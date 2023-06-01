@@ -19,10 +19,15 @@
 package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
+import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +35,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ConversationApiV4Test : ApiTest() {
@@ -55,8 +61,50 @@ internal class ConversationApiV4Test : ApiTest() {
             assertEquals(result.value.failedToAdd.first(), UserId("failedId", "failedDomain"))
         }
 
+    fun given200Response_whenUpdatingConversationProtocol_thenEventIsParsedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.validUpdateProtocol.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPut()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTOCOL")
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        val response = conversationApi.updateProtocol(conversationId, ConvProtocol.MIXED)
+
+        assertIs<NetworkResponse.Success<UpdateConversationProtocolResponse>>(response)
+        assertIs<UpdateConversationProtocolResponse.ProtocolUpdated>(response.value)
+        assertEquals(
+            EventContentDTOJson.validUpdateProtocol.serializableData,
+            (response.value as UpdateConversationProtocolResponse.ProtocolUpdated).event
+        )
+    }
+
+    @Test
+    fun given204Response_whenUpdatingConversationProtocol_thenEventIsParsedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.NoContent,
+            assertion = {
+                assertPut()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_PROTOCOL")
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        val response = conversationApi.updateProtocol(conversationId, ConvProtocol.MIXED)
+
+        assertIs<NetworkResponse.Success<UpdateConversationProtocolResponse>>(response)
+        assertIs<UpdateConversationProtocolResponse.ProtocolUnchanged>(response.value)
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
+        const val PATH_PROTOCOL = "protocol"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v4_withFailedToAdd.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
     }

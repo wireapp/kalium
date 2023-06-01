@@ -19,10 +19,12 @@
 package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
@@ -136,6 +138,28 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
+    private val jsonProviderUpdateConversationProtocol = { serializable: EventContentDTO.Conversation.ProtocolUpdate ->
+        """
+        |{
+        |  "conversation":"${serializable.qualifiedConversation.value}",
+        |  "data":{
+        |    "protocol": "mixed"
+        |  },
+        |  "from":"${serializable.qualifiedFrom.value}",
+        |  "qualified_conversation": {
+        |    "id": "${serializable.qualifiedConversation.value}",
+        |    "domain": "${serializable.qualifiedConversation.domain}"
+        |  },
+        |  "qualified_from" : {
+        |     "id" : "${serializable.qualifiedFrom.value}",
+        |     "domain" : "${serializable.qualifiedFrom.domain}"
+        |  },
+        |  "time":"2023-01-27T10:35:10.146Z",
+        |  "type":"conversation.protocol-update"
+        |}
+        """.trimMargin()
+    }
+
     val validAccessUpdate = ValidJsonProvider(
         EventContentDTO.Conversation.AccessUpdate(
             qualifiedConversation = ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
@@ -211,6 +235,21 @@ object EventContentDTOJson {
             data = ConversationReceiptModeDTO(receiptMode = ReceiptMode.ENABLED)
         ),
         jsonProviderUpdateConversationReceiptMode
+    )
+
+    val validUpdateProtocol = ValidJsonProvider(
+        EventContentDTO.Conversation.ProtocolUpdate(
+            qualifiedConversation = QualifiedID(
+                value = "conversationId",
+                domain = "conversationDomain"
+            ),
+            qualifiedFrom = QualifiedID(
+                value = "qualifiedFromId",
+                domain = "qualifiedFromDomain"
+            ),
+            data = ConversationProtocolDTO(ConvProtocol.MIXED)
+        ),
+        jsonProviderUpdateConversationProtocol
     )
 
     val validGenerateGuestRoomLink = """
