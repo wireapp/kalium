@@ -30,13 +30,25 @@ import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration
 
 class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
 
-    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
-    private val logOutputFile by option(help = "output file for logs")
-    private val developmentApiEnabled by option(help = "use development API if supported by backend").flag(default = false)
-    private val encryptProteusStorage by option(help = "use encrypted storage for proteus sessions and identity").flag(default = false)
+    private val logLevel by option(
+        help = "log level"
+    ).enum<KaliumLogLevel>().default(KaliumLogLevel.WARN)
+    private val logOutputFile by option(
+        help = "output file for logs"
+    )
+    private val developmentApiEnabled by option(
+        help = "use development API if supported by backend"
+    ).flag(default = false)
+    private val encryptProteusStorage by option(
+        help = "use encrypted storage for proteus sessions and identity"
+    ).flag(default = false)
+    private val mlsMigrationInterval by option(
+        help = "interval at which mls migration is updated"
+    ).default("24h")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
     override fun run() = runBlocking {
@@ -45,7 +57,8 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
                 rootPath = "$HOME_DIRECTORY/.kalium/accounts",
                 kaliumConfigs = KaliumConfigs(
                     developmentApiEnabled = developmentApiEnabled,
-                    encryptProteusStorage = encryptProteusStorage
+                    encryptProteusStorage = encryptProteusStorage,
+                    mlsMigrationInterval = Duration.parse(mlsMigrationInterval)
                 )
             )
         }
@@ -63,7 +76,6 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
     companion object {
         val HOME_DIRECTORY: String = homeDirectory()
     }
-
 }
 
 expect fun fileLogger(filePath: String): LogWriter
