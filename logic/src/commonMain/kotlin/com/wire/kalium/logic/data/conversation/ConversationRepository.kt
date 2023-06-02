@@ -161,7 +161,7 @@ interface ConversationRepository {
     ): Either<NetworkFailure, Unit>
 
     suspend fun getConversationsByGroupState(
-        groupState: Conversation.ProtocolInfo.MLS.GroupState
+        groupState: Conversation.ProtocolInfo.MLSCapable.GroupState
     ): Either<StorageFailure, List<Conversation>>
 
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID): Either<StorageFailure, Unit>
@@ -509,7 +509,7 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun getConversationsByGroupState(
-        groupState: Conversation.ProtocolInfo.MLS.GroupState
+        groupState: Conversation.ProtocolInfo.MLSCapable.GroupState
     ): Either<StorageFailure, List<Conversation>> =
         wrapStorageRequest {
             conversationDAO.getConversationsByGroupState(conversationMapper.toDAOGroupState(groupState))
@@ -642,7 +642,7 @@ internal class ConversationDataSource internal constructor(
     override suspend fun deleteConversation(conversationId: ConversationId) =
         getConversationProtocolInfo(conversationId).flatMap {
             when (it) {
-                is Conversation.ProtocolInfo.MLS ->
+                is Conversation.ProtocolInfo.MLSCapable ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                         wrapProteusRequest {
                             mlsClient.wipeConversation(it.groupId.toCrypto())
