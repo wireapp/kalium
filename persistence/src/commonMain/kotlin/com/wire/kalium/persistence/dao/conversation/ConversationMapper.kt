@@ -196,6 +196,14 @@ internal class ConversationMapper {
                 mlsCipherSuite
             )
 
+            ConversationEntity.Protocol.MIXED -> ConversationEntity.ProtocolInfo.Mixed(
+                mlsGroupId ?: "",
+                mlsGroupState,
+                mlsEpoch.toULong(),
+                mlsLastKeyingMaterialUpdate,
+                mlsCipherSuite
+            )
+
             ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
         }
     }
