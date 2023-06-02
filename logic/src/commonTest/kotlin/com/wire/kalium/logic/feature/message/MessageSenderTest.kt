@@ -41,6 +41,7 @@ import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Compa
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_MEMBER_2
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -69,6 +70,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MessageSenderTest {
@@ -769,6 +771,32 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+    fun givenAllStepsSucceed_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldStart() {
+        val duration = Duration.parse("PT1M")
+        val message = TestMessage.TEXT_MESSAGE.copy(
+            expirationData = Message.ExpirationData(duration)
+        )
+
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.selfDeleteMessageSenderHandler)
+                .function(arrangement.selfDeleteMessageSenderHandler::enqueueSelfDeletion)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -797,6 +825,9 @@ class MessageSenderTest {
         @Mock
         val userRepository = configure(mock(UserRepository::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
+
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
@@ -816,6 +847,7 @@ class MessageSenderTest {
             mlsMessageCreator = mlsMessageCreator,
             messageSendingInterceptor = messageSendingInterceptor,
             userRepository = userRepository,
+            selfDeleteMessageSenderHandler = selfDeleteMessageSenderHandler,
             scope = testScope
         )
 
@@ -953,16 +985,22 @@ class MessageSenderTest {
             createOutgoingEnvelopeFailing: Boolean = false,
             sendEnvelopeWithResult: Either<CoreFailure, MessageSent>? = null,
             updateMessageStatusFailing: Boolean = false
-        ) =
-            apply {
-                withGetMessageById()
-                if (getConversationProtocolFailing) withGetProtocolInfoFailing() else withGetProtocolInfo()
-                withGetConversationRecipients(getConversationsRecipientFailing)
-                withPrepareRecipientsForNewOutgoingMessage(prepareRecipientsForNewOutGoingMessageFailing)
-                withCreateOutgoingEnvelope(createOutgoingEnvelopeFailing)
-                if (sendEnvelopeWithResult != null) withSendEnvelope(sendEnvelopeWithResult) else withSendEnvelope()
-                withUpdateMessageStatus(updateMessageStatusFailing)
-            }
+        ) = apply {
+            withGetMessageById()
+            if (getConversationProtocolFailing) withGetProtocolInfoFailing() else withGetProtocolInfo()
+            withGetConversationRecipients(getConversationsRecipientFailing)
+            withPrepareRecipientsForNewOutgoingMessage(prepareRecipientsForNewOutGoingMessageFailing)
+            withCreateOutgoingEnvelope(createOutgoingEnvelopeFailing)
+            if (sendEnvelopeWithResult != null) withSendEnvelope(sendEnvelopeWithResult) else withSendEnvelope()
+            withUpdateMessageStatus(updateMessageStatusFailing)
+        }
+
+        fun withEnqueueSelfDeleteMessage() = apply {
+            given(selfDeleteMessageSenderHandler)
+                .function(selfDeleteMessageSenderHandler::enqueueSelfDeletion)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
+        }
 
         fun withSendMlsMessage(
             sendMlsMessageWithResult: Either<CoreFailure, String>? = null,

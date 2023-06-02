@@ -125,6 +125,7 @@ class MessageScope internal constructor(
             mlsMessageCreator,
             messageSendingInterceptor,
             userRepository,
+            ephemeralMessageDeletionHandler,
             scope
         )
 
