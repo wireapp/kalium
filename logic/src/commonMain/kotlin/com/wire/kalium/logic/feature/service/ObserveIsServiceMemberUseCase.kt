@@ -17,10 +17,12 @@
  */
 package com.wire.kalium.logic.feature.service
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -33,14 +35,14 @@ interface ObserveIsServiceMemberUseCase {
     suspend operator fun invoke(
         serviceId: ServiceId,
         conversationId: ConversationId
-    ): Flow<QualifiedID?>
+    ): Flow<Either<StorageFailure, UserId?>>
 }
 
 class ObserveIsServiceMemberUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : ObserveIsServiceMemberUseCase {
 
-    override suspend fun invoke(serviceId: ServiceId, conversationId: ConversationId): Flow<QualifiedID?> =
+    override suspend fun invoke(serviceId: ServiceId, conversationId: ConversationId): Flow<Either<StorageFailure, UserId?>> =
         serviceRepository.observeIsServiceMember(
             serviceId = serviceId,
             conversationId = conversationId

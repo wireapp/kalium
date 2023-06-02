@@ -30,8 +30,8 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
@@ -136,21 +136,21 @@ internal class SyncFeatureConfigsUseCaseImpl(
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
     }
 
-    private fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
+    private suspend fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
+                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Disabled,
                     hasFeatureChanged = null
                 )
             )
         } else {
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val selfDeletionTimer = when {
-                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced.ByTeam(enforcedTimeout)
-                selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
-                else -> SelfDeletionTimer.Disabled
+            val selfDeletionTimer: TeamSelfDeleteTimer = when {
+                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
+                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
+                else -> TeamSelfDeleteTimer.Disabled
             }
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
