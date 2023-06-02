@@ -194,24 +194,42 @@ data class Conversation(
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
-    sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo() {
+    sealed interface ProtocolInfo {
+        object Proteus : ProtocolInfo {
             override fun name() = "Proteus"
         }
 
         data class MLS(
-            val groupId: GroupID,
-            val groupState: GroupState,
-            val epoch: ULong,
-            val keyingMaterialLastUpdate: Instant,
-            val cipherSuite: CipherSuite
-        ) : ProtocolInfo() {
-            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
-
+            override val groupId: GroupID,
+            override val groupState: MLSCapable.GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: CipherSuite
+        ) : MLSCapable {
             override fun name() = "MLS"
         }
 
-        abstract fun name(): String
+        data class Mixed(
+            override val groupId: GroupID,
+            override val groupState: MLSCapable.GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: CipherSuite
+        ) : MLSCapable {
+            override fun name() = "Mixed"
+        }
+
+        sealed interface MLSCapable : ProtocolInfo {
+            val groupId: GroupID
+            val groupState: GroupState
+            val epoch: ULong
+            val keyingMaterialLastUpdate: Instant
+            val cipherSuite: CipherSuite
+
+            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+        }
+
+        fun name(): String
     }
 
     data class Member(val id: UserId, val role: Role) {

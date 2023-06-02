@@ -30,6 +30,13 @@ class ProtocolInfoMapperTest {
     private val protocolInfoMapper = ProtocolInfoMapperImpl()
 
     @Test
+    fun givenConversationMixedProtocolInfo_WhenMapToConversationProtocolInfo_ResultShouldBeEqual() = runTest {
+        val mappedValue = protocolInfoMapper.toEntity(CONVERSATION_MIXED_PROTOCOL_INFO)
+        assertIs<ConversationEntity.ProtocolInfo>(mappedValue)
+        assertEquals(mappedValue, CONV_ENTITY_MIXED_PROTOCOL_INFO)
+    }
+
+    @Test
     fun givenConversationMLSProtocolInfo_WhenMapToConversationProtocolInfo_ResultShouldBeEqual() = runTest {
         val mappedValue = protocolInfoMapper.toEntity(CONVERSATION_MLS_PROTOCOL_INFO)
         assertIs<ConversationEntity.ProtocolInfo>(mappedValue)
@@ -41,6 +48,13 @@ class ProtocolInfoMapperTest {
         val mappedValue = protocolInfoMapper.toEntity(CONVERSATION_PROTEUS_PROTOCOL_INFO)
         assertIs<ConversationEntity.ProtocolInfo>(mappedValue)
         assertEquals(mappedValue, CONV_ENTITY_PROTEUS_PROTOCOL_INFO)
+    }
+
+    @Test
+    fun givenEntityMixedProtocolInfo_WhenMapToConversationProtocolInfo_ResultShouldBeEqual() = runTest {
+        val mappedValue = protocolInfoMapper.fromEntity(CONV_ENTITY_MIXED_PROTOCOL_INFO)
+        assertIs<Conversation.ProtocolInfo>(mappedValue)
+        assertEquals(mappedValue, CONVERSATION_MIXED_PROTOCOL_INFO)
     }
 
     @Test
@@ -58,15 +72,30 @@ class ProtocolInfoMapperTest {
     }
 
     companion object {
+        val CONVERSATION_MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
+            GroupID("GROUP_ID"),
+            Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+            5UL,
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        )
         val CONVERSATION_MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
             GroupID("GROUP_ID"),
-            Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
+            Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
             5UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
             cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
         val CONVERSATION_PROTEUS_PROTOCOL_INFO = Conversation.ProtocolInfo.Proteus
 
+        val CONV_ENTITY_MIXED_PROTOCOL_INFO =
+            ConversationEntity.ProtocolInfo.Mixed(
+                "GROUP_ID",
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
+                5UL,
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
         val CONV_ENTITY_MLS_PROTOCOL_INFO =
             ConversationEntity.ProtocolInfo.MLS(
                 "GROUP_ID",
@@ -76,6 +105,5 @@ class ProtocolInfoMapperTest {
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
         val CONV_ENTITY_PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
-
     }
 }

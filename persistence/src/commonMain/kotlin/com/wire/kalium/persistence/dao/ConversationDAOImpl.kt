@@ -200,6 +200,14 @@ private class ConversationMapper {
                 mlsCipherSuite
             )
 
+            ConversationEntity.Protocol.MIXED -> ConversationEntity.ProtocolInfo.Mixed(
+                mlsGroupId ?: "",
+                mlsGroupState,
+                mlsEpoch.toULong(),
+                mlsLastKeyingMaterialUpdate,
+                mlsCipherSuite
+            )
+
             ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
         }
     }
@@ -252,14 +260,17 @@ class ConversationDAOImpl(
                 name,
                 type,
                 teamId,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupId
                 else null,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupState
                 else ConversationEntity.GroupState.ESTABLISHED,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.epoch.toLong()
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
                 else MLS_DEFAULT_EPOCH,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
-                else ConversationEntity.Protocol.PROTEUS,
+                when (protocolInfo) {
+                    is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
+                    is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED
+                    is ConversationEntity.ProtocolInfo.Proteus -> ConversationEntity.Protocol.PROTEUS
+                },
                 mutedStatus,
                 mutedTime,
                 creatorId,
@@ -268,9 +279,9 @@ class ConversationDAOImpl(
                 access,
                 accessRole,
                 lastReadDate,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.keyingMaterialLastUpdate
                 else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
                 receiptMode,
                 messageTimer,
@@ -385,7 +396,7 @@ class ConversationDAOImpl(
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
         withContext(coroutineContext) {
-            conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
+            conversationQueries.selectByGroupState(groupState)
                 .executeAsList()
                 .map(conversationMapper::toModel)
         }
@@ -508,7 +519,6 @@ class ConversationDAOImpl(
     override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
-            ConversationEntity.Protocol.MLS,
             DateTimeUtil.currentInstant().minus(threshold)
         ).executeAsList()
     }
@@ -522,7 +532,7 @@ class ConversationDAOImpl(
     }
 
     override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
-        return conversationQueries.selectProposalTimers(ConversationEntity.Protocol.MLS)
+        return conversationQueries.selectProposalTimers()
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()

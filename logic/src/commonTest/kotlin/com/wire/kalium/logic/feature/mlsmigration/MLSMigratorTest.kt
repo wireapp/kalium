@@ -224,15 +224,17 @@ class MLSMigratorTest {
         }
 
         companion object {
-            val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
+            val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(
+                ErrorResponse(409, "", "mls-stale-message")
+            )
             val MEMBERS = listOf(TestUser.USER_ID)
-            val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
+            val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
                 TestConversation.GROUP_ID,
-                Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            ) // TODO jacob should be mixed
+            )
             val UPDATE_PROTOCOL_SUCCESS = NetworkResponse.Success(
                 UpdateConversationProtocolResponse.ProtocolUpdated(
                     EventContentDTO.Conversation.ProtocolUpdate(
