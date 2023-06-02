@@ -39,13 +39,16 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.isPositiveNotNull
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
@@ -118,7 +121,7 @@ interface MessageSender {
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
@@ -130,6 +133,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
+    private val selfDeleteMessageSenderHandler: EphemeralMessageDeletionHandler,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -157,8 +161,6 @@ internal class MessageSenderImpl internal constructor(
             }
         }
     }
-
-    private fun getType(messageContent: MessageContent?) = messageContent?.let { it::class.simpleName }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
         messageSendingInterceptor
@@ -216,7 +218,15 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithProteus(message, messageTarget)
                     }
                 }
+            }.onSuccess {
+                startSelfDeletionIfNeeded(message)
             }
+    }
+
+    private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
+        if (message is Message.Regular && message.expirationData?.expireAfter.isPositiveNotNull()) {
+            selfDeleteMessageSenderHandler.enqueueSelfDeletion(message)
+        }
     }
 
     private suspend fun attemptToSendWithProteus(
