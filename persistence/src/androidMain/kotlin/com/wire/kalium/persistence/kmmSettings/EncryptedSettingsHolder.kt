@@ -39,7 +39,7 @@ internal actual object EncryptedSettingsBuilder {
             .build()
 
     @Synchronized
-    fun build(
+    actual fun build(
         options: SettingOptions,
         param: EncryptedSettingsPlatformParam
     ): Settings {
