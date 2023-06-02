@@ -62,7 +62,9 @@ dependencies {
     add("implementation", "io.prometheus:simpleclient_dropwizard:${Versions.prometheus_simpleclient}")
     add("implementation", "io.prometheus:simpleclient_servlet:${Versions.prometheus_simpleclient}")
 
-    add("implementation", project(":network"))
+    add("implementation", project(":network")) {
+        exclude("org.slf4j", "slf4j-api")
+    }
     add("implementation", project(":cryptography")) {
         exclude("org.slf4j", "slf4j-api")
     }

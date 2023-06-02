@@ -31,7 +31,8 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -40,9 +41,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -52,7 +56,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -480,11 +483,11 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
-                    && it.hasFeatureChanged == null
-        }
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Disabled
+            })
     }
 
     @Test
@@ -505,12 +508,11 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
-                    && it.enforcedSelfDeletionTimer.toDuration() == ZERO
-                    && it.hasFeatureChanged == null
-        }
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
+            })
     }
 
     @Test
@@ -528,23 +530,22 @@ class SyncFeatureConfigsUseCaseTest {
             .arrange()
 
         // When
-        val result = getTeamSettingsSelfDeletionStatusUseCase.invoke()
+        getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
-                    && it.enforcedSelfDeletionTimer.toDuration() == ZERO
-                    && it.hasFeatureChanged == null
-        }
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
+            })
     }
 
     @Test
     fun givenNewEnforcedTeamSettingsSelfDeletionEvent_whenSyncing_thenItMapsToEnforced() = runTest {
         // Given
-        val enforcedTimeout = 3600L
+        val enforcedTimeoutInMs = 3600000L
         val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
-            config = SelfDeletingMessagesConfigModel(enforcedTimeout),
+            config = SelfDeletingMessagesConfigModel(enforcedTimeoutInMs),
             status = Status.ENABLED
         )
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
@@ -558,12 +559,15 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
-                    && it.enforcedSelfDeletionTimer.toDuration() == 1.toDuration(DurationUnit.HOURS)
-                    && it.hasFeatureChanged == null
-        }
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enforced(
+                    enforcedTimeoutInMs.toDuration(
+                        DurationUnit.MILLISECONDS
+                    )
+                )
+            })
     }
 
     private class Arrangement {
@@ -572,8 +576,12 @@ class SyncFeatureConfigsUseCaseTest {
 
         var kaliumConfigs = KaliumConfigs()
 
+        @Mock
+        val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
+
         var userConfigRepository: UserConfigRepository = UserConfigDataSource(
             inMemoryStorage,
+            userConfigDAO,
             kaliumConfigs
         )
             private set
@@ -583,6 +591,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         @Mock
         val isGuestRoomLinkFeatureEnabled = mock(classOf<GetGuestRoomLinkFeatureStatusUseCase>())
+
 
         private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 
@@ -606,6 +615,7 @@ class SyncFeatureConfigsUseCaseTest {
             kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = state)
             userConfigRepository = UserConfigDataSource(
                 inMemoryStorage,
+                userConfigDAO,
                 kaliumConfigs
             )
         }
@@ -637,10 +647,10 @@ class SyncFeatureConfigsUseCaseTest {
         }
 
         fun withSuccessfulTeamSettingsSelfDeletionStatus() = apply {
-            /*given(userConfigRepository)
-                .function(userConfigRepository::setTeamSettingsSelfDeletionStatus)
+            given(userConfigDAO)
+                .suspendFunction(userConfigDAO::setTeamSettingsSelfDeletionStatus)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))*/
+                .then { }
         }
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
