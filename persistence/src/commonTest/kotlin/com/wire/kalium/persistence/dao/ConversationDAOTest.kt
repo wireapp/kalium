@@ -133,12 +133,30 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingMixedConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
+        conversationDAO.insertConversation(conversationEntity6)
+        insertTeamUserAndMember(team, user2, conversationEntity6.id)
+        val result =
+            conversationDAO.getConversationIdByGroupID((conversationEntity6.protocolInfo as ConversationEntity.ProtocolInfo.Mixed).groupId)
+        assertEquals(conversationEntity6.id, result)
+    }
+    @Test
     fun givenExistingMLSConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
             conversationDAO.getConversationIdByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
         assertEquals(conversationEntity2.id, result)
+    }
+
+    @Test
+    fun givenExistingMixedConversation_ThenConversationCanBeRetrievedByGroupState() = runTest {
+        conversationDAO.insertConversation(conversationEntity6)
+        conversationDAO.insertConversation(conversationEntity3)
+        insertTeamUserAndMember(team, user2, conversationEntity6.id)
+        val result =
+            conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.ESTABLISHED)
+        assertEquals(listOf(conversationEntity6.toViewEntity(user2)), result)
     }
 
     @Test
@@ -186,7 +204,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
         assertEquals(updatedConversation1Entity.toViewEntity(user1), result)
     }
-
 
     @Test
     fun givenAnExistingConversation_WhenUpdatingTheMutingStatus_ThenConversationShouldBeUpdated() = runTest {
@@ -737,7 +754,19 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAnMLSConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+    fun givenMixedConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity6)
+
+        // when
+        val result = conversationDAO.getConversationProtocolInfo(conversationEntity6.id)
+
+        // then
+        assertEquals(conversationEntity6.protocolInfo, result)
+    }
+
+    @Test
+    fun givenMLSConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity2)
 
@@ -749,7 +778,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAProteusConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
+    fun givenProteusConversation_whenGettingConversationProtocolInfo_itReturnsCorrectInfo() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity1)
 
@@ -951,8 +980,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val mlsGroupState: ConversationEntity.GroupState
 
         val protocolInfoTmp = protocolInfo
-        if (protocolInfoTmp is ConversationEntity.ProtocolInfo.MLS) {
-            protocol = ConversationEntity.Protocol.MLS
+        if (protocolInfoTmp is ConversationEntity.ProtocolInfo.MLSCapable) {
+            protocol = if (protocolInfoTmp is ConversationEntity.ProtocolInfo.MLS) {
+                ConversationEntity.Protocol.MLS
+            } else {
+                ConversationEntity.Protocol.MIXED
+            }
             mlsGroupId = protocolInfoTmp.groupId
             mlsLastKeyingMaterialUpdate = protocolInfoTmp.keyingMaterialLastUpdate
             mlsGroupState = protocolInfoTmp.groupState
@@ -1104,7 +1137,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         )
         val conversationEntity5 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
-            "conversation1",
+            "conversation5",
             ConversationEntity.Type.GROUP,
             teamId,
             ConversationEntity.ProtocolInfo.Proteus,
@@ -1116,7 +1149,33 @@ class ConversationDAOTest : BaseDatabaseTest() {
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = null
+            messageTimer = null,
+            userMessageTimer = null
+        )
+        val conversationEntity6 = ConversationEntity(
+            QualifiedIDEntity("6", "wire.com"),
+            "conversation6",
+            ConversationEntity.Type.GROUP,
+            null,
+            ConversationEntity.ProtocolInfo.Mixed(
+                "group6",
+                ConversationEntity.GroupState.ESTABLISHED,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            ),
+            creatorId = "someValue",
+            // This conversation was modified after the last time the user was notified about it
+            lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+            // and it's status is set to be only notified if there is a mention for the user
+            mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
+            access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+            accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+            receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+            messageTimer = null,
+            userMessageTimer = null
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

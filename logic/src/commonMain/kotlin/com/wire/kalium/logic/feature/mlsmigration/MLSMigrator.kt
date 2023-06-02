@@ -84,7 +84,7 @@ class MLSMigratorImpl(
         conversationRepository.getConversationProtocolInfo(conversationId)
             .flatMap { protocolInfo ->
                 when (protocolInfo) {
-                    is Conversation.ProtocolInfo.MLS -> { // TODO jacob should be MIXED
+                    is Conversation.ProtocolInfo.Mixed -> {
                         mlsConversationRepository.establishMLSGroup(protocolInfo.groupId, emptyList())
                             .flatMap {
                                 conversationRepository.getConversationMembers(conversationId).flatMap { members ->
@@ -92,7 +92,7 @@ class MLSMigratorImpl(
                                 }
                             }
                     }
-                    is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                    else -> Either.Right(Unit)
                 }
             }
 }
