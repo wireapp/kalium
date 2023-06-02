@@ -30,7 +30,6 @@ private fun SettingOptions.keyAlias(): String = when (this) {
 }
 
 internal actual object EncryptedSettingsBuilder {
-    @Synchronized
     private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS): MasterKey =
         MasterKey
             .Builder(context, keyAlias)
@@ -38,12 +37,11 @@ internal actual object EncryptedSettingsBuilder {
             .setRequestStrongBoxBacked(true)
             .build()
 
-    @Synchronized
     actual fun build(
         options: SettingOptions,
         param: EncryptedSettingsPlatformParam
-    ): Settings {
-        return SharedPreferencesSettings(
+    ): Settings = synchronized(this) {
+        SharedPreferencesSettings(
             if (options.shouldEncryptData) {
                 EncryptedSharedPreferences.create(
                     param.appContext,
@@ -57,7 +55,6 @@ internal actual object EncryptedSettingsBuilder {
             }, false
         )
     }
-
 }
 
 internal actual class EncryptedSettingsPlatformParam(val appContext: Context)
