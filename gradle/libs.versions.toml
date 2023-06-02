@@ -48,6 +48,7 @@ carthage = "0.0.1"
 libsodiumBindings = "0.8.6"
 protobufCodegen = "0.9.1"
 annotation = "1.2.0"
+mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
 
 [plugins]
@@ -118,6 +119,7 @@ libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsod
 # cli
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
 okhttp-loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "ok-http" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant"}
 
 # ktor
 ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
