@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.selfdeletingMessages
+package com.wire.kalium.logic.feature.selfDeletingMessages
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.serialization.toJsonElement
@@ -44,7 +44,7 @@ sealed class SelfDeletionTimer {
     fun toDuration(): Duration = when (this) {
         is Enabled -> userDuration
         is Enforced -> enforcedDuration
-        else -> Duration.ZERO
+        is Disabled -> Duration.ZERO
     }
 
     private fun toLogMap(): Map<String, Any?> = mapOf(
@@ -93,5 +93,11 @@ data class TeamSettingsSelfDeletionStatus(
      * user settings (aka, if the team settings timer is set to [SelfDeletionTimer.Enforced] or [SelfDeletionTimer.Disabled] then the user
      * won't be able to change the timer for any conversation
      * */
-    val enforcedSelfDeletionTimer: SelfDeletionTimer
+    val enforcedSelfDeletionTimer: TeamSelfDeleteTimer
 )
+
+sealed interface TeamSelfDeleteTimer {
+    object Disabled : TeamSelfDeleteTimer
+    object Enabled : TeamSelfDeleteTimer
+    data class Enforced(val enforcedDuration: Duration) : TeamSelfDeleteTimer
+}

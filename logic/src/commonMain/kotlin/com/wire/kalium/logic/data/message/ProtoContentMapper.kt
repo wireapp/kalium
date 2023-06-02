@@ -27,13 +27,14 @@ import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
+import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Calling
-import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
+import com.wire.kalium.protobuf.messages.Confirmation
+import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Knock
@@ -45,8 +46,6 @@ import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
-import com.wire.kalium.protobuf.messages.Asset
-import com.wire.kalium.protobuf.messages.Location
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 
@@ -344,7 +343,7 @@ class ProtoContentMapperImpl(
         val replacingMessageId = protoContent.value.replacingMessageId
         return when (val editContent = protoContent.value.content) {
             is MessageEdit.Content.Text -> {
-                val mentions = editContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) }
+                val mentions = editContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) }
                 MessageContent.TextEdited(
                     editMessageId = replacingMessageId, newContent = editContent.value.content, newMentions = mentions
                 )
@@ -403,7 +402,7 @@ class ProtoContentMapperImpl(
 
     private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
         value = protoContent.value.content,
-        mentions = protoContent.value.mentions.map { messageMentionMapper.fromProtoToModel(it) },
+        mentions = protoContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
         quotedMessageReference = protoContent.value.quote?.let {
             MessageContent.QuoteReference(
                 quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false

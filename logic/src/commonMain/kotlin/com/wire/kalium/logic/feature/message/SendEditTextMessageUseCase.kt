@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -109,15 +108,6 @@ class SendEditTextMessageUseCase internal constructor(
                 }
                 .flatMap {
                     messageSender.sendMessage(message)
-                        .onSuccess {
-                            // when succeeded, we modify the message id locally
-                            messageRepository.updateTextMessage(
-                                conversationId = message.conversationId,
-                                messageContent = content,
-                                newMessageId = editedMessageId,
-                                editTimeStamp = message.date
-                            )
-                        }
                 }
         }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE) }
     }

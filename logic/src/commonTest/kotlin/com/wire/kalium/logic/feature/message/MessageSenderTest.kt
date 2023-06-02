@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
@@ -65,6 +66,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MessageSenderTest {
@@ -633,6 +635,98 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+    fun givenASuccess_WhenSendingEditMessage_ThenUpdateMessageIdButDoNotUpdateCreationDate() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withUpdateTextMessage()
+            .arrange()
+
+        val originalMessageId = "original_id"
+        val editedMessageId = "edited_id"
+        val content = MessageContent.TextEdited(originalMessageId, "", listOf())
+        val message = Message.Signaling(
+            id = editedMessageId,
+            content = content,
+            conversationId = Arrangement.TEST_CONVERSATION_ID,
+            date = TestMessage.TEST_DATE_STRING,
+            senderUserId = UserId("userValue", "userDomain"),
+            senderClientId = ClientId("clientId"),
+            status = Message.Status.PENDING,
+            isSelfMessage = false
+        )
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message = message)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::updateTextMessage)
+                .with(anything(), eq(content), eq(editedMessageId), anything())
+                .wasInvoked(exactly = once)
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
+                .with(anything(), eq(editedMessageId), eq(null), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenASuccess_WhenSendingRegularMessage_ThenDoNotUpdateMessageIdButUpdateCreationDateToServerDate() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .arrange()
+        val message = TestMessage.TEXT_MESSAGE
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message = message)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::updateTextMessage)
+                .with(anything(), anything(), anything(), anything())
+                .wasNotInvoked()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
+                .with(anything(), eq(TestMessage.TEXT_MESSAGE.id), matching { it != null }, anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAllStepsSucceed_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldStart() {
+        val duration = Duration.parse("PT1M")
+        val message = TestMessage.TEXT_MESSAGE.copy(
+            expirationData = Message.ExpirationData(duration)
+        )
+
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.selfDeleteMessageSenderHandler)
+                .function(arrangement.selfDeleteMessageSenderHandler::enqueueSelfDeletion)
+                .with(eq(message))
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -661,6 +755,9 @@ class MessageSenderTest {
         @Mock
         val userRepository = configure(mock(UserRepository::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
+
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
@@ -680,6 +777,7 @@ class MessageSenderTest {
             mlsMessageCreator = mlsMessageCreator,
             messageSendingInterceptor = messageSendingInterceptor,
             userRepository = userRepository,
+            selfDeleteMessageSenderHandler = selfDeleteMessageSenderHandler,
             scope = testScope
         )
 
@@ -792,6 +890,13 @@ class MessageSenderTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withUpdateTextMessage() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::updateTextMessage)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withAllRecipients(recipients: Pair<List<Recipient>, List<Recipient>>) = apply {
             given(userRepository)
                 .suspendFunction(userRepository::getAllRecipients)
@@ -807,16 +912,22 @@ class MessageSenderTest {
             createOutgoingEnvelopeFailing: Boolean = false,
             sendEnvelopeWithResult: Either<CoreFailure, String>? = null,
             updateMessageStatusFailing: Boolean = false
-        ) =
-            apply {
-                withGetMessageById()
-                if (getConversationProtocolFailing) withGetProtocolInfoFailing() else withGetProtocolInfo()
-                withGetConversationRecipients(getConversationsRecipientFailing)
-                withPrepareRecipientsForNewOutgoingMessage(prepareRecipientsForNewOutGoingMessageFailing)
-                withCreateOutgoingEnvelope(createOutgoingEnvelopeFailing)
-                if (sendEnvelopeWithResult != null) withSendEnvelope(sendEnvelopeWithResult) else withSendEnvelope()
-                withUpdateMessageStatus(updateMessageStatusFailing)
-            }
+        ) = apply {
+            withGetMessageById()
+            if (getConversationProtocolFailing) withGetProtocolInfoFailing() else withGetProtocolInfo()
+            withGetConversationRecipients(getConversationsRecipientFailing)
+            withPrepareRecipientsForNewOutgoingMessage(prepareRecipientsForNewOutGoingMessageFailing)
+            withCreateOutgoingEnvelope(createOutgoingEnvelopeFailing)
+            if (sendEnvelopeWithResult != null) withSendEnvelope(sendEnvelopeWithResult) else withSendEnvelope()
+            withUpdateMessageStatus(updateMessageStatusFailing)
+        }
+
+        fun withEnqueueSelfDeleteMessage() = apply {
+            given(selfDeleteMessageSenderHandler)
+                .function(selfDeleteMessageSenderHandler::enqueueSelfDeletion)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
+        }
 
         fun withSendMlsMessage(
             sendMlsMessageWithResult: Either<CoreFailure, String>? = null,
