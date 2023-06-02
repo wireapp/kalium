@@ -125,7 +125,8 @@ class CallMapperImpl(
             Conversation.Type.GROUP -> {
                 when (conversation.protocol) {
                     is Conversation.ProtocolInfo.MLS -> ConversationType.ConferenceMls
-                    is Conversation.ProtocolInfo.Proteus -> ConversationType.Conference
+                    is Conversation.ProtocolInfo.Proteus,
+                    is Conversation.ProtocolInfo.Mixed -> ConversationType.Conference
                 }
             }
             Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne

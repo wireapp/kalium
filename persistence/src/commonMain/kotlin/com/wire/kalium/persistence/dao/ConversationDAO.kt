@@ -52,7 +52,7 @@ data class ConversationEntity(
 
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
-    enum class Protocol { PROTEUS, MLS }
+    enum class Protocol { PROTEUS, MLS, MIXED }
     enum class ReceiptMode { DISABLED, ENABLED }
 
     @Suppress("MagicNumber")
@@ -74,15 +74,30 @@ data class ConversationEntity(
 
     enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_AND_REPLIES_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
-    sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo()
+    sealed interface ProtocolInfo {
+        object Proteus : ProtocolInfo
         data class MLS(
-            val groupId: String,
-            val groupState: GroupState,
-            val epoch: ULong,
-            val keyingMaterialLastUpdate: Instant,
+            override val groupId: String,
+            override val groupState: GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: CipherSuite
+        ) : MLSCapable
+        data class Mixed(
+            override val groupId: String,
+            override val groupState: GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: CipherSuite
+        ) : MLSCapable
+
+        sealed interface MLSCapable : ProtocolInfo {
+            val groupId: String
+            val groupState: GroupState
+            val epoch: ULong
+            val keyingMaterialLastUpdate: Instant
             val cipherSuite: CipherSuite
-        ) : ProtocolInfo()
+        }
     }
 }
 

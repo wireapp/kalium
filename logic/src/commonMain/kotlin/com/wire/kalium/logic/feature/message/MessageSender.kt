@@ -219,7 +219,7 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithMLS(protocolInfo.groupId, message)
                     }
 
-                    is Conversation.ProtocolInfo.Proteus -> {
+                    is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {
                         // TODO(messaging): make this thread safe (per user)
                         attemptToSendWithProteus(message, messageTarget)
                     }
