@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.*
+import com.wire.crypto.client.CoreCryptoCentral.Companion.lower
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
@@ -76,7 +77,7 @@ actual class MLSClientImpl actual constructor(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration =
         CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
-    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
+    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     private val defaultCredentialType = MlsCredentialType.BASIC
     private val defaultE2EIExpiry: UInt = 90U
 
@@ -85,7 +86,7 @@ actual class MLSClientImpl actual constructor(
             rootDir,
             databaseKey.value,
             toUByteList(clientId.toString()),
-            null
+            listOf(defaultCiphersuiteName)
         )
         coreCrypto.setCallbacks(Callbacks())
     }

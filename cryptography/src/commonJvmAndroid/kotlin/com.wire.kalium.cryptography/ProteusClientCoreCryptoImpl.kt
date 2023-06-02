@@ -21,6 +21,7 @@ package com.wire.kalium.cryptography
 import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CryptoException
+import com.wire.crypto.client.CoreCryptoCentral.Companion.lower
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -34,7 +35,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
 ) : ProteusClient {
 
     private val path: String = "$rootDir/$KEYSTORE_NAME"
-    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519
+    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     private lateinit var coreCrypto: CoreCrypto
 
     override fun clearLocalFiles(): Boolean {
@@ -48,7 +49,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
     override suspend fun openOrCreate() {
         coreCrypto = wrapException {
             File(rootDir).mkdirs()
-            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, listOf(defaultCiphersuiteName))
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
@@ -59,7 +60,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
         val directory = File(rootDir)
         if (directory.exists()) {
             coreCrypto = wrapException {
-                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, listOf(defaultCiphersuiteName))
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
                 coreCrypto
@@ -122,7 +123,12 @@ class ProteusClientCoreCryptoImpl internal constructor(
     }
 
     override suspend fun newLastPreKey(): PreKeyCrypto {
-        return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId().toInt(), toByteArray(coreCrypto.proteusLastResortPrekey())) }
+        return wrapException {
+            toPreKey(
+                coreCrypto.proteusLastResortPrekeyId().toInt(),
+                toByteArray(coreCrypto.proteusLastResortPrekey())
+            )
+        }
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {
@@ -132,7 +138,12 @@ class ProteusClientCoreCryptoImpl internal constructor(
     }
 
     override suspend fun createSession(preKeyCrypto: PreKeyCrypto, sessionId: CryptoSessionId) {
-        wrapException { coreCrypto.proteusSessionFromPrekey(sessionId.value, toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes())) }
+        wrapException {
+            coreCrypto.proteusSessionFromPrekey(
+                sessionId.value,
+                toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes())
+            )
+        }
     }
 
     override suspend fun decrypt(message: ByteArray, sessionId: CryptoSessionId): ByteArray {
@@ -144,7 +155,8 @@ class ProteusClientCoreCryptoImpl internal constructor(
                 coreCrypto.proteusSessionSave(sessionId.value)
                 decryptedMessage
             } else {
-                val decryptedMessage = toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))
+                val decryptedMessage =
+                    toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))
                 coreCrypto.proteusSessionSave(sessionId.value)
                 decryptedMessage
             }
@@ -159,7 +171,10 @@ class ProteusClientCoreCryptoImpl internal constructor(
         }
     }
 
-    override suspend fun encryptBatched(message: ByteArray, sessionIds: List<CryptoSessionId>): Map<CryptoSessionId, ByteArray> {
+    override suspend fun encryptBatched(
+        message: ByteArray,
+        sessionIds: List<CryptoSessionId>
+    ): Map<CryptoSessionId, ByteArray> {
         return wrapException {
             coreCrypto.proteusEncryptBatched(sessionIds.map { it.value }, toUByteList((message))).mapNotNull { entry ->
                 CryptoSessionId.fromEncodedString(entry.key)?.let { sessionId ->
@@ -175,7 +190,10 @@ class ProteusClientCoreCryptoImpl internal constructor(
         sessionId: CryptoSessionId
     ): ByteArray {
         return wrapException {
-            coreCrypto.proteusSessionFromPrekey(sessionId.value, toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes()))
+            coreCrypto.proteusSessionFromPrekey(
+                sessionId.value,
+                toUByteList(preKeyCrypto.encodedData.decodeBase64Bytes())
+            )
             val encryptedMessage = toByteArray(coreCrypto.proteusEncrypt(sessionId.value, toUByteList(message)))
             coreCrypto.proteusSessionSave(sessionId.value)
             encryptedMessage
@@ -193,7 +211,11 @@ class ProteusClientCoreCryptoImpl internal constructor(
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
+            throw ProteusException(
+                e.message,
+                ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()),
+                e.cause
+            )
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
