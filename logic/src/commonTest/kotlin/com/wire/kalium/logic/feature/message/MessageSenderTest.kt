@@ -961,7 +961,7 @@ class MessageSenderTest {
             val GROUP_ID = GroupID("groupId")
             val MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
                 GROUP_ID,
-                Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
+                Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 0UL,
                 Instant.DISTANT_PAST,
                 Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
