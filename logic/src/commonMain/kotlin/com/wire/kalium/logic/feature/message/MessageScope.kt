@@ -179,6 +179,7 @@ class MessageScope internal constructor(
             slowSyncRepository,
             messageSender,
             messageSendFailureHandler,
+            messageRepository,
             userPropertyRepository,
             observeSelfDeletingMessages,
             scope,
@@ -302,5 +303,4 @@ class MessageScope internal constructor(
     val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
-
 }
