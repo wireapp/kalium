@@ -20,12 +20,12 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.distinct
-import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
@@ -66,6 +66,7 @@ internal class PendingProposalSchedulerImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val mlsConversationRepository: Lazy<MLSConversationRepository>,
+    private val subconversationRepository: Lazy<SubconversationRepository>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : PendingProposalScheduler {
 
@@ -101,7 +102,6 @@ internal class PendingProposalSchedulerImpl(
 
     private suspend fun timers() = channelFlow {
         mlsConversationRepository.value.observeProposalTimers()
-            .flatten()
             .distinct()
             .cancellable()
             .collect { timer ->
@@ -115,13 +115,16 @@ internal class PendingProposalSchedulerImpl(
                     } else {
                         send(timer.groupID)
                     }
+                }
             }
-        }
     }
 
     override suspend fun scheduleCommit(groupID: GroupID, date: Instant) {
         kaliumLogger.d("Scheduling to commit pending proposals in $groupID at $date")
-        mlsConversationRepository.value.setProposalTimer(ProposalTimer(groupID, date))
+        mlsConversationRepository.value.setProposalTimer(
+            ProposalTimer(groupID, date),
+            inMemory = subconversationRepository.value.containsSubconversation(groupID)
+        )
     }
 
 }

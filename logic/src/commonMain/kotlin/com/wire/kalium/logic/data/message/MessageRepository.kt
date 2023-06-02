@@ -188,6 +188,11 @@ interface MessageRepository {
         deletionStartDate: Instant
     ): Either<CoreFailure, Unit>
 
+    suspend fun observeMessageVisibility(
+        messageUuid: String,
+        conversationId: ConversationId
+    ): Flow<MessageEntity.Visibility>
+
     suspend fun persistRecipientsDeliveryFailure(
         conversationId: ConversationId,
         messageUuid: String,
@@ -526,6 +531,10 @@ class MessageDataSource(
         return wrapStorageRequest {
             messageDAO.updateSelfDeletionStartDate(conversationId.toDao(), messageUuid, deletionStartDate)
         }
+    }
+
+    override suspend fun observeMessageVisibility(messageUuid: String, conversationId: ConversationId): Flow<MessageEntity.Visibility> {
+        return messageDAO.observeMessageVisibility(messageUuid, conversationId.toDao())
     }
 
     /**
