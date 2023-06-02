@@ -58,9 +58,6 @@ import kotlin.time.toDuration
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
-    fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
-    fun fromDaoModel(daoProtocol: Protocol?): Conversation.Protocol?
-    fun toDaoModel(protocol: Conversation.Protocol?): Protocol?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
@@ -72,7 +69,7 @@ interface ConversationMapper {
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
-    fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState
+    fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState): GroupState
     fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
@@ -124,24 +121,6 @@ internal class ConversationMapperImpl(
         archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
         verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
-
-    override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
-        ConvProtocol.PROTEUS -> Protocol.PROTEUS
-        ConvProtocol.MLS -> Protocol.MLS
-        ConvProtocol.MIXED -> Protocol.MLS // TODO jacob create separate case for mixed
-    }
-
-    override fun fromDaoModel(daoProtocol: Protocol?): Conversation.Protocol? = when (daoProtocol) {
-        Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
-        Protocol.MLS -> Conversation.Protocol.MLS
-        null -> null
-    }
-
-    override fun toDaoModel(protocol: Conversation.Protocol?): Protocol? = when (protocol) {
-        Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
-        Conversation.Protocol.MLS -> Protocol.MLS
-        null -> null
-    }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
@@ -313,12 +292,12 @@ internal class ConversationMapperImpl(
             }
         }
 
-    override fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState =
+    override fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState): GroupState =
         when (groupState) {
-            Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
-            Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
-            Conversation.ProtocolInfo.MLS.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
-            Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
+            Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
         }
 
     override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
@@ -421,7 +400,15 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS, ConvProtocol.MIXED -> ProtocolInfo.MLS( // TODO jacob create separate case for the MIXED case
+            ConvProtocol.MLS -> ProtocolInfo.MLS(
+                groupId ?: "",
+                mlsGroupState ?: GroupState.PENDING_JOIN,
+                epoch ?: 0UL,
+                keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
+            )
+
+            ConvProtocol.MIXED -> ProtocolInfo.Mixed(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
