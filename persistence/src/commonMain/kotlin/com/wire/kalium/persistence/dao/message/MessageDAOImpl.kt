@@ -32,6 +32,7 @@ import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOne
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -359,10 +360,20 @@ class MessageDAOImpl(
         }
     }
 
-    override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
-
     override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(coroutineContext) {
         unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()
     }
+
+    override suspend fun observeMessageVisibility(
+        messageUuid: String,
+        conversationId: QualifiedIDEntity
+    ): Flow<MessageEntity.Visibility> {
+        return queries.selectMessageVisibility(messageUuid, conversationId)
+            .asFlow()
+            .mapToOne()
+            .distinctUntilChanged()
+    }
+
+    override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
 }
