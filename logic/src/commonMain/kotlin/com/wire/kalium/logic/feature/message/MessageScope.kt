@@ -113,6 +113,21 @@ class MessageScope internal constructor(
     private val messageSendingInterceptor: MessageSendingInterceptor
         get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
 
+    internal val ephemeralMessageDeletionHandler =
+        EphemeralMessageDeletionHandlerImpl(
+            userSessionCoroutineScope = scope,
+            messageRepository = messageRepository,
+            deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
+            deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
+        )
+
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
+
+    val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
+        ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
+    )
+
     internal val messageSender: MessageSender
         get() = MessageSenderImpl(
             messageRepository,
@@ -125,7 +140,7 @@ class MessageScope internal constructor(
             mlsMessageCreator,
             messageSendingInterceptor,
             userRepository,
-            ephemeralMessageDeletionHandler,
+            { ephemeralMessageDeletionHandler.enqueueSelfDeletion(it) },
             scope
         )
 
@@ -288,19 +303,4 @@ class MessageScope internal constructor(
             selfUserId = selfUserId,
             selfConversationIdProvider = selfConversationIdProvider
         )
-
-    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
-
-    internal val ephemeralMessageDeletionHandler =
-        EphemeralMessageDeletionHandlerImpl(
-            userSessionCoroutineScope = scope,
-            messageRepository = messageRepository,
-            deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
-            deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
-        )
-
-    val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
-        ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
-    )
 }
