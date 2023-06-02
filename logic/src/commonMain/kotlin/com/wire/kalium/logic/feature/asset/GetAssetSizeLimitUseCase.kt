@@ -23,9 +23,9 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-fun interface GetAssetSizeLimitUseCase {
+interface GetAssetSizeLimitUseCase {
     /**
-     * Returns the maximum size of an asset that can be uploaded to the Wire backend.
+     * Returns the maximum size in Bytes of an asset that can be uploaded to the Wire backend.
      * @param isImage whether the asset to upload is an image or not
      */
     suspend operator fun invoke(isImage: Boolean): Long

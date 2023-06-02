@@ -47,14 +47,15 @@ sealed class SelfDeletionTimer {
         is Disabled -> Duration.ZERO
     }
 
-    private fun toLogMap(): Map<String, Any?> = mapOf(
+    private fun toLogMap(eventDescription: String): Map<String, Any?> = mapOf(
+        eventKey to eventDescription,
         typeKey to this::class.simpleName,
         durationKey to toDuration().inWholeSeconds,
         isEnforcedKey to isEnforced,
         isDisabledKey to isDisabled
     )
 
-    fun toLogString(): String = toLogMap().toJsonElement().toString()
+    fun toLogString(eventDescription: String): String = toLogMap(eventDescription).toJsonElement().toString()
 
     val isEnforced
         get() = this is Enforced
@@ -68,11 +69,13 @@ sealed class SelfDeletionTimer {
     val isDisabled
         get() = this is Disabled
 
-    private companion object {
-        const val typeKey = "type"
-        const val durationKey = "durationInSeconds"
-        const val isEnforcedKey = "isEnforced"
-        const val isDisabledKey = "isDisabled"
+    companion object {
+        const val TAG = "Self-Deletion"
+        private const val eventKey = "event"
+        private const val typeKey = "selfDeletionTimerType"
+        private const val durationKey = "durationInSeconds"
+        private const val isEnforcedKey = "isEnforced"
+        private const val isDisabledKey = "isDisabled"
     }
 }
 
@@ -100,4 +103,17 @@ sealed interface TeamSelfDeleteTimer {
     object Disabled : TeamSelfDeleteTimer
     object Enabled : TeamSelfDeleteTimer
     data class Enforced(val enforcedDuration: Duration) : TeamSelfDeleteTimer
+
+    private fun toLogMap(eventDescription: String): Map<String, Any?> = mapOf(
+        eventKey to eventDescription,
+    )
+
+    companion object {
+        const val TAG = "Self-Deletion"
+        private const val eventKey = "event"
+        private const val typeKey = "selfDeletionTimerType"
+        private const val durationKey = "durationInSeconds"
+        private const val isEnforcedKey = "isEnforced"
+        private const val isDisabledKey = "isDisabled"
+    }
 }

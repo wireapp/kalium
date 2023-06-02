@@ -30,6 +30,8 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
@@ -176,19 +178,27 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             })
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val newEnforcedTimer: TeamSelfDeleteTimer = when {
+            val newTeamSettingsTimer: TeamSelfDeleteTimer = when {
                 selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
                 selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
                 else -> TeamSelfDeleteTimer.Disabled
             }
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = newEnforcedTimer,
+                    enforcedSelfDeletionTimer = newTeamSettingsTimer,
                     // If there is an error fetching the previously stored value, we will always override it and mark it as changed
                     hasFeatureChanged = storedTeamSettingsSelfDeletionStatus.hasFeatureChanged == null
-                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newEnforcedTimer
+                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newTeamSettingsTimer
                 )
-            )
+            ).onFailure {
+                /*val logMap = mapOf(
+                    "value" to newTeamSettingsTimer.toLogString(eventDescription = "Self Deletion User Update Failure"),
+                    "errorInfo" to "$it"
+                )
+                kaliumLogger.e()*/
+            }.onSuccess {
+
+            }
         }
     }
 }
