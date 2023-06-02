@@ -946,6 +946,8 @@ class MLSConversationRepositoryTest {
 
         val epochsFlow = MutableSharedFlow<GroupID>()
 
+        val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
+
         fun withGetConversationByGroupIdSuccessful() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByGroupID)
@@ -1113,7 +1115,8 @@ class MLSConversationRepositoryTest {
             syncManager,
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
-            epochsFlow
+            epochsFlow,
+            proposalTimersFlow
         )
 
         internal companion object {
