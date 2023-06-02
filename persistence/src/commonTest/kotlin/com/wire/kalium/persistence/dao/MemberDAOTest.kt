@@ -107,6 +107,22 @@ class MemberDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingMixedConversation_whenAddingMembersByGroupId_ThenAllMembersCanBeRetrieved() = runTest {
+        val conversationEntity5 = TestStubs.conversationEntity5
+        val member1 = TestStubs.member1
+        val member2 = TestStubs.member2
+
+        conversationDAO.insertConversation(conversationEntity5)
+
+        memberDAO.insertMembers(
+            listOf(member1, member2),
+            (conversationEntity5.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        )
+
+        assertEquals(listOf(member1, member2), memberDAO.observeConversationMembers(conversationEntity5.id).first())
+    }
+
+    @Test
     fun givenExistingMLSConversation_whenAddingMembersByGroupId_ThenAllMembersCanBeRetrieved() = runTest {
         val conversationEntity2 = TestStubs.conversationEntity2
         val member1 = TestStubs.member1

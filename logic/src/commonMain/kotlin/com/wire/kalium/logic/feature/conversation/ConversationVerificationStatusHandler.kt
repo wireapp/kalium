@@ -51,7 +51,8 @@ internal class ConversationVerificationStatusHandlerImpl(
         if (shouldNotifyUser(conversation, status)) {
             val content = when (conversation.protocol) {
                 is Conversation.ProtocolInfo.MLS -> MessageContent.ConversationDegradedMLS
-                Conversation.ProtocolInfo.Proteus -> MessageContent.ConversationDegradedProteus
+                is Conversation.ProtocolInfo.Proteus -> MessageContent.ConversationDegradedProteus
+                is Conversation.ProtocolInfo.Mixed -> MessageContent.ConversationDegradedProteus
             }
             val conversationDegradedMessage = Message.System(
                 id = uuid4().toString(),
