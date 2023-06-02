@@ -296,6 +296,24 @@ object TestConversation {
         userMessageTimer = null
     )
 
+    val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
+        GROUP_ID,
+        ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+        0UL,
+        Instant.parse("2021-03-30T15:36:00.000Z"),
+        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    )
+
+    val PROTEUS_PROTOCOL_INFO = ProtocolInfo.Proteus
+
+    val MIXED_PROTOCOL_INFO = ProtocolInfo.Mixed(
+        GROUP_ID,
+        ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+        0UL,
+        Instant.parse("2021-03-30T15:36:00.000Z"),
+        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    )
+
     val CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "ONE_ON_ONE Name",
@@ -320,13 +338,7 @@ object TestConversation {
         "MLS Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.MLS(
-            GROUP_ID,
-            ProtocolInfo.MLS.GroupState.PENDING_JOIN,
-            0UL,
-            Instant.parse("2021-03-30T15:36:00.000Z"),
-            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-        ),
+        MLS_PROTOCOL_INFO,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -338,6 +350,10 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null
+    )
+
+    val MIXED_CONVERSATION = MLS_CONVERSATION.copy(
+        protocol = MIXED_PROTOCOL_INFO
     )
 
     val LIMITED_CONVERSATION_INFO: LimitedConversationInfo = LimitedConversationInfo("conv_id_value", "name")

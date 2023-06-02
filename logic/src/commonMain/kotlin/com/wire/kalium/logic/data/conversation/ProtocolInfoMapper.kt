@@ -36,7 +36,14 @@ class ProtocolInfoMapperImpl(
             is ConversationEntity.ProtocolInfo.Proteus -> Conversation.ProtocolInfo.Proteus
             is ConversationEntity.ProtocolInfo.MLS -> Conversation.ProtocolInfo.MLS(
                 idMapper.fromGroupIDEntity(protocolInfo.groupId),
-                Conversation.ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
+                Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.epoch,
+                protocolInfo.keyingMaterialLastUpdate,
+                Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
+            )
+            is ConversationEntity.ProtocolInfo.Mixed -> Conversation.ProtocolInfo.Mixed(
+                idMapper.fromGroupIDEntity(protocolInfo.groupId),
+                Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
                 Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
@@ -47,6 +54,13 @@ class ProtocolInfoMapperImpl(
         when (protocolInfo) {
             is Conversation.ProtocolInfo.Proteus -> ConversationEntity.ProtocolInfo.Proteus
             is Conversation.ProtocolInfo.MLS -> ConversationEntity.ProtocolInfo.MLS(
+                idMapper.toGroupIDEntity(protocolInfo.groupId),
+                ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.epoch,
+                protocolInfo.keyingMaterialLastUpdate,
+                ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
+            )
+            is Conversation.ProtocolInfo.Mixed -> ConversationEntity.ProtocolInfo.Mixed(
                 idMapper.toGroupIDEntity(protocolInfo.groupId),
                 ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
