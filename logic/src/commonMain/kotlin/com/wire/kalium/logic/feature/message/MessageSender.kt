@@ -41,7 +41,6 @@ import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -138,7 +137,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
-    private val selfDeleteMessageSenderHandler: EphemeralMessageDeletionHandler,
+    private val enqueueSelfDeletion: (Message.Regular) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -230,7 +229,7 @@ internal class MessageSenderImpl internal constructor(
 
     private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
         if (message is Message.Regular && message.expirationData?.expireAfter.isPositiveNotNull()) {
-            selfDeleteMessageSenderHandler.enqueueSelfDeletion(message)
+            enqueueSelfDeletion(message)
         }
     }
 
