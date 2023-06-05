@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -169,15 +168,13 @@ internal class TeamDataSource(
     // TODO: there is no documentation about getting the next page in case there is a next page
     override suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit> = wrapApiRequest {
         teamsApi.whiteListedServices(teamId = teamId.value)
-    }.fold({
-        Either.Right(Unit)
-    }, { serviceDetailResponse ->
-        val services = serviceDetailResponse.services.map { service ->
+    }.map {
+        it.services.map { service ->
             serviceMapper.mapToServiceEntity(service, selfUserId)
         }
+    }.flatMap {
         wrapStorageRequest {
-            serviceDAO.insertMultiple(services)
+            serviceDAO.insertMultiple(it)
         }
-        Either.Right(Unit)
-    })
+    }
 }
