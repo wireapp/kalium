@@ -18,14 +18,6 @@ jobs:
           cache: gradle
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
-
-      # temporary, remove later
-      -   name: Generate Dokka docs
-          run: make doc/generate-kdocs
-          env:
-              GITHUB_USER: ${{ github.actor }}
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Run Detekt
         run: |
             make detekt/run-verify
