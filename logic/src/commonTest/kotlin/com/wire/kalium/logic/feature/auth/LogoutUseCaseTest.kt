@@ -22,6 +22,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -29,21 +30,29 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -65,6 +74,7 @@ class LogoutUseCaseTest {
                 .withClearHasRegisteredMLSClientResult(Either.Right(Unit))
                 .withUserSessionScopeGetResult(null)
                 .withFirebaseTokenUpdate()
+                .withNoOngoingCalls()
                 .arrange()
 
             logoutUseCase.invoke(reason)
@@ -115,6 +125,7 @@ class LogoutUseCaseTest {
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
             .arrange()
 
         logoutUseCase.invoke(reason)
@@ -141,6 +152,7 @@ class LogoutUseCaseTest {
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
             .withKaliumConfigs { it.copy(wipeOnDeviceRemoval = true) }
+            .withNoOngoingCalls()
             .arrange()
 
         logoutUseCase.invoke(reason)
@@ -167,6 +179,7 @@ class LogoutUseCaseTest {
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
             .withKaliumConfigs { it.copy(wipeOnDeviceRemoval = true) }
+            .withNoOngoingCalls()
             .arrange()
 
         logoutUseCase.invoke(reason)
@@ -193,6 +206,7 @@ class LogoutUseCaseTest {
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
             .withKaliumConfigs { it.copy(wipeOnCookieInvalid = true) }
+            .withNoOngoingCalls()
             .arrange()
 
         logoutUseCase.invoke(reason)
@@ -219,6 +233,7 @@ class LogoutUseCaseTest {
                 .withClearHasRegisteredMLSClientResult(Either.Right(Unit))
                 .withUserSessionScopeGetResult(null)
                 .withFirebaseTokenUpdate()
+                .withNoOngoingCalls()
                 .arrange()
 
             logoutUseCase.invoke(reason)
@@ -251,6 +266,7 @@ class LogoutUseCaseTest {
             .withClearRetainedClientIdResult(Either.Right(Unit))
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
             .arrange()
 
         logoutUseCase.invoke(reason)
@@ -268,6 +284,38 @@ class LogoutUseCaseTest {
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::clearHasRegisteredMLSClient)
             .wasNotInvoked()
+    }
+
+    @Test
+    fun whenLogout_thenEndOngoingCalls() = runTest {
+        val calls = listOf<Call>(
+            TestCall.oneOnOneEstablishedCall().copy(conversationId = ConversationId("id1", "domain")),
+            TestCall.oneOnOneEstablishedCall().copy(conversationId = ConversationId("id2", "domain"))
+        )
+        val reason = LogoutReason.REMOVED_CLIENT
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withOngoingCalls(calls)
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        verify(arrangement.observeEstablishedCallsUseCase)
+            .suspendFunction(arrangement.observeEstablishedCallsUseCase::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
+            .with(any())
+            .wasInvoked(exactly = calls.size.time)
     }
 
     private class Arrangement {
@@ -298,25 +346,39 @@ class LogoutUseCaseTest {
         @Mock
         val userSessionWorkScheduler = configure(mock(classOf<UserSessionWorkScheduler>())) { stubsUnitByDefault = true }
 
+        @Mock val observeEstablishedCallsUseCase =  mock(classOf<ObserveEstablishedCallsUseCase>())
+
+        @Mock
+        val endCall = configure(mock(EndCallUseCase::class)) { stubsUnitByDefault = true }
+
         var kaliumConfigs = KaliumConfigs()
 
         val globalTestScope = TestScope()
 
         private val logoutUseCase
             get() = LogoutUseCaseImpl(
-            logoutRepository,
-            sessionRepository,
-            clientRepository,
-            USER_ID,
-            deregisterTokenUseCase,
-            clearClientDataUseCase,
-            clearUserDataUseCase,
-            userSessionScopeProvider,
-            pushTokenRepository,
-            globalTestScope,
-            userSessionWorkScheduler,
-            kaliumConfigs
-        )
+                logoutRepository,
+                sessionRepository,
+                clientRepository,
+                USER_ID,
+                deregisterTokenUseCase,
+                clearClientDataUseCase,
+                clearUserDataUseCase,
+                userSessionScopeProvider,
+                pushTokenRepository,
+                globalTestScope,
+                userSessionWorkScheduler,
+                observeEstablishedCallsUseCase,
+                endCall,
+                kaliumConfigs
+            )
+
+        init {
+            given(endCall)
+                .suspendFunction(endCall::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
+        }
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
             given(deregisterTokenUseCase)
@@ -382,7 +444,7 @@ class LogoutUseCaseTest {
             return this
         }
 
-        suspend fun withFirebaseTokenUpdate() = apply {
+        fun withFirebaseTokenUpdate() = apply {
             given(pushTokenRepository)
                 .suspendFunction(pushTokenRepository::setUpdateFirebaseTokenFlag)
                 .whenInvokedWith(any())
@@ -391,6 +453,20 @@ class LogoutUseCaseTest {
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
+        }
+
+        fun withOngoingCalls(ongoingCalls: List<Call>) = apply {
+            given(observeEstablishedCallsUseCase)
+                .suspendFunction(observeEstablishedCallsUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(flowOf(ongoingCalls))
+        }
+
+        fun withNoOngoingCalls() = apply {
+            given(observeEstablishedCallsUseCase)
+                .suspendFunction(observeEstablishedCallsUseCase::invoke)
+                .whenInvoked()
+                .then { flowOf(emptyList()) }
         }
 
         fun arrange() = this to logoutUseCase

@@ -80,7 +80,8 @@ private class ConversationMapper {
             otherUserId = otherUserId,
             selfRole = selfRole,
             receiptMode = receipt_mode,
-            messageTimer = message_timer
+            messageTimer = message_timer,
+            userMessageTimer = user_message_timer,
         )
     }
 
@@ -106,7 +107,8 @@ private class ConversationMapper {
         mlsLastKeyingMaterialUpdateDate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite,
         receiptMode: ConversationEntity.ReceiptMode,
-        messageTimer: Long?
+        messageTimer: Long?,
+        userMessageTimer: Long?,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -129,7 +131,8 @@ private class ConversationMapper {
         access = accessList,
         accessRole = accessRoleList,
         receiptMode = receiptMode,
-        messageTimer = messageTimer
+        messageTimer = messageTimer,
+        userMessageTimer = userMessageTimer,
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -173,7 +176,8 @@ private class ConversationMapper {
                 otherUserId = otherUserId,
                 selfRole = selfRole,
                 receiptMode = receipt_mode,
-                messageTimer = message_timer
+                messageTimer = message_timer,
+                userMessageTimer = user_message_timer,
             )
         }
     }
@@ -268,7 +272,9 @@ class ConversationDAOImpl(
                 else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
                 if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
-                receiptMode
+                receiptMode,
+                messageTimer,
+                userMessageTimer
             )
         }
     }
@@ -562,4 +568,7 @@ class ConversationDAOImpl(
         conversationQueries.updateMessageTimer(messageTimer, conversationId)
     }
 
+    override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
+        conversationQueries.updateUserMessageTimer(messageTimer, conversationId)
+    }
 }

@@ -31,38 +31,41 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
+import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @OptIn(ExperimentalCoroutinesApi::class)
-
 class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenSecondFactorChallengeIsEnabled_whenSyncing_thenItShouldBeStoredAsRequired() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
+            .withRemoteFeatureConfigsReturning(
                 Either.Right(
                     FeatureConfigTest.newModel(
                         secondFactorPasswordChallengeModel = ConfigsStatusModel(Status.ENABLED)
@@ -80,7 +83,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenSecondFactorChallengeIsDisabled_whenSyncing_thenItShouldBeStoredAsNotRequired() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
+            .withRemoteFeatureConfigsReturning(
                 Either.Right(
                     FeatureConfigTest.newModel(
                         secondFactorPasswordChallengeModel = ConfigsStatusModel(Status.DISABLED)
@@ -98,7 +101,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenMlsIsEnabledAndSelfUserIsWhitelisted_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(SELF_USER_ID.toPlainID()), Status.ENABLED))
             ).arrange()
 
@@ -112,7 +115,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenMlsIsEnabledAndSelfUserIsNotWhitelisted_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.ENABLED))
             ).arrange()
 
@@ -126,7 +129,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenMlsIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.DISABLED))
             ).arrange()
 
@@ -140,7 +143,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenConferenceCallingIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.ENABLED))
             ).arrange()
 
@@ -154,7 +157,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenConferenceCallingIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.DISABLED))
             ).arrange()
 
@@ -167,47 +170,28 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenFileSharingIsEnabledButBlockedByKaliumConfigs_whenSyncing_thenShouldStoreAsDisabled() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
-            )
-            .withKaliumConfigs { it.copy(fileRestrictionEnabled = true) }
-            .arrange()
-
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertFalse { it.isFileSharingEnabled!! }
-        }
-    }
-
-    @Test
     fun givenFileSharingIsEnabled_whenSyncing_thenShouldStoreAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
             ).arrange()
 
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertTrue { it.isFileSharingEnabled!! }
+            assertEquals(FileSharingStatus.Value.EnabledAll, it.state)
         }
     }
 
     @Test
     fun givenFileSharingIsEnabledWithoutChange_whenSyncing_thenShouldStoreAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
             )
-            .withFileSharingEnabledReturning(
-                FileSharingStatus(
-                    isFileSharingEnabled = true,
-                    isStatusChanged = false
-                )
+            .withLocalSharingEnabledReturning(
+                status = true,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -221,7 +205,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenFileSharingIsDisabled_whenSyncing_thenShouldStoreAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             ).arrange()
 
@@ -229,21 +213,19 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
-            assertFalse { it.isFileSharingEnabled!! }
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
         }
     }
 
     @Test
     fun givenFileSharingIsDisabledWithoutChange_whenSyncing_thenShouldStoreChangedAsFalse() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
-            .withFileSharingEnabledReturning(
-                FileSharingStatus(
-                    isFileSharingEnabled = false,
-                    isStatusChanged = false
-                )
+            .withLocalSharingEnabledReturning(
+                status = false,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -257,14 +239,12 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenFileSharingChangedFromDisabledToEnabled_whenSyncing_thenShouldStoreChangedAsTrue() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
             )
-            .withFileSharingEnabledReturning(
-                FileSharingStatus(
-                    isFileSharingEnabled = false,
-                    isStatusChanged = false
-                )
+            .withLocalSharingEnabledReturning(
+                status = false,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -272,21 +252,22 @@ class SyncFeatureConfigsUseCaseTest {
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
             assertTrue { it.isStatusChanged!! }
-            assertTrue { it.isFileSharingEnabled!! }
+            FileSharingStatus(
+                state = FileSharingStatus.Value.EnabledAll,
+                isStatusChanged = false
+            )
         }
     }
 
     @Test
     fun givenFileSharingChangedFromEnabledToDisabled_whenSyncing_thenShouldStoreChangedAsTrue() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
-            .withFileSharingEnabledReturning(
-                FileSharingStatus(
-                    isFileSharingEnabled = true,
-                    isStatusChanged = false
-                )
+            .withLocalSharingEnabledReturning(
+                status = true,
+                isStatusChanged = false
             )
             .arrange()
 
@@ -294,14 +275,14 @@ class SyncFeatureConfigsUseCaseTest {
 
         arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
             assertTrue { it.isStatusChanged!! }
-            assertFalse { it.isFileSharingEnabled!! }
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
         }
     }
 
     @Test
     fun givenGuestRoomLinkIsEnabledWithoutChange_whenSyncing_thenShouldStoreAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.ENABLED))
             )
             .withGuestRoomLinkEnabledReturning(
@@ -322,7 +303,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenGuestRoomLinkIsDisabledWithoutChange_whenSyncing_thenShouldStoreChangedAsFalse() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.DISABLED))
             )
             .withGuestRoomLinkEnabledReturning(
@@ -343,7 +324,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenGuestLinkChangedFromEnabledToDisabled_whenSyncing_thenShouldStoreChangedAsTrue() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.DISABLED))
             )
             .withGuestRoomLinkEnabledReturning(
@@ -365,7 +346,7 @@ class SyncFeatureConfigsUseCaseTest {
     @Test
     fun givenFileGuestLinkChangedFromDisabledToEnabled_whenSyncing_thenShouldStoreChangedAsTrue() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withGetFeatureConfigsSucceeding(
+            .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.ENABLED))
             )
             .withGuestRoomLinkEnabledReturning(
@@ -389,7 +370,7 @@ class SyncFeatureConfigsUseCaseTest {
         // Given
         val operationDeniedException = TestNetworkException.operationDenied
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(operationDeniedException)))
+            .withRemoteFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(operationDeniedException)))
             .arrange()
 
         // When
@@ -406,7 +387,7 @@ class SyncFeatureConfigsUseCaseTest {
         // Given
         val noTeamException = TestNetworkException.noTeam
         val (arrangement, getFileSharingStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(noTeamException)))
+            .withRemoteFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(noTeamException)))
             .arrange()
 
         // When
@@ -416,6 +397,78 @@ class SyncFeatureConfigsUseCaseTest {
         verify(arrangement.featureConfigRepository)
             .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRemoteConfigIsEnable_whenBuildConfigIsNoRestriction_thenStateIsEnableAll() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
+            )
+            .withLocalSharingEnabledReturning(
+                status = true,
+                isStatusChanged = false
+            )
+            .withBuildConfigFileSharing(BuildFileRestrictionState.NoRestriction)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
+            assertEquals(FileSharingStatus.Value.EnabledAll, it.state)
+        }
+    }
+
+    @Test
+    fun givenRemoteConfigIsEnable_whenBuildConfigIsRestrictSome_thenStateIsRestrictSome() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
+            )
+            .withLocalSharingEnabledReturning(
+                status = true,
+                isStatusChanged = false
+            )
+            .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
+            assertEquals(FileSharingStatus.Value.EnabledSome(listOf("png", "jpg")), it.state)
+        }
+    }
+
+    @Test
+    fun givenRemoteConfigIsDisable_whenBuildConfigIsRestrictSome_thenStateIsDisable() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
+            )
+            .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
+        }
+    }
+
+    @Test
+    fun givenRemoteConfigIsDisable_whenBuildConfigIsNoRestriction_thenStateIsDisable() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
+            )
+            .withBuildConfigFileSharing(BuildFileRestrictionState.NoRestriction)
+            .arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.isFileSharingEnabled().shouldSucceed {
+            assertEquals(FileSharingStatus.Value.Disabled, it.state)
+        }
     }
 
     @Test
@@ -430,11 +483,11 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Disabled
-                    && it.hasFeatureChanged == null
-        }
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Disabled
+            })
     }
 
     @Test
@@ -445,7 +498,7 @@ class SyncFeatureConfigsUseCaseTest {
             status = Status.ENABLED
         )
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
+            .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
             .withSuccessfulTeamSettingsSelfDeletionStatus()
@@ -455,12 +508,11 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
-                    && it.enforcedSelfDeletionTimer.toDuration() == ZERO
-                    && it.hasFeatureChanged == null
-        }
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
+            })
     }
 
     @Test
@@ -471,34 +523,7 @@ class SyncFeatureConfigsUseCaseTest {
             status = Status.ENABLED
         )
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
-                Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
-            )
-            .withSuccessfulTeamSettingsSelfDeletionStatus()
-            .arrange()
-
-        // When
-        val result = getTeamSettingsSelfDeletionStatusUseCase.invoke()
-
-        // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
-                    && it.enforcedSelfDeletionTimer.toDuration() == ZERO
-                    && it.hasFeatureChanged == null
-        }
-    }
-
-    @Test
-    fun givenNewEnforcedTeamSettingsSelfDeletionEvent_whenSyncing_thenItMapsToEnforced() = runTest {
-        // Given
-        val enforcedTimeout = 3600L
-        val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
-            config = SelfDeletingMessagesConfigModel(enforcedTimeout),
-            status = Status.ENABLED
-        )
-        val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
-            .withGetFeatureConfigsReturning(
+            .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
             .withSuccessfulTeamSettingsSelfDeletionStatus()
@@ -508,49 +533,74 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        val storedTeamSettingsSelfDeletionStatus = arrangement.userConfigRepository.getTeamSettingsSelfDeletionStatus()
-        storedTeamSettingsSelfDeletionStatus.shouldSucceed {
-            it.enforcedSelfDeletionTimer is SelfDeletionTimer.Enabled
-                    && it.enforcedSelfDeletionTimer.toDuration() == 1.toDuration(DurationUnit.HOURS)
-                    && it.hasFeatureChanged == null
-        }
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
+            })
+    }
+
+    @Test
+    fun givenNewEnforcedTeamSettingsSelfDeletionEvent_whenSyncing_thenItMapsToEnforced() = runTest {
+        // Given
+        val enforcedTimeoutInMs = 3600000L
+        val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
+            config = SelfDeletingMessagesConfigModel(enforcedTimeoutInMs),
+            status = Status.ENABLED
+        )
+        val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
+            .withRemoteFeatureConfigsReturning(
+                Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
+            )
+            .withSuccessfulTeamSettingsSelfDeletionStatus()
+            .arrange()
+
+        // When
+        getTeamSettingsSelfDeletionStatusUseCase.invoke()
+
+        // Then
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
+            .with(matching {
+                it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enforced(
+                    enforcedTimeoutInMs.toDuration(
+                        DurationUnit.MILLISECONDS
+                    )
+                )
+            })
     }
 
     private class Arrangement {
 
-        val userConfigRepository: UserConfigRepository = UserConfigDataSource(
-            inMemoryUserConfigStorage()
+        private val inMemoryStorage = inMemoryUserConfigStorage()
+
+        var kaliumConfigs = KaliumConfigs()
+
+        @Mock
+        val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
+
+        var userConfigRepository: UserConfigRepository = UserConfigDataSource(
+            inMemoryStorage,
+            userConfigDAO,
+            kaliumConfigs
         )
+            private set
 
         @Mock
         val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
 
         @Mock
-        val isFileSharingEnabledUseCase = mock(classOf<IsFileSharingEnabledUseCase>())
-
-        @Mock
         val isGuestRoomLinkFeatureEnabled = mock(classOf<GetGuestRoomLinkFeatureStatusUseCase>())
 
-        var kaliumConfigs = KaliumConfigs()
 
-        private val syncFeatureConfigsUseCase
-            get() = SyncFeatureConfigsUseCaseImpl(
-                userConfigRepository,
-                featureConfigRepository,
-                isFileSharingEnabledUseCase,
-                isGuestRoomLinkFeatureEnabled,
-                kaliumConfigs,
-                SELF_USER_ID
-            )
+        private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 
         init {
-            withGetFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
-            withFileSharingEnabledReturning(
-                FileSharingStatus(
-                    isFileSharingEnabled = true,
-                    isStatusChanged = false
-                )
-            )
+            withRemoteFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
+//            withLocalSharingEnabledReturning(
+//                status = true,
+//                isStatusChanged = false
+//            )
             withGuestRoomLinkEnabledReturning(
                 GuestRoomLinkStatus(
                     isGuestRoomLinkEnabled = true,
@@ -559,21 +609,34 @@ class SyncFeatureConfigsUseCaseTest {
             )
         }
 
-        fun withGetFeatureConfigsSucceeding(featureConfigModel: FeatureConfigModel) =
-            withGetFeatureConfigsReturning(Either.Right(featureConfigModel))
+        fun withBuildConfigFileSharing(
+            state: BuildFileRestrictionState
+        ) = apply {
+            kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = state)
+            userConfigRepository = UserConfigDataSource(
+                inMemoryStorage,
+                userConfigDAO,
+                kaliumConfigs
+            )
+        }
 
-        fun withGetFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) = apply {
+        fun withRemoteFeatureConfigsSucceeding(featureConfigModel: FeatureConfigModel) =
+            withRemoteFeatureConfigsReturning(Either.Right(featureConfigModel))
+
+        fun withRemoteFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) = apply {
             given(featureConfigRepository)
                 .suspendFunction(featureConfigRepository::getFeatureConfigs)
                 .whenInvoked()
                 .thenReturn(result)
         }
 
-        fun withFileSharingEnabledReturning(fileSharingStatus: FileSharingStatus) = apply {
-            given(isFileSharingEnabledUseCase)
-                .function(isFileSharingEnabledUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(fileSharingStatus)
+        fun withLocalSharingEnabledReturning(
+            status: Boolean,
+            isStatusChanged: Boolean?
+        ) = apply {
+            userConfigRepository.setFileSharingStatus(
+                status, isStatusChanged
+            )
         }
 
         fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: GuestRoomLinkStatus) = apply {
@@ -584,17 +647,26 @@ class SyncFeatureConfigsUseCaseTest {
         }
 
         fun withSuccessfulTeamSettingsSelfDeletionStatus() = apply {
-            /*given(userConfigRepository)
-                .function(userConfigRepository::setTeamSettingsSelfDeletionStatus)
+            given(userConfigDAO)
+                .suspendFunction(userConfigDAO::setTeamSettingsSelfDeletionStatus)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))*/
+                .then { }
         }
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
 
-        fun arrange() = this to syncFeatureConfigsUseCase
+        fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCase> {
+            syncFeatureConfigsUseCase = SyncFeatureConfigsUseCaseImpl(
+                userConfigRepository,
+                featureConfigRepository,
+                isGuestRoomLinkFeatureEnabled,
+                kaliumConfigs,
+                SELF_USER_ID
+            )
+            return this to syncFeatureConfigsUseCase
+        }
 
     }
 

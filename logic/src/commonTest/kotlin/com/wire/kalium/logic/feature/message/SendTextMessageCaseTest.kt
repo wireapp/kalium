@@ -20,23 +20,21 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -44,6 +42,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -59,8 +58,8 @@ class SendTextMessageCaseTest {
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
             .withSendMessageSuccess()
-            .withUpdateMessageStatusSuccess()
             .arrange()
 
         // When
@@ -80,13 +79,9 @@ class SendTextMessageCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
             .wasInvoked(once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-            .with(eq(MessageEntity.Status.SENT), any(), any())
-            .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -99,7 +94,7 @@ class SendTextMessageCaseTest {
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
             .withSendMessageFailure()
-            .withUpdateMessageStatusSuccess()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
             .arrange()
 
         // When
@@ -121,14 +116,11 @@ class SendTextMessageCaseTest {
             .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasInvoked(once)
     }
 
     private class Arrangement {
-
-        @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -147,6 +139,9 @@ class SendTextMessageCaseTest {
 
         @Mock
         val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { stubsUnitByDefault = true }
+
+        @Mock
+        val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
         fun withSendMessageSuccess() = apply {
             given(messageSender)
@@ -179,12 +174,6 @@ class SendTextMessageCaseTest {
                 .whenInvoked()
                 .thenReturn(stateFlow)
         }
-        fun withUpdateMessageStatusSuccess() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
         fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
             given(userPropertyRepository)
                 .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
@@ -192,15 +181,22 @@ class SendTextMessageCaseTest {
                 .thenReturn(enabled)
         }
 
+        fun  withMessageTimer(result: SelfDeletionTimer) = apply {
+            given(observeSelfDeletionTimerSettingsForConversation)
+                .suspendFunction(observeSelfDeletionTimerSettingsForConversation::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(result))
+        }
+
         fun arrange() = this to SendTextMessageUseCase(
-            messageRepository,
             persistMessage,
             TestUser.SELF.id,
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
             messageSendFailureHandler,
-            userPropertyRepository
+            userPropertyRepository,
+            observeSelfDeletionTimerSettingsForConversation
         )
     }
 

@@ -32,8 +32,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -42,11 +44,12 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.isPositiveNotNull
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
@@ -71,16 +74,12 @@ interface MessageSender {
      * Will handle all the needed encryption and possible set-up
      * steps and retries depending on the [ConversationOptions.Protocol].
      *
-     * In case of connectivity failure, will schedule a retry in the future using a [MessageSendingScheduler].
+     * In case of connectivity failure, will handle the error by updating the state of the persisted message
+     * and, if needed, also scheduling a retry in the future using a [MessageSendingScheduler].
      *
      * @param conversationId
      * @param messageUuid
      */
-    @Deprecated(
-        "For now we don't support re-sending pending messages, they should fail immediately when there's an error, " +
-                "even if it's no network",
-        ReplaceWith("sendMessage")
-    )
     suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit>
 
     /**
@@ -121,7 +120,7 @@ interface MessageSender {
     suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class MessageSenderImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val conversationRepository: ConversationRepository,
@@ -131,9 +130,9 @@ internal class MessageSenderImpl internal constructor(
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
-    private val messageSendingScheduler: MessageSendingScheduler,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
+    private val enqueueSelfDeletion: (Message.Regular) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -143,25 +142,21 @@ internal class MessageSenderImpl internal constructor(
         syncManager.waitUntilLive()
         return withContext(scope.coroutineContext) {
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
-                if (message is Message.Regular) sendMessage(message)
-                else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
-            }.onFailure {
-                logger.i("Failed to send message. Failure = $it")
-                when (it) {
-                    is NetworkFailure.FederatedBackendFailure -> {
-                        logger.i("Failed due to federation context availability.")
-                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageUuid)
+                val result =
+                    if (message is Message.Regular) sendMessage(message)
+                    else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
+                result
+                    .onFailure {
+                        val type = message.content.getType()
+                        logger.i("Failed to send message of type $type. Failure = $it")
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                            failure = it,
+                            conversationId = conversationId,
+                            messageId = messageUuid,
+                            messageType = type,
+                            scheduleResendIfNoNetwork = false // Right now we do not allow automatic resending of failed pending messages.
+                        )
                     }
-
-                    is NetworkFailure.NoNetworkConnection -> {
-                        logger.i("Scheduling message for retrying in the future.")
-                        messageSendingScheduler.scheduleSendingOfPendingMessages()
-                    }
-
-                    else -> {
-                        messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageUuid)
-                    }
-                }
             }
         }
     }
@@ -174,11 +169,22 @@ internal class MessageSenderImpl internal constructor(
                     val serverDate = messageRemoteTime.toInstant()
                     val localDate = message.date.toInstant()
                     val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+                    val isEditMessage = message.content is MessageContent.TextEdited
+                    // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+                    if (isEditMessage) {
+                        messageRepository.updateTextMessage(
+                            conversationId = processedMessage.conversationId,
+                            messageContent = processedMessage.content as MessageContent.TextEdited,
+                            newMessageId = processedMessage.id,
+                            editTimeStamp = processedMessage.date
+                        )
+                    }
                     messageRepository.promoteMessageToSentUpdatingServerTime(
-                        processedMessage.conversationId,
-                        processedMessage.id,
-                        serverDate,
-                        millis
+                        conversationId = processedMessage.conversationId,
+                        messageUuid = processedMessage.id,
+                        // if it's edit then we don't want to change the original message creation time, it's already a server date
+                        serverDate = if (!isEditMessage) serverDate else null,
+                        millis = millis
                     )
                     Unit
                 }
@@ -211,7 +217,15 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithProteus(message, messageTarget)
                     }
                 }
+            }.onSuccess {
+                startSelfDeletionIfNeeded(message)
             }
+    }
+
+    private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
+        if (message is Message.Regular && message.expirationData?.expireAfter.isPositiveNotNull()) {
+            enqueueSelfDeletion(message)
+        }
     }
 
     private suspend fun attemptToSendWithProteus(

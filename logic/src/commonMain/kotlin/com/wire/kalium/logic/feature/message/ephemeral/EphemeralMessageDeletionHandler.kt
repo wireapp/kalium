@@ -17,9 +17,10 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 
-interface EphemeralMessageDeletionHandler {
+internal interface EphemeralMessageDeletionHandler {
 
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)
+    fun enqueueSelfDeletion(message: Message.Regular)
     fun enqueuePendingSelfDeletionMessages()
 }
 
@@ -43,7 +44,15 @@ internal class EphemeralMessageDeletionHandlerImpl(
         }
     }
 
-    private suspend fun enqueueSelfDeletion(message: Message.Regular) {
+    override fun enqueueSelfDeletion(message: Message.Regular) {
+        val canBeDeleted = when (message.status) {
+            Message.Status.PENDING -> false
+            Message.Status.SENT,
+            Message.Status.READ,
+            Message.Status.FAILED,
+            Message.Status.FAILED_REMOTELY -> true
+        }
+        if (!canBeDeleted) return
         launch {
             if (message.expirationData != null) {
                 ongoingSelfDeletionMessagesMutex.withLock {

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -25,8 +26,8 @@ import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -47,30 +48,30 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     }
 
     @Suppress("LongMethod")
-    private fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
+    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
-                if (kaliumConfigs.fileRestrictionEnabled) {
-                    userConfigRepository.setFileSharingStatus(false, null)
-                } else {
+                val currentFileSharingStatus: Boolean = userConfigRepository
+                    .isFileSharingEnabled()
+                    .fold({ false }, {
+                        when (it.state) {
+                            FileSharingStatus.Value.Disabled -> false
+                            FileSharingStatus.Value.EnabledAll -> true
+                            is FileSharingStatus.Value.EnabledSome -> true
+                        }
+                    })
 
-                    val currentFileSharingStatus: Boolean = userConfigRepository
-                        .isFileSharingEnabled()
-                        .fold({ false }, { it.isFileSharingEnabled ?: false })
+                when (event.model.status) {
+                    Status.ENABLED -> userConfigRepository.setFileSharingStatus(
+                        status = true,
+                        isStatusChanged = !currentFileSharingStatus
+                    )
 
-                    when (event.model.status) {
-                        Status.ENABLED -> userConfigRepository.setFileSharingStatus(
-                            status = true,
-                            isStatusChanged = !currentFileSharingStatus
-                        )
-
-                        Status.DISABLED -> userConfigRepository.setFileSharingStatus(
-                            status = false,
-                            isStatusChanged = currentFileSharingStatus
-                        )
-                    }
+                    Status.DISABLED -> userConfigRepository.setFileSharingStatus(
+                        status = false,
+                        isStatusChanged = currentFileSharingStatus
+                    )
                 }
-
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
                     event
@@ -158,26 +159,26 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         }
     }
 
-    private fun handleSelfDeletingFeatureConfig(model: SelfDeletingMessagesModel) {
+    private suspend fun handleSelfDeletingFeatureConfig(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
+                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Disabled,
                     hasFeatureChanged = null
                 )
             )
         } else {
             val storedTeamSettingsSelfDeletionStatus = userConfigRepository.getTeamSettingsSelfDeletionStatus().fold({
-                TeamSettingsSelfDeletionStatus(hasFeatureChanged = null, enforcedSelfDeletionTimer = SelfDeletionTimer.Enabled(ZERO))
+                TeamSettingsSelfDeletionStatus(hasFeatureChanged = null, enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled)
             }, {
                 it
             })
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val newEnforcedTimer = when {
-                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced.ByTeam(enforcedTimeout)
-                selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
-                else -> SelfDeletionTimer.Disabled
+            val newEnforcedTimer: TeamSelfDeleteTimer = when {
+                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
+                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
+                else -> TeamSelfDeleteTimer.Disabled
             }
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
@@ -185,7 +186,6 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     // If there is an error fetching the previously stored value, we will always override it and mark it as changed
                     hasFeatureChanged = storedTeamSettingsSelfDeletionStatus.hasFeatureChanged == null
                             || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newEnforcedTimer
-                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toDuration() != newEnforcedTimer.toDuration()
                 )
             )
         }

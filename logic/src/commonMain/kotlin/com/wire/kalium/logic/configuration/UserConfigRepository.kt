@@ -19,18 +19,19 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.feature.selfdeletingMessages.ConversationSelfDeletionStatus
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionMapper.toSelfDeletionTimerStatus
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -54,24 +55,20 @@ interface UserConfigRepository {
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
 
-    fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
-    fun setTeamSettingsSelfDeletionStatus(
+    suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
+    suspend fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
     ): Either<StorageFailure, Unit>
 
-    fun setConversationSelfDeletionTimer(
-        conversationId: ConversationId,
-        selfDeletionTimer: SelfDeletionTimer
-    ): Either<StorageFailure, Unit>
-
-    fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
-    fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
-    fun observeConversationSelfDeletionTimer(conversationId: ConversationId): Flow<Either<StorageFailure, ConversationSelfDeletionStatus>>
+    suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
+    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
 }
 
 @Suppress("TooManyFunctions")
 class UserConfigDataSource(
-    private val userConfigStorage: UserConfigStorage
+    private val userConfigStorage: UserConfigStorage,
+    private val userConfigDAO: UserConfigDAO,
+    private val kaliumConfigs: KaliumConfigs
 ) : UserConfigRepository {
 
     override fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =
@@ -81,22 +78,49 @@ class UserConfigDataSource(
         userConfigStorage.setFileSharingAsNotified()
     }
 
-    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> =
-        wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }.map {
-            with(it) { FileSharingStatus(status, isStatusChanged) }
-        }
+    override fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus> {
+        val serverSideConfig = wrapStorageRequest { userConfigStorage.isFileSharingEnabled() }
+        val buildConfig = kaliumConfigs.fileRestrictionState
+        return deriveFileSharingStatus(serverSideConfig, buildConfig)
+    }
 
     override fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>> =
         userConfigStorage.isFileSharingEnabledFlow()
             .wrapStorageRequest()
             .map {
-                it.map { isFileSharingEnabledEntity ->
-                    FileSharingStatus(
-                        isFileSharingEnabledEntity.status,
-                        isFileSharingEnabledEntity.isStatusChanged
-                    )
-                }
+                val buildConfig = kaliumConfigs.fileRestrictionState
+                deriveFileSharingStatus(it, buildConfig)
             }
+
+    private fun deriveFileSharingStatus(
+        serverSideConfig: Either<StorageFailure, IsFileSharingEnabledEntity>,
+        buildConfig: BuildFileRestrictionState
+    ): Either<StorageFailure, FileSharingStatus> = when {
+        serverSideConfig.isLeft() -> serverSideConfig
+
+        serverSideConfig.value.status.not() -> Either.Right(
+            FileSharingStatus(
+                isStatusChanged = serverSideConfig.value.isStatusChanged,
+                state = FileSharingStatus.Value.Disabled
+            )
+        )
+
+        buildConfig is BuildFileRestrictionState.AllowSome -> Either.Right(
+            FileSharingStatus(
+                isStatusChanged = false,
+                state = FileSharingStatus.Value.EnabledSome(buildConfig.allowedType)
+            )
+        )
+
+        buildConfig is BuildFileRestrictionState.NoRestriction -> Either.Right(
+            FileSharingStatus(
+                isStatusChanged = serverSideConfig.value.isStatusChanged,
+                state = FileSharingStatus.Value.EnabledAll
+            )
+        )
+
+        else -> error("Unknown file restriction state: buildConfig: $buildConfig , serverConfig: $serverSideConfig")
+    }
 
     override fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>) =
         wrapStorageRequest { userConfigStorage.persistClassifiedDomainsStatus(enabled, domains) }
@@ -160,63 +184,38 @@ class UserConfigDataSource(
                 }
             }
 
-    override fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus> = wrapStorageRequest {
-        userConfigStorage.getTeamSettingsSelfDeletionStatus()
+    override suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus> = wrapStorageRequest {
+        userConfigDAO.getTeamSettingsSelfDeletionStatus()
     }.map {
         with(it) {
             TeamSettingsSelfDeletionStatus(
                 hasFeatureChanged = isStatusChanged,
-                enforcedSelfDeletionTimer = selfDeletionTimerEntity.toSelfDeletionTimerStatus()
+                enforcedSelfDeletionTimer = selfDeletionTimerEntity.toTeamSelfDeleteTimer()
             )
         }
     }
 
-    override fun setTeamSettingsSelfDeletionStatus(
-        teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus
-    ): Either<StorageFailure, Unit> =
+    override suspend fun setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatus: TeamSettingsSelfDeletionStatus):
+            Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            userConfigStorage.persistTeamSettingsSelfDeletionStatus(
-                TeamSettingsSelfDeletionStatusEntity(
-                    selfDeletionTimerEntity = teamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
-                    isStatusChanged = teamSettingsSelfDeletionStatus.hasFeatureChanged,
-                )
+            val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
+                selfDeletionTimerEntity = teamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer.toSelfDeletionTimerEntity(),
+                isStatusChanged = teamSettingsSelfDeletionStatus.hasFeatureChanged,
             )
+            userConfigDAO.setTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatusEntity)
         }
 
-    override fun setConversationSelfDeletionTimer(
-        conversationId: ConversationId,
-        selfDeletionTimer: SelfDeletionTimer
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigStorage.persistConversationSelfDeletionTimer(conversationId.toDao(), selfDeletionTimer.toSelfDeletionTimerEntity())
+    override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.markTeamSettingsSelfDeletingMessagesStatusAsNotified()
     }
 
-    override fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigStorage.setSelfDeletingMessagesAsNotified()
-    }
-
-    override fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
-        userConfigStorage.getTeamSettingsSelfDeletionStatusFlow()
-            .wrapStorageRequest()
-            .map {
-                it.map { teamSettingsStatus ->
-                    TeamSettingsSelfDeletionStatus(
-                        teamSettingsStatus.isStatusChanged,
-                        teamSettingsStatus.selfDeletionTimerEntity.toSelfDeletionTimerStatus()
-                    )
-                }
+    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
+        userConfigDAO.observeTeamSettingsSelfDeletingStatus().wrapStorageRequest().map {
+            it.map {
+                TeamSettingsSelfDeletionStatus(
+                    hasFeatureChanged = it.isStatusChanged,
+                    enforcedSelfDeletionTimer = it.selfDeletionTimerEntity.toTeamSelfDeleteTimer()
+                )
             }
-
-    override fun observeConversationSelfDeletionTimer(
-        conversationId: ConversationId
-    ): Flow<Either<StorageFailure, ConversationSelfDeletionStatus>> =
-        userConfigStorage.getConversationSelfDeletionTimerFlow(conversationId.toDao())
-            .wrapStorageRequest()
-            .map {
-                it.map { conversationSelfDeletionStatus ->
-                    ConversationSelfDeletionStatus(
-                        conversationId = conversationId,
-                        selfDeletionTimer = conversationSelfDeletionStatus.toSelfDeletionTimerStatus()
-                    )
-                }
-            }
+        }
 }

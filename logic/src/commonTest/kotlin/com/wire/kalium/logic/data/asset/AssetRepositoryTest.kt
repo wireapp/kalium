@@ -25,10 +25,10 @@ import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.EncryptionFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -60,6 +60,7 @@ import okio.buffer
 import okio.use
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -220,7 +221,8 @@ class AssetRepositoryTest {
     }
 
     @Test
-    fun givenAnAssetId_whenDownloadingPrivateAssetsAndNotPresentInDB_thenShouldReturnItsDataPathFromRemoteAndPersistIt() = runTest {
+    fun givenAnAssetIdAndDownloadIfNeededSetToTrue_whenDownloadingPrivateAssetsAndNotPresentInDB_thenReturnItsPathFromRemoteAndPersistIt() =
+        runTest {
         // Given
         val assetKey = UserAssetId("value1", "domain1")
         val assetName = "Eiffel Tower.jpg"
@@ -240,12 +242,14 @@ class AssetRepositoryTest {
 
         // When
         val result = assetRepository.fetchPrivateDecodedAsset(
-            assetKey.value,
-            assetKey.domain,
-            assetName,
-            assetToken,
-            assetEncryptionKey,
-            SHA256Key(assetSha256!!)
+            assetId = assetKey.value,
+            assetDomain = assetKey.domain,
+            assetName = assetName,
+            assetToken = assetToken,
+            encryptionKey = assetEncryptionKey,
+            assetSHA256Key = SHA256Key(assetSha256!!),
+            downloadIfNeeded = true,
+            mimeType = null
         )
 
         // Then
@@ -266,6 +270,97 @@ class AssetRepositoryTest {
                 .wasInvoked(exactly = once)
         }
     }
+
+    @Test
+    fun givenAnAssetIdAndDownloadIfNeededSetToFalse_whenDownloadingPrivateAssetsAndNotPresentInDB_thenReturnFailure() =
+        runTest {
+            // Given
+            val assetKey = UserAssetId("value1", "domain1")
+            val assetName = "Eiffel Tower.jpg"
+            val assetToken = "some-token"
+            val assetEncryptionKey = generateRandomAES256Key()
+            val assetRawData = assetName.encodeToByteArray()
+            val encryptedDataPath = encryptDataWithPath(assetRawData, assetEncryptionKey)
+            val assetSha256 = calcFileSHA256(fakeKaliumFileSystem.source(encryptedDataPath))
+
+            val (arrangement, assetRepository) = Arrangement()
+                .withMockedAssetDaoGetByKeyCall(assetKey, null)
+                .arrange()
+
+            // When
+            val result = assetRepository.fetchPrivateDecodedAsset(
+                assetId = assetKey.value,
+                assetDomain = assetKey.domain,
+                assetName = assetName,
+                assetToken = assetToken,
+                encryptionKey = assetEncryptionKey,
+                assetSHA256Key = SHA256Key(assetSha256!!),
+                downloadIfNeeded = false,
+                mimeType = null
+            )
+
+            // Then
+            with(arrangement) {
+                assertTrue(result is Either.Left)
+                assertIs<StorageFailure.DataNotFound>(result.value)
+                verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
+                    .with(eq(assetKey.value))
+                    .wasInvoked(exactly = once)
+                verify(assetApi).suspendFunction(assetApi::downloadAsset)
+                    .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
+                    .wasNotInvoked()
+                verify(assetDAO)
+                    .suspendFunction(assetDAO::insertAsset)
+                    .with(any())
+                    .wasNotInvoked()
+            }
+        }
+
+    @Test
+    fun givenAnAssetId_whenDownloadingPrivateAssetsAndAlreadyPresentInDB_thenReturnItsPathFromLocal() =
+        runTest {
+            // Given
+            val assetKey = UserAssetId("value1", "domain1")
+            val assetName = "Eiffel Tower.jpg"
+            val assetToken = "some-token"
+            val assetEncryptionKey = generateRandomAES256Key()
+            val assetRawData = assetName.encodeToByteArray()
+            val encryptedDataPath = encryptDataWithPath(assetRawData, assetEncryptionKey)
+            val assetSha256 = calcFileSHA256(fakeKaliumFileSystem.source(encryptedDataPath))
+            val assetPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+
+            val (arrangement, assetRepository) = Arrangement()
+                .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetPath, assetRawData.size.toLong()))
+                .arrange()
+
+            // When
+            val result = assetRepository.fetchPrivateDecodedAsset(
+                assetId = assetKey.value,
+                assetDomain = assetKey.domain,
+                assetName = assetName,
+                assetToken = assetToken,
+                encryptionKey = assetEncryptionKey,
+                assetSHA256Key = SHA256Key(assetSha256!!),
+                downloadIfNeeded = false,
+                mimeType = null
+            )
+
+            // Then
+            with(arrangement) {
+                assertTrue(result is Either.Right)
+                assertEquals(assetPath, result.value)
+                verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
+                    .with(eq(assetKey.value))
+                    .wasInvoked(exactly = once)
+                verify(assetApi).suspendFunction(assetApi::downloadAsset)
+                    .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
+                    .wasNotInvoked()
+                verify(assetDAO)
+                    .suspendFunction(assetDAO::insertAsset)
+                    .with(any())
+                    .wasNotInvoked()
+            }
+        }
 
     // @SF.Messages @TSFI.UserInterface @S0.1 @S1
     @Test
@@ -295,6 +390,7 @@ class AssetRepositoryTest {
                 assetKey.value,
                 assetKey.domain,
                 assetName,
+                null,
                 assetToken,
                 assetEncryptionKey,
                 SHA256Key(wrongAssetSha256!!)
@@ -358,6 +454,7 @@ class AssetRepositoryTest {
             assetId = assetKey.value,
             assetDomain = assetKey.domain,
             assetName,
+            null,
             null,
             encryptionKey,
             assetSha256
@@ -455,6 +552,105 @@ class AssetRepositoryTest {
 
     }
 
+    @Test
+    fun givenValidParams_whenPersistingAsset_thenShouldSucceedWithAPathResponse() = runTest {
+        // Given
+        val dataNamePath = "temp-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".toByteArray()
+        val dataSize = dummyData.size.toLong()
+        val assetId = "some_key"
+        val assetDomain = "some_domain"
+        val expectedAssetPath = fakeKaliumFileSystem.providePersistentAssetPath(assetId)
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withRawStoredData(dummyData, fullDataPath)
+            .withSuccessfulInsert()
+            .arrange()
+
+        // When
+        val actual = assetRepository.persistAsset(
+            assetId = assetId,
+            assetDomain = assetDomain,
+            assetDataSize = dataSize,
+            decodedDataPath = fullDataPath,
+            extension = null
+        )
+
+        // Then
+        actual.shouldSucceed {
+            assertIs<Path>(it)
+            assertEquals(expectedAssetPath, it)
+        }
+        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
+            .with(matching {
+                it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
+            })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAnError_whenPersistingAsset_thenShouldReturnFailure() = runTest {
+        // Given
+        val dataNamePath = "temp-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".toByteArray()
+        val dataSize = dummyData.size.toLong()
+        val assetId = "some_key"
+        val assetDomain = "some_domain"
+        val expectedAssetPath = fakeKaliumFileSystem.providePersistentAssetPath(assetId)
+
+        val (arrangement, assetRepository) = Arrangement()
+            .withRawStoredData(dummyData, fullDataPath)
+            .withErrorInsertResponse()
+            .arrange()
+
+        // When
+        val actual = assetRepository.persistAsset(
+            assetId = assetId,
+            assetDomain = assetDomain,
+            assetDataSize = dataSize,
+            decodedDataPath = fullDataPath,
+            extension = null
+        )
+
+        // Then
+        actual.shouldFail()
+        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
+            .with(matching {
+                it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
+            })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenDataFileNotExisting_whenPersistingAsset_thenShouldReturnFailure() = runTest {
+        // Given
+        val dataNamePath = "temp-data-path"
+        val fullDataPath = fakeKaliumFileSystem.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".toByteArray()
+        val dataSize = dummyData.size.toLong()
+        val assetId = "some_key"
+        val assetDomain = "some_domain"
+
+        val (arrangement, assetRepository) = Arrangement().arrange()
+
+        // When
+        val actual = assetRepository.persistAsset(
+            assetId = assetId,
+            assetDomain = assetDomain,
+            assetDataSize = dataSize,
+            decodedDataPath = fullDataPath,
+            extension = null
+        )
+
+        // Then
+        actual.shouldFail()
+        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     class Arrangement {
 
         @Mock
@@ -471,16 +667,26 @@ class AssetRepositoryTest {
             fakeKaliumFileSystem.sink(dataPath).buffer().use { it.write(data) }
         }
 
-        fun withSuccessfulUpload(expectedAssetResponse: AssetResponse): Arrangement = apply {
+        fun withSuccessfulInsert(): Arrangement = apply {
             given(assetDAO)
                 .suspendFunction(assetDAO::insertAsset)
                 .whenInvokedWith(any())
                 .thenDoNothing()
+        }
 
+        fun withErrorInsertResponse(): Arrangement = apply {
+            given(assetDAO)
+                .suspendFunction(assetDAO::insertAsset)
+                .whenInvokedWith(any())
+                .thenThrow(RuntimeException("An error occurred persisting the data"))
+        }
+
+        fun withSuccessfulUpload(expectedAssetResponse: AssetResponse): Arrangement = apply {
             given(assetApi)
                 .suspendFunction(assetApi::uploadAsset)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(NetworkResponse.Success(expectedAssetResponse, mapOf(), 200))
+            withSuccessfulInsert()
         }
 
         fun withSuccessfulDownload(assetsIdToPersist: List<AssetId>): Arrangement = apply {
@@ -495,10 +701,7 @@ class AssetRepositoryTest {
                     .whenInvokedWith(any(), eq(null), any(), any())
                     .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
 
-                given(assetDAO)
-                    .suspendFunction(assetDAO::insertAsset)
-                    .whenInvokedWith(any())
-                    .thenDoNothing()
+                withSuccessfulInsert()
             }
         }
 
@@ -524,10 +727,7 @@ class AssetRepositoryTest {
                     })
                     .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
 
-                given(assetDAO)
-                    .suspendFunction(assetDAO::insertAsset)
-                    .whenInvokedWith(any())
-                    .thenDoNothing()
+                withSuccessfulInsert()
             }
         }
 

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -29,9 +30,8 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.selfdeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.selfdeletingMessages.TeamSettingsSelfDeletionStatus
-import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
@@ -55,7 +55,6 @@ internal interface SyncFeatureConfigsUseCase {
 internal class SyncFeatureConfigsUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
-    private val isFileSharingEnabledUseCase: IsFileSharingEnabledUseCase,
     private val getGuestRoomLinkFeatureStatus: GetGuestRoomLinkFeatureStatusUseCase,
     private val kaliumConfigs: KaliumConfigs,
     private val selfUserId: UserId
@@ -102,16 +101,20 @@ internal class SyncFeatureConfigsUseCaseImpl(
     }
 
     private fun handleFileSharingStatus(model: ConfigsStatusModel) {
-        if (kaliumConfigs.fileRestrictionEnabled) {
-            userConfigRepository.setFileSharingStatus(false, null)
-        } else {
-            val status: Boolean = model.status == Status.ENABLED
-            val isStatusChanged = when (isFileSharingEnabledUseCase().isFileSharingEnabled) {
-                null, status -> false
-                else -> true
+        val newStatus: Boolean = model.status == Status.ENABLED
+        val currentStatus = userConfigRepository.isFileSharingEnabled()
+        val isStatusChanged: Boolean = when (currentStatus) {
+            is Either.Left -> false
+            is Either.Right -> {
+                when (currentStatus.value.state) {
+                    FileSharingStatus.Value.Disabled -> newStatus
+                    FileSharingStatus.Value.EnabledAll -> !newStatus
+                    // EnabledSome is a build time flag, so we don't need to check if the server side status have been changed
+                    is FileSharingStatus.Value.EnabledSome -> !newStatus
+                }
             }
-            userConfigRepository.setFileSharingStatus(status, isStatusChanged)
         }
+        userConfigRepository.setFileSharingStatus(newStatus, isStatusChanged)
     }
 
     private fun handleGuestRoomLinkFeatureFlag(model: ConfigsStatusModel) {
@@ -133,21 +136,21 @@ internal class SyncFeatureConfigsUseCaseImpl(
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
     }
 
-    private fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
+    private suspend fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {
         if (!kaliumConfigs.selfDeletingMessages) {
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = SelfDeletionTimer.Disabled,
+                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Disabled,
                     hasFeatureChanged = null
                 )
             )
         } else {
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val selfDeletionTimer = when {
-                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> SelfDeletionTimer.Enforced.ByTeam(enforcedTimeout)
-                selfDeletingMessagesEnabled -> SelfDeletionTimer.Enabled(ZERO)
-                else -> SelfDeletionTimer.Disabled
+            val selfDeletionTimer: TeamSelfDeleteTimer = when {
+                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
+                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
+                else -> TeamSelfDeleteTimer.Disabled
             }
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(

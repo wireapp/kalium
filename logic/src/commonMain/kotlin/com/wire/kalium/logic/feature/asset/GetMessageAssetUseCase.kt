@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
+import com.wire.kalium.logic.data.message.Message.UploadStatus.NOT_UPLOADED
+import com.wire.kalium.logic.data.message.Message.UploadStatus.UPLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
@@ -71,11 +73,15 @@ internal class GetMessageAssetUseCaseImpl(
             kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
             CompletableDeferred(MessageAssetResult.Failure(it))
         }, { message ->
-            val assetDownloadStatus = (message.content as MessageContent.Asset).value.downloadStatus
-            val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
-            val assetMetadata = when (val content = message.content) {
+            when (val content = message.content) {
                 is MessageContent.Asset -> {
-                    with(content.value.remoteData) {
+                    val assetDownloadStatus = content.value.downloadStatus
+                    val assetUploadStatus = content.value.uploadStatus
+                    val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
+                    // assets uploaded by other clients have upload status NOT_UPLOADED
+                    val alreadyUploaded: Boolean = (assetUploadStatus == NOT_UPLOADED && content.value.shouldBeDisplayed)
+                            || assetUploadStatus == UPLOADED
+                    val assetMetadata = with(content.value.remoteData) {
                         DownloadAssetMessageMetadata(
                             content.value.name ?: "",
                             content.value.sizeInBytes,
@@ -86,6 +92,35 @@ internal class GetMessageAssetUseCaseImpl(
                             SHA256Key(sha256)
                         )
                     }
+
+                    // Start progress bar for generic assets
+                    if (!wasDownloaded && alreadyUploaded)
+                        updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
+
+                    scope.async(dispatcher.io) {
+                        assetDataSource.fetchPrivateDecodedAsset(
+                            assetId = assetMetadata.assetKey,
+                            assetDomain = assetMetadata.assetKeyDomain,
+                            assetName = assetMetadata.assetName,
+                            mimeType = content.value.mimeType,
+                            assetToken = assetMetadata.assetToken,
+                            encryptionKey = assetMetadata.encryptionKey,
+                            assetSHA256Key = assetMetadata.assetSHA256Key,
+                            downloadIfNeeded = alreadyUploaded
+                        ).fold({
+                            kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
+                            // This should be called if there is an issue while downloading the asset
+                            updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
+                            MessageAssetResult.Failure(it)
+                        }, { decodedAssetPath ->
+                            // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded
+                            // while running this specific use case. Otherwise, recursive loop as described above kicks in.
+                            if (!wasDownloaded)
+                                updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
+
+                            MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
+                        })
+                    }
                 }
                 // This should never happen
                 else -> return@fold CompletableDeferred(
@@ -94,36 +129,15 @@ internal class GetMessageAssetUseCaseImpl(
                     )
                 )
             }
-
-            // Start progress bar for generic assets
-            if (!wasDownloaded) updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
-
-            scope.async(dispatcher.io) {
-                assetDataSource.fetchPrivateDecodedAsset(
-                    assetId = assetMetadata.assetKey,
-                    assetDomain = assetMetadata.assetKeyDomain,
-                    assetName = assetMetadata.assetName,
-                    assetToken = assetMetadata.assetToken,
-                    encryptionKey = assetMetadata.encryptionKey,
-                    assetSHA256Key = assetMetadata.assetSHA256Key
-                ).fold({
-                    kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
-                    // This should be called if there is an issue while downloading the asset
-                    updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
-                    MessageAssetResult.Failure(it)
-                }, { decodedAssetPath ->
-                    // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded while
-                    // running this specific use case. Otherwise, recursive loop as described above kicks in.
-                    if (!wasDownloaded)
-                        updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
-
-                    MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
-                })
-            }
         })
 }
 
 sealed class MessageAssetResult {
-    class Success(val decodedAssetPath: Path, val assetSize: Long, val assetName: String) : MessageAssetResult()
+    class Success(
+        val decodedAssetPath: Path,
+        val assetSize: Long,
+        val assetName: String
+    ) : MessageAssetResult()
+
     class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
 }
