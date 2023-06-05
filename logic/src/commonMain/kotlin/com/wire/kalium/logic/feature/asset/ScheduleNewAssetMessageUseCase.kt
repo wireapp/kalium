@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -50,13 +51,16 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.isGreaterThan
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okio.Path
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 
 interface ScheduleNewAssetMessageUseCase {
@@ -87,6 +91,7 @@ interface ScheduleNewAssetMessageUseCase {
     ): ScheduleNewAssetMessageResult
 }
 
+// TODO: https://github.com/wireapp/kalium/pull/1727, see Vitor comment
 @Suppress("LongParameterList")
 internal class ScheduleNewAssetMessageUseCaseImpl(
     private val persistMessage: PersistMessageUseCase,
@@ -97,11 +102,16 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val messageRepository: MessageRepository,
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
+
+    private var outGoingAssetUploadJob: Job? = null
+
+    @Suppress("LongMethod")
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -147,12 +157,34 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 expectsReadConfirmation = expectsReadConfirmation
             ).onSuccess { (currentAssetMessageContent, message) ->
                 // We schedule the asset upload and return Either.Right so later it's transformed to Success(message.id)
-                scope.launch(dispatcher.io) {
-                    uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
-                        .onSuccess {
-                            // We delete asset added temporarily that was used to show the loading
-                            assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
+                outGoingAssetUploadJob = scope.launch(dispatcher.io) {
+                    launch {
+                        messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
+                            if (visibility == MessageEntity.Visibility.DELETED) {
+                                // If the message is deleted we cancel the upload
+                                outGoingAssetUploadJob?.cancel()
+                            }
                         }
+                    }
+                    launch {
+                        uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
+                            .onSuccess {
+                                // We delete asset added temporarily that was used to show the loading
+                                assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
+                            }
+                    }.invokeOnCompletion { cause ->
+                        if (cause is CancellationException) {
+                            kaliumLogger.d(
+                                "Asset upload was cancelled, " +
+                                        "for message with id ${message.id} and conversationId $conversationId"
+                            )
+                        } else {
+                            kaliumLogger.d(
+                                "Asset uploaded successfully, " +
+                                        "for message with id ${message.id} and conversationId $conversationId"
+                            )
+                        }
+                    }
                 }
             }
         }.fold({
