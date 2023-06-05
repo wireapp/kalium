@@ -25,20 +25,20 @@ import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-object EphemeralEventLogger {
+object SelfDeletionEventLogger {
     fun log(
-        loggingDeletionEvent: LoggingDeletionEvent
+        loggingSelfDeletionEvent: LoggingSelfDeletionEvent
     ) {
-        kaliumLogger.i(loggingDeletionEvent.toJson())
+        kaliumLogger.i(loggingSelfDeletionEvent.toJson())
     }
 }
 
-sealed class LoggingDeletionEvent(
+sealed class LoggingSelfDeletionEvent(
     open val message: Message.Regular,
     open val expirationData: Message.ExpirationData
 ) {
     private companion object {
-        const val EPHEMERAL_LOG_TAG = "Ephemeral"
+        const val EPHEMERAL_LOG_TAG = "Self-Deletion"
     }
 
     fun toJson(): String {
@@ -60,10 +60,10 @@ sealed class LoggingDeletionEvent(
         }
     }
 
-    data class SelfDeletionAlreadyRequested(
+    data class SelfSelfDeletionAlreadyRequested(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData
-    ) : LoggingDeletionEvent(message, expirationData) {
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "self-deletion-already-requested"
@@ -71,11 +71,11 @@ sealed class LoggingDeletionEvent(
         }
     }
 
-    data class MarkingSelfDeletionStartDate(
+    data class MarkingSelfSelfDeletionStartDate(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData,
         val startDate: Instant
-    ) : LoggingDeletionEvent(message, expirationData) {
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "marking-self_deletion_start_date",
@@ -84,11 +84,11 @@ sealed class LoggingDeletionEvent(
         }
     }
 
-    data class WaitingForDeletion(
+    data class WaitingForSelfDeletion(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData,
         val delayWaitTime: Duration
-    ) : LoggingDeletionEvent(message, expirationData) {
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "waiting-for-deletion",
@@ -97,10 +97,10 @@ sealed class LoggingDeletionEvent(
         }
     }
 
-    data class StartingSelfDeletion(
+    data class StartingSelfSelfDeletion(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData,
-    ) : LoggingDeletionEvent(message, expirationData) {
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "starting-self-deletion"
@@ -111,36 +111,47 @@ sealed class LoggingDeletionEvent(
     data class AttemptingToDelete(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData
-    ) : LoggingDeletionEvent(message, expirationData) {
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "attempting-to-delete",
-                "is-user-sender" to message.isSelfMessage.toString()
+                "is-self-user-sender" to message.isSelfMessage.toString()
             )
         }
     }
 
-    data class SuccessFullyDeleted(
+    data class SuccessfullyDeleted(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData,
-    ) : LoggingDeletionEvent(message, expirationData) {
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "self-deletion-succeed",
-                "is-user-sender" to message.isSelfMessage.toString()
+                "is-self-user-sender" to message.isSelfMessage.toString()
             )
         }
     }
 
-    data class DeletionFailed(
+    data class InvalidMessageStatus(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "invalid-message-status",
+                "is-self-user-sender" to message.isSelfMessage.toString(),
+            )
+        }
+    }
+    data class SelfDeletionFailed(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData,
         val coreFailure: CoreFailure
-    ) : LoggingDeletionEvent(message, expirationData) {
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "self-deletion-failed",
-                "is-user-sender" to message.isSelfMessage.toString(),
+                "is-self-user-sender" to message.isSelfMessage.toString(),
                 "reason" to coreFailure.toString()
             )
         }

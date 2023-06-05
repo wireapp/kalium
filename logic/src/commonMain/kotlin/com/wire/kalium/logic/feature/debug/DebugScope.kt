@@ -138,7 +138,7 @@ class DebugScope internal constructor(
             mlsMessageCreator,
             messageSendingInterceptor,
             userRepository,
-            { ephemeralMessageDeletionHandler.enqueueSelfDeletion(it) },
+            { ephemeralMessageDeletionHandler.enqueueSelfDeletion(it, message.expirationData) },
             scope
         )
 
