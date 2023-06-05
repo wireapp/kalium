@@ -64,7 +64,7 @@ internal open class E2EIApiV4 internal constructor(private val authenticatedNetw
     override suspend fun getAccessTokenUrl(clientId: String): String {
         //return httpClient.post("$PATH_CLIENTS/$clientId/$PATH_ACCESS_TOKEN").request.url.toString()
         //todo: temporarily use this hardcoded value to test, BE need to fix it
-        return "https://staging.zinfra.io/$PATH_CLIENTS/$clientId/$PATH_ACCESS_TOKEN"
+        return "https://nginz-https.anta.wire.link/v4/$PATH_CLIENTS/$clientId/$PATH_ACCESS_TOKEN"
     }
 
     private companion object {
