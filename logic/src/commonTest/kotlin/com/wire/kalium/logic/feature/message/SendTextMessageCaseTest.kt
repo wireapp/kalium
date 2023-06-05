@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -40,6 +42,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -55,6 +58,7 @@ class SendTextMessageCaseTest {
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
             .withSendMessageSuccess()
             .arrange()
 
@@ -90,6 +94,7 @@ class SendTextMessageCaseTest {
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
             .withSendMessageFailure()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
             .arrange()
 
         // When
@@ -135,6 +140,9 @@ class SendTextMessageCaseTest {
         @Mock
         val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { stubsUnitByDefault = true }
 
+        @Mock
+        val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
+
         fun withSendMessageSuccess() = apply {
             given(messageSender)
                 .suspendFunction(messageSender::sendMessage)
@@ -173,6 +181,13 @@ class SendTextMessageCaseTest {
                 .thenReturn(enabled)
         }
 
+        fun  withMessageTimer(result: SelfDeletionTimer) = apply {
+            given(observeSelfDeletionTimerSettingsForConversation)
+                .suspendFunction(observeSelfDeletionTimerSettingsForConversation::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(result))
+        }
+
         fun arrange() = this to SendTextMessageUseCase(
             persistMessage,
             TestUser.SELF.id,
@@ -180,7 +195,8 @@ class SendTextMessageCaseTest {
             slowSyncRepository,
             messageSender,
             messageSendFailureHandler,
-            userPropertyRepository
+            userPropertyRepository,
+            observeSelfDeletionTimerSettingsForConversation
         )
     }
 
