@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer.Companion.SELF_DELETION_LOG_TAG
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -33,6 +35,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -191,13 +194,14 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                             || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newTeamSettingsTimer
                 )
             ).onFailure {
-                /*val logMap = mapOf(
-                    "value" to newTeamSettingsTimer.toLogString(eventDescription = "Self Deletion User Update Failure"),
+                val logMap = mapOf(
+                    "value" to newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Failure"),
                     "errorInfo" to "$it"
                 )
-                kaliumLogger.e()*/
+                kaliumLogger.e("$SELF_DELETION_LOG_TAG: ${logMap.toJsonElement()}")
             }.onSuccess {
-
+                val logMap = newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Success")
+                kaliumLogger.d("$SELF_DELETION_LOG_TAG: ${logMap.toJsonElement()}")
             }
         }
     }

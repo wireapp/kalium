@@ -41,9 +41,9 @@ class PersistNewSelfDeletionTimerUseCaseImpl(
                 "value" to newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Failure"),
                 "errorInfo" to "$it"
             )
-            kaliumLogger.e("${SelfDeletionTimer.TAG}: $logMap")
+            kaliumLogger.e("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
         }, {
             val logMap = mapOf("value" to newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Success"))
-            kaliumLogger.d("${SelfDeletionTimer.TAG}: $logMap")
+            kaliumLogger.d("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
         })
 }

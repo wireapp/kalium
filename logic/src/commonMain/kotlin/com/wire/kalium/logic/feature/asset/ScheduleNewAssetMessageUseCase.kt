@@ -119,6 +119,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
         val messageTimer = selfDeleteTimer(conversationId, true).first().let {
+            val logMap = it.toLogString(eventDescription = "Sending asset message with self-deletion timer")
+            if (it != SelfDeletionTimer.Disabled) kaliumLogger.d("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
+
             when (it) {
                 SelfDeletionTimer.Disabled -> null
                 is SelfDeletionTimer.Enabled -> it.userDuration
@@ -213,8 +216,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         isSelfMessage = true
                     )
                     // We persist the asset message right away so that it can be displayed on the conversation screen loading
-                    persistMessage(message)
-                        .map { currentAssetMessageContent to message }
+                    persistMessage(message).map { currentAssetMessageContent to message }
                 }
                 .onFailure {
                     updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, messageId)
