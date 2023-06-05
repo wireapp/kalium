@@ -5,6 +5,13 @@ on:
     branches:
       - develop # later on we should stick to main, since there will be the releases
   workflow_dispatch:
+      # deleteme. temp to test the workflow
+      inputs:
+          current-branch:
+              type: string
+              description: 'nothing to declare'
+              required: false
+              default: ''
 
 jobs:
     publish:
@@ -31,10 +38,10 @@ jobs:
                 GITHUB_USER: ${{ github.actor }}
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Deploy docs 🚀
-              uses: JamesIves/github-pages-deploy-action@v4.2.5
-              with:
-                  branch: gh-pages
-                  clean: false
-                  folder: build/dokka/htmlMultiModule
-                  target-folder: docs
+#            - name: Deploy docs 🚀
+#              uses: JamesIves/github-pages-deploy-action@v4.2.5
+#              with:
+#                  branch: gh-pages
+#                  clean: false
+#                  folder: build/dokka/htmlMultiModule
+#                  target-folder: docs
