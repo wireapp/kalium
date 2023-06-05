@@ -20,12 +20,15 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
@@ -54,6 +57,7 @@ class PendingProposalSchedulerTest {
     @Test
     fun givenConversation_onScheduleCommit_thenProposalTimerIsScheduled() = runTest {
         val (arrangement, pendingProposalsScheduler) = Arrangement()
+            .withSubconversationRepositoryDoesNotContainGroup()
             .withScheduleProposalTimerSuccessful()
             .arrange()
 
@@ -61,7 +65,23 @@ class PendingProposalSchedulerTest {
 
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::setProposalTimer)
-            .with(eq(Arrangement.PROPOSAL_TIMER))
+            .with(eq(Arrangement.PROPOSAL_TIMER), eq(false))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSubconversation_onScheduleCommit_thenProposalTimerIsScheduledInMemory() = runTest {
+        val (arrangement, pendingProposalsScheduler) = Arrangement()
+            .withSubconversationRepositoryContainsGroup(Arrangement.PROPOSAL_TIMER.groupID)
+            .withScheduleProposalTimerSuccessful()
+            .arrange()
+
+        pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::setProposalTimer)
+            .with(eq(Arrangement.PROPOSAL_TIMER), eq(true))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -175,22 +195,37 @@ class PendingProposalSchedulerTest {
         val kaliumConfigs = KaliumConfigs()
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
-
-        @Mock
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val subconversationRepository = mock(classOf<SubconversationRepository>())
+
         val pendingProposalScheduler = PendingProposalSchedulerImpl(
             kaliumConfigs,
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
+            lazy { subconversationRepository },
             TestKaliumDispatcher
         )
 
         fun arrange() = this to pendingProposalScheduler
+
+        fun withSubconversationRepositoryDoesNotContainGroup() = apply {
+            given(subconversationRepository)
+                .suspendFunction(subconversationRepository::containsSubconversation)
+                .whenInvokedWith(any())
+                .thenReturn(false)
+        }
+
+        fun withSubconversationRepositoryContainsGroup(groupID: GroupID) = apply {
+            given(subconversationRepository)
+                .suspendFunction(subconversationRepository::containsSubconversation)
+                .whenInvokedWith(eq(groupID))
+                .thenReturn(true)
+        }
 
         fun withScheduleProposalTimerSuccessful() = apply {
             given(mlsConversationRepository)
@@ -210,14 +245,14 @@ class PendingProposalSchedulerTest {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::observeProposalTimers)
                 .whenInvoked()
-                .thenReturn(flowOf(timers))
+                .thenReturn(flowOf(timers).flatten())
         }
 
         fun withScheduledProposalTimersFlow(timersFlow: Flow<List<ProposalTimer>>) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::observeProposalTimers)
                 .whenInvoked()
-                .thenReturn(timersFlow)
+                .thenReturn(timersFlow.flatten())
         }
 
         companion object {
