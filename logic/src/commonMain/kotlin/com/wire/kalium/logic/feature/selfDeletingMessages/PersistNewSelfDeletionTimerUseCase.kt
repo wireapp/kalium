@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 /**
  * Use case to persist the new self deletion timer for a given conversation to memory.
@@ -40,10 +41,10 @@ class PersistNewSelfDeletionTimerUseCaseImpl(
             val logMap = mapOf(
                 "value" to newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Failure"),
                 "errorInfo" to "$it"
-            )
+            ).toJsonElement()
             kaliumLogger.e("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
         }, {
-            val logMap = mapOf("value" to newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Success"))
+            val logMap = newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Success")
             kaliumLogger.d("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
         })
 }

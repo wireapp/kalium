@@ -197,8 +197,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 val logMap = mapOf(
                     "value" to newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Failure"),
                     "errorInfo" to "$it"
-                )
-                kaliumLogger.e("$SELF_DELETION_LOG_TAG: ${logMap.toJsonElement()}")
+                ).toJsonElement()
+                kaliumLogger.e("$SELF_DELETION_LOG_TAG: $logMap")
             }.onSuccess {
                 val logMap = newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Success")
                 kaliumLogger.d("$SELF_DELETION_LOG_TAG: ${logMap.toJsonElement()}")
