@@ -33,7 +33,7 @@
     <div id="leftToggler"><span class="icon-toggler"></span></div>
     <div class="library-name">
 <a href="../../../index.html">
-<span>Kalium</span>            </a>    </div>
+<span>kalium</span>            </a>    </div>
     <div>
     </div>
     <div class="pull-right d-flex">
@@ -49,314 +49,393 @@
         <div id="sideMenu"></div>
     </div>
     <div id="main">
-<div class="main-content" id="content" pageids="logic::com.wire.kalium.logic.feature.user/UserScope///PointingToDeclaration//867774983">
+<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic.feature.user/UserScope///PointingToDeclaration//867774983">
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature.user</a><span class="delimiter">/</span><span class="current">UserScope</span></div>
   <div class="cover ">
     <h1 class="cover"><span>User</span><wbr><span><span>Scope</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">UserScope</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">searchUserRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.publicuser/-search-user-repository/index.html">SearchUserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">assetRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">connectionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-repository/index.html">ConnectionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">qualifiedIdMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span></span><span class="parameter ">sessionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.session/-session-repository/index.html">SessionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">serverConfigRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration.server/-server-config-repository/index.html">ServerConfigRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">metadataDAO<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao/-metadata-d-a-o/index.html">MetadataDAO</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a></span></span><span class="token punctuation">)</span></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">UserScope</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">searchUserRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.publicuser/-search-user-repository/index.html">SearchUserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">assetRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">connectionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-repository/index.html">ConnectionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">qualifiedIdMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span></span><span class="parameter ">sessionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.session/-session-repository/index.html">SessionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">serverConfigRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration.server/-server-config-repository/index.html">ServerConfigRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">metadataDAO<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.message/-message-sender/index.html">MessageSender</a><span class="token punctuation">, </span></span><span class="parameter ">clientIdProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">isSelfATeamMember<span class="token operator">: </span><a href="../-is-self-a-team-member-use-case/index.html">IsSelfATeamMemberUseCase</a></span></span><span class="token punctuation">)</span></div></div></div>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="Constructors">Constructors</button><button class="section-tab" data-togglable="Properties">Properties</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,FUNCTION,PROPERTY">Members</button></div>
     <div class="tabs-section-body">
-      <h2 class="tabbedcontent">Constructors</h2>
-      <div class="table" data-togglable="Constructors"><a data-name="498123536%2FConstructors%2F867774983" anchor-label="UserScope" id="498123536%2FConstructors%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue TabbedContent">
-            <div class=""><span class="inline-flex">
-                <div><a href="-user-scope.html"><span>User</span><wbr><span><span>Scope</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="498123536%2FConstructors%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword"></span><span class="token keyword">fun </span><a href="-user-scope.html"><span class="token function">UserScope</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">searchUserRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.publicuser/-search-user-repository/index.html">SearchUserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">assetRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">connectionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-repository/index.html">ConnectionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">qualifiedIdMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span></span><span class="parameter ">sessionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.session/-session-repository/index.html">SessionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">serverConfigRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration.server/-server-config-repository/index.html">ServerConfigRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">metadataDAO<span class="token operator">: </span><a href="../../../persistence/com.wire.kalium.persistence.dao/-metadata-d-a-o/index.html">MetadataDAO</a><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a></span></span><span class="token punctuation">)</span></div></div></div>
+      <div data-togglable="CONSTRUCTOR">
+        <h2 class="">Constructors</h2>
+        <div class="table"><a data-name="-1469856523%2FConstructors%2F867774983" anchor-label="UserScope" id="-1469856523%2FConstructors%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-user-scope.html"><span>User</span><wbr><span><span>Scope</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1469856523%2FConstructors%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/-user-repository/index.html">UserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">searchUserRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.publicuser/-search-user-repository/index.html">SearchUserRepository</a><span class="token punctuation">, </span></span><span class="parameter ">syncManager<span class="token operator">: </span><a href="../../com.wire.kalium.logic.sync/-sync-manager/index.html">SyncManager</a><span class="token punctuation">, </span></span><span class="parameter ">assetRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.asset/-asset-repository/index.html">AssetRepository</a><span class="token punctuation">, </span></span><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">connectionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.connection/-connection-repository/index.html">ConnectionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">qualifiedIdMapper<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.id/-qualified-id-mapper/index.html">QualifiedIdMapper</a><span class="token punctuation">, </span></span><span class="parameter ">sessionRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.session/-session-repository/index.html">SessionRepository</a><span class="token punctuation">, </span></span><span class="parameter ">serverConfigRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.configuration.server/-server-config-repository/index.html">ServerConfigRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfUserId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">metadataDAO<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">userPropertyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.properties/-user-property-repository/index.html">UserPropertyRepository</a><span class="token punctuation">, </span></span><span class="parameter ">messageSender<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.message/-message-sender/index.html">MessageSender</a><span class="token punctuation">, </span></span><span class="parameter ">clientIdProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature/-current-client-id-provider/index.html">CurrentClientIdProvider</a><span class="token punctuation">, </span></span><span class="parameter ">conversationRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.conversation/-conversation-repository/index.html">ConversationRepository</a><span class="token punctuation">, </span></span><span class="parameter ">isSelfATeamMember<span class="token operator">: </span><a href="../-is-self-a-team-member-use-case/index.html">IsSelfATeamMemberUseCase</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h2 class="">Properties</h2>
-      <div class="table" data-togglable="Properties"><a data-name="1068004635%2FProperties%2F867774983" anchor-label="getAllContactsNotInConversation" id="1068004635%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="get-all-contacts-not-in-conversation.html"><span>get</span><wbr><span>All</span><wbr><span>Contacts</span><wbr><span>Not</span><wbr><span>In</span><wbr><span><span>Conversation</span></span></a></div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="1020753235%2FProperties%2F867774983" anchor-label="deleteAsset" id="1020753235%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="delete-asset.html"><span>delete</span><wbr><span><span>Asset</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1020753235%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="delete-asset.html">deleteAsset</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.asset/-delete-asset-use-case/index.html">DeleteAssetUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1068004635%2FProperties%2F867774983" anchor-label="getAllContactsNotInConversation" id="1068004635%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-all-contacts-not-in-conversation.html"><span>get</span><wbr><span>All</span><wbr><span>Contacts</span><wbr><span>Not</span><wbr><span>In</span><wbr><span><span>Conversation</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1068004635%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1068004635%2FProperties%2F867774983" anchor-label="getAllContactsNotInConversation" id="1068004635%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-all-contacts-not-in-conversation.html">getAllContactsNotInConversation</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-get-all-contacts-not-in-conversation-use-case/index.html">GetAllContactsNotInConversationUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-all-contacts-not-in-conversation.html">getAllContactsNotInConversation</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.conversation/-get-all-contacts-not-in-conversation-use-case/index.html">GetAllContactsNotInConversationUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="413359954%2FProperties%2F867774983" anchor-label="getAllKnownUsers" id="413359954%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="get-all-known-users.html"><span>get</span><wbr><span>All</span><wbr><span>Known</span><wbr><span><span>Users</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-all-known-users.html"><span>get</span><wbr><span>All</span><wbr><span>Known</span><wbr><span><span>Users</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="413359954%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="413359954%2FProperties%2F867774983" anchor-label="getAllKnownUsers" id="413359954%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-all-known-users.html">getAllKnownUsers</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser/-get-all-contacts-use-case/index.html">GetAllContactsUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-all-known-users.html">getAllKnownUsers</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser/-get-all-contacts-use-case/index.html">GetAllContactsUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+<a data-name="2123478360%2FProperties%2F867774983" anchor-label="getAssetSizeLimit" id="2123478360%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-asset-size-limit.html"><span>get</span><wbr><span>Asset</span><wbr><span>Size</span><wbr><span><span>Limit</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2123478360%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-asset-size-limit.html">getAssetSizeLimit</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.asset/-get-asset-size-limit-use-case/index.html">GetAssetSizeLimitUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="-1292028630%2FProperties%2F867774983" anchor-label="getKnownUser" id="-1292028630%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="get-known-user.html"><span>get</span><wbr><span>Known</span><wbr><span><span>User</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-known-user.html"><span>get</span><wbr><span>Known</span><wbr><span><span>User</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1292028630%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1292028630%2FProperties%2F867774983" anchor-label="getKnownUser" id="-1292028630%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-known-user.html">getKnownUser</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser/-get-known-user-use-case/index.html">GetKnownUserUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-known-user.html">getKnownUser</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser/-get-known-user-use-case/index.html">GetKnownUserUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1831151567%2FProperties%2F867774983" anchor-label="getPublicAsset" id="-1831151567%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="get-public-asset.html"><span>get</span><wbr><span>Public</span><wbr><span><span>Asset</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-public-asset.html"><span>get</span><wbr><span>Public</span><wbr><span><span>Asset</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1831151567%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1831151567%2FProperties%2F867774983" anchor-label="getPublicAsset" id="-1831151567%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-public-asset.html">getPublicAsset</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.asset/-get-avatar-asset-use-case/index.html">GetAvatarAssetUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-public-asset.html">getPublicAsset</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.asset/-get-avatar-asset-use-case/index.html">GetAvatarAssetUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="2128028587%2FProperties%2F867774983" anchor-label="getSelfUser" id="2128028587%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="get-self-user.html"><span>get</span><wbr><span>Self</span><wbr><span><span>User</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-self-user.html"><span>get</span><wbr><span>Self</span><wbr><span><span>User</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2128028587%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="2128028587%2FProperties%2F867774983" anchor-label="getSelfUser" id="2128028587%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-self-user.html">getSelfUser</a><span class="token operator">: </span><a href="../-get-self-user-use-case/index.html">GetSelfUserUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-self-user.html">getSelfUser</a><span class="token operator">: </span><a href="../-get-self-user-use-case/index.html">GetSelfUserUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+<a data-name="1278313128%2FProperties%2F867774983" anchor-label="getSelfUserWithTeam" id="1278313128%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-self-user-with-team.html"><span>get</span><wbr><span>Self</span><wbr><span>User</span><wbr><span>With</span><wbr><span><span>Team</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1278313128%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-self-user-with-team.html">getSelfUserWithTeam</a><span class="token operator">: </span><a href="../-observe-self-user-with-team-use-case/index.html">ObserveSelfUserWithTeamUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="-220862455%2FProperties%2F867774983" anchor-label="getUserInfo" id="-220862455%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="get-user-info.html"><span>get</span><wbr><span>User</span><wbr><span><span>Info</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="get-user-info.html"><span>get</span><wbr><span>User</span><wbr><span><span>Info</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-220862455%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-220862455%2FProperties%2F867774983" anchor-label="getUserInfo" id="-220862455%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-user-info.html">getUserInfo</a><span class="token operator">: </span><a href="../-get-user-info-use-case/index.html">GetUserInfoUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="get-user-info.html">getUserInfo</a><span class="token operator">: </span><a href="../-get-user-info-use-case/index.html">GetUserInfoUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="505056574%2FProperties%2F867774983" anchor-label="isPasswordRequired" id="505056574%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="is-password-required.html"><span>is</span><wbr><span>Password</span><wbr><span><span>Required</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-password-required.html"><span>is</span><wbr><span>Password</span><wbr><span><span>Required</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="505056574%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="505056574%2FProperties%2F867774983" anchor-label="isPasswordRequired" id="505056574%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-password-required.html">isPasswordRequired</a><span class="token operator">: </span><a href="../-is-password-required-use-case/index.html">IsPasswordRequiredUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-password-required.html">isPasswordRequired</a><span class="token operator">: </span><a href="../-is-password-required-use-case/index.html">IsPasswordRequiredUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+<a data-name="-1868171849%2FProperties%2F867774983" anchor-label="isReadOnlyAccount" id="-1868171849%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="is-read-only-account.html"><span>is</span><wbr><span>Read</span><wbr><span>Only</span><wbr><span><span>Account</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1868171849%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="is-read-only-account.html">isReadOnlyAccount</a><span class="token operator">: </span><a href="../-is-read-only-account-use-case/index.html">IsReadOnlyAccountUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="1569819790%2FProperties%2F867774983" anchor-label="observeReadReceiptsEnabled" id="1569819790%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="observe-read-receipts-enabled.html"><span>observe</span><wbr><span>Read</span><wbr><span>Receipts</span><wbr><span><span>Enabled</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-read-receipts-enabled.html"><span>observe</span><wbr><span>Read</span><wbr><span>Receipts</span><wbr><span><span>Enabled</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1569819790%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1569819790%2FProperties%2F867774983" anchor-label="observeReadReceiptsEnabled" id="1569819790%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-read-receipts-enabled.html">observeReadReceiptsEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.readReceipts/-observe-read-receipts-enabled-use-case/index.html">ObserveReadReceiptsEnabledUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-read-receipts-enabled.html">observeReadReceiptsEnabled</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.readReceipts/-observe-read-receipts-enabled-use-case/index.html">ObserveReadReceiptsEnabledUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-466681469%2FProperties%2F867774983" anchor-label="observeUserInfo" id="-466681469%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="observe-user-info.html"><span>observe</span><wbr><span>User</span><wbr><span><span>Info</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="observe-user-info.html"><span>observe</span><wbr><span>User</span><wbr><span><span>Info</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-466681469%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-466681469%2FProperties%2F867774983" anchor-label="observeUserInfo" id="-466681469%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-user-info.html">observeUserInfo</a><span class="token operator">: </span><a href="../-observe-user-info-use-case/index.html">ObserveUserInfoUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="observe-user-info.html">observeUserInfo</a><span class="token operator">: </span><a href="../-observe-user-info-use-case/index.html">ObserveUserInfoUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1993351303%2FProperties%2F867774983" anchor-label="persistMigratedUsers" id="1993351303%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="persist-migrated-users.html"><span>persist</span><wbr><span>Migrated</span><wbr><span><span>Users</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="persist-migrated-users.html"><span>persist</span><wbr><span>Migrated</span><wbr><span><span>Users</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1993351303%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1993351303%2FProperties%2F867774983" anchor-label="persistMigratedUsers" id="1993351303%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-migrated-users.html">persistMigratedUsers</a><span class="token operator">: </span><a href="../-persist-migrated-users-use-case/index.html">PersistMigratedUsersUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-migrated-users.html">persistMigratedUsers</a><span class="token operator">: </span><a href="../-persist-migrated-users-use-case/index.html">PersistMigratedUsersUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="2113594623%2FProperties%2F867774983" anchor-label="persistReadReceiptsStatusConfig" id="2113594623%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="persist-read-receipts-status-config.html"><span>persist</span><wbr><span>Read</span><wbr><span>Receipts</span><wbr><span>Status</span><wbr><span><span>Config</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="persist-read-receipts-status-config.html"><span>persist</span><wbr><span>Read</span><wbr><span>Receipts</span><wbr><span>Status</span><wbr><span><span>Config</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2113594623%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="2113594623%2FProperties%2F867774983" anchor-label="persistReadReceiptsStatusConfig" id="2113594623%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-read-receipts-status-config.html">persistReadReceiptsStatusConfig</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.readReceipts/-persist-read-receipts-status-config-use-case/index.html">PersistReadReceiptsStatusConfigUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="persist-read-receipts-status-config.html">persistReadReceiptsStatusConfig</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.user.readReceipts/-persist-read-receipts-status-config-use-case/index.html">PersistReadReceiptsStatusConfigUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-469781771%2FProperties%2F867774983" anchor-label="searchKnownUsers" id="-469781771%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="search-known-users.html"><span>search</span><wbr><span>Known</span><wbr><span><span>Users</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="search-known-users.html"><span>search</span><wbr><span>Known</span><wbr><span><span>Users</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-469781771%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-469781771%2FProperties%2F867774983" anchor-label="searchKnownUsers" id="-469781771%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="search-known-users.html">searchKnownUsers</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser.search/-search-known-users-use-case/index.html">SearchKnownUsersUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="search-known-users.html">searchKnownUsers</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser.search/-search-known-users-use-case/index.html">SearchKnownUsersUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-855866248%2FProperties%2F867774983" anchor-label="searchUsers" id="-855866248%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="search-users.html"><span>search</span><wbr><span><span>Users</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="search-users.html"><span>search</span><wbr><span><span>Users</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-855866248%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-855866248%2FProperties%2F867774983" anchor-label="searchUsers" id="-855866248%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="search-users.html">searchUsers</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser.search/-search-public-users-use-case/index.html">SearchPublicUsersUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="search-users.html">searchUsers</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature.publicuser.search/-search-public-users-use-case/index.html">SearchPublicUsersUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-136272830%2FProperties%2F867774983" anchor-label="serverLinks" id="-136272830%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="server-links.html"><span>server</span><wbr><span><span>Links</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="server-links.html"><span>server</span><wbr><span><span>Links</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-136272830%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-136272830%2FProperties%2F867774983" anchor-label="serverLinks" id="-136272830%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="server-links.html">serverLinks</a><span class="token operator">: </span><a href="../-self-server-config-use-case/index.html">SelfServerConfigUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="server-links.html">serverLinks</a><span class="token operator">: </span><a href="../-self-server-config-use-case/index.html">SelfServerConfigUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-117666621%2FProperties%2F867774983" anchor-label="setUserHandle" id="-117666621%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="set-user-handle.html"><span>set</span><wbr><span>User</span><wbr><span><span>Handle</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-user-handle.html"><span>set</span><wbr><span>User</span><wbr><span><span>Handle</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-117666621%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-117666621%2FProperties%2F867774983" anchor-label="setUserHandle" id="-117666621%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="set-user-handle.html">setUserHandle</a><span class="token operator">: </span><a href="../-set-user-handle-use-case/index.html">SetUserHandleUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="set-user-handle.html">setUserHandle</a><span class="token operator">: </span><a href="../-set-user-handle-use-case/index.html">SetUserHandleUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="1655104687%2FProperties%2F867774983" anchor-label="timestampKeyRepository" id="1655104687%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="timestamp-key-repository.html"><span>timestamp</span><wbr><span>Key</span><wbr><span><span>Repository</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="timestamp-key-repository.html"><span>timestamp</span><wbr><span>Key</span><wbr><span><span>Repository</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1655104687%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="1655104687%2FProperties%2F867774983" anchor-label="timestampKeyRepository" id="1655104687%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="timestamp-key-repository.html">timestampKeyRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature/-timestamp-key-repository-impl/index.html">TimestampKeyRepositoryImpl</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="timestamp-key-repository.html">timestampKeyRepository</a><span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature/-timestamp-key-repository-impl/index.html">TimestampKeyRepositoryImpl</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="388759572%2FProperties%2F867774983" anchor-label="updateDisplayName" id="388759572%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="update-display-name.html"><span>update</span><wbr><span>Display</span><wbr><span><span>Name</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-display-name.html"><span>update</span><wbr><span>Display</span><wbr><span><span>Name</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="388759572%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="388759572%2FProperties%2F867774983" anchor-label="updateDisplayName" id="388759572%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="update-display-name.html">updateDisplayName</a><span class="token operator">: </span><a href="../-update-display-name-use-case/index.html">UpdateDisplayNameUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="update-display-name.html">updateDisplayName</a><span class="token operator">: </span><a href="../-update-display-name-use-case/index.html">UpdateDisplayNameUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+<a data-name="1922554053%2FProperties%2F867774983" anchor-label="updateEmail" id="1922554053%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-email.html"><span>update</span><wbr><span><span>Email</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1922554053%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="update-email.html">updateEmail</a><span class="token operator">: </span><a href="../-update-email-use-case/index.html">UpdateEmailUseCase</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
 <a data-name="-965217376%2FProperties%2F867774983" anchor-label="updateSelfAvailabilityStatus" id="-965217376%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="update-self-availability-status.html"><span>update</span><wbr><span>Self</span><wbr><span>Availability</span><wbr><span><span>Status</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-self-availability-status.html"><span>update</span><wbr><span>Self</span><wbr><span>Availability</span><wbr><span><span>Status</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-965217376%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-965217376%2FProperties%2F867774983" anchor-label="updateSelfAvailabilityStatus" id="-965217376%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="update-self-availability-status.html">updateSelfAvailabilityStatus</a><span class="token operator">: </span><a href="../-update-self-availability-status-use-case/index.html">UpdateSelfAvailabilityStatusUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="update-self-availability-status.html">updateSelfAvailabilityStatus</a><span class="token operator">: </span><a href="../-update-self-availability-status-use-case/index.html">UpdateSelfAvailabilityStatusUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 <a data-name="-1295763363%2FProperties%2F867774983" anchor-label="uploadUserAvatar" id="-1295763363%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-        <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-          <div class="main-subrow keyValue ">
-            <div class=""><span class="inline-flex">
-                <div><a href="upload-user-avatar.html"><span>upload</span><wbr><span>User</span><wbr><span><span>Avatar</span></span></a></div>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="upload-user-avatar.html"><span>upload</span><wbr><span>User</span><wbr><span><span>Avatar</span></span></a></div>
 <span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1295763363%2FProperties%2F867774983"></span>
-                  <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                </span></span></div>
-            <div>
-              <div class="title">
-                <div class="platform-hinted " data-platform-hinted="data-platform-hinted" data-togglable="Properties"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><a data-name="-1295763363%2FProperties%2F867774983" anchor-label="uploadUserAvatar" id="-1295763363%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="upload-user-avatar.html">uploadUserAvatar</a><span class="token operator">: </span><a href="../-upload-user-avatar-use-case/index.html">UploadUserAvatarUseCase</a></div></div></div>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="upload-user-avatar.html">uploadUserAvatar</a><span class="token operator">: </span><a href="../-upload-user-avatar-use-case/index.html">UploadUserAvatarUseCase</a></div></div></div>
+                </div>
               </div>
             </div>
           </div>
@@ -370,6 +449,6 @@
       </div>
     </div>
 </div>
-
-</body></html>
+</body>
+</html>
 
