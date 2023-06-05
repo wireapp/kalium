@@ -29,10 +29,6 @@ internal open class MLSMessageApiV0 internal constructor() : MLSMessageApi {
         APINotSupported("MLS: sendMessage api is only available on API V4")
     )
 
-    override suspend fun sendWelcomeMessage(message: MLSMessageApi.WelcomeMessage): NetworkResponse<Unit> = NetworkResponse.Error(
-        APINotSupported("MLS: sendWelcomeMessage api is only available on API V4")
-    )
-
     override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> =
         NetworkResponse.Error(
             APINotSupported("MLS: sendCommitBundle api is only available on API V4")

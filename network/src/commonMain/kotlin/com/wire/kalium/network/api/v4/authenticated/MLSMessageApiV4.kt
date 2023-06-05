@@ -23,7 +23,6 @@ import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.v3.authenticated.MLSMessageApiV3
 import com.wire.kalium.network.serialization.Mls
-import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post
@@ -45,25 +44,16 @@ internal open class MLSMessageApiV4 internal constructor(
             }
         }
 
-    override suspend fun sendWelcomeMessage(message: MLSMessageApi.WelcomeMessage): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.post(PATH_WELCOME_MESSAGE) {
-                contentType(ContentType.Message.Mls)
-                setBody(message.value)
-            }
-        }
-
     override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> =
         wrapKaliumResponse {
             httpClient.post(PATH_COMMIT_BUNDLES) {
                 setBody(bundle.value)
-                contentType(ContentType.Application.XProtoBuf)
+                contentType(ContentType.Message.Mls)
             }
         }
 
     private companion object {
         const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
         const val PATH_MESSAGE = "mls/messages"
-        const val PATH_WELCOME_MESSAGE = "mls/welcome"
     }
 }

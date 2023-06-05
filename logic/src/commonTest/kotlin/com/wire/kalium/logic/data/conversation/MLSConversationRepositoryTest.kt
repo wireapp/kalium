@@ -20,8 +20,8 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.PublicGroupStateBundle
-import com.wire.kalium.cryptography.PublicGroupStateEncryptionType
+import com.wire.kalium.cryptography.GroupInfoBundle
+import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
@@ -1143,8 +1143,8 @@ class MLSConversationRepositoryTest {
             val WELCOME = "welcome".encodeToByteArray()
             val COMMIT = "commit".encodeToByteArray()
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
-            val PUBLIC_GROUP_STATE_BUNDLE = PublicGroupStateBundle(
-                PublicGroupStateEncryptionType.PLAINTEXT,
+            val PUBLIC_GROUP_STATE_BUNDLE = GroupInfoBundle(
+                GroupInfoEncryptionType.PLAINTEXT,
                 RatchetTreeType.FULL,
                 PUBLIC_GROUP_STATE
             )

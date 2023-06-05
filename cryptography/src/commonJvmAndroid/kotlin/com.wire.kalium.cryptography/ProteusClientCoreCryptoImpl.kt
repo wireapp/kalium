@@ -18,8 +18,10 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CryptoException
+import com.wire.crypto.client.CoreCryptoCentral.Companion.lower
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -46,7 +48,11 @@ class ProteusClientCoreCryptoImpl internal constructor(
     override suspend fun openOrCreate() {
         wrapException {
             File(rootDir).mkdirs()
-            coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+            coreCrypto = CoreCrypto.deferredInit(
+                path,
+                databaseKey.value,
+                listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower())
+            )
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
@@ -57,7 +63,11 @@ class ProteusClientCoreCryptoImpl internal constructor(
         val directory = File(rootDir)
         if (directory.exists()) {
             wrapException {
-                coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+                coreCrypto = CoreCrypto.deferredInit(
+                    path,
+                    databaseKey.value,
+                    listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower())
+                )
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
             }
