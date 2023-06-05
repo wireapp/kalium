@@ -62,6 +62,7 @@ import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
+import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
@@ -388,6 +389,8 @@ class UserSessionScope internal constructor(
 
     private val epochsFlow = MutableSharedFlow<GroupID>()
 
+    private val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
+
     // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
     private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
@@ -469,7 +472,8 @@ class UserSessionScope internal constructor(
             syncManager,
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
-            epochsFlow
+            epochsFlow,
+            proposalTimersFlow
         )
 
     private val e2eiRepository: E2EIRepository
@@ -893,7 +897,12 @@ class UserSessionScope internal constructor(
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
 
     private val pendingProposalScheduler: PendingProposalScheduler =
-        PendingProposalSchedulerImpl(kaliumConfigs, incrementalSyncRepository, lazy { mlsConversationRepository })
+        PendingProposalSchedulerImpl(
+            kaliumConfigs,
+            incrementalSyncRepository,
+            lazy { mlsConversationRepository },
+            lazy { subconversationRepository }
+        )
 
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
