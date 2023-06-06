@@ -47,7 +47,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun createDpopToken(backendNonce: String): DpopToken {
+    override fun createDpopToken(accessTokenUrl: String, backendNonce: String): DpopToken {
         TODO("Not yet implemented")
     }
 

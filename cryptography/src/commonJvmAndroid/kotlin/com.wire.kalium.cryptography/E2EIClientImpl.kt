@@ -50,8 +50,8 @@ class E2EIClientImpl(
     override fun setAuthzResponse(authz: JsonRawData) =
         toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(toUByteList(authz)))
 
-    override fun createDpopToken(backendNonce: String) =
-        wireE2eIdentity.createDpopToken(expirySecs = defaultDPoPTokenExpiry, backendNonce)
+    override fun createDpopToken(accessTokenUrl:String, backendNonce: String) =
+        wireE2eIdentity.createDpopToken(accessTokenUrl, expirySecs = defaultDPoPTokenExpiry, backendNonce)
 
     override fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
         toByteArray(wireE2eIdentity.newDpopChallengeRequest(accessToken, previousNonce))
