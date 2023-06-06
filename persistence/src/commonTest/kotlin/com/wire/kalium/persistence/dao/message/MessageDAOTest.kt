@@ -688,7 +688,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         insertInitialData()
 
         val conversationInQuestion = conversationEntity1
-        val dateInQuestion = "2022-03-30T15:36:00.000Z"
 
         val expectedMessages = listOf(
             newRegularMessageEntity(
@@ -722,6 +721,18 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date before
                 date = "2022-03-30T15:39:00.000Z".toInstant(),
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            ),
+
+            // Message from self user
+            newRegularMessageEntity(
+                "4",
+                conversationId = conversationInQuestion.id,
+                senderUserId = selfUserId,
+                status = MessageEntity.Status.SENT,
+                // date before
+                date = "2022-03-30T15:36:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = true
             )
