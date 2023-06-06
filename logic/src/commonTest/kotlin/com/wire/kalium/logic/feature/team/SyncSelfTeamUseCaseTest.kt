@@ -25,6 +25,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -38,7 +39,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncSelfTeamUseCaseTest {
@@ -108,7 +108,7 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    fun givenSelfUserHasValidTeam_whenSyncingSelfTeamReturnsError_thenServicesAreNotSynced() = runTest {
+    fun givenFetchingTeamInfoReturnsAnError_whenSyncingSelfTeam_thenServicesAreNotSynced() = runTest {
         // given
         val selfUserFlow = flowOf(TestUser.SELF)
 
@@ -136,11 +136,11 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    fun givenSelfUserHasValidTeam_whenSyncingSelfTeam_thenServicesAreRequested() = runTest {
+    fun givenServicesReturnAccessDenied_whenSyncingSelfTeam_thenServicesAreIgnoredButUseCaseSucceeds() = runTest {
         // given
         val selfUserFlow = flowOf(TestUser.SELF)
 
-        val (arrangement, syncSelfTeamUseCase) = Arrangement()
+        val (_, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
             .withTeam()
             .withTeamMembers()
@@ -151,25 +151,7 @@ class SyncSelfTeamUseCaseTest {
         val result = syncSelfTeamUseCase.invoke()
 
         // then
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchTeamById)
-            .with(eq(TestUser.SELF.teamId))
-            .wasInvoked(exactly = once)
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchMembersByTeamId)
-            .with(
-                eq(TestUser.SELF.teamId),
-                eq(TestUser.SELF.id.domain)
-            )
-            .wasInvoked(exactly = once)
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::syncServices)
-            .with(eq(TestUser.SELF.teamId))
-            .wasInvoked(exactly = once)
-        assertEquals(
-            Either.Right(Unit),
-            result
-        )
+        result.shouldSucceed()
     }
 
     private class Arrangement {
