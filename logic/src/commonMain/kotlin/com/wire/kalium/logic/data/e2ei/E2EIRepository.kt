@@ -123,10 +123,6 @@ class E2EIRepositoryImpl(
         }
     }
 
-    override suspend fun getWireAccessTokenEndPoint() = currentClientIdProvider().map { clientId ->
-        e2EIApi.getAccessTokenUrl(clientId.value)
-    }
-
     override suspend fun getWireAccessToken(dpopToken: String) = currentClientIdProvider().flatMap { clientId ->
         wrapApiRequest {
             e2EIApi.getAccessToken(clientId.value, dpopToken)
