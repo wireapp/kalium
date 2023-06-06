@@ -33,6 +33,8 @@ val documentedSubprojects = listOf(
     "protobuf"
 )
 
+private val DOKKA_CACHE_DIR = ".cache/dokka"
+
 /**
  * Adds a common Dokka configuration for the module, including:
  * - $MODULE_DIR$/module.md file
@@ -44,7 +46,12 @@ fun Project.commonDokkaConfig() {
 
     plugins.apply("org.jetbrains.dokka")
     val rootProject = rootProject
+    rootProject.mkdir("build/$DOKKA_CACHE_DIR") // creating cache dir
+
     tasks.withType(AbstractDokkaLeafTask::class.java).configureEach {
+        cacheRoot.set(rootProject.buildDir.resolve(DOKKA_CACHE_DIR))  // set cache config dir to rootProject/buildDir
+        offlineMode.set(true) // offline, since we don't do online package-list
+
         dokkaSourceSets.configureEach {
             file("module.md").takeIf { it.exists() }?.let {
                 includes.from(it)
@@ -53,6 +60,8 @@ fun Project.commonDokkaConfig() {
             samples.from(rootProject.file("samples"))
             includeNonPublic.set(true)
             documentedVisibilities.set(listOf(Visibility.PUBLIC, Visibility.INTERNAL))
+            classpath.setFrom("protobuf") // not sure... but why not?
         }
     }
 }
+
