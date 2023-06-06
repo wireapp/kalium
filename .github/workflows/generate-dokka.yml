@@ -8,14 +8,14 @@ on:
 
 jobs:
     publish:
-        runs-on: buildjet-4vcpu-ubuntu-2204
+        runs-on: ubuntu-latest
         steps:
             - name: Checkout project
               uses: actions/checkout@v2 
               with:
                   fetch-depth: 0
 
-            - name: Set up JDK 11
+            - name: Set up JDK
               uses: actions/setup-java@v3
               with:
                 java-version: '17'
