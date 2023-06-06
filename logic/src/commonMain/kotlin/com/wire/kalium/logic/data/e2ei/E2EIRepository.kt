@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapE2EIRequest
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
@@ -47,7 +48,6 @@ interface E2EIRepository {
     suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
     suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
     suspend fun getWireNonce(): Either<CoreFailure, String>
-    suspend fun getWireAccessTokenEndPoint(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
     suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
@@ -113,10 +113,14 @@ class E2EIRepositoryImpl(
             acmeApi.sendACMERequest(authzEndpoint, authzRequest)
         }.flatMap { apiResponse ->
             val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
+            kaliumLogger(toLog(apiResponse.response))
+            // get the target from here and force it with new value
             Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
         }
     }
-
+    fun toLog(value: ByteArray) = value.joinToString("") {
+        it.toByte().toChar().toString()
+    }
     override suspend fun getWireNonce() = currentClientIdProvider().flatMap { clientId ->
         wrapApiRequest {
             e2EIApi.getWireNonce(clientId.value)
