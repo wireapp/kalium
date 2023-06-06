@@ -51,7 +51,7 @@ interface E2EIClient {
     fun setOrderResponse(order: JsonRawData): NewAcmeOrder
     fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData
     fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
-    fun createDpopToken(accessTokenUrl: String, backendNonce: String): DpopToken
+    fun createDpopToken(backendNonce: String): DpopToken
     fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
     fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
     fun setChallengeResponse(challenge: JsonRawData)
