@@ -25,8 +25,6 @@ interface E2EIApi {
 
     suspend fun getWireNonce(clientId: String): NetworkResponse<String>
 
-    suspend fun getAccessTokenUrl(clientId: String): String
-
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
             APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")

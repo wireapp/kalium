@@ -26,8 +26,4 @@ internal open class E2EIApiV0 internal constructor() : E2EIApi {
 
     override suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> =
         E2EIApi.getApiNotSupportError(::getAccessToken.name)
-
-    override suspend fun getAccessTokenUrl(clientId: String): String =
-        E2EIApi.getApiNotSupportError(::getAccessTokenUrl.name).toString()
-
 }
