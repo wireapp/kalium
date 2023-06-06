@@ -777,7 +777,12 @@ class MessageSenderTest {
             mlsMessageCreator = mlsMessageCreator,
             messageSendingInterceptor = messageSendingInterceptor,
             userRepository = userRepository,
-            enqueueSelfDeletion = { selfDeleteMessageSenderHandler.enqueueSelfDeletion(it) },
+            enqueueSelfDeletion = { message, expirationData ->
+                selfDeleteMessageSenderHandler.enqueueSelfDeletion(
+                    message,
+                    expirationData
+                )
+            },
             scope = testScope
         )
 
