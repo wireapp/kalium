@@ -46,17 +46,17 @@ class OnCloseCall(
         clientId: String?,
         arg: Pointer?
     ) {
+        callingLogger.i(
+            "[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} |" +
+                    " UserId: ${userId.obfuscateId()} | Reason: $reason"
+        )
+
+        val avsReason = CallClosedReason.fromInt(value = reason)
+
+        val callStatus = getCallStatusFromCloseReason(avsReason)
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
         scope.launch {
-            callingLogger.i(
-                "[OnCloseCall] -> ConversationId: ${conversationId.obfuscateId()} |" +
-                        " UserId: ${userId.obfuscateId()} | Reason: $reason"
-            )
-
-            val avsReason = CallClosedReason.fromInt(value = reason)
-
-            val callStatus = getCallStatusFromCloseReason(avsReason)
-            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
             if (shouldPersistMissedCall(conversationIdWithDomain, callStatus)) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
