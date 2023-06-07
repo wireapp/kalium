@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.Client
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.NewClientRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -27,11 +26,9 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
-import com.wire.kalium.logic.functional.onlyRight
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
 
 /**
  * Observes new Clients for all the users that are logged in on device
