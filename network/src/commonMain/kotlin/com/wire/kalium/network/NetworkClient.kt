@@ -126,7 +126,6 @@ internal fun provideBaseHttpClient(
     installCompression: Boolean = true,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
-
     install(UserAgent) {
         agent = KaliumUserAgentProvider.userAgent
     }

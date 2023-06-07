@@ -60,6 +60,7 @@ import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
+import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
@@ -185,11 +186,11 @@ import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
-import com.wire.kalium.logic.feature.selfdeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
-import com.wire.kalium.logic.feature.selfdeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCaseImpl
+import com.wire.kalium.logic.feature.selfDeletingMessages.PersistNewSelfDeletionTimerUseCaseImpl
 import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
@@ -380,6 +381,8 @@ class UserSessionScope internal constructor(
 
     private val epochsFlow = MutableSharedFlow<GroupID>()
 
+    private val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
+
     // TODO(refactor): Extract to Provider class and make atomic
     // val _teamId: Atomic<Either<CoreFailure, TeamId?>> = Atomic(Either.Left(CoreFailure.Unknown(Throwable("NotInitialized"))))
     private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
@@ -414,7 +417,7 @@ class UserSessionScope internal constructor(
     )
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, kaliumConfigs)
+        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, userStorage.database.userConfigDAO, kaliumConfigs)
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
@@ -461,7 +464,8 @@ class UserSessionScope internal constructor(
             syncManager,
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
-            epochsFlow
+            epochsFlow,
+            proposalTimersFlow
         )
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
@@ -862,7 +866,12 @@ class UserSessionScope internal constructor(
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
 
     private val pendingProposalScheduler: PendingProposalScheduler =
-        PendingProposalSchedulerImpl(kaliumConfigs, incrementalSyncRepository, lazy { mlsConversationRepository })
+        PendingProposalSchedulerImpl(
+            kaliumConfigs,
+            incrementalSyncRepository,
+            lazy { mlsConversationRepository },
+            lazy { subconversationRepository }
+        )
 
     private val callManager: Lazy<CallManager> = lazy {
         globalCallManager.getCallManagerForClient(
@@ -1127,7 +1136,8 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            this,
+            selfConversationIdProvider,
+            this
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -1149,10 +1159,10 @@ class UserSessionScope internal constructor(
             syncManager,
             slowSyncRepository,
             messageSendingScheduler,
-            userStorage,
             userPropertyRepository,
             incrementalSyncRepository,
             protoContentMapper,
+            observeSelfDeletingMessages,
             this
         )
     val users: UserScope
@@ -1224,7 +1234,7 @@ class UserSessionScope internal constructor(
         get() = ObserveTeamSettingsSelfDeletingStatusUseCaseImpl(userConfigRepository)
 
     val persistNewSelfDeletionStatus: PersistNewSelfDeletionTimerUseCaseImpl
-        get() = PersistNewSelfDeletionTimerUseCaseImpl(userConfigRepository)
+        get() = PersistNewSelfDeletionTimerUseCaseImpl(conversationRepository)
 
     val observeGuestRoomLinkFeatureFlag: ObserveGuestRoomLinkFeatureFlagUseCase
         get() = ObserveGuestRoomLinkFeatureFlagUseCaseImpl(userConfigRepository)

@@ -161,7 +161,7 @@ sealed class ConversationRepository {
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             val expireAfter = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
                             messages.sendTextMessage(
-                                conversationId, text, mentions, expireAfter, quotedMessageId
+                                conversationId, text, mentions, quotedMessageId
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
@@ -308,7 +308,6 @@ sealed class ConversationRepository {
                                     type,
                                     null,
                                     null,
-                                    null
                                 )
                             }
                             when (sendResult) {
@@ -387,7 +386,6 @@ sealed class ConversationRepository {
                                 "image", type,
                                 width,
                                 height,
-                                null
                             )
                             if (sendResult is ScheduleNewAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {
