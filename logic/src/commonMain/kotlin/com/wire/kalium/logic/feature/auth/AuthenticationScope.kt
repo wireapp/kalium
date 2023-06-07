@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
@@ -50,21 +51,24 @@ class AuthenticationScopeProvider internal constructor(
 
     internal fun provide(
         serverConfig: ServerConfig,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        serverConfigRepository: ServerConfigRepository
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,
-                proxyCredentials
+                proxyCredentials,
+                serverConfigRepository
             )
         }
 }
 
-class AuthenticationScope internal constructor (
+class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
-    private val proxyCredentials: ProxyCredentials?
+    private val proxyCredentials: ProxyCredentials?,
+    private val serverConfigRepository: ServerConfigRepository
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
@@ -109,4 +113,10 @@ class AuthenticationScope internal constructor (
         get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
     val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
         get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
+
+    val domainLookup: DomainLookupUseCase
+        get() = DomainLookupUseCase(
+            serverConfigRepository = serverConfigRepository,
+            ssoLoginRepository = ssoLoginRepository
+        )
 }
