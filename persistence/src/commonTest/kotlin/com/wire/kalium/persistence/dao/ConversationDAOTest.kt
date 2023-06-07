@@ -1158,7 +1158,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = null
+            messageTimer = null,
+            userMessageTimer = null
         )
 
         val conversationEntity6 = ConversationEntity(
@@ -1183,7 +1184,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = null
+            messageTimer = null,
+            userMessageTimer = null
         )
 
         val member1 = Member(user1.id, Member.Role.Admin)

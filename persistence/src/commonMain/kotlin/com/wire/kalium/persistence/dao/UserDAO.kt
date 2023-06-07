@@ -32,6 +32,10 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+enum class SupportedProtocolEntity {
+    PROTEUS, MLS
+}
+
 enum class UserAvailabilityStatusEntity {
     NONE, AVAILABLE, BUSY, AWAY
 }
@@ -52,7 +56,8 @@ data class UserEntity(
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
     val botService: BotIdEntity?,
-    val deleted: Boolean
+    val deleted: Boolean,
+    val supportedProtocols: Set<SupportedProtocolEntity>?
 )
 
 data class UserEntityMinimized(
