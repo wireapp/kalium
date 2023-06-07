@@ -30,6 +30,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ServiceRefere
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.add
@@ -83,6 +84,11 @@ object ConversationResponseJson {
         conversationResponse, conversationResponseSerializer
     )
 
+    val v4_withFailedToAdd = ValidJsonProvider(
+        serializableData = conversationResponse.copy(failedToAdd = setOf(UserId("failedId", "failedDomain"))),
+        jsonProvider = conversationResponseSerializer
+    )
+
     val v0 = ValidJsonProvider(
         conversationResponse, conversationResponseSerializerWithDeprecatedAccessRole
     )
@@ -119,6 +125,16 @@ fun buildConversationResponse(
         conversationResponse.name?.let { put("name", it) }
         conversationResponse.teamId?.let { put("team", it) }
         conversationResponse.mlsCipherSuiteTag?.let { put("cipher_suite", it) }
+        if (conversationResponse.failedToAdd.isNotEmpty()) {
+            putJsonArray("failed_to_add") {
+                conversationResponse.failedToAdd.forEach { failedToAdd ->
+                    addJsonObject {
+                        put("id", failedToAdd.value)
+                        put("domain", failedToAdd.domain)
+                    }
+                }
+            }
+        }
     }
 
 fun JsonObjectBuilder.putAccessRoleSet(accessRole: Set<ConversationAccessRoleDTO>) = putJsonArray("access_role") {

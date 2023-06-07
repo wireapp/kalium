@@ -37,8 +37,6 @@ import com.wire.kalium.util.DateTimeUtil
 /**
  * Handles the addition of members to a new conversation and the related system messages when a conversation is started.
  * Either all users are added or some of them could fail to be added.
- *
- * TODO(offline backend branch): And add failed members handling in api v4
  */
 internal interface NewConversationMembersRepository {
     suspend fun persistMembersAdditionToTheConversation(
@@ -74,6 +72,23 @@ internal class NewConversationMembersRepositoryImpl(
                 )
                 persistMessage(messageStartedWithMembers)
             }
+        }.also {
+            createFailedToAddSystemMessage(conversationResponse)
+        }
+    }
+
+    private suspend fun createFailedToAddSystemMessage(conversationResponse: ConversationResponse) {
+        if (conversationResponse.failedToAdd.isNotEmpty()) {
+            val messageStartedWithFailedMembers = Message.System(
+                uuid4().toString(),
+                MessageContent.MemberChange.FailedToAdd(conversationResponse.failedToAdd.map { it.toModel() }),
+                conversationResponse.id.toModel(),
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.SENT,
+                Message.Visibility.VISIBLE
+            )
+            persistMessage(messageStartedWithFailedMembers)
         }
     }
 

@@ -18,8 +18,10 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageContent.MemberChange.CreationAdded
+import com.wire.kalium.logic.data.message.MessageContent.MemberChange.FailedToAdd
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -31,6 +33,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
@@ -63,7 +66,7 @@ class NewConversationMembersRepositoryTest {
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
-                (it.content as? MessageContent.MemberChange.CreationAdded)?.members?.contains(TestUser.OTHER.id) == true
+                (it.content as? CreationAdded)?.members?.contains(TestUser.OTHER.id) == true
             })
             .wasInvoked(once)
     }
@@ -89,10 +92,75 @@ class NewConversationMembersRepositoryTest {
 
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
+            .with(matching {
+                it.content is CreationAdded
+            })
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenASuccessConversationResponse_whenMembersFailedToAddIsEmpty_ThenShouldNotCreateTheSystemMessage() = runTest {
+        val conversationId = TestConversation.ENTITY_ID
+        val (arrangement, handler) = Arrangement()
+            .withPersistMessageSuccess()
+            .arrange()
+
+        val result = handler.persistMembersAdditionToTheConversation(
+            conversationId,
+            CONVERSATION_RESPONSE.copy(failedToAdd = emptySet())
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching { it.content is CreationAdded })
+            .wasInvoked(once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                it.content is FailedToAdd
+            })
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenASuccessConversationResponse_whenWithMembersFailedToAdd_ThenShouldCreateTheSystemMessage() = runTest {
+        val conversationId = TestConversation.ENTITY_ID
+        val (arrangement, handler) = Arrangement()
+            .withPersistMessageSuccess()
+            .arrange()
+
+        val result = handler.persistMembersAdditionToTheConversation(
+            conversationId,
+            CONVERSATION_RESPONSE.copy(failedToAdd = setOf(QualifiedID("remoteId", "remoteDomain")))
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching { it.content is CreationAdded })
+            .wasInvoked(once)
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content as FailedToAdd).members.contains(UserId("remoteId", "remoteDomain"))
+            })
+            .wasInvoked(once)
+    }
 
     private class Arrangement {
         @Mock
