@@ -19,6 +19,8 @@
 package com.wire.kalium.network.api.base.authenticated.self
 
 import com.wire.kalium.network.api.base.model.SelfUserDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserProtocol
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
 
@@ -27,7 +29,15 @@ data class ChangeHandleRequest(
     @SerialName("handle") val handle: String
 )
 
-interface SelfApi {
+interface BaseApi {
+    fun getApiNotSupportError(apiName: String, apiVersion: Int) = NetworkResponse.Error(
+        APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
+    )
+}
+
+
+
+interface SelfApi: BaseApi {
     suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO>
     suspend fun updateSelf(userUpdateRequest: UserUpdateRequest): NetworkResponse<Unit>
     suspend fun changeHandle(request: ChangeHandleRequest): NetworkResponse<Unit>
@@ -39,4 +49,12 @@ interface SelfApi {
      * true if the email address was updated, it is the same email address
      */
     suspend fun updateEmailAddress(email: String): NetworkResponse<Boolean>
+
+    /**
+     * Update the supported protocols of the current user.
+     * @param protocols The updated list of supported protocols.
+     * @return A [NetworkResponse] with the result of the operation.
+     * true if the protocols were updated.
+     */
+    suspend fun updateSupportedProtocols(protocols: List<UserProtocol>): NetworkResponse<Unit>
 }

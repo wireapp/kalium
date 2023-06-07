@@ -35,6 +35,7 @@ sealed class UserDTO {
     abstract val expiresAt: String?
     abstract val nonQualifiedId: NonQualifiedUserId
     abstract val service: ServiceDTO?
+    abstract val supportedProtocols: List<UserProtocol>
 }
 
 @Serializable
@@ -51,6 +52,7 @@ data class UserProfileDTO(
     @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
     @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") override val service: ServiceDTO?,
+    @SerialName("supported_protocols") override val supportedProtocols: List<UserProtocol> = listOf(UserProtocol.PROTEUS),
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
 ) : UserDTO()
 
@@ -68,6 +70,7 @@ data class SelfUserDTO(
     @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
     @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") override val service: ServiceDTO?,
+    @SerialName("supported_protocols") override val supportedProtocols: List<UserProtocol> = listOf(UserProtocol.PROTEUS),
     @SerialName("locale") val locale: String,
     @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("phone") val phone: String?,
@@ -104,6 +107,19 @@ enum class ManagedByDTO {
 
     @SerialName("scim")
     SCIM;
+
+    override fun toString(): String {
+        return this.name.lowercase()
+    }
+}
+
+@Serializable
+enum class UserProtocol {
+    @SerialName("proteus")
+    PROTEUS,
+
+    @SerialName("mls")
+    MLS;
 
     override fun toString(): String {
         return this.name.lowercase()

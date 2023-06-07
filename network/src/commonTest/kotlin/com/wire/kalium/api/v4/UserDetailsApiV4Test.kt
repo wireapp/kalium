@@ -70,6 +70,8 @@ internal class UserDetailsApiV4Test : ApiTest() {
         val params = ListUserRequest.qualifiedIds(
             listOf(QualifiedIDSamples.one, QualifiedIDSamples.two, QualifiedIDSamples.three)
         )
+
+        println(SUCCESS_RESPONSE.rawJson)
         val expectedRequestBody = KtxSerializer.json.encodeToString(params)
         val networkClient = mockAuthenticatedNetworkClient(
             SUCCESS_RESPONSE.rawJson,

@@ -23,6 +23,9 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.base.model.UserProtocol
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 object ListUsersResponseJson {
 
@@ -43,7 +46,8 @@ object ListUsersResponseJson {
             email = null,
             expiresAt = null,
             nonQualifiedId = USER_1.value,
-            service = null
+            service = null,
+            supportedProtocols = listOf(UserProtocol.PROTEUS, UserProtocol.MLS)
         ),
         UserProfileDTO(
             id = USER_2,
@@ -61,43 +65,59 @@ object ListUsersResponseJson {
         ),
     )
 
-    private val validUserInfoProvider = { userInfo: List<UserProfileDTO> ->
+    private val validUserInfoProviderV0 = { userInfo: UserProfileDTO ->
         """
-        |[
-        |   {
-        |    "accent_id": ${userInfo[0].accentId},
-        |    "handle": "${userInfo[0].handle}",
-        |    "legalhold_status": "enabled",
-        |    "name": "${userInfo[0].name}",
-        |    "assets": ${userInfo[0].assets},
-        |    "id": "${userInfo[0].id.value}",
-        |    "deleted": "false",
-        |    "qualified_id": {
-        |      "domain": "${userInfo[0].id.domain}",
-        |      "id": "${userInfo[0].id.value}"
-        |    }
-        |   },
-        |   {
-        |    "accent_id": ${userInfo[1].accentId},
-        |    "handle": "${userInfo[1].handle}",
-        |    "legalhold_status": "enabled",
-        |    "name": "${userInfo[1].name}",
-        |    "assets": ${userInfo[1].assets},
-        |    "id": "${userInfo[1].id.value}",
-        |    "deleted": "false",
-        |    "qualified_id": {
-        |      "domain": "${userInfo[1].id.domain}",
-        |      "id": "${userInfo[1].id.value}"
-        |    }
-        |   }
-        |]
+        |{
+        | "accent_id": ${userInfo.accentId},
+        | "handle": "${userInfo.handle}",
+        | "legalhold_status": "enabled",
+        | "name": "${userInfo.name}",
+        | "assets": ${userInfo.assets},
+        | "id": "${userInfo.id.value}",
+        | "deleted": "false",
+        | "qualified_id": {
+        |   "domain": "${userInfo.id.domain}",
+        |   "id": "${userInfo.id.value}"
+        | }
+        |}
         """.trimMargin()
     }
 
+    private val validUserInfoProviderV4 = { userInfo: UserProfileDTO ->
+        """
+        |{
+        | "accent_id": ${userInfo.accentId},
+        | "handle": "${userInfo.handle}",
+        | "legalhold_status": "enabled",
+        | "name": "${userInfo.name}",
+        | "assets": ${userInfo.assets},
+        | "id": "${userInfo.id.value}",
+        | "deleted": "false",
+        | "supported_protocols": ${Json.encodeToString(userInfo.supportedProtocols)},
+        | "qualified_id": {
+        |   "domain": "${userInfo.id.domain}",
+        |   "id": "${userInfo.id.value}"
+        | }
+        |}
+        """.trimMargin()
+    }
+
+    private val listProvider = { list: List<String> ->
+        """
+        |[
+        | ${list[0]},
+        | ${list[1]}
+        |]
+        """.trimMargin()
+
+    }
+
     val v0 = ValidJsonProvider(
-        expectedUsersResponse
+        expectedUsersResponse.map {
+            it.copy(supportedProtocols = listOf(UserProtocol.PROTEUS)) // always expect only proteus with v0
+        }
     ) {
-        validUserInfoProvider(it)
+        listProvider(it.map(validUserInfoProviderV0))
     }
 
     val v4_withFailedUsers = ValidJsonProvider(
@@ -111,7 +131,7 @@ object ListUsersResponseJson {
         |        "id": "${it.usersFailed[0].value}"
         |      }
         |    ],
-        |    "found": ${validUserInfoProvider(it.usersFound)}
+        |    "found": ${ listProvider(it.usersFound.map(validUserInfoProviderV4)) }
         |}
         """.trimMargin()
     }
@@ -121,7 +141,7 @@ object ListUsersResponseJson {
     ) {
         """
         |{
-        |    "found": ${validUserInfoProvider(it.usersFound)}
+        |    "found": ${ listProvider(it.usersFound.map(validUserInfoProviderV4)) }
         |}
         """.trimMargin()
     }
