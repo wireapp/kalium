@@ -35,10 +35,13 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
-import com.wire.kalium.network.api.base.unbound.acme.FinalizeOrderResponse
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 interface E2EIRepository {
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
@@ -47,7 +50,6 @@ interface E2EIRepository {
     suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
     suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
     suspend fun getWireNonce(): Either<CoreFailure, String>
-    suspend fun getWireAccessTokenEndPoint(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
     suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
@@ -112,9 +114,31 @@ class E2EIRepositoryImpl(
         wrapApiRequest {
             acmeApi.sendACMERequest(authzEndpoint, authzRequest)
         }.flatMap { apiResponse ->
-            val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
+            val authzResponse = e2eiClient.setAuthzResponse(modifyDpopHtuLink(apiResponse.response))
             Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
         }
+    }
+
+    //todo: Will remove this after the backend fix it
+    private fun modifyDpopHtuLink(apiResponse: ByteArray): ByteArray{
+        val apiResponseString = apiResponse.joinToString("") {
+            it.toByte().toChar().toString()
+        }
+        val response = (Json.decodeFromString(apiResponseString) as JsonObject)
+        val challenges = response["challenges"] as JsonArray
+        val dpopChallenge = challenges[1] as JsonObject
+
+        val modifiedDpopChallenge = dpopChallenge.toMutableMap().apply {
+            put("target", JsonPrimitive("https://anta.wire.link/v4/clients/89f1c4056c99edcb/access-token"))
+        }
+        val modifiedChallenges = challenges.toMutableList().apply {
+            removeAt(1)
+            add(1, JsonObject(modifiedDpopChallenge))
+        }.let { JsonArray(it) }
+        val modifiedResp = response.toMutableMap().apply {
+            put("challenges", modifiedChallenges)
+        }
+        return Json.encodeToString(modifiedResp).toByteArray()
     }
 
     override suspend fun getWireNonce() = currentClientIdProvider().flatMap { clientId ->
@@ -167,7 +191,7 @@ class E2EIRepositoryImpl(
                 acmeApi.sendACMERequest(location, checkOrderRequest)
             }.map { apiResponse ->
                 val finalizeOrderUrl = e2eiClient.checkOrderResponse(apiResponse.response)
-                Pair(apiResponse,finalizeOrderUrl)
+                Pair(apiResponse, finalizeOrderUrl)
             }
         }
 
