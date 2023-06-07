@@ -15,19 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.cli.commands
 
-package com.wire.kalium.persistence.kmmSettings
+sealed class InputAction {
+    data class UpdateDraft(
+        var draft: String,
+        var cursorPosition: Int,
+        var description: String? = null
+    ) : InputAction()
 
-import com.russhwolf.settings.ExperimentalSettingsImplementation
-import com.russhwolf.settings.KeychainSettings
-import com.russhwolf.settings.Settings
+    data class SendText(
+        var draft: String
+    ) : InputAction()
 
-@OptIn(ExperimentalSettingsImplementation::class)
-internal actual object EncryptedSettingsBuilder {
-    actual fun build(
-        options: SettingOptions,
-        param: EncryptedSettingsPlatformParam
-    ): Settings = KeychainSettings(param.serviceName)
+    data class RunCommand(
+        val command: Command
+    ) : InputAction()
+
+    object Quit : InputAction()
 }
-
-internal actual class EncryptedSettingsPlatformParam(val serviceName: String)

@@ -77,15 +77,6 @@ allprojects {
                 password = getLocalProperty("github.package_registry.token", System.getenv("GITHUB_TOKEN"))
             }
         }
-
-        // TODO we should remove this and "localrepo" dir after cryptobox-android debugging is completed
-        val avsLocal = maven(url = uri("$rootDir/localrepo/"))
-        exclusiveContent {
-            forRepositories(avsLocal)
-            filter {
-                includeModule("com.wire", "cryptobox-android")
-            }
-        }
     }
 }
 

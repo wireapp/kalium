@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -45,6 +46,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
@@ -56,6 +58,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -84,9 +87,11 @@ class ScheduleNewAssetMessageUseCaseTest {
         val expectedAssetId = dummyUploadedAssetId
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (_, sendAssetUseCase) = Arrangement()
+        val (_, sendAssetUseCase) = Arrangement(this)
             .withStoredData(assetToSend, inputDataPath)
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+            .withObserveMessageVisibility()
+            .withDeleteAssetLocally()
             .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
             .arrange()
 
@@ -115,9 +120,11 @@ class ScheduleNewAssetMessageUseCaseTest {
             val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
             val conversationId = ConversationId("some-convo-id", "some-domain-id")
             val unauthorizedException = TestNetworkException.missingAuth
-            val (_, sendAssetUseCase) = Arrangement()
+            val (_, sendAssetUseCase) = Arrangement(this)
                 .withUploadAssetErrorResponse(unauthorizedException)
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withDeleteAssetLocally()
+                .withObserveMessageVisibility()
                 .arrange()
 
             // When
@@ -145,9 +152,11 @@ class ScheduleNewAssetMessageUseCaseTest {
             val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
             val conversationId = ConversationId("some-convo-id", "some-domain-id")
             val unauthorizedException = TestNetworkException.missingAuth
-            val (arrangement, sendAssetUseCase) = Arrangement()
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
                 .withUploadAssetErrorResponse(unauthorizedException)
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
                 .arrange()
 
             // When
@@ -182,9 +191,11 @@ class ScheduleNewAssetMessageUseCaseTest {
         val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
         val expectedAssetId = dummyUploadedAssetId
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
-        val (arrangement, sendAssetUseCase) = Arrangement()
+        val (arrangement, sendAssetUseCase) = Arrangement(this)
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
             .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+            .withObserveMessageVisibility()
+            .withDeleteAssetLocally()
             .arrange()
 
         // When
@@ -197,6 +208,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetWidth = null,
             assetHeight = null
         )
+
         advanceUntilIdle()
 
         // Then
@@ -224,9 +236,11 @@ class ScheduleNewAssetMessageUseCaseTest {
             val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
             val expectedAssetId = dummyUploadedAssetId
             val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
-            val (arrangement, sendAssetUseCase) = Arrangement()
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
                 .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
                 .arrange()
 
             // When
@@ -261,9 +275,11 @@ class ScheduleNewAssetMessageUseCaseTest {
             val assetName = "some-asset.txt"
             val conversationId = ConversationId("some-convo-id", "some-domain-id")
             val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-            val (arrangement, sendAssetUseCase) = Arrangement()
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
                 .withPersistAssetErrorResponse()
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
                 .arrange()
 
             // When
@@ -306,9 +322,11 @@ class ScheduleNewAssetMessageUseCaseTest {
             val assetName = "some-asset.txt"
             val conversationId = ConversationId("some-convo-id", "some-domain-id")
             val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-            val (arrangement, sendAssetUseCase) = Arrangement()
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
                 .withPersistMessageErrorResponse()
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
                 .arrange()
 
             // When
@@ -358,9 +376,11 @@ class ScheduleNewAssetMessageUseCaseTest {
             val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
             val expectedAssetId = dummyUploadedAssetId
             val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
-            val (arrangement, sendAssetUseCase) = Arrangement()
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
                 .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
                 .arrange()
 
             // When
@@ -399,10 +419,12 @@ class ScheduleNewAssetMessageUseCaseTest {
         val expectedAssetId = dummyUploadedAssetId
         val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendAssetUseCase) = Arrangement()
+        val (arrangement, sendAssetUseCase) = Arrangement(this)
             .withStoredData(assetToSend, inputDataPath)
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
             .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+            .withObserveMessageVisibility()
+            .withDeleteAssetLocally()
             .arrange()
 
         // When
@@ -439,10 +461,12 @@ class ScheduleNewAssetMessageUseCaseTest {
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
 
         val expectedDuration = Duration.parse("PT1H")
-        val (arrangement, sendAssetUseCase) = Arrangement()
+        val (arrangement, sendAssetUseCase) = Arrangement(this)
             .withStoredData(assetToSend, inputDataPath)
             .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
             .withSelfDeleteTimer(SelfDeletionTimer.Enabled(expectedDuration))
+            .withObserveMessageVisibility()
+            .withDeleteAssetLocally()
             .arrange()
 
         // When
@@ -467,7 +491,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 it.expirationData == Message.ExpirationData(expectedDuration)
             })
     }
-    private class Arrangement {
+
+    private class Arrangement(val coroutineScope: CoroutineScope) {
 
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -496,11 +521,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         @Mock
         val observeSelfDeletionTimerSettingsForConversation = mock(classOf<ObserveSelfDeletionTimerSettingsForConversationUseCase>())
 
+        @Mock
+        private val messageRepository: MessageRepository = mock(MessageRepository::class)
+
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
-        private val testScope = TestScope(testDispatcher.default)
 
         init {
             withToggleReadReceiptsStatus()
@@ -632,6 +659,21 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .thenReturn(flowOf(result))
         }
 
+        fun withObserveMessageVisibility() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::observeMessageVisibility)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(MessageEntity.Visibility.VISIBLE))
+        }
+
+        fun withDeleteAssetLocally() = apply {
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::deleteAssetLocally)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+
         fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
             updateUploadStatus,
@@ -641,9 +683,10 @@ class ScheduleNewAssetMessageUseCaseTest {
             slowSyncRepository,
             messageSender,
             messageSendFailureHandler,
+            messageRepository,
             userPropertyRepository,
             observeSelfDeletionTimerSettingsForConversation,
-            testScope,
+            coroutineScope,
             testDispatcher
         )
     }

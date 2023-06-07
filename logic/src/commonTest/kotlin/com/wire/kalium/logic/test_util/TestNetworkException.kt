@@ -47,6 +47,10 @@ object TestNetworkException {
         ErrorResponse(403, message = "invalid credentials", label = "invalid-credentials")
     )
 
+    val accessDenied = KaliumException.InvalidRequestError(
+        ErrorResponse(403, message = "Access denied.", label = "access-denied")
+    )
+
     val missingAuthenticationCode = KaliumException.InvalidRequestError(
         ErrorResponse(
             code = 403,

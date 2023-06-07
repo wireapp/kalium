@@ -26,11 +26,15 @@ import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer.Companion.SELF_DELETION_LOG_TAG
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -47,7 +51,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         handleFeatureConfigEvent(event)
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> {
@@ -123,7 +127,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
 
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
-                    event
+                    event,
+                    Pair("isDurationEnforced", (event.model.config.enforcedTimeoutSeconds ?: 0) > 0),
                 )
             }
 
@@ -175,19 +180,28 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             })
             val selfDeletingMessagesEnabled = model.status == Status.ENABLED
             val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val newEnforcedTimer: TeamSelfDeleteTimer = when {
+            val newTeamSettingsTimer: TeamSelfDeleteTimer = when {
                 selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
                 selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
                 else -> TeamSelfDeleteTimer.Disabled
             }
             userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = newEnforcedTimer,
+                    enforcedSelfDeletionTimer = newTeamSettingsTimer,
                     // If there is an error fetching the previously stored value, we will always override it and mark it as changed
                     hasFeatureChanged = storedTeamSettingsSelfDeletionStatus.hasFeatureChanged == null
-                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newEnforcedTimer
+                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newTeamSettingsTimer
                 )
-            )
+            ).onFailure {
+                val logMap = mapOf(
+                    "value" to newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Failure"),
+                    "errorInfo" to "$it"
+                ).toJsonElement()
+                kaliumLogger.e("$SELF_DELETION_LOG_TAG: $logMap")
+            }.onSuccess {
+                val logMap = newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Success")
+                kaliumLogger.d("$SELF_DELETION_LOG_TAG: ${logMap.toJsonElement()}")
+            }
         }
     }
 }
