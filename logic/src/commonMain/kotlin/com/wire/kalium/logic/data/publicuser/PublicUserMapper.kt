@@ -31,6 +31,8 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
@@ -88,7 +90,8 @@ class PublicUserMapperImpl(
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
-        deleted = userEntity.deleted
+        deleted = userEntity.deleted,
+        supportedProtocols = userEntity.supportedProtocols?.map { it.toModel() }?.toSet()
     )
 
     override fun fromPublicUserToDaoModel(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -106,7 +109,8 @@ class PublicUserMapperImpl(
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = userEntityTypeMapper.fromUserType(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
-            deleted = deleted
+            deleted = deleted,
+            supportedProtocols = supportedProtocols?.map { it.toDao() }?.toSet()
         )
     }
 
@@ -135,7 +139,8 @@ class PublicUserMapperImpl(
         availabilityStatus = UserAvailabilityStatus.NONE,
         userType = userType,
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
-        deleted = userDetailResponse.deleted ?: false
+        deleted = userDetailResponse.deleted ?: false,
+        supportedProtocols = userDetailResponse.supportedProtocols.map { it.toModel() }.toSet()
     )
 
     override fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
@@ -158,7 +163,8 @@ class PublicUserMapperImpl(
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = userTypeEntity,
         botService = userDetailResponse.service?.let { BotIdEntity(it.id, it.provider) },
-        deleted = userDetailResponse.deleted ?: false
+        deleted = userDetailResponse.deleted ?: false,
+        supportedProtocols = userDetailResponse.supportedProtocols.map { it.toDao() }.toSet()
     )
 
 }

@@ -199,7 +199,8 @@ internal class ConversationMapperImpl(
                             completePicture = previewAssetId?.toModel(),
                             previewPicture = previewAssetId?.toModel(),
                             teamId = teamId?.let { TeamId(it) },
-                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
+                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
+                            supportedProtocols = null // TODO jacob include in query?
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -233,7 +234,8 @@ internal class ConversationMapperImpl(
                         handle = null,
                         completePicture = previewAssetId?.toModel(),
                         previewPicture = previewAssetId?.toModel(),
-                        teamId = teamId?.let { TeamId(it) }
+                        teamId = teamId?.let { TeamId(it) },
+                        supportedProtocols = null // TODO jacob include in query?
                     )
 
                     ConversationDetails.Connection(

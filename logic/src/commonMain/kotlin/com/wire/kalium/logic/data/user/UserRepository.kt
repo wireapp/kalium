@@ -117,6 +117,8 @@ internal interface UserRepository {
      * otherwise [Either.Left] with [NetworkFailure]
      */
     suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
+
+    suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -405,6 +407,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
         userDAO.updateUserAvailabilityStatus(userId.toDao(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
+    }
+
+    override suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit> {
+        return wrapApiRequest { selfApi.updateSupportedProtocols(protocols.map { it.toApi() }) }
     }
 
     override fun observeAllKnownUsersNotInConversation(

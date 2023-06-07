@@ -129,7 +129,8 @@ class UploadUserAvatarUseCaseTest {
             ConnectionState.ACCEPTED,
             UserAssetId("value1", "domain"),
             UserAssetId("value2", "domain"),
-            UserAvailabilityStatus.NONE
+            UserAvailabilityStatus.NONE,
+            null
         )
 
         fun withStoredData(data: ByteArray, dataNamePath: Path): Arrangement {
