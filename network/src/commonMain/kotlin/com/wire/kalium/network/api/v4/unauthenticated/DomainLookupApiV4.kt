@@ -22,4 +22,4 @@ import com.wire.kalium.network.api.v3.unauthenticated.DomainLookupApiV3
 
 internal open class DomainLookupApiV4 internal constructor(
     unauthenticatedNetworkClient: UnauthenticatedNetworkClient
-): DomainLookupApiV3(unauthenticatedNetworkClient)
+) : DomainLookupApiV3(unauthenticatedNetworkClient)

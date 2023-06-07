@@ -26,7 +26,7 @@ import io.ktor.client.request.get
 
 internal open class DomainLookupApiV0 internal constructor(
     private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
-): DomainLookupApi {
+) : DomainLookupApi {
     private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
     override suspend fun lookup(domain: String): NetworkResponse<DomainLookupResponse> = wrapKaliumResponse {
