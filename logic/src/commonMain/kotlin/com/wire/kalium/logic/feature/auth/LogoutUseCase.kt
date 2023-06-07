@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.NewClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
@@ -52,6 +53,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val clientRepository: ClientRepository,
+    private val newClientRepository: NewClientRepository,
     private val userId: QualifiedID,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val clearClientDataUseCase: ClearClientDataUseCase,
@@ -107,6 +109,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     private suspend fun clearCurrentClientIdAndFirebaseTokenFlag() {
         clientRepository.clearCurrentClientId()
+        newClientRepository.clearNewClientsForUser(userId)
         // After logout we need to mark the Firebase token as invalid
         // locally so that we can register a new one on the next login.
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
@@ -126,6 +129,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearCurrentClientId()
         clientRepository.clearHasRegisteredMLSClient()
+        newClientRepository.clearNewClientsForUser(userId)
+
         // After logout we need to mark the Firebase token as invalid
         // locally so that we can register a new one on the next login.
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)

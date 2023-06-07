@@ -1,0 +1,4 @@
+CREATE TABLE GlobalMetadata (
+    key TEXT NOT NULL PRIMARY KEY,
+    stringValue TEXT NOT NULL
+);

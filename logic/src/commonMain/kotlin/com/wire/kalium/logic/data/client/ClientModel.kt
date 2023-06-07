@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
 data class RegisterClientParam(
     val password: String?,
@@ -40,6 +41,7 @@ data class DeleteClientParam(
     val clientId: ClientId
 )
 
+@Serializable
 data class Client(
     val id: ClientId,
     val type: ClientType?,

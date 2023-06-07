@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.db
 
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.GlobalMetadataDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 actual class GlobalDatabaseProvider {
@@ -30,6 +31,9 @@ actual class GlobalDatabaseProvider {
     }
 
     actual val accountsDAO: AccountsDAO
+        get() = TODO("Not yet implemented")
+
+    actual val globalDAO: GlobalMetadataDAO
         get() = TODO("Not yet implemented")
 
 }

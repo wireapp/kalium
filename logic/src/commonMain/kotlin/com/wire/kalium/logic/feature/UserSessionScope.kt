@@ -56,10 +56,10 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
+import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
+import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
@@ -136,8 +136,6 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
-import com.wire.kalium.logic.feature.client.NewClientManager
-import com.wire.kalium.logic.feature.client.NewClientManagerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -1017,11 +1015,9 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val newClientManager: NewClientManager = NewClientManagerImpl
-
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
-            newClientManager, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
+            globalScope.newClientRepository, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1186,6 +1182,7 @@ class UserSessionScope internal constructor(
             logoutRepository,
             globalScope.sessionRepository,
             clientRepository,
+            globalScope.newClientRepository,
             userId,
             client.deregisterNativePushToken,
             client.clearClientData,
