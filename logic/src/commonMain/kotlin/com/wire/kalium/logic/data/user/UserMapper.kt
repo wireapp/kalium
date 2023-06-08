@@ -33,10 +33,10 @@ import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SelfUserDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
-import com.wire.kalium.network.api.base.model.UserProtocol
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
@@ -318,8 +318,8 @@ internal class UserMapperImpl(
 }
 
 fun SupportedProtocol.toApi() = when (this) {
-    SupportedProtocol.MLS -> UserProtocol.MLS
-    SupportedProtocol.PROTEUS -> UserProtocol.PROTEUS
+    SupportedProtocol.MLS -> SupportedProtocolDTO.MLS
+    SupportedProtocol.PROTEUS -> SupportedProtocolDTO.PROTEUS
 }
 
 fun SupportedProtocol.toDao() = when (this) {
@@ -327,14 +327,14 @@ fun SupportedProtocol.toDao() = when (this) {
     SupportedProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
-fun UserProtocol.toModel() = when (this) {
-    UserProtocol.MLS -> SupportedProtocol.MLS
-    UserProtocol.PROTEUS -> SupportedProtocol.PROTEUS
+fun SupportedProtocolDTO.toModel() = when (this) {
+    SupportedProtocolDTO.MLS -> SupportedProtocol.MLS
+    SupportedProtocolDTO.PROTEUS -> SupportedProtocol.PROTEUS
 }
 
-fun UserProtocol.toDao() = when (this) {
-    UserProtocol.MLS -> SupportedProtocolEntity.MLS
-    UserProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
+fun SupportedProtocolDTO.toDao() = when (this) {
+    SupportedProtocolDTO.MLS -> SupportedProtocolEntity.MLS
+    SupportedProtocolDTO.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
 fun SupportedProtocolEntity.toModel() = when (this) {

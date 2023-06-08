@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.network.api.base.authenticated.self
 
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProtocol
+import com.wire.kalium.network.api.base.authenticated.userDetails.SupportedProtocolDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class UpdateSupportedProtocolsRequest(
     @SerialName("supported_protocols")
-    val protocols: List<UserProtocol>
+    val protocols: List<SupportedProtocolDTO>
 )

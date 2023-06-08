@@ -21,7 +21,7 @@ package com.wire.kalium.api.v0.user.self
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.UserDTOJson
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProtocol
+import com.wire.kalium.network.api.base.authenticated.userDetails.SupportedProtocolDTO
 import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
@@ -130,7 +130,7 @@ internal class SelfApiV0Test : ApiTest() {
     fun givenRequest_whenUpdatingSupportedProtocols_thenRequestShouldFail() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(responseBody = "", statusCode = HttpStatusCode.OK)
         val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
-        val response = selfApi.updateSupportedProtocols(listOf(UserProtocol.PROTEUS))
+        val response = selfApi.updateSupportedProtocols(listOf(SupportedProtocolDTO.PROTEUS))
 
         assertFalse(response.isSuccessful())
     }

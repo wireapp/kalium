@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.self.UpdateSupportedProtocolsRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProtocol
+import com.wire.kalium.network.api.base.authenticated.userDetails.SupportedProtocolDTO
 import com.wire.kalium.network.api.v3.authenticated.SelfApiV3
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
@@ -34,7 +34,7 @@ internal open class SelfApiV4 internal constructor(
 ) : SelfApiV3(authenticatedNetworkClient, sessionManager) {
 
     override suspend fun updateSupportedProtocols(
-        protocols: List<UserProtocol>
+        protocols: List<SupportedProtocolDTO>
     ): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.put("$PATH_SELF/$PATH_SUPPORTED_PROTOCOLS") {
             setBody(UpdateSupportedProtocolsRequest(protocols))

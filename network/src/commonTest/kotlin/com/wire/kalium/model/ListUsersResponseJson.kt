@@ -21,9 +21,9 @@ package com.wire.kalium.model
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.model.UserProfileDTO
-import com.wire.kalium.network.api.base.model.UserProtocol
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -47,7 +47,7 @@ object ListUsersResponseJson {
             expiresAt = null,
             nonQualifiedId = USER_1.value,
             service = null,
-            supportedProtocols = listOf(UserProtocol.PROTEUS, UserProtocol.MLS)
+            supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS)
         ),
         UserProfileDTO(
             id = USER_2,
@@ -114,7 +114,7 @@ object ListUsersResponseJson {
 
     val v0 = ValidJsonProvider(
         expectedUsersResponse.map {
-            it.copy(supportedProtocols = listOf(UserProtocol.PROTEUS)) // always expect only proteus with v0
+            it.copy(supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS)) // always expect only proteus with v0
         }
     ) {
         listProvider(it.map(validUserInfoProviderV0))

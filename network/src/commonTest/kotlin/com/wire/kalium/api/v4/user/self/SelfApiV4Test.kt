@@ -19,7 +19,7 @@
 package com.wire.kalium.api.v4.user.self
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProtocol
+import com.wire.kalium.network.api.base.authenticated.userDetails.SupportedProtocolDTO
 import com.wire.kalium.network.api.v4.authenticated.SelfApiV4
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -43,7 +43,7 @@ internal class SelfApiV4Test : ApiTest() {
                 }
             )
             val selfApi = SelfApiV4(networkClient, TEST_SESSION_NAMAGER)
-            val response = selfApi.updateSupportedProtocols(listOf(UserProtocol.MLS))
+            val response = selfApi.updateSupportedProtocols(listOf(SupportedProtocolDTO.MLS))
             assertTrue(response.isSuccessful())
         }
 

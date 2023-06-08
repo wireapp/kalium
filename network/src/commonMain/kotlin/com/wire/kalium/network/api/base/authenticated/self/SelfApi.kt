@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.self
 
 import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.UserProtocol
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
@@ -54,5 +54,5 @@ interface SelfApi : BaseApi {
      * @return A [NetworkResponse] with the result of the operation.
      * true if the protocols were updated.
      */
-    suspend fun updateSupportedProtocols(protocols: List<UserProtocol>): NetworkResponse<Unit>
+    suspend fun updateSupportedProtocols(protocols: List<SupportedProtocolDTO>): NetworkResponse<Unit>
 }

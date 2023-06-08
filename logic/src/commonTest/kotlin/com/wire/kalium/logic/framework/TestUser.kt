@@ -30,10 +30,10 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.SelfUserDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
-import com.wire.kalium.network.api.base.model.UserProtocol
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
@@ -122,7 +122,7 @@ object TestUser {
         expiresAt = null,
         nonQualifiedId = NETWORK_ID.value,
         service = null,
-        supportedProtocols = listOf(UserProtocol.MLS)
+        supportedProtocols = listOf(SupportedProtocolDTO.MLS)
     )
 
     val SELF_USER_DTO = SelfUserDTO(
