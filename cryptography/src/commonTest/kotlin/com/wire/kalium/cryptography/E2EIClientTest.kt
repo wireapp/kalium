@@ -15,17 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cryptography.E2EI
+package com.wire.kalium.cryptography
 
-import com.wire.kalium.cryptography.AcmeDirectory
-import com.wire.kalium.cryptography.BaseMLSClientTest
-import com.wire.kalium.cryptography.CryptoClientId
-import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.CryptoQualifiedID
-import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.E2EIQualifiedClientId
-import com.wire.kalium.cryptography.IgnoreIOS
-import com.wire.kalium.cryptography.IgnoreJS
 import io.ktor.utils.io.core.toByteArray
 import kotlin.test.Test
 import kotlin.test.assertEquals
