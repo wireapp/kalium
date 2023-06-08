@@ -110,7 +110,8 @@ class SelfClientsUseCaseTest {
             label = null,
             model = "Mac ox",
             isVerified = false,
-            isValid = true
+            isValid = true,
+            isMLSCapable = false
         )
         val CLIENTS_LIST = listOf(
             CLIENT.copy(id = PlainId(value = "client_id_1")),

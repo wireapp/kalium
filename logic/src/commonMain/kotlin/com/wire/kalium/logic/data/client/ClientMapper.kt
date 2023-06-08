@@ -67,7 +67,8 @@ class ClientMapper(
         label = response.label,
         model = response.model,
         isVerified = false,
-        isValid = true
+        isValid = true,
+        isMLSCapable = response.mlsPublicKeys?.isNotEmpty() ?: false
     )
 
     fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
@@ -79,7 +80,8 @@ class ClientMapper(
             label = label,
             model = model,
             isVerified = isVerified,
-            isValid = isValid
+            isValid = isValid,
+            isMLSCapable = false // TODO jacob persist in db?
         )
     }
 
@@ -91,7 +93,8 @@ class ClientMapper(
         label = event.label,
         model = event.model,
         isVerified = false,
-        isValid = true
+        isValid = true,
+        isMLSCapable = false // TODO jacob check if data is available on new client event
     )
 
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
