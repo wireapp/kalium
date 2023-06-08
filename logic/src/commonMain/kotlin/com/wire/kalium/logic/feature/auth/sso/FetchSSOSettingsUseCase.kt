@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.feature.auth.sso.FetchSSOSettingsUseCase.Result
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.http.HttpStatusCode
 
 /**
  * Fetches the SSO settings from the server.
@@ -36,7 +37,7 @@ class FetchSSOSettingsUseCase internal constructor(
         .fold({
             if (it is NetworkFailure.ServerMiscommunication &&
                 it.kaliumException is KaliumException.InvalidRequestError &&
-                it.kaliumException.errorResponse.code == 404
+                it.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
             ) {
                 Result.Success(null)
             } else {
