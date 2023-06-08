@@ -98,11 +98,17 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
         }
 
     private suspend fun mlsIsSupported(): Either<CoreFailure, Boolean> =
-        listOf(
-            mlsMigrationDeadlineHasBeenReached(),
-            allActiveClientsAreMLSCapable()
-        ).foldToEitherWhileRight(false) { result, acc ->
-            result.flatMap { Either.Right(it || acc) }
+        featureConfigRepository.getFeatureConfigs().map { it.mlsModel }.flatMap { mlsConfiguration ->
+            if (mlsConfiguration.supportedProtocols.contains(SupportedProtocol.MLS)) {
+                listOf(
+                    mlsMigrationDeadlineHasBeenReached(),
+                    allActiveClientsAreMLSCapable()
+                ).foldToEitherWhileRight(false) { result, acc ->
+                    result.flatMap { Either.Right(it || acc) }
+                }
+            } else {
+                Either.Right(false)
+            }
         }
 
     private suspend fun proteusIsSupported(): Either<CoreFailure, Boolean> =

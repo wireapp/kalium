@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.featureConfigs
 
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.userDetails.SupportedProtocolDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import kotlinx.datetime.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
