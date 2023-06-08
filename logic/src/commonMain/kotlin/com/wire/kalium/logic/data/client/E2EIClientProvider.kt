@@ -80,7 +80,9 @@ class E2EIClientProviderImpl(
         /*val selfUser = selfUserUseCase().first()
         return if (selfUser.name == null || selfUser.handle == null)
             Either.Left(E2EIFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
-        else*/ return Either.Right(Pair("Mojtaba Chenani", "mojtaba_wire"))
+        else*/
+        //todo: Mojtaba remove hardcoded values later
+        return Either.Right(Pair("Mojtaba Chenani", "mojtaba_wire"))
     }
 
     private companion object {
