@@ -36,6 +36,7 @@ class SSOLoginScope internal constructor(
         )
     val finalize: SSOFinalizeLoginUseCase get() = SSOFinalizeLoginUseCaseImpl(ssoLoginRepository)
     val getLoginSession: GetSSOLoginSessionUseCase get() = GetSSOLoginSessionUseCaseImpl(ssoLoginRepository, proxyCredentials)
+    val fetchSSOSettings: FetchSSOSettingsUseCase get() = FetchSSOSettingsUseCase(ssoLoginRepository)
     val metaData: SSOMetaDataUseCase get() = SSOMetaDataUseCaseImpl(ssoLoginRepository)
     val settings: SSOSettingsUseCase get() = SSOSettingsUseCaseImpl(ssoLoginRepository)
 }
