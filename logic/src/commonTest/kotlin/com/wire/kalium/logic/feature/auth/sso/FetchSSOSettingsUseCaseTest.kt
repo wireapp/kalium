@@ -20,7 +20,9 @@ package com.wire.kalium.logic.feature.auth.sso
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.given
 import io.mockative.mock
@@ -32,6 +34,7 @@ import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FetchSSOSettingsUseCaseTest {
@@ -60,6 +63,30 @@ class FetchSSOSettingsUseCaseTest {
 
         useCase().also { result ->
             assertIs<FetchSSOSettingsUseCase.Result.Failure>(result)
+        }
+
+        verify(arrangement.ssoLoginRepository)
+            .suspendFunction(arrangement.ssoLoginRepository::settings)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun given404Error_whenInvoked_thenReturnSuccessWithNoCode() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSSOSettings(
+                Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(
+                            ErrorResponse(404, "Not Found", "Not Found")
+                        )
+                    )
+                )
+            )
+            .arrange()
+
+        useCase().also { result ->
+            assertIs<FetchSSOSettingsUseCase.Result.Success>(result)
+            assertNull(result.defaultSSOCode)
         }
 
         verify(arrangement.ssoLoginRepository)

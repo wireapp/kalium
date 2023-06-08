@@ -18,10 +18,11 @@
 package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.feature.auth.sso.FetchSSOSettingsUseCase.Result
 import com.wire.kalium.logic.functional.fold
-import kotlin.String
+import com.wire.kalium.network.exceptions.KaliumException
 
 /**
  * Fetches the SSO settings from the server.
@@ -32,10 +33,19 @@ class FetchSSOSettingsUseCase internal constructor(
 ) {
 
     suspend operator fun invoke(): Result = ssoLoginRepository.settings()
-        .fold(Result::Failure, { Result.Success(it.defaultCode) })
+        .fold({
+            if (it is NetworkFailure.ServerMiscommunication &&
+                it.kaliumException is KaliumException.InvalidRequestError &&
+                it.kaliumException.errorResponse.code == 404
+            ) {
+                Result.Success(null)
+            } else {
+                Result.Failure(it)
+            }
+        }, { Result.Success(it.defaultCode) })
 
     sealed interface Result {
-        data class Success(val defaultSSOCode: String) : Result
+        data class Success(val defaultSSOCode: String?) : Result
         data class Failure(val coreFailure: CoreFailure) : Result
     }
 }
