@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.self
 
 import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProtocol
+import com.wire.kalium.network.api.base.model.UserProtocol
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
@@ -35,9 +35,7 @@ interface BaseApi {
     )
 }
 
-
-
-interface SelfApi: BaseApi {
+interface SelfApi : BaseApi {
     suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO>
     suspend fun updateSelf(userUpdateRequest: UserUpdateRequest): NetworkResponse<Unit>
     suspend fun changeHandle(request: ChangeHandleRequest): NetworkResponse<Unit>

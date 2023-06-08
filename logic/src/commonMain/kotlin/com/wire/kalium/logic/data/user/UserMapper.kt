@@ -319,25 +319,25 @@ internal class UserMapperImpl(
 
 fun SupportedProtocol.toApi() = when (this) {
     SupportedProtocol.MLS -> UserProtocol.MLS
-    SupportedProtocol.PROTEUS  -> UserProtocol.PROTEUS
+    SupportedProtocol.PROTEUS -> UserProtocol.PROTEUS
 }
 
 fun SupportedProtocol.toDao() = when (this) {
     SupportedProtocol.MLS -> SupportedProtocolEntity.MLS
-    SupportedProtocol.PROTEUS  -> SupportedProtocolEntity.PROTEUS
+    SupportedProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
 fun UserProtocol.toModel() = when (this) {
     UserProtocol.MLS -> SupportedProtocol.MLS
-    UserProtocol.PROTEUS  -> SupportedProtocol.PROTEUS
+    UserProtocol.PROTEUS -> SupportedProtocol.PROTEUS
 }
 
 fun UserProtocol.toDao() = when (this) {
     UserProtocol.MLS -> SupportedProtocolEntity.MLS
-    UserProtocol.PROTEUS  -> SupportedProtocolEntity.PROTEUS
+    UserProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
 }
 
 fun SupportedProtocolEntity.toModel() = when (this) {
     SupportedProtocolEntity.MLS -> SupportedProtocol.MLS
-    SupportedProtocolEntity.PROTEUS  -> SupportedProtocol.PROTEUS
+    SupportedProtocolEntity.PROTEUS -> SupportedProtocol.PROTEUS
 }
