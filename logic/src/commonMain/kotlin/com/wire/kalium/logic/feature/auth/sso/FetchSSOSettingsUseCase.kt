@@ -19,8 +19,14 @@ package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.feature.auth.sso.FetchSSOSettingsUseCase.Result
 import com.wire.kalium.logic.functional.fold
+import kotlin.String
 
+/**
+ * Fetches the SSO settings from the server.
+ * @return [Result] with the default SSO code or [CoreFailure].
+ */
 class FetchSSOSettingsUseCase internal constructor(
     private val ssoLoginRepository: SSOLoginRepository
 ) {
