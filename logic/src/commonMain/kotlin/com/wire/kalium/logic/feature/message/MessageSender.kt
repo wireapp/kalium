@@ -190,10 +190,8 @@ internal class MessageSenderImpl internal constructor(
                         serverDate = if (!isEditMessage) serverDate else null,
                         millis = millis
                     )
+                    startSelfDeletionIfNeeded(message)
 
-                    if (message is Message.Regular && message.expirationData != null) {
-                        enqueueSelfDeletion(message.conversationId, message.id)
-                    }
                     Unit
                 }
             }
@@ -368,8 +366,8 @@ internal class MessageSenderImpl internal constructor(
                     }
                     .onFailure {
                         val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
-                            " , " +
-                            "\"errorInfo\" : \"${it}\"}"
+                                " , " +
+                                "\"errorInfo\" : \"${it}\"}"
                         logger.e(logLine)
                     }
             }
