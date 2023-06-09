@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message.ephemeral
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
@@ -134,15 +135,18 @@ sealed class LoggingSelfDeletionEvent(
 
     data class InvalidMessageStatus(
         override val message: Message.Regular,
-        override val expirationData: Message.ExpirationData
+        override val expirationData: Message.ExpirationData,
+        val currentStatus: MessageEntity.Status
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "invalid-message-status",
+                "message-status" to "$currentStatus",
                 "is-self-user-sender" to message.isSelfMessage.toString(),
             )
         }
     }
+
     data class SelfDeletionFailed(
         override val message: Message.Regular,
         override val expirationData: Message.ExpirationData,
@@ -153,6 +157,29 @@ sealed class LoggingSelfDeletionEvent(
                 "deletion-status" to "self-deletion-failed",
                 "is-self-user-sender" to message.isSelfMessage.toString(),
                 "reason" to coreFailure.toString()
+            )
+        }
+    }
+    data class MessageSentStoppingObserving(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "message-sent",
+                "is-self-user-sender" to message.isSelfMessage.toString(),
+            )
+        }
+    }
+
+    data class WaitingForMessageToBeSent(
+        override val message: Message.Regular,
+        override val expirationData: Message.ExpirationData
+    ) : LoggingSelfDeletionEvent(message, expirationData) {
+        override fun eventJsonMap(): Map<String, String> {
+            return mapOf(
+                "deletion-status" to "waiting-to-be-sent",
+                "is-self-user-sender" to message.isSelfMessage.toString(),
             )
         }
     }

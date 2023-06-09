@@ -11,7 +11,9 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -30,7 +32,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase,
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase,
-    userSessionCoroutineScope: CoroutineScope
+    private val userSessionCoroutineScope: CoroutineScope
 ) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
@@ -71,23 +73,32 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 addToOutgoingDeletion(message)
             }
 
-            messageRepository.observeMessageStatus(message.id, message.conversationId).collect {
-                val canBeDeleted = when (it) {
-                    MessageEntity.Status.PENDING -> false
-                    MessageEntity.Status.SENT,
-                    MessageEntity.Status.READ,
-                    MessageEntity.Status.FAILED,
-                    MessageEntity.Status.FAILED_REMOTELY -> true
-                }
-
-                if (!canBeDeleted) {
-                    SelfDeletionEventLogger.log(
-                        LoggingSelfDeletionEvent.InvalidMessageStatus(
-                            message,
-                            expirationData
-                        )
+            launch {
+                SelfDeletionEventLogger.log(
+                    LoggingSelfDeletionEvent.WaitingForMessageToBeSent(
+                        message,
+                        expirationData
                     )
-                } else {
+                )
+
+                messageRepository.observeMessageStatus(message.id, message.conversationId)
+                    .takeWhile { it != MessageEntity.Status.SENT }
+                    .collect {
+                        SelfDeletionEventLogger.log(
+                            LoggingSelfDeletionEvent.InvalidMessageStatus(
+                                message,
+                                expirationData,
+                                it
+                            )
+                        )
+                    }
+
+                LoggingSelfDeletionEvent.MessageSentStoppingObserving(
+                    message,
+                    expirationData
+                )
+
+                launch {
                     markDeletionDateAndWait(message, expirationData)
 
                     SelfDeletionEventLogger.log(
@@ -96,7 +107,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                             expirationData
                         )
                     )
-                    
+
                     deleteMessage(message, expirationData)
                 }
             }
