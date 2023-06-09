@@ -7,6 +7,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -54,25 +55,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override fun enqueueSelfDeletion(message: Message.Regular, expirationData: Message.ExpirationData) {
-        val canBeDeleted = when (message.status) {
-            Message.Status.PENDING -> false
-            Message.Status.SENT,
-            Message.Status.READ,
-            Message.Status.FAILED,
-            Message.Status.FAILED_REMOTELY -> true
-        }
-        kaliumLogger.i("deleting the message with status ${message.status}")
-        if (!canBeDeleted) {
-            SelfDeletionEventLogger.log(
-                LoggingSelfDeletionEvent.InvalidMessageStatus(
-                    message,
-                    expirationData
-                )
-            )
-
-            return
-        }
-
         launch {
             ongoingSelfDeletionMessagesMutex.withLock {
                 val isSelfDeletionOutgoing = ongoingSelfDeletionMessages[message.conversationId to message.id] != null
@@ -88,16 +70,36 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
                 addToOutgoingDeletion(message)
             }
-            markDeletionDateAndWait(message, expirationData)
 
-            SelfDeletionEventLogger.log(
-                LoggingSelfDeletionEvent.StartingSelfSelfDeletion(
-                    message,
-                    expirationData
-                )
-            )
+            messageRepository.observeMessageStatus(message.id, message.conversationId).collect {
+                val canBeDeleted = when (it) {
+                    MessageEntity.Status.PENDING -> false
+                    MessageEntity.Status.SENT,
+                    MessageEntity.Status.READ,
+                    MessageEntity.Status.FAILED,
+                    MessageEntity.Status.FAILED_REMOTELY -> true
+                }
 
-            deleteMessage(message, expirationData)
+                if (!canBeDeleted) {
+                    SelfDeletionEventLogger.log(
+                        LoggingSelfDeletionEvent.InvalidMessageStatus(
+                            message,
+                            expirationData
+                        )
+                    )
+                } else {
+                    markDeletionDateAndWait(message, expirationData)
+
+                    SelfDeletionEventLogger.log(
+                        LoggingSelfDeletionEvent.StartingSelfSelfDeletion(
+                            message,
+                            expirationData
+                        )
+                    )
+                    
+                    deleteMessage(message, expirationData)
+                }
+            }
         }
     }
 

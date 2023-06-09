@@ -534,6 +534,9 @@ WHERE message_id = ? AND conversation_id = ?;
 selectMessageVisibility:
 SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;
 
+selectMessageStatus:
+SELECT status FROM Message WHERE id = ? AND conversation_id = ?;
+
 updateAssetDownloadStatus:
 UPDATE MessageAssetContent
 SET asset_download_status = ?

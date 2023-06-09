@@ -190,7 +190,6 @@ internal class MessageSenderImpl internal constructor(
                         serverDate = if (!isEditMessage) serverDate else null,
                         millis = millis
                     )
-                    startSelfDeletionIfNeeded(message)
 
                     Unit
                 }
@@ -225,6 +224,8 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithProteus(message, messageTarget)
                     }
                 }
+            }.onSuccess {
+                startSelfDeletionIfNeeded(message)
             }
     }
 

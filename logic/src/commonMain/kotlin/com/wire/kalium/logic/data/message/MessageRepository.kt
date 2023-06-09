@@ -189,6 +189,11 @@ interface MessageRepository {
         conversationId: ConversationId
     ): Flow<MessageEntity.Visibility>
 
+    suspend fun observeMessageStatus(
+        messageUuid: String,
+        conversationId: ConversationId
+    ) : Flow<MessageEntity.Status>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -509,6 +514,10 @@ class MessageDataSource(
 
     override suspend fun observeMessageVisibility(messageUuid: String, conversationId: ConversationId): Flow<MessageEntity.Visibility> {
         return messageDAO.observeMessageVisibility(messageUuid, conversationId.toDao())
+    }
+
+    override suspend fun observeMessageStatus(messageUuid: String, conversationId: ConversationId): Flow<MessageEntity.Status> {
+        return messageDAO.observeMessageStatus(messageUuid,conversationId.toDao())
     }
 
 }

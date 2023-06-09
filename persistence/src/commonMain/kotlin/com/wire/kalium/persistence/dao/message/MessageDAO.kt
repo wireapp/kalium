@@ -88,7 +88,7 @@ interface MessageDAO {
     )
 
     suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility>
-
+    suspend fun observeMessageStatus(messageUuid: String, conversationId: QualifiedIDEntity) : Flow<MessageEntity.Status>
     suspend fun getConversationMessagesByContentType(
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType

@@ -374,6 +374,13 @@ class MessageDAOImpl(
             .distinctUntilChanged()
     }
 
+    override suspend fun observeMessageStatus(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Status> {
+        return queries.selectMessageStatus(messageUuid, conversationId)
+            .asFlow()
+            .mapToOne()
+            .distinctUntilChanged()
+    }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
 }
