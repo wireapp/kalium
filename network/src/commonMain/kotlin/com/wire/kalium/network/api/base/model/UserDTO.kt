@@ -48,6 +48,7 @@ data class UserProfileDTO(
     @SerialName("deleted") override val deleted: Boolean?,
     @SerialName("email") override val email: String?,
     @SerialName("expires_at") override val expiresAt: String?,
+    @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
     @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
@@ -64,6 +65,7 @@ data class SelfUserDTO(
     @SerialName("deleted") override val deleted: Boolean?,
     @SerialName("email") override val email: String?,
     @SerialName("expires_at") override val expiresAt: String?,
+    @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
     @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("locale") val locale: String,
