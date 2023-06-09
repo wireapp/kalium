@@ -190,7 +190,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
         try {
             return b()
         } catch (e: CryptoException) {
-            if (this::coreCrypto::isInitialized.get()) {
+            if (this::coreCrypto.isInitialized) {
                 throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e)
             } else {
                 throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
