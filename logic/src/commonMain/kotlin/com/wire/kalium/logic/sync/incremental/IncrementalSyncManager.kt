@@ -125,9 +125,6 @@ internal class IncrementalSyncManager(
             async {
                 incrementalSyncRepository
                     .connectionPolicyState
-                    .onEach {
-                        println(it)
-                    }
                     .drop(1)
                     .first { it == KEEP_ALIVE }
             }.onAwait {
