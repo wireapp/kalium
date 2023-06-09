@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.base.authenticated.self
 
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
-import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
 
@@ -28,12 +28,6 @@ import kotlinx.serialization.SerialName
 data class ChangeHandleRequest(
     @SerialName("handle") val handle: String
 )
-
-interface BaseApi {
-    fun getApiNotSupportError(apiName: String, apiVersion: Int) = NetworkResponse.Error(
-        APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
-    )
-}
 
 interface SelfApi : BaseApi {
     suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO>
