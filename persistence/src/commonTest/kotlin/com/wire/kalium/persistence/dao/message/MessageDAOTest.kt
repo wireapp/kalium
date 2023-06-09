@@ -684,11 +684,10 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenReadMessagesAreNotReturned() = runTest {
         insertInitialData()
 
         val conversationInQuestion = conversationEntity1
-        val dateInQuestion = "2022-03-30T15:36:00.000Z"
 
         val expectedMessages = listOf(
             newRegularMessageEntity(
@@ -697,7 +696,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 // date after
-                date = "2022-03-30T15:37:00.000Z".toInstant(),
+                date = "2022-03-30T15:41:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = true
             )
@@ -729,7 +728,47 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertOrIgnoreMessages(allMessages)
         val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id)
-        assertEquals(2, result.size)
+        assertEquals(expectedMessages.size, result.size)
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingPendingMessagesByConversationAfterDate_thenMessagesFromSelfAreNotReturned() = runTest {
+        insertInitialData()
+
+        val conversationInQuestion = conversationEntity1
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                // This will return
+                "1",
+                conversationId = conversationInQuestion.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                // date after
+                date = "2022-03-30T15:41:00.000Z".toInstant(),
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = true
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            // Self message
+            // This will NOT return
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationInQuestion.id,
+                senderUserId = selfUserId,
+                status = MessageEntity.Status.READ,
+                // date after
+                date = "2022-03-30T15:37:00.000Z".toInstant(),
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = false
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(allMessages)
+        val result = messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(conversationInQuestion.id)
+        assertEquals(expectedMessages.size, result.size)
     }
 
     @Test
@@ -1476,7 +1515,11 @@ class MessageDAOTest : BaseDatabaseTest() {
 
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
-        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastReadDate = "2022-03-30T15:40:00.000Z".toInstant()
+            )
+        )
         conversationDAO.insertConversation(conversationEntity2)
     }
 }
