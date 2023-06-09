@@ -18,8 +18,8 @@
 
 package com.wire.kalium.network.api.base.unauthenticated
 
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface LoginApi {
@@ -49,5 +49,5 @@ interface LoginApi {
     suspend fun login(
         param: LoginParam,
         persist: Boolean
-    ): NetworkResponse<Pair<SessionDTO, UserDTO>>
+    ): NetworkResponse<Pair<SessionDTO, SelfUserDTO>>
 }

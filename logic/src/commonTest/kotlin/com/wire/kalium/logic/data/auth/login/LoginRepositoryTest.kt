@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
@@ -102,11 +103,11 @@ class LoginRepositoryTest {
 
         init {
             withLoginReturning(
-                NetworkResponse.Success(value = SESSION_DTO to USER_DTO, mapOf(), HttpStatusCode.OK.value)
+                NetworkResponse.Success(value = SESSION_DTO to TestUser.SELF_USER_DTO, mapOf(), HttpStatusCode.OK.value)
             )
         }
 
-        fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, UserDTO>>) = apply {
+        fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {
             given(loginApi)
                 .suspendFunction(loginApi::login)
                 .whenInvokedWith(any(), any())
@@ -124,9 +125,9 @@ class LoginRepositoryTest {
         const val TEST_SECOND_FACTOR_CODE = "123456"
         const val TEST_PASSWORD = "123456"
         const val TEST_PERSIST_CLIENT = false
-        val USER_DTO: UserDTO = TestUser.USER_DTO
+        val SELF_USER_DTO: UserDTO = TestUser.SELF_USER_DTO
         val SESSION_DTO: SessionDTO = SessionDTO(
-            userId = USER_DTO.id,
+            userId = SELF_USER_DTO.id,
             tokenType = "tokenType",
             accessToken = "access_token",
             refreshToken = "refresh_token",
