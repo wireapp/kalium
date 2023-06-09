@@ -696,7 +696,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 // date after
-                date = "2022-03-30T15:37:00.000Z".toInstant(),
+                date = "2022-03-30T15:41:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = true
             )
@@ -745,7 +745,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 // date after
-                date = "2022-03-30T15:37:00.000Z".toInstant(),
+                date = "2022-03-30T15:41:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
                 expectsReadConfirmation = true
             )
@@ -1515,7 +1515,11 @@ class MessageDAOTest : BaseDatabaseTest() {
 
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
-        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastReadDate = "2022-03-30T15:40:00.000Z".toInstant()
+            )
+        )
         conversationDAO.insertConversation(conversationEntity2)
     }
 }
