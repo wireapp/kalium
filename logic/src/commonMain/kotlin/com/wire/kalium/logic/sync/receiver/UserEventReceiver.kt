@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.data.client.NewClientRepository
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -38,7 +38,7 @@ interface UserEventReceiver : EventReceiver<Event.User>
 
 @Suppress("LongParameterList")
 class UserEventReceiverImpl internal constructor(
-    private val newClientRepository: NewClientRepository,
+    private val clientRepository: ClientRepository,
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -116,7 +116,7 @@ class UserEventReceiverImpl internal constructor(
     }
 
     private suspend fun handleNewClient(event: Event.User.NewClient) {
-        newClientRepository.saveNewClientEvent(event, selfUserId)
+        clientRepository.saveNewClientEvent(event)
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {

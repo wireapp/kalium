@@ -18,17 +18,19 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.Client
-import com.wire.kalium.logic.data.client.NewClientRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 
 /**
  * Observes new Clients for all the users that are logged in on device
@@ -48,20 +50,26 @@ interface ObserveNewClientsUseCase {
 class ObserveNewClientsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val observeValidAccounts: ObserveValidAccountsUseCase,
-    private val newClientRepository: NewClientRepository
+    private val userSessionScopeProvider: UserSessionScopeProvider
 ) : ObserveNewClientsUseCase {
 
-    override suspend operator fun invoke(): Flow<NewClientResult> = newClientRepository.observeNewClients()
-        .mapRight { list ->
-            if (list.isEmpty()) return@mapRight NewClientResult.Empty
+    override suspend operator fun invoke(): Flow<NewClientResult> = observeValidAccounts()
+        .flatMapLatest {
+            val flows = it.map { (selfUser, _) -> observeNewClientsFoUser(selfUser.id) }
+            combine(flows) { array ->
+                array.groupBy({ (_, userId) -> userId }) { (clients, _) -> clients }
+                    .mapValues { (_, lists) -> lists.flatten() }
+            }
+
+        }
+        .map { groupByUser ->
+            if (groupByUser.isEmpty()) return@map NewClientResult.Empty
 
             sessionRepository.currentSession()
                 .map { currentAccInfo ->
-                    val groupByUser = list.groupBy { it.second }
-
                     if (groupByUser.containsKey(currentAccInfo.userId)) {
                         NewClientResult.InCurrentAccount(
-                            groupByUser.getOrElse(currentAccInfo.userId) { listOf() }.map { it.first },
+                            groupByUser.getOrElse(currentAccInfo.userId) { listOf() },
                             currentAccInfo.userId
                         )
                     } else {
@@ -71,7 +79,7 @@ class ObserveNewClientsUseCaseImpl internal constructor(
                             ?.firstOrNull { selfUser -> groupByUser.containsKey(selfUser.id) }
                             ?.let { selfUser ->
                                 NewClientResult.InOtherAccount(
-                                    groupByUser.getOrElse(selfUser.id) { listOf() }.map { it.first },
+                                    groupByUser.getOrElse(selfUser.id) { listOf() },
                                     selfUser.id,
                                     selfUser.name,
                                     selfUser.handle
@@ -81,13 +89,19 @@ class ObserveNewClientsUseCaseImpl internal constructor(
                 }
                 .getOrElse(NewClientResult.Error)
         }
-        .mapToRightOr(NewClientResult.Error)
         .filter {
             // if newClients list is empty mean no NewClients - do not emit anything
             (it is NewClientResult.InCurrentAccount && it.newClients.isNotEmpty()) ||
                     (it is NewClientResult.InOtherAccount && it.newClients.isNotEmpty()) ||
                     it is NewClientResult.Error
         }
+
+    private suspend fun observeNewClientsFoUser(userId: UserId) = userSessionScopeProvider.getOrCreate(userId)
+        .clientRepository
+        .observeNewClients()
+        .mapToRightOr(listOf<Client>())
+        .map { it to userId }
+
 }
 
 sealed class NewClientResult {

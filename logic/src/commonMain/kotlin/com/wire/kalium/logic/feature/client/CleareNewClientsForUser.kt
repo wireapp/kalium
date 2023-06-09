@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.data.client.NewClientRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
 
 /**
  * Clear all NewClients for the [UserId] from the BD.
@@ -28,8 +28,10 @@ interface ClearNewClientsForUserUseCase {
     suspend operator fun invoke(userId: UserId)
 }
 
-class ClearNewClientsForUserUseCaseImpl(private val newClientRepository: NewClientRepository) : ClearNewClientsForUserUseCase {
+class ClearNewClientsForUserUseCaseImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : ClearNewClientsForUserUseCase {
     override suspend fun invoke(userId: UserId) {
-        newClientRepository.clearNewClientsForUser(userId)
+        userSessionScopeProvider.getOrCreate(userId)
+            .clientRepository
+            .clearNewClients()
     }
 }

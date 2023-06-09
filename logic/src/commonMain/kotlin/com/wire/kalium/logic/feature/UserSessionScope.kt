@@ -634,13 +634,14 @@ class UserSessionScope internal constructor(
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
 
-    private val clientRepository: ClientRepository
+    internal val clientRepository: ClientRepository
         get() = ClientDataSource(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
             userId,
-            authenticatedNetworkContainer.clientApi
+            authenticatedNetworkContainer.clientApi,
+            userStorage.database.metadataDAO
         )
 
     private val sessionEstablisher: SessionEstablisher
@@ -1026,7 +1027,7 @@ class UserSessionScope internal constructor(
 
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
-            globalScope.newClientRepository, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
+            clientRepository, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1192,7 +1193,6 @@ class UserSessionScope internal constructor(
             logoutRepository,
             globalScope.sessionRepository,
             clientRepository,
-            globalScope.newClientRepository,
             userId,
             client.deregisterNativePushToken,
             client.clearClientData,

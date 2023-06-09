@@ -111,10 +111,10 @@ class GlobalKaliumScope internal constructor(
 
     val sessionRepository: SessionRepository
         get() = SessionDataSource(
-                globalDatabase.value.accountsDAO,
-                globalPreferences.value.authTokenStorage,
-                serverConfigRepository
-            )
+            globalDatabase.value.accountsDAO,
+            globalPreferences.value.authTokenStorage,
+            serverConfigRepository
+        )
 
     val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
@@ -174,8 +174,8 @@ class GlobalKaliumScope internal constructor(
         get() = NewClientDataSource(globalDatabase.value.globalDAO)
 
     val observeNewClientsUseCase: ObserveNewClientsUseCase
-        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, newClientRepository)
+        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userSessionScopeProvider.value)
 
     val clearNewClientsForUser: ClearNewClientsForUserUseCase
-        get() = ClearNewClientsForUserUseCaseImpl(newClientRepository)
+        get() = ClearNewClientsForUserUseCaseImpl(userSessionScopeProvider.value)
 }

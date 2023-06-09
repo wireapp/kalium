@@ -23,6 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
@@ -39,12 +40,17 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @Suppress("TooManyFunctions")
 interface ClientRepository {
@@ -76,6 +82,10 @@ interface ClientRepository {
         clientId: ClientId,
         verified: Boolean
     ): Either<StorageFailure, Unit>
+
+    suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient)
+    suspend fun clearNewClients()
+    suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -85,6 +95,7 @@ class ClientDataSource(
     private val clientDAO: ClientDAO,
     private val selfUserID: UserId,
     private val clientApi: ClientApi,
+    private val metadataDAO: MetadataDAO,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
 ) : ClientRepository {
@@ -212,5 +223,38 @@ class ClientDataSource(
         verified: Boolean
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
+    }
+
+    override suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient) {
+        val prevList = getNewClientsList()
+
+        val newListString = Json.encodeToString(prevList.plus(clientMapper.fromNewClientEvent(newClientEvent)))
+        metadataDAO.insertValue(newListString, NEW_CLIENTS_LIST_KEY)
+    }
+
+    override suspend fun clearNewClients() {
+        metadataDAO.insertValue("", NewClientDataSource.NEW_CLIENTS_LIST_KEY)
+    }
+
+    override suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>> =
+        metadataDAO.valueByKeyFlow(NEW_CLIENTS_LIST_KEY)
+            .map { decodeNewClientsList(it) }
+            .wrapStorageRequest()
+
+    private suspend fun getNewClientsList() = decodeNewClientsList(metadataDAO.valueByKey(NEW_CLIENTS_LIST_KEY))
+
+    private fun decodeNewClientsList(stringValue: String?): List<Client> =
+        stringValue?.let {
+            try {
+                Json.decodeFromString<List<Client>>(it)
+            } catch (e: SerializationException) {
+                null
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        } ?: listOf()
+
+    companion object {
+        const val NEW_CLIENTS_LIST_KEY = "new_clients_list"
     }
 }

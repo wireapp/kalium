@@ -183,7 +183,7 @@ class ObserveNewClientsUseCaseTest {
         }
 
         private var observeNewClientsUseCase: ObserveNewClientsUseCase =
-            ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, newClientRepository)
+            ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, newClientRepository, userSessionScopeProvider.value)
 
         suspend fun withCurrentSession(result: Either<StorageFailure, AccountInfo>) = apply {
             given(sessionRepository)
