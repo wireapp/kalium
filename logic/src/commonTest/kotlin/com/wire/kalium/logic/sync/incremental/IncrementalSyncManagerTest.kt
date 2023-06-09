@@ -51,6 +51,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -341,7 +342,7 @@ class IncrementalSyncManagerTest {
                 .withWorkerReturning(flowThatFailsOnFirstTime())
                 .withNextExponentialDuration(retryDelay)
                 .withRecoveringFromFailure()
-                .withConnectionPolicyReturning(policyFlow.consumeAsFlow())
+                .withConnectionPolicyReturning(policyFlow.receiveAsFlow())
                 .arrange()
 
             arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
