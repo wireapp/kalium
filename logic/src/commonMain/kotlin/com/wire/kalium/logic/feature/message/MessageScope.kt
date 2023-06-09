@@ -140,7 +140,7 @@ class MessageScope internal constructor(
             mlsMessageCreator,
             messageSendingInterceptor,
             userRepository,
-            { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
+            { conversationId, messageId -> ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId) },
             scope
         )
 

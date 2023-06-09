@@ -61,6 +61,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
             Message.Status.FAILED,
             Message.Status.FAILED_REMOTELY -> true
         }
+        kaliumLogger.i("deleting the message with status ${message.status}")
         if (!canBeDeleted) {
             SelfDeletionEventLogger.log(
                 LoggingSelfDeletionEvent.InvalidMessageStatus(
