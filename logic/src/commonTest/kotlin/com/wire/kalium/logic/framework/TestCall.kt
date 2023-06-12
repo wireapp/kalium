@@ -72,6 +72,7 @@ object TestCall {
         callerName = CALLER_NAME,
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
+        callStatus = CallStatus.ESTABLISHED,
         protocol = Conversation.ProtocolInfo.Proteus
     )
 
