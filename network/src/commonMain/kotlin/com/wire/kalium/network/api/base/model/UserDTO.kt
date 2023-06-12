@@ -35,7 +35,7 @@ sealed class UserDTO {
     abstract val expiresAt: String?
     abstract val nonQualifiedId: NonQualifiedUserId
     abstract val service: ServiceDTO?
-    abstract val supportedProtocols: List<SupportedProtocolDTO>
+    abstract val supportedProtocols: List<SupportedProtocolDTO>?
 }
 
 @Serializable
@@ -52,7 +52,7 @@ data class UserProfileDTO(
     @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
     @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") override val service: ServiceDTO?,
-    @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO> = listOf(SupportedProtocolDTO.PROTEUS),
+    @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
 ) : UserDTO()
 
@@ -70,7 +70,7 @@ data class SelfUserDTO(
     @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
     @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") override val service: ServiceDTO?,
-    @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO> = listOf(SupportedProtocolDTO.PROTEUS),
+    @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
     @SerialName("locale") val locale: String,
     @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("phone") val phone: String?,

@@ -140,6 +140,7 @@ object TestUser {
         locale = "",
         managedByDTO = null,
         phone = null,
-        ssoID = null
+        ssoID = null,
+        supportedProtocols = null
     )
 }

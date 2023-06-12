@@ -551,7 +551,8 @@ class SearchUserRepositoryTest {
                     email = null,
                     expiresAt = null,
                     nonQualifiedId = "value",
-                    service = null
+                    service = null,
+                    supportedProtocols = null
                 )
             )
         )

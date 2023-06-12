@@ -371,7 +371,8 @@ class ConnectionRepositoryTest {
             email = null,
             expiresAt = null,
             nonQualifiedId = "value",
-            service = null
+            service = null,
+            supportedProtocols = null
         )
 
         val stubUserEntity = UserEntity(

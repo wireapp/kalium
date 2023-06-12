@@ -61,7 +61,8 @@ object ListUsersResponseJson {
             email = null,
             expiresAt = null,
             nonQualifiedId = USER_2.value,
-            service = null
+            service = null,
+            supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS)
         ),
     )
 
@@ -114,7 +115,7 @@ object ListUsersResponseJson {
 
     val v0 = ValidJsonProvider(
         expectedUsersResponse.map {
-            it.copy(supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS)) // always expect only proteus with v0
+            it.copy(supportedProtocols = null) // we don't expect supported_protocols in v0
         }
     ) {
         listProvider(it.map(validUserInfoProviderV0))
