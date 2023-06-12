@@ -19,7 +19,7 @@
 package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -29,7 +29,7 @@ import kotlinx.serialization.json.putJsonObject
 
 object UserDTOJson {
 
-    private val jsonProvider = { serializable: UserDTO ->
+    private val jsonProvider = { serializable: SelfUserDTO ->
         buildJsonObject {
             put("accent_id", serializable.accentId)
             put("id", serializable.nonQualifiedId)
@@ -73,10 +73,10 @@ object UserDTOJson {
         }.toString()
     }
 
-    fun createValid(userDTO: UserDTO) = ValidJsonProvider(userDTO, jsonProvider)
+    fun createValid(userDTO: SelfUserDTO) = ValidJsonProvider(userDTO, jsonProvider)
 
     val valid = ValidJsonProvider(
-        UserDTO(
+        SelfUserDTO(
             id = UserId("user_id", "domain.com"),
             name = "user_name_123",
             accentId = 2,

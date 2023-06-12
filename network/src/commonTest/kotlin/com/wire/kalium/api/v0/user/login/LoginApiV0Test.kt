@@ -25,8 +25,8 @@ import com.wire.kalium.model.LoginWithEmailRequestJson
 import com.wire.kalium.model.UserDTOJson
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
 import com.wire.kalium.network.exceptions.KaliumException
@@ -139,7 +139,7 @@ internal class LoginApiV0Test : ApiTest() {
             expiresIn = 900,
             tokenType = "Bearer"
         )
-        val userDTO = UserDTO(
+        val userDTO = SelfUserDTO(
             id = userID,
             name = "user_name_123",
             accentId = 2,

@@ -52,15 +52,6 @@ class EndCallUseCaseTest {
     @BeforeTest
     fun setup() {
         endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository)
-    }
-
-    @Test
-    fun givenAnEstablishedCall_whenEndCallIsInvoked_thenInvokeEndCallOnce() = runTest {
-        val conversationId = ConversationId("someone", "wire.com")
-
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked().then { flowOf(listOf(call)) }
 
         given(callManager)
             .suspendFunction(callManager::endCall)
@@ -71,6 +62,15 @@ class EndCallUseCaseTest {
             .function(callRepository::updateIsCameraOnById)
             .whenInvokedWith(eq(conversationId), eq(false))
             .thenDoNothing()
+    }
+
+    @Test
+    fun givenAnEstablishedCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest {
+
+        given(callRepository)
+            .suspendFunction(callRepository::callsFlow)
+            .whenInvoked().then { flowOf(listOf(call)) }
+
 
         endCall.invoke(conversationId)
 
@@ -85,53 +85,72 @@ class EndCallUseCaseTest {
             .wasInvoked(once)
 
         verify(callRepository)
-            .function(callRepository::persistMissedCall)
+            .suspendFunction(callRepository::updateCallStatusById)
+            .with(eq(conversationId), eq(CallStatus.CLOSED))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest {
+        val stillOngoingCall = call.copy(
+            status = CallStatus.STILL_ONGOING,
+            conversationType = Conversation.Type.GROUP
+        )
+
+        given(callRepository)
+            .suspendFunction(callRepository::callsFlow)
+            .whenInvoked().then { flowOf(listOf(stillOngoingCall)) }
+
+        endCall.invoke(conversationId)
+
+        verify(callManager)
+            .suspendFunction(callManager::endCall)
             .with(eq(conversationId))
+            .wasInvoked(once)
+
+        verify(callRepository)
+            .function(callRepository::updateIsCameraOnById)
+            .with(eq(conversationId), eq(false))
+            .wasInvoked(once)
+
+        verify(callRepository)
+            .suspendFunction(callRepository::updateCallStatusById)
+            .with(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+            .wasInvoked(once)
+
+    }
+
+    @Test
+    fun givenNoValidCalls_whenEndCallIsInvoked_thenDoNotUpdateStatus() = runTest {
+        val closedCall = call.copy(
+            status = CallStatus.CLOSED
+        )
+
+        given(callRepository)
+            .suspendFunction(callRepository::callsFlow)
+            .whenInvoked().then { flowOf(listOf(closedCall)) }
+
+        endCall.invoke(conversationId)
+
+        verify(callManager)
+            .suspendFunction(callManager::endCall)
+            .with(eq(conversationId))
+            .wasInvoked(once)
+
+        verify(callRepository)
+            .function(callRepository::updateIsCameraOnById)
+            .with(eq(conversationId), eq(false))
+            .wasInvoked(once)
+
+        verify(callRepository)
+            .suspendFunction(callRepository::updateCallStatusById)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
-    @Test
-    fun givenNoEstablishedCall_whenEndCallIsInvoked_thenSaveMissedCall() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::persistMissedCall)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
-
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked().then { flowOf(listOf()) }
-
-        given(callManager)
-            .suspendFunction(callManager::endCall)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
-
-        given(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId), eq(false))
-            .thenDoNothing()
-
-        endCall.invoke(conversationId)
-
-        verify(callManager)
-            .suspendFunction(callManager::endCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
-
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(once)
-
-        verify(callRepository)
-            .suspendFunction(callRepository::persistMissedCall)
-            .with(any())
-            .wasInvoked(once)
-    }
-
     companion object {
-        val conversationId = ConversationId("someone", "wire.com")
-        val call = Call(
+        private val conversationId = ConversationId("someone", "wire.com")
+        private val call = Call(
             conversationId = conversationId,
             status = CallStatus.ESTABLISHED,
             callerId = "called-id",
@@ -139,7 +158,7 @@ class EndCallUseCaseTest {
             isCameraOn = false,
             isCbrEnabled = false,
             conversationName = null,
-            conversationType = Conversation.Type.GROUP,
+            conversationType = Conversation.Type.ONE_ON_ONE,
             callerName = null,
             callerTeamName = null,
             establishedTime = null
