@@ -22,7 +22,6 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.NewClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -42,7 +41,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
@@ -52,7 +50,6 @@ import io.mockative.once
 import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -330,9 +327,6 @@ class LogoutUseCaseTest {
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
-        val newClientRepository = mock(classOf<NewClientRepository>())
-
-        @Mock
         val deregisterTokenUseCase = mock(classOf<DeregisterTokenUseCase>())
 
         @Mock
@@ -364,7 +358,6 @@ class LogoutUseCaseTest {
                 logoutRepository,
                 sessionRepository,
                 clientRepository,
-                newClientRepository,
                 USER_ID,
                 deregisterTokenUseCase,
                 clearClientDataUseCase,

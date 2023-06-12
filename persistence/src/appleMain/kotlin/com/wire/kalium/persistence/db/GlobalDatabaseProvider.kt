@@ -27,13 +27,11 @@ import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
+import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
+import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
-import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
-import com.wire.kalium.persistence.cache.LRUCache
-import com.wire.kalium.persistence.daokaliumdb.GlobalMetadataDAO
-import com.wire.kalium.persistence.daokaliumdb.GlobalMetadataDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -93,8 +91,6 @@ actual class GlobalDatabaseProvider(
 
     private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
     private val databaseScope = CoroutineScope(SupervisorJob() + queriesContext)
-    actual val globalDAO: GlobalMetadataDAO
-        get() = GlobalMetadataDAOImpl(database.globalMetadataQueries, metadataCache, databaseScope, queriesContext)
 
     actual fun nuke(): Boolean {
         return NSFileManager.defaultManager.removeItemAtPath(storePath, null)

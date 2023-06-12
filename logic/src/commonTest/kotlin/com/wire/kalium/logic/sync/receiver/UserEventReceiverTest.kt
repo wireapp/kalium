@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.data.client.NewClientRepository
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -137,9 +137,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(event)
 
-        verify(arrangement.newClientRepository)
-            .suspendFunction(arrangement.newClientRepository::saveNewClientEvent)
-            .with(any(), eq(SELF_USER_ID))
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::saveNewClientEvent)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -160,10 +160,10 @@ class UserEventReceiverTest {
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
-        val newClientRepository = mock(classOf<NewClientRepository>())
+        val clientRepository = mock(classOf<ClientRepository>())
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            newClientRepository,
+            clientRepository,
             connectionRepository,
             conversationRepository,
             userRepository,

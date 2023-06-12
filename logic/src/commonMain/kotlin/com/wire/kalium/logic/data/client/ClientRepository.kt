@@ -233,7 +233,7 @@ class ClientDataSource(
     }
 
     override suspend fun clearNewClients() {
-        metadataDAO.insertValue("", NewClientDataSource.NEW_CLIENTS_LIST_KEY)
+        metadataDAO.insertValue("", NEW_CLIENTS_LIST_KEY)
     }
 
     override suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>> =

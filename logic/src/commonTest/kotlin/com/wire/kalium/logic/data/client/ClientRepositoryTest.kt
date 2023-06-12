@@ -24,10 +24,13 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -41,6 +44,7 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
@@ -62,6 +66,8 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -383,6 +389,62 @@ class ClientRepositoryTest {
         }
     }
 
+    @Test
+    fun givenNoNewClientsInMemory_whenSavingNewClient_thenNewClientSaved() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withNewClients("")
+            .arrange()
+
+        val newClientEvent = TestEvent.newClient()
+        val stringToSave = toStringForSaving(listOf(newClientEvent))
+
+        repository.saveNewClientEvent(newClientEvent)
+
+        verify(arrangement.metadataDAO)
+            .suspendFunction(arrangement.metadataDAO::insertValue)
+            .with(eq(stringToSave))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSomeNewClientsInMemory_whenSavingNewClient_thenAllNewClientsSaved() = runTest {
+        val oldList = listOf(TestEvent.newClient())
+        val (arrangement, repository) = Arrangement()
+            .withNewClients(toStringForSaving(oldList))
+            .arrange()
+
+        val newClientEvent = TestEvent.newClient().copy(id = "new_new_client_event")
+        val stringToSave = toStringForSaving(oldList.plus(newClientEvent))
+
+        repository.saveNewClientEvent(newClientEvent)
+
+        verify(arrangement.metadataDAO)
+            .suspendFunction(arrangement.metadataDAO::insertValue)
+            .with(eq(stringToSave))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSomeNewClientsInMemory_whenClearNewClientsForUser_thenNewClientsForOtherUsersKept() = runTest {
+        val oldList = listOf(
+            TestEvent.newClient(),
+            TestEvent.newClient().copy(id = "new_new_client_event")
+        )
+        val (arrangement, repository) = Arrangement()
+            .withNewClients(toStringForSaving(oldList))
+            .arrange()
+
+        repository.clearNewClients()
+
+        verify(arrangement.metadataDAO)
+            .suspendFunction(arrangement.metadataDAO::insertValue)
+            .with(eq(""))
+            .wasInvoked(exactly = once)
+    }
+
+    private fun toStringForSaving(list: List<Event.User.NewClient>) =
+        Json.encodeToString(list.map { MapperProvider.clientMapper().fromNewClientEvent(it) })
+
     private companion object {
         val selfUserId = UserId("self-user-id", "domain")
         const val SECOND_FACTOR_CODE = "123456"
@@ -430,8 +492,26 @@ class ClientRepositoryTest {
         @Mock
         val clientDAO = mock(classOf<ClientDAO>())
 
+        @Mock
+        val metadataDAO: MetadataDAO = mock(classOf<MetadataDAO>())
+
         var clientRepository: ClientRepository =
-            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi)
+            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi, metadataDAO)
+
+        init {
+            given(metadataDAO)
+                .suspendFunction(metadataDAO::insertValue)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
+            given(metadataDAO)
+                .suspendFunction(metadataDAO::deleteValue)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
+            given(metadataDAO)
+                .suspendFunction(metadataDAO::clear)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
+        }
 
         fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
             given(clientRegistrationStorage)
@@ -505,6 +585,13 @@ class ClientRepositoryTest {
                 .suspendFunction(clientDAO::deleteClient)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
+        }
+
+        fun withNewClients(result: String) = apply {
+            given(metadataDAO)
+                .suspendFunction(metadataDAO::valueByKey)
+                .whenInvokedWith(eq(ClientDataSource.NEW_CLIENTS_LIST_KEY))
+                .thenReturn(result)
         }
 
         fun arrange() = this to clientRepository

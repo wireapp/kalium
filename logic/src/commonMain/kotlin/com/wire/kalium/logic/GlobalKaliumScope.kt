@@ -22,8 +22,8 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.client.NewClientRepository
-import com.wire.kalium.logic.data.client.NewClientDataSource
+import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
+import com.wire.kalium.logic.data.client.UserClientRepositoryProviderImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -170,11 +170,11 @@ class GlobalKaliumScope internal constructor(
             sessionRepository
         )
 
-    val newClientRepository: NewClientRepository
-        get() = NewClientDataSource(globalDatabase.value.globalDAO)
+    private val userClientRepositoryProvider: UserClientRepositoryProvider
+        get() = UserClientRepositoryProviderImpl(userSessionScopeProvider.value)
 
     val observeNewClientsUseCase: ObserveNewClientsUseCase
-        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userSessionScopeProvider.value)
+        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userClientRepositoryProvider)
 
     val clearNewClientsForUser: ClearNewClientsForUserUseCase
         get() = ClearNewClientsForUserUseCaseImpl(userSessionScopeProvider.value)
