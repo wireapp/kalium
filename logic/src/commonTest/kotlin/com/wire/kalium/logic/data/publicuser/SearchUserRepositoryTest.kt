@@ -273,7 +273,7 @@ class SearchUserRepositoryTest {
             .then { flowOf(USER_ENTITY) }
 
         given(userMapper)
-            .function(userMapper::fromDaoModelToSelfUser)
+            .function(userMapper::fromUserEntityToSelfUser)
             .whenInvokedWith(any())
             .then { SELF_USER }
 
@@ -324,7 +324,7 @@ class SearchUserRepositoryTest {
                 .then { flowOf(USER_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromDaoModelToSelfUser)
+                .function(userMapper::fromUserEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { SELF_USER }
 
@@ -373,7 +373,7 @@ class SearchUserRepositoryTest {
                 .then { flowOf(USER_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromDaoModelToSelfUser)
+                .function(userMapper::fromUserEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { SELF_USER }
 

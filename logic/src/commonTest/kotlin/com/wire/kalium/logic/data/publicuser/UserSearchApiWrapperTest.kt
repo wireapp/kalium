@@ -353,7 +353,7 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(USER_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromDaoModelToSelfUser)
+                .function(userMapper::fromUserEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { selfUser }
 
@@ -386,7 +386,7 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(USER_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromDaoModelToSelfUser)
+                .function(userMapper::fromUserEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { selfUser }
 

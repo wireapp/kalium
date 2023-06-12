@@ -39,12 +39,8 @@ import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
-import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
-import com.wire.kalium.persistence.dao.UserTypeEntity
 
 interface PublicUserMapper {
     fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
@@ -55,19 +51,9 @@ interface PublicUserMapper {
         // UserProfileDTO has no info about userType, we need to pass it explicitly
         userType: UserType
     ): OtherUser
-
-    // TODO:I think we are making too complicated parsers,
-    // maybe a good solution will be fetching self user when we are saving other users to db?
-    fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
-        userDetailResponse: UserProfileDTO,
-        connectionState: ConnectionEntity.State,
-        // UserProfileDTO has no info about userType, we need to pass it explicitly
-        userTypeEntity: UserTypeEntity
-    ): UserEntity
 }
 
 class PublicUserMapperImpl(
-    private val idMapper: IdMapper,
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
     private val domainUserTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
@@ -137,28 +123,4 @@ class PublicUserMapperImpl(
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
         deleted = userDetailResponse.deleted ?: false
     )
-
-    override fun fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
-        userDetailResponse: UserProfileDTO,
-        connectionState: ConnectionEntity.State,
-        userTypeEntity: UserTypeEntity
-    ) = UserEntity(
-        id = idMapper.fromApiToDao(userDetailResponse.id),
-        name = userDetailResponse.name,
-        handle = userDetailResponse.handle,
-        email = userDetailResponse.email,
-        phone = null,
-        accentId = userDetailResponse.accentId,
-        team = userDetailResponse.teamId,
-        previewAssetId = userDetailResponse.assets.getPreviewAssetOrNull()
-            ?.let { QualifiedIDEntity(it.key, userDetailResponse.id.domain) },
-        completeAssetId = userDetailResponse.assets.getCompleteAssetOrNull()
-            ?.let { QualifiedIDEntity(it.key, userDetailResponse.id.domain) },
-        connectionStatus = connectionState,
-        availabilityStatus = UserAvailabilityStatusEntity.NONE,
-        userType = userTypeEntity,
-        botService = userDetailResponse.service?.let { BotIdEntity(it.id, it.provider) },
-        deleted = userDetailResponse.deleted ?: false
-    )
-
 }

@@ -61,6 +61,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.collections.ConcurrentMap
@@ -154,7 +155,7 @@ internal class UserDataSource internal constructor(
                 Either.Left(SelfUserDeleted)
             } else {
                 updateSelfUserProviderAccountInfo(userDTO)
-                    .map { userMapper.fromApiSelfModelToDaoModel(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+                    .map { userMapper.fromSelfUserDtoToUserEntity(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
                     .flatMap { userEntity ->
                         wrapStorageRequest { userDAO.insertUser(userEntity) }
                             .flatMap {
@@ -240,17 +241,23 @@ internal class UserDataSource internal constructor(
             .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
         userDAO.upsertTeamMembers(
             teamMembers.map { userProfileDTO ->
-                userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-                    userProfileDTO = userProfileDTO,
-                    userTypeEntity = null
+                userMapper.fromUserProfileDtoToUserEntity(
+                    userProfile = userProfileDTO,
+                    connectionState = ConnectionEntity.State.ACCEPTED,
+                    userTypeEntity = UserTypeEntity.STANDARD
                 )
+//                 userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+//                     userProfileDTO = userProfileDTO,
+//                     userTypeEntity = null
+//                 )
             }
         )
 
         userDAO.upsertUsers(
             otherUsers.map { userProfileDTO ->
-                userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-                    userProfileDTO = userProfileDTO,
+                userMapper.fromUserProfileDtoToUserEntity(
+                    userProfile = userProfileDTO,
+                    connectionState = ConnectionEntity.State.NOT_CONNECTED,
                     userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUserTeamId,
@@ -259,6 +266,16 @@ internal class UserDataSource internal constructor(
                         isService = userProfileDTO.service != null
                     )
                 )
+//                 userMapper.fromApiModelWithUserTypeEntityToDaoModel(
+//                     userProfileDTO = userProfileDTO,
+//                     userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
+//                         otherUserDomain = userProfileDTO.id.domain,
+//                         selfUserTeamId = selfUserTeamId,
+//                         otherUserTeamId = userProfileDTO.teamId,
+//                         selfUserDomain = selfUserId.domain,
+//                         isService = userProfileDTO.service != null
+//                     )
+//                 )
             }
         )
     }
@@ -298,7 +315,7 @@ internal class UserDataSource internal constructor(
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.getUserByQualifiedID(selfUserID)
                 .filterNotNull()
-                .map(userMapper::fromDaoModelToSelfUser)
+                .map(userMapper::fromUserEntityToSelfUser)
         }
     }
 
@@ -309,7 +326,7 @@ internal class UserDataSource internal constructor(
             userDAO.getUserWithTeamByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map { (user, team) ->
-                    userMapper.fromDaoModelToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
+                    userMapper.fromUserEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
                 }
         }
     }
@@ -327,7 +344,7 @@ internal class UserDataSource internal constructor(
             .flatMap { userEntity ->
                 wrapStorageRequest {
                     userDAO.updateUser(userEntity)
-                }.map { userMapper.fromDaoModelToSelfUser(userEntity) }
+                }.map { userMapper.fromUserEntityToSelfUser(userEntity) }
             }
     }
 
@@ -372,7 +389,7 @@ internal class UserDataSource internal constructor(
             .map { userEntity ->
                 // TODO: cache SelfUserId so it's not fetched from DB every single time
                 if (userId == selfUserId) {
-                    userEntity?.let { userMapper.fromDaoModelToSelfUser(userEntity) }
+                    userEntity?.let { userMapper.fromUserEntityToSelfUser(userEntity) }
                 } else {
                     userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) }
                 }
@@ -442,7 +459,7 @@ internal class UserDataSource internal constructor(
         val userId = qualifiedIdMapper.fromStringToQualifiedID(event.userId)
         val user =
             userDAO.getUserByQualifiedID(userId.toDao()).firstOrNull() ?: return Either.Left(StorageFailure.DataNotFound)
-        userDAO.updateUser(userMapper.toUpdateDaoFromEvent(event, user))
+        userDAO.updateUser(userMapper.fromUserUpdateEventToUserEntity(event, user))
     }
 
     override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {
@@ -457,7 +474,7 @@ internal class UserDataSource internal constructor(
                 users.map { user ->
                     when (user) {
                         is OtherUser -> publicUserMapper.fromPublicUserToDaoModel(user)
-                        is SelfUser -> userMapper.fromSelfUserToDaoModel(user)
+                        is SelfUser -> userMapper.fromSelfUserToUserEntity(user)
                     }
                 }
             )

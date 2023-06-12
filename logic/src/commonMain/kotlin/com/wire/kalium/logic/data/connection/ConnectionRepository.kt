@@ -26,10 +26,8 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionState.ACCEPTED
@@ -41,6 +39,7 @@ import com.wire.kalium.logic.data.user.ConnectionState.NOT_CONNECTED
 import com.wire.kalium.logic.data.user.ConnectionState.PENDING
 import com.wire.kalium.logic.data.user.ConnectionState.SENT
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
@@ -91,10 +90,9 @@ internal class ConnectionDataSource(
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val conversationRepository: ConversationRepository,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : ConnectionRepository {
 
@@ -215,8 +213,8 @@ internal class ConnectionDataSource(
                 }
             }, { userProfileDTO ->
                 wrapStorageRequest {
-                    val userEntity = publicUserMapper.fromUserApiToEntityWithConnectionStateAndUserTypeEntity(
-                        userDetailResponse = userProfileDTO,
+                    val userEntity = userMapper.fromUserProfileDtoToUserEntity(
+                        userProfile = userProfileDTO,
                         connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
                         userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
                             otherUserDomain = userProfileDTO.id.domain,

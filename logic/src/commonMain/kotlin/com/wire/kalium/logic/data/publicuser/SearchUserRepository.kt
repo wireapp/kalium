@@ -190,7 +190,7 @@ internal class SearchUserRepositoryImpl(
 
                 userDAO.getUserByQualifiedID(selfUserID)
                     .filterNotNull()
-                    .map(userMapper::fromDaoModelToSelfUser)
+                    .map(userMapper::fromUserEntityToSelfUser)
             }.firstOrNull() ?: throw IllegalStateException()
     }
 

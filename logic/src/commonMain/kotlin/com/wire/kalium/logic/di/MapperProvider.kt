@@ -129,7 +129,7 @@ internal object MapperProvider {
         )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
-    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
+    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl()
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
