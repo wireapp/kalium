@@ -26,12 +26,12 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
-import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -118,7 +118,7 @@ object TestUser {
         service = null
     )
 
-    val USER_DTO = UserDTO(
+    val SELF_USER_DTO = SelfUserDTO(
         id = NETWORK_ID,
         name = "user_name_123",
         accentId = 2,

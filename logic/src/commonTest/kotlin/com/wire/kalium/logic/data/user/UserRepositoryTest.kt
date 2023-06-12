@@ -576,7 +576,7 @@ class UserRepositoryTest {
             given(selfApi)
                 .suspendFunction(selfApi::getSelfInfo)
                 .whenInvoked()
-                .thenReturn(NetworkResponse.Success(TestUser.USER_DTO.copy(deleted = true), mapOf(), 200))
+                .thenReturn(NetworkResponse.Success(TestUser.SELF_USER_DTO.copy(deleted = true), mapOf(), 200))
         }
 
         fun withSuccessfulGetMultipleUsersApiRequest(result: ListUsersDTO) = apply {
@@ -604,6 +604,6 @@ class UserRepositoryTest {
     }
 
     private companion object {
-        val SELF_USER = TestUser.USER_DTO
+        val SELF_USER = TestUser.SELF_USER_DTO
     }
 }
