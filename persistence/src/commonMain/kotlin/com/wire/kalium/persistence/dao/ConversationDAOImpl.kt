@@ -82,6 +82,7 @@ private class ConversationMapper {
             receiptMode = receipt_mode,
             messageTimer = message_timer,
             userMessageTimer = user_message_timer,
+            userSupportedProtocols = userSupportedProtocols
         )
     }
 
@@ -178,6 +179,7 @@ private class ConversationMapper {
                 receiptMode = receipt_mode,
                 messageTimer = message_timer,
                 userMessageTimer = user_message_timer,
+                userSupportedProtocols = userSupportedProtocols
             )
         }
     }
