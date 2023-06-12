@@ -46,7 +46,6 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
-    fun fromSelfUserDtoToSelfUser(userDTO: SelfUserDTO): SelfUser
     fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity
     fun fromUserEntityToSelfUser(userEntity: UserEntity): SelfUser
     fun fromSelfUserToUserEntity(selfUser: SelfUser): UserEntity
@@ -95,22 +94,6 @@ internal class UserMapperImpl(
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
     private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : UserMapper {
-
-    override fun fromSelfUserDtoToSelfUser(userDTO: SelfUserDTO): SelfUser = with(userDTO) {
-        SelfUser(
-            id = id.toModel(),
-            name = name,
-            handle = handle,
-            email = email,
-            phone = phone,
-            accentId = accentId,
-            teamId = teamId?.let { TeamId(it) },
-            connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = assets.getPreviewAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
-            completePicture = assets.getCompleteAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
-            availabilityStatus = UserAvailabilityStatus.NONE
-        )
-    }
 
     override fun fromUserEntityToSelfUser(userEntity: UserEntity) = with(userEntity) {
         SelfUser(
@@ -186,24 +169,13 @@ internal class UserMapperImpl(
     override fun fromUpdateRequestToDaoModel(
         user: SelfUser,
         updateRequest: UserUpdateRequest
-    ): UserEntity {
-        return UserEntity(
-            id = user.id.toDao(),
-            name = updateRequest.name ?: user.name,
-            handle = user.handle,
-            email = user.email,
-            phone = user.phone,
-            accentId = updateRequest.accentId ?: user.accentId,
-            team = user.teamId?.value,
-            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionState = user.connectionStatus),
-            previewAssetId = updateRequest.assets.getPreviewAssetOrNull()?.toDao(user.id.domain),
-            completeAssetId = updateRequest.assets.getCompleteAssetOrNull()?.toDao(user.id.domain),
-            availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.STANDARD,
-            botService = null,
-            deleted = false
+    ): UserEntity =
+        fromSelfUserToUserEntity(
+            user.copy(
+                previewPicture = updateRequest.assets.getPreviewAssetOrNull()?.toModel(user.id.domain),
+                completePicture = updateRequest.assets.getCompleteAssetOrNull()?.toModel(user.id.domain)
+            )
         )
-    }
 
     override fun toUserIdPersistence(userId: UserId) = UserIdEntity(userId.value, userId.domain)
 
