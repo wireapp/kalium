@@ -39,7 +39,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
             messageRepository.getMessageById(conversationId, messageId).map { message ->
-                if (message is Message.Regular && message.expirationData != null) {
+                if (message is Message.Regular && message.expirationData != null && message.status != Message.Status.PENDING) {
                     enqueueSelfDeletion(
                         message = message,
                         expirationData = message.expirationData
@@ -54,23 +54,12 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override fun enqueueSelfDeletion(message: Message.Regular, expirationData: Message.ExpirationData) {
-        val canBeDeleted = when (message.status) {
-            Message.Status.PENDING -> false
-            Message.Status.SENT,
-            Message.Status.READ,
-            Message.Status.FAILED,
-            Message.Status.FAILED_REMOTELY -> true
-        }
-        if (!canBeDeleted) {
-            SelfDeletionEventLogger.log(
-                LoggingSelfDeletionEvent.InvalidMessageStatus(
-                    message,
-                    expirationData
-                )
+        SelfDeletionEventLogger.log(
+            LoggingSelfDeletionEvent.InvalidMessageStatus(
+                message,
+                expirationData
             )
-
-            return
-        }
+        )
 
         launch {
             ongoingSelfDeletionMessagesMutex.withLock {
