@@ -393,4 +393,9 @@ class UserDAOImpl internal constructor(
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
         userQueries.updateUserDisplayName(displayName, selfUserId)
     }
+
+    override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
+        withContext(queriesContext) {
+            userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
+        }
 }

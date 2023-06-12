@@ -152,3 +152,6 @@ SELECT * FROM User AS user
 
 updateUserDisplayName:
 UPDATE User SET name = ? WHERE qualified_id = ?;
+
+updateUserSupportedProtocols:
+UPDATE User SET supported_protocols = ? WHERE qualified_id = ?;

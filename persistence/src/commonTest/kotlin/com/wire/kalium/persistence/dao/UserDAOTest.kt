@@ -614,6 +614,20 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(expectedNewDisplayName, persistedUser?.name)
     }
 
+    @Test
+    fun givenAnExistingUser_whenUpdatingTheSupportedProtocols_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewSupportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
+        db.userDAO.insertUser(user1)
+
+        // when
+        db.userDAO.updateUserSupportedProtocols(user1.id, expectedNewSupportedProtocols)
+
+        // then
+        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(expectedNewSupportedProtocols, persistedUser?.supportedProtocols)
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))

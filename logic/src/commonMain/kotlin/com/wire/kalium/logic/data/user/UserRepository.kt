@@ -411,6 +411,11 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit> {
         return wrapApiRequest { selfApi.updateSupportedProtocols(protocols.map { it.toApi() }) }
+            .flatMap {
+                wrapStorageRequest {
+                    userDAO.updateUserSupportedProtocols(selfUserId.toDao(), protocols.map { it.toDao() }.toSet())
+                }
+            }
     }
 
     override fun observeAllKnownUsersNotInConversation(
