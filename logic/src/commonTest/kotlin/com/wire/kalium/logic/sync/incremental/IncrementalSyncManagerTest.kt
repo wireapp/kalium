@@ -19,10 +19,10 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
-import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.network.NetworkState
 import com.wire.kalium.logic.network.NetworkStateObserver
@@ -40,6 +40,7 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.times
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,6 +51,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
@@ -296,10 +299,61 @@ class IncrementalSyncManagerTest {
         arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
         advanceUntilIdle()
 
-        verify(arrangement.exponentialDurationHelper)
-            .function(arrangement.exponentialDurationHelper::next)
-            .wasInvoked(exactly = once)
-    }
+            verify(arrangement.exponentialDurationHelper)
+                .function(arrangement.exponentialDurationHelper::next)
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenSlowSyncIsCompletedAndWorkerFails_whenPolicyIsUpgraded_thenShouldResetExponentialDuration() =
+        runTest(TestKaliumDispatcher.default) {
+            val policyFlow = MutableStateFlow(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS)
+
+            val (arrangement, _) = Arrangement()
+                .withWorkerReturning(emptyFlow())
+                .withRecoveringFromFailure()
+                .withConnectionPolicyReturning(policyFlow)
+                .arrange()
+
+            arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+            verify(arrangement.exponentialDurationHelper)
+                .function(arrangement.exponentialDurationHelper::reset)
+                .wasNotInvoked()
+
+            policyFlow.emit(ConnectionPolicy.KEEP_ALIVE)
+            advanceUntilIdle()
+
+            verify(arrangement.exponentialDurationHelper)
+                .function(arrangement.exponentialDurationHelper::reset)
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenWorkerFailsAndDelayUntilRetry_whenPolicyIsUpgraded_thenShouldRetryImmediately() =
+        runTest(TestKaliumDispatcher.default) {
+            val policyFlow = Channel<ConnectionPolicy>(capacity = Channel.UNLIMITED)
+            policyFlow.send(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS)
+            policyFlow.send(ConnectionPolicy.KEEP_ALIVE)
+
+            val retryDelay = 10.seconds
+
+            val (arrangement, _) = Arrangement()
+                .withWorkerReturning(flowThatFailsOnFirstTime())
+                .withNextExponentialDuration(retryDelay)
+                .withRecoveringFromFailure()
+                .withConnectionPolicyReturning(policyFlow.receiveAsFlow())
+                .arrange()
+
+            arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+            // Should ignore the rest of the timer and immediately retry
+            advanceTimeBy(retryDelay.inWholeMilliseconds / 2)
+            verify(arrangement.incrementalSyncWorker)
+                .suspendFunction(arrangement.incrementalSyncWorker::processEventsWhilePolicyAllowsFlow)
+                .wasInvoked(exactly = 2.times)
+        }
+
     private class Arrangement {
 
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
@@ -345,7 +399,7 @@ class IncrementalSyncManagerTest {
                 .thenReturn(sourceFlow)
         }
 
-        fun withConnectionPolicyReturning(connectionPolicyFlow: StateFlow<ConnectionPolicy>) = apply {
+        fun withConnectionPolicyReturning(connectionPolicyFlow: Flow<ConnectionPolicy>) = apply {
             given(incrementalSyncRepository)
                 .getter(incrementalSyncRepository::connectionPolicyState)
                 .whenInvoked()

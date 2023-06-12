@@ -26,4 +26,4 @@ data class SessionDTO(
     val cookieLabel: String?
 )
 
-data class AuthenticationResultDTO(val sessionDTO: SessionDTO, val userDTO: UserDTO)
+data class AuthenticationResultDTO(val sessionDTO: SessionDTO, val userDTO: SelfUserDTO)
