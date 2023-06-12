@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -34,7 +36,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class NewGroupConversationStartedMessageCreatorTest {
+class NewGroupConversationSystemMessagesCreatorTest {
 
     @Test
     fun givenASuccessConversationResponse_whenPersistingAGroupConversation_ThenShouldCreateASystemMessage() = runTest {
@@ -42,7 +44,7 @@ class NewGroupConversationStartedMessageCreatorTest {
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = sysMessageCreator.createSystemMessage(
+        val result = sysMessageCreator.conversationStarted(
             TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
         )
 
@@ -62,7 +64,7 @@ class NewGroupConversationStartedMessageCreatorTest {
             .withPersistMessageSuccess()
             .arrange()
 
-        val result = newGroupConversationCreatedHandler.createSystemMessage(
+        val result = newGroupConversationCreatedHandler.conversationStarted(
             TestConversation.ENTITY.copy(type = ConversationEntity.Type.ONE_ON_ONE)
         )
 
@@ -80,6 +82,13 @@ class NewGroupConversationStartedMessageCreatorTest {
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
 
+        @Mock
+        val isSelfATeamMember = mock(IsSelfATeamMemberUseCase::class)
+
+
+        @Mock
+        val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+
         fun withPersistMessageSuccess() = apply {
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
@@ -87,8 +96,11 @@ class NewGroupConversationStartedMessageCreatorTest {
                 .then { Either.Right(Unit) }
         }
 
-        fun arrange() = this to NewGroupConversationStartedMessageCreatorImpl(
-            persistMessage, TestUser.SELF.id,
+        fun arrange() = this to NewGroupConversationSystemMessagesCreatorImpl(
+            persistMessage,
+            isSelfATeamMember,
+            qualifiedIdMapper,
+            TestUser.SELF.id,
         )
     }
 

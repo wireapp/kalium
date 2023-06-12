@@ -58,8 +58,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
@@ -495,14 +495,16 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
-            newGroupConversationStartedMessageCreator,
+            newGroupConversationSystemMessagesCreator,
             userId,
             selfTeamId
         )
 
-    private val newGroupConversationStartedMessageCreator: NewGroupConversationStartedMessageCreator
-        get() = NewGroupConversationStartedMessageCreatorImpl(
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+        get() = NewGroupConversationSystemMessagesCreatorImpl(
             persistMessage,
+            team.isSelfATeamMember,
+            qualifiedIdMapper,
             userId
         )
 
@@ -1261,7 +1263,7 @@ class UserSessionScope internal constructor(
     val service: ServiceScope
         get() = ServiceScope(
             serviceRepository,
-        teamRepository,
+            teamRepository,
             selfTeamId
         )
 
