@@ -15,28 +15,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.selfdeletingMessages
+package com.wire.kalium.logic.feature.selfDeletingMessages
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 /**
  * Use case to persist the new self deletion timer for a given conversation to memory.
  */
-fun interface PersistNewSelfDeletionTimerUseCase {
+interface PersistNewSelfDeletionTimerUseCase {
     /**
      * @param conversationId the conversation id for which the self deletion timer should be updated
      */
-    operator fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer)
+    suspend operator fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer)
 }
 
 class PersistNewSelfDeletionTimerUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository
+    private val conversationRepository: ConversationRepository
 ) : PersistNewSelfDeletionTimerUseCase {
-    override fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
-        userConfigRepository.setConversationSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({
-            kaliumLogger.e("Failure while persisting self deleting messages status $it")
-        }, { kaliumLogger.d("Successfully updated self deleting messages status $newSelfDeletionTimer") })
+    override suspend fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
+        conversationRepository.updateUserSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({
+            val logMap = mapOf(
+                "value" to newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Failure"),
+                "errorInfo" to "$it"
+            ).toJsonElement()
+            kaliumLogger.e("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
+        }, {
+            val logMap = newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Success")
+            kaliumLogger.d("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
+        })
 }

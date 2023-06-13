@@ -253,7 +253,8 @@ internal class ConnectionDataSource(
                         access = emptyList(),
                         accessRole = emptyList(),
                         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-                        messageTimer = null
+                        messageTimer = null,
+                        userMessageTimer = null
                     )
                 )
             }

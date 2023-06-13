@@ -179,6 +179,8 @@ sealed class MessageContent {
     sealed class MemberChange(open val members: List<UserId>) : System() {
         data class Added(override val members: List<UserId>) : MemberChange(members)
         data class Removed(override val members: List<UserId>) : MemberChange(members)
+        data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
+        data class CreationAdded(override val members: List<UserId>) : MemberChange(members)
     }
 
     data class LastRead(
@@ -235,6 +237,46 @@ sealed class MessageContent {
     object CryptoSessionReset : System()
 
     object HistoryLost : System()
+    object ConversationCreated : System()
+}
+
+/**
+ * @return A string representing the type of content.
+ * Useful for logging. Plain strings must be used, otherwise it may be affected by code minification.
+ */
+@Suppress("ComplexMethod")
+fun MessageContent?.getType() = when (this) {
+    is MessageContent.Asset -> "Asset"
+    is MessageContent.FailedDecryption -> "FailedDecryption"
+    is MessageContent.Knock -> "Knock"
+    is MessageContent.RestrictedAsset -> "RestrictedAsset"
+    is MessageContent.Text -> "Text"
+    is MessageContent.Unknown -> "Unknown"
+    is MessageContent.Availability -> "Availability"
+    is MessageContent.Calling -> "Calling"
+    is MessageContent.Cleared -> "Cleared"
+    is MessageContent.ClientAction -> "ClientAction"
+    is MessageContent.DeleteForMe -> "DeleteForMe"
+    is MessageContent.DeleteMessage -> "DeleteMessage"
+    is MessageContent.Ignored -> "Ignored"
+    is MessageContent.LastRead -> "LastRead"
+    is MessageContent.Reaction -> "Reaction"
+    is MessageContent.Receipt -> "Receipt"
+    is MessageContent.TextEdited -> "TextEdited"
+    is MessageContent.ConversationMessageTimerChanged -> "ConversationMessageTimerChanged"
+    is MessageContent.ConversationReceiptModeChanged -> "ConversationReceiptModeChanged"
+    is MessageContent.ConversationRenamed -> "ConversationRenamed"
+    is MessageContent.CryptoSessionReset -> "CryptoSessionReset"
+    is MessageContent.HistoryLost -> "HistoryLost"
+    is MessageContent.MemberChange.Added -> "MemberChange.Added"
+    is MessageContent.MemberChange.Removed -> "MemberChange.Removed"
+    is MessageContent.MissedCall -> "MissedCall"
+    is MessageContent.NewConversationReceiptMode -> "NewConversationReceiptMode"
+    is MessageContent.TeamMemberRemoved -> "TeamMemberRemoved"
+    is MessageContent.ConversationCreated -> "ConversationCreated"
+    is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
+    is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
+    null -> "Unknown"
 }
 
 sealed class MessagePreviewContent {
@@ -262,6 +304,18 @@ sealed class MessagePreviewContent {
         ) : WithUser(senderName)
 
         data class MembersRemoved(
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
+
+        data class MembersFailedToAdd(
+            val senderName: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser(senderName)
+
+        data class MembersCreationAdded(
             val senderName: String?,
             val isSelfUserRemoved: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames

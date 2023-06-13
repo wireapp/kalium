@@ -15,14 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.selfdeletingMessages
+package com.wire.kalium.logic.feature.selfDeletingMessages
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlin.time.Duration
 
 /**
  * Use case to observe the status of the self deletion settings set by the team admin.
@@ -39,7 +38,7 @@ class ObserveTeamSettingsSelfDeletingStatusUseCaseImpl internal constructor(
             it.fold(
                 {
                     kaliumLogger.e("There was an error when fetching team settings self deletion timer")
-                    TeamSettingsSelfDeletionStatus(null, SelfDeletionTimer.Enabled(Duration.ZERO))
+                    TeamSettingsSelfDeletionStatus(null, TeamSelfDeleteTimer.Enabled)
                 },
                 { teamSettingsSelfDeletionStatus ->
                     teamSettingsSelfDeletionStatus

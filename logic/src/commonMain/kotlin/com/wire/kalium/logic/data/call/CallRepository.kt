@@ -216,6 +216,7 @@ internal class CallDataSource(
             isCameraOn = isCameraOn,
             isCbrEnabled = isCbrEnabled,
             establishedTime = null,
+            callStatus = status,
             protocol = conversation.conversation.protocol
         )
 
@@ -318,7 +319,10 @@ internal class CallDataSource(
                 else call.establishedTime
 
                 // Update Metadata
-                this[conversationId] = call.copy(establishedTime = establishedTime)
+                this[conversationId] = call.copy(
+                    establishedTime = establishedTime,
+                    callStatus = status
+                    )
             }
 
             _callMetadataProfile.value = callMetadataProfile.copy(
