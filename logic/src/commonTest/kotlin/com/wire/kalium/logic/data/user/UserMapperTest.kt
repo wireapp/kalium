@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.logic.framework.TestTeam
@@ -29,30 +28,33 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.mock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class UserMapperTest {
 
-//     @Test
-//     fun givenUserProfileDTOAndUserTypeEntity_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
-//         // Given
-//         val givenResponse = TestUser.USER_PROFILE_DTO
-//         val givenUserTypeEntity = UserTypeEntity.EXTERNAL
-//         val expectedResult = TestUser.ENTITY.copy(
-//             phone = null, // UserProfileDTO doesn't contain the phone
-//             connectionStatus = ConnectionEntity.State.NOT_CONNECTED // UserProfileDTO doesn't contain the connection status
-//         )
-//         val (_, userMapper) = Arrangement().arrange()
-//         // When
-//         val result = userMapper.fromApiModelWithUserTypeEntityToDaoModel(givenResponse, givenUserTypeEntity)
-//         // Then
-//         assertEquals(expectedResult, result)
-//     }
+    @Test
+    fun givenUserProfileDTOAndUserTypeEntity_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
+        // Given
+        val givenResponse = TestUser.USER_PROFILE_DTO
+        val givenUserTypeEntity = UserTypeEntity.EXTERNAL
+        val expectedResult = TestUser.ENTITY.copy(
+            phone = null, // UserProfileDTO doesn't contain the phone
+            connectionStatus = ConnectionEntity.State.NOT_CONNECTED
+        )
+        val (_, userMapper) = Arrangement().arrange()
+        // When
+        val result = userMapper.fromUserProfileDtoToUserEntity(
+            givenResponse,
+            expectedResult.connectionStatus,
+            givenUserTypeEntity
+        )
+        // Then
+        assertEquals(expectedResult, result)
+    }
 
     @Test
     fun givenTeamMemberApiModel_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
@@ -93,11 +95,8 @@ class UserMapperTest {
     }
 
     private class Arrangement {
-
-        @Mock
-        private val idMapper = mock(classOf<IdMapper>())
-
-        private val userMapper = UserMapperImpl(idMapper = idMapper)
+        
+        private val userMapper = UserMapperImpl()
 
         fun arrange() = this to userMapper
     }
