@@ -224,7 +224,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNewClientAdded_thenItisMarkedAsNotVerified() = runTest {
+    fun givenNewClientAdded_thenItIsMarkedAsNotVerified() = runTest {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
@@ -232,7 +232,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenClient_whenUpdateingVerificationStatus_thenItIsUpdated() = runTest {
+    fun givenClient_whenUpdatingVerificationStatus_thenItIsUpdated() = runTest {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
@@ -244,7 +244,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUserId_whenANewClientIsAdded_thennewListIsEmited() = runTest {
+    fun givenUserId_whenAClientIsAdded_thenNewListIsEmitted() = runTest {
         val user = user
         userDAO.insertUser(user)
 
@@ -261,7 +261,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenVerifiedClient_whenINsertingTheSameIdAgian_thenVerificationStatusIsNotChanges() = runTest {
+    fun givenVerifiedClient_whenInsertingTheSameIdAgain_thenVerificationStatusIsNotChanges() = runTest {
         val user = user
         userDAO.insertUser(user)
 
@@ -273,6 +273,30 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.insertClient(insertedClient)
         assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+    }
+
+    @Test
+    fun givenUserId_whenANewClientsIsAdded_thenNewClientListIsEmitted() = runTest {
+        userDAO.insertUser(user)
+        clientDAO.observeNewClients(userId).test {
+            awaitItem().also { result -> assertEquals(emptyList(), result) }
+            clientDAO.insertClient(insertedClient.copy(isMyNewClient = true))
+
+            awaitItem().also { result -> assertEquals(listOf(client), result) }
+        }
+    }
+
+    @Test
+    fun givenNewClientsForUser_whenMarkedAsNonNewForUser_thenNewClientEmptyListIsEmitted() = runTest {
+        userDAO.insertUser(user)
+        clientDAO.insertClients(listOf(insertedClient.copy(isMyNewClient = true), insertedClient1.copy(isMyNewClient = true)))
+
+        clientDAO.observeNewClients(userId).test {
+            awaitItem()
+            clientDAO.markClientsAsNonNewForUser(userId)
+
+            awaitItem().also { result -> assertEquals(listOf(), result) }
+        }
     }
 
     private companion object {
@@ -317,14 +341,14 @@ class ClientDAOTest : BaseDatabaseTest() {
 }
 
 private fun InsertClientParam.toClient(): Client =
-        Client(
-            userId,
-            id,
-            deviceType = deviceType,
-            clientType = clientType,
-            isValid = true,
-            isVerified = false,
-            label = label,
-            model = model,
-            registrationDate = registrationDate
-        )
+    Client(
+        userId,
+        id,
+        deviceType = deviceType,
+        clientType = clientType,
+        isValid = true,
+        isVerified = false,
+        label = label,
+        model = model,
+        registrationDate = registrationDate
+    )

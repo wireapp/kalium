@@ -641,7 +641,6 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             userId,
             authenticatedNetworkContainer.clientApi,
-            userStorage.database.metadataDAO
         )
 
     private val sessionEstablisher: SessionEstablisher

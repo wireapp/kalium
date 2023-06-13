@@ -390,55 +390,29 @@ class ClientRepositoryTest {
     }
 
     @Test
-    fun givenNoNewClientsInMemory_whenSavingNewClient_thenNewClientSaved() = runTest {
-        val (arrangement, repository) = Arrangement()
-            .withNewClients("")
-            .arrange()
+    fun whenSavingNewClient_thenNewClientSaved() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
 
         val newClientEvent = TestEvent.newClient()
-        val stringToSave = toStringForSaving(listOf(newClientEvent))
+        val insertClientParam = MapperProvider.clientMapper().toInsertClientParam(selfUserId, newClientEvent)
 
         repository.saveNewClientEvent(newClientEvent)
 
-        verify(arrangement.metadataDAO)
-            .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq(stringToSave))
+        verify(arrangement.clientDAO)
+            .suspendFunction(arrangement.clientDAO::insertClient)
+            .with(eq(insertClientParam))
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenSomeNewClientsInMemory_whenSavingNewClient_thenAllNewClientsSaved() = runTest {
-        val oldList = listOf(TestEvent.newClient())
-        val (arrangement, repository) = Arrangement()
-            .withNewClients(toStringForSaving(oldList))
-            .arrange()
-
-        val newClientEvent = TestEvent.newClient().copy(id = "new_new_client_event")
-        val stringToSave = toStringForSaving(oldList.plus(newClientEvent))
-
-        repository.saveNewClientEvent(newClientEvent)
-
-        verify(arrangement.metadataDAO)
-            .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq(stringToSave))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenSomeNewClientsInMemory_whenClearNewClientsForUser_thenNewClientsForOtherUsersKept() = runTest {
-        val oldList = listOf(
-            TestEvent.newClient(),
-            TestEvent.newClient().copy(id = "new_new_client_event")
-        )
-        val (arrangement, repository) = Arrangement()
-            .withNewClients(toStringForSaving(oldList))
-            .arrange()
+    fun whenClearNewClientsForUser_thenNewClientsCleared() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
 
         repository.clearNewClients()
 
-        verify(arrangement.metadataDAO)
-            .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq(""))
+        verify(arrangement.clientDAO)
+            .suspendFunction(arrangement.clientDAO::markClientsAsNonNewForUser)
+            .with(eq(selfUserId.toDao()))
             .wasInvoked(exactly = once)
     }
 
@@ -496,7 +470,7 @@ class ClientRepositoryTest {
         val metadataDAO: MetadataDAO = mock(classOf<MetadataDAO>())
 
         var clientRepository: ClientRepository =
-            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi, metadataDAO)
+            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi)
 
         init {
             given(metadataDAO)
@@ -585,13 +559,6 @@ class ClientRepositoryTest {
                 .suspendFunction(clientDAO::deleteClient)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
-        }
-
-        fun withNewClients(result: String) = apply {
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
-                .whenInvokedWith(eq(ClientDataSource.NEW_CLIENTS_LIST_KEY))
-                .thenReturn(result)
         }
 
         fun arrange() = this to clientRepository

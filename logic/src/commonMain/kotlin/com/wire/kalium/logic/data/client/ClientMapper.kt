@@ -135,6 +135,18 @@ class ClientMapper(
             )
         }
 
+    fun toInsertClientParam(userId: UserId, event: Event.User.NewClient): InsertClientParam =
+        InsertClientParam(
+            userId = userId.toDao(),
+            id = event.clientId.value,
+            deviceType = toDeviceTypeEntity(event.deviceType),
+            clientType = toClientTypeEntity(event.clientType),
+            label = event.label,
+            model = event.model,
+            registrationDate = Instant.parse(event.registrationTime),
+            isMyNewClient = true
+        )
+
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
         ClientType.Temporary -> ClientTypeDTO.Temporary
         ClientType.Permanent -> ClientTypeDTO.Permanent

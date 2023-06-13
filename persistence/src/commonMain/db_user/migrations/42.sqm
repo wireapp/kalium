@@ -1,0 +1,1 @@
+ALTER TABLE Client ADD COLUMN is_my_new INTEGER AS Boolean DEFAULT(0);
