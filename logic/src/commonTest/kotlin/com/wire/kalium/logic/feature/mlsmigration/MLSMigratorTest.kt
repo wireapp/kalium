@@ -21,13 +21,17 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -139,7 +143,53 @@ class MLSMigratorTest {
         result.shouldSucceed()
     }
 
+    @Test
+    fun givenTeamConversation_whenFinalising_thenKnownUsersAreFetchedAndProtocolIsUpdatedToMls() = runTest {
+        val conversation = TestConversation.CONVERSATION.copy(
+            type = Conversation.Type.GROUP,
+            teamId = TestTeam.TEAM_ID
+        )
+
+        val (arrangement, migrator) = Arrangement()
+            .withFetchKnownUsersSucceeding()
+            .withGetProteusTeamConversationsReadyForFinalisationReturning(listOf(conversation.id))
+            .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_SUCCESS)
+            .withFetchConversationSucceeding()
+            .withGetConversationProtocolInfoReturning(Arrangement.MLS_PROTOCOL_INFO)
+            .arrange()
+
+        migrator.finaliseProteusConversations()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchKnownUsers)
+            .wasInvoked(once)
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::updateProtocol)
+            .with(eq(conversation.id.toApi()), eq(ConvProtocol.MLS))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAnError_whenFinalising_thenStillConsiderItASuccess() = runTest {
+        val conversation = TestConversation.CONVERSATION.copy(
+            type = Conversation.Type.GROUP,
+            teamId = TestTeam.TEAM_ID
+        )
+
+        val (_, migrator) = Arrangement()
+            .withGetProteusTeamConversationsReturning(listOf(conversation))
+            .withUpdateProtocolReturns(TestNetworkResponseError.genericResponseError())
+            .arrange()
+
+        val result = migrator.migrateProteusConversations()
+        result.shouldSucceed()
+    }
+
     private class Arrangement {
+
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -153,11 +203,25 @@ class MLSMigratorTest {
         @Mock
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
+        fun withFetchKnownUsersSucceeding() = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchKnownUsers)
+                .whenInvoked()
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withGetProteusTeamConversationsReturning(conversations: List<Conversation>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getProteusTeamConversations)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(flowOf(conversations)))
+        }
+
+        fun withGetProteusTeamConversationsReadyForFinalisationReturning(conversationsIs: List<ConversationId>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getProteusTeamConversationsReadyForFinalisation)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(flowOf(conversationsIs)))
         }
 
         fun withGetConversationProtocolInfoReturning(protocolInfo: Conversation.ProtocolInfo) = apply {
@@ -211,6 +275,7 @@ class MLSMigratorTest {
 
         fun arrange() = this to MLSMigratorImpl(
             selfTeamIdProvider,
+            userRepository,
             conversationRepository,
             mlsConversationRepository,
             conversationApi
@@ -229,6 +294,13 @@ class MLSMigratorTest {
             )
             val MEMBERS = listOf(TestUser.USER_ID)
             val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
+                TestConversation.GROUP_ID,
+                Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+                0UL,
+                Instant.parse("2021-03-30T15:36:00.000Z"),
+                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            )
+            val MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,

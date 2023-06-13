@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -38,10 +39,12 @@ import kotlinx.coroutines.flow.first
 
 interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
+    suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>
 }
 
-class MLSMigratorImpl(
+internal class MLSMigratorImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationApi: ConversationApi
@@ -59,6 +62,21 @@ class MLSMigratorImpl(
                 }
         }
 
+    override suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit> =
+        selfTeamIdProvider().flatMap {
+            it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+        }.flatMap { teamId ->
+            userRepository.fetchKnownUsers()
+                .flatMap {
+                    conversationRepository.getProteusTeamConversationsReadyForFinalisation(teamId)
+                        .flatMap {
+                            it.first().foldToEitherWhileRight(Unit) { conversationId, _ ->
+                                finalise(conversationId)
+                            }
+                        }
+                }
+        }
+
     private suspend fun migrate(conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("migrating ${conversationId.toLogString()} to mixed")
         return updateProtocolToMixed(conversationId)
@@ -70,11 +88,30 @@ class MLSMigratorImpl(
             }
     }
 
+    private suspend fun finalise(conversationId: ConversationId): Either<CoreFailure, Unit> {
+        kaliumLogger.i("finalising ${conversationId.toLogString()} to mls")
+        return updateProtocolToMLS(conversationId)
+            .flatMapLeft {
+                kaliumLogger.w("failed to migrate ${conversationId.toLogString()} to mls: $it")
+                Either.Right(Unit)
+            }
+    }
+
     private suspend fun updateProtocolToMixed(conversationId: ConversationId) =
         wrapApiRequest { conversationApi.updateProtocol(conversationId.toApi(), ConvProtocol.MIXED) }
             .flatMap {
                 if (it is UpdateConversationProtocolResponse.ProtocolUpdated) {
                     conversationRepository.fetchConversation(conversationId)
+                } else {
+                    Either.Right(Unit)
+                }
+            }
+
+    private suspend fun updateProtocolToMLS(conversationId: ConversationId) =
+        wrapApiRequest { conversationApi.updateProtocol(conversationId.toApi(), ConvProtocol.MLS) }
+            .flatMap {
+                if (it is UpdateConversationProtocolResponse.ProtocolUpdated) {
+                    conversationRepository.fetchConversation(conversationId) // TODO jacob just locally update protocol to MLS
                 } else {
                     Either.Right(Unit)
                 }
