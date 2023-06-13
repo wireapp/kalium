@@ -342,6 +342,14 @@ class ConversationDAOImpl(
             .map { it.map(conversationMapper::toModel) }
     }
 
+    override suspend fun getAllProteusTeamConversationsReadyToBeFinalised(teamId: String): Flow<List<QualifiedIDEntity>> {
+        return conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
+            .asFlow()
+            .mapToList()
+            .flowOn(coroutineContext)
+            .map { it.also { println(it) }.map { it.qualified_id } }
+    }
+
     override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
