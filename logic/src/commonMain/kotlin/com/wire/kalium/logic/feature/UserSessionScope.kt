@@ -1215,7 +1215,6 @@ class UserSessionScope internal constructor(
             messages.messageSender,
             clientIdProvider,
             clientRepository,
-            mlsMigrationRepository,
             featureConfigRepository,
             slowSyncRepository,
             team.isSelfATeamMember,

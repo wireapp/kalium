@@ -76,7 +76,6 @@ class UserScope internal constructor(
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
     private val clientRepository: ClientRepository,
-    private val mlsMigrationRepository: MLSMigrationRepository,
     private val featureConfigRepository: FeatureConfigRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase
@@ -112,7 +111,6 @@ class UserScope internal constructor(
         get() = UpdateSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
-            mlsMigrationRepository,
             featureConfigRepository,
             slowSyncRepository
         )
