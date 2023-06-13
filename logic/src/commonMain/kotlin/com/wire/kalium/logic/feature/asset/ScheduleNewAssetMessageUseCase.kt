@@ -56,6 +56,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -160,12 +161,21 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 outGoingAssetUploadJob = scope.launch(dispatcher.io) {
                     launch {
                         messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
-                            if (visibility == MessageEntity.Visibility.DELETED) {
-                                // If the message is deleted we cancel the upload
-                                outGoingAssetUploadJob?.cancel()
-                            }
+                            visibility.fold(
+                                {
+                                    outGoingAssetUploadJob?.cancel()
+                                    this.cancel()
+                                },
+                                {
+                                    if (it == MessageEntity.Visibility.DELETED) {
+                                        outGoingAssetUploadJob?.cancel()
+                                        this.cancel()
+                                    }
+                                }
+                            )
                         }
                     }
+
                     launch {
                         uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
                             .onSuccess {
