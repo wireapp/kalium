@@ -484,8 +484,8 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.clientApi
         )
 
-    private val conversationGroupRepository: ConversationGroupRepository by lazy {
-        ConversationGroupRepositoryImpl(
+    private val conversationGroupRepository: ConversationGroupRepository
+        get() = ConversationGroupRepositoryImpl(
             mlsConversationRepository,
             joinExistingMLSConversationUseCase,
             memberJoinHandler,
@@ -497,14 +497,12 @@ class UserSessionScope internal constructor(
             userId,
             selfTeamId
         )
-    }
 
-    private val newConversationMembersRepository: NewConversationMembersRepository by lazy {
-        NewConversationMembersRepositoryImpl(
+    private val newConversationMembersRepository: NewConversationMembersRepository
+        get() = NewConversationMembersRepositoryImpl(
             userStorage.database.conversationDAO,
             lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
-    }
 
     private val messageRepository: MessageRepository
         get() = MessageDataSource(
