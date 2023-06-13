@@ -46,7 +46,7 @@ internal class MLSMessageApiV4Test : ApiTest() {
                 assertion =
                 {
                     assertPost()
-                    assertContentType(ContentType.Application.XProtoBuf)
+                    assertContentType(ContentType.Message.Mls)
                     assertPathEqual(PATH_COMMIT_BUNDLES)
                 }
             )
