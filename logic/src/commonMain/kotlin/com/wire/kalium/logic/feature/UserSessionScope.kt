@@ -502,7 +502,7 @@ class UserSessionScope internal constructor(
     private val newConversationMembersRepository: NewConversationMembersRepository by lazy {
         NewConversationMembersRepositoryImpl(
             userStorage.database.conversationDAO,
-            lazy { conversations.newGroupConversationSystemMessagesCreator }
+            conversations.newGroupConversationSystemMessagesCreator
         )
     }
 
