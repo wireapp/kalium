@@ -304,7 +304,6 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withWaitUntilLiveSuccessful()
             .arrange()
@@ -335,7 +334,6 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
@@ -365,7 +363,6 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
@@ -619,7 +616,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
 
@@ -651,7 +647,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
@@ -750,7 +745,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
 
@@ -772,7 +766,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
@@ -1046,13 +1039,6 @@ class MLSConversationRepositoryTest {
                 .function(mlsClient::updateKeyingMaterial)
                 .whenInvokedWith(anything())
                 .thenReturn(COMMIT_BUNDLE)
-        }
-
-        fun withSendWelcomeMessageSuccessful() = apply {
-            given(mlsMessageApi)
-                .suspendFunction(mlsMessageApi::sendWelcomeMessage)
-                .whenInvokedWith(anything())
-                .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
         }
 
         fun withSendCommitBundleSuccessful(events: List<EventContentDTO> = emptyList()) = apply {
