@@ -104,8 +104,7 @@ internal object MapperProvider {
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl(
-        idMapper(),
-        clientMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper()
+        idMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper()
     )
 
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()

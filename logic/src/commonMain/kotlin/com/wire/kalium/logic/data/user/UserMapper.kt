@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.client.ClientMapper
-import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
@@ -42,7 +40,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
@@ -76,8 +73,6 @@ interface UserMapper {
         userDomain: String,
     ): UserEntity
 
-    fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient>
-
     fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity
 
     fun fromUserProfileDtoToUserEntity(
@@ -89,7 +84,6 @@ interface UserMapper {
 
 internal class UserMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper(),
     private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
@@ -207,11 +201,6 @@ internal class UserMapperImpl(
             botService = null,
             deleted = false
         )
-
-    override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
-        otherUsersClients.map {
-            OtherUserClient(clientMapper.fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isVerified)
-        }
 
     override fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
