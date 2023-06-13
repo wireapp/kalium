@@ -42,7 +42,7 @@ internal interface NewConversationMembersRepository {
 
 internal class NewConversationMembersRepositoryImpl(
     private val conversationDAO: ConversationDAO,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper()
 ) : NewConversationMembersRepository {
@@ -56,7 +56,7 @@ internal class NewConversationMembersRepositoryImpl(
             idMapper.fromApiToDao(conversationResponse.id)
         )
     }.flatMap {
-        newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
+        newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
             conversationId,
             conversationResponse
         )
