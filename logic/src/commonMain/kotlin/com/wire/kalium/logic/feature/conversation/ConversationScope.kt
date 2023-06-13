@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -126,9 +128,15 @@ class ConversationScope internal constructor(
             conversationGroupRepository,
             syncManager,
             currentClientIdProvider,
-            selfUserId,
+            newGroupConversationSystemMessagesCreator
+        )
+
+    internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+        get() = NewGroupConversationSystemMessagesCreatorImpl(
             persistMessage,
-            isSelfATeamMember
+            isSelfATeamMember,
+            qualifiedIdMapper,
+            selfUserId
         )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase

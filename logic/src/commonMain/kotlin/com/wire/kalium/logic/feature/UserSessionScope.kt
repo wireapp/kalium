@@ -495,17 +495,9 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
-            newGroupConversationSystemMessagesCreator,
+            conversations.newGroupConversationSystemMessagesCreator,
             userId,
             selfTeamId
-        )
-
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
-        get() = NewGroupConversationSystemMessagesCreatorImpl(
-            persistMessage,
-            team.isSelfATeamMember,
-            qualifiedIdMapper,
-            userId
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository
