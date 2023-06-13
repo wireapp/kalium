@@ -248,7 +248,8 @@ object MessageMapper {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
         date: Instant,
-        senderUserId: UserIDEntity,
+        senderUserId: QualifiedIDEntity,
+        isSelfDelete: Boolean,
         senderName: String?,
         senderPreviewAssetId: QualifiedIDEntity?,
         conversationName: String?,
@@ -256,7 +257,7 @@ object MessageMapper {
         isQuotingSelf: Boolean?,
         assetMimeType: String?,
         mutedStatus: ConversationEntity.MutedStatus,
-        conversationType: ConversationEntity.Type,
+        conversationType: ConversationEntity.Type
     ): NotificationMessageEntity = NotificationMessageEntity(
         id = id,
         contentType = contentType,
@@ -270,7 +271,8 @@ object MessageMapper {
         conversationName = conversationName,
         mutedStatus = mutedStatus,
         conversationType = conversationType,
-        isQuotingSelf = isQuotingSelf == true
+        isQuotingSelf = isQuotingSelf == true,
+        isSelfDelete = isSelfDelete
     )
 
     private fun createMessageEntity(

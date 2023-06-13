@@ -35,9 +35,13 @@ data class LocalNotificationConversation(
 )
 
 sealed class LocalNotificationMessage(
-    open val author: LocalNotificationMessageAuthor,
+    open val author: LocalNotificationMessageAuthor?,
     open val time: Instant
 ) {
+    data class SelfDeleteMessage(
+        override val time: Instant
+    ) : LocalNotificationMessage(null, time)
+
     data class Text(
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant,
