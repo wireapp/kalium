@@ -21,8 +21,6 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 data class RegisterClientParam(
     val password: String?,
@@ -42,16 +40,15 @@ data class DeleteClientParam(
     val clientId: ClientId
 )
 
-@Serializable
 data class Client(
-    @SerialName("id") val id: ClientId,
-    @SerialName("type") val type: ClientType?,
-    @SerialName("registrationTime") val registrationTime: Instant?, // yyyy-mm-ddThh:MM:ss.qqq
-    @SerialName("isVerified") val isVerified: Boolean,
-    @SerialName("isValid") val isValid: Boolean,
-    @SerialName("deviceType") val deviceType: DeviceType?,
-    @SerialName("label") val label: String?,
-    @SerialName("model") val model: String?
+    val id: ClientId,
+    val type: ClientType?,
+    val registrationTime: Instant?, // yyyy-mm-ddThh:MM:ss.qqq
+    val isVerified: Boolean,
+    val isValid: Boolean,
+    val deviceType: DeviceType?,
+    val label: String?,
+    val model: String?
 )
 
 enum class ClientType {

@@ -44,7 +44,6 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
@@ -466,26 +465,8 @@ class ClientRepositoryTest {
         @Mock
         val clientDAO = mock(classOf<ClientDAO>())
 
-        @Mock
-        val metadataDAO: MetadataDAO = mock(classOf<MetadataDAO>())
-
         var clientRepository: ClientRepository =
             ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi)
-
-        init {
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::insertValue)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::deleteValue)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::clear)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
-        }
 
         fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
             given(clientRegistrationStorage)
