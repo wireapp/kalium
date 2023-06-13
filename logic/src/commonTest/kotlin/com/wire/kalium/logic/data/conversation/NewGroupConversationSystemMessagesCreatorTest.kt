@@ -78,6 +78,24 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenASuccessConversationResponse_whenPersistingAGroupConversation_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .arrange()
+
+        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE)
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.Receipt)
+            })
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
