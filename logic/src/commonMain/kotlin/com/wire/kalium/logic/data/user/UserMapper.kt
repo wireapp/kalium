@@ -40,7 +40,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
     fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity
@@ -65,7 +64,6 @@ interface UserMapper {
         updateRequest: UserUpdateRequest
     ): UserEntity
 
-    fun toUserIdPersistence(userId: UserId): UserIdEntity
     fun fromTeamMemberToDaoModel(
         teamId: TeamId,
         nonQualifiedUserId: NonQualifiedUserId,
@@ -170,8 +168,6 @@ internal class UserMapperImpl(
                 completePicture = updateRequest.assets.getCompleteAssetOrNull()?.toModel(user.id.domain)
             )
         )
-
-    override fun toUserIdPersistence(userId: UserId) = UserIdEntity(userId.value, userId.domain)
 
     /**
      * Null and default/hardcoded values will be replaced later when fetching known users.
