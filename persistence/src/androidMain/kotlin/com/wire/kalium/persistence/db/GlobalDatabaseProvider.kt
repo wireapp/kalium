@@ -30,16 +30,12 @@ import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
-import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.db.support.SqliteCallback
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.Flow
 import kotlin.coroutines.CoroutineContext
 
 // TODO(refactor): Unify creation just like it's done for UserDataBase
@@ -90,9 +86,6 @@ actual class GlobalDatabaseProvider(
 
     actual val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
-
-    private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
-    private val databaseScope = CoroutineScope(SupervisorJob() + queriesContext)
 
     actual fun nuke(): Boolean {
         driver.close()

@@ -32,7 +32,4 @@ actual class GlobalDatabaseProvider {
     actual val accountsDAO: AccountsDAO
         get() = TODO("Not yet implemented")
 
-    actual val globalDAO: GlobalMetadataDAO
-        get() = TODO("Not yet implemented")
-
 }
