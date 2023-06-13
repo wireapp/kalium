@@ -5,6 +5,7 @@ SELECT
     Message.content_type AS contentType,
     Message.creation_date AS date,
     Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isSelfDelete,
     User.name AS senderName,
     User.preview_asset_id AS senderPreviewAssetId,
     Conversation.name AS conversationName,
