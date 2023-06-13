@@ -25,6 +25,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -39,7 +40,7 @@ import kotlin.test.Test
 class NewGroupConversationSystemMessagesCreatorTest {
 
     @Test
-    fun givenASuccessConversationResponse_whenPersistingAGroupConversation_ThenShouldCreateASystemMessage() = runTest {
+    fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedSystemMessage() = runTest {
         val (arrangement, sysMessageCreator) = Arrangement()
             .withPersistMessageSuccess()
             .arrange()
@@ -59,7 +60,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
     }
 
     @Test
-    fun givenASuccessConversationResponse_whenPersistingNOTAGroupConversation_ThenShouldNOTCreateASystemMessage() = runTest {
+    fun givenNotAGroupConversation_whenPersisting_ThenShouldNOTCreateAStartedSystemMessage() = runTest {
         val (arrangement, newGroupConversationCreatedHandler) = Arrangement()
             .withPersistMessageSuccess()
             .arrange()
@@ -79,7 +80,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
     }
 
     @Test
-    fun givenASuccessConversationResponse_whenPersistingAGroupConversation_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
+    fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
         val (arrangement, sysMessageCreator) = Arrangement()
             .withPersistMessageSuccess()
             .withIsASelfTeamMember()
@@ -97,13 +98,53 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenNotAGroupConversation_whenPersisting_ThenShouldNOTCreateASystemMessageForReceiptStatus() =
+        runTest {
+            val (arrangement, sysMessageCreator) = Arrangement()
+                .withPersistMessageSuccess()
+                .arrange()
+
+            val result = sysMessageCreator.conversationReadReceiptStatus(
+                TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE)
+            )
+
+            result.shouldSucceed()
+
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(matching {
+                    (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+                })
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenNotAGroupConversation_whenPersistingUserNotTeamMember_ThenShouldNOTCreateASystemMessageForReceiptStatus() =
+        runTest {
+            val (arrangement, sysMessageCreator) = Arrangement()
+                .withIsASelfTeamMember(false)
+                .withPersistMessageSuccess()
+                .arrange()
+
+            val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE)
+
+            result.shouldSucceed()
+
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(matching {
+                    (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+                })
+                .wasNotInvoked()
+        }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
         val isSelfATeamMember = mock(IsSelfATeamMemberUseCase::class)
-
 
         @Mock
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
