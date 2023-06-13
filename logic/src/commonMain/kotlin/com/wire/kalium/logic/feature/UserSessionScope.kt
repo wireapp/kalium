@@ -500,9 +500,8 @@ class UserSessionScope internal constructor(
 
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
-            persistMessage,
             userStorage.database.conversationDAO,
-            userId
+            conversations.newGroupConversationSystemMessagesCreator
         )
 
     private val messageRepository: MessageRepository

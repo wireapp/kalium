@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -74,6 +75,8 @@ class NewConversationEventHandlerTest {
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
+            .withConversationStartedSystemMessage()
+            .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
@@ -113,6 +116,8 @@ class NewConversationEventHandlerTest {
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
+            .withConversationStartedSystemMessage()
+            .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
@@ -126,7 +131,7 @@ class NewConversationEventHandlerTest {
     }
 
     @Test
-    fun givenNewGroupConversationEvent_whenHandlingIt_thenPersistSystemMessageForReceiptMode() = runTest {
+    fun givenNewGroupConversationEvent_whenHandlingIt_thenPersistTheSystemMessagesForNewConversation() = runTest {
         // given
         val event = Event.Conversation.NewConversation(
             id = "eventId",
@@ -151,6 +156,8 @@ class NewConversationEventHandlerTest {
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
+            .withConversationStartedSystemMessage()
+            .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
@@ -160,11 +167,21 @@ class NewConversationEventHandlerTest {
 
         // then
         verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStarted, fun1<ConversationResponse>())
+            .with(eq(event.conversation))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            .with(eq(event.conversationId.toDao()), eq(event.conversation))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
             .suspendFunction(
                 arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus,
                 fun1<ConversationResponse>()
             )
-            .with(any())
+            .with(eq(event.conversation))
             .wasInvoked(exactly = once)
     }
 
@@ -204,6 +221,25 @@ class NewConversationEventHandlerTest {
                 .suspendFunction(conversationRepository::persistConversations)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(result)
+        }
+
+        fun withConversationStartedSystemMessage() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(
+                    newGroupConversationSystemMessagesCreator::conversationStarted,
+                    fun1<ConversationResponse>()
+                )
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withConversationResolvedMembersSystemMessage() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(
+                    newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed
+                )
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         suspend fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {

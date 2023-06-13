@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -54,6 +55,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val selfUserId: UserId,
+    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
 ) : NewGroupConversationSystemMessagesCreator {
 
     override suspend fun conversationStarted(conversation: ConversationEntity) = run {
@@ -125,6 +127,22 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse
     ): Either<CoreFailure, Unit> = run {
-        TODO("Not yet implemented")
+        if (conversationResponse.members.otherMembers.isEmpty()) {
+            Either.Right(Unit)
+        } else {
+            persistMessage(
+                Message.System(
+                    id = uuid4().toString(),
+                    content = MessageContent.MemberChange.CreationAdded(
+                        memberMapper.fromApiModel(conversationResponse.members).otherMembers.map { it.id }
+                    ),
+                    conversationId = conversationId.toModel(),
+                    date = DateTimeUtil.currentIsoDateTimeString(),
+                    senderUserId = selfUserId,
+                    status = Message.Status.SENT,
+                    visibility = Message.Visibility.VISIBLE
+                )
+            )
+        }
     }
 }

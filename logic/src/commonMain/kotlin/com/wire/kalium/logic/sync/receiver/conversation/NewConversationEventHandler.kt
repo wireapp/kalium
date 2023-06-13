@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -50,23 +51,25 @@ internal class NewConversationEventHandlerImpl(
         .persistConversations(listOf(event.conversation), selfTeamIdProvider().getOrNull()?.value, originatedFromEvent = true)
         .flatMap { conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant()) }
         .flatMap {
-            userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }
-                .toSet())
-        }
-        .onSuccess {
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation)
-            kaliumLogger
-                .logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
+            userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
+        }.onSuccess {
+            createSystemMessagesForNewConversation(event)
+            kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
         }
         .onFailure {
-            kaliumLogger
-                .logEventProcessing(
-                    EventLoggingStatus.FAILURE,
-                    event,
-                    Pair("errorInfo", "$it")
-                )
+            kaliumLogger.logEventProcessing(EventLoggingStatus.FAILURE, event, Pair("errorInfo", "$it"))
         }
+
+    /**
+     * Creates system messages for new conversation.
+     * Conversation started, members added and failed, read receipt status.
+     */
+    private suspend fun createSystemMessagesForNewConversation(event: Event.Conversation.NewConversation) = run {
+        newGroupConversationSystemMessagesCreator.conversationStarted(event.conversation)
+        newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
+            event.conversationId.toDao(),
+            event.conversation
+        )
+        newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation)
+    }
 }
