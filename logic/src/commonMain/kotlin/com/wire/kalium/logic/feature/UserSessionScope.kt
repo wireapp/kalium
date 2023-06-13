@@ -493,7 +493,7 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
-            conversations.newGroupConversationSystemMessagesCreator,
+            lazy { conversations.newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId
         )
@@ -502,7 +502,7 @@ class UserSessionScope internal constructor(
     private val newConversationMembersRepository: NewConversationMembersRepository by lazy {
         NewConversationMembersRepositoryImpl(
             userStorage.database.conversationDAO,
-            conversations.newGroupConversationSystemMessagesCreator
+            lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
     }
 
