@@ -34,6 +34,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
     private val databaseKey: ProteusDBSecret
 ) : ProteusClient {
 
+    private val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     private val path: String = "$rootDir/$KEYSTORE_NAME"
     private lateinit var coreCrypto: CoreCrypto
 
@@ -51,7 +52,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
             coreCrypto = CoreCrypto.deferredInit(
                 path,
                 databaseKey.value,
-                listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower())
+                listOf(defaultCiphersuite)
             )
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
@@ -66,7 +67,7 @@ class ProteusClientCoreCryptoImpl internal constructor(
                 coreCrypto = CoreCrypto.deferredInit(
                     path,
                     databaseKey.value,
-                    listOf(CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower())
+                    listOf(defaultCiphersuite)
                 )
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
