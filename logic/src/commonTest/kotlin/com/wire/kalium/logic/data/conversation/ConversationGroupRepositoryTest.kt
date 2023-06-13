@@ -703,7 +703,7 @@ class ConversationGroupRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 newConversationMembersRepository,
-                newGroupConversationSystemMessagesCreator,
+                lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )

@@ -77,7 +77,7 @@ class NewConversationMembersRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun arrange() = this to NewConversationMembersRepositoryImpl(conversationDAO, newGroupConversationSystemMessagesCreator)
+        fun arrange() = this to NewConversationMembersRepositoryImpl(conversationDAO, lazy { newGroupConversationSystemMessagesCreator })
     }
 
     private companion object {
