@@ -208,7 +208,6 @@ class CreateGroupConversationUseCaseTest {
         @Mock
         val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
 
-
         private val createGroupConversation = CreateGroupConversationUseCase(
             conversationRepository,
             conversationGroupRepository,

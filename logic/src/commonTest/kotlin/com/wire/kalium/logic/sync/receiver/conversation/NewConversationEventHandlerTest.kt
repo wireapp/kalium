@@ -21,25 +21,25 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
+import io.mockative.fun1
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
@@ -74,7 +74,7 @@ class NewConversationEventHandlerTest {
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
-            .withPersistSystemMessage()
+            .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
 
@@ -113,7 +113,7 @@ class NewConversationEventHandlerTest {
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
-            .withPersistSystemMessage()
+            .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
 
@@ -151,7 +151,7 @@ class NewConversationEventHandlerTest {
             .withPersistingConversations(Either.Right(Unit))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
-            .withPersistSystemMessage()
+            .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
 
@@ -159,12 +159,12 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(event)
 
         // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                val content = it.content as MessageContent.NewConversationReceiptMode
-                content.receiptMode
-            })
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(
+                arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus,
+                fun1<ConversationResponse>()
+            )
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -179,20 +179,17 @@ class NewConversationEventHandlerTest {
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
 
         @Mock
         private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
-        private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
             conversationRepository,
             userRepository,
             selfTeamIdProvider,
-            persistMessage,
-            qualifiedIdMapper,
-            isSelfATeamMember
+            newGroupConversationSystemMessagesCreator
         )
 
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
@@ -223,9 +220,9 @@ class NewConversationEventHandlerTest {
                 .then { either }
         }
 
-        fun withPersistSystemMessage() = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
+        fun withReadReceiptsSystemMessage() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus, fun1<ConversationResponse>())
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
