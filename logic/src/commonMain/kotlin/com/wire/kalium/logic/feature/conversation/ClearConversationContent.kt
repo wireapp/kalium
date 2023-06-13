@@ -33,6 +33,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DateTimeUtil
 
 internal interface ClearConversationContent {
@@ -45,7 +46,7 @@ internal class ClearConversationContentImpl(
 ) : ClearConversationContent {
 
     override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        return conversationRepository.getAssetMessages(conversationId).flatMap { conversationAssetMessages ->
+        conversationRepository.getAssetMessages(conversationId).onSuccess { conversationAssetMessages ->
             conversationAssetMessages.forEach { message ->
                 val messageContent: MessageContent = message.content
 
@@ -55,9 +56,8 @@ internal class ClearConversationContentImpl(
                     }
                 }
             }
-
-            conversationRepository.deleteAllMessages(conversationId)
         }
+        return conversationRepository.deleteAllMessages(conversationId)
     }
 }
 
