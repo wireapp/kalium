@@ -62,23 +62,29 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         if (conversation.type != ConversationEntity.Type.GROUP) {
             return Either.Right(Unit)
         }
-        persistConversationStartedSystemMessage(conversation.id.toModel())
+        persistConversationStartedSystemMessage(
+            conversation.creatorId.let { qualifiedIdMapper.fromStringToQualifiedID(it) },
+            conversation.id.toModel()
+        )
     }
 
     override suspend fun conversationStarted(conversation: ConversationResponse) = run {
         if (conversation.type != ConversationResponse.Type.GROUP) {
             return Either.Right(Unit)
         }
-        persistConversationStartedSystemMessage(conversation.id.toModel())
+        persistConversationStartedSystemMessage(
+            conversation.creator.let { qualifiedIdMapper.fromStringToQualifiedID(it) },
+            conversation.id.toModel()
+        )
     }
 
-    private suspend fun persistConversationStartedSystemMessage(conversationId: ConversationId) = persistMessage(
+    private suspend fun persistConversationStartedSystemMessage(creatorId: UserId, conversationId: ConversationId) = persistMessage(
         Message.System(
             id = uuid4().toString(),
             content = MessageContent.ConversationCreated,
             conversationId = conversationId,
             date = DateTimeUtil.currentIsoDateTimeString(),
-            senderUserId = selfUserId,
+            senderUserId = creatorId,
             status = Message.Status.SENT,
             visibility = Message.Visibility.VISIBLE
         )
@@ -92,7 +98,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         persistReadReceiptSystemMessage(
             conversationId = conversation.id,
             creatorId = conversation.creatorId?.let { qualifiedIdMapper.fromStringToQualifiedID(it) } ?: selfUserId,
-            receiptMode = conversation.receiptMode == Conversation.ReceiptMode.ENABLED)
+            receiptMode = conversation.receiptMode == Conversation.ReceiptMode.ENABLED
+        )
     }
 
     override suspend fun conversationReadReceiptStatus(conversation: ConversationResponse) = run {
