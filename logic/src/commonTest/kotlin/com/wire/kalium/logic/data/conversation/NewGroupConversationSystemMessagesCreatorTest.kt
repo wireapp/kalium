@@ -82,6 +82,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
     fun givenASuccessConversationResponse_whenPersistingAGroupConversation_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
         val (arrangement, sysMessageCreator) = Arrangement()
             .withPersistMessageSuccess()
+            .withIsASelfTeamMember()
             .arrange()
 
         val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE)
@@ -91,7 +92,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
-                (it.content is MessageContent.System && it.content is MessageContent.Receipt)
+                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
             .wasInvoked(once)
     }
@@ -107,11 +108,25 @@ class NewGroupConversationSystemMessagesCreatorTest {
         @Mock
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
+        init {
+            given(qualifiedIdMapper)
+                .function(qualifiedIdMapper::fromStringToQualifiedID)
+                .whenInvokedWith(any())
+                .then { TestUser.USER_ID }
+        }
+
         fun withPersistMessageSuccess() = apply {
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .then { Either.Right(Unit) }
+        }
+
+        fun withIsASelfTeamMember(isMember: Boolean = true) = apply {
+            given(isSelfATeamMember)
+                .suspendFunction(isSelfATeamMember::invoke)
+                .whenInvoked()
+                .then { isMember }
         }
 
         fun arrange() = this to NewGroupConversationSystemMessagesCreatorImpl(
