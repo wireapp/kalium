@@ -171,7 +171,7 @@ internal class UserDataSource internal constructor(
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
-                userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+                userEntity?.let { publicUserMapper.fromUserEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
                 processFederatedUserRefresh(userId, otherUser)
             }
@@ -374,14 +374,14 @@ internal class UserDataSource internal constructor(
             .mapRight { users ->
                 users
                     .filter { it.id != selfUserId && !it.deleted }
-                    .map { userEntity -> publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+                    .map { userEntity -> publicUserMapper.fromUserEntityToOtherUser(userEntity) }
             }
     }
 
     override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
         qualifiedID = userId.toDao()
     )?.let {
-        publicUserMapper.fromDaoModelToPublicUserMinimized(it)
+        publicUserMapper.fromUserEntityToOtherUserMinimized(it)
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =
@@ -391,7 +391,7 @@ internal class UserDataSource internal constructor(
                 if (userId == selfUserId) {
                     userEntity?.let { userMapper.fromUserEntityToSelfUser(userEntity) }
                 } else {
-                    userEntity?.let { publicUserMapper.fromDaoModelToPublicUser(userEntity) }
+                    userEntity?.let { publicUserMapper.fromUserEntityToOtherUser(userEntity) }
                 }
             }
 
@@ -399,7 +399,7 @@ internal class UserDataSource internal constructor(
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
             getSelfUser()?.teamId.let { selfTeamId ->
                 Either.Right(
-                    publicUserMapper.fromUserDetailResponseWithUsertype(
+                    publicUserMapper.fromUserProfileDtoToOtherUser(
                         userDetailResponse = userProfileDTO,
                         userType = userTypeMapper.fromTeamAndDomain(
                             otherUserDomain = userProfileDTO.id.domain,
@@ -432,7 +432,7 @@ internal class UserDataSource internal constructor(
             .mapRight { users ->
                 users
                     .filter { !it.deleted }
-                    .map { publicUserMapper.fromDaoModelToPublicUser(it) }
+                    .map { publicUserMapper.fromUserEntityToOtherUser(it) }
             }
     }
 
@@ -473,7 +473,7 @@ internal class UserDataSource internal constructor(
             userDAO.insertOrIgnoreUsers(
                 users.map { user ->
                     when (user) {
-                        is OtherUser -> publicUserMapper.fromPublicUserToDaoModel(user)
+                        is OtherUser -> publicUserMapper.fromOtherToUserEntity(user)
                         is SelfUser -> userMapper.fromSelfUserToUserEntity(user)
                     }
                 }

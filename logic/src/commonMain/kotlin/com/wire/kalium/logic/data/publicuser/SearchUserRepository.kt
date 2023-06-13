@@ -162,7 +162,7 @@ internal class SearchUserRepositoryImpl(
                 val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
                     val selfUser = getSelfUser()
                     userProfileDTOList.map { userProfileDTO ->
-                        publicUserMapper.fromUserDetailResponseWithUsertype(
+                        publicUserMapper.fromUserProfileDtoToOtherUser(
                             userDetailResponse = userProfileDTO,
                             userType = userTypeMapper.fromTeamAndDomain(
                                 otherUserDomain = userProfileDTO.id.domain,
@@ -205,7 +205,7 @@ internal class SearchUserRepositoryImpl(
         }
 
         return listFlow.map {
-            UserSearchResult(it.map(publicUserMapper::fromDaoModelToPublicUser))
+            UserSearchResult(it.map(publicUserMapper::fromUserEntityToOtherUser))
         }
     }
 

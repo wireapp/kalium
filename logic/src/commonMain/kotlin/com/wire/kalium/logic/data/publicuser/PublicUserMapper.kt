@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.publicuser
 
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
@@ -43,10 +42,10 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 
 interface PublicUserMapper {
-    fun fromDaoModelToPublicUser(userEntity: UserEntity): OtherUser
-    fun fromPublicUserToDaoModel(otherUser: OtherUser): UserEntity
-    fun fromDaoModelToPublicUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized
-    fun fromUserDetailResponseWithUsertype(
+    fun fromUserEntityToOtherUser(userEntity: UserEntity): OtherUser
+    fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity
+    fun fromUserEntityToOtherUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized
+    fun fromUserProfileDtoToOtherUser(
         userDetailResponse: UserProfileDTO,
         // UserProfileDTO has no info about userType, we need to pass it explicitly
         userType: UserType
@@ -60,7 +59,7 @@ class PublicUserMapperImpl(
     private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : PublicUserMapper {
 
-    override fun fromDaoModelToPublicUser(userEntity: UserEntity) = OtherUser(
+    override fun fromUserEntityToOtherUser(userEntity: UserEntity) = OtherUser(
         id = userEntity.id.toModel(),
         name = userEntity.name,
         handle = userEntity.handle,
@@ -77,7 +76,7 @@ class PublicUserMapperImpl(
         deleted = userEntity.deleted
     )
 
-    override fun fromPublicUserToDaoModel(otherUser: OtherUser): UserEntity = with(otherUser) {
+    override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
         UserEntity(
             id = id.toDao(),
             name = name,
@@ -96,7 +95,7 @@ class PublicUserMapperImpl(
         )
     }
 
-    override fun fromDaoModelToPublicUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized =
+    override fun fromUserEntityToOtherUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized =
         OtherUserMinimized(
             id = userEntity.id.toModel(),
             name = userEntity.name,
@@ -104,7 +103,7 @@ class PublicUserMapperImpl(
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         )
 
-    override fun fromUserDetailResponseWithUsertype(
+    override fun fromUserProfileDtoToOtherUser(
         userDetailResponse: UserProfileDTO,
         userType: UserType
     ) = OtherUser(
