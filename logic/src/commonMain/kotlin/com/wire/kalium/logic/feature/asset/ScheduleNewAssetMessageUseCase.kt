@@ -56,7 +56,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -164,12 +163,10 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                             visibility.fold(
                                 {
                                     outGoingAssetUploadJob?.cancel()
-                                    this.cancel()
                                 },
                                 {
                                     if (it == MessageEntity.Visibility.DELETED) {
                                         outGoingAssetUploadJob?.cancel()
-                                        this.cancel()
                                     }
                                 }
                             )

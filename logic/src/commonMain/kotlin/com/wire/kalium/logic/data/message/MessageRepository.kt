@@ -508,7 +508,10 @@ class MessageDataSource(
         }
     }
 
-    override suspend fun observeMessageVisibility(messageUuid: String, conversationId: ConversationId): Flow<Either<StorageFailure, MessageEntity.Visibility>> =
+    override suspend fun observeMessageVisibility(
+        messageUuid: String,
+        conversationId: ConversationId
+    ): Flow<Either<StorageFailure, MessageEntity.Visibility>> =
         wrapFlowStorageRequest {
             messageDAO.observeMessageVisibility(messageUuid, conversationId.toDao())
         }
