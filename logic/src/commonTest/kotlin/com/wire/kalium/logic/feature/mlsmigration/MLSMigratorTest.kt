@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.mlsmigration
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -30,11 +30,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
@@ -42,6 +40,7 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
@@ -67,7 +66,7 @@ class MLSMigratorTest {
 
         val (arrangement, migrator) = Arrangement()
             .withGetProteusTeamConversationsReturning(listOf(conversation))
-            .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_SUCCESS)
+            .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupSucceeds()
@@ -77,42 +76,9 @@ class MLSMigratorTest {
 
         migrator.migrateProteusConversations()
 
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::updateProtocol)
-            .with(eq(conversation.id.toApi()), eq(ConvProtocol.MIXED))
-            .wasInvoked(once)
-
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
-            .with(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(emptyList()))
-
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
-            .with(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(Arrangement.MEMBERS))
-    }
-
-    @Test
-    fun givenProtocolIsUnchanged_whenMigrating_thenGroupIsEstablished() = runTest {
-        val conversation = TestConversation.CONVERSATION.copy(
-            type = Conversation.Type.GROUP,
-            teamId = TestTeam.TEAM_ID
-        )
-
-        val (arrangement, migrator) = Arrangement()
-            .withGetProteusTeamConversationsReturning(listOf(conversation))
-            .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_UNCHANGED)
-            .withFetchConversationSucceeding()
-            .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
-            .withEstablishGroupSucceeds()
-            .withGetConversationMembersReturning(Arrangement.MEMBERS)
-            .withAddMembersSucceeds()
-            .arrange()
-
-        migrator.migrateProteusConversations()
-
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::updateProtocol)
-            .with(eq(conversation.id.toApi()), eq(ConvProtocol.MIXED))
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateProtocol)
+            .with(eq(conversation.id), eq(Conversation.Protocol.MIXED))
             .wasInvoked(once)
 
         verify(arrangement.mlsConversationRepository)
@@ -131,9 +97,9 @@ class MLSMigratorTest {
             teamId = TestTeam.TEAM_ID
         )
 
-        val (arrangement, migrator) = Arrangement()
+        val (_, migrator) = Arrangement()
             .withGetProteusTeamConversationsReturning(listOf(conversation))
-            .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_UNCHANGED)
+            .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupFails()
@@ -153,7 +119,7 @@ class MLSMigratorTest {
         val (arrangement, migrator) = Arrangement()
             .withFetchKnownUsersSucceeding()
             .withGetProteusTeamConversationsReadyForFinalisationReturning(listOf(conversation.id))
-            .withUpdateProtocolReturns(Arrangement.UPDATE_PROTOCOL_SUCCESS)
+            .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MLS_PROTOCOL_INFO)
             .arrange()
@@ -164,9 +130,9 @@ class MLSMigratorTest {
             .suspendFunction(arrangement.userRepository::fetchKnownUsers)
             .wasInvoked(once)
 
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::updateProtocol)
-            .with(eq(conversation.id.toApi()), eq(ConvProtocol.MLS))
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateProtocol)
+            .with(eq(conversation.id), eq(Conversation.Protocol.MLS))
             .wasInvoked(once)
     }
 
@@ -179,7 +145,7 @@ class MLSMigratorTest {
 
         val (_, migrator) = Arrangement()
             .withGetProteusTeamConversationsReturning(listOf(conversation))
-            .withUpdateProtocolReturns(TestNetworkResponseError.genericResponseError())
+            .withUpdateProtocolReturns(Either.Left(TestNetworkResponseError.noNetworkConnection()))
             .arrange()
 
         val result = migrator.migrateProteusConversations()
@@ -196,9 +162,6 @@ class MLSMigratorTest {
 
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
-
-        @Mock
-        val conversationApi = mock(classOf<ConversationApi>())
 
         @Mock
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
@@ -244,12 +207,11 @@ class MLSMigratorTest {
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(Unit))
         }
-
-        fun withUpdateProtocolReturns(response: NetworkResponse<UpdateConversationProtocolResponse>) = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::updateProtocol)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(response)
+        fun withUpdateProtocolReturns(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateProtocol)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
         }
 
         fun withEstablishGroupSucceeds() = apply {
@@ -277,8 +239,7 @@ class MLSMigratorTest {
             selfTeamIdProvider,
             userRepository,
             conversationRepository,
-            mlsConversationRepository,
-            conversationApi
+            mlsConversationRepository
         )
 
         init {
@@ -307,18 +268,6 @@ class MLSMigratorTest {
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
-            val UPDATE_PROTOCOL_SUCCESS = NetworkResponse.Success(
-                UpdateConversationProtocolResponse.ProtocolUpdated(
-                    EventContentDTO.Conversation.ProtocolUpdate(
-                        TestConversation.NETWORK_ID,
-                        ConversationProtocolDTO(ConvProtocol.MIXED),
-                        TestUser.NETWORK_ID
-                    )
-                ), emptyMap(), 200
-            )
-            val UPDATE_PROTOCOL_UNCHANGED = NetworkResponse.Success(
-                UpdateConversationProtocolResponse.ProtocolUnchanged,
-                emptyMap(), 204)
         }
     }
 }

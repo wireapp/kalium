@@ -838,8 +838,7 @@ class UserSessionScope internal constructor(
             selfTeamId,
             userRepository,
             conversationRepository,
-            mlsConversationRepository,
-            authenticatedNetworkContainer.conversationApi
+            mlsConversationRepository
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,

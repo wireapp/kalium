@@ -570,6 +570,12 @@ class ConversationDAOImpl(
             conversationQueries.updateConversationType(type, conversationID)
         }
 
+    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol) {
+        withContext(coroutineContext) {
+            conversationQueries.updateConversationProtocol(protocol, conversationId)
+        }
+    }
+
     override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) = withContext(coroutineContext) {
         memberQueries.deleteUserFromGroupConversations(userId, userId)
     }

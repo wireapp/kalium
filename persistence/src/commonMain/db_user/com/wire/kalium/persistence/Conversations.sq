@@ -292,6 +292,11 @@ UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
 
+updateConversationProtocol:
+UPDATE Conversation
+SET protocol = ?
+WHERE qualified_id = ?;
+
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
 
