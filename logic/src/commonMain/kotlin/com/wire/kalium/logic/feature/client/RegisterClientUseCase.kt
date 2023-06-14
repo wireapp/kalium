@@ -105,6 +105,7 @@ interface RegisterClientUseCase {
         val password: String?,
         val capabilities: List<ClientCapability>?,
         val clientType: ClientType? = null,
+        val model: String? = null,
         val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
         val secondFactorVerificationCode: String? = null,
     )
@@ -137,7 +138,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         val verificationCode = registerClientParam.secondFactorVerificationCode ?: currentlyStoredVerificationCode()
         sessionRepository.cookieLabel(selfUserId)
             .flatMap { cookieLabel ->
-                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel, verificationCode)
+                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, model, cookieLabel, verificationCode)
             }.fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
@@ -211,6 +212,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         password: String?,
         capabilities: List<ClientCapability>?,
         clientType: ClientType? = null,
+        model: String? = null,
         cookieLabel: String?,
         secondFactorVerificationCode: String? = null,
     ) = withContext(dispatchers.io) {
@@ -224,7 +226,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                         lastKey = lastKey,
                         deviceType = null,
                         label = null,
-                        model = null,
+                        model = model,
                         clientType = clientType,
                         cookieLabel = cookieLabel,
                         secondFactorVerificationCode = secondFactorVerificationCode,
