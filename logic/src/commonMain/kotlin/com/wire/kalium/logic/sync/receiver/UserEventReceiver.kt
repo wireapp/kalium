@@ -111,6 +111,7 @@ class UserEventReceiverImpl internal constructor(
                         event,
                         Pair("info", "OTHER_CLIENT")
                     )
+                clientRepository.deleteClientLocally(event.clientId)
             }
         }
     }

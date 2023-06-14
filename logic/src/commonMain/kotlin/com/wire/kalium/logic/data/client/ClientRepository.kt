@@ -63,6 +63,7 @@ interface ClientRepository {
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
+    suspend fun deleteClientLocally(clientId: ClientId): Either<StorageFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
     suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
@@ -149,6 +150,9 @@ class ClientDataSource(
             wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), param.clientId.value) }
         }
     }
+
+    override suspend fun deleteClientLocally(clientId: ClientId): Either<StorageFailure, Unit> =
+        wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), clientId.value) }
 
     /**
      * fetches the clients from the backend and stores them in the database
