@@ -213,7 +213,12 @@ class InstanceService(
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
                     when (val result = client.getOrRegister(
-                        RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList(), ClientType.Permanent)
+                        RegisterClientUseCase.RegisterClientParam(
+                            password = instanceRequest.password,
+                            capabilities = emptyList(),
+                            clientType = ClientType.Permanent,
+                            model = instanceRequest.deviceName
+                        )
                     )) {
                         is RegisterClientResult.Failure ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed")
