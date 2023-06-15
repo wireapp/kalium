@@ -163,7 +163,8 @@ object TestConversation {
         userDefederated = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        userSupportedProtocols = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -316,7 +317,8 @@ object TestConversation {
         userDefederated = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        userSupportedProtocols = null
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
@@ -359,13 +361,6 @@ object TestConversation {
         verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
-    val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
-        GROUP_ID,
-        ProtocolInfo.MLS.GroupState.PENDING_JOIN,
-        0UL,
-        Instant.parse("2021-03-30T15:36:00.000Z"),
-        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-    )
     val MLS_CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "MLS Name",
