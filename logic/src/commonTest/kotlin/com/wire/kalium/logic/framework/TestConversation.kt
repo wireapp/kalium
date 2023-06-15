@@ -159,7 +159,8 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        userSupportedProtocols = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -309,7 +310,8 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        userSupportedProtocols = null
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(

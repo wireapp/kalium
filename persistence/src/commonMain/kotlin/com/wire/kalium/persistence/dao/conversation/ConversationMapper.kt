@@ -66,7 +66,8 @@ internal class ConversationMapper {
             userMessageTimer = user_message_timer,
             userDefederated = userDefederated,
             archived = archived,
-            archivedDateTime = archived_date_time
+            archivedDateTime = archived_date_time,
+            userSupportedProtocols = userSupportedProtocols
         )
     }
 
@@ -169,7 +170,8 @@ internal class ConversationMapper {
                 userMessageTimer = user_message_timer,
                 userDefederated = userDefederated,
                 archived = archived,
-                archivedDateTime = archived_date_time
+                archivedDateTime = archived_date_time,
+                userSupportedProtocols = userSupportedProtocols
             )
         }
     }

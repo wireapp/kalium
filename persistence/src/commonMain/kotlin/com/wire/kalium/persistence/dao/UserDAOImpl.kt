@@ -53,7 +53,8 @@ class UserMapper {
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
             expiresAt = user.expires_at,
-            defederated = user.defederated
+            defederated = user.defederated,
+            supportedProtocols = user.supported_protocols
         )
     }
 
@@ -76,6 +77,7 @@ class UserMapper {
         hasIncompleteMetadata: Boolean,
         expiresAt: Instant?,
         defederated: Boolean,
+        supportedProtocols: Set<SupportedProtocolEntity>?,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -97,7 +99,8 @@ class UserMapper {
             deleted = deleted,
             hasIncompleteMetadata = hasIncompleteMetadata,
             expiresAt = expiresAt,
-            defederated = defederated
+            defederated = defederated,
+            supportedProtocols = supportedProtocols
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -146,7 +149,8 @@ class UserDAOImpl internal constructor(
             incomplete_metadata = user.hasIncompleteMetadata,
             expires_at = user.expiresAt,
             connection_status = user.connectionStatus,
-            deleted = user.deleted
+            deleted = user.deleted,
+            supported_protocols = user.supportedProtocols
         )
     }
 
@@ -168,7 +172,8 @@ class UserDAOImpl internal constructor(
                     incomplete_metadata = false,
                     expires_at = user.expiresAt,
                     connection_status = user.connectionStatus,
-                    deleted = user.deleted
+                    deleted = user.deleted,
+                    supported_protocols = user.supportedProtocols
                 )
             }
         }
@@ -206,7 +211,8 @@ class UserDAOImpl internal constructor(
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt,
                         connection_status = user.connectionStatus,
-                        deleted = user.deleted
+                        deleted = user.deleted,
+                        supported_protocols =  user.supportedProtocols
                     )
                 }
             }
@@ -229,7 +235,7 @@ class UserDAOImpl internal constructor(
                     user_type = user.userType,
                     bot_service = user.botService,
                     incomplete_metadata = false,
-                    expires_at = user.expiresAt
+                    expires_at = user.expiresAt,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
@@ -248,7 +254,8 @@ class UserDAOImpl internal constructor(
                         bot_service = user.botService,
                         deleted = user.deleted,
                         incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt
+                        expires_at = user.expiresAt,
+                        supported_protocols = user.supportedProtocols
                     )
                 }
             }
@@ -276,7 +283,8 @@ class UserDAOImpl internal constructor(
                         bot_service = user.botService,
                         deleted = user.deleted,
                         incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt
+                        expires_at = user.expiresAt,
+                        supported_protocols = user.supportedProtocols
                     )
                 }
             }
@@ -428,4 +436,9 @@ class UserDAOImpl internal constructor(
     override suspend fun allOtherUsersId(): List<UserIDEntity> = withContext(queriesContext) {
         userQueries.userIdsWithoutSelf().executeAsList()
     }
+
+    override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
+        withContext(queriesContext) {
+            userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
+        }
 }
