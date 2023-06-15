@@ -63,7 +63,7 @@ class ProteusClientProviderImpl(
     override suspend fun clearLocalFiles() {
         mutex.withLock {
             withContext(dispatcher.io) {
-                _proteusClient?.clearLocalFiles()
+                (_proteusClient ?: createProteusClient()).clearLocalFiles()
                 _proteusClient = null
             }
         }

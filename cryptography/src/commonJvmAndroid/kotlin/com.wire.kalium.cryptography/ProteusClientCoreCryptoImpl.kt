@@ -39,6 +39,9 @@ class ProteusClientCoreCryptoImpl internal constructor(
     private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
 
     override fun clearLocalFiles(): Boolean {
+        if (::coreCrypto.isInitialized) {
+            coreCrypto.close()
+        }
         return File(path).deleteRecursively()
     }
 
