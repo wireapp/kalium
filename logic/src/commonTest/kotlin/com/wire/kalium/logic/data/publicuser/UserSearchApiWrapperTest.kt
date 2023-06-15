@@ -448,7 +448,8 @@ class UserSearchApiWrapperTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                    expiresAt = null
+                    expiresAt = null,
+                    supportedProtocols = null,
                 )
             }
 
@@ -464,7 +465,8 @@ class UserSearchApiWrapperTest {
                 previewPicture = null,
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                expiresAt = null
+                expiresAt = null,
+                supportedProtocols = null
             )
 
             const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
@@ -484,7 +486,8 @@ class UserSearchApiWrapperTest {
                 userType = UserTypeEntity.EXTERNAL,
                 botService = null,
                 deleted = false,
-                expiresAt = null
+                expiresAt = null,
+                supportedProtocols = null
             )
         }
     }
