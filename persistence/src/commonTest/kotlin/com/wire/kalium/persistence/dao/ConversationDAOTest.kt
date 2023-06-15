@@ -165,7 +165,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result =
             conversationDAO.getAllProteusTeamConversations(teamId)
 
-        assertEquals(listOf(conversationEntity5.toViewEntity()), result.first())
+        assertEquals(listOf(conversationEntity5.id), result)
     }
 
     @Test
@@ -180,7 +180,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val result = conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId)
 
-        assertEquals(listOf(conversationEntity5.id), result.first())
+        assertEquals(listOf(conversationEntity5.id), result)
     }
 
     @Test
@@ -195,7 +195,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val result = conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId)
 
-        assertTrue(result.first().isEmpty())
+        assertTrue(result.isEmpty())
     }
 
     @Test

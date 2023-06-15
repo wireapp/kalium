@@ -50,8 +50,8 @@ internal class MLSMigratorImpl(
         }.flatMap { teamId ->
             conversationRepository.getProteusTeamConversations(teamId)
                 .flatMap {
-                    it.first().foldToEitherWhileRight(Unit) { conversation, _ ->
-                        migrate(conversation.id)
+                    it.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                        migrate(conversationId)
                     }
                 }
         }
@@ -64,7 +64,7 @@ internal class MLSMigratorImpl(
                 .flatMap {
                     conversationRepository.getProteusTeamConversationsReadyForFinalisation(teamId)
                         .flatMap {
-                            it.first().foldToEitherWhileRight(Unit) { conversationId, _ ->
+                            it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                                 finalise(conversationId)
                             }
                         }

@@ -65,7 +65,7 @@ class MLSMigratorTest {
         )
 
         val (arrangement, migrator) = Arrangement()
-            .withGetProteusTeamConversationsReturning(listOf(conversation))
+            .withGetProteusTeamConversationsReturning(listOf(conversation.id))
             .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
@@ -98,7 +98,7 @@ class MLSMigratorTest {
         )
 
         val (_, migrator) = Arrangement()
-            .withGetProteusTeamConversationsReturning(listOf(conversation))
+            .withGetProteusTeamConversationsReturning(listOf(conversation.id))
             .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
@@ -144,11 +144,12 @@ class MLSMigratorTest {
         )
 
         val (_, migrator) = Arrangement()
-            .withGetProteusTeamConversationsReturning(listOf(conversation))
+            .withFetchKnownUsersSucceeding()
+            .withGetProteusTeamConversationsReadyForFinalisationReturning(listOf(conversation.id))
             .withUpdateProtocolReturns(Either.Left(TestNetworkResponseError.noNetworkConnection()))
             .arrange()
 
-        val result = migrator.migrateProteusConversations()
+        val result = migrator.finaliseProteusConversations()
         result.shouldSucceed()
     }
 
@@ -173,18 +174,18 @@ class MLSMigratorTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetProteusTeamConversationsReturning(conversations: List<Conversation>) = apply {
+        fun withGetProteusTeamConversationsReturning(conversationsIds: List<ConversationId>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getProteusTeamConversations)
                 .whenInvokedWith(anything())
-                .thenReturn(Either.Right(flowOf(conversations)))
+                .thenReturn(Either.Right(conversationsIds))
         }
 
-        fun withGetProteusTeamConversationsReadyForFinalisationReturning(conversationsIs: List<ConversationId>) = apply {
+        fun withGetProteusTeamConversationsReadyForFinalisationReturning(conversationsIds: List<ConversationId>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getProteusTeamConversationsReadyForFinalisation)
                 .whenInvokedWith(anything())
-                .thenReturn(Either.Right(flowOf(conversationsIs)))
+                .thenReturn(Either.Right(conversationsIds))
         }
 
         fun withGetConversationProtocolInfoReturning(protocolInfo: Conversation.ProtocolInfo) = apply {
