@@ -32,6 +32,10 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+enum class SupportedProtocolEntity {
+    PROTEUS, MLS
+}
+
 enum class UserAvailabilityStatusEntity {
     NONE, AVAILABLE, BUSY, AWAY
 }
@@ -53,7 +57,8 @@ data class UserEntity(
     val userType: UserTypeEntity,
     val botService: BotIdEntity?,
     val deleted: Boolean,
-    val hasIncompleteMetadata: Boolean = false
+    val hasIncompleteMetadata: Boolean = false,
+    val supportedProtocols: Set<SupportedProtocolEntity>?
 )
 
 data class UserEntityMinimized(
@@ -194,4 +199,5 @@ interface UserDAO {
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
     suspend fun getUsersWithoutMetadata(): List<UserEntity>
+    suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>)
 }

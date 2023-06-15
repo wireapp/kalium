@@ -50,7 +50,8 @@ class UserMapper {
             userType = user.user_type,
             botService = user.bot_service,
             deleted = user.deleted,
-            hasIncompleteMetadata = user.incomplete_metadata
+            hasIncompleteMetadata = user.incomplete_metadata,
+            supportedProtocols = user.supported_protocols
         )
     }
 
@@ -71,6 +72,7 @@ class UserMapper {
         botService: BotIdEntity?,
         deleted: Boolean,
         hasIncompleteMetadata: Boolean,
+        supportedProtocols: Set<SupportedProtocolEntity>?,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -90,7 +92,8 @@ class UserMapper {
             userType = userType,
             botService = botService,
             deleted = deleted,
-            hasIncompleteMetadata = hasIncompleteMetadata
+            hasIncompleteMetadata = hasIncompleteMetadata,
+            supportedProtocols = supportedProtocols
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -138,7 +141,8 @@ class UserDAOImpl internal constructor(
             user.userType,
             user.botService,
             user.deleted,
-            user.hasIncompleteMetadata
+            user.hasIncompleteMetadata,
+            user.supportedProtocols
         )
     }
 
@@ -159,7 +163,8 @@ class UserDAOImpl internal constructor(
                     user.userType,
                     user.botService,
                     user.deleted,
-                    user.hasIncompleteMetadata
+                    user.hasIncompleteMetadata,
+                    user.supportedProtocols
                 )
             }
         }
@@ -196,7 +201,8 @@ class UserDAOImpl internal constructor(
                         user.userType,
                         user.botService,
                         user.deleted,
-                        user.hasIncompleteMetadata
+                        user.hasIncompleteMetadata,
+                        user.supportedProtocols
                     )
                 }
             }
@@ -236,7 +242,8 @@ class UserDAOImpl internal constructor(
                         user.userType,
                         user.botService,
                         user.deleted,
-                        user.hasIncompleteMetadata
+                        user.hasIncompleteMetadata,
+                        user.supportedProtocols
                     )
                 }
             }
@@ -263,7 +270,8 @@ class UserDAOImpl internal constructor(
                         user.userType,
                         user.botService,
                         user.deleted,
-                        user.hasIncompleteMetadata
+                        user.hasIncompleteMetadata,
+                        user.supportedProtocols
                     )
                 }
             }
@@ -400,4 +408,9 @@ class UserDAOImpl internal constructor(
             .executeAsList()
             .map(mapper::toModel)
     }
+
+    override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
+        withContext(queriesContext) {
+            userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
+        }
 }
