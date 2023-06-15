@@ -164,6 +164,10 @@ CASE (Conversation.type)
     WHEN 'CONNECTION_PENDING' THEN connection_user.deleted
 END AS userDeleted,
 CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.supported_protocols
+    WHEN 'CONNECTION_PENDING' THEN connection_user.supported_protocols
+END AS userSupportedProtocols,
+CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN  User.connection_status
     WHEN 'CONNECTION_PENDING' THEN connection_user.connection_status
 END AS connectionStatus,

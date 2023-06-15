@@ -68,7 +68,8 @@ private class ConnectionMapper {
         user_type: UserTypeEntity?,
         bot_service: BotIdEntity?,
         deleted: Boolean?,
-        incomplete_metadata: Boolean?
+        incomplete_metadata: Boolean?,
+        supportedProtocols: Set<SupportedProtocolEntity>?
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
@@ -93,7 +94,8 @@ private class ConnectionMapper {
             userType = user_type.requireField("user_type"),
             botService = bot_service,
             deleted = deleted.requireField("deleted"),
-            hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata")
+            hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata"),
+            supportedProtocols = supportedProtocols
         ) else null
     )
 

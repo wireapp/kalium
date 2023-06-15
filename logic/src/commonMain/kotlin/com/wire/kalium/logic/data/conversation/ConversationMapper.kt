@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -202,7 +203,8 @@ internal class ConversationMapperImpl(
                             completePicture = previewAssetId?.toModel(),
                             previewPicture = previewAssetId?.toModel(),
                             teamId = teamId?.let { TeamId(it) },
-                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
+                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
+                            supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet()
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -236,7 +238,8 @@ internal class ConversationMapperImpl(
                         handle = null,
                         completePicture = previewAssetId?.toModel(),
                         previewPicture = previewAssetId?.toModel(),
-                        teamId = teamId?.let { TeamId(it) }
+                        teamId = teamId?.let { TeamId(it) },
+                        supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet()
                     )
 
                     ConversationDetails.Connection(

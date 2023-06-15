@@ -176,7 +176,8 @@ class CallingParticipantsOrderTest {
             connectionStatus = ConnectionState.NOT_CONNECTED,
             previewPicture = null,
             completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.AVAILABLE
+            availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+            supportedProtocols = null
         )
 
         const val selfClientId = "client1"
