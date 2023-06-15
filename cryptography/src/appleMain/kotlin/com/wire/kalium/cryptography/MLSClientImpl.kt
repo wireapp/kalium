@@ -279,7 +279,8 @@ actual class MLSClientImpl actual constructor(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
-            value.hasEpochChanged
+            value.hasEpochChanged,
+            identity = null
         )
     }
 

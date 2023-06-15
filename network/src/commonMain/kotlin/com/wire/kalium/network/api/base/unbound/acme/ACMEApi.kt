@@ -37,9 +37,7 @@ import io.ktor.http.isSuccess
 
 interface ACMEApi {
     suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse>
-
     suspend fun getACMENonce(url: String): NetworkResponse<String>
-
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
 

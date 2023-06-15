@@ -115,32 +115,11 @@ class E2EIRepositoryImpl(
         wrapApiRequest {
             acmeApi.sendACMERequest(authzEndpoint, authzRequest)
         }.flatMap { apiResponse ->
-            val authzResponse = e2eiClient.setAuthzResponse(modifyDpopHtuLink(apiResponse.response))
+            val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
             Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
         }
     }
 
-    //todo: Will remove this after the backend fix it
-    private fun modifyDpopHtuLink(apiResponse: ByteArray): ByteArray{
-        val apiResponseString = apiResponse.joinToString("") {
-            it.toByte().toChar().toString()
-        }
-        val response = (Json.decodeFromString(apiResponseString) as JsonObject)
-        val challenges = response["challenges"] as JsonArray
-        val dpopChallenge = challenges[1] as JsonObject
-
-        val modifiedDpopChallenge = dpopChallenge.toMutableMap().apply {
-            put("target", JsonPrimitive("https://anta.wire.link/v4/clients/89f1c4056c99edcb/access-token"))
-        }
-        val modifiedChallenges = challenges.toMutableList().apply {
-            removeAt(1)
-            add(1, JsonObject(modifiedDpopChallenge))
-        }.let { JsonArray(it) }
-        val modifiedResp = response.toMutableMap().apply {
-            put("challenges", modifiedChallenges)
-        }
-        return Json.encodeToString(modifiedResp).toByteArray()
-    }
 
     override suspend fun getWireNonce() = currentClientIdProvider().flatMap { clientId ->
         wrapApiRequest {

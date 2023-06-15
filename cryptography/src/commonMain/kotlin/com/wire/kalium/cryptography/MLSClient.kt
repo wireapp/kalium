@@ -53,7 +53,8 @@ class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
-    val hasEpochChanged: Boolean
+    val hasEpochChanged: Boolean,
+    val identity: E2EIdentity?
 )
 
 @JvmInline
