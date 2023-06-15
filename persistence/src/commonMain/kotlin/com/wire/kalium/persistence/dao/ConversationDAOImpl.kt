@@ -569,9 +569,14 @@ class ConversationDAOImpl(
             conversationQueries.updateConversationType(type, conversationID)
         }
 
-    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol) {
-        withContext(coroutineContext) {
-            conversationQueries.updateConversationProtocol(protocol, conversationId)
+    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean {
+        return withContext(coroutineContext) {
+            val previousProtocol = conversationQueries.selectConversationByQualifiedId(conversationId).executeAsOneOrNull()?.protocol
+            val updated = protocol != previousProtocol
+            if (updated) {
+                conversationQueries.updateConversationProtocol(protocol, conversationId)
+            }
+            updated
         }
     }
 

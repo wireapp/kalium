@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlinx.datetime.Instant
@@ -222,6 +223,12 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.ConversationCreated -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.ConversationProtocolChanged -> messagesQueries.insertConversationProtocolChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                protocol = content.protocol
+            )
         }
     }
 
@@ -317,5 +324,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
+        is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
     }
 }
