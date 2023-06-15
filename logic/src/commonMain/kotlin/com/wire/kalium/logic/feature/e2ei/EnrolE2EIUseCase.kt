@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.delay
 
 
 interface EnrolE2EIUseCase {
@@ -98,6 +99,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             wireNonce
         })
 
+        delay(3000)
         val dpopToken = e2EIRepository.getDPoPToken(wireNonce).fold({
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.DPoPToken, it).toCoreFailure())
         }, { dpopToken ->
@@ -174,7 +176,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
         val certificateRequest = e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).fold({
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.Certificate, it).toCoreFailure())
         }, {
-            step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.Certificate, it.toString())
+            step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.Certificate, it.response.decodeToString())
             kaliumLogger.e("Certificate:> ${it.response.decodeToString()}")
             it
         })
