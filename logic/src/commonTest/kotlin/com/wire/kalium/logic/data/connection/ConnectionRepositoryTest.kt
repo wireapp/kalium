@@ -371,7 +371,8 @@ class ConnectionRepositoryTest {
             email = null,
             expiresAt = null,
             nonQualifiedId = "value",
-            service = null
+            service = null,
+            supportedProtocols = null
         )
 
         val stubUserEntity = UserEntity(
@@ -390,7 +391,8 @@ class ConnectionRepositoryTest {
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            supportedProtocols = null
         )
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")

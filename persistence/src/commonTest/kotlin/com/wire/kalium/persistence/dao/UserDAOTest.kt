@@ -96,7 +96,8 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -125,7 +126,8 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
         )
 
         db.userDAO.getUserByQualifiedID(user1.id).take(2).collect {
@@ -254,7 +256,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     botService = null,
                     false,
                     hasIncompleteMetadata = false,
-                    expiresAt = null
+                    expiresAt = null,
+                    supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -272,7 +275,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     botService = null,
                     deleted = false,
                     hasIncompleteMetadata = false,
-                    expiresAt = null
+                    expiresAt = null,
+                    supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
@@ -685,6 +689,20 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertNull(result)
+    }
+
+    @Test
+    fun givenAnExistingUser_whenUpdatingTheSupportedProtocols_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewSupportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
+        db.userDAO.insertUser(user1)
+
+        // when
+        db.userDAO.updateUserSupportedProtocols(user1.id, expectedNewSupportedProtocols)
+
+        // then
+        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(expectedNewSupportedProtocols, persistedUser?.supportedProtocols)
     }
 
     private companion object {

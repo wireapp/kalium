@@ -28,8 +28,11 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.OtherUserMinimized
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
@@ -75,7 +78,8 @@ class PublicUserMapperImpl(
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
-        expiresAt = userEntity.expiresAt
+        expiresAt = userEntity.expiresAt,
+        supportedProtocols = userEntity.supportedProtocols?.toModel()
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -94,7 +98,8 @@ class PublicUserMapperImpl(
             userType = userEntityTypeMapper.fromUserType(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
-            expiresAt = expiresAt
+            expiresAt = expiresAt,
+            supportedProtocols = supportedProtocols?.toDao()
         )
     }
 
@@ -124,6 +129,7 @@ class PublicUserMapperImpl(
         userType = userType,
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
         deleted = userDetailResponse.deleted ?: false,
-        expiresAt = userDetailResponse.expiresAt?.toInstant()
+        expiresAt = userDetailResponse.expiresAt?.toInstant(),
+        supportedProtocols = userDetailResponse.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS)
     )
 }
