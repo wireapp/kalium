@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
@@ -323,7 +324,7 @@ class RegisterAccountRepositoryTest {
         const val TEAM_ICON = "teamIcon"
         val USERID_DTO = UserIdDTO("user_id", "domain.com")
         val SESSION: SessionDTO = SessionDTO(USERID_DTO, "tokenType", "access_token", "refresh_token", "cookieLabel")
-        val TEST_USER: UserDTO = UserDTO(
+        val TEST_USER: SelfUserDTO = SelfUserDTO(
             id = USERID_DTO,
             name = NAME,
             email = EMAIL,

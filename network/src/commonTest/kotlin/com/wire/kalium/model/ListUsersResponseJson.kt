@@ -20,9 +20,9 @@ package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.model.UserProfileDTO
 
 object ListUsersResponseJson {
 

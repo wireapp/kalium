@@ -82,10 +82,9 @@ actual class MLSClientImpl actual constructor(
     private val defaultE2EIExpiry: UInt = 90U
 
     init {
-        coreCrypto = CoreCrypto(
+        coreCrypto = CoreCrypto.deferredInit(
             rootDir,
             databaseKey.value,
-            toUByteList(clientId.toString()),
             listOf(defaultCiphersuiteName)
         )
         coreCrypto.setCallbacks(Callbacks())
@@ -301,7 +300,10 @@ actual class MLSClientImpl actual constructor(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) },
-            value.hasEpochChanged
+            value.hasEpochChanged,
+            value.identity?.let {
+                E2EIdentiy(it.clientId, it.handle, it.displayName, it.domain)
+            }
         )
     }
 

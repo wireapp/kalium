@@ -174,6 +174,11 @@ class MessageMapperImpl(
             message.senderName.orEmpty(),
             message.senderImage?.toModel()
         )
+        if (message.isSelfDelete) {
+            return LocalNotificationMessage.SelfDeleteMessage(
+                message.date
+            )
+        }
         return when (message.contentType) {
             MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
                 author = sender,
