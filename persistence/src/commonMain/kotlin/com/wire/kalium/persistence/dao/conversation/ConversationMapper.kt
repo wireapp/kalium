@@ -67,7 +67,8 @@ internal class ConversationMapper {
             userDefederated = userDefederated,
             archived = archived,
             archivedDateTime = archived_date_time,
-            verificationStatus = verification_status
+            verificationStatus = verification_status,
+            userSupportedProtocols = userSupportedProtocols
         )
     }
 
@@ -173,7 +174,8 @@ internal class ConversationMapper {
                 userDefederated = userDefederated,
                 archived = archived,
                 archivedDateTime = archived_date_time,
-                verificationStatus = verification_status
+                verificationStatus = verification_status,
+                userSupportedProtocols = userSupportedProtocols
             )
         }
     }
