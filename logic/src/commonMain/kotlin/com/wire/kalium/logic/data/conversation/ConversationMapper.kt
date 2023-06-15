@@ -478,6 +478,6 @@ internal fun Conversation.Protocol.toApi(): ConvProtocol = when (this) {
 
 internal fun Conversation.Protocol.toDao(): Protocol = when (this) {
     Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
-    Conversation.Protocol.MIXED -> Protocol.PROTEUS
-    Conversation.Protocol.MLS -> Protocol.PROTEUS
+    Conversation.Protocol.MIXED -> Protocol.MIXED
+    Conversation.Protocol.MLS -> Protocol.MLS
 }
