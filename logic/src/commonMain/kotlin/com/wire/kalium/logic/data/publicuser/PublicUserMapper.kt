@@ -29,8 +29,11 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.OtherUserMinimized
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
@@ -84,7 +87,8 @@ class PublicUserMapperImpl(
         deleted = userEntity.deleted,
         expiresAt = userEntity.expiresAt,
         defederated = userEntity.defederated,
-        isProteusVerified = false
+        isProteusVerified = false,
+        supportedProtocols = userEntity.supportedProtocols?.toModel()
     )
 
     override fun fromUserDetailsEntityToOtherUser(userDetailsEntity: UserDetailsEntity) = OtherUser(
@@ -104,7 +108,8 @@ class PublicUserMapperImpl(
         deleted = userDetailsEntity.deleted,
         expiresAt = userDetailsEntity.expiresAt,
         defederated = userDetailsEntity.defederated,
-        isProteusVerified = userDetailsEntity.isProteusVerified
+        isProteusVerified = userDetailsEntity.isProteusVerified,
+        supportedProtocols = userDetailsEntity.supportedProtocols?.toModel()
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -125,7 +130,8 @@ class PublicUserMapperImpl(
             deleted = deleted,
             expiresAt = expiresAt,
             hasIncompleteMetadata = false,
-            defederated = defederated
+            defederated = defederated,
+            supportedProtocols = supportedProtocols?.toDao()
         )
     }
 
@@ -148,7 +154,8 @@ class PublicUserMapperImpl(
             expiresAt = expiresAt,
             hasIncompleteMetadata = false,
             defederated = defederated,
-            isProteusVerified = otherUser.isProteusVerified
+            isProteusVerified = otherUser.isProteusVerified,
+            supportedProtocols = supportedProtocols?.toDao()
         )
     }
 
@@ -180,7 +187,8 @@ class PublicUserMapperImpl(
         deleted = userDetailResponse.deleted ?: false,
         expiresAt = userDetailResponse.expiresAt?.toInstant(),
         defederated = false,
-        isProteusVerified = false
+        isProteusVerified = false,
+        supportedProtocols = userDetailResponse.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS)
     )
 
     override fun fromEntityToUserSummary(userEntity: UserEntity) = with(userEntity) {

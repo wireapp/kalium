@@ -122,7 +122,8 @@ class MembersToMentionUseCaseTest {
             ConnectionState.ACCEPTED,
             UserAssetId("value1", DOMAIN),
             UserAssetId("value2", DOMAIN),
-            UserAvailabilityStatus.NONE
+            UserAvailabilityStatus.NONE,
+            supportedProtocols = null
         )
         private val OTHER_USER = OtherUser(
             UserId(value = "other-id", DOMAIN),
@@ -140,7 +141,8 @@ class MembersToMentionUseCaseTest {
             botService = null,
             deleted = false,
             defederated = false,
-            isProteusVerified = false
+            isProteusVerified = false,
+            supportedProtocols = null
         )
 
         val members = listOf(

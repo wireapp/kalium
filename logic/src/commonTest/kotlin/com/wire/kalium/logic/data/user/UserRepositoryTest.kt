@@ -35,6 +35,7 @@ import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
+import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
@@ -418,7 +419,6 @@ class UserRepositoryTest {
             .wasNotInvoked()
     }
 
-
     @Test
     fun whenRemovingUserBrokenAsset_thenShouldCallDaoAndSucceed() = runTest {
         // Given
@@ -537,6 +537,51 @@ class UserRepositoryTest {
             .suspendFunction(arrangement.userDAO::getUsersDetailsByQualifiedIDList)
             .with(any())
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenANewSupportedProtocols_whenUpdatingOk_thenShouldSucceedAndPersistTheSupportedProtocolsLocally() = runTest {
+        val successResponse = NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateSupportedProtocolsApiRequestResponse(successResponse)
+            .arrange()
+
+        val result = userRepository.updateSupportedProtocols(setOf(SupportedProtocol.MLS))
+
+        with(result) {
+            shouldSucceed()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSupportedProtocols)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserSupportedProtocols)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenANewSupportedProtocols_whenUpdatingFails_thenShouldNotPersistSupportedProtocolsLocally() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateSupportedProtocolsApiRequestResponse(TestNetworkResponseError.genericResponseError())
+            .arrange()
+
+        val result = userRepository.updateSupportedProtocols(setOf(SupportedProtocol.MLS))
+
+        with(result) {
+            shouldFail()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSupportedProtocols)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserSupportedProtocols)
+                .with(any(), any())
+                .wasNotInvoked()
+        }
     }
 
     private class Arrangement {
@@ -677,6 +722,13 @@ class UserRepositoryTest {
         fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
             given(selfApi)
                 .suspendFunction(selfApi::updateSelf)
+                .whenInvokedWith(any())
+                .thenReturn(response)
+        }
+
+        fun withUpdateSupportedProtocolsApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            given(selfApi)
+                .suspendFunction(selfApi::updateSupportedProtocols)
                 .whenInvokedWith(any())
                 .thenReturn(response)
         }

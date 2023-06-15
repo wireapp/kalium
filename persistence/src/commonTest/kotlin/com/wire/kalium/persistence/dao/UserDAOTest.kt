@@ -98,7 +98,8 @@ class UserDAOTest : BaseDatabaseTest() {
             deleted = false,
             hasIncompleteMetadata = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
@@ -128,7 +129,8 @@ class UserDAOTest : BaseDatabaseTest() {
             false,
             hasIncompleteMetadata = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
         )
 
         db.userDAO.observeUserDetailsByQualifiedID(user1.id).take(2).collect {
@@ -258,7 +260,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     false,
                     hasIncompleteMetadata = false,
                     expiresAt = null,
-                    defederated = false
+                    defederated = false,
+                    supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -277,7 +280,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     deleted = false,
                     hasIncompleteMetadata = false,
                     expiresAt = null,
-                    defederated = false
+                    defederated = false,
+                    supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
@@ -750,6 +754,19 @@ class UserDAOTest : BaseDatabaseTest() {
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNotNull(result)
         assertEquals(true, result.defederated)
+    }
+    @Test
+    fun givenAnExistingUser_whenUpdatingTheSupportedProtocols_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewSupportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
+        db.userDAO.insertUser(user1)
+
+        // when
+        db.userDAO.updateUserSupportedProtocols(user1.id, expectedNewSupportedProtocols)
+
+        // then
+        val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(expectedNewSupportedProtocols, persistedUser?.supportedProtocols)
     }
 
     @Test

@@ -48,6 +48,10 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+enum class SupportedProtocolEntity {
+    PROTEUS, MLS
+}
+
 enum class UserAvailabilityStatusEntity {
     NONE, AVAILABLE, BUSY, AWAY
 }
@@ -71,7 +75,8 @@ data class UserEntity(
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
-    val defederated: Boolean
+    val defederated: Boolean,
+    val supportedProtocols: Set<SupportedProtocolEntity>?
 )
 
 data class UserDetailsEntity(
@@ -94,7 +99,8 @@ data class UserDetailsEntity(
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
     val defederated: Boolean,
-    val isProteusVerified: Boolean
+    val isProteusVerified: Boolean,
+    val supportedProtocols: Set<SupportedProtocolEntity>?
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,
@@ -113,7 +119,8 @@ data class UserDetailsEntity(
         deleted = deleted,
         hasIncompleteMetadata = hasIncompleteMetadata,
         expiresAt = expiresAt,
-        defederated = defederated
+        defederated = defederated,
+        supportedProtocols = supportedProtocols
     )
 }
 
@@ -265,4 +272,6 @@ interface UserDAO {
      * the list does not contain self user ID
      */
     suspend fun allOtherUsersId(): List<UserIDEntity>
+
+    suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>)
 }

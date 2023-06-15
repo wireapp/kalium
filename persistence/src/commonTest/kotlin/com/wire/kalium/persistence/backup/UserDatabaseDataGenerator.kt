@@ -194,7 +194,8 @@ class UserDatabaseDataGenerator(
             botService = null,
             hasIncompleteMetadata = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            supportedProtocols = null
         )
     }
 

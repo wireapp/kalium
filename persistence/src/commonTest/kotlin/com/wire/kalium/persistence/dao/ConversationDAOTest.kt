@@ -1161,7 +1161,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
             archived = false,
             archivedDateTime = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null
         )
     }
 
@@ -1294,7 +1295,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("6", "wire.com"),
@@ -1319,7 +1323,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
