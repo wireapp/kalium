@@ -7,7 +7,7 @@
         "xml"
     ],
     "ignore": [
-        "**/src/.*Test/**"
+        "**/src/Test/**"
     ],
     "ignorePattern": [
         "import .*"
