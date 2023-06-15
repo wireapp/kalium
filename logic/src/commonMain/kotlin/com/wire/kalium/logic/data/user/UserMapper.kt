@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SelfUserDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
@@ -41,6 +42,7 @@ import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -110,7 +112,8 @@ internal class UserMapperImpl(
             connectionStatus = ConnectionState.NOT_CONNECTED,
             previewPicture = assets.getPreviewAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
             completePicture = assets.getCompleteAssetOrNull()?.toModel(id.domain), // assume the same domain as the userId
-            availabilityStatus = UserAvailabilityStatus.NONE
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            supportedProtocols = supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS)
         )
     }
 
@@ -131,7 +134,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userTypeEntity ?: UserTypeEntity.STANDARD,
             botService = userProfileDTO.service?.let { BotIdEntity(it.id, it.provider) },
-            deleted = userProfileDTO.deleted ?: false
+            deleted = userProfileDTO.deleted ?: false,
+            supportedProtocols = userProfileDTO.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS)
         )
     }
 
@@ -147,7 +151,9 @@ internal class UserMapperImpl(
             connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewAssetId?.toModel(),
             completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            supportedProtocols?.toModel()
+
         )
     }
 
@@ -166,7 +172,8 @@ internal class UserMapperImpl(
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = false
+            deleted = false,
+            supportedProtocols = supportedProtocols?.toDao()
         )
     }
 
@@ -206,7 +213,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = false
+            deleted = false,
+            supportedProtocols = user.supportedProtocols?.toDao()
         )
     }
 
@@ -224,7 +232,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = userDTO.deleted ?: false
+            deleted = userDTO.deleted ?: false,
+            supportedProtocols = supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS)
         )
     }
 
@@ -256,7 +265,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
-            deleted = false
+            deleted = false,
+            supportedProtocols = null
         )
 
     override fun fromOtherUsersClientsDTO(otherUsersClients: List<Client>): List<OtherUserClient> =
@@ -286,7 +296,8 @@ internal class UserMapperImpl(
                     isService = user.service != null
                 ),
             botService = user.service?.let { BotIdEntity(it.id, it.provider) },
-            deleted = false
+            deleted = false,
+            supportedProtocols = user.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS)
         )
     }
 
@@ -305,3 +316,33 @@ internal class UserMapperImpl(
         }
     }
 }
+
+fun SupportedProtocol.toApi() = when (this) {
+    SupportedProtocol.MLS -> SupportedProtocolDTO.MLS
+    SupportedProtocol.PROTEUS -> SupportedProtocolDTO.PROTEUS
+}
+
+fun SupportedProtocol.toDao() = when (this) {
+    SupportedProtocol.MLS -> SupportedProtocolEntity.MLS
+    SupportedProtocol.PROTEUS -> SupportedProtocolEntity.PROTEUS
+}
+
+fun SupportedProtocolDTO.toModel() = when (this) {
+    SupportedProtocolDTO.MLS -> SupportedProtocol.MLS
+    SupportedProtocolDTO.PROTEUS -> SupportedProtocol.PROTEUS
+}
+
+fun SupportedProtocolDTO.toDao() = when (this) {
+    SupportedProtocolDTO.MLS -> SupportedProtocolEntity.MLS
+    SupportedProtocolDTO.PROTEUS -> SupportedProtocolEntity.PROTEUS
+}
+
+fun SupportedProtocolEntity.toModel() = when (this) {
+    SupportedProtocolEntity.MLS -> SupportedProtocol.MLS
+    SupportedProtocolEntity.PROTEUS -> SupportedProtocol.PROTEUS
+}
+
+fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
+fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
+fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
+fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()

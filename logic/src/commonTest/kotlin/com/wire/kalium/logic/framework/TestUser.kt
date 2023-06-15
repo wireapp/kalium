@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -29,11 +30,13 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.SelfUserDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -63,7 +66,8 @@ object TestUser {
         connectionStatus = ConnectionState.ACCEPTED,
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
-        availabilityStatus = UserAvailabilityStatus.NONE
+        availabilityStatus = UserAvailabilityStatus.NONE,
+        supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
     )
 
     val OTHER = OtherUser(
@@ -80,7 +84,8 @@ object TestUser {
         availabilityStatus = UserAvailabilityStatus.NONE,
         userType = UserType.EXTERNAL,
         botService = null,
-        deleted = false
+        deleted = false,
+        supportedProtocols = setOf(SupportedProtocol.PROTEUS)
     )
 
     val ENTITY = UserEntity(
@@ -97,7 +102,8 @@ object TestUser {
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = UserTypeEntity.EXTERNAL,
         botService = null,
-        deleted = false
+        deleted = false,
+        setOf(SupportedProtocolEntity.MLS)
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(
@@ -115,7 +121,8 @@ object TestUser {
         deleted = false,
         expiresAt = null,
         nonQualifiedId = NETWORK_ID.value,
-        service = null
+        service = null,
+        supportedProtocols = listOf(SupportedProtocolDTO.MLS)
     )
 
     val SELF_USER_DTO = SelfUserDTO(
@@ -133,6 +140,7 @@ object TestUser {
         locale = "",
         managedByDTO = null,
         phone = null,
-        ssoID = null
+        ssoID = null,
+        supportedProtocols = null
     )
 }

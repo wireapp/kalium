@@ -415,6 +415,51 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenANewSupportedProtocols_whenUpdatingOk_thenShouldSucceedAndPersistTheSupportedProtocolsLocally() = runTest {
+        val successResponse = NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value)
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateSupportedProtocolsApiRequestResponse(successResponse)
+            .arrange()
+
+        val result = userRepository.updateSupportedProtocols(setOf(SupportedProtocol.MLS))
+
+        with(result) {
+            shouldSucceed()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSupportedProtocols)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserSupportedProtocols)
+                .with(any(), any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenANewSupportedProtocols_whenUpdatingFails_thenShouldNotPersistSupportedProtocolsLocally() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withUpdateSupportedProtocolsApiRequestResponse(TestNetworkResponseError.genericResponseError())
+            .arrange()
+
+        val result = userRepository.updateSupportedProtocols(setOf(SupportedProtocol.MLS))
+
+        with(result) {
+            shouldFail()
+            verify(arrangement.selfApi)
+                .suspendFunction(arrangement.selfApi::updateSupportedProtocols)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::updateUserSupportedProtocols)
+                .with(any(), any())
+                .wasNotInvoked()
+        }
+    }
+
 // TODO other UserRepository tests
 
     private class Arrangement {
@@ -535,6 +580,13 @@ class UserRepositoryTest {
         fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
             given(selfApi)
                 .suspendFunction(selfApi::updateSelf)
+                .whenInvokedWith(any())
+                .thenReturn(response)
+        }
+
+        fun withUpdateSupportedProtocolsApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            given(selfApi)
+                .suspendFunction(selfApi::updateSupportedProtocols)
                 .whenInvokedWith(any())
                 .thenReturn(response)
         }
