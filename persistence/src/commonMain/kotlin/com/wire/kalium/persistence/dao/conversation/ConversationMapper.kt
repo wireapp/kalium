@@ -64,7 +64,8 @@ internal class ConversationMapper {
             receiptMode = receipt_mode,
             messageTimer = message_timer,
             userMessageTimer = user_message_timer,
-            userDefederated = userDefederated
+            userDefederated = userDefederated,
+            userSupportedProtocols = userSupportedProtocols
         )
     }
 
@@ -161,7 +162,8 @@ internal class ConversationMapper {
                 receiptMode = receipt_mode,
                 messageTimer = message_timer,
                 userMessageTimer = user_message_timer,
-                userDefederated = userDefederated
+                userDefederated = userDefederated,
+                userSupportedProtocols = userSupportedProtocols
             )
         }
     }
