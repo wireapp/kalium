@@ -302,7 +302,7 @@ actual class MLSClientImpl actual constructor(
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) },
             value.hasEpochChanged,
             value.identity?.let {
-                E2EIdentiy(it.clientId, it.handle, it.displayName, it.domain)
+                E2EIdentity(it.clientId, it.handle, it.displayName, it.domain)
             }
         )
     }
