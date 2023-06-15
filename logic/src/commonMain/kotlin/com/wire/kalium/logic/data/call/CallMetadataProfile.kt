@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.CallStatus
 
 data class CallMetadataProfile(
     val data: Map<ConversationId, CallMetadata>
@@ -36,6 +37,7 @@ data class CallMetadata(
     val callerName: String?,
     val callerTeamName: String?,
     val establishedTime: String? = null,
+    val callStatus: CallStatus,
     val participants: List<Participant> = emptyList(),
     val maxParticipants: Int = 0, // Was used for tracking
     val protocol: Conversation.ProtocolInfo

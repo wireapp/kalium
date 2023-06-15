@@ -18,7 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.self
 
-import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
 
@@ -28,7 +28,7 @@ data class ChangeHandleRequest(
 )
 
 interface SelfApi {
-    suspend fun getSelfInfo(): NetworkResponse<UserDTO>
+    suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO>
     suspend fun updateSelf(userUpdateRequest: UserUpdateRequest): NetworkResponse<Unit>
     suspend fun changeHandle(request: ChangeHandleRequest): NetworkResponse<Unit>
 

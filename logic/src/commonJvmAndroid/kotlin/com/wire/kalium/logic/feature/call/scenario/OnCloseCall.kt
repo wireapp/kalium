@@ -52,19 +52,22 @@ class OnCloseCall(
         )
 
         val avsReason = CallClosedReason.fromInt(value = reason)
+
         val callStatus = getCallStatusFromCloseReason(avsReason)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+
         scope.launch {
-            callRepository.updateCallStatusById(
-                conversationId = conversationIdWithDomain,
-                status = callStatus
-            )
 
             if (shouldPersistMissedCall(conversationIdWithDomain, callStatus)) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
-            if (callRepository.getCallMetadataProfile().get(conversationIdWithDomain)?.protocol is Conversation.ProtocolInfo.MLS) {
+            callRepository.updateCallStatusById(
+                conversationId = conversationIdWithDomain,
+                status = callStatus
+            )
+
+            if (callRepository.getCallMetadataProfile()[conversationIdWithDomain]?.protocol is Conversation.ProtocolInfo.MLS) {
                 callRepository.leaveMlsConference(conversationIdWithDomain)
             }
 
@@ -77,7 +80,10 @@ class OnCloseCall(
             return true
         return callRepository.getCallMetadataProfile().data[conversationId]?.let {
             val isGroupCall = it.conversationType == Conversation.Type.GROUP
-            (callStatus == CallStatus.CLOSED && isGroupCall && it.establishedTime.isNullOrEmpty())
+            (callStatus == CallStatus.CLOSED &&
+                    isGroupCall &&
+                    it.establishedTime.isNullOrEmpty() &&
+                    it.callStatus != CallStatus.CLOSED_INTERNALLY)
         } ?: false
     }
 

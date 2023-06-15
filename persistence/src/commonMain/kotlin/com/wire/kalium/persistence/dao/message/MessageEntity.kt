@@ -333,6 +333,7 @@ data class MessagePreviewEntity(
 data class NotificationMessageEntity(
     val id: String,
     val contentType: MessageEntity.ContentType,
+    val isSelfDelete: Boolean,
     val senderUserId: QualifiedIDEntity,
     val senderImage: UserAssetIdEntity?,
 
