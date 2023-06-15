@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.conversation
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -62,7 +63,8 @@ data class ConversationViewEntity(
     val removedBy: UserIDEntity? = null, // TODO how to calculate?,
     val receiptMode: ConversationEntity.ReceiptMode,
     val messageTimer: Long?,
-    val userMessageTimer: Long?
+    val userMessageTimer: Long?,
+    val userSupportedProtocols: Set<SupportedProtocolEntity>?
 ) {
     val isMember: Boolean get() = selfRole != null
 

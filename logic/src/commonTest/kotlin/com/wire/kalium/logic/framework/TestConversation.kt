@@ -150,7 +150,8 @@ object TestConversation {
         selfRole = MemberEntity.Role.Member,
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        userSupportedProtocols = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -293,7 +294,8 @@ object TestConversation {
         selfRole = MemberEntity.Role.Member,
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        userSupportedProtocols = null
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(

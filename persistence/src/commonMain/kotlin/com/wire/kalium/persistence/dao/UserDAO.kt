@@ -33,6 +33,10 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+enum class SupportedProtocolEntity {
+    PROTEUS, MLS
+}
+
 enum class UserAvailabilityStatusEntity {
     NONE, AVAILABLE, BUSY, AWAY
 }
@@ -55,7 +59,8 @@ data class UserEntity(
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
-    val expiresAt: Instant?
+    val expiresAt: Instant?,
+    val supportedProtocols: Set<SupportedProtocolEntity>?
 )
 
 data class UserEntityMinimized(
@@ -199,4 +204,5 @@ interface UserDAO {
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 
     suspend fun getUsersWithoutMetadata(): List<UserEntity>
+    suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>)
 }

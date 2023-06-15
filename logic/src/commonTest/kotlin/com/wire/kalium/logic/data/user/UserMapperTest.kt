@@ -25,6 +25,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -81,7 +82,8 @@ class UserMapperTest {
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
-            expiresAt = null
+            expiresAt = null,
+            supportedProtocols = null
         )
         val (_, userMapper) = Arrangement().arrange()
 

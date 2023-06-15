@@ -968,7 +968,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             selfRole = MemberEntity.Role.Member,
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null
         )
     }
 

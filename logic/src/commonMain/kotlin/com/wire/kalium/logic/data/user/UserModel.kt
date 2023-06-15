@@ -44,6 +44,7 @@ sealed class User {
     abstract val completePicture: UserAssetId?
     abstract val availabilityStatus: UserAvailabilityStatus
     abstract val expiresAt: Instant?
+    abstract val supportedProtocols: Set<SupportedProtocol>?
 }
 
 // TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
@@ -78,6 +79,10 @@ data class Connection(
 
 enum class UserAvailabilityStatus {
     NONE, AVAILABLE, BUSY, AWAY
+}
+
+enum class SupportedProtocol {
+    PROTEUS, MLS
 }
 
 enum class ConnectionState {
@@ -126,7 +131,8 @@ data class SelfUser(
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
     override val availabilityStatus: UserAvailabilityStatus,
-    override val expiresAt: Instant? = null
+    override val expiresAt: Instant? = null,
+    override val supportedProtocols: Set<SupportedProtocol>?
 ) : User()
 
 data class OtherUserMinimized(
@@ -149,6 +155,7 @@ data class OtherUser(
     override val completePicture: UserAssetId?,
     val userType: UserType,
     override val availabilityStatus: UserAvailabilityStatus,
+    override val supportedProtocols: Set<SupportedProtocol>?,
     val botService: BotService?,
     val deleted: Boolean,
     override val expiresAt: Instant? = null
