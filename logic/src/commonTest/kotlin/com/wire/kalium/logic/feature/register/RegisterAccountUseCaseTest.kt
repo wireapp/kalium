@@ -214,7 +214,8 @@ class RegisterAccountUseCaseTest {
             connectionStatus = ConnectionState.ACCEPTED,
             previewPicture = null,
             completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.NONE
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            supportedProtocols = null
         )
         val TEST_AUTH_TOKENS = AuthTokens(
             accessToken = "access_token",

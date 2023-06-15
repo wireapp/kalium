@@ -59,6 +59,7 @@ import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 import com.wire.kalium.persistence.content.ButtonContent
 import com.wire.kalium.persistence.adapter.StringListAdapter
+import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -174,7 +175,8 @@ internal object TableMapper {
         complete_asset_idAdapter = QualifiedIDAdapter,
         user_typeAdapter = EnumColumnAdapter(),
         bot_serviceAdapter = BotServiceAdapter(),
-        expires_atAdapter = InstantTypeAdapter
+        expires_atAdapter = InstantTypeAdapter,
+        supported_protocolsAdapter = SupportedProtocolSetAdapter
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
