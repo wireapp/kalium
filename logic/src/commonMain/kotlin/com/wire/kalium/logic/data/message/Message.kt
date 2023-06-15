@@ -274,12 +274,17 @@ sealed interface Message {
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )
 
                 is MessageContent.ConversationCreated -> mutableMapOf(
                     typeKey to "conversationCreated"
+                )
+
+                is MessageContent.ConversationProtocolChanged -> mutableMapOf(
+                    typeKey to "conversationProtocolChanged"
                 )
             }
 

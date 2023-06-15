@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.SystemMessageBuilder
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -167,6 +168,9 @@ class MLSMigratorTest {
         @Mock
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
+        @Mock
+        val systemMessageBuilder = mock(classOf<SystemMessageBuilder>())
+
         fun withFetchKnownUsersSucceeding() = apply {
             given(userRepository)
                 .suspendFunction(userRepository::fetchKnownUsers)
@@ -208,7 +212,7 @@ class MLSMigratorTest {
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(Unit))
         }
-        fun withUpdateProtocolReturns(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+        fun withUpdateProtocolReturns(result: Either<CoreFailure, Boolean> = Either.Right(true)) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateProtocol)
                 .whenInvokedWith(any(), any())
@@ -237,10 +241,12 @@ class MLSMigratorTest {
         }
 
         fun arrange() = this to MLSMigratorImpl(
+            TestUser.SELF.id,
             selfTeamIdProvider,
             userRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            systemMessageBuilder
         )
 
         init {

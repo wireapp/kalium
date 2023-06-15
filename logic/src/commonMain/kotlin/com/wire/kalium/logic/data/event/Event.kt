@@ -323,6 +323,22 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 senderUserIdKey to senderUserId.toLogString(),
             )
         }
+
+        data class ConversationProtocol(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+            val protocol: com.wire.kalium.logic.data.conversation.Conversation.Protocol,
+            val senderUserId: UserId
+        ) : Conversation(id, transient, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ConversationProtocol",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                "protocol" to protocol.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
     }
 
     sealed class Team(

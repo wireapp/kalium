@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.toDao
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -222,6 +224,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.HISTORY_LOST -> null
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
         }
     }
 
@@ -319,6 +322,7 @@ class MessageMapperImpl(
         is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
         is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
         is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
+        is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -405,6 +409,7 @@ class MessageMapperImpl(
         is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
+        is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
     }
 }
 

@@ -201,7 +201,7 @@ interface ConversationRepository {
     suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
     suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer?>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
-    suspend fun updateProtocol(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Unit>
+    suspend fun updateProtocol(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -737,14 +737,14 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateProtocol(
         conversationId: ConversationId,
         protocol: Conversation.Protocol
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Boolean> =
         wrapApiRequest {
             conversationApi.updateProtocol(conversationId.toApi(), protocol.toApi())
         }.flatMap { response ->
             when (response) {
                 UpdateConversationProtocolResponse.ProtocolUnchanged -> {
                     // no need to update conversation
-                    Either.Right(Unit)
+                    Either.Right(false)
                 }
 
                 is UpdateConversationProtocolResponse.ProtocolUpdated -> {
@@ -757,9 +757,9 @@ internal class ConversationDataSource internal constructor(
                                     conversationId = conversationId.toDao(),
                                     protocol = protocol.toDao()
                                 )
-                            }
+                            }.map {}
                         }
-                    }
+                    }.map { true }
                 }
             }
         }
