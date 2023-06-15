@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -64,11 +65,10 @@ internal class ClearClientDataUseCaseImpl internal constructor(
         wrapCryptoRequest {
             proteusClientProvider.clearLocalFiles()
         }.flatMap {
-            mlsClientProvider.getMLSClient()
-                .flatMap { mlsClient ->
-                    wrapMLSRequest {
-                        mlsClient.clearLocalFiles()
-                    }
+            mlsClientProvider.getMLSClient().getOrNull()?.let { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.clearLocalFiles()
                 }
+            } ?: Either.Right(false)
         }
 }
