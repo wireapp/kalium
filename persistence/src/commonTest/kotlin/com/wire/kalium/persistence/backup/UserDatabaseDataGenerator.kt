@@ -188,7 +188,8 @@ class UserDatabaseDataGenerator(
             connectionStatus = ConnectionEntity.State.values()[generatedUsersCount % ConnectionEntity.State.values().size],
             previewAssetId = null,
             completeAssetId = null,
-            botService = null
+            botService = null,
+            supportedProtocols = null
         )
     }
 

@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.base.model.SelfUserDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UpdateEmailRequest
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
@@ -42,7 +43,7 @@ internal open class SelfApiV0 internal constructor(
     private val sessionManager: SessionManager
 ) : SelfApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    internal val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO> = wrapKaliumResponse {
         httpClient.get(PATH_SELF)
@@ -77,7 +78,11 @@ internal open class SelfApiV0 internal constructor(
             }
         } ?: NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No session found")))
 
-    private companion object {
+    @Suppress("MagicNumber")
+    override suspend fun updateSupportedProtocols(protocols: List<SupportedProtocolDTO>): NetworkResponse<Unit> =
+        getApiNotSupportError(::updateSupportedProtocols.name, 4)
+
+    companion object {
         const val PATH_SELF = "self"
         const val PATH_HANDLE = "handle"
         const val PATH_ACCESS = "access"
