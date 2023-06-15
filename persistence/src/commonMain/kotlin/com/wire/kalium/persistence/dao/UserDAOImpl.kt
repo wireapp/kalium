@@ -49,7 +49,8 @@ class UserMapper {
             availabilityStatus = user.user_availability_status,
             userType = user.user_type,
             botService = user.bot_service,
-            deleted = user.deleted
+            deleted = user.deleted,
+            supportedProtocols = user.supported_protocols
         )
     }
 
@@ -69,6 +70,7 @@ class UserMapper {
         userType: UserTypeEntity,
         botService: BotIdEntity?,
         deleted: Boolean,
+        supportedProtocols: Set<SupportedProtocolEntity>?,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -87,7 +89,8 @@ class UserMapper {
             availabilityStatus = userAvailabilityStatus,
             userType = userType,
             botService = botService,
-            deleted = deleted
+            deleted = deleted,
+            supportedProtocols = supportedProtocols
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -134,7 +137,8 @@ class UserDAOImpl internal constructor(
             user.completeAssetId,
             user.userType,
             user.botService,
-            user.deleted
+            user.deleted,
+            user.supportedProtocols
         )
     }
 
@@ -154,7 +158,8 @@ class UserDAOImpl internal constructor(
                     user.completeAssetId,
                     user.userType,
                     user.botService,
-                    user.deleted
+                    user.deleted,
+                    user.supportedProtocols
                 )
             }
         }
@@ -190,7 +195,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.supportedProtocols
                     )
                 }
             }
@@ -228,7 +234,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.supportedProtocols
                     )
                 }
             }
@@ -254,7 +261,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.supportedProtocols
                     )
                 }
             }
@@ -385,4 +393,9 @@ class UserDAOImpl internal constructor(
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
         userQueries.updateUserDisplayName(displayName, selfUserId)
     }
+
+    override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
+        withContext(queriesContext) {
+            userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
+        }
 }
