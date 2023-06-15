@@ -518,7 +518,8 @@ class SearchUserRepositoryTest {
             botService = null,
             deleted = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            supportedProtocols = null
         )
 
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
@@ -552,7 +553,8 @@ class SearchUserRepositoryTest {
                     email = null,
                     expiresAt = null,
                     nonQualifiedId = "value",
-                    service = null
+                    service = null,
+                    supportedProtocols = null
                 )
             )
         )
@@ -575,7 +577,8 @@ class SearchUserRepositoryTest {
             botService = null,
             deleted = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            supportedProtocols = null
         )
 
         val SELF_USER = SelfUser(
@@ -590,7 +593,8 @@ class SearchUserRepositoryTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-            expiresAt = null
+            expiresAt = null,
+            supportedProtocols = null
         )
 
     }
