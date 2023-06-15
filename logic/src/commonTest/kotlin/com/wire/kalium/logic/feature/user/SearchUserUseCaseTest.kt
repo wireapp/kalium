@@ -269,7 +269,8 @@ class SearchUserUseCaseTest {
                     userType = UserType.FEDERATED,
                     botService = null,
                     deleted = false,
-                    defederated = false
+                    defederated = false,
+                    supportedProtocols = null
                 )
             }
         )
