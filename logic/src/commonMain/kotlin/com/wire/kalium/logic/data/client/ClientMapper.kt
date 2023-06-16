@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.base.authenticated.client.SimpleClientRespons
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.persistence.dao.newclient.NewClientEntity
 import kotlinx.datetime.Instant
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
@@ -80,6 +81,19 @@ class ClientMapper(
             model = model,
             isVerified = isVerified,
             isValid = isValid
+        )
+    }
+
+    fun fromNewClientEntity(clientEntity: NewClientEntity): Client = with(clientEntity) {
+        Client(
+            id = ClientId(id),
+            type = clientType?.let { fromClientTypeEntity(it) },
+            registrationTime = registrationDate,
+            deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
+            label = label,
+            model = model,
+            isVerified = true,
+            isValid = true
         )
     }
 
@@ -143,8 +157,7 @@ class ClientMapper(
             clientType = toClientTypeEntity(event.clientType),
             label = event.label,
             model = event.model,
-            registrationDate = Instant.parse(event.registrationTime),
-            isMyNewClient = true
+            registrationDate = Instant.parse(event.registrationTime)
         )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {

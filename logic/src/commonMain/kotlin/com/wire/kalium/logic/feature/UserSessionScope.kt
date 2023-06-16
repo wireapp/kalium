@@ -639,6 +639,7 @@ class UserSessionScope internal constructor(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
+            userStorage.database.newClientDAO,
             userId,
             authenticatedNetworkContainer.clientApi,
         )

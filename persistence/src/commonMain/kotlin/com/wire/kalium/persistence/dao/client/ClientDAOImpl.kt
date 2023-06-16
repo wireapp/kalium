@@ -41,7 +41,6 @@ internal object ClientMapper {
         registration_date: Instant?,
         label: String?,
         model: String?,
-        is_my_new: Boolean,
     ): Client = Client(
         userId = user_id,
         id = id,
@@ -78,7 +77,6 @@ internal class ClientDAOImpl internal constructor(
             device_type = deviceType,
             client_type = clientType,
             is_valid = true,
-            is_my_new = isMyNewClient,
             registration_date = registrationDate,
             model = model,
             label = label
@@ -124,15 +122,15 @@ internal class ClientDAOImpl internal constructor(
             .executeAsList()
             .groupBy { it.userId }
 
-    override suspend fun observeNewClients(userId: QualifiedIDEntity): Flow<List<Client>> =
-        clientsQueries.selectNewClientsForUser(userId, mapper::fromClient)
-            .asFlow()
-            .flowOn(queriesContext)
-            .mapToList()
-
-    override suspend fun markClientsAsNonNewForUser(userId: QualifiedIDEntity) {
-        clientsQueries.updateNewClientFlagsForUser(false, userId)
-    }
+//     override suspend fun observeNewClients(userId: QualifiedIDEntity): Flow<List<Client>> =
+//         clientsQueries.selectNewClientsForUser(userId, mapper::fromClient)
+//             .asFlow()
+//             .flowOn(queriesContext)
+//             .mapToList()
+//
+//     override suspend fun markClientsAsNonNewForUser(userId: QualifiedIDEntity) {
+//         clientsQueries.updateNewClientFlagsForUser(false, userId)
+//     }
 
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)

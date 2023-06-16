@@ -41,8 +41,7 @@ data class InsertClientParam(
     val clientType: ClientTypeEntity?,
     val label: String?,
     val registrationDate: Instant?,
-    val model: String?,
-    val isMyNewClient: Boolean = false
+    val model: String?
 )
 
 enum class DeviceTypeEntity {
@@ -76,6 +75,4 @@ interface ClientDAO {
     suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
     suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?>
     suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>>
-    suspend fun observeNewClients(userId: QualifiedIDEntity): Flow<List<Client>>
-    suspend fun markClientsAsNonNewForUser(userId: QualifiedIDEntity)
 }

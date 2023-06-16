@@ -48,6 +48,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
+import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -397,8 +398,8 @@ class ClientRepositoryTest {
 
         repository.saveNewClientEvent(newClientEvent)
 
-        verify(arrangement.clientDAO)
-            .suspendFunction(arrangement.clientDAO::insertClient)
+        verify(arrangement.newClientDAO)
+            .suspendFunction(arrangement.newClientDAO::insertNewClient)
             .with(eq(insertClientParam))
             .wasInvoked(exactly = once)
     }
@@ -409,9 +410,8 @@ class ClientRepositoryTest {
 
         repository.clearNewClients()
 
-        verify(arrangement.clientDAO)
-            .suspendFunction(arrangement.clientDAO::markClientsAsNonNewForUser)
-            .with(eq(selfUserId.toDao()))
+        verify(arrangement.newClientDAO)
+            .suspendFunction(arrangement.newClientDAO::clearNewClients)
             .wasInvoked(exactly = once)
     }
 
@@ -465,8 +465,11 @@ class ClientRepositoryTest {
         @Mock
         val clientDAO = mock(classOf<ClientDAO>())
 
+        @Mock
+        val newClientDAO = mock(classOf<NewClientDAO>())
+
         var clientRepository: ClientRepository =
-            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi)
+            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, newClientDAO, selfUserId, clientApi)
 
         fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
             given(clientRegistrationStorage)

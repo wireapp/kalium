@@ -1,1 +1,12 @@
-ALTER TABLE Client ADD COLUMN is_my_new INTEGER AS Boolean DEFAULT(0);
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity;
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE NewClient (
+    id TEXT NOT NULL PRIMARY KEY,
+    device_type TEXT AS DeviceTypeEntity,
+    client_type TEXT AS ClientTypeEntity DEFAULT NULL,
+    registration_date INTEGER AS Instant DEFAULT NULL,
+    label TEXT DEFAULT NULL,
+    model TEXT DEFAULT NULL
+);

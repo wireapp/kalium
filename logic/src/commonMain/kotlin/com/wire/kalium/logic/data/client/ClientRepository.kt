@@ -42,9 +42,11 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
@@ -63,7 +65,6 @@ interface ClientRepository {
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
-    suspend fun deleteClientLocally(clientId: ClientId): Either<StorageFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
     suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
@@ -89,6 +90,7 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
+    private val newClientDAO: NewClientDAO,
     private val selfUserID: UserId,
     private val clientApi: ClientApi,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
@@ -150,9 +152,6 @@ class ClientDataSource(
             wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), param.clientId.value) }
         }
     }
-
-    override suspend fun deleteClientLocally(clientId: ClientId): Either<StorageFailure, Unit> =
-        wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), clientId.value) }
 
     /**
      * fetches the clients from the backend and stores them in the database
@@ -224,15 +223,15 @@ class ClientDataSource(
     }
 
     override suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient) {
-        clientDAO.insertClient(clientMapper.toInsertClientParam(selfUserID, newClientEvent))
+        newClientDAO.insertNewClient(clientMapper.toInsertClientParam(selfUserID, newClientEvent))
     }
 
     override suspend fun clearNewClients() {
-        clientDAO.markClientsAsNonNewForUser(selfUserID.toDao())
+        newClientDAO.clearNewClients()
     }
 
     override suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>> =
-        clientDAO.observeNewClients(selfUserID.toDao())
-            .map { it.map { clientMapper.fromClientEntity(it) } }
+        newClientDAO.observeNewClients()
+            .map { it.map { clientMapper.fromNewClientEntity(it) } }
             .wrapStorageRequest()
 }
