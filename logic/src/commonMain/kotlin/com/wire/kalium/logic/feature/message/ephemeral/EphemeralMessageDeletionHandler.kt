@@ -21,7 +21,7 @@ internal interface EphemeralMessageDeletionHandler {
 
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)
     fun enqueueSelfDeletion(message: Message.Regular, expirationData: Message.ExpirationData)
-    fun enqueuePendingSelfDeletionMessages()
+    suspend fun enqueuePendingSelfDeletionMessages()
 }
 
 internal class EphemeralMessageDeletionHandlerImpl(
@@ -202,19 +202,17 @@ internal class EphemeralMessageDeletionHandlerImpl(
         ongoingSelfDeletionMessages[message.conversationId to message.id] = Unit
     }
 
-    override fun enqueuePendingSelfDeletionMessages() {
-        launch {
-            messageRepository.getEphemeralMessagesMarkedForDeletion()
-                .onSuccess { ephemeralMessages ->
-                    ephemeralMessages.forEach { ephemeralMessage ->
-                        if (ephemeralMessage is Message.Regular && ephemeralMessage.expirationData != null) {
-                            enqueueSelfDeletion(
-                                message = ephemeralMessage,
-                                expirationData = ephemeralMessage.expirationData
-                            )
-                        }
+    override suspend fun enqueuePendingSelfDeletionMessages() {
+        messageRepository.getEphemeralMessagesMarkedForDeletion()
+            .onSuccess { ephemeralMessages ->
+                ephemeralMessages.forEach { ephemeralMessage ->
+                    if (ephemeralMessage is Message.Regular && ephemeralMessage.expirationData != null) {
+                        enqueueSelfDeletion(
+                            message = ephemeralMessage,
+                            expirationData = ephemeralMessage.expirationData
+                        )
                     }
                 }
-        }
+            }
     }
 }
