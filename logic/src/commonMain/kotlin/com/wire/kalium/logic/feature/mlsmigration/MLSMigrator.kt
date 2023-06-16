@@ -30,7 +30,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.first
 
 interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
