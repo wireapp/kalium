@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
@@ -499,6 +500,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val email: String?,
             val previewAssetId: String?,
             val completeAssetId: String?,
+            val supportedProtocols: Set<SupportedProtocol>?
         ) : User(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.Update",
