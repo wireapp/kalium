@@ -35,10 +35,17 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
@@ -76,7 +83,10 @@ internal class IncrementalSyncManager(
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
     private val networkStateObserver: NetworkStateObserver,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
+    private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
+        MIN_RETRY_DELAY,
+        MAX_RETRY_DELAY
+    )
 ) {
 
     /**
@@ -101,13 +111,31 @@ internal class IncrementalSyncManager(
                 incrementalSyncRecoveryHandler.recover(failure = failure) {
                     val delay = exponentialDurationHelper.next()
                     kaliumLogger.i("$TAG Triggering delay($delay) and waiting for reconnection")
-                    networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                    delayUntilConnectedOrPolicyUpgrade(delay)
                     kaliumLogger.i("$TAG Delay and waiting for connection finished - retrying")
                     startMonitoringForSync()
                 }
             }
         }
     )
+
+    private suspend fun delayUntilConnectedOrPolicyUpgrade(delay: Duration): Unit = coroutineScope {
+        select {
+            async {
+                incrementalSyncRepository
+                    .connectionPolicyState
+                    .drop(1)
+                    .first { it == KEEP_ALIVE }
+            }.onAwait {
+                kaliumLogger.i("$TAG backoff timer short-circuited as Policy was upgraded")
+            }
+            async {
+                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+            }.onAwait {
+                kaliumLogger.i("$TAG wait whole timer, as there was no policy upgrade until now")
+            }
+        }.also { coroutineContext.cancelChildren() }
+    }
 
     private val syncScope = CoroutineScope(SupervisorJob() + eventProcessingDispatcher)
 
@@ -136,6 +164,7 @@ internal class IncrementalSyncManager(
             .filter { it == KEEP_ALIVE }
             .cancellable()
             .collect {
+                exponentialDurationHelper.reset()
                 kaliumLogger.i("$TAG Re-starting IncrementalSync, as ConnectionPolicy was upgraded to KEEP_ALIVE")
                 doIncrementalSyncWhilePolicyAllows()
             }

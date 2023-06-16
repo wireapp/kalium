@@ -36,6 +36,9 @@ class ProteusClientCoreCryptoImpl internal constructor(
     private lateinit var coreCrypto: CoreCrypto
 
     override fun clearLocalFiles(): Boolean {
+        if (::coreCrypto.isInitialized) {
+            coreCrypto.close()
+        }
         return File(path).deleteRecursively()
     }
 
@@ -44,9 +47,9 @@ class ProteusClientCoreCryptoImpl internal constructor(
     }
 
     override suspend fun openOrCreate() {
-        coreCrypto = wrapException {
+        wrapException {
             File(rootDir).mkdirs()
-            val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+            coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
             coreCrypto
@@ -56,11 +59,10 @@ class ProteusClientCoreCryptoImpl internal constructor(
     override suspend fun openOrError() {
         val directory = File(rootDir)
         if (directory.exists()) {
-            coreCrypto = wrapException {
-                val coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
+            wrapException {
+                coreCrypto = CoreCrypto.deferredInit(path, databaseKey.value, null)
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()
-                coreCrypto
             }
         } else {
             throw ProteusException(
@@ -186,14 +188,18 @@ class ProteusClientCoreCryptoImpl internal constructor(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "ThrowsCount")
     private fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
-            throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
+            if (this::coreCrypto.isInitialized) {
+                throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e)
+            } else {
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
+            }
         } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
         }
     }
 

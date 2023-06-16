@@ -52,7 +52,7 @@ class ClientMapper(
         deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
         type = param.clientType?.let { toClientTypeDTO(param.clientType) } ?: toClientTypeDTO(clientConfig.clientType()),
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } },
-        model = clientConfig.deviceModelName(),
+        model = param.model?.let { param.model } ?: clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
         cookieLabel = param.cookieLabel,
         secondFactorVerificationCode = param.secondFactorVerificationCode,
@@ -160,6 +160,11 @@ class ClientMapper(
     private fun fromClientCapabilityDTO(clientCapabilityDTO: ClientCapabilityDTO): ClientCapability = when (clientCapabilityDTO) {
         ClientCapabilityDTO.LegalHoldImplicitConsent -> ClientCapability.LegalHoldImplicitConsent
     }
+
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
+        otherUsersClients.map {
+            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isVerified)
+        }
 
     private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO = when (deviceType) {
         DeviceType.Phone -> DeviceTypeDTO.Phone

@@ -19,8 +19,8 @@
 package com.wire.kalium.network.api.base.unauthenticated.register
 
 import com.wire.kalium.network.api.base.model.NewUserDTO
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface RegisterApi {
@@ -118,7 +118,7 @@ interface RegisterApi {
 
     suspend fun register(
         param: RegisterParam
-    ): NetworkResponse<Pair<UserDTO, SessionDTO>>
+    ): NetworkResponse<Pair<SelfUserDTO, SessionDTO>>
 
     suspend fun requestActivationCode(
         param: RequestActivationCodeParam

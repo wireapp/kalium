@@ -160,12 +160,19 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 outGoingAssetUploadJob = scope.launch(dispatcher.io) {
                     launch {
                         messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
-                            if (visibility == MessageEntity.Visibility.DELETED) {
-                                // If the message is deleted we cancel the upload
-                                outGoingAssetUploadJob?.cancel()
-                            }
+                            visibility.fold(
+                                {
+                                    outGoingAssetUploadJob?.cancel()
+                                },
+                                {
+                                    if (it == MessageEntity.Visibility.DELETED) {
+                                        outGoingAssetUploadJob?.cancel()
+                                    }
+                                }
+                            )
                         }
                     }
+
                     launch {
                         uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
                             .onSuccess {

@@ -23,24 +23,56 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserDTO(
-    @SerialName("accent_id") val accentId: Int,
-    @SerialName("assets") val assets: List<UserAssetDTO>,
-    @SerialName("deleted") val deleted: Boolean?,
-    @SerialName("email") val email: String?,
-    @SerialName("expires_at") val expiresAt: String?,
-    @SerialName("handle") val handle: String?,
+sealed class UserDTO {
+    abstract val id: UserId
+    abstract val name: String
+    abstract val handle: String?
+    abstract val teamId: TeamId?
+    abstract val accentId: Int
+    abstract val assets: List<UserAssetDTO>
+    abstract val deleted: Boolean?
+    abstract val email: String?
+    abstract val expiresAt: String?
+    abstract val nonQualifiedId: NonQualifiedUserId
+    abstract val service: ServiceDTO?
+}
+
+@Serializable
+data class UserProfileDTO(
+    @SerialName("qualified_id") override val id: UserId,
+    @SerialName("name") override val name: String,
+    @SerialName("handle") override val handle: String?,
+    @SerialName("team") override val teamId: TeamId?,
+    @SerialName("accent_id") override val accentId: Int,
+    @SerialName("assets") override val assets: List<UserAssetDTO>,
+    @SerialName("deleted") override val deleted: Boolean?,
+    @SerialName("email") override val email: String?,
+    @SerialName("expires_at") override val expiresAt: String?,
     @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
-    @SerialName("id") val nonQualifiedId: NonQualifiedUserId,
-    @SerialName("name") val name: String,
+    @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
+    @SerialName("service") override val service: ServiceDTO?,
+    @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
+) : UserDTO()
+
+@Serializable
+data class SelfUserDTO(
+    @SerialName("qualified_id") override val id: UserId,
+    @SerialName("name") override val name: String,
+    @SerialName("handle") override val handle: String?,
+    @SerialName("team") override val teamId: TeamId?,
+    @SerialName("accent_id") override val accentId: Int,
+    @SerialName("assets") override val assets: List<UserAssetDTO>,
+    @SerialName("deleted") override val deleted: Boolean?,
+    @SerialName("email") override val email: String?,
+    @SerialName("expires_at") override val expiresAt: String?,
+    @Deprecated("use id instead", replaceWith = ReplaceWith("this.id"))
+    @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
+    @SerialName("service") override val service: ServiceDTO?,
     @SerialName("locale") val locale: String,
     @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("phone") val phone: String?,
-    @SerialName("qualified_id") val id: UserId,
-    @SerialName("service") val service: ServiceDTO?,
     @SerialName("sso_id") val ssoID: UserSsoIdDTO?,
-    @SerialName("team") val teamId: TeamId?
-)
+) : UserDTO()
 
 @Serializable
 internal data class NewUserDTO(

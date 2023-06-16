@@ -1475,6 +1475,7 @@ class CallRepositoryTest {
         conversationType = Conversation.Type.GROUP,
         callerName = null,
         callerTeamName = null,
+        callStatus = CallStatus.ESTABLISHED,
         protocol = Conversation.ProtocolInfo.Proteus
     )
 

@@ -40,7 +40,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
 
-// TODO(testing): create unit test
 internal class OnHttpRequest(
     private val handle: Deferred<Handle>,
     private val calling: Calling,
