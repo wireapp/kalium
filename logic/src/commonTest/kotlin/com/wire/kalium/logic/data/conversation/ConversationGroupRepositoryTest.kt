@@ -63,6 +63,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.eq
+import io.mockative.fun1
 import io.mockative.fun2
 import io.mockative.given
 import io.mockative.mock
@@ -688,7 +689,7 @@ class ConversationGroupRepositoryTest {
         val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
 
         @Mock
-        val newGroupConversationStartedMessageCreator = mock(NewGroupConversationStartedMessageCreator::class)
+        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
@@ -702,7 +703,7 @@ class ConversationGroupRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 newConversationMembersRepository,
-                newGroupConversationStartedMessageCreator,
+                lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
@@ -994,8 +995,8 @@ class ConversationGroupRepositoryTest {
         }
 
         fun withSuccessfulNewConversationGroupStartedHandled() = apply {
-            given(newGroupConversationStartedMessageCreator)
-                .suspendFunction(newGroupConversationStartedMessageCreator::createSystemMessage)
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStarted, fun1<ConversationEntity>())
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

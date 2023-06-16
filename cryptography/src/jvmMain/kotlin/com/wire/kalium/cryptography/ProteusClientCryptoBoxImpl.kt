@@ -44,7 +44,9 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override fun clearLocalFiles(): Boolean {
-        box.close()
+        if (::box.isInitialized) {
+            box.close()
+        }
         return File(path).deleteRecursively()
     }
 
