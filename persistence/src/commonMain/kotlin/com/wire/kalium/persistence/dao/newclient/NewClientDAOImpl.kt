@@ -19,9 +19,6 @@ package com.wire.kalium.persistence.dao.newclient
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.NewClientQueries
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.client.Client
-import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.util.mapToList
