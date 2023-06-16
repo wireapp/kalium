@@ -257,7 +257,6 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
     }
 }
 
-
 /**
  * @return true if the database have fk violations, false otherwise
  */
