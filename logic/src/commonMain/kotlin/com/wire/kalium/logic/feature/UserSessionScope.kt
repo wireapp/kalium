@@ -58,8 +58,6 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
@@ -493,22 +491,15 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
-            newGroupConversationStartedMessageCreator,
+            lazy { conversations.newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId
         )
 
-    private val newGroupConversationStartedMessageCreator: NewGroupConversationStartedMessageCreator
-        get() = NewGroupConversationStartedMessageCreatorImpl(
-            persistMessage,
-            userId
-        )
-
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
-            persistMessage,
             userStorage.database.conversationDAO,
-            userId
+            lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
 
     private val messageRepository: MessageRepository
@@ -972,9 +963,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             selfTeamId,
-            persistMessage,
-            qualifiedIdMapper,
-            team.isSelfATeamMember
+            conversations.newGroupConversationSystemMessagesCreator
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
