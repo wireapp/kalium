@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -69,6 +70,7 @@ class UserEventReceiverTest {
         val (arrangement, eventReceiver) = Arrangement()
             .withCurrentClientIdIs(CLIENT_ID2)
             .withLogoutUseCaseSucceed()
+            .withDeleteClientSucceeds()
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -77,6 +79,23 @@ class UserEventReceiverTest {
             .suspendFunction(arrangement.logoutUseCase::invoke)
             .with(any())
             .wasNotInvoked()
+    }
+
+    @Test
+    fun givenRemoveClientEvent_whenTheClientIdIsNotEqualCurrentClient_ClientIsDeleted() = runTest {
+        val event = TestEvent.clientRemove(EVENT_ID, CLIENT_ID1)
+        val (arrangement, eventReceiver) = Arrangement()
+            .withCurrentClientIdIs(CLIENT_ID2)
+            .withLogoutUseCaseSucceed()
+            .withDeleteClientSucceeds()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::deleteClient)
+            .with(eq(event.clientId))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -134,6 +153,7 @@ class UserEventReceiverTest {
     fun givenNewClientEvent_NewClientManagerInvoked() = runTest {
         val event = TestEvent.newClient()
         val (arrangement, eventReceiver) = Arrangement()
+            .withInsertClientSucceeds()
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -141,6 +161,21 @@ class UserEventReceiverTest {
         verify(arrangement.newClientManager)
             .suspendFunction(arrangement.newClientManager::scheduleNewClientEvent)
             .with(any(), eq(SELF_USER_ID))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewClientEvent_NewClientIsPersisted() = runTest {
+        val event = TestEvent.newClient()
+        val (arrangement, eventReceiver) = Arrangement()
+            .withInsertClientSucceeds()
+            .arrange()
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::insertClient)
+            .with(eq(event.client))
             .wasInvoked(exactly = once)
     }
 
@@ -155,6 +190,9 @@ class UserEventReceiverTest {
         val userRepository = mock(classOf<UserRepository>())
 
         @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
+
+        @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
@@ -167,6 +205,7 @@ class UserEventReceiverTest {
             newClientManager,
             connectionRepository,
             conversationRepository,
+            clientRepository,
             userRepository,
             logoutUseCase,
             SELF_USER_ID,
@@ -182,6 +221,14 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
+        }
+
+        fun withInsertClientSucceeds() = apply {
+            given(clientRepository).suspendFunction(clientRepository::insertClient).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+        }
+
+        fun withDeleteClientSucceeds() = apply {
+            given(clientRepository).suspendFunction(clientRepository::deleteClient).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
         fun withUpdateUserSuccess() = apply {

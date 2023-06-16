@@ -56,14 +56,14 @@ class DeleteClientUseCaseTest {
     fun givenDeleteClientParams_whenDeleting_thenTheRepositoryShouldBeCalledWithCorrectParameters() = runTest {
         val params = DELETE_CLIENT_PARAMETERS
         given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
+            .suspendFunction(clientRepository::revokeClient)
             .whenInvokedWith(anything())
             .then { Either.Left(TEST_FAILURE) }
 
         deleteClient(params)
 
         verify(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
+            .suspendFunction(clientRepository::revokeClient)
             .with(eq(params))
             .wasInvoked(once)
     }
@@ -72,7 +72,7 @@ class DeleteClientUseCaseTest {
     fun givenRepositoryDeleteClientFailsDueToGenericError_whenDeleting_thenGenericErrorShouldBeReturned() = runTest {
         val genericFailure = TEST_FAILURE
         given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
+            .suspendFunction(clientRepository::revokeClient)
             .whenInvokedWith(anything())
             .then { Either.Left(genericFailure) }
 
@@ -86,7 +86,7 @@ class DeleteClientUseCaseTest {
     fun givenRepositoryDeleteClientFailsDueToWrongPassword_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
         val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
         given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
+            .suspendFunction(clientRepository::revokeClient)
             .whenInvokedWith(anything())
             .then { Either.Left(wrongPasswordFailure) }
 
@@ -99,7 +99,7 @@ class DeleteClientUseCaseTest {
     fun givenRepositoryDeleteClientFailsDueToMissingPassword_whenDeleting_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
         val missingPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
         given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
+            .suspendFunction(clientRepository::revokeClient)
             .whenInvokedWith(anything())
             .then { Either.Left(missingPasswordFailure) }
 
@@ -112,7 +112,7 @@ class DeleteClientUseCaseTest {
     fun givenRepositoryDeleteClientFailsDueToBadRequest_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
         val badRequest = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
         given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
+            .suspendFunction(clientRepository::revokeClient)
             .whenInvokedWith(anything())
             .then { Either.Left(badRequest) }
 

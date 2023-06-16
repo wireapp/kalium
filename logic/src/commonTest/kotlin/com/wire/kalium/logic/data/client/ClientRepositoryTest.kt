@@ -204,7 +204,7 @@ class ClientRepositoryTest {
             .withDeleteClientReportedly(expected)
             .arrange()
 
-        val actual = clientRepository.deleteClient(param)
+        val actual = clientRepository.revokeClient(param)
 
         actual.shouldFail { expected.value }
 
@@ -225,12 +225,12 @@ class ClientRepositoryTest {
             .withDeleteClientLocally()
             .arrange()
 
-        val actual = clientRepository.deleteClient(param)
+        val actual = clientRepository.revokeClient(param)
 
         actual.shouldSucceed()
 
         verify(arrangement.clientRemoteRepository)
-            .coroutine { clientRepository.deleteClient(param) }
+            .coroutine { clientRepository.revokeClient(param) }
             .wasInvoked(exactly = once)
         verify(arrangement.clientDAO)
             .coroutine { arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value) }

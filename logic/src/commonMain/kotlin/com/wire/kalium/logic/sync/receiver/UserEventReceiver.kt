@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
@@ -41,6 +42,7 @@ class UserEventReceiverImpl internal constructor(
     private val newClientManager: NewClientManager,
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
+    private val clientRepository: ClientRepository,
     private val userRepository: UserRepository,
     private val logout: LogoutUseCase,
     private val selfUserId: UserId,
@@ -105,18 +107,45 @@ class UserEventReceiverImpl internal constructor(
                     )
                 logout(LogoutReason.REMOVED_CLIENT)
             } else {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event,
-                        Pair("info", "OTHER_CLIENT")
-                    )
+                clientRepository.deleteClient(event.clientId)
+                    .onSuccess {
+                        kaliumLogger
+                            .logEventProcessing(
+                                EventLoggingStatus.SUCCESS,
+                                event,
+                                Pair("info", "OTHER_CLIENT")
+                            )
+                    }
+                    .onFailure {
+                        kaliumLogger
+                            .logEventProcessing(
+                                EventLoggingStatus.FAILURE,
+                                event,
+                                Pair("errorInfo", "$it")
+                            )
+                    }
             }
         }
     }
 
     private suspend fun handleNewClient(event: Event.User.NewClient) {
         newClientManager.scheduleNewClientEvent(event, selfUserId)
+        clientRepository.insertClient(event.client)
+            .onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }
+            .onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }
     }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete) {

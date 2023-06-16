@@ -61,7 +61,9 @@ interface ClientRepository {
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
-    suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
+    suspend fun revokeClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
+    suspend fun deleteClient(clientId: ClientId): Either<StorageFailure, Unit>
+    suspend fun insertClient(client: Client): Either<StorageFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
     suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
@@ -139,11 +141,17 @@ class ClientDataSource(
             rawClientId?.let { ClientId(it) }
         }
 
-    override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> {
+    override suspend fun revokeClient(param: DeleteClientParam): Either<NetworkFailure, Unit> {
         return clientRemoteRepository.deleteClient(param).onSuccess {
             wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), param.clientId.value) }
         }
     }
+
+    override suspend fun deleteClient(clientId: ClientId): Either<StorageFailure, Unit> =
+            wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), clientId.value) }
+
+    override suspend fun insertClient(client: Client): Either<StorageFailure, Unit> =
+        wrapStorageRequest { clientDAO.insertClient(clientMapper.toInsertClientParam(client, selfUserID)) }
 
     /**
      * fetches the clients from the backend and stores them in the database

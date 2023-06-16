@@ -110,6 +110,19 @@ class ClientMapper(
             )
         }
 
+    fun toInsertClientParam(client: Client, userId: UserId): InsertClientParam =
+        with(client) {
+            InsertClientParam(
+                userId = userId.toDao(),
+                id = id.value,
+                deviceType = deviceType?.let { toDeviceTypeEntity(it) },
+                clientType = type?.let { toClientTypeEntity(it) },
+                label = label,
+                model = model,
+                registrationDate = registrationTime
+            )
+        }
+
     fun toInsertClientParam(userId: UserId, clientId: List<ClientId>): List<InsertClientParam> =
         clientId.map {
             InsertClientParam(
@@ -192,6 +205,12 @@ class ClientMapper(
         DeviceTypeDTO.Desktop -> DeviceTypeEntity.Desktop
         DeviceTypeDTO.LegalHold -> DeviceTypeEntity.LegalHold
         DeviceTypeDTO.Unknown -> DeviceTypeEntity.Unknown
+    }
+
+    fun toClientTypeEntity(clientType: ClientType): ClientTypeEntity = when (clientType) {
+        ClientType.Temporary -> ClientTypeEntity.Temporary
+        ClientType.Permanent -> ClientTypeEntity.Permanent
+        ClientType.LegalHold -> ClientTypeEntity.LegalHold
     }
 
     fun toClientTypeEntity(clientTypeDTO: ClientTypeDTO): ClientTypeEntity = when (clientTypeDTO) {

@@ -38,7 +38,7 @@ interface DeleteClientUseCase {
 
 class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : DeleteClientUseCase {
     override suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult =
-        clientRepository.deleteClient(param).fold(
+        clientRepository.revokeClient(param).fold(
             {
                 handleError(it)
             }, {

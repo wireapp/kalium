@@ -1019,7 +1019,14 @@ class UserSessionScope internal constructor(
 
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
-            newClientManager, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
+            newClientManager,
+            connectionRepository,
+            conversationRepository,
+            clientRepository,
+            userRepository,
+            logout,
+            userId,
+            clientIdProvider
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
