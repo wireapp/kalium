@@ -275,30 +275,6 @@ class ClientDAOTest : BaseDatabaseTest() {
         assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
     }
 
-    @Test
-    fun givenUserId_whenANewClientsIsAdded_thenNewClientListIsEmitted() = runTest {
-        userDAO.insertUser(user)
-        clientDAO.observeNewClients(userId).test {
-            awaitItem().also { result -> assertEquals(emptyList(), result) }
-            clientDAO.insertClient(insertedClient.copy(isMyNewClient = true))
-
-            awaitItem().also { result -> assertEquals(listOf(client), result) }
-        }
-    }
-
-    @Test
-    fun givenNewClientsForUser_whenMarkedAsNonNewForUser_thenNewClientEmptyListIsEmitted() = runTest {
-        userDAO.insertUser(user)
-        clientDAO.insertClients(listOf(insertedClient.copy(isMyNewClient = true), insertedClient1.copy(isMyNewClient = true)))
-
-        clientDAO.observeNewClients(userId).test {
-            awaitItem()
-            clientDAO.markClientsAsNonNewForUser(userId)
-
-            awaitItem().also { result -> assertEquals(listOf(), result) }
-        }
-    }
-
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
