@@ -266,16 +266,6 @@ internal class UserDataSource internal constructor(
                         isService = userProfileDTO.service != null
                     )
                 )
-//                 userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-//                     userProfileDTO = userProfileDTO,
-//                     userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
-//                         otherUserDomain = userProfileDTO.id.domain,
-//                         selfUserTeamId = selfUserTeamId,
-//                         otherUserTeamId = userProfileDTO.teamId,
-//                         selfUserDomain = selfUserId.domain,
-//                         isService = userProfileDTO.service != null
-//                     )
-//                 )
             }
         )
     }
