@@ -87,10 +87,10 @@ class ClientMapper(
     fun fromNewClientEntity(clientEntity: NewClientEntity): Client = with(clientEntity) {
         Client(
             id = ClientId(id),
-            type = clientType?.let { fromClientTypeEntity(it) },
+            type = null,
             registrationTime = registrationDate,
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
-            label = label,
+            label = null,
             model = model,
             isVerified = true,
             isValid = true

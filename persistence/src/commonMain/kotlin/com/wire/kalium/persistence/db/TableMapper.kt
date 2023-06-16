@@ -188,7 +188,6 @@ internal object TableMapper {
 
     val newClientAdapter = NewClient.Adapter(
         device_typeAdapter = EnumColumnAdapter(),
-        client_typeAdapter = EnumColumnAdapter(),
         registration_dateAdapter = InstantTypeAdapter
     )
 }

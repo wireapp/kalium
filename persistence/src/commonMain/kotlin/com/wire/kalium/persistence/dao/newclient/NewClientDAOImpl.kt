@@ -35,16 +35,12 @@ internal object NewClientMapper {
     fun fromClient(
         id: String,
         device_type: DeviceTypeEntity?,
-        client_type: ClientTypeEntity?,
         registration_date: Instant?,
-        label: String?,
         model: String?,
     ): NewClientEntity = NewClientEntity(
         id = id,
         deviceType = device_type,
-        clientType = client_type,
         registrationDate = registration_date,
-        label = label,
         model = model
     )
 }
@@ -59,10 +55,8 @@ internal class NewClientDAOImpl(
         newClientsQueries.insertNewClient(
             id = id,
             device_type = deviceType,
-            client_type = clientType,
             registration_date = registrationDate,
-            model = model,
-            label = label
+            model = model
         )
     }
 
