@@ -32,7 +32,8 @@ data class NewClientEventData(
     @SerialName("model") val model: String?,
     @SerialName("type") val clientType: ClientTypeDTO,
     @SerialName("class") val deviceType: DeviceTypeDTO,
-    @SerialName("label") val label: String?
+    @SerialName("label") val label: String?,
+    @SerialName("mls_public_keys") val mlsPublicKeys: Map<String, String>?
 )
 
 @Serializable

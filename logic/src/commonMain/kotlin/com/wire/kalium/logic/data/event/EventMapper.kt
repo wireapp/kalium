@@ -212,7 +212,8 @@ class EventMapper(
             model = eventNewClient.client.model,
             clientType = eventNewClient.client.clientType,
             deviceType = eventNewClient.client.deviceType,
-            label = eventNewClient.client.label
+            label = eventNewClient.client.label,
+            isMLSCapable = eventNewClient.client.mlsPublicKeys?.isNotEmpty() ?: false
         )
     }
 

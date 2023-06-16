@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -552,7 +553,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val model: String?,
             val clientType: ClientTypeDTO,
             val deviceType: DeviceTypeDTO,
-            val label: String?
+            val label: String?,
+            val isMLSCapable: Boolean
         ) : User(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.NewClient",

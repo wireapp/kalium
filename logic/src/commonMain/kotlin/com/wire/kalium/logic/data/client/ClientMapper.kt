@@ -94,7 +94,7 @@ class ClientMapper(
         model = event.model,
         isVerified = false,
         isValid = true,
-        isMLSCapable = false // TODO jacob check if data is available on new client event
+        isMLSCapable = event.isMLSCapable
     )
 
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =

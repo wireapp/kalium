@@ -57,7 +57,8 @@ object NotificationEventsResponseJson {
             |    "capabilities": {
             |      "capabilities": []
             |    },
-            |    "label": "${eventData.client.label}"
+            |    "label": "${eventData.client.label}",
+            |    "mls_public_keys": { "${eventData.client.mlsPublicKeys?.keys?.first()}": "${eventData.client.mlsPublicKeys?.values?.first()}" }
             |  }
             |}
         """.trimMargin()
@@ -66,7 +67,13 @@ object NotificationEventsResponseJson {
     private val clientAdd = ValidJsonProvider(
         EventContentDTO.User.NewClientDTO(
             NewClientEventData(
-                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", ClientTypeDTO.Permanent, DeviceTypeDTO.Desktop, "OS X 10.15 10.15"
+                "id",
+                "2022-02-15T12:54:30Z",
+                "Firefox (Temporary)",
+                ClientTypeDTO.Permanent,
+                DeviceTypeDTO.Desktop,
+                "OS X 10.15 10.15",
+                mapOf(Pair("key_variant", "public_key"))
             )
         ),
         newClientSerializer
