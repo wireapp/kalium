@@ -122,16 +122,6 @@ internal class ClientDAOImpl internal constructor(
             .executeAsList()
             .groupBy { it.userId }
 
-//     override suspend fun observeNewClients(userId: QualifiedIDEntity): Flow<List<Client>> =
-//         clientsQueries.selectNewClientsForUser(userId, mapper::fromClient)
-//             .asFlow()
-//             .flowOn(queriesContext)
-//             .mapToList()
-//
-//     override suspend fun markClientsAsNonNewForUser(userId: QualifiedIDEntity) {
-//         clientsQueries.updateNewClientFlagsForUser(false, userId)
-//     }
-
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
             .asFlow()
