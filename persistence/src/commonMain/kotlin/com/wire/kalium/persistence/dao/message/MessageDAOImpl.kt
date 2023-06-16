@@ -32,7 +32,7 @@ import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
 import com.wire.kalium.persistence.util.mapToList
-import com.wire.kalium.persistence.util.mapToOne
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -376,10 +376,10 @@ class MessageDAOImpl(
     override suspend fun observeMessageVisibility(
         messageUuid: String,
         conversationId: QualifiedIDEntity
-    ): Flow<MessageEntity.Visibility> {
+    ): Flow<MessageEntity.Visibility?> {
         return queries.selectMessageVisibility(messageUuid, conversationId)
             .asFlow()
-            .mapToOne()
+            .mapToOneOrNull()
             .distinctUntilChanged()
     }
 

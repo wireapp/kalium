@@ -46,7 +46,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
@@ -196,6 +195,8 @@ internal class MessageSenderImpl internal constructor(
                         millis = millis
                     )
                     Unit
+                }.also {
+                    startSelfDeletionIfNeeded(message)
                 }
             }
 
@@ -228,8 +229,6 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithProteus(message, messageTarget)
                     }
                 }
-            }.onSuccess {
-                startSelfDeletionIfNeeded(message)
             }
     }
 

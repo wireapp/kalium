@@ -18,10 +18,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.data.message.MessageContent.MemberChange.CreationAdded
-import com.wire.kalium.logic.data.message.MessageContent.MemberChange.FailedToAdd
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -33,12 +29,10 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
-import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -51,7 +45,7 @@ class NewConversationMembersRepositoryTest {
     fun givenASuccessConversationResponse_whenPersistingMembers_ThenShouldSucceedAndCreateASystemMessage() = runTest {
         val conversationId = TestConversation.ENTITY_ID
         val (arrangement, handler) = Arrangement()
-            .withPersistMessageSuccess()
+            .withPersistResolvedMembersSystemMessageSuccess()
             .arrange()
 
         val result = handler.persistMembersAdditionToTheConversation(conversationId, CONVERSATION_RESPONSE)
@@ -63,11 +57,9 @@ class NewConversationMembersRepositoryTest {
             .with(any())
             .wasInvoked(exactly = once)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                (it.content as? CreationAdded)?.members?.contains(TestUser.OTHER.id) == true
-            })
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            .with(any())
             .wasInvoked(once)
     }
 
@@ -75,7 +67,7 @@ class NewConversationMembersRepositoryTest {
     fun givenASuccessConversationResponse_whenMembersItsEmpty_ThenShouldNotCreateTheSystemMessage() = runTest {
         val conversationId = TestConversation.ENTITY_ID
         val (arrangement, handler) = Arrangement()
-            .withPersistMessageSuccess()
+            .withPersistResolvedMembersSystemMessageSuccess()
             .arrange()
 
         val result = handler.persistMembersAdditionToTheConversation(
@@ -89,77 +81,6 @@ class NewConversationMembersRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId)
             .with(any())
             .wasInvoked(exactly = once)
-
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                it.content is CreationAdded
-            })
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenASuccessConversationResponse_whenMembersFailedToAddIsEmpty_ThenShouldNotCreateTheSystemMessage() = runTest {
-        val conversationId = TestConversation.ENTITY_ID
-        val (arrangement, handler) = Arrangement()
-            .withPersistMessageSuccess()
-            .arrange()
-
-        val result = handler.persistMembersAdditionToTheConversation(
-            conversationId,
-            CONVERSATION_RESPONSE.copy(failedToAdd = emptySet())
-        )
-
-        result.shouldSucceed()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is CreationAdded })
-            .wasInvoked(once)
-
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                it.content is FailedToAdd
-            })
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenASuccessConversationResponse_whenWithMembersFailedToAdd_ThenShouldCreateTheSystemMessage() = runTest {
-        val conversationId = TestConversation.ENTITY_ID
-        val (arrangement, handler) = Arrangement()
-            .withPersistMessageSuccess()
-            .arrange()
-
-        val result = handler.persistMembersAdditionToTheConversation(
-            conversationId,
-            CONVERSATION_RESPONSE.copy(failedToAdd = setOf(QualifiedID("remoteId", "remoteDomain")))
-        )
-
-        result.shouldSucceed()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is CreationAdded })
-            .wasInvoked(once)
-
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                (it.content as FailedToAdd).members.contains(UserId("remoteId", "remoteDomain"))
-            })
-            .wasInvoked(once)
     }
 
     private class Arrangement {
@@ -167,18 +88,18 @@ class NewConversationMembersRepositoryTest {
         val conversationDAO = mock(ConversationDAO::class)
 
         @Mock
-        val persistMessage = mock(PersistMessageUseCase::class)
+        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
-        fun withPersistMessageSuccess() = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .then { Either.Right(Unit) }
+        fun withPersistResolvedMembersSystemMessageSuccess() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to NewConversationMembersRepositoryImpl(
-            persistMessage, conversationDAO, TestUser.SELF.id,
-        )
+            conversationDAO,
+            lazy { newGroupConversationSystemMessagesCreator })
     }
 
     private companion object {

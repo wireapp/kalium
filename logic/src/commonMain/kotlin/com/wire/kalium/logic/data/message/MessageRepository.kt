@@ -43,6 +43,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -191,7 +192,7 @@ interface MessageRepository {
     suspend fun observeMessageVisibility(
         messageUuid: String,
         conversationId: ConversationId
-    ): Flow<MessageEntity.Visibility>
+    ): Flow<Either<StorageFailure, MessageEntity.Visibility>>
 
     suspend fun persistRecipientsDeliveryFailure(
         conversationId: ConversationId,
@@ -533,9 +534,13 @@ class MessageDataSource(
         }
     }
 
-    override suspend fun observeMessageVisibility(messageUuid: String, conversationId: ConversationId): Flow<MessageEntity.Visibility> {
-        return messageDAO.observeMessageVisibility(messageUuid, conversationId.toDao())
-    }
+    override suspend fun observeMessageVisibility(
+        messageUuid: String,
+        conversationId: ConversationId
+    ): Flow<Either<StorageFailure, MessageEntity.Visibility>> =
+        wrapFlowStorageRequest {
+            messageDAO.observeMessageVisibility(messageUuid, conversationId.toDao())
+        }
 
     /**
      * Persist a list of users ids that failed to receive the message

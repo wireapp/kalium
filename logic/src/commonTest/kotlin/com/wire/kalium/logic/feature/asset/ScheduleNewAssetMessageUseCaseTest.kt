@@ -63,7 +63,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -663,7 +662,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::observeMessageVisibility)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(MessageEntity.Visibility.VISIBLE))
+                .thenReturn(flowOf(Either.Right(MessageEntity.Visibility.VISIBLE)))
         }
 
         fun withDeleteAssetLocally() = apply {
