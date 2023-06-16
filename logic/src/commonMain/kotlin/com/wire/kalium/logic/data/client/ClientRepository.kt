@@ -205,7 +205,7 @@ class ClientDataSource(
         wrapStorageRequest {
             clientDAO.getClientsOfUserByQualifiedID(userId.toDao())
         }.map { clientsList ->
-            userMapper.fromOtherUsersClientsDTO(clientsList)
+            clientMapper.fromOtherUsersClientsDTO(clientsList)
         }
 
     override suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>> =

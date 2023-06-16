@@ -21,10 +21,10 @@ package com.wire.kalium.logic.data.team
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.service.ServiceMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -34,6 +34,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
@@ -63,7 +64,8 @@ internal class TeamDataSource(
     private val serviceDAO: ServiceDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
-    private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper()
+    private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper(),
+    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -137,17 +139,22 @@ internal class TeamDataSource(
                 teamId = teamId,
                 userId = userId,
             )
-        }.flatMap { member ->
+        }.flatMap { _ ->
             wrapApiRequest { userDetailsApi.getUserInfo(userId = QualifiedID(userId, selfUserId.domain)) }
-                .flatMap { userProfile ->
+                .flatMap { userProfileDTO ->
                     wrapStorageRequest {
-                        val user = userMapper.apiToEntity(
-                            user = userProfile,
-                            member = member,
-                            teamId = teamId,
-                            selfUser = selfUserId.toApi()
+                        val userEntity = userMapper.fromUserProfileDtoToUserEntity(
+                            userProfile = userProfileDTO,
+                            connectionState = ConnectionEntity.State.ACCEPTED,
+                            userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
+                                otherUserDomain = userProfileDTO.id.domain,
+                                selfUserTeamId = teamId,
+                                otherUserTeamId = userProfileDTO.teamId,
+                                selfUserDomain = selfUserId.domain,
+                                isService = userProfileDTO.service != null
+                            )
                         )
-                        userDAO.insertUser(user)
+                        userDAO.insertUser(userEntity)
                     }
                 }
         }

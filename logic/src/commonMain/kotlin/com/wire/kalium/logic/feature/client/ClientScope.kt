@@ -87,7 +87,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     val observeClientDetailsUseCase: ObserveClientDetailsUseCase get() = ObserveClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
     val needsToRegisterClient: NeedsToRegisterClientUseCase
-        get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, selfUserId)
+        get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, proteusClientProvider, selfUserId)
     val deregisterNativePushToken: DeregisterTokenUseCase
         get() = DeregisterTokenUseCaseImpl(clientRepository, notificationTokenRepository)
     val mlsKeyPackageCountUseCase: MLSKeyPackageCountUseCase
