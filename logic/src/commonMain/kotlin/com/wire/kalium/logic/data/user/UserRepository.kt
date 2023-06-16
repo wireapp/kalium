@@ -246,10 +246,6 @@ internal class UserDataSource internal constructor(
                     connectionState = ConnectionEntity.State.ACCEPTED,
                     userTypeEntity = UserTypeEntity.STANDARD
                 )
-//                 userMapper.fromApiModelWithUserTypeEntityToDaoModel(
-//                     userProfileDTO = userProfileDTO,
-//                     userTypeEntity = null
-//                 )
             }
         )
 
