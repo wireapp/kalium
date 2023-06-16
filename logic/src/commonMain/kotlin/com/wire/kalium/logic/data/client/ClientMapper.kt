@@ -81,7 +81,7 @@ class ClientMapper(
             model = model,
             isVerified = isVerified,
             isValid = isValid,
-            isMLSCapable = false // TODO jacob persist in db?
+            isMLSCapable = isMLSCapable
         )
     }
 
@@ -107,13 +107,14 @@ class ClientMapper(
                     clientType = null,
                     label = null,
                     model = null,
-                    registrationDate = null
+                    registrationDate = null,
+                    isMLSCapable = false
                 )
             }
         }
 
-    fun toInsertClientParam(simpleClientResponse: ClientResponse, userIdDTO: UserIdDTO): InsertClientParam =
-        with(simpleClientResponse) {
+    fun toInsertClientParam(clientResponse: ClientResponse, userIdDTO: UserIdDTO): InsertClientParam =
+        with(clientResponse) {
             InsertClientParam(
                 userId = userIdDTO.toDao(),
                 id = clientId,
@@ -121,7 +122,8 @@ class ClientMapper(
                 clientType = toClientTypeEntity(type),
                 label = label,
                 model = model,
-                registrationDate = Instant.parse(registrationTime)
+                registrationDate = Instant.parse(registrationTime),
+                isMLSCapable = mlsPublicKeys?.isNotEmpty() ?: false
             )
         }
 
@@ -134,7 +136,8 @@ class ClientMapper(
                 clientType = null,
                 label = null,
                 model = null,
-                registrationDate = null
+                registrationDate = null,
+                isMLSCapable = false
             )
         }
 

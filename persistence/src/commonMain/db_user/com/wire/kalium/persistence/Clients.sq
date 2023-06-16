@@ -10,6 +10,7 @@ CREATE TABLE Client (
     device_type TEXT AS DeviceTypeEntity,
     is_valid INTEGER  AS Boolean NOT NULL DEFAULT 1,
     is_verified INTEGER  AS Boolean NOT NULL DEFAULT 0,
+    is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
     client_type TEXT AS ClientTypeEntity DEFAULT NULL,
     registration_date INTEGER AS Instant DEFAULT NULL,
     label TEXT DEFAULT NULL,
@@ -28,14 +29,15 @@ deleteClientsOfUser:
 DELETE FROM Client WHERE user_id = ?;
 
 insertClient:
-INSERT INTO Client(user_id, id,device_type, client_type, is_valid, registration_date, label, model)
-VALUES(?, ?,?, ?, ?,?, ?, ?)
+INSERT INTO Client(user_id, id,device_type, client_type, is_valid, is_mls_capable, registration_date, label, model)
+VALUES(?, ?,?, ?, ?,?,?, ?, ?)
 ON CONFLICT(id, user_id) DO UPDATE SET
 device_type = coalesce(excluded.device_type, device_type),
 registration_date = coalesce(excluded.registration_date, registration_date),
 label = coalesce(excluded.label, label),
 model = coalesce(excluded.model, model),
-is_valid = is_valid;
+is_valid = is_valid,
+is_mls_capable = is_mls_capable;
 
 selectAllClients:
 SELECT * FROM Client;

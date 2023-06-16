@@ -354,6 +354,7 @@ class ClientRepositoryTest {
                 isVerified = false,
                 isValid = true,
                 userId = userId,
+                isMLSCapable = false
             )
         )
 

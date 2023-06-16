@@ -37,6 +37,7 @@ internal object ClientMapper {
         device_type: DeviceTypeEntity?,
         is_valid: Boolean,
         is_verified: Boolean,
+        is_mls_capable: Boolean,
         client_type: ClientTypeEntity?,
         registration_date: Instant?,
         label: String?,
@@ -48,6 +49,7 @@ internal object ClientMapper {
         clientType = client_type,
         isValid = is_valid,
         isVerified = is_verified,
+        isMLSCapable = is_mls_capable,
         registrationDate = registration_date,
         label = label,
         model = model
@@ -77,6 +79,7 @@ internal class ClientDAOImpl internal constructor(
             device_type = deviceType,
             client_type = clientType,
             is_valid = true,
+            is_mls_capable = isMLSCapable,
             registration_date = registrationDate,
             model = model,
             label = label

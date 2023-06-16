@@ -74,7 +74,7 @@ object TestEvent {
     )
 
     fun newClient(eventId: String = "eventId", clientId: ClientId = ClientId("client")) = Event.User.NewClient(
-        false, eventId, clientId, "2022-04-30T15:36:00.000Z", "model", ClientTypeDTO.Permanent, DeviceTypeDTO.Phone, "label"
+        false, eventId, clientId, "2022-04-30T15:36:00.000Z", "model", ClientTypeDTO.Permanent, DeviceTypeDTO.Phone, "label", isMLSCapable = false
     )
 
     fun newConnection(eventId: String = "eventId") = Event.User.NewConnection(
