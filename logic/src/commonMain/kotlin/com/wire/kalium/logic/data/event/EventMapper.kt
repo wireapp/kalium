@@ -224,6 +224,7 @@ class EventMapper(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
         eventContentDTO.data
     )

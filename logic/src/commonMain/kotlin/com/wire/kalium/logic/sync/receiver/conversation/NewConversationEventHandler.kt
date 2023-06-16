@@ -65,7 +65,7 @@ internal class NewConversationEventHandlerImpl(
      * Conversation started, members added and failed, read receipt status.
      */
     private suspend fun createSystemMessagesForNewConversation(event: Event.Conversation.NewConversation) = run {
-        newGroupConversationSystemMessagesCreator.conversationStarted(event.conversation)
+        newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation)
         newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
             event.conversationId.toDao(),
             event.conversation
