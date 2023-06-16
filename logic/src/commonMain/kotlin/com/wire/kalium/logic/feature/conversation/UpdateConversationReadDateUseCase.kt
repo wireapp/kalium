@@ -96,5 +96,4 @@ class UpdateConversationReadDateUseCase internal constructor(
             messageSender.sendMessage(regularMessage)
         }
     }
-
 }

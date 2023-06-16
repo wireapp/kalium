@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -45,6 +46,9 @@ import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
@@ -70,9 +74,13 @@ class DebugScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
+
+    val breakSession: BreakSessionUseCase
+        get() = BreakSessionUseCaseImpl(proteusClientProvider)
 
     val sendBrokenAssetMessage: SendBrokenAssetMessageUseCase
         get() = SendBrokenAssetMessageUseCaseImpl(
@@ -92,7 +100,7 @@ class DebugScope internal constructor(
         )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository)
+        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository, messageSendingScheduler)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
@@ -128,9 +136,30 @@ class DebugScope internal constructor(
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,
-            messageSendingScheduler,
             messageSendingInterceptor,
             userRepository,
+            { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
             scope
+        )
+
+    private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
+        get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            currentClientIdProvider = currentClientIdProvider,
+            messageSender = messageSender,
+            selfUserId = userId,
+            selfConversationIdProvider = selfConversationIdProvider
+        )
+
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
+
+    private val ephemeralMessageDeletionHandler =
+        EphemeralMessageDeletionHandlerImpl(
+            userSessionCoroutineScope = scope,
+            messageRepository = messageRepository,
+            deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
+            deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
         )
 }

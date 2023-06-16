@@ -26,6 +26,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 sealed class CoreFailure {
@@ -204,3 +205,31 @@ internal fun <T : Any> Flow<T?>.wrapStorageRequest(): Flow<Either<StorageFailure
         kaliumLogger.e(e.stackTraceToString())
         emit(Either.Left(StorageFailure.Generic(e)))
     }
+
+internal inline fun <T : Any> wrapFlowStorageRequest(storageRequest: () -> Flow<T?>): Flow<Either<StorageFailure, T>> {
+    return try {
+        storageRequest().map {
+            it?.let { data -> Either.Right(data) } ?: Either.Left<StorageFailure>(StorageFailure.DataNotFound)
+        }.catch { e ->
+            kaliumLogger.e(e.stackTraceToString())
+            emit(Either.Left(StorageFailure.Generic(e)))
+        }
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        flowOf(Either.Left(StorageFailure.Generic(e)))
+    }
+}
+
+internal inline fun <T : Any> wrapNullableFlowStorageRequest(storageRequest: () -> Flow<T?>): Flow<Either<StorageFailure, T?>> {
+    return try {
+        storageRequest().map {
+            Either.Right(it) as Either<StorageFailure, T?>
+        }.catch { e ->
+            kaliumLogger.e(e.stackTraceToString())
+            emit(Either.Left(StorageFailure.Generic(e)))
+        }
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        flowOf(Either.Left(StorageFailure.Generic(e)))
+    }
+}

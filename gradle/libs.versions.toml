@@ -9,13 +9,13 @@ compose-compiler = "1.4.6"
 compose-ui = "1.3.2"
 compose-material = "1.3.1"
 cryptobox4j = "1.3.0"
-cryptobox-android = "1.1.3-logging"
+cryptobox-android = "1.1.3"
 javax-crypto = "1.1.0-alpha06"
 android-security = "1.1.0-alpha06"
-ktor = "2.2.2"
+ktor = "2.3.0"
 okio = "3.2.0"
-ok-http = "4.9.3"
-mockative = "1.2.6"
+ok-http = "4.10.0"
+mockative = "1.4.1"
 android-work = "2.8.1"
 android-test-runner = "1.5.0"
 android-test-rules = "1.4.0"
@@ -27,7 +27,7 @@ benasher-uuid = "0.6.0"
 ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
 ktx-atomicfu = "0.18.5"
-multiplatform-settings = "1.0.0-RC"
+multiplatform-settings = "1.0.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the work around in the dev.mk file
 sqldelight = "2.0.0-alpha05"
@@ -48,6 +48,8 @@ carthage = "0.0.1"
 libsodiumBindings = "0.8.6"
 protobufCodegen = "0.9.1"
 annotation = "1.2.0"
+mordant = "2.0.0-beta13"
+apache-tika = "2.8.0"
 
 [plugins]
 # Home-made convention plugins
@@ -117,6 +119,7 @@ libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsod
 # cli
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
 okhttp-loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "ok-http" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant"}
 
 # ktor
 ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -167,6 +170,7 @@ pbandk-runtime-macX64 = { module = "pro.streem.pbandk:pbandk-runtime-macosx64", 
 pbandk-runtime-macArm64 = { module = "pro.streem.pbandk:pbandk-runtime-macosarm64", version.ref = "pbandk" }
 pbandk-runtime-common = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
 benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
+apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }

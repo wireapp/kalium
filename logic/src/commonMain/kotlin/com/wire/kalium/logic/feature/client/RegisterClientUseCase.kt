@@ -47,6 +47,9 @@ import com.wire.kalium.network.exceptions.isInvalidCredentials
 import com.wire.kalium.network.exceptions.isMissingAuth
 import com.wire.kalium.network.exceptions.isTooManyClients
 import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
@@ -102,6 +105,7 @@ interface RegisterClientUseCase {
         val password: String?,
         val capabilities: List<ClientCapability>?,
         val clientType: ClientType? = null,
+        val model: String? = null,
         val preKeysToSend: Int = DEFAULT_PRE_KEYS_COUNT,
         val secondFactorVerificationCode: String? = null,
     )
@@ -124,6 +128,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     private val selfUserId: UserId,
     private val userRepository: UserRepository,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)
@@ -133,7 +138,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         val verificationCode = registerClientParam.secondFactorVerificationCode ?: currentlyStoredVerificationCode()
         sessionRepository.cookieLabel(selfUserId)
             .flatMap { cookieLabel ->
-                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, cookieLabel, verificationCode)
+                generateProteusPreKeys(preKeysToSend, password, capabilities, clientType, model, cookieLabel, verificationCode)
             }.fold({
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
@@ -207,24 +212,27 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         password: String?,
         capabilities: List<ClientCapability>?,
         clientType: ClientType? = null,
+        model: String? = null,
         cookieLabel: String?,
         secondFactorVerificationCode: String? = null,
-    ) = preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
-        preKeyRepository.generateNewLastKey().flatMap { lastKey ->
-            Either.Right(
-                RegisterClientParam(
-                    password = password,
-                    capabilities = capabilities,
-                    preKeys = preKeys,
-                    lastKey = lastKey,
-                    deviceType = null,
-                    label = null,
-                    model = null,
-                    clientType = clientType,
-                    cookieLabel = cookieLabel,
-                    secondFactorVerificationCode = secondFactorVerificationCode,
+    ) = withContext(dispatchers.io) {
+        preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
+            preKeyRepository.generateNewLastKey().flatMap { lastKey ->
+                Either.Right(
+                    RegisterClientParam(
+                        password = password,
+                        capabilities = capabilities,
+                        preKeys = preKeys,
+                        lastKey = lastKey,
+                        deviceType = null,
+                        label = null,
+                        model = model,
+                        clientType = clientType,
+                        cookieLabel = cookieLabel,
+                        secondFactorVerificationCode = secondFactorVerificationCode,
+                    )
                 )
-            )
+            }
         }
     }
 }

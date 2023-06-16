@@ -66,6 +66,7 @@ internal fun mapToServiceEntity(
 interface ServiceDAO {
     suspend fun byId(id: BotIdEntity): ServiceEntity?
     suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?>
+    suspend fun getAllServices(): Flow<List<ServiceEntity>>
     suspend fun searchServicesByName(query: String): Flow<List<ServiceEntity>>
     suspend fun insert(service: ServiceEntity)
     suspend fun insertMultiple(serviceList: List<ServiceEntity>)
@@ -83,10 +84,13 @@ internal class ServiceDAOImpl(
     override suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
         serviceQueries.getUserIdFromMember(conversationId, id).asFlow().flowOn(context).mapToOneOrNull(context)
 
+    override suspend fun getAllServices(): Flow<List<ServiceEntity>> =
+        serviceQueries.allServices(mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
+
     override suspend fun searchServicesByName(
         query: String
     ): Flow<List<ServiceEntity>> =
-        serviceQueries.getServicesByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
+        serviceQueries.searchByName(query, mapper = ::mapToServiceEntity).asFlow().flowOn(context).mapToList()
 
     override suspend fun insert(service: ServiceEntity) = withContext(context) {
         serviceQueries.insert(

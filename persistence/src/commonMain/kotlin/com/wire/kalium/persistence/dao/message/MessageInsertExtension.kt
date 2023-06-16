@@ -212,11 +212,16 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 receipt_mode = content.receiptMode
             )
+
             is MessageEntityContent.ConversationMessageTimerChanged -> messagesQueries.insertConversationMessageTimerChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
                 message_timer = content.messageTimer
             )
+
+            is MessageEntityContent.ConversationCreated -> {
+                /* no-op */
+            }
         }
     }
 
@@ -232,10 +237,12 @@ internal class MessageInsertExtensionImpl(
                     message.conversationId,
                     message.date
                 )
+
                 is MessageEntityContent.Text -> insertUnreadTextContent(
                     message,
                     message.content as MessageEntityContent.Text
                 )
+
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
@@ -244,12 +251,14 @@ internal class MessageInsertExtensionImpl(
                     message.conversationId,
                     message.date
                 )
+
                 MessageEntityContent.MissedCall -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MISSED_CALL,
                     message.conversationId,
                     message.date
                 )
+
                 else -> {}
             }
         }
@@ -272,6 +281,7 @@ internal class MessageInsertExtensionImpl(
                 message.conversationId,
                 message.date
             )
+
             textContent.mentions.map { it.userId }.contains(selfUserIDEntity) ->
                 unreadEventsQueries.insertEvent(
                     message.id,
@@ -279,6 +289,7 @@ internal class MessageInsertExtensionImpl(
                     message.conversationId,
                     message.date
                 )
+
             else -> unreadEventsQueries.insertEvent(
                 message.id,
                 UnreadEventTypeEntity.MESSAGE,
@@ -305,5 +316,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
+        is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
     }
 }

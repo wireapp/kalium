@@ -30,7 +30,8 @@ object BackupConstants {
     const val BACKUP_WEB_EVENTS_FILE_NAME = "events.json"
     const val BACKUP_WEB_CONVERSATIONS_FILE_NAME = "conversations.json"
 
-    fun createBackupFileName(userHandle: String?, timestampIso: String) = "$BACKUP_FILE_NAME_PREFIX-$userHandle-$timestampIso.zip"
+    fun createBackupFileName(userHandle: String?, timestampIso: String) = // file names cannot have special characters
+        "$BACKUP_FILE_NAME_PREFIX-$userHandle-${timestampIso.replace(":", "-")}.zip"
 
     val ACCEPTED_EXTENSIONS = listOf(
         BACKUP_ENCRYPTED_EXTENSION,

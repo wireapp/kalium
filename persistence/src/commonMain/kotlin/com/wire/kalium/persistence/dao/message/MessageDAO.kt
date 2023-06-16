@@ -87,6 +87,8 @@ interface MessageDAO {
         newMessageId: String
     )
 
+    suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
+
     suspend fun getConversationMessagesByContentType(
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType
@@ -120,7 +122,7 @@ interface MessageDAO {
     suspend fun promoteMessageToSentUpdatingServerTime(
         conversationId: ConversationIDEntity,
         messageUuid: String,
-        serverDate: Instant,
+        serverDate: Instant?,
         millis: Long
     )
 

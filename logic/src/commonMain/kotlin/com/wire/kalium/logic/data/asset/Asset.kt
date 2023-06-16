@@ -46,6 +46,19 @@ enum class RetentionType {
     EXPIRING
 }
 
+enum class AttachmentType {
+    IMAGE, GENERIC_FILE, AUDIO, VIDEO;
+
+    companion object {
+        fun fromMimeTypeString(mimeType: String): AttachmentType = when {
+            isDisplayableImageMimeType(mimeType) -> IMAGE
+            isAudioMimeType(mimeType) -> AUDIO
+            isVideoMimeType(mimeType) -> VIDEO
+            else -> GENERIC_FILE
+        }
+    }
+}
+
 fun isDisplayableImageMimeType(mimeType: String): Boolean = mimeType in setOf(
     "image/jpg", "image/jpeg", "image/png", "image/heic", "image/gif", "image/webp"
 )

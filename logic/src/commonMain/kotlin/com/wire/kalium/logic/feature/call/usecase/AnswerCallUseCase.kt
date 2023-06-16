@@ -20,7 +20,13 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 
 /**
  * This use case is responsible for answering a call.
@@ -32,8 +38,12 @@ interface AnswerCallUseCase {
 }
 
 internal class AnswerCallUseCaseImpl(
+    private val allCalls: GetAllCallsWithSortedParticipantsUseCase,
     private val callManager: Lazy<CallManager>,
-    private val kaliumConfigs: KaliumConfigs
+    private val muteCall: MuteCallUseCase,
+    private val unMuteCall: UnMuteCallUseCase,
+    private val kaliumConfigs: KaliumConfigs,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : AnswerCallUseCase {
 
     /**
@@ -42,6 +52,21 @@ internal class AnswerCallUseCaseImpl(
     override suspend fun invoke(
         conversationId: ConversationId
     ) {
+        // mute or un-mute call when answering/joining
+        allCalls().map {
+            it.find { call ->
+                call.conversationId == conversationId &&
+                        call.status != CallStatus.CLOSED &&
+                        call.status != CallStatus.MISSED
+            }
+        }.flowOn(dispatchers.default).first()?.let {
+            if (it.isMuted) {
+                muteCall(conversationId)
+            } else {
+                unMuteCall(conversationId)
+            }
+        }
+
         callManager.value.answerCall(
             conversationId = conversationId,
             isAudioCbr = kaliumConfigs.forceConstantBitrateCalls

@@ -63,9 +63,9 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.eq
+import io.mockative.fun1
 import io.mockative.fun2
 import io.mockative.given
-import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
@@ -92,6 +92,8 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -108,8 +110,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -123,6 +125,8 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withInsertMembersWithQualifiedIdSucceeds()
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -139,8 +143,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -155,6 +159,8 @@ class ConversationGroupRepositoryTest {
             .withInsertConversationSuccess()
             .withMlsConversationEstablished()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -171,13 +177,13 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-                .with(matching { it.isNotEmpty() }, anything())
-                .wasInvoked(once)
-
             verify(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                .with(anything(), anything())
+                .wasInvoked(once)
+
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
                 .wasInvoked(once)
         }
@@ -680,6 +686,12 @@ class ConversationGroupRepositoryTest {
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
+        val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
+
+        @Mock
+        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
+
+        @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         val conversationGroupRepository =
@@ -690,6 +702,8 @@ class ConversationGroupRepositoryTest {
                 memberLeaveEventHandler,
                 conversationDAO,
                 conversationApi,
+                newConversationMembersRepository,
+                lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
@@ -978,6 +992,20 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationDAO::observeGuestRoomLinkByConversationId)
                 .whenInvokedWith(any())
                 .thenReturn(GUEST_ROOM_LINK_FLOW)
+        }
+
+        fun withSuccessfulNewConversationGroupStartedHandled() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStarted, fun1<ConversationEntity>())
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSuccessfulNewConversationMemberHandled() = apply {
+            given(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to conversationGroupRepository

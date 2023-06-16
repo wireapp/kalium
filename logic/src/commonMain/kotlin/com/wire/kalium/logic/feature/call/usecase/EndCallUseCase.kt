@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallStatus
@@ -31,30 +32,42 @@ import kotlinx.coroutines.withContext
 /**
  * This use case is responsible for ending a call.
  */
-class EndCallUseCase(
-    private val callManager: Lazy<CallManager>,
-    private val callRepository: CallRepository,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
-) {
+interface EndCallUseCase {
 
     /**
      * @param conversationId the id of the conversation for the call should be ended.
      */
-    suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
-        persistMissedCallIfNeeded(conversationId)
+    suspend operator fun invoke(conversationId: ConversationId)
+}
 
-        callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
-        callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
+/**
+ * This use case is responsible for ending a call.
+ */
+class EndCallUseCaseImpl(
+    private val callManager: Lazy<CallManager>,
+    private val callRepository: CallRepository,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+) : EndCallUseCase {
+
+    /**
+     * @param conversationId the id of the conversation for the call should be ended.
+     */
+    override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
+        callRepository.callsFlow().first().find {
+            // This use case can be invoked while joining the call or when the call is established.
+            it.conversationId == conversationId &&
+                    (it.status == CallStatus.STILL_ONGOING || it.status == CallStatus.ESTABLISHED)
+        }?.let {
+            if (it.conversationType == Conversation.Type.GROUP) {
+                callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
+                callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED_INTERNALLY)
+            } else {
+                callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED")
+                callRepository.updateCallStatusById(conversationId, CallStatus.CLOSED)
+            }
+        }
 
         callManager.value.endCall(conversationId)
         callRepository.updateIsCameraOnById(conversationId, false)
-    }
-
-    private suspend fun persistMissedCallIfNeeded(conversationId: ConversationId) {
-        val call = callRepository.establishedCallsFlow().first().find {
-            it.conversationId == conversationId
-        }
-        if (call == null)
-            callRepository.persistMissedCall(conversationId)
     }
 }

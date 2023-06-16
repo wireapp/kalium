@@ -18,4 +18,13 @@
 
 package com.wire.kalium.logic.configuration
 
-data class FileSharingStatus(val isFileSharingEnabled: Boolean?, val isStatusChanged: Boolean?)
+data class FileSharingStatus(
+    val state: Value,
+    val isStatusChanged: Boolean?
+) {
+    sealed interface Value {
+        object Disabled : Value
+        object EnabledAll : Value
+        data class EnabledSome(val allowedType: List<String>) : Value
+    }
+}

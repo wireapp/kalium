@@ -22,7 +22,7 @@ import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
-import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.toSessionDto
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
@@ -87,7 +87,7 @@ internal open class SSOLoginApiV0 internal constructor(
                 NetworkResponse.Success(refreshToken, headers, httpCode)
             }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
         }.flatMap { tokensPairResponse ->
-            wrapKaliumResponse<UserDTO> {
+            wrapKaliumResponse<SelfUserDTO> {
                 httpClient.get(PATH_SELF) {
                     bearerAuth(tokensPairResponse.value.first.value)
                 }

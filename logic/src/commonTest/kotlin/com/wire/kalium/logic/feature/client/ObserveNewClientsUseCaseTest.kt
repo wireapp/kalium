@@ -32,6 +32,7 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -110,7 +111,7 @@ class ObserveNewClientsUseCaseTest {
 
             verify(arrangement.observeValidAccounts)
                 .suspendFunction(arrangement.observeValidAccounts::invoke)
-                .wasInvoked()
+                .wasInvoked(exactly = once)
 
             awaitComplete()
         }

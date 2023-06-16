@@ -49,6 +49,7 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -58,7 +59,7 @@ import kotlin.test.Test
 class ApplicationMessageHandlerTest {
 
     @Test
-    fun givenValidNewImageMessageEvent_whenHandling_shouldSetDownloadStatusAsInProgress() = runTest {
+    fun givenValidNewImageMessageEvent_whenHandling_shouldCallTheAssetMessageHandler() = runTest {
         val messageId = "messageId"
         val validImageContent = MessageContent.Asset(
             AssetContent(
@@ -87,15 +88,15 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
+        verify(arrangement.assetMessageHandler)
+            .suspendFunction(arrangement.assetMessageHandler::handle)
             .with(
                 matching {
                     it.content is MessageContent.Asset &&
-                            (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+                            (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.NOT_DOWNLOADED
                 }
             )
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -169,7 +170,7 @@ class ApplicationMessageHandlerTest {
                 .thenReturn(
                     Either.Right(
                         FileSharingStatus(
-                            isFileSharingEnabled = true,
+                            state = FileSharingStatus.Value.EnabledAll,
                             isStatusChanged = false
                         )
                     )

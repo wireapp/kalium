@@ -21,13 +21,16 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.KSerializer
 import kotlin.coroutines.CoroutineContext
 
 class MetadataDAOImpl internal constructor(
@@ -50,7 +53,7 @@ class MetadataDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrNull()
             .distinctUntilChanged()
-            .shareIn(databaseScope, SharingStarted.Lazily, 1)
+            .shareIn(databaseScope, SharingStarted.Eagerly, 1)
     }
 
     override suspend fun valueByKey(key: String): String? = withContext(queriesContext) {
@@ -63,5 +66,30 @@ class MetadataDAOImpl internal constructor(
         } else {
             metadataQueries.deleteAllExcept(keysToKeep)
         }
+    }
+
+    override suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>) {
+        val jsonString = JsonSerializer().encodeToString(kSerializer, value)
+        insertValue(value = jsonString, key = key)
+    }
+
+    override suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T? {
+        val jsonString: String? = valueByKey(key)
+        return jsonString?.let {
+            JsonSerializer().decodeFromString(kSerializer, it)
+        }
+    }
+
+    override suspend fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
+        return metadataQueries.selectValueByKey(key)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { jsonString ->
+                jsonString?.let {
+                    JsonSerializer().decodeFromString(kSerializer, it)
+                }
+            }
+            .distinctUntilChanged()
+            .shareIn(databaseScope, SharingStarted.Lazily, 1)
     }
 }

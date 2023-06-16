@@ -43,6 +43,8 @@ import java.util.Base64
 import java.util.Collections
 import javax.ws.rs.WebApplicationException
 import javax.ws.rs.core.Response
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 sealed class ConversationRepository {
 
@@ -143,11 +145,13 @@ sealed class ConversationRepository {
             }
         }
 
+        @Suppress("LongParameterList")
         suspend fun sendTextMessage(
             instance: Instance,
             conversationId: ConversationId,
             text: String?,
             mentions: List<MessageMention>,
+            messageTimer: Int?,
             quotedMessageId: String?
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
@@ -155,8 +159,9 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
+                            val expireAfter = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
                             messages.sendTextMessage(
-                                conversationId, text, mentions, null, quotedMessageId
+                                conversationId, text, mentions, quotedMessageId
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
@@ -303,7 +308,6 @@ sealed class ConversationRepository {
                                     type,
                                     null,
                                     null,
-                                    null
                                 )
                             }
                             when (sendResult) {
@@ -382,7 +386,6 @@ sealed class ConversationRepository {
                                 "image", type,
                                 width,
                                 height,
-                                null
                             )
                             if (sendResult is ScheduleNewAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {

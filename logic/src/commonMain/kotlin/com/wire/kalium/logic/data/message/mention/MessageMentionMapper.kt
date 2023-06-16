@@ -28,7 +28,7 @@ import com.wire.kalium.protobuf.messages.Mention
 interface MessageMentionMapper {
     fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention
     fun fromModelToDao(mention: MessageMention): MessageEntity.Mention
-    fun fromProtoToModel(mention: Mention): MessageMention
+    fun fromProtoToModel(mention: Mention): MessageMention?
     fun fromModelToProto(mention: MessageMention): Mention
 }
 
@@ -54,19 +54,24 @@ class MessageMentionMapperImpl(
         )
     }
 
-    override fun fromProtoToModel(mention: Mention): MessageMention {
-        val userId = mention.qualifiedUserId?.let {
-            idMapper.fromProtoUserId(it)
-        } ?: UserId(
-            mention.mentionType?.value as String,
-            selfUserId.domain
-        )
-        return MessageMention(
+    override fun fromProtoToModel(mention: Mention): MessageMention? = mention.qualifiedUserId?.let {
+        MessageMention(
             start = mention.start,
             length = mention.length,
-            userId = userId,
-            isSelfMention = userId == selfUserId
+            userId = idMapper.fromProtoUserId(it),
+            isSelfMention = idMapper.fromProtoUserId(it) == selfUserId
         )
+    } ?: run {
+        mention.mentionType?.let { mentionType ->
+            val userId = UserId(mentionType.value as String, selfUserId.domain)
+            MessageMention(
+                start = mention.start,
+                length = mention.length,
+                userId = userId,
+                isSelfMention = userId == selfUserId
+            )
+
+        } ?: run { null }
     }
 
     override fun fromModelToProto(mention: MessageMention): Mention = Mention(

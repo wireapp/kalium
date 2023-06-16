@@ -21,9 +21,9 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -32,6 +32,7 @@ import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -82,7 +83,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         verify(conversationRepository)
             .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
             .with(anything())
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -103,7 +104,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
 
         verify(conversationGroupRepository)
             .coroutine { createGroupConversation(usersList = MEMBER) }
-            .wasInvoked()
+            .wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -125,7 +126,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
             creatorId = null,
             receiptMode = Conversation.ReceiptMode.DISABLED,
-            messageTimer = null
+            messageTimer = null,
+            userMessageTimer = null
         )
     }
 }

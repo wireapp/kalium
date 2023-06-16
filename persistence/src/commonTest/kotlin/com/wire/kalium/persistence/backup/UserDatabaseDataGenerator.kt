@@ -268,7 +268,8 @@ class UserDatabaseDataGenerator(
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
-                    messageTimer = null
+                    messageTimer = null,
+                    userMessageTimer = null
                 )
             )
 
@@ -309,7 +310,8 @@ class UserDatabaseDataGenerator(
             access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
             accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-            messageTimer = null
+            messageTimer = null,
+            userMessageTimer = null
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -374,7 +376,8 @@ class UserDatabaseDataGenerator(
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                 accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                 receiptMode = DEFAULT_RECEIPT_MODE,
-                messageTimer = null
+                messageTimer = null,
+                userMessageTimer = null
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -438,7 +441,8 @@ class UserDatabaseDataGenerator(
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
-                    messageTimer = null
+                    messageTimer = null,
+                    userMessageTimer = null
                 )
             )
 
@@ -480,7 +484,8 @@ class UserDatabaseDataGenerator(
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
-                    messageTimer = null
+                    messageTimer = null,
+                    userMessageTimer = null
                 )
             )
 
@@ -591,7 +596,8 @@ class UserDatabaseDataGenerator(
                     access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
-                    messageTimer = null
+                    messageTimer = null,
+                    userMessageTimer = null
                 )
             )
 

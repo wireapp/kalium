@@ -28,6 +28,7 @@ interface SubconversationRepository {
     suspend fun insertSubconversation(conversationId: ConversationId, subconversationId: SubconversationId, groupId: GroupID)
     suspend fun getSubconversationInfo(conversationId: ConversationId, subconversationId: SubconversationId): GroupID?
     suspend fun deleteSubconversation(conversationId: ConversationId, subconversationId: SubconversationId)
+    suspend fun containsSubconversation(groupId: GroupID): Boolean
 
 }
 
@@ -45,6 +46,12 @@ class SubconversationRepositoryImpl : SubconversationRepository {
     override suspend fun getSubconversationInfo(conversationId: ConversationId, subconversationId: SubconversationId): GroupID? {
         mutex.withLock {
             return subconversations[Pair(conversationId, subconversationId)]
+        }
+    }
+
+    override suspend fun containsSubconversation(groupId: GroupID): Boolean {
+        mutex.withLock {
+            return subconversations.containsValue(groupId)
         }
     }
 

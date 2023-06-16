@@ -40,6 +40,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
@@ -63,6 +64,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlin.time.Duration
 
 data class ApplicationMessage(
@@ -92,8 +94,8 @@ interface MLSConversationRepository {
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
     suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
-    suspend fun setProposalTimer(timer: ProposalTimer)
-    suspend fun observeProposalTimers(): Flow<List<ProposalTimer>>
+    suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
+    suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun observeEpochChanges(): Flow<GroupID>
 }
 
@@ -131,6 +133,7 @@ class MLSConversationDataSource(
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val epochsFlow: MutableSharedFlow<GroupID>,
+    private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
@@ -300,13 +303,19 @@ class MLSConversationDataSource(
                 }
             }
 
-    override suspend fun setProposalTimer(timer: ProposalTimer) {
-        conversationDAO.setProposalTimer(conversationMapper.toDAOProposalTimer(timer))
+    override suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean) {
+        if (inMemory) {
+            proposalTimersFlow.emit(timer)
+        } else {
+            conversationDAO.setProposalTimer(conversationMapper.toDAOProposalTimer(timer))
+        }
     }
 
-    override suspend fun observeProposalTimers(): Flow<List<ProposalTimer>> {
-        return conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }
-    }
+    override suspend fun observeProposalTimers(): Flow<ProposalTimer> =
+        merge(
+            proposalTimersFlow,
+            conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }.flatten()
+        )
 
     override suspend fun observeEpochChanges(): Flow<GroupID> {
         return epochsFlow

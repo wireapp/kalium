@@ -149,6 +149,20 @@ object MessageMapper {
                             )
                         }
                     }
+
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD -> {
+                        MessagePreviewEntityContent.MembersFailedToAdded(
+                            senderName = senderName,
+                            isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                            otherUserIdList = userIdList.filterNot { it == selfUserId },
+                        )
+                    }
+
+                    MessageEntity.MemberChangeType.CREATION_ADDED -> MessagePreviewEntityContent.MembersCreationAdded(
+                        senderName = senderName,
+                        isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                        otherUserIdList = userIdList.filterNot { it == selfUserId },
+                    )
                 }
             }
 
@@ -170,6 +184,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -233,7 +248,8 @@ object MessageMapper {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
         date: Instant,
-        senderUserId: UserIDEntity,
+        senderUserId: QualifiedIDEntity,
+        isSelfDelete: Boolean,
         senderName: String?,
         senderPreviewAssetId: QualifiedIDEntity?,
         conversationName: String?,
@@ -241,7 +257,7 @@ object MessageMapper {
         isQuotingSelf: Boolean?,
         assetMimeType: String?,
         mutedStatus: ConversationEntity.MutedStatus,
-        conversationType: ConversationEntity.Type,
+        conversationType: ConversationEntity.Type
     ): NotificationMessageEntity = NotificationMessageEntity(
         id = id,
         contentType = contentType,
@@ -255,7 +271,8 @@ object MessageMapper {
         conversationName = conversationName,
         mutedStatus = mutedStatus,
         conversationType = conversationType,
-        isQuotingSelf = isQuotingSelf == true
+        isQuotingSelf = isQuotingSelf == true,
+        isSelfDelete = isSelfDelete
     )
 
     private fun createMessageEntity(
@@ -474,6 +491,8 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
                 messageTimer = conversationMessageTimerChanged
             )
+
+            MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
         }
 
         return createMessageEntity(

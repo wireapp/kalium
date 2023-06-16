@@ -107,8 +107,7 @@ class GlobalKaliumScope internal constructor(
         )
 
     val sessionRepository: SessionRepository
-        get() =
-            SessionDataSource(
+        get() = SessionDataSource(
                 globalDatabase.value.accountsDAO,
                 globalPreferences.value.authTokenStorage,
                 serverConfigRepository

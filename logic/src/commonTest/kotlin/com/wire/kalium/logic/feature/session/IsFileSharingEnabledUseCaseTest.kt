@@ -29,15 +29,17 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class IsFileSharingEnabledUseCaseTest {
 
     @Test
     fun givenATrueValue_thenISFileSharingIsEnabled() = runTest {
-        val expectedValue = FileSharingStatus(true, false)
+        val expectedValue = FileSharingStatus(FileSharingStatus.Value.EnabledAll, false)
 
         val (arrangement, isFileSharingEnabledUseCase) = Arrangement()
             .withSuccessfulResponse(expectedValue)

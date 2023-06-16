@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -29,13 +28,10 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -59,7 +55,6 @@ class SendKnockUserCaseTest {
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
             .withSendMessageSuccess()
-            .withUpdateMessageStatusSuccess()
             .arrange()
 
         // When
@@ -71,13 +66,9 @@ class SendKnockUserCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
             .wasInvoked(once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-            .with(eq(MessageEntity.Status.SENT), any(), any())
-            .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -90,7 +81,6 @@ class SendKnockUserCaseTest {
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
             .withSendMessageFailure()
-            .withUpdateMessageStatusSuccess()
             .arrange()
 
         // When
@@ -104,14 +94,11 @@ class SendKnockUserCaseTest {
             .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any(), any(), any())
             .wasInvoked(once)
     }
 
     private class Arrangement {
-
-        @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
         private val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -160,15 +147,8 @@ class SendKnockUserCaseTest {
                 .whenInvoked()
                 .thenReturn(stateFlow)
         }
-        fun withUpdateMessageStatusSuccess() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
 
         fun arrange() = this to SendKnockUseCase(
-            messageRepository,
             persistMessage,
             TestUser.SELF.id,
             currentClientIdProvider,

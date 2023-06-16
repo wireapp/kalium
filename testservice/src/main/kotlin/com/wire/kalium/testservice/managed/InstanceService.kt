@@ -27,6 +27,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse
 import com.wire.kalium.testservice.models.Instance
@@ -211,7 +213,12 @@ class InstanceService(
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
                     when (val result = client.getOrRegister(
-                        RegisterClientUseCase.RegisterClientParam(instanceRequest.password, emptyList(), ClientType.Permanent)
+                        RegisterClientUseCase.RegisterClientParam(
+                            password = instanceRequest.password,
+                            capabilities = emptyList(),
+                            clientType = ClientType.Permanent,
+                            model = instanceRequest.deviceName
+                        )
                     )) {
                         is RegisterClientResult.Failure ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed")
@@ -339,6 +346,30 @@ class InstanceService(
                 if (result is CurrentSessionResult.Success) {
                     instance.coreLogic.sessionScope(result.accountInfo.userId) {
                         users.updateSelfAvailabilityStatus(status)
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun breakSession(instanceId: String, clientId: String, userId: String, userDomain: String) {
+        val instance = getInstanceOrThrow(instanceId)
+        instance.coreLogic?.globalScope {
+            scope.async {
+                val result = session.currentSession()
+                if (result is CurrentSessionResult.Success) {
+                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Wait until alive")
+                        if (syncManager.isSlowSyncOngoing()) {
+                            log.info("Instance ${instance.instanceId}: Slow sync is ongoing")
+                        }
+                        syncManager.waitUntilLiveOrFailure().onFailure {
+                            log.warn("Instance ${instance.instanceId}: Sync failed with $it")
+                        }
+                        log.info(
+                            "Instance ${instance.instanceId}: Break session with client $clientId of user $userId"
+                        )
+                        debug.breakSession(QualifiedID(userId, userDomain), ClientId(clientId))
                     }
                 }
             }

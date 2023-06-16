@@ -111,7 +111,8 @@ internal class ConversationMapperImpl(
         access = apiModel.access.map { it.toDAO() },
         accessRole = apiModel.accessRole.map { it.toDAO() },
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
-        messageTimer = apiModel.messageTimer
+        messageTimer = apiModel.messageTimer,
+        userMessageTimer = null, // user picked self deletion timer is only persisted locally
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -138,7 +139,8 @@ internal class ConversationMapperImpl(
             accessRole = accessRoleList.map { it.toDAO() },
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
-            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS)
         )
     }
 
@@ -160,7 +162,8 @@ internal class ConversationMapperImpl(
             accessRole = accessRole.map { it.toDAO() },
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
-            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS)
+            messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS)
         )
     }
 
@@ -349,7 +352,8 @@ internal class ConversationMapperImpl(
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
-            messageTimer = messageTimer?.inWholeMilliseconds
+            messageTimer = messageTimer?.inWholeMilliseconds,
+            userMessageTimer = userMessageTimer?.inWholeMilliseconds,
         )
     }
 

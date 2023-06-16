@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.config
 
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
-import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,10 +31,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserConfigStorageTest {
@@ -130,72 +125,6 @@ class UserConfigStorageTest {
         userConfigStorage.persistGuestRoomLinkFeatureFlag(status = true, isStatusChanged = false)
         userConfigStorage.isGuestRoomLinkEnabled()?.status?.let {
             assertTrue { it }
-        }
-    }
-
-    @Test
-    fun givenValidEnabledTeamSettingsSelfDeletingStatus_whenGettingItsValue_thenItShouldBeRetrievedCorrectly() {
-        val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
-            selfDeletionTimerEntity = SelfDeletionTimerEntity.Enabled(ZERO),
-            isStatusChanged = false
-        )
-        userConfigStorage.persistTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatusEntity)
-        userConfigStorage.getTeamSettingsSelfDeletionStatus().let {
-            assertTrue(it?.selfDeletionTimerEntity is SelfDeletionTimerEntity.Enabled)
-            assertEquals(teamSettingsSelfDeletionStatusEntity.selfDeletionTimerEntity, it?.selfDeletionTimerEntity)
-            assertTrue(it?.isStatusChanged == false)
-        }
-    }
-
-    @Test
-    fun givenValidEnforcedTeamSettingsSelfDeletingStatus_whenGettingItsValue_thenItShouldBeRetrievedCorrectly() {
-        val enforcedTimeout = 1000.seconds
-        val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
-            selfDeletionTimerEntity = SelfDeletionTimerEntity.Enforced(enforcedTimeout),
-            isStatusChanged = false
-        )
-        userConfigStorage.persistTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatusEntity)
-        userConfigStorage.getTeamSettingsSelfDeletionStatus().let {
-            assertTrue(it?.selfDeletionTimerEntity is SelfDeletionTimerEntity.Enforced)
-            val retrievedDuration = (it?.selfDeletionTimerEntity as SelfDeletionTimerEntity.Enforced).enforcedDuration
-            assertEquals(enforcedTimeout, retrievedDuration)
-            assertTrue(it.isStatusChanged == false)
-        }
-    }
-
-    @Test
-    fun givenValidDisabledTeamSettingsSelfDeletingStatus_whenObservingItsValue_thenItShouldBeRetrievedCorrectly() = runTest {
-        val teamSettingsSelfDeletionStatusEntity = TeamSettingsSelfDeletionStatusEntity(
-            selfDeletionTimerEntity = SelfDeletionTimerEntity.Disabled,
-            isStatusChanged = false
-        )
-        userConfigStorage.persistTeamSettingsSelfDeletionStatus(teamSettingsSelfDeletionStatusEntity)
-        assertTrue(
-            userConfigStorage.getTeamSettingsSelfDeletionStatusFlow().first()?.selfDeletionTimerEntity is SelfDeletionTimerEntity.Disabled
-        )
-        assertTrue(userConfigStorage.getTeamSettingsSelfDeletionStatusFlow().first()?.isStatusChanged == false)
-    }
-
-    @Test
-    fun givenValidUserEnabledConversationSelfDeletingStatus_whenGettingItsValue_thenItShouldBeRetrievedCorrectly() = runTest {
-        val conversationIDEntity = ConversationIDEntity("conversationID", "domain")
-        val conversationUserDuration = 1.toDuration(DurationUnit.DAYS)
-        val selfDeletionTimerEntity = SelfDeletionTimerEntity.Enabled(conversationUserDuration)
-        userConfigStorage.persistConversationSelfDeletionTimer(conversationIDEntity, selfDeletionTimerEntity)
-        assertTrue(userConfigStorage.getConversationSelfDeletionTimerFlow(conversationIDEntity).first() is SelfDeletionTimerEntity.Enabled)
-        userConfigStorage.getConversationSelfDeletionTimerFlow(conversationIDEntity).first().let {
-            assertEquals(selfDeletionTimerEntity, it)
-        }
-    }
-
-    @Test
-    fun givenValidUserEnabledConversationSelfDeletingStatus_whenObservingItsValue_thenItShouldBeRetrieveTheLastOneCorrectly() = runTest {
-        val conversationIDEntity = ConversationIDEntity("conversationID", "domain")
-        val conversationEnforcedTimer = 1.toDuration(DurationUnit.DAYS)
-        val selfDeletionTimerEntity = SelfDeletionTimerEntity.Enforced(conversationEnforcedTimer)
-        userConfigStorage.persistConversationSelfDeletionTimer(conversationIDEntity, selfDeletionTimerEntity)
-        userConfigStorage.getConversationSelfDeletionTimerFlow(conversationIDEntity).first()?.let {
-            assertTrue(it is SelfDeletionTimerEntity.Enforced && it.enforcedDuration == conversationEnforcedTimer)
         }
     }
 }

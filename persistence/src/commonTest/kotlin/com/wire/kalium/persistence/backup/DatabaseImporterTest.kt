@@ -650,7 +650,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 access = accessList,
                 accessRole = accessRoleList,
                 receiptMode = receiptMode,
-                messageTimer = null
+                messageTimer = null,
+                userMessageTimer = null
             )
         }
     }
@@ -685,7 +686,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
                 accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                 receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-                messageTimer = null
+                messageTimer = null,
+                userMessageTimer = null
             )
 
             conversationAdded.add(overlappingConversation)

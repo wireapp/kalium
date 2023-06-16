@@ -21,8 +21,8 @@ package com.wire.kalium.network.api.v0.unauthenticated
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.model.toSessionDto
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.utils.CustomErrors
@@ -72,7 +72,7 @@ internal open class LoginApiV0 internal constructor(
     override suspend fun login(
         param: LoginApi.LoginParam,
         persist: Boolean
-    ): NetworkResponse<Pair<SessionDTO, UserDTO>> = wrapKaliumResponse<AccessTokenDTO> {
+    ): NetworkResponse<Pair<SessionDTO, SelfUserDTO>> = wrapKaliumResponse<AccessTokenDTO> {
         httpClient.post(PATH_LOGIN) {
             parameter(QUERY_PERSIST, persist)
             setBody(param.toRequestBody())
@@ -85,7 +85,7 @@ internal open class LoginApiV0 internal constructor(
         }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
     }.flatMap { tokensPairResponse ->
         // this is a hack to get the user QualifiedUserId on login
-        wrapKaliumResponse<UserDTO> {
+        wrapKaliumResponse<SelfUserDTO> {
             httpClient.get(PATH_SELF) {
                 bearerAuth(tokensPairResponse.value.first.value)
             }

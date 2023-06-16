@@ -24,6 +24,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -43,12 +44,12 @@ class IncrementalSyncRecoveryHandlerTest {
             verify(restartSlowSyncProcessForRecoveryUseCase)
                 .function(restartSlowSyncProcessForRecoveryUseCase::invoke)
                 .with()
-                .wasInvoked()
+                .wasInvoked(exactly = once)
 
             verify(onIncrementalSyncRetryCallback)
                 .function(onIncrementalSyncRetryCallback::retry)
                 .with()
-                .wasInvoked()
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -67,7 +68,7 @@ class IncrementalSyncRecoveryHandlerTest {
             verify(onIncrementalSyncRetryCallback)
                 .function(onIncrementalSyncRetryCallback::retry)
                 .with()
-                .wasInvoked()
+                .wasInvoked(exactly = once)
 
             verify(restartSlowSyncProcessForRecoveryUseCase)
                 .function(restartSlowSyncProcessForRecoveryUseCase::invoke)

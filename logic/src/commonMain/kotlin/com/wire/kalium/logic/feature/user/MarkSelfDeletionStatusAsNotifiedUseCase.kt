@@ -24,13 +24,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
  * It needs to be called after notifying the user about that specific change, e.g. after showing a dialog, or a toast etc.
  */
 interface MarkSelfDeletionStatusAsNotifiedUseCase {
-    operator fun invoke()
+    suspend operator fun invoke()
 }
 
 class MarkSelfDeletionStatusAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : MarkSelfDeletionStatusAsNotifiedUseCase {
-    override operator fun invoke() {
+    override suspend operator fun invoke() {
         userConfigRepository.markTeamSettingsSelfDeletingMessagesStatusAsNotified()
     }
 }

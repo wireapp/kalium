@@ -21,27 +21,36 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
-import kotlinx.coroutines.flow.first
 
 /**
  * This use case is responsible for muting a call.
  */
-class MuteCallUseCase internal constructor(
+interface MuteCallUseCase {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        shouldApplyOnDeviceMicrophone: Boolean = true
+    )
+}
+
+class MuteCallUseCaseImpl internal constructor(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository
-) {
+) : MuteCallUseCase {
+
     /**
-     * We should call AVS muting method only for established call, otherwise incoming call could mute/un-mute the current call
      * @param conversationId the id of the conversation.
+     * @param shouldApplyOnDeviceMicrophone to be used mainly in preview calling screen to not allow muting device microphone
      */
-    suspend operator fun invoke(conversationId: ConversationId) {
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        shouldApplyOnDeviceMicrophone: Boolean
+    ) {
         callRepository.updateIsMutedById(
             conversationId = conversationId,
             isMuted = true
         )
-        val activeCall = callRepository.establishedCallsFlow().first().find {
-            it.conversationId == conversationId
+        if (shouldApplyOnDeviceMicrophone) {
+            callManager.value.muteCall(true)
         }
-        activeCall?.let { callManager.value.muteCall(true) }
     }
 }

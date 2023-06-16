@@ -116,12 +116,12 @@ class JoinSubconversationUseCaseTest {
                         )
                     )
                 )
-                .wasInvoked()
+                .wasInvoked(exactly = once)
 
             verify(arrangement.mlsConversationRepository)
                 .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
                 .with(eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId)), eq(emptyList()))
-                .wasInvoked()
+                .wasInvoked(exactly = once)
         }
 
     @Test

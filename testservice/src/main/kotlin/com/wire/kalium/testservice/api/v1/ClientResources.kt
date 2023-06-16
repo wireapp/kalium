@@ -21,6 +21,8 @@ package com.wire.kalium.testservice.api.v1
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.AvailabilityRequest
+import com.wire.kalium.testservice.models.BreakSessionRequest
+import com.wire.kalium.testservice.models.SendSessionResetRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -95,9 +97,26 @@ class ClientResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/breakSession
-    // Break a session to a specific device of a remote user (on purpose).
+    @POST
+    @Path("/instance/{id}/breakSession")
+    @Operation(summary = "Break a session to a specific device of a remote user on purpose. Only for proteus sessions.")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun breakSession(@PathParam("id") id: String, @Valid request: BreakSessionRequest): Response {
+        instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
+        runBlocking {
+            with(request) {
+                instanceService.breakSession(id, clientId, userId, userDomain)
+            }
+        }
+        return Response.status(Response.Status.OK).build()
+    }
 
-    // POST /api/v1/instance/{instanceId}/sendSessionReset
-    // Reset session of a specific device
+    @POST
+    @Path("/instance/{id}/sendSessionReset")
+    @Operation(summary = "Reset session of a specific device")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendSessionReset(@PathParam("id") id: String, @Valid request: SendSessionResetRequest): Response {
+        instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
+        return Response.status(Response.Status.OK).build()
+    }
 }

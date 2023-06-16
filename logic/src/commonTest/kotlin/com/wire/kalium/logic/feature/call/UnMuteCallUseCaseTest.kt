@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -31,7 +32,6 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -49,7 +49,7 @@ class UnMuteCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        unMuteCall = UnMuteCallUseCase(lazy { callManager }, callRepository)
+        unMuteCall = UnMuteCallUseCaseImpl(lazy { callManager }, callRepository)
 
         given(callManager)
             .suspendFunction(callManager::muteCall)
@@ -63,14 +63,10 @@ class UnMuteCallUseCaseTest {
     }
 
     @Test
-    fun givenAnEstablishedCallWhenUnMuteUseCaseCalledThenUpdateMuteStateAndMuteCall() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked().then {
-                flowOf(listOf(call))
-            }
+    fun givenShouldApplyOnDeviceMicrophoneIsTrue_whenUnMuteUseCaseCalled_thenUpdateMuteStateAndUnMuteCall() = runTest {
+        val shouldApplyOnDeviceMicrophone = true
 
-        unMuteCall(conversationId)
+        unMuteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
         verify(callRepository)
             .function(callRepository::updateIsMutedById)
@@ -84,14 +80,10 @@ class UnMuteCallUseCaseTest {
     }
 
     @Test
-    fun givenNonEstablishedCallWhenUnMuteUseCaseCalledThenUpdateMuteStateOnly() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked().then {
-                flowOf(listOf())
-            }
+    fun givenShouldApplyOnDeviceMicrophoneIsFalse_whenUnMuteUseCaseCalled_thenUpdateMuteStateOnly() = runTest {
+        val shouldApplyOnDeviceMicrophone = false
 
-        unMuteCall(conversationId)
+        unMuteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
         verify(callRepository)
             .function(callRepository::updateIsMutedById)

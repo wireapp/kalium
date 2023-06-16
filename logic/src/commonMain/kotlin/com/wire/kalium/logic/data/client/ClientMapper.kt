@@ -52,7 +52,7 @@ class ClientMapper(
         deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
         type = param.clientType?.let { toClientTypeDTO(param.clientType) } ?: toClientTypeDTO(clientConfig.clientType()),
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } },
-        model = clientConfig.deviceModelName(),
+        model = param.model?.let { param.model } ?: clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
         cookieLabel = param.cookieLabel,
         secondFactorVerificationCode = param.secondFactorVerificationCode,

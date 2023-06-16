@@ -29,13 +29,13 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserAssetDTO
 import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
-import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
@@ -48,13 +48,13 @@ import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.UserIDEntity as UserIdEntity
 
 interface UserMapper {
-    fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser
+    fun fromDtoToSelfUser(userDTO: SelfUserDTO): SelfUser
     fun fromApiModelWithUserTypeEntityToDaoModel(
         userProfileDTO: UserProfileDTO,
         userTypeEntity: UserTypeEntity?
     ): UserEntity
 
-    fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity
+    fun fromApiSelfModelToDaoModel(userDTO: SelfUserDTO): UserEntity
     fun fromDaoModelToSelfUser(userEntity: UserEntity): SelfUser
     fun fromSelfUserToDaoModel(selfUser: SelfUser): UserEntity
 
@@ -98,7 +98,7 @@ internal class UserMapperImpl(
     private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : UserMapper {
 
-    override fun fromDtoToSelfUser(userDTO: UserDTO): SelfUser = with(userDTO) {
+    override fun fromDtoToSelfUser(userDTO: SelfUserDTO): SelfUser = with(userDTO) {
         SelfUser(
             id = id.toModel(),
             name = name,
@@ -210,7 +210,7 @@ internal class UserMapperImpl(
         )
     }
 
-    override fun fromApiSelfModelToDaoModel(userDTO: UserDTO): UserEntity = with(userDTO) {
+    override fun fromApiSelfModelToDaoModel(userDTO: SelfUserDTO): UserEntity = with(userDTO) {
         return UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,

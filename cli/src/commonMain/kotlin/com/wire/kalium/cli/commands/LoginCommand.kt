@@ -25,6 +25,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.prompt
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -80,8 +81,36 @@ class LoginCommand : CliktCommand(name = "login") {
             is AutoVersionAuthScopeUseCase.Result.Success -> result.authenticationScope
         }
 
+    private suspend fun authenticate(secondFactorVerificationCode: String? = null): AuthenticationResult =
+        provideVersionedAuthenticationScope(serverConfig()).let { authenticationScope ->
+            authenticationScope.login(
+                email,
+                password,
+                shouldPersistClient = false,
+                secondFactorVerificationCode = secondFactorVerificationCode
+            ).let {
+                when (it) {
+                    is AuthenticationResult.Failure.InvalidCredentials.Missing2FA -> {
+                        echo("Second factor authentication required, check your e-mail for the 2fa code")
+                        authenticationScope.requestSecondFactorVerificationCode(
+                            email,
+                            VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION
+                        )
+                        authenticate(prompt("2fa-code"))
+                    }
+
+                    is AuthenticationResult.Failure.InvalidCredentials.Invalid2FA -> {
+                        echo("Incorrect 2fa code")
+                        authenticate(prompt("2fa-code"))
+                    }
+
+                    else -> it
+                }
+            }
+        }
+
     override fun run(): Unit = runBlocking {
-        val loginResult = provideVersionedAuthenticationScope(serverConfig()).login(email, password, true).let {
+        val loginResult = authenticate().let {
             if (it !is AuthenticationResult.Success) {
                 throw PrintMessage("Login failed, check your credentials")
             } else {

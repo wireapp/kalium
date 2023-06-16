@@ -33,6 +33,25 @@ import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
+/**
+ * A conversation is a group of users that can exchange messages.
+ * @param id the conversation id
+ * @param name the conversation name
+ * @param type the conversation [Type]
+ * @param teamId the team id if the conversation was created on a team, null if there is no team
+ * @param protocol the [ProtocolInfo] for the communication between users
+ * @param mutedStatus the [MutedConversationStatus] informing about the conversation muting settings
+ * @param removedBy the user id of the user that removed the conversation if self user was removed, null otherwise
+ * @param lastNotificationDate the last notification date for the conversation, null if there are no notifications yet
+ * @param lastModifiedDate the last modified date for the conversation, null if there are no modifications yet
+ * @param lastReadDate the self user's last read date for the conversation
+ * @param access the list of available [Access] types that can be used to invite users to the conversation
+ * @param accessRole the list of available [AccessRole] user types that can be members of the conversation
+ * @param creatorId the user id of the user that created the conversation
+ * @param receiptMode the [ReceiptMode] flag indicating whether the conversation has read receipts enabled or not
+ * @param messageTimer the enforced timer by group conversation for self deleting messages, always NULL for 1on1 conversation
+ * @param userMessageTimer the timer duration picked by the user in absence of team or conversation enforced timers
+ */
 data class Conversation(
     val id: ConversationId,
     val name: String?,
@@ -48,7 +67,8 @@ data class Conversation(
     val accessRole: List<AccessRole>,
     val creatorId: String?,
     val receiptMode: ReceiptMode,
-    val messageTimer: Duration? // enforced time by group conversation for self deleting messages, always NULL for 1on1 conversation
+    val messageTimer: Duration?,
+    val userMessageTimer: Duration?
 ) {
 
     companion object {
@@ -273,7 +293,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             accessRole = accessRole,
             creatorId = null,
             receiptMode = Conversation.ReceiptMode.DISABLED,
-            messageTimer = null
+            messageTimer = null,
+            userMessageTimer = null
         )
     )
 }

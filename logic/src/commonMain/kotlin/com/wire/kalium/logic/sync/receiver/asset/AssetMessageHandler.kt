@@ -1,11 +1,13 @@
 package com.wire.kalium.logic.sync.receiver.asset
 
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -18,7 +20,8 @@ internal interface AssetMessageHandler {
 internal class AssetMessageHandlerImpl(
     private val messageRepository: MessageRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
 ) : AssetMessageHandler {
 
     override suspend fun handle(message: Message.Regular) {
@@ -28,19 +31,33 @@ internal class AssetMessageHandlerImpl(
         }
         val messageContent = message.content
         userConfigRepository.isFileSharingEnabled().onSuccess {
-            if (it.isFileSharingEnabled != null && it.isFileSharingEnabled) {
+            val isThisAssetAllowed = when (it.state) {
+                FileSharingStatus.Value.Disabled -> false
+                FileSharingStatus.Value.EnabledAll -> true
+
+                is FileSharingStatus.Value.EnabledSome -> validateAssetMimeTypeUseCase(
+                    messageContent.value.mimeType,
+                    it.state.allowedType
+                )
+            }
+
+            if (isThisAssetAllowed) {
                 processNonRestrictedAssetMessage(message, messageContent)
             } else {
-                val newMessage = message.copy(
-                    content = MessageContent.RestrictedAsset(
-                        mimeType = messageContent.value.mimeType,
-                        sizeInBytes = messageContent.value.sizeInBytes,
-                        name = messageContent.value.name ?: ""
-                    )
-                )
-                persistMessage(newMessage)
+                persistRestrictedAssetMessage(message, messageContent)
             }
         }
+    }
+
+    private suspend fun persistRestrictedAssetMessage(message: Message.Regular, messageContent: MessageContent.Asset) {
+        val newMessage = message.copy(
+            content = MessageContent.RestrictedAsset(
+                mimeType = messageContent.value.mimeType,
+                sizeInBytes = messageContent.value.sizeInBytes,
+                name = messageContent.value.name ?: ""
+            )
+        )
+        persistMessage(newMessage)
     }
 
     private suspend fun processNonRestrictedAssetMessage(processedMessage: Message.Regular, assetContent: MessageContent.Asset) {

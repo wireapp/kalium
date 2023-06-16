@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -78,6 +79,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
@@ -191,6 +195,8 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
+    suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer?>
+    suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -691,6 +697,25 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
         wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
+
+    override suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer> =
+        wrapStorageRequest {
+            SelfDeletionTimer.Enabled(
+                conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.messageTimer?.toDuration(
+                    DurationUnit.MILLISECONDS
+                ) ?: ZERO
+            )
+        }
+
+    override suspend fun updateUserSelfDeletionTimer(
+        conversationId: ConversationId,
+        selfDeletionTimer: SelfDeletionTimer
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        conversationDAO.updateUserMessageTimer(
+            conversationId = conversationId.toDao(),
+            messageTimer = selfDeletionTimer.toDuration().inWholeMilliseconds
+        )
+    }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

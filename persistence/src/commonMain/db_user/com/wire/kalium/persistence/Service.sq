@@ -22,15 +22,7 @@ allServices:
 SELECT * FROM Service;
 
 byId:
-SELECT
-    Service.id,
-    Service.name,
-    Service.description,
-    Service.summary,
-    Service.tags,
-    Service.enabled,
-    Service.preview_asset_id,
-    Service.complete_asset_id
+SELECT *
 FROM Service
 WHERE Service.id = :id;
 
@@ -40,15 +32,7 @@ FROM User
 JOIN Member ON Member.user = User.qualified_id AND Member.conversation = :conversation
 WHERE User.bot_service = :id;
 
-getServicesByName:
-SELECT
-    Service.id,
-    Service.name,
-    Service.description,
-    Service.summary,
-    Service.tags,
-    Service.enabled,
-    Service.preview_asset_id,
-    Service.complete_asset_id
+searchByName:
+SELECT *
 FROM Service
-WHERE Service.name LIKE :query;
+WHERE Service.name LIKE ('%' || :query || '%');

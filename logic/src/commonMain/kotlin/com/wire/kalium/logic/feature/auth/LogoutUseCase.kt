@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -32,6 +34,7 @@ import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 /**
@@ -57,6 +60,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val pushTokenRepository: PushTokenRepository,
     private val globalCoroutineScope: CoroutineScope,
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
+    private val getEstablishedCallsUseCase: ObserveEstablishedCallsUseCase,
+    private val endCallUseCase: EndCallUseCase,
     private val kaliumConfigs: KaliumConfigs
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
@@ -66,6 +71,11 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     override suspend operator fun invoke(reason: LogoutReason) {
         globalCoroutineScope.launch {
             deregisterTokenUseCase()
+
+            getEstablishedCallsUseCase().firstOrNull()?.forEach {
+                endCallUseCase(it.conversationId)
+            }
+
             logoutRepository.logout()
             sessionRepository.logout(userId = userId, reason)
             logoutRepository.onLogout(reason)

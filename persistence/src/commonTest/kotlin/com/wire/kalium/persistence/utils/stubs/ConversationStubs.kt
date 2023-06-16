@@ -36,7 +36,8 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
     receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-    messageTimer = null
+    messageTimer = null,
+    userMessageTimer = null
 )
 
 fun newConversationEntity(
@@ -56,5 +57,6 @@ fun newConversationEntity(
     access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
     accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
     receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-    messageTimer = null
+    messageTimer = null,
+    userMessageTimer = null
 )

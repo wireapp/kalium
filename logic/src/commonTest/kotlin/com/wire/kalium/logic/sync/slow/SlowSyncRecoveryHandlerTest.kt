@@ -52,7 +52,7 @@ class SlowSyncRecoveryHandlerTest {
             verify(onSlowSyncRetryCallback)
                 .function(onSlowSyncRetryCallback::retry)
                 .with()
-                .wasInvoked()
+                .wasNotInvoked()
         }
     }
 
@@ -75,7 +75,7 @@ class SlowSyncRecoveryHandlerTest {
             verify(onSlowSyncRetryCallback)
                 .function(onSlowSyncRetryCallback::retry)
                 .with()
-                .wasInvoked()
+                .wasInvoked(exactly = once)
         }
     }
 
