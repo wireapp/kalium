@@ -30,10 +30,10 @@ import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 
 /**
- * Retrieves the fingerprint of a client.
+ * Retrieves the Proteus-specific fingerprint of a client.
  * If no session exists for the client, a new session is established.
  * @param userId The user id of the client.
  * @param clientId The client id of the client.
@@ -47,7 +47,7 @@ class ClientFingerprintUseCase internal constructor(
 ) {
     suspend operator fun invoke(userId: UserId, clientId: ClientId): Result =
         proteusClientProvider.getOrError().flatMap { proteusClient ->
-            wrapCryptoRequest {
+            wrapProteusRequest {
                 proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
             }
         }.fold(
@@ -71,7 +71,7 @@ class ClientFingerprintUseCase internal constructor(
             { error -> Either.Left(error) },
             { _ ->
                 proteusClientProvider.getOrError().flatMap { proteusClient ->
-                    wrapCryptoRequest {
+                    wrapProteusRequest {
                         proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
                     }
                 }
