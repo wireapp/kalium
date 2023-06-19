@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -39,7 +40,8 @@ import kotlinx.serialization.json.Json
 interface MLSMigrationRepository {
     suspend fun fetchMigrationConfiguration(): Either<CoreFailure, Unit>
     suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit>
-    suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel>
+    suspend fun getMigrationConfiguration(): Either<CoreFailure, MLSMigrationModel>
+    suspend fun getOrFetchMigrationConfiguration(): Either<CoreFailure, MLSMigrationModel>
 }
 
 internal class MLSMigrationRepositoryImpl(
@@ -68,7 +70,14 @@ internal class MLSMigrationRepositoryImpl(
             }
     }
 
-    override suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel> =
+    override suspend fun getOrFetchMigrationConfiguration(): Either<CoreFailure, MLSMigrationModel> =
+        getMigrationConfiguration()
+            .flatMapLeft {
+                fetchMigrationConfiguration()
+                    .flatMap { getMigrationConfiguration() }
+            }
+
+    override suspend fun getMigrationConfiguration(): Either<CoreFailure, MLSMigrationModel> =
         wrapStorageRequest {
             metadataDAO.valueByKey(MLS_MIGRATION_CONFIGURATION_KEY)
         }.map { encodedValue ->
