@@ -53,7 +53,7 @@ actual open class BaseDatabaseTest actual constructor() {
     actual val encryptedDBSecret: UserDBSecret
         get() = TODO("Not yet implemented")
 
-    actual fun platformDBData(): PlatformDatabaseData {
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData {
         TODO("Not yet implemented")
     }
 }

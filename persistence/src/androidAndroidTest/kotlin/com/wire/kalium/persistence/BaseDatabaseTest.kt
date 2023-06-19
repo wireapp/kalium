@@ -64,5 +64,5 @@ actual open class BaseDatabaseTest actual constructor() {
         return context.getDatabasePath(FileNameUtil.userDBName(userId)).absolutePath
     }
 
-    actual fun platformDBData(): PlatformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext())
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext())
 }

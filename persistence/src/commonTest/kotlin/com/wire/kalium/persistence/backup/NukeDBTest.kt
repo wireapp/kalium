@@ -44,12 +44,12 @@ class NukeDBTest : BaseDatabaseTest() {
 
     @Test
     fun givenDB_whenDeleted_thenItIsDeleted() {
-        assertTrue { nuke(selfUserId, platformDatabaseData = platformDBData()) }
+        assertTrue { nuke(selfUserId, platformDatabaseData = platformDBData(selfUserId)) }
         assertFalse { doesDatabaseExist(selfUserId) }
     }
 
     @Test
     fun givenDBNotFound_whenNuke_thenReturnTrue() {
-        assertTrue { nuke(selfUserId.copy(value = "some id"), platformDatabaseData = platformDBData()) }
+        assertTrue { nuke(selfUserId.copy(value = "some id"), platformDatabaseData = platformDBData(selfUserId)) }
     }
 }

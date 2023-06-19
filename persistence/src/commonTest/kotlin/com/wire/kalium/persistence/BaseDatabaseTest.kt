@@ -41,7 +41,7 @@ expect open class BaseDatabaseTest() {
         userId: UserIDEntity
     )
 
-    fun platformDBData(): PlatformDatabaseData
+    fun platformDBData(userId: UserIDEntity): PlatformDatabaseData
 
     fun createDatabase(
         userId: UserIDEntity,
