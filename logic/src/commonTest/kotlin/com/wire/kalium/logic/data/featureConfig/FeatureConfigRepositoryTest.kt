@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
@@ -33,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDT
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -78,6 +80,7 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             MLSModel(
                 emptyList(),
+                setOf(SupportedProtocol.PROTEUS),
                 Status.ENABLED
             ),
             E2EIModel(
@@ -162,6 +165,7 @@ class FeatureConfigRepositoryTest {
                 MLSConfigDTO(
                     emptyList(),
                     ConvProtocol.MLS,
+                    listOf(SupportedProtocolDTO.PROTEUS),
                     emptyList(),
                     1
                 ), FeatureFlagStatusDTO.ENABLED

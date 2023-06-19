@@ -59,7 +59,8 @@ data class Client(
     val deviceType: DeviceType?,
     val label: String?,
     val model: String?,
-    val mlsPublicKeys: Map<String, String>?
+    val mlsPublicKeys: Map<String, String>?,
+    val isMLSCapable: Boolean
 )
 
 enum class ClientType {
