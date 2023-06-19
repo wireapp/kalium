@@ -160,7 +160,7 @@ class ClientDataSource(
             }.map {
                 // TODO: mapping directly from the api to the domain model is not ideal,
                 //  and the verification status is not correctly reflected
-                it.map { clientMapper.fromClientResponse(it) }
+                it.map { clientMapper.fromClientDto(it) }
             }
     }
 
@@ -198,7 +198,7 @@ class ClientDataSource(
         wrapStorageRequest {
             clientDAO.getClientsOfUserByQualifiedID(userId.toDao())
         }.map { clientsList ->
-            userMapper.fromOtherUsersClientsDTO(clientsList)
+            clientMapper.fromOtherUsersClientsDTO(clientsList)
         }
 
     override suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>> =

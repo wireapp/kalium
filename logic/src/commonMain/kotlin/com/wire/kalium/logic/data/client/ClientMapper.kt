@@ -20,12 +20,11 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
@@ -59,13 +58,13 @@ class ClientMapper(
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information
-    fun fromClientResponse(response: ClientResponse): Client = Client(
-        id = ClientId(response.clientId),
-        type = fromClientTypeDTO(response.type),
-        registrationTime = Instant.parse(response.registrationTime),
-        deviceType = fromDeviceTypeDTO(response.deviceType),
-        label = response.label,
-        model = response.model,
+    fun fromClientDto(client: ClientDTO): Client = Client(
+        id = ClientId(client.clientId),
+        type = fromClientTypeDTO(client.type),
+        registrationTime = Instant.parse(client.registrationTime),
+        deviceType = fromDeviceTypeDTO(client.deviceType),
+        label = client.label,
+        model = client.model,
         isVerified = false,
         isValid = true
     )
@@ -83,17 +82,6 @@ class ClientMapper(
         )
     }
 
-    fun fromNewClientEvent(event: Event.User.NewClient): Client = Client(
-        id = event.clientId,
-        type = fromClientTypeDTO(event.clientType),
-        registrationTime = Instant.parse(event.registrationTime),
-        deviceType = fromDeviceTypeDTO(event.deviceType),
-        label = event.label,
-        model = event.model,
-        isVerified = false,
-        isValid = true
-    )
-
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
         simpleClientResponse.map {
             with(it) {
@@ -109,8 +97,8 @@ class ClientMapper(
             }
         }
 
-    fun toInsertClientParam(simpleClientResponse: ClientResponse, userIdDTO: UserIdDTO): InsertClientParam =
-        with(simpleClientResponse) {
+    fun toInsertClientParam(client: ClientDTO, userIdDTO: UserIdDTO): InsertClientParam =
+        with(client) {
             InsertClientParam(
                 userId = userIdDTO.toDao(),
                 id = clientId,
@@ -160,6 +148,11 @@ class ClientMapper(
     private fun fromClientCapabilityDTO(clientCapabilityDTO: ClientCapabilityDTO): ClientCapability = when (clientCapabilityDTO) {
         ClientCapabilityDTO.LegalHoldImplicitConsent -> ClientCapability.LegalHoldImplicitConsent
     }
+
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
+        otherUsersClients.map {
+            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isVerified)
+        }
 
     private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO = when (deviceType) {
         DeviceType.Phone -> DeviceTypeDTO.Phone

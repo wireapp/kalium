@@ -23,7 +23,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ClientResponse(
+data class ClientDTO(
     @SerialName("cookie") val cookie: String?,
     @SerialName("time") val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
     @SerialName("location") val location: LocationResponse?,
