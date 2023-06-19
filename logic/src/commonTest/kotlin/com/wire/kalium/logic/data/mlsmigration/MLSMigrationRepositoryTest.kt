@@ -32,6 +32,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlag
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
@@ -166,6 +167,7 @@ class MLSMigrationRepositoryTest {
                     MLSConfigDTO(
                         emptyList(),
                         ConvProtocol.MLS,
+                        listOf(SupportedProtocolDTO.MLS),
                         emptyList(),
                         1
                     ), FeatureFlagStatusDTO.ENABLED),

@@ -42,9 +42,9 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         ssoModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         validateSAMLEmailsModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
-        mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED),
+        mlsModel: MLSModel = MLSModel(listOf(), setOf(), Status.ENABLED),
         e2EIModel: E2EIModel = E2EIModel(E2EIConfigModel("url", 10000L), Status.ENABLED),
-        mlsMigrationModel: MLSMigrationModel = MLSMigrationModel(
+        mlsMigrationModel: MLSMigrationModel? = MLSMigrationModel(
             Instant.DISTANT_FUTURE,
             Instant.DISTANT_FUTURE,
             100,
