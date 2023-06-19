@@ -24,7 +24,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
@@ -35,7 +34,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
@@ -66,8 +65,6 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -248,7 +245,7 @@ class ClientRepositoryTest {
     fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated() = runTest {
         val result = NetworkResponse.Success(
             listOf(
-                ClientResponse(
+                ClientDTO(
                     clientId = "client_id_1",
                     type = ClientTypeDTO.Permanent,
                     registrationTime = "1969-05-12T10:52:02.671Z",
@@ -260,7 +257,7 @@ class ClientRepositoryTest {
                     cookie = null,
                     location = null
                 ),
-                ClientResponse(
+                ClientDTO(
                     clientId = "client_id_2",
                     type = ClientTypeDTO.Permanent,
                     registrationTime = "2021-05-12T10:52:02.671Z",
@@ -415,9 +412,6 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-    private fun toStringForSaving(list: List<Event.User.NewClient>) =
-        Json.encodeToString(list.map { MapperProvider.clientMapper().fromNewClientEvent(it) })
-
     private companion object {
         val selfUserId = UserId("self-user-id", "domain")
         const val SECOND_FACTOR_CODE = "123456"
@@ -478,7 +472,7 @@ class ClientRepositoryTest {
                 .thenReturn(values)
         }
 
-        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientResponse>>) = apply {
+        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientDTO>>) = apply {
             given(clientApi)
                 .suspendFunction(clientApi::fetchSelfUserClient)
                 .whenInvoked()
