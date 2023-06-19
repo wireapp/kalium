@@ -44,7 +44,7 @@ class NewClientDAOTest: BaseDatabaseTest() {
     fun whenANewClientsIsAdded_thenNewClientListIsEmitted() = runTest {
         newClientDAO.observeNewClients().test {
             awaitItem().also { result -> assertEquals(emptyList(), result) }
-            newClientDAO.insertNewClient(insertedClient)
+            newClientDAO.insertNewClient(insertedClient1)
 
             awaitItem().also { result -> assertEquals(listOf(client), result) }
         }
@@ -52,8 +52,8 @@ class NewClientDAOTest: BaseDatabaseTest() {
 
     @Test
     fun givenNewClients_whenClearNewClients_thenNewClientEmptyListIsEmitted() = runTest {
-        newClientDAO.insertNewClient(insertedClient)
         newClientDAO.insertNewClient(insertedClient1)
+        newClientDAO.insertNewClient(insertedClient2)
 
         newClientDAO.observeNewClients().test {
             awaitItem()
@@ -66,19 +66,20 @@ class NewClientDAOTest: BaseDatabaseTest() {
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
-        val insertedClient = InsertClientParam(
+        val insertedClient1 = InsertClientParam(
             userId = user.id,
-            id = "id0",
+            id = "id1",
             deviceType = null,
             clientType = null,
             label = null,
             model = null,
             registrationDate = null,
-            lastActive = null
+            lastActive = null,
+            isMLSCapable = false
         )
-        val insertedClient1 = insertedClient.copy(user.id, "id1", deviceType = null)
+        val insertedClient2 = insertedClient1.copy(user.id, "id2", deviceType = null)
 
-        val client = insertedClient.toClientEntity()
+        val client = insertedClient1.toClientEntity()
     }
 
 }
