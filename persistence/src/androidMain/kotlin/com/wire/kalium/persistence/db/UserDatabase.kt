@@ -120,7 +120,11 @@ internal actual fun nuke(
 ): Boolean {
     val context = platformDatabaseData.context
     return context.getDatabasePath(FileNameUtil.userDBName(userId))?.let {
-        context.deleteDatabase(FileNameUtil.userDBName(userId))
+        if (it.exists()) {
+            context.deleteDatabase(FileNameUtil.userDBName(userId))
+        } else {
+            true
+        }
     } ?: true
 }
 

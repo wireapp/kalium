@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.db.userDatabaseBuilder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import java.io.File
 import java.nio.file.Files
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,6 +46,10 @@ actual open class BaseDatabaseTest actual constructor() {
 
     actual fun deleteDatabase(userId: UserIDEntity) {
         userId.databaseFile.delete()
+    }
+
+    actual fun doesDatabaseExist(userId: UserIDEntity): Boolean {
+        return databasePath(userId).let { File(it).exists() }
     }
 
     actual fun createDatabase(

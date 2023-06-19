@@ -40,9 +40,18 @@ actual open class BaseDatabaseTest actual constructor() {
         context.deleteDatabase(FileNameUtil.userDBName(userId))
     }
 
-    actual fun createDatabase(userId: UserIDEntity, passphrase: UserDBSecret?, enableWAL: Boolean): UserDatabaseBuilder {
+    actual fun doesDatabaseExist(userId: UserIDEntity): Boolean {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        return context.getDatabasePath(FileNameUtil.userDBName(userId)).exists()
+    }
+
+    actual fun createDatabase(
+        userId: UserIDEntity,
+        passphrase: UserDBSecret?,
+        enableWAL: Boolean
+    ): UserDatabaseBuilder {
         return userDatabaseBuilder(
-            platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
+            platformDatabaseData = platformDBData(),
             userId = userId,
             passphrase = passphrase,
             dispatcher = dispatcher,
@@ -54,4 +63,6 @@ actual open class BaseDatabaseTest actual constructor() {
         val context: Context = ApplicationProvider.getApplicationContext()
         return context.getDatabasePath(FileNameUtil.userDBName(userId)).absolutePath
     }
+
+    actual fun platformDBData(): PlatformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext())
 }
