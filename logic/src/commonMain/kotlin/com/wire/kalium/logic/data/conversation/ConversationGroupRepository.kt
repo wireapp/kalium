@@ -163,8 +163,12 @@ internal class ConversationGroupRepositoryImpl(
                         }.map { Unit }
                     }
 
-                    is ConversationEntity.ProtocolInfo.MLS ->
-                        Either.Left(MLSFailure(UnsupportedOperationException("Adding service to MLS conversation is not supported")))
+                    is ConversationEntity.ProtocolInfo.MLS -> {
+                        val failure = MLSFailure.Generic(
+                            UnsupportedOperationException("Adding service to MLS conversation is not supported")
+                        )
+                        Either.Left(failure)
+                    }
                 }
             }
 

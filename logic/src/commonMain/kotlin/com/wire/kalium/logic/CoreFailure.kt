@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic
 
+import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -101,9 +102,13 @@ sealed class NetworkFailure : CoreFailure {
     object FederatedBackendFailure : NetworkFailure()
 }
 
-class MLSFailure(internal val exception: Exception) : CoreFailure {
+interface MLSFailure : CoreFailure {
 
-    val rootCause: Throwable get() = exception
+    object WrongEpoch : MLSFailure
+
+    class Generic(internal val exception: Exception) : MLSFailure {
+        val rootCause: Throwable get() = exception
+    }
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
@@ -174,9 +179,50 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
 internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
+    } catch (cryptoException: CryptoException) {
+        kaliumLogger.e(cryptoException.stackTraceToString())
+        val mappedFailure = when (cryptoException) {
+            is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
+
+            // Currently unhandled cases
+            is CryptoException.CallbacksNotSet,
+            is CryptoException.ClientNotFound,
+            is CryptoException.ClientSignatureMismatch,
+            is CryptoException.ClientSignatureNotFound,
+            is CryptoException.ConversationNotFound,
+            is CryptoException.ConvertIntException,
+            is CryptoException.CryptoboxMigrationException,
+            is CryptoException.DecryptionException,
+            is CryptoException.GenerationOutOfBound,
+            is CryptoException.HexDecodeException,
+            is CryptoException.ImplementationException,
+            is CryptoException.InvalidByteArrayException,
+            is CryptoException.InvalidHashReference,
+            is CryptoException.InvalidKeyPackage,
+            is CryptoException.IoException,
+            is CryptoException.KeyStoreException,
+            is CryptoException.LockPoisonException,
+            is CryptoException.MalformedIdentifier,
+            is CryptoException.MlsException,
+            is CryptoException.MlsNotInitialized,
+            is CryptoException.MlsProviderException,
+            is CryptoException.OutOfKeyPackage,
+            is CryptoException.ParseIntException,
+            is CryptoException.PendingCommitNotFound,
+            is CryptoException.PendingProposalNotFound,
+            is CryptoException.ProteusException,
+            is CryptoException.ProteusNotInitialized,
+            is CryptoException.ProteusSupportNotEnabled,
+            is CryptoException.StringUtf8Exception,
+            is CryptoException.Unauthorized,
+            is CryptoException.UnauthorizedExternalAddProposal,
+            is CryptoException.UnauthorizedExternalCommit,
+            is CryptoException.Utf8Exception -> MLSFailure.Generic(cryptoException)
+        }
+        Either.Left(mappedFailure)
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(MLSFailure(e))
+        Either.Left(MLSFailure.Generic(e))
     }
 }
 
