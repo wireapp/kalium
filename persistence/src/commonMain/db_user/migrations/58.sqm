@@ -1,4 +1,3 @@
-
 ALTER TABLE User ADD COLUMN supported_protocols TEXT AS Set<SupportedProtocolEntity>;
 
 DROP VIEW IF EXISTS ConversationDetails;

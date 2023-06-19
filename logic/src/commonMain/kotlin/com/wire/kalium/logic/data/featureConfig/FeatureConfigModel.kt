@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.util.time.Second
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import kotlinx.datetime.Instant
 
 data class FeatureConfigModel(
@@ -80,6 +81,7 @@ data class SelfDeletingMessagesConfigModel(
 
 data class MLSModel(
     val allowedUsers: List<PlainId>,
+    val supportedProtocols: Set<SupportedProtocol>,
     val status: Status
 )
 
