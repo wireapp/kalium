@@ -169,7 +169,7 @@ class SearchUserRepositoryTest {
             .wasNotInvoked()
 
         verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponseWithUsertype)
+            .function(publicUserMapper::fromUserProfileDtoToOtherUser)
             .with(any(), any())
             .wasNotInvoked()
     }
@@ -212,7 +212,7 @@ class SearchUserRepositoryTest {
 
         // then
         verify(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponseWithUsertype)
+            .function(publicUserMapper::fromUserProfileDtoToOtherUser)
             .with(any(), any())
             .wasNotInvoked()
     }
@@ -259,7 +259,7 @@ class SearchUserRepositoryTest {
             .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
 
         given(publicUserMapper)
-            .function(publicUserMapper::fromUserDetailResponseWithUsertype)
+            .function(publicUserMapper::fromUserProfileDtoToOtherUser)
             .whenInvokedWith(any(), any())
             .then { _, _ -> PUBLIC_USER }
 
@@ -273,7 +273,7 @@ class SearchUserRepositoryTest {
             .then { flowOf(USER_ENTITY) }
 
         given(userMapper)
-            .function(userMapper::fromDaoModelToSelfUser)
+            .function(userMapper::fromUserEntityToSelfUser)
             .whenInvokedWith(any())
             .then { SELF_USER }
 
@@ -310,7 +310,7 @@ class SearchUserRepositoryTest {
                 .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
 
             given(publicUserMapper)
-                .function(publicUserMapper::fromUserDetailResponseWithUsertype)
+                .function(publicUserMapper::fromUserProfileDtoToOtherUser)
                 .whenInvokedWith(any(), any())
                 .then { _, _ -> PUBLIC_USER }
 
@@ -324,7 +324,7 @@ class SearchUserRepositoryTest {
                 .then { flowOf(USER_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromDaoModelToSelfUser)
+                .function(userMapper::fromUserEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { SELF_USER }
 
@@ -373,7 +373,7 @@ class SearchUserRepositoryTest {
                 .then { flowOf(USER_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromDaoModelToSelfUser)
+                .function(userMapper::fromUserEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { SELF_USER }
 

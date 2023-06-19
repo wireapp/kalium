@@ -161,6 +161,11 @@ class ClientMapper(
         ClientCapabilityDTO.LegalHoldImplicitConsent -> ClientCapability.LegalHoldImplicitConsent
     }
 
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
+        otherUsersClients.map {
+            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isVerified)
+        }
+
     private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO = when (deviceType) {
         DeviceType.Phone -> DeviceTypeDTO.Phone
         DeviceType.Tablet -> DeviceTypeDTO.Tablet
