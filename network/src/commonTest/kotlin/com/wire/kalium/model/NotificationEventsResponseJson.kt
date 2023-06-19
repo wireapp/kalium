@@ -20,6 +20,7 @@ package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.model.conversation.ConversationResponseJson
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -34,8 +35,8 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlag
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.authenticated.notification.user.NewClientEventData
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.LocationResponse
 import com.wire.kalium.network.api.base.model.QualifiedID
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
@@ -51,12 +52,13 @@ object NotificationEventsResponseJson {
             |    "time": "${eventData.client.registrationTime}",
             |    "model": "${eventData.client.model}",
             |    "id": "71ff8872e468a970",
-            |    "type": "${eventData.client.clientType}",
+            |    "type": "${eventData.client.type}",
             |    "class": "desktop",
             |    "capabilities": {
             |      "capabilities": []
             |    },
-            |    "label": "${eventData.client.label}"
+            |    "label": "${eventData.client.label}",
+            |    "mls_public_keys": { "${eventData.client.mlsPublicKeys?.keys?.first()}": "${eventData.client.mlsPublicKeys?.values?.first()}" }
             |  }
             |}
         """.trimMargin()
@@ -64,8 +66,17 @@ object NotificationEventsResponseJson {
 
     private val clientAdd = ValidJsonProvider(
         EventContentDTO.User.NewClientDTO(
-            NewClientEventData(
-                "id", "2022-02-15T12:54:30Z", "Firefox (Temporary)", ClientTypeDTO.Permanent, DeviceTypeDTO.Desktop, "OS X 10.15 10.15"
+            ClientDTO(
+                cookie = null,
+                clientId = "id",
+                location = LocationResponse("23.2", "43.2"),
+                registrationTime = "2022-02-15T12:54:30Z",
+                model = "Firefox (Temporary)",
+                type = ClientTypeDTO.Permanent,
+                deviceType = DeviceTypeDTO.Desktop,
+                label = "OS X 10.15 10.15",
+                capabilities = null,
+                mlsPublicKeys = mapOf(Pair("key_variant", "public_key")),
             )
         ),
         newClientSerializer

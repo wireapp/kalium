@@ -52,6 +52,8 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import com.wire.kalium.persistence.dao.newclient.NewClientDAO
+import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
@@ -137,7 +139,8 @@ class UserDatabaseBuilder internal constructor(
         MessageNewConversationReceiptModeContentAdapter = TableMapper.messageNewConversationReceiptModeContentAdapter,
         UnreadEventAdapter = TableMapper.unreadEventAdapter,
         MessageConversationTimerChangedContentAdapter = TableMapper.messageConversationTimerChangedContentAdapter,
-        ServiceAdapter = TableMapper.serviceAdapter
+        ServiceAdapter = TableMapper.serviceAdapter,
+        NewClientAdapter = TableMapper.newClientAdapter
     )
 
     init {
@@ -171,6 +174,9 @@ class UserDatabaseBuilder internal constructor(
 
     val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
+
+    val newClientDAO: NewClientDAO
+        get() = NewClientDAOImpl(database.newClientQueries, queriesContext)
 
     val databaseImporter: DatabaseImporter
         get() = DatabaseImporterImpl(this, database.importContentQueries, isEncrypted, platformDatabaseData)

@@ -23,6 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
@@ -41,6 +42,7 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
@@ -76,6 +78,10 @@ interface ClientRepository {
         clientId: ClientId,
         verified: Boolean
     ): Either<StorageFailure, Unit>
+
+    suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient)
+    suspend fun clearNewClients()
+    suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -83,6 +89,7 @@ class ClientDataSource(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRegistrationStorage: ClientRegistrationStorage,
     private val clientDAO: ClientDAO,
+    private val newClientDAO: NewClientDAO,
     private val selfUserID: UserId,
     private val clientApi: ClientApi,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
@@ -160,7 +167,7 @@ class ClientDataSource(
             }.map {
                 // TODO: mapping directly from the api to the domain model is not ideal,
                 //  and the verification status is not correctly reflected
-                it.map { clientMapper.fromClientResponse(it) }
+                it.map { clientMapper.fromClientDto(it) }
             }
     }
 
@@ -198,7 +205,7 @@ class ClientDataSource(
         wrapStorageRequest {
             clientDAO.getClientsOfUserByQualifiedID(userId.toDao())
         }.map { clientsList ->
-            userMapper.fromOtherUsersClientsDTO(clientsList)
+            clientMapper.fromOtherUsersClientsDTO(clientsList)
         }
 
     override suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>> =
@@ -213,4 +220,17 @@ class ClientDataSource(
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
     }
+
+    override suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient) {
+        newClientDAO.insertNewClient(clientMapper.toInsertClientParam(selfUserID, newClientEvent))
+    }
+
+    override suspend fun clearNewClients() {
+        newClientDAO.clearNewClients()
+    }
+
+    override suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>> =
+        newClientDAO.observeNewClients()
+            .map { it.map { clientMapper.fromNewClientEntity(it) } }
+            .wrapStorageRequest()
 }

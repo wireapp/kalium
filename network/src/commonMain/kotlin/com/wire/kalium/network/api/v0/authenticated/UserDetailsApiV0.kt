@@ -22,8 +22,8 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserProfileDTO
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse

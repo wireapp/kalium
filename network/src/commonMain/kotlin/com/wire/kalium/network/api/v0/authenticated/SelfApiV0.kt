@@ -23,8 +23,8 @@ import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UpdateEmailRequest
-import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
@@ -44,7 +44,7 @@ internal open class SelfApiV0 internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun getSelfInfo(): NetworkResponse<UserDTO> = wrapKaliumResponse {
+    override suspend fun getSelfInfo(): NetworkResponse<SelfUserDTO> = wrapKaliumResponse {
         httpClient.get(PATH_SELF)
     }
 

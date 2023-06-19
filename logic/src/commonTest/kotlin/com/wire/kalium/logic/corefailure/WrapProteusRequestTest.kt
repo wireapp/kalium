@@ -22,17 +22,17 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class WrapCryptoRequestTest {
+class WrapProteusRequestTest {
 
     @Test
     fun whenACryptoRequestReturnValue_thenSuccessIsPropagated() {
         val expected = listOf(PreKeyCrypto(1, "key 1"), PreKeyCrypto(2, "key 2"))
-        val actual = wrapCryptoRequest { expected }
+        val actual = wrapProteusRequest { expected }
 
         assertIs<Either.Right<List<PreKeyCrypto>>>(actual)
         assertEquals(expected, actual.value)
@@ -41,7 +41,7 @@ class WrapCryptoRequestTest {
     @Test
     fun whenApiRequestReturnNoInternetConnection_thenCorrectErrorIsPropagated() {
         val expected = ProteusException(null, ProteusException.Code.PANIC, RuntimeException())
-        val actual = wrapCryptoRequest { throw expected }
+        val actual = wrapProteusRequest { throw expected }
 
         assertIs<Either.Left<ProteusFailure>>(actual)
         assertEquals(expected, actual.value.proteusException)

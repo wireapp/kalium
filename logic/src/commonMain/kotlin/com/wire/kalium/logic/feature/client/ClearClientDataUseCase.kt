@@ -23,10 +23,11 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -61,14 +62,13 @@ internal class ClearClientDataUseCaseImpl internal constructor(
     }
 
     private suspend fun clearCrypto(): Either<CoreFailure, Boolean> =
-        wrapCryptoRequest {
+        wrapProteusRequest {
             proteusClientProvider.clearLocalFiles()
         }.flatMap {
-            mlsClientProvider.getMLSClient()
-                .flatMap { mlsClient ->
-                    wrapMLSRequest {
-                        mlsClient.clearLocalFiles()
-                    }
+            mlsClientProvider.getMLSClient().getOrNull()?.let { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.clearLocalFiles()
                 }
+            } ?: Either.Right(false)
         }
 }

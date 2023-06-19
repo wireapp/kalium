@@ -58,8 +58,6 @@ import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreator
-import com.wire.kalium.logic.data.conversation.NewGroupConversationStartedMessageCreatorImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
@@ -137,8 +135,6 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
-import com.wire.kalium.logic.feature.client.NewClientManager
-import com.wire.kalium.logic.feature.client.NewClientManagerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -495,22 +491,15 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
-            newGroupConversationStartedMessageCreator,
+            lazy { conversations.newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId
         )
 
-    private val newGroupConversationStartedMessageCreator: NewGroupConversationStartedMessageCreator
-        get() = NewGroupConversationStartedMessageCreatorImpl(
-            persistMessage,
-            userId
-        )
-
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
-            persistMessage,
             userStorage.database.conversationDAO,
-            userId
+            lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
 
     private val messageRepository: MessageRepository
@@ -636,13 +625,14 @@ class UserSessionScope internal constructor(
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
 
-    private val clientRepository: ClientRepository
+    internal val clientRepository: ClientRepository
         get() = ClientDataSource(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
+            userStorage.database.newClientDAO,
             userId,
-            authenticatedNetworkContainer.clientApi
+            authenticatedNetworkContainer.clientApi,
         )
 
     private val sessionEstablisher: SessionEstablisher
@@ -973,9 +963,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             selfTeamId,
-            persistMessage,
-            qualifiedIdMapper,
-            team.isSelfATeamMember
+            conversations.newGroupConversationSystemMessagesCreator
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
@@ -1026,11 +1014,9 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val newClientManager: NewClientManager = NewClientManagerImpl
-
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
-            newClientManager, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
+            clientRepository, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1261,7 +1247,7 @@ class UserSessionScope internal constructor(
     val service: ServiceScope
         get() = ServiceScope(
             serviceRepository,
-        teamRepository,
+            teamRepository,
             selfTeamId
         )
 

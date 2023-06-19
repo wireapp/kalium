@@ -104,8 +104,7 @@ internal object MapperProvider {
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl(
-        idMapper(),
-        clientMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper()
+        idMapper(), availabilityStatusMapper(), connectionStateMapper(), userTypeEntityMapper()
     )
 
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
@@ -129,7 +128,7 @@ internal object MapperProvider {
         )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
-    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl(idMapper())
+    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl()
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()

@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.base.authenticated.client.SimpleClientRespons
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.persistence.dao.newclient.NewClientEntity
 import kotlinx.datetime.Instant
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
@@ -52,20 +53,20 @@ class ClientMapper(
         deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
         type = param.clientType?.let { toClientTypeDTO(param.clientType) } ?: toClientTypeDTO(clientConfig.clientType()),
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } },
-        model = clientConfig.deviceModelName(),
+        model = param.model?.let { param.model } ?: clientConfig.deviceModelName(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
         cookieLabel = param.cookieLabel,
         secondFactorVerificationCode = param.secondFactorVerificationCode,
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information
-    fun fromClientResponse(response: ClientResponse): Client = Client(
-        id = ClientId(response.clientId),
-        type = fromClientTypeDTO(response.type),
-        registrationTime = Instant.parse(response.registrationTime),
-        deviceType = fromDeviceTypeDTO(response.deviceType),
-        label = response.label,
-        model = response.model,
+    fun fromClientDto(client: ClientDTO): Client = Client(
+        id = ClientId(client.clientId),
+        type = fromClientTypeDTO(client.type),
+        registrationTime = Instant.parse(client.registrationTime),
+        deviceType = fromDeviceTypeDTO(client.deviceType),
+        label = client.label,
+        model = client.model,
         isVerified = false,
         isValid = true
     )
@@ -83,16 +84,18 @@ class ClientMapper(
         )
     }
 
-    fun fromNewClientEvent(event: Event.User.NewClient): Client = Client(
-        id = event.clientId,
-        type = fromClientTypeDTO(event.clientType),
-        registrationTime = Instant.parse(event.registrationTime),
-        deviceType = fromDeviceTypeDTO(event.deviceType),
-        label = event.label,
-        model = event.model,
-        isVerified = false,
-        isValid = true
-    )
+    fun fromNewClientEntity(clientEntity: NewClientEntity): Client = with(clientEntity) {
+        Client(
+            id = ClientId(id),
+            type = null,
+            registrationTime = registrationDate,
+            deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
+            label = null,
+            model = model,
+            isVerified = false,
+            isValid = true
+        )
+    }
 
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
         simpleClientResponse.map {
@@ -109,8 +112,8 @@ class ClientMapper(
             }
         }
 
-    fun toInsertClientParam(simpleClientResponse: ClientResponse, userIdDTO: UserIdDTO): InsertClientParam =
-        with(simpleClientResponse) {
+    fun toInsertClientParam(client: ClientDTO, userIdDTO: UserIdDTO): InsertClientParam =
+        with(client) {
             InsertClientParam(
                 userId = userIdDTO.toDao(),
                 id = clientId,
@@ -134,6 +137,17 @@ class ClientMapper(
                 registrationDate = null
             )
         }
+
+    fun toInsertClientParam(userId: UserId, event: Event.User.NewClient): InsertClientParam =
+        InsertClientParam(
+            userId = userId.toDao(),
+            id = event.client.id.value,
+            deviceType = event.client.deviceType?.let { toDeviceTypeEntity(it) },
+            clientType = event.client.type?.let { toClientTypeEntity(it) },
+            label = event.client.label,
+            model = event.client.model,
+            registrationDate = event.client.registrationTime
+        )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
         ClientType.Temporary -> ClientTypeDTO.Temporary
@@ -160,6 +174,11 @@ class ClientMapper(
     private fun fromClientCapabilityDTO(clientCapabilityDTO: ClientCapabilityDTO): ClientCapability = when (clientCapabilityDTO) {
         ClientCapabilityDTO.LegalHoldImplicitConsent -> ClientCapability.LegalHoldImplicitConsent
     }
+
+    fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
+        otherUsersClients.map {
+            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isVerified)
+        }
 
     private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO = when (deviceType) {
         DeviceType.Phone -> DeviceTypeDTO.Phone
@@ -205,5 +224,11 @@ class ClientMapper(
         ClientTypeDTO.Temporary -> ClientTypeEntity.Temporary
         ClientTypeDTO.Permanent -> ClientTypeEntity.Permanent
         ClientTypeDTO.LegalHold -> ClientTypeEntity.LegalHold
+    }
+
+    fun toClientTypeEntity(clientType: ClientType): ClientTypeEntity = when (clientType) {
+        ClientType.Temporary -> ClientTypeEntity.Temporary
+        ClientType.Permanent -> ClientTypeEntity.Permanent
+        ClientType.LegalHold -> ClientTypeEntity.LegalHold
     }
 }

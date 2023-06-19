@@ -224,7 +224,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenNewClientAdded_thenItisMarkedAsNotVerified() = runTest {
+    fun givenNewClientAdded_thenItIsMarkedAsNotVerified() = runTest {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
@@ -232,7 +232,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenClient_whenUpdateingVerificationStatus_thenItIsUpdated() = runTest {
+    fun givenClient_whenUpdatingVerificationStatus_thenItIsUpdated() = runTest {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
@@ -244,7 +244,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenUserId_whenANewClientIsAdded_thennewListIsEmited() = runTest {
+    fun givenUserId_whenAClientIsAdded_thenNewListIsEmitted() = runTest {
         val user = user
         userDAO.insertUser(user)
 
@@ -261,7 +261,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenVerifiedClient_whenINsertingTheSameIdAgian_thenVerificationStatusIsNotChanges() = runTest {
+    fun givenVerifiedClient_whenInsertingTheSameIdAgain_thenVerificationStatusIsNotChanges() = runTest {
         val user = user
         userDAO.insertUser(user)
 
@@ -317,14 +317,14 @@ class ClientDAOTest : BaseDatabaseTest() {
 }
 
 private fun InsertClientParam.toClient(): Client =
-        Client(
-            userId,
-            id,
-            deviceType = deviceType,
-            clientType = clientType,
-            isValid = true,
-            isVerified = false,
-            label = label,
-            model = model,
-            registrationDate = registrationDate
-        )
+    Client(
+        userId,
+        id,
+        deviceType = deviceType,
+        clientType = clientType,
+        isValid = true,
+        isVerified = false,
+        label = label,
+        model = model,
+        registrationDate = registrationDate
+    )
