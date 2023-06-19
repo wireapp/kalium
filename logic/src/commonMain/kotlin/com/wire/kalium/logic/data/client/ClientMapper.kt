@@ -92,7 +92,7 @@ class ClientMapper(
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
             label = null,
             model = model,
-            isVerified = true,
+            isVerified = false,
             isValid = true
         )
     }
