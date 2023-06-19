@@ -21,13 +21,13 @@ package com.wire.kalium.model
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.client.Capabilities
 import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.model.LocationResponse
 
 object ClientResponseJson {
-    private val jsonProvider = { serializable: ClientResponse ->
+    private val jsonProvider = { serializable: ClientDTO ->
         """
         |{
         |   "id": "${serializable.clientId}",
@@ -51,7 +51,7 @@ object ClientResponseJson {
     }
 
     val valid = ValidJsonProvider(
-        ClientResponse(
+        ClientDTO(
             clientId = "defkrr8e7grgsoufhg8",
             type = ClientTypeDTO.Permanent,
             deviceType = DeviceTypeDTO.Phone,
@@ -66,5 +66,5 @@ object ClientResponseJson {
         jsonProvider
     )
 
-    fun createValid(clientResponse: ClientResponse) = ValidJsonProvider(clientResponse, jsonProvider)
+    fun createValid(client: ClientDTO) = ValidJsonProvider(client, jsonProvider)
 }
