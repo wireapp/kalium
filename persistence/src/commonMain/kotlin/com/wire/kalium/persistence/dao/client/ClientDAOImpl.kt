@@ -37,11 +37,11 @@ internal object ClientMapper {
         device_type: DeviceTypeEntity?,
         is_valid: Boolean,
         is_verified: Boolean,
-        is_mls_capable: Boolean,
         client_type: ClientTypeEntity?,
         registration_date: Instant?,
         label: String?,
         model: String?,
+        is_mls_capable: Boolean
     ): Client = Client(
         userId = user_id,
         id = id,

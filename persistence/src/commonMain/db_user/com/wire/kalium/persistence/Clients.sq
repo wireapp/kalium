@@ -10,11 +10,11 @@ CREATE TABLE Client (
     device_type TEXT AS DeviceTypeEntity,
     is_valid INTEGER  AS Boolean NOT NULL DEFAULT 1,
     is_verified INTEGER  AS Boolean NOT NULL DEFAULT 0,
-    is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
     client_type TEXT AS ClientTypeEntity DEFAULT NULL,
     registration_date INTEGER AS Instant DEFAULT NULL,
     label TEXT DEFAULT NULL,
     model TEXT DEFAULT NULL,
+    is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
