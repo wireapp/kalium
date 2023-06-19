@@ -24,6 +24,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
@@ -532,6 +534,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val email: String?,
             val previewAssetId: String?,
             val completeAssetId: String?,
+            val supportedProtocols: Set<SupportedProtocol>?
         ) : User(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.Update",
@@ -591,7 +594,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 "model" to (client.model ?: ""),
                 "clientType" to client.type,
                 "deviceType" to client.deviceType,
-                "label" to (client.label ?: "")
+                "label" to (client.label ?: ""),
+                "isMLSCapable" to client.isMLSCapable
             )
         }
     }

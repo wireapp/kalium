@@ -252,7 +252,7 @@ class OnCloseCallTest {
         val mlsCall = callMetadata.copy(
             protocol = Conversation.ProtocolInfo.MLS(
                 groupId = GroupID(""),
-                groupState = Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
+                groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 epoch = ULong.MAX_VALUE,
                 keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
                 cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
