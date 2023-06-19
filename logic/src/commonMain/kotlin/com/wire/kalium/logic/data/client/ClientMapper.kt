@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -32,6 +33,7 @@ import com.wire.kalium.network.api.base.authenticated.client.SimpleClientRespons
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
+import com.wire.kalium.persistence.dao.newclient.NewClientEntity
 import kotlinx.datetime.Instant
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
@@ -82,6 +84,19 @@ class ClientMapper(
         )
     }
 
+    fun fromNewClientEntity(clientEntity: NewClientEntity): Client = with(clientEntity) {
+        Client(
+            id = ClientId(id),
+            type = null,
+            registrationTime = registrationDate,
+            deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
+            label = null,
+            model = model,
+            isVerified = false,
+            isValid = true
+        )
+    }
+
     fun toInsertClientParam(simpleClientResponse: List<SimpleClientResponse>, userIdDTO: UserIdDTO): List<InsertClientParam> =
         simpleClientResponse.map {
             with(it) {
@@ -122,6 +137,17 @@ class ClientMapper(
                 registrationDate = null
             )
         }
+
+    fun toInsertClientParam(userId: UserId, event: Event.User.NewClient): InsertClientParam =
+        InsertClientParam(
+            userId = userId.toDao(),
+            id = event.client.id.value,
+            deviceType = event.client.deviceType?.let { toDeviceTypeEntity(it) },
+            clientType = event.client.type?.let { toClientTypeEntity(it) },
+            label = event.client.label,
+            model = event.client.model,
+            registrationDate = event.client.registrationTime
+        )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
         ClientType.Temporary -> ClientTypeDTO.Temporary
@@ -198,5 +224,11 @@ class ClientMapper(
         ClientTypeDTO.Temporary -> ClientTypeEntity.Temporary
         ClientTypeDTO.Permanent -> ClientTypeEntity.Permanent
         ClientTypeDTO.LegalHold -> ClientTypeEntity.LegalHold
+    }
+
+    fun toClientTypeEntity(clientType: ClientType): ClientTypeEntity = when (clientType) {
+        ClientType.Temporary -> ClientTypeEntity.Temporary
+        ClientType.Permanent -> ClientTypeEntity.Permanent
+        ClientType.LegalHold -> ClientTypeEntity.LegalHold
     }
 }

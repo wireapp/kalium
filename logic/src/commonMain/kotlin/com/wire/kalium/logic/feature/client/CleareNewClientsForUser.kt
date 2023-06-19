@@ -17,25 +17,21 @@
  */
 package com.wire.kalium.logic.feature.client
 
-import app.cash.turbine.test
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestUser
-import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.UserSessionScopeProvider
 
-class NewClientManagerTest {
+/**
+ * Clear all NewClients for the [UserId] from the BD.
+ * Use it after informing user about NewClients, or when user logs out.
+ */
+interface ClearNewClientsForUserUseCase {
+    suspend operator fun invoke(userId: UserId)
+}
 
-    @Test
-    fun testIfProperDataIsPassedForward() = runTest {
-        val newClientManager = NewClientManagerImpl
-        val event = TestEvent.newClient()
-        val expectedClient = event.client
-        newClientManager.observeNewClients().test {
-            newClientManager.scheduleNewClientEvent(event, TestUser.USER_ID)
-
-            assertEquals(expectedClient to TestUser.USER_ID, awaitItem())
-        }
+class ClearNewClientsForUserUseCaseImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : ClearNewClientsForUserUseCase {
+    override suspend fun invoke(userId: UserId) {
+        userSessionScopeProvider.getOrCreate(userId)
+            .clientRepository
+            .clearNewClients()
     }
 }
