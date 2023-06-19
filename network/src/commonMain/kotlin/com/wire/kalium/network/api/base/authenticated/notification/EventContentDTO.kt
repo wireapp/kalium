@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.notification
 
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
@@ -33,7 +34,6 @@ import com.wire.kalium.network.api.base.authenticated.notification.conversation.
 import com.wire.kalium.network.api.base.authenticated.notification.team.PermissionsData
 import com.wire.kalium.network.api.base.authenticated.notification.team.TeamMemberIdData
 import com.wire.kalium.network.api.base.authenticated.notification.team.TeamUpdateData
-import com.wire.kalium.network.api.base.authenticated.notification.user.NewClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.UserUpdateEventData
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -289,7 +289,7 @@ sealed class EventContentDTO {
         @Serializable
         @SerialName("user.client-add")
         data class NewClientDTO(
-            @SerialName("client") val client: NewClientEventData,
+            @SerialName("client") val client: ClientDTO,
         ) : User()
 
         @Serializable

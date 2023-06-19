@@ -31,7 +31,7 @@ class NewClientManagerTest {
     fun testIfProperDataIsPassedForward() = runTest {
         val newClientManager = NewClientManagerImpl
         val event = TestEvent.newClient()
-        val expectedClient = MapperProvider.clientMapper().fromNewClientEvent(event)
+        val expectedClient = event.client
         newClientManager.observeNewClients().test {
             newClientManager.scheduleNewClientEvent(event, TestUser.USER_ID)
 

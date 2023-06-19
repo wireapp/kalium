@@ -52,7 +52,7 @@ internal object NewClientManagerImpl : NewClientManager {
      * Use this method in [com.wire.kalium.logic.sync.receiver.UserEventReceiver] or where ever [Event.User.NewClient] come into.
      */
     override suspend fun scheduleNewClientEvent(newClientEvent: Event.User.NewClient, userId: UserId) {
-        newClients.send(mapper.fromNewClientEvent(newClientEvent) to userId)
+        newClients.send(newClientEvent.client to userId)
     }
 
 }
