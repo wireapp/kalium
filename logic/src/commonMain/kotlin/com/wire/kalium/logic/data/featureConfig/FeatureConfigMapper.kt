@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
@@ -75,10 +77,12 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         data?.let {
             MLSModel(
                 it.config.protocolToggleUsers.map { userId -> PlainId(userId) },
+                it.config.supportedProtocols.map { it.toModel() }.toSet(),
                 fromDTO(it.status)
             )
         } ?: MLSModel(
             listOf(),
+            setOf(SupportedProtocol.PROTEUS),
             Status.DISABLED
         )
 

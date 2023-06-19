@@ -43,7 +43,8 @@ internal object ClientMapper {
         label: String?,
         model: String?,
         lastActive: Instant?,
-        mls_public_keys: Map<String, String>?
+        mls_public_keys: Map<String, String>?,
+        is_mls_capable: Boolean
     ): Client = Client(
         userId = user_id,
         id = id,
@@ -51,11 +52,12 @@ internal object ClientMapper {
         clientType = client_type,
         isValid = is_valid,
         isProteusVerified = is_verified,
+        isMLSCapable = is_mls_capable,
         registrationDate = registration_date,
         label = label,
         model = model,
         lastActive = lastActive,
-        mlsPublicKeys = mls_public_keys
+        mlsPublicKeys = mls_public_keys,
     )
 }
 
@@ -82,6 +84,7 @@ internal class ClientDAOImpl internal constructor(
             device_type = deviceType,
             client_type = clientType,
             is_valid = true,
+            is_mls_capable = isMLSCapable,
             registration_date = registrationDate,
             last_active = lastActive,
             model = model,
