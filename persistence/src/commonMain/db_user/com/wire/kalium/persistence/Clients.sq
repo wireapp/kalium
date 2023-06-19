@@ -17,6 +17,7 @@ CREATE TABLE Client (
     model TEXT DEFAULT NULL,
     last_active INTEGER AS Instant DEFAULT NULL,
     mls_public_keys TEXT AS Map<String, String> DEFAULT NULL,
+    is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, id)
 );
@@ -31,8 +32,8 @@ deleteClientsOfUser:
 DELETE FROM Client WHERE user_id = ?;
 
 insertClient:
-INSERT INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys, is_mls_capable)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, user_id) DO UPDATE SET
 device_type = coalesce(excluded.device_type, device_type),
 registration_date = coalesce(excluded.registration_date, registration_date),
@@ -40,7 +41,8 @@ label = coalesce(excluded.label, label),
 model = coalesce(excluded.model, model),
 is_valid = is_valid,
 last_active = coalesce(excluded.last_active, last_active),
-mls_public_keys = excluded.mls_public_keys;
+mls_public_keys = excluded.mls_public_keys,
+is_mls_capable = is_mls_capable;
 
 selectAllClients:
 SELECT * FROM Client;

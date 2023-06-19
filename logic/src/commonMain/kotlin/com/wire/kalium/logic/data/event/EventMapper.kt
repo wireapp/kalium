@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -487,7 +488,8 @@ class EventMapper(
         email = event.userData.email,
         previewAssetId = event.userData.assets?.getPreviewAssetOrNull()?.key,
         transient = transient,
-        completeAssetId = event.userData.assets?.getCompleteAssetOrNull()?.key
+        completeAssetId = event.userData.assets?.getCompleteAssetOrNull()?.key,
+        supportedProtocols = event.userData.supportedProtocols?.toModel()
     )
 
 }
