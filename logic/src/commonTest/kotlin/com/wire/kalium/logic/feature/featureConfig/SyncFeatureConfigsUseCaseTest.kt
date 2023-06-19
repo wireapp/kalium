@@ -42,6 +42,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandle
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
@@ -115,7 +116,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenMlsIsEnabledAndSelfUserIsWhitelisted_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(SELF_USER_ID.toPlainID()), Status.ENABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(SELF_USER_ID.toPlainID()), emptySet(), Status.ENABLED))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
@@ -131,7 +132,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenMlsIsEnabledAndSelfUserIsNotWhitelisted_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.ENABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), emptySet(), Status.ENABLED))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
@@ -144,10 +145,10 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenMlsIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
+    fun givenMlsIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.DISABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), emptySet(), Status.DISABLED))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()

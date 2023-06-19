@@ -67,8 +67,8 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenClientIsInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
 
-        val insertedClient = insertedClient1.copy(user.id, "id1", deviceType = null)
-        val expected = client1.copy(user.id, "id1", deviceType = null, isValid = true, isVerified = false)
+        val insertedClient = insertedClient1.copy(user.id, "id1", deviceType = null, isMLSCapable = true)
+        val expected = client1.copy(user.id, "id1", deviceType = null, isValid = true, isVerified = false, isMLSCapable = true)
 
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
@@ -316,7 +316,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             model = null,
             registrationDate = null,
             lastActive = null,
-            mlsPublicKeys = null
+            mlsPublicKeys = null,
+            isMLSCapable = false
         )
         clientDAO.insertClient(insertedClient2)
 
@@ -340,7 +341,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             model = null,
             registrationDate = null,
             lastActive = null,
-            mlsPublicKeys = null
+            mlsPublicKeys = null,
+            isMLSCapable = false
         )
         val client = insertedClient.toClient()
 
@@ -382,6 +384,7 @@ private fun InsertClientParam.toClient(): Client =
         clientType = clientType,
         isValid = true,
         isVerified = false,
+        isMLSCapable = false,
         label = label,
         model = model,
         registrationDate = registrationDate,

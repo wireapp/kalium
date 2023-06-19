@@ -40,6 +40,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.NotificationR
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.LocationResponse
 import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -198,7 +199,7 @@ object NotificationEventsResponseJson {
     private val newMlsFeatureConfigUpdate = ValidJsonProvider(
         EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
             MLS(
-                MLSConfigDTO(emptyList(), ConvProtocol.MLS, listOf(1), 1),
+                MLSConfigDTO(emptyList(), ConvProtocol.MLS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED,
             )
         ),
