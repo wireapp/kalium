@@ -70,7 +70,8 @@ class ClientMapper(
         label = client.label,
         model = client.model,
         isVerified = false,
-        isValid = true
+        isValid = true,
+        isMLSCapable = client.mlsPublicKeys?.isNotEmpty() ?: false
     )
 
     fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
@@ -83,7 +84,8 @@ class ClientMapper(
             label = label,
             model = model,
             isVerified = isVerified,
-            isValid = isValid
+            isValid = isValid,
+            isMLSCapable = isMLSCapable
         )
     }
 
@@ -97,7 +99,8 @@ class ClientMapper(
             label = null,
             model = model,
             isVerified = false,
-            isValid = true
+            isValid = true,
+            isMLSCapable = false
         )
     }
 
@@ -112,7 +115,8 @@ class ClientMapper(
                     label = null,
                     model = null,
                     registrationDate = null,
-                    lastActive = null
+                    lastActive = null,
+                    isMLSCapable = false
                 )
             }
         }
@@ -127,7 +131,8 @@ class ClientMapper(
                 label = label,
                 model = model,
                 registrationDate = Instant.parse(registrationTime),
-                lastActive = lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) }
+                lastActive = lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) },
+                isMLSCapable = mlsPublicKeys?.isNotEmpty() ?: false
             )
         }
 
@@ -141,7 +146,8 @@ class ClientMapper(
                 label = null,
                 model = null,
                 registrationDate = null,
-                lastActive = null
+                lastActive = null,
+                isMLSCapable = false
             )
         }
 
@@ -154,7 +160,8 @@ class ClientMapper(
             label = event.client.label,
             model = event.client.model,
             registrationDate = event.client.registrationTime,
-            lastActive = event.client.lastActive
+            lastActive = event.client.lastActive,
+            isMLSCapable = event.client.isMLSCapable
         )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
