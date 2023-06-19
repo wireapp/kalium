@@ -42,8 +42,8 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         ssoModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         validateSAMLEmailsModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
-        mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED),
-        mlsMigrationModel: MLSMigrationModel = MLSMigrationModel(
+        mlsModel: MLSModel = MLSModel(listOf(), setOf(), Status.ENABLED),
+        mlsMigrationModel: MLSMigrationModel? = MLSMigrationModel(
             Instant.DISTANT_FUTURE,
             Instant.DISTANT_FUTURE,
             100,

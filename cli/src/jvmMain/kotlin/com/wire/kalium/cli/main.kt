@@ -28,6 +28,7 @@ import com.wire.kalium.cli.commands.MarkAsReadCommand
 import com.wire.kalium.cli.commands.ConsoleCommand
 import com.wire.kalium.cli.commands.RefillKeyPackagesCommand
 import com.wire.kalium.cli.commands.RemoveMemberFromGroupCommand
+import com.wire.kalium.cli.commands.UpdateSupportedProtocolsCommand
 
 fun main(args: Array<String>) = CLIApplication().subcommands(
     LoginCommand().subcommands(
@@ -38,6 +39,7 @@ fun main(args: Array<String>) = CLIApplication().subcommands(
         RemoveMemberFromGroupCommand(),
         ConsoleCommand(),
         RefillKeyPackagesCommand(),
-        MarkAsReadCommand()
+        MarkAsReadCommand(),
+        UpdateSupportedProtocolsCommand()
     )
 ).main(args)
