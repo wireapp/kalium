@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -27,8 +28,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.feature.client.NewClientManager
-import com.wire.kalium.logic.feature.client.NewClientManagerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -138,9 +137,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(event)
 
-        verify(arrangement.newClientManager)
-            .suspendFunction(arrangement.newClientManager::scheduleNewClientEvent)
-            .with(any(), eq(SELF_USER_ID))
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::saveNewClientEvent)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -161,10 +160,10 @@ class UserEventReceiverTest {
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
-        val newClientManager = mock(classOf<NewClientManager>())
+        val clientRepository = mock(classOf<ClientRepository>())
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
-            newClientManager,
+            clientRepository,
             connectionRepository,
             conversationRepository,
             userRepository,
