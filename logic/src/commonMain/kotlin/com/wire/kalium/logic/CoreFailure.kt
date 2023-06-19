@@ -151,9 +151,9 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
         }
     }
 
-internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFailure, T> {
+internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<ProteusFailure, T> {
     return try {
-        Either.Right(cryptoRequest())
+        Either.Right(proteusRequest())
     } catch (e: ProteusException) {
         kaliumLogger.e(
             """{ "ProteusException": "${e.message},"
