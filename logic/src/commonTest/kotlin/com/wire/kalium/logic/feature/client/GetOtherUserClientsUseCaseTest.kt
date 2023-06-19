@@ -56,7 +56,8 @@ class ObserveClientsByUserIdUseCaseTest {
                 label = null,
                 model = "Mac ox",
                 isVerified = false,
-                isValid = true
+                isValid = true,
+                isMLSCapable = false
             ),
             Client(
                 id = ClientId("2222"),
@@ -66,7 +67,8 @@ class ObserveClientsByUserIdUseCaseTest {
                 label = null,
                 model = "Mac ox",
                 isVerified = false,
-                isValid = true
+                isValid = true,
+                isMLSCapable = false
             )
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
