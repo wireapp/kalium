@@ -32,7 +32,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
@@ -242,7 +242,7 @@ class ClientRepositoryTest {
     fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated() = runTest {
         val result = NetworkResponse.Success(
             listOf(
-                ClientResponse(
+                ClientDTO(
                     clientId = "client_id_1",
                     type = ClientTypeDTO.Permanent,
                     registrationTime = "1969-05-12T10:52:02.671Z",
@@ -254,7 +254,7 @@ class ClientRepositoryTest {
                     cookie = null,
                     location = null
                 ),
-                ClientResponse(
+                ClientDTO(
                     clientId = "client_id_2",
                     type = ClientTypeDTO.Permanent,
                     registrationTime = "2021-05-12T10:52:02.671Z",
@@ -440,7 +440,7 @@ class ClientRepositoryTest {
                 .thenReturn(values)
         }
 
-        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientResponse>>) = apply {
+        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientDTO>>) = apply {
             given(clientApi)
                 .suspendFunction(clientApi::fetchSelfUserClient)
                 .whenInvoked()
