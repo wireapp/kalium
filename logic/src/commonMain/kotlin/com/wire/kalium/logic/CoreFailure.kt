@@ -29,28 +29,28 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
-sealed class CoreFailure {
+sealed interface CoreFailure {
 
     /**
      * The attempted operation requires that this client is registered.
      */
-    object MissingClientRegistration : CoreFailure()
+    object MissingClientRegistration : CoreFailure
 
     /**
      * A user has no key packages available which prevents him/her from being added
      * to an existing or new conversation.
      */
-    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure()
+    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure
 
     /**
      * It's not allowed to run the application with development API enabled when
      * connecting to the production environment.
      */
-    object DevelopmentAPINotAllowedOnProduction : CoreFailure()
+    object DevelopmentAPINotAllowedOnProduction : CoreFailure
 
-    data class Unknown(val rootCause: Throwable?) : CoreFailure()
+    data class Unknown(val rootCause: Throwable?) : CoreFailure
 
-    abstract class FeatureFailure : CoreFailure()
+    abstract class FeatureFailure : CoreFailure
 
     /**
      * It's only allowed to insert system messages as bulk for all conversations.
@@ -63,7 +63,7 @@ sealed class CoreFailure {
     object NotSupportedByProteus : FeatureFailure()
 }
 
-sealed class NetworkFailure : CoreFailure() {
+sealed class NetworkFailure : CoreFailure {
     /**
      * Failed to establish a connection with the necessary servers in order to pull/push data.
      *
@@ -101,12 +101,12 @@ sealed class NetworkFailure : CoreFailure() {
     object FederatedBackendFailure : NetworkFailure()
 }
 
-class MLSFailure(internal val exception: Exception) : CoreFailure() {
+class MLSFailure(internal val exception: Exception) : CoreFailure {
 
     val rootCause: Throwable get() = exception
 }
 
-class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
+class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
 
     val rootCause: Throwable get() = proteusException
 }
@@ -117,7 +117,7 @@ sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
     object WrongAssetHash : EncryptionFailure()
 }
 
-sealed class StorageFailure : CoreFailure() {
+sealed class StorageFailure : CoreFailure {
     object DataNotFound : StorageFailure()
     data class Generic(val rootCause: Throwable) : StorageFailure()
 }
