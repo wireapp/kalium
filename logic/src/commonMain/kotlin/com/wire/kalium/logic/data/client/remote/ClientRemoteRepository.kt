@@ -58,7 +58,7 @@ class ClientRemoteDataSource(
 
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =
         wrapApiRequest { clientApi.registerClient(clientMapper.toRegisterClientRequest(clientConfig, param)) }
-            .map { clientResponse -> clientMapper.fromClientResponse(clientResponse) }
+            .map { clientResponse -> clientMapper.fromClientDto(clientResponse) }
 
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit> =
         wrapApiRequest {

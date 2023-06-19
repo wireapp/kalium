@@ -59,7 +59,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.persistence.dao.ConversationEntity
@@ -593,7 +593,7 @@ internal class CallDataSource(
 
     private suspend fun createEpochInfo(parentGroupID: GroupID, subconversationGroupID: GroupID): Either<CoreFailure, EpochInfo> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapCryptoRequest {
+            wrapMLSRequest {
                 val epoch = mlsClient.conversationEpoch(subconversationGroupID.toCrypto())
                 val secret = mlsClient.deriveSecret(subconversationGroupID.toCrypto(), 32u)
                 val conversationMembers = mlsClient.members(parentGroupID.toCrypto())
