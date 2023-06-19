@@ -107,6 +107,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     private suspend fun clearCurrentClientIdAndFirebaseTokenFlag() {
         clientRepository.clearCurrentClientId()
+        clientRepository.clearNewClients()
         // After logout we need to mark the Firebase token as invalid
         // locally so that we can register a new one on the next login.
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
@@ -126,6 +127,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearCurrentClientId()
         clientRepository.clearHasRegisteredMLSClient()
+        clientRepository.clearNewClients()
+
         // After logout we need to mark the Firebase token as invalid
         // locally so that we can register a new one on the next login.
         pushTokenRepository.setUpdateFirebaseTokenFlag(true)
