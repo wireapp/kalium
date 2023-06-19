@@ -253,7 +253,7 @@ sealed class EventContentDTO {
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("data") val data: ConversationProtocolDTO,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-        )
+        ) : Conversation()
 
     }
 

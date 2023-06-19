@@ -146,6 +146,16 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversations_ThenConversationIdsCanBeRetrievedByProtocol() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        insertTeamUserAndMember(team, user2, conversationEntity2.id)
+        val result =
+            conversationDAO.getConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
+        assertEquals(listOf(conversationEntity1.id), result)
+    }
+
+    @Test
     fun givenExistingMLSConversation_ThenConversationCanBeRetrievedByGroupState() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)

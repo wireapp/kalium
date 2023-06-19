@@ -241,6 +241,8 @@ sealed class MessageContent {
 
     object CryptoSessionReset : System()
 
+    object HistoryLostProtocolChanged : System()
+
     object HistoryLost : System()
     object ConversationCreated : System()
 }
@@ -273,6 +275,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationRenamed -> "ConversationRenamed"
     is MessageContent.CryptoSessionReset -> "CryptoSessionReset"
     is MessageContent.HistoryLost -> "HistoryLost"
+    is MessageContent.HistoryLostProtocolChanged -> "HistoryLostProtocolChanged"
     is MessageContent.MemberChange.Added -> "MemberChange.Added"
     is MessageContent.MemberChange.Removed -> "MemberChange.Removed"
     is MessageContent.MissedCall -> "MissedCall"
@@ -283,7 +286,6 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
     is MessageContent.ConversationProtocolChanged -> "ConversationProtocolChanged"
     null -> "Unknown"
-
 }
 
 sealed class MessagePreviewContent {

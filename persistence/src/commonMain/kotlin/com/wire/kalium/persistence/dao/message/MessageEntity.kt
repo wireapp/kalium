@@ -200,6 +200,7 @@ sealed class MessageEntity(
         NEW_CONVERSATION_RECEIPT_MODE,
         CONVERSATION_RECEIPT_MODE_CHANGED,
         HISTORY_LOST,
+        HISTORY_LOST_PROTOCOL_CHANGED,
         CONVERSATION_MESSAGE_TIMER_CHANGED,
         CONVERSATION_CREATED,
         CONVERSATION_PROTOCOL_CHANGED
@@ -325,6 +326,7 @@ sealed class MessageEntityContent {
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
+    object HistoryLostProtocolChanged : System()
     object HistoryLost : System()
     object ConversationCreated : System()
 }

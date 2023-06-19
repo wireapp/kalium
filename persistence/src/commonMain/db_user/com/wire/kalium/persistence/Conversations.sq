@@ -253,6 +253,9 @@ SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS "ML
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
+selectConversationIdsByProtocol:
+SELECT qualified_id FROM Conversation WHERE protocol = ?;
+
 updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?

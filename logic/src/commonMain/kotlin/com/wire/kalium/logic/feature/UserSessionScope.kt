@@ -86,7 +86,6 @@ import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
-import com.wire.kalium.logic.data.message.SystemMessageBuilder
 import com.wire.kalium.logic.data.message.SystemMessageBuilderImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
@@ -696,7 +695,10 @@ class UserSessionScope internal constructor(
     }
 
     private val syncConversations: SyncConversationsUseCase
-        get() = SyncConversationsUseCase(conversationRepository)
+        get() = SyncConversationsUseCase(
+            conversationRepository,
+            systemMessageBuilder
+        )
 
     private val syncConnections: SyncConnectionsUseCase
         get() = SyncConnectionsUseCaseImpl(
@@ -949,7 +951,7 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
-    private val systemMessageBuilder get() = SystemMessageBuilderImpl(persistMessage)
+    private val systemMessageBuilder get() = SystemMessageBuilderImpl(userId, persistMessage)
 
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
