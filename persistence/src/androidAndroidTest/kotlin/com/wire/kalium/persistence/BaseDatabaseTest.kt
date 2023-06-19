@@ -51,7 +51,7 @@ actual open class BaseDatabaseTest actual constructor() {
         enableWAL: Boolean
     ): UserDatabaseBuilder {
         return userDatabaseBuilder(
-            platformDatabaseData = platformDBData(),
+            platformDatabaseData = platformDBData(userId),
             userId = userId,
             passphrase = passphrase,
             dispatcher = dispatcher,
