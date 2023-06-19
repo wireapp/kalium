@@ -42,6 +42,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDT
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import kotlinx.datetime.Instant
 
 object FeatureConfigJson {
@@ -126,7 +127,7 @@ object FeatureConfigJson {
             SSO(FeatureFlagStatusDTO.ENABLED),
             ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             MLS(
-                MLSConfigDTO(emptyList(), ConvProtocol.PROTEUS, listOf(1), 1),
+                MLSConfigDTO(emptyList(), ConvProtocol.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.MLSMigration(

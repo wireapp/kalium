@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
@@ -102,7 +103,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenMlsIsEnabledAndSelfUserIsWhitelisted_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(SELF_USER_ID.toPlainID()), Status.ENABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(SELF_USER_ID.toPlainID()), emptySet(), Status.ENABLED))
             ).arrange()
 
         syncFeatureConfigsUseCase()
@@ -116,7 +117,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenMlsIsEnabledAndSelfUserIsNotWhitelisted_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.ENABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), emptySet(), Status.ENABLED))
             ).arrange()
 
         syncFeatureConfigsUseCase()
@@ -127,10 +128,10 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenMlsIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
+    fun givenMlsIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.DISABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), emptySet(), Status.DISABLED))
             ).arrange()
 
         syncFeatureConfigsUseCase()

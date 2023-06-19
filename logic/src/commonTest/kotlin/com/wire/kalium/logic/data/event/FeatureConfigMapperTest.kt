@@ -31,6 +31,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlag
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -159,6 +160,7 @@ class FeatureConfigMapperTest {
                 MLSConfigDTO(
                     listOf("someId"),
                     ConvProtocol.MLS,
+                    listOf(SupportedProtocolDTO.MLS),
                     emptyList(),
                     1
                 ),

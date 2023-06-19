@@ -103,7 +103,8 @@ class ObserveClientDetailsUseCaseTest {
             label = null,
             model = "Mac ox",
             isVerified = false,
-            isValid = true
+            isValid = true,
+            isMLSCapable = false
         )
         val CLIENT_RESULT = CLIENT.copy(id = PlainId(value = "client_id_1"))
     }

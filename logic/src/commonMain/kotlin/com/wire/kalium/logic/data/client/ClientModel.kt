@@ -48,7 +48,8 @@ data class Client(
     val isValid: Boolean,
     val deviceType: DeviceType?,
     val label: String?,
-    val model: String?
+    val model: String?,
+    val isMLSCapable: Boolean
 )
 
 enum class ClientType {

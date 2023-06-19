@@ -241,7 +241,8 @@ internal class UserMapperImpl(
                 previewAssetId = event.previewAssetId?.let { QualifiedIDEntity(it, persistedEntity.id.domain) }
                     ?: persistedEntity.previewAssetId,
                 completeAssetId = event.completeAssetId?.let { QualifiedIDEntity(it, persistedEntity.id.domain) }
-                    ?: persistedEntity.completeAssetId
+                    ?: persistedEntity.completeAssetId,
+                supportedProtocols = event.supportedProtocols?.toDao() ?: persistedEntity.supportedProtocols
             )
         }
     }
