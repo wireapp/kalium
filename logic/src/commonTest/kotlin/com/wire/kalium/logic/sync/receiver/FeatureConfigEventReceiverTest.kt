@@ -58,7 +58,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), Status.ENABLED))
+            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), emptySet(), Status.ENABLED))
         )
 
         verify(arrangement.userConfigRepository)
@@ -73,7 +73,7 @@ class FeatureConfigEventReceiverTest {
             .withSettingMLSEnabledSuccessful()
             .arrange()
 
-        featureConfigEventReceiver.onEvent(arrangement.newMLSUpdatedEvent(MLSModel(emptyList(), Status.ENABLED)))
+        featureConfigEventReceiver.onEvent(arrangement.newMLSUpdatedEvent(MLSModel(emptyList(), emptySet(), Status.ENABLED)))
 
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setMLSEnabled)
@@ -89,7 +89,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), Status.DISABLED))
+            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), emptySet(), Status.DISABLED))
         )
 
         verify(arrangement.userConfigRepository)

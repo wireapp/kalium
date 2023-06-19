@@ -44,7 +44,7 @@ class VerifyExistingClientUseCaseTest {
     @Test
     fun givenRegisteredClientId_whenInvoking_thenReturnSuccess() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_PAST, isVerified = false, isValid = false, null, null, "label")
+        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_PAST, isVerified = false, isValid = false, null, null, "label", false)
         val (_, useCase) = Arrangement()
             .withSelfClientsResult(Either.Right(listOf(client)))
             .arrange()

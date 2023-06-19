@@ -32,6 +32,7 @@ data class Client(
     val registrationDate: Instant?,
     val label: String?,
     val model: String?,
+    val isMLSCapable: Boolean
 )
 
 data class InsertClientParam(
@@ -41,7 +42,8 @@ data class InsertClientParam(
     val clientType: ClientTypeEntity?,
     val label: String?,
     val registrationDate: Instant?,
-    val model: String?
+    val model: String?,
+    val isMLSCapable: Boolean
 )
 
 enum class DeviceTypeEntity {
