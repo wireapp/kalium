@@ -77,7 +77,7 @@ object TestEvent {
     fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(false, eventId, userId)
     fun updateUser(eventId: String = "eventId", userId: UserId) = Event.User.Update(
         eventId,
-        false, userId.toString(), null, false, "newName", null, null, null, null
+        false, userId.toString(), null, false, "newName", null, null, null, null, null
     )
 
     fun newClient(eventId: String = "eventId", clientId: ClientId = ClientId("client")) = Event.User.NewClient(
