@@ -86,13 +86,7 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
         featureConfigRepository.getFeatureConfigs().flatMap { featureConfigs ->
             clientsRepository.selfListOfClients().map { selfClients ->
                 val mlsConfiguration = featureConfigs.mlsModel
-                val migrationConfiguration = featureConfigs.mlsMigrationModel ?: MLSMigrationModel(
-                    Instant.DISTANT_FUTURE,
-                    Instant.DISTANT_FUTURE,
-                    0,
-                    0,
-                    Status.DISABLED
-                )
+                val migrationConfiguration = featureConfigs.mlsMigrationModel ?: MIGRATION_CONFIGURATION_DISABLED
                 val supportedProtocols = mutableSetOf<SupportedProtocol>()
                 if (proteusIsSupported(mlsConfiguration, migrationConfiguration)) {
                     supportedProtocols.add(SupportedProtocol.PROTEUS)
@@ -123,5 +117,15 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
         val proteusIsSupported = mlsConfiguration.supportedProtocols.contains(SupportedProtocol.PROTEUS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
         return proteusIsSupported || !mlsMigrationHasEnded
+    }
+
+    companion object {
+        val MIGRATION_CONFIGURATION_DISABLED = MLSMigrationModel(
+            startTime = Instant.DISTANT_FUTURE,
+            endTime = Instant.DISTANT_FUTURE,
+            usersThreshold = 0,
+            clientsThreshold = 0,
+            status = Status.DISABLED
+        )
     }
 }
