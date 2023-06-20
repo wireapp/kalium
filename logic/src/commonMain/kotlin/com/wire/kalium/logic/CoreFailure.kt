@@ -183,41 +183,9 @@ internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, 
         kaliumLogger.e(cryptoException.stackTraceToString())
         val mappedFailure = when (cryptoException) {
             is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
-
-            // Currently unhandled cases
-            is CryptoException.CallbacksNotSet,
-            is CryptoException.ClientNotFound,
-            is CryptoException.ClientSignatureMismatch,
-            is CryptoException.ClientSignatureNotFound,
-            is CryptoException.ConversationNotFound,
-            is CryptoException.ConvertIntException,
-            is CryptoException.CryptoboxMigrationException,
-            is CryptoException.DecryptionException,
-            is CryptoException.GenerationOutOfBound,
-            is CryptoException.HexDecodeException,
-            is CryptoException.ImplementationException,
-            is CryptoException.InvalidByteArrayException,
-            is CryptoException.InvalidHashReference,
-            is CryptoException.InvalidKeyPackage,
-            is CryptoException.IoException,
-            is CryptoException.KeyStoreException,
-            is CryptoException.LockPoisonException,
-            is CryptoException.MalformedIdentifier,
-            is CryptoException.MlsException,
-            is CryptoException.MlsNotInitialized,
-            is CryptoException.MlsProviderException,
-            is CryptoException.OutOfKeyPackage,
-            is CryptoException.ParseIntException,
-            is CryptoException.PendingCommitNotFound,
-            is CryptoException.PendingProposalNotFound,
-            is CryptoException.ProteusException,
-            is CryptoException.ProteusNotInitialized,
-            is CryptoException.ProteusSupportNotEnabled,
-            is CryptoException.StringUtf8Exception,
-            is CryptoException.Unauthorized,
-            is CryptoException.UnauthorizedExternalAddProposal,
-            is CryptoException.UnauthorizedExternalCommit,
-            is CryptoException.Utf8Exception -> MLSFailure.Generic(cryptoException)
+            // TODO: Handle all cases explicitly.
+            //       Blocked by https://github.com/wireapp/core-crypto/pull/214
+            else -> MLSFailure.Generic(cryptoException)
         }
         Either.Left(mappedFailure)
     } catch (e: Exception) {
