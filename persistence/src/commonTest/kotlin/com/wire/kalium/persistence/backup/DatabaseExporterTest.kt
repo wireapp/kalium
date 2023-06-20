@@ -83,8 +83,6 @@ class DatabaseExporterTest : BaseDatabaseTest() {
             } ?: fail("Message should not be null")
         }
     }
-
-
     private companion object {
         val TEST_CONVERSATION_1 = newConversationEntity("testConversation1")
         val TEST_CONVERSATION_2 = newConversationEntity("testConversation2")
