@@ -130,6 +130,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            val senderUserId: UserId,
             val timestampIso: String,
             val conversation: ConversationResponse
         ) : Conversation(id, transient, conversationId) {

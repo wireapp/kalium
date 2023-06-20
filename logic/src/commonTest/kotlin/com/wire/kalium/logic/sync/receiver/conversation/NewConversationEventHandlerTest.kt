@@ -28,10 +28,12 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -41,6 +43,7 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.fun1
+import io.mockative.fun2
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
@@ -61,6 +64,7 @@ class NewConversationEventHandlerTest {
             transient = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
+            senderUserId = TestUser.SELF.id
         )
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamIdValue = "teamId"
@@ -101,7 +105,8 @@ class NewConversationEventHandlerTest {
             conversationId = TestConversation.ID,
             false,
             timestampIso = "timestamp",
-            conversation = TestConversation.CONVERSATION_RESPONSE
+            conversation = TestConversation.CONVERSATION_RESPONSE,
+            senderUserId = TestUser.SELF.id
         )
 
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
@@ -141,7 +146,8 @@ class NewConversationEventHandlerTest {
             conversation = TestConversation.CONVERSATION_RESPONSE.copy(
                 creator = "creatorId@creatorDomain",
                 receiptMode = ReceiptMode.ENABLED
-            )
+            ),
+            senderUserId = TestUser.SELF.id
         )
 
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
@@ -167,8 +173,11 @@ class NewConversationEventHandlerTest {
 
         // then
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStarted, fun1<ConversationResponse>())
-            .with(eq(event.conversation))
+            .suspendFunction(
+                arrangement.newGroupConversationSystemMessagesCreator::conversationStarted,
+                fun2<UserId, ConversationResponse>()
+            )
+            .with(any(), eq(event.conversation))
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
@@ -227,9 +236,9 @@ class NewConversationEventHandlerTest {
             given(newGroupConversationSystemMessagesCreator)
                 .suspendFunction(
                     newGroupConversationSystemMessagesCreator::conversationStarted,
-                    fun1<ConversationResponse>()
+                    fun2<UserId, ConversationResponse>()
                 )
-                .whenInvokedWith(any())
+                .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
 
