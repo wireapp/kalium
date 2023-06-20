@@ -727,6 +727,33 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart() {
+        val duration = Duration.parse("PT1M")
+        val message = TestMessage.TEXT_MESSAGE.copy(
+            expirationData = Message.ExpirationData(duration)
+        )
+
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(true, true)
+            .withPromoteMessageToSentUpdatingServerTime()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message)
+
+            // then
+            result.shouldFail()
+            verify(arrangement.selfDeleteMessageSenderHandler)
+                .function(arrangement.selfDeleteMessageSenderHandler::enqueueSelfDeletion)
+                .with(eq(message))
+                .wasNotInvoked()
+        }
+    }
+
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
