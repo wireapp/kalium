@@ -153,6 +153,4 @@ class DatabaseExporterTest : BaseDatabaseTest() {
             )
         )
     }
-
-
 }
