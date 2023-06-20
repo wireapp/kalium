@@ -172,7 +172,8 @@ interface ConversationDAO {
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
-    suspend fun getAllProteusTeamConversations(teamId: String): Flow<List<ConversationViewEntity>>
+    suspend fun getAllProteusTeamConversations(teamId: String): List<QualifiedIDEntity>
+    suspend fun getAllProteusTeamConversationsReadyToBeFinalised(teamId: String): List<QualifiedIDEntity>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
@@ -219,6 +220,7 @@ interface ConversationDAO {
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
+    suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol)
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
     suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
