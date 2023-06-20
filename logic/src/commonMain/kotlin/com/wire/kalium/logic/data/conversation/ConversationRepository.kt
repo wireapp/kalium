@@ -60,6 +60,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
@@ -113,7 +114,8 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun getProteusTeamConversations(teamId: TeamId): Either<StorageFailure, Flow<List<Conversation>>>
+    suspend fun getProteusTeamConversations(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
+    suspend fun getProteusTeamConversationsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
     suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -214,6 +216,8 @@ interface ConversationRepository {
         firstDomain: String,
         secondDomain: String
     ): Either<CoreFailure, ConversationsWithMembers>
+
+    suspend fun updateProtocol(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -387,10 +391,16 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun getProteusTeamConversations(teamId: TeamId): Either<StorageFailure, Flow<List<Conversation>>> =
+    override suspend fun getProteusTeamConversations(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
         wrapStorageRequest {
             conversationDAO.getAllProteusTeamConversations(teamId.value)
-                .map { it.map(conversationMapper::fromDaoModel) }
+                .map { it.toModel() }
+        }
+
+    override suspend fun getProteusTeamConversationsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
+        wrapStorageRequest {
+            conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId.value)
+                .map { it.toModel() }
         }
 
     override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
@@ -813,6 +823,36 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
+    override suspend fun updateProtocol(
+        conversationId: ConversationId,
+        protocol: Conversation.Protocol
+    ): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.updateProtocol(conversationId.toApi(), protocol.toApi())
+        }.flatMap { response ->
+            when (response) {
+                UpdateConversationProtocolResponse.ProtocolUnchanged -> {
+                    // no need to update conversation
+                    Either.Right(Unit)
+                }
+
+                is UpdateConversationProtocolResponse.ProtocolUpdated -> {
+                    when (protocol) {
+                        Conversation.Protocol.PROTEUS -> Either.Right(Unit)
+                        Conversation.Protocol.MIXED -> fetchConversation(conversationId)
+                        Conversation.Protocol.MLS -> {
+                            wrapStorageRequest {
+                                conversationDAO.updateConversationProtocol(
+                                    conversationId = conversationId.toDao(),
+                                    protocol = protocol.toDao()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

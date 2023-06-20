@@ -148,12 +148,19 @@ internal class ConversationDAOImpl internal constructor(
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
-    override suspend fun getAllProteusTeamConversations(teamId: String): Flow<List<ConversationViewEntity>> {
-        return conversationQueries.selectAllTeamProteusConversations(teamId)
-            .asFlow()
-            .mapToList()
-            .flowOn(coroutineContext)
-            .map { it.map(conversationMapper::toModel) }
+    override suspend fun getAllProteusTeamConversations(teamId: String): List<QualifiedIDEntity> {
+        return withContext(coroutineContext) {
+            conversationQueries.selectAllTeamProteusConversations(teamId)
+                .executeAsList()
+        }
+    }
+
+    override suspend fun getAllProteusTeamConversationsReadyToBeFinalised(teamId: String): List<QualifiedIDEntity> {
+        return withContext(coroutineContext) {
+            conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
+                .executeAsList()
+                .map { it.qualified_id }
+        }
     }
 
     override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
@@ -282,6 +289,12 @@ internal class ConversationDAOImpl internal constructor(
         withContext(coroutineContext) {
             conversationQueries.updateConversationType(type, conversationID)
         }
+
+    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol) {
+        withContext(coroutineContext) {
+            conversationQueries.updateConversationProtocol(protocol, conversationId)
+        }
+    }
 
     override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) = withContext(coroutineContext) {
         memberQueries.deleteUserFromGroupConversations(userId, userId)
