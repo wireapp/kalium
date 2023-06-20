@@ -49,5 +49,4 @@ expect open class BaseDatabaseTest() {
         enableWAL: Boolean
     ): UserDatabaseBuilder
 
-
 }
