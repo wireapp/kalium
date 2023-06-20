@@ -301,4 +301,3 @@ fun List<SupportedProtocolDTO>.toDao() = this.map { it.toDao() }.toSet()
 fun List<SupportedProtocolDTO>.toModel() = this.map { it.toModel() }.toSet()
 fun Set<SupportedProtocol>.toDao() = this.map { it.toDao() }.toSet()
 fun Set<SupportedProtocolEntity>.toModel() = this.map { it.toModel() }.toSet()
-

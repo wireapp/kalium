@@ -497,3 +497,15 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
 }
+
+internal fun Conversation.Protocol.toApi(): ConvProtocol = when (this) {
+    Conversation.Protocol.PROTEUS -> ConvProtocol.PROTEUS
+    Conversation.Protocol.MIXED -> ConvProtocol.MIXED
+    Conversation.Protocol.MLS -> ConvProtocol.MLS
+}
+
+internal fun Conversation.Protocol.toDao(): Protocol = when (this) {
+    Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
+    Conversation.Protocol.MIXED -> Protocol.MIXED
+    Conversation.Protocol.MLS -> Protocol.MLS
+}
