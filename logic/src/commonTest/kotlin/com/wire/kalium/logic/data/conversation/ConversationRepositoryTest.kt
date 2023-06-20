@@ -60,9 +60,11 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
@@ -1023,7 +1025,8 @@ class ConversationRepositoryTest {
                 null,
                 null,
                 null,
-                null
+                null,
+                false
             )
         )
 
@@ -1064,8 +1067,8 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::getConversationsWithoutMetadata)
-                .wasInvoked(exactly = once)
+            .suspendFunction(arrange.conversationDAO::getConversationsWithoutMetadata)
+            .wasInvoked(exactly = once)
 
             verify(arrange.conversationApi)
                 .suspendFunction(arrange.conversationApi::fetchConversationsListDetails)
@@ -1142,8 +1145,81 @@ class ConversationRepositoryTest {
         assertEquals(unreadCount, result)
     }
 
+    @Test
+    fun givenConversation_whenUpdatingProtocolToMls_thenShouldUpdateLocally() = runTest {
+        // given
+        val protocol = Conversation.Protocol.MLS
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateProtocolResponse(UPDATE_PROTOCOL_SUCCESS)
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateProtocol(CONVERSATION_ID, protocol)
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationProtocol)
+                .with(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenNoChange_whenUpdatingProtocolToMls_thenShouldNotUpdateLocally() = runTest {
+        // given
+        val protocol = Conversation.Protocol.MLS
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateProtocolResponse(UPDATE_PROTOCOL_UNCHANGED)
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateProtocol(CONVERSATION_ID, protocol)
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationProtocol)
+                .with(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenConversation_whenUpdatingProtocolToMixed_thenShouldFetchConversation() = runTest {
+        // given
+        val protocol = Conversation.Protocol.MIXED
+        val conversationResponse = NetworkResponse.Success(
+            TestConversation.CONVERSATION_RESPONSE,
+            emptyMap(),
+            HttpStatusCode.OK.value
+        )
+
+        val (arrangement, conversationRepository) = Arrangement()
+            .withUpdateProtocolResponse(UPDATE_PROTOCOL_SUCCESS)
+            .withFetchConversationsDetails(conversationResponse)
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateProtocol(CONVERSATION_ID, protocol)
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::fetchConversationDetails)
+                .with(eq(CONVERSATION_ID.toApi()))
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
+
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
 
@@ -1241,6 +1317,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(userRepository::getSelfUser)
                 .whenInvoked()
                 .thenReturn(selfUser)
+        }
+
+        fun withFetchConversationsDetails(response: NetworkResponse<ConversationResponse>) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::fetchConversationDetails)
+                .whenInvokedWith(any())
+                .thenReturn(response)
         }
 
         fun withFetchConversationsIds(response: NetworkResponse<ConversationPagingResponse>) = apply {
@@ -1456,7 +1539,7 @@ class ConversationRepositoryTest {
                     )
                 )
         }
-
+        
         fun withConversationsWithoutMetadataId(result: List<QualifiedIDEntity>) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationsWithoutMetadata)
@@ -1483,6 +1566,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(memberDAO::getOneOneConversationWithFederatedMembers)
                 .whenInvokedWith(domain)
                 .thenReturn(result)
+        }
+
+        fun withUpdateProtocolResponse(response: NetworkResponse<UpdateConversationProtocolResponse>) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateProtocol)
+                .whenInvokedWith(any(), any())
+                .thenReturn(response)
         }
 
         fun arrange() = this to conversationRepository
@@ -1566,6 +1656,19 @@ class ConversationRepositoryTest {
                 ConversationNameUpdateEvent("newName")
             )
         )
+
+        val UPDATE_PROTOCOL_SUCCESS = NetworkResponse.Success(
+            UpdateConversationProtocolResponse.ProtocolUpdated(
+                EventContentDTO.Conversation.ProtocolUpdate(
+                    TestConversation.NETWORK_ID,
+                    ConversationProtocolDTO(ConvProtocol.MIXED),
+                    TestUser.NETWORK_ID
+                )
+            ), emptyMap(), 200
+        )
+        val UPDATE_PROTOCOL_UNCHANGED = NetworkResponse.Success(
+            UpdateConversationProtocolResponse.ProtocolUnchanged,
+            emptyMap(), 204)
 
     }
 }
