@@ -262,3 +262,20 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
         false
     }
 }
+
+/**
+ * @return true if the database have fk violations, false otherwise
+ */
+fun SqlDriver.checkFKViolations(): Boolean {
+    var result = false
+    executeQuery(null, "PRAGMA foreign_key_check;", {
+        // foreign_key_check returns the rows with the fk violations
+        // if the cursor has a next, it means there are violations
+        // and the backup is corrupted
+        if (it.next()) {
+            result = true
+        }
+    }, 0, null)
+
+    return result
+}
