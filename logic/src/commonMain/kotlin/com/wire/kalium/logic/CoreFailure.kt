@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic
 
+import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -101,9 +102,13 @@ sealed class NetworkFailure : CoreFailure {
     object FederatedBackendFailure : NetworkFailure()
 }
 
-class MLSFailure(internal val exception: Exception) : CoreFailure {
+interface MLSFailure : CoreFailure {
 
-    val rootCause: Throwable get() = exception
+    object WrongEpoch : MLSFailure
+
+    class Generic(internal val exception: Exception) : MLSFailure {
+        val rootCause: Throwable get() = exception
+    }
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
@@ -174,9 +179,18 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
 internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
+    } catch (cryptoException: CryptoException) {
+        kaliumLogger.e(cryptoException.stackTraceToString())
+        val mappedFailure = when (cryptoException) {
+            is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
+            // TODO: Handle all cases explicitly.
+            //       Blocked by https://github.com/wireapp/core-crypto/pull/214
+            else -> MLSFailure.Generic(cryptoException)
+        }
+        Either.Left(mappedFailure)
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(MLSFailure(e))
+        Either.Left(MLSFailure.Generic(e))
     }
 }
 
