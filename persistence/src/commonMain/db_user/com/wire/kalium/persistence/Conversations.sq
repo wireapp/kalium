@@ -227,7 +227,15 @@ selectAllConversations:
 SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
 
 selectAllTeamProteusConversations:
-SELECT * FROM ConversationDetails WHERE type IS 'GROUP' AND protocol IS 'PROTEUS' AND teamId = ?;
+SELECT qualified_id FROM Conversation WHERE type IS 'GROUP' AND protocol IS 'PROTEUS' AND team_id = ?;
+
+selectAllTeamProteusConversationsReadyForMigration:
+SELECT
+qualified_id,
+(SELECT count(*) FROM Member WHERE conversation = qualified_id) AS memberCount,
+(SELECT count(*) FROM Member LEFT JOIN User ON User.qualified_id = Member.user WHERE Member.conversation = Conversation.qualified_id AND (User.supported_protocols = 'MLS' OR User.supported_protocols = 'MLS,PROTEUS' OR User.supported_protocols = 'PROTEUS,MLS')) AS mlsCapableMemberCount
+FROM Conversation
+WHERE type IS 'GROUP' AND protocol IS 'PROTEUS' AND team_id = ? AND memberCount = mlsCapableMemberCount;
 
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
@@ -285,6 +293,11 @@ WHERE qualified_id = ?;
 updateConversationType:
 UPDATE Conversation
 SET type = ?
+WHERE qualified_id = ?;
+
+updateConversationProtocol:
+UPDATE Conversation
+SET protocol = ?
 WHERE qualified_id = ?;
 
 selfConversationId:
