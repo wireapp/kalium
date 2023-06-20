@@ -950,9 +950,9 @@ class UserSessionScope internal constructor(
     private val mlsMigrator: MLSMigrator
         get() = MLSMigratorImpl(
             selfTeamId,
+            userRepository,
             conversationRepository,
-            mlsConversationRepository,
-            authenticatedNetworkContainer.conversationApi
+            mlsConversationRepository
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
