@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientsOfUsersResponse
 import com.wire.kalium.network.api.base.authenticated.client.ListClientsOfUsersRequest
 import com.wire.kalium.network.api.base.authenticated.client.PasswordRequest
@@ -45,7 +45,7 @@ internal open class ClientApiV0 internal constructor(
 
     protected val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientResponse> =
+    override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
         wrapKaliumResponse {
             httpClient.post(PATH_CLIENTS) {
                 setBody(registerClientRequest)
@@ -67,7 +67,7 @@ internal open class ClientApiV0 internal constructor(
             }.toMap()
         }
 
-    override suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientResponse>> =
+    override suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientDTO>> =
         wrapKaliumResponse { httpClient.get(PATH_CLIENTS) }
 
     override suspend fun deleteClient(password: String?, clientID: String) =
@@ -77,7 +77,7 @@ internal open class ClientApiV0 internal constructor(
             }
         }
 
-    override suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse> =
+    override suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientDTO> =
         wrapKaliumResponse { httpClient.get("$PATH_CLIENTS/$clientID") }
 
     override suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit> =

@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.MessageRecipientFailure
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
+import com.wire.kalium.persistence.NewClient
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.SelfUser
@@ -184,6 +185,11 @@ internal object TableMapper {
         tagsAdapter = ServiceTagListAdapter,
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter
+    )
+
+    val newClientAdapter = NewClient.Adapter(
+        device_typeAdapter = EnumColumnAdapter(),
+        registration_dateAdapter = InstantTypeAdapter
     )
 
     val messageRecipientFailureAdapter = MessageRecipientFailure.Adapter(

@@ -135,8 +135,6 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
-import com.wire.kalium.logic.feature.client.NewClientManager
-import com.wire.kalium.logic.feature.client.NewClientManagerImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -629,13 +627,14 @@ class UserSessionScope internal constructor(
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
 
-    private val clientRepository: ClientRepository
+    internal val clientRepository: ClientRepository
         get() = ClientDataSource(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
+            userStorage.database.newClientDAO,
             userId,
-            authenticatedNetworkContainer.clientApi
+            authenticatedNetworkContainer.clientApi,
         )
 
     private val sessionEstablisher: SessionEstablisher
@@ -1024,11 +1023,9 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val newClientManager: NewClientManager = NewClientManagerImpl
-
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
-            newClientManager, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
+            clientRepository, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver

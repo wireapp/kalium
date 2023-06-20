@@ -46,7 +46,7 @@ import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 
 interface MessageEnvelopeCreator {
 
@@ -115,7 +115,7 @@ class MessageEnvelopeCreatorImpl(
         }
 
         return proteusClientProvider.getOrError().flatMap { proteusClient ->
-            wrapCryptoRequest {
+            wrapProteusRequest {
                 proteusClient.encryptBatched(encodedContent.data, sessions)
             }
         }.flatMap {
