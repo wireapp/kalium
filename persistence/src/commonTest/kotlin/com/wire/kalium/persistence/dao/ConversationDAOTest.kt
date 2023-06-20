@@ -165,7 +165,37 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result =
             conversationDAO.getAllProteusTeamConversations(teamId)
 
-        assertEquals(listOf(conversationEntity5.toViewEntity()), result.first())
+        assertEquals(listOf(conversationEntity5.id), result)
+    }
+
+    @Test
+    fun givenAllMembersAreMlsCapable_WhenGetAllProteusTeamConversationsReadyToBeFinalised_ThenConversationIsReturned() = runTest {
+        val allProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
+        val selfUser = user1.copy(id = selfUserId, supportedProtocols = allProtocols)
+        userDAO.insertUser(selfUser)
+
+        conversationDAO.insertConversation(conversationEntity5)
+        insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity5.id)
+        insertTeamUserAndMember(team, user3.copy(supportedProtocols = allProtocols), conversationEntity5.id)
+
+        val result = conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId)
+
+        assertEquals(listOf(conversationEntity5.id), result)
+    }
+
+    @Test
+    fun givenOnlySomeMembersAreMlsCapable_WhenGetAllProteusTeamConversationsReadyToBeFinalised_ThenConversationIsNotReturned() = runTest {
+        val allProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
+        val selfUser = user1.copy(id = selfUserId, supportedProtocols = allProtocols)
+        userDAO.insertUser(selfUser)
+
+        conversationDAO.insertConversation(conversationEntity5)
+        insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity5.id)
+        insertTeamUserAndMember(team, user3.copy(supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)), conversationEntity5.id)
+
+        val result = conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId)
+
+        assertTrue(result.isEmpty())
     }
 
     @Test

@@ -43,6 +43,7 @@ class MLSMigrationWorkerImpl(
             if (configuration.hasMigrationStarted()) {
                 kaliumLogger.i("Running proteus to MLS migration")
                 mlsMigrator.migrateProteusConversations()
+                mlsMigrator.finaliseProteusConversations()
             } else {
                 kaliumLogger.i("MLS migration is not enabled")
                 Either.Right(Unit)
