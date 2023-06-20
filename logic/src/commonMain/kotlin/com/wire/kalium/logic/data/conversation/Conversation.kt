@@ -175,6 +175,12 @@ data class Conversation(
         CODE;
     }
 
+    enum class Protocol {
+        PROTEUS,
+        MIXED,
+        MLS
+    }
+
     enum class ReceiptMode { DISABLED, ENABLED }
     enum class TypingIndicatorMode { STARTED, STOPPED }
 
