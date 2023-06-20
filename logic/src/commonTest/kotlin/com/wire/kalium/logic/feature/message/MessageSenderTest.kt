@@ -728,7 +728,7 @@ class MessageSenderTest {
     }
 
     @Test
-    fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldStart() {
+fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart() {
         val duration = Duration.parse("PT1M")
         val message = TestMessage.TEXT_MESSAGE.copy(
             expirationData = Message.ExpirationData(duration)
