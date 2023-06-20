@@ -28,6 +28,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.hours
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -292,6 +294,30 @@ class MessageNotificationsTest : BaseMessageTest() {
         val messageNeedsToBeNotified = true
         val message = OTHER_QUOTING_SELF
         doTheTest(conversationMutedStatus, userStatus, messageNeedsToBeNotified, message, SELF_MESSAGE)
+    }
+
+    @Test
+    fun givenConversation_whenMessageSelfDeleteMessageInserted_thenIsSelfDeleteFlagSetToTrue() = runTest {
+        val message = OTHER_MESSAGE.copy(expireAfterMs = 10000)
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+
+        messageDAO.getNotificationMessage().test {
+            val notifications = awaitItem()
+            assertTrue { notifications.first().isSelfDelete }
+        }
+    }
+
+    @Test
+    fun givenConversation_whenMessageNormalInserted_thenIsSelfDeleteFlagSetToFalse() = runTest {
+        val message = OTHER_MESSAGE.copy(expireAfterMs = null)
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOf(message))
+
+        messageDAO.getNotificationMessage().test {
+            val notifications = awaitItem()
+            assertFalse { notifications.first().isSelfDelete }
+        }
     }
 
     private suspend fun doTheTest(

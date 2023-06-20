@@ -44,10 +44,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.util.isPositiveNotNull
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
@@ -132,7 +130,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
-    private val enqueueSelfDeletion: (Message.Regular) -> Unit,
+    private val enqueueSelfDeletion: (Message.Regular, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -143,8 +141,13 @@ internal class MessageSenderImpl internal constructor(
         return withContext(scope.coroutineContext) {
             messageRepository.getMessageById(conversationId, messageUuid).flatMap { message ->
                 val result =
-                    if (message is Message.Regular) sendMessage(message)
-                    else Either.Left(StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages")))
+                    if (message is Message.Regular) {
+                        sendMessage(message)
+                    } else {
+                        Either.Left(
+                            StorageFailure.Generic(IllegalArgumentException("Client cannot send server messages"))
+                        )
+                    }
                 result
                     .onFailure {
                         val type = message.content.getType()
@@ -187,6 +190,8 @@ internal class MessageSenderImpl internal constructor(
                         millis = millis
                     )
                     Unit
+                }.also {
+                    startSelfDeletionIfNeeded(message)
                 }
             }
 
@@ -198,7 +203,9 @@ internal class MessageSenderImpl internal constructor(
             attemptToBroadcastWithProteus(message, target).map { }
         }
 
-    override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(message)
+    override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(
+        message
+    )
 
     private suspend fun attemptToSend(
         message: Message.Sendable,
@@ -217,14 +224,12 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithProteus(message, messageTarget)
                     }
                 }
-            }.onSuccess {
-                startSelfDeletionIfNeeded(message)
             }
     }
 
     private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
-        if (message is Message.Regular && message.expirationData?.expireAfter.isPositiveNotNull()) {
-            enqueueSelfDeletion(message)
+        if (message is Message.Regular && message.expirationData != null) {
+            enqueueSelfDeletion(message, message.expirationData)
         }
     }
 
@@ -330,7 +335,12 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .broadcastEnvelope(envelope, option)
             .fold({
-                handleProteusError(it, "Broadcast", message.toLogString()) { attemptToBroadcastWithProteus(message, target) }
+                handleProteusError(it, "Broadcast", message.toLogString()) {
+                    attemptToBroadcastWithProteus(
+                        message,
+                        target
+                    )
+                }
             }, {
                 logger.i("Message Broadcast Success: { \"message\" : \"${message.toLogString()}\" }")
                 Either.Right(it)
@@ -344,7 +354,9 @@ internal class MessageSenderImpl internal constructor(
     ) =
         when (failure) {
             is ProteusSendMessageFailure -> {
-                logger.w("Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }")
+                logger.w(
+                    "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                )
                 messageSendFailureHandler
                     .handleClientsHaveChangedFailure(failure)
                     .flatMap {
@@ -353,14 +365,16 @@ internal class MessageSenderImpl internal constructor(
                     }
                     .onFailure {
                         val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
-                                " , " +
-                                "\"errorInfo\" : \"${it}\"}"
+                            " , " +
+                            "\"errorInfo\" : \"${it}\"}"
                         logger.e(logLine)
                     }
             }
 
             else -> {
-                logger.e("Message $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }")
+                logger.e(
+                    "Message $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                )
                 Either.Left(failure)
             }
         }
@@ -378,8 +392,9 @@ internal class MessageSenderImpl internal constructor(
 
         teamRecipients.forEach {
             when {
-                it.id == selfUserId -> selfRecipient =
-                    it.copy(clients = it.clients.filter { clientId -> clientId != selfClientId })
+                it.id == selfUserId ->
+                    selfRecipient =
+                        it.copy(clients = it.clients.filter { clientId -> clientId != selfClientId })
 
                 receivers.size < (target.limit - 1) -> receivers.add(it)
                 else -> filteredOut.add(it.id)

@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
@@ -35,8 +36,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
@@ -47,6 +46,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     private companion object {
         const val typeKey = "type"
         const val idKey = "id"
+        const val featureStatusKey = "status"
         const val clientIdKey = "clientId"
         const val userIdKey = "userId"
         const val conversationIdKey = "conversationId"
@@ -54,6 +54,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         const val teamIdKey = "teamId"
         const val memberIdKey = "memberId"
         const val timestampIsoKey = "timestampIso"
+        const val selfDeletionDurationKey = "selfDeletionDuration"
     }
 
     fun shouldUpdateLastProcessedEventId() = !transient
@@ -402,7 +403,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.FileSharingUpdated",
                 idKey to id.obfuscateId(),
-                "status" to model.status.name,
+                featureStatusKey to model.status.name,
             )
         }
 
@@ -414,7 +415,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSUpdated",
                 idKey to id.obfuscateId(),
-                "status" to model.status.name,
+                featureStatusKey to model.status.name,
                 "allowedUsers" to model.allowedUsers.map { it.value.obfuscateId() }
             )
         }
@@ -427,7 +428,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.ClassifiedDomainsUpdated",
                 idKey to id.obfuscateId(),
-                "status" to model.status.name,
+                featureStatusKey to model.status.name,
                 "domains" to model.config.domains.map { it.obfuscateDomain() }
             )
         }
@@ -440,7 +441,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override fun toLogMap() = mapOf(
                 typeKey to "FeatureConfig.ConferenceCallingUpdated",
                 idKey to id.obfuscateId(),
-                "status" to model.status.name,
+                featureStatusKey to model.status.name,
             )
         }
 
@@ -452,7 +453,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.GuestRoomLinkUpdated",
                 idKey to id.obfuscateId(),
-                "status" to model.status.name,
+                featureStatusKey to model.status.name,
             )
         }
 
@@ -462,9 +463,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val model: SelfDeletingMessagesModel,
         ) : FeatureConfig(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "FeatureConfig.GuestRoomLinkUpdated",
+                typeKey to "FeatureConfig.SelfDeletingMessagesConfig",
                 idKey to id.obfuscateId(),
-                "status" to model.status.name,
+                featureStatusKey to model.status.name,
+                selfDeletionDurationKey to model.config.enforcedTimeoutSeconds
             )
         }
 
@@ -544,22 +546,17 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class NewClient(
             override val transient: Boolean,
             override val id: String,
-            val clientId: ClientId,
-            val registrationTime: String,
-            val model: String?,
-            val clientType: ClientTypeDTO,
-            val deviceType: DeviceTypeDTO,
-            val label: String?
+            val client: Client,
         ) : User(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.NewClient",
                 idKey to id.obfuscateId(),
-                clientIdKey to clientId.value.obfuscateId(),
-                "registrationTime" to registrationTime,
-                "model" to (model ?: ""),
-                "clientType" to clientType,
-                "deviceType" to deviceType,
-                "label" to (label ?: "")
+                clientIdKey to client.id.value.obfuscateId(),
+                "registrationTime" to client.registrationTime,
+                "model" to (client.model ?: ""),
+                "clientType" to client.type,
+                "deviceType" to client.deviceType,
+                "label" to (client.label ?: "")
             )
         }
     }

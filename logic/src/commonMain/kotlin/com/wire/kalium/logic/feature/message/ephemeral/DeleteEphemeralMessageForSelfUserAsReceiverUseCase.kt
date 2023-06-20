@@ -104,6 +104,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                 status = Message.Status.PENDING,
                 isSelfMessage = true
             )
+
             messageSender.sendMessage(regularMessage)
         }
     }
@@ -123,6 +124,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             status = Message.Status.PENDING,
             isSelfMessage = false
         )
+
         return messageSender.sendMessage(regularMessage)
     }
 

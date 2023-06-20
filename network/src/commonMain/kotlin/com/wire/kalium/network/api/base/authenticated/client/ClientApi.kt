@@ -24,15 +24,15 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 interface ClientApi {
 
-    suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientResponse>
+    suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO>
 
     suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>>
 
-    suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientResponse>>
+    suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientDTO>>
 
     suspend fun deleteClient(password: String?, clientID: String): NetworkResponse<Unit>
 
-    suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientResponse>
+    suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientDTO>
 
     suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit>
 

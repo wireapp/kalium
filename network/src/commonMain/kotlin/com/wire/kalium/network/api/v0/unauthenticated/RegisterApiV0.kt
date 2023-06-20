@@ -21,8 +21,8 @@ package com.wire.kalium.network.api.v0.unauthenticated
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
+import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.UserDTO
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
@@ -48,7 +48,7 @@ internal open class RegisterApiV0 internal constructor(
 
     override suspend fun register(
         param: RegisterApi.RegisterParam
-    ): NetworkResponse<Pair<UserDTO, SessionDTO>> = wrapKaliumResponse<UserDTO> {
+    ): NetworkResponse<Pair<SelfUserDTO, SessionDTO>> = wrapKaliumResponse<SelfUserDTO> {
         httpClient.post(REGISTER_PATH) {
             setBody(param.toBody())
         }

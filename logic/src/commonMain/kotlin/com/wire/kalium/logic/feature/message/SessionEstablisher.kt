@@ -35,7 +35,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -99,7 +99,7 @@ internal class SessionEstablisherImpl internal constructor(
         proteusClientProvider.getOrError()
             .flatMap { proteusClient ->
                 val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))
-                wrapCryptoRequest {
+                wrapProteusRequest {
                     proteusClient.doesSessionExist(cryptoSessionID)
                 }
             }

@@ -18,7 +18,9 @@
 package com.wire.kalium.logic.feature.selfDeletingMessages
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.ZERO
 
 sealed class SelfDeletionTimer {
     /**
@@ -43,8 +45,10 @@ sealed class SelfDeletionTimer {
     fun toDuration(): Duration = when (this) {
         is Enabled -> userDuration
         is Enforced -> enforcedDuration
-        is Disabled -> Duration.ZERO
+        is Disabled -> ZERO
     }
+
+    fun toLogString(eventDescription: String): String = toLogMap(eventDescription).toJsonElement().toString()
 
     val isEnforced
         get() = this is Enforced
@@ -57,6 +61,23 @@ sealed class SelfDeletionTimer {
 
     val isDisabled
         get() = this is Disabled
+
+    private fun toLogMap(eventDescription: String): Map<String, Any?> = mapOf(
+        eventKey to eventDescription,
+        typeKey to this::class.simpleName,
+        durationKey to toDuration().inWholeSeconds,
+        isEnforcedKey to isEnforced,
+        isDisabledKey to isDisabled
+    )
+
+    companion object {
+        const val SELF_DELETION_LOG_TAG = "Self-Deletion"
+        private const val eventKey = "event"
+        private const val typeKey = "selfDeletionTimerType"
+        private const val durationKey = "durationInSeconds"
+        private const val isEnforcedKey = "isEnforced"
+        private const val isDisabledKey = "isDisabled"
+    }
 }
 
 data class ConversationSelfDeletionStatus(
@@ -83,4 +104,20 @@ sealed interface TeamSelfDeleteTimer {
     object Disabled : TeamSelfDeleteTimer
     object Enabled : TeamSelfDeleteTimer
     data class Enforced(val enforcedDuration: Duration) : TeamSelfDeleteTimer
+
+    fun toLogMap(eventDescription: String): Map<String, Any?> = mapOf(
+        eventKey to eventDescription,
+        typeKey to this::class.simpleName,
+        durationKey to if (this is Enforced) enforcedDuration.inWholeSeconds else ZERO,
+        isEnforcedKey to (this is Enforced),
+        isDisabledKey to (this is Disabled)
+    )
+
+    companion object {
+        private const val eventKey = "event"
+        private const val typeKey = "selfDeletionTimerType"
+        private const val durationKey = "durationInSeconds"
+        private const val isEnforcedKey = "isEnforced"
+        private const val isDisabledKey = "isDisabled"
+    }
 }

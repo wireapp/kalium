@@ -27,12 +27,14 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.ClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
@@ -45,6 +47,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
+import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -242,7 +245,7 @@ class ClientRepositoryTest {
     fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated() = runTest {
         val result = NetworkResponse.Success(
             listOf(
-                ClientResponse(
+                ClientDTO(
                     clientId = "client_id_1",
                     type = ClientTypeDTO.Permanent,
                     registrationTime = "1969-05-12T10:52:02.671Z",
@@ -254,7 +257,7 @@ class ClientRepositoryTest {
                     cookie = null,
                     location = null
                 ),
-                ClientResponse(
+                ClientDTO(
                     clientId = "client_id_2",
                     type = ClientTypeDTO.Permanent,
                     registrationTime = "2021-05-12T10:52:02.671Z",
@@ -383,6 +386,32 @@ class ClientRepositoryTest {
         }
     }
 
+    @Test
+    fun whenSavingNewClient_thenNewClientSaved() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+
+        val newClientEvent = TestEvent.newClient()
+        val insertClientParam = MapperProvider.clientMapper().toInsertClientParam(selfUserId, newClientEvent)
+
+        repository.saveNewClientEvent(newClientEvent)
+
+        verify(arrangement.newClientDAO)
+            .suspendFunction(arrangement.newClientDAO::insertNewClient)
+            .with(eq(insertClientParam))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenClearNewClientsForUser_thenNewClientsCleared() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+
+        repository.clearNewClients()
+
+        verify(arrangement.newClientDAO)
+            .suspendFunction(arrangement.newClientDAO::clearNewClients)
+            .wasInvoked(exactly = once)
+    }
+
     private companion object {
         val selfUserId = UserId("self-user-id", "domain")
         const val SECOND_FACTOR_CODE = "123456"
@@ -430,8 +459,11 @@ class ClientRepositoryTest {
         @Mock
         val clientDAO = mock(classOf<ClientDAO>())
 
+        @Mock
+        val newClientDAO = mock(classOf<NewClientDAO>())
+
         var clientRepository: ClientRepository =
-            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, selfUserId, clientApi)
+            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, newClientDAO, selfUserId, clientApi)
 
         fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
             given(clientRegistrationStorage)
@@ -440,7 +472,7 @@ class ClientRepositoryTest {
                 .thenReturn(values)
         }
 
-        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientResponse>>) = apply {
+        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientDTO>>) = apply {
             given(clientApi)
                 .suspendFunction(clientApi::fetchSelfUserClient)
                 .whenInvoked()
