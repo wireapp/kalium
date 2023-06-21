@@ -300,6 +300,9 @@ internal class ConversationDataSource internal constructor(
                     selfTeamIdProvider().getOrNull(),
                 )
             )
+            conversationDAO.insertMembersWithQualifiedId(
+                memberMapper.fromApiModelToDaoModel(conversation.members), idMapper.fromApiToDao(conversation.id)
+            )
         }
         isNewConversation
     }
