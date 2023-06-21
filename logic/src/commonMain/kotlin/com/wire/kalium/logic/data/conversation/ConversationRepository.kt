@@ -529,10 +529,8 @@ internal class ConversationDataSource internal constructor(
      */
     override suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>> =
         wrapStorageRequest {
-            memberMapper.fromMapOfClientsEntityToRecipients(
-                clientDAO.conversationRecipient(conversationId.toDao())
-            )
-        }
+            clientDAO.conversationRecipient(conversationId.toDao())
+        }.map (memberMapper::fromMapOfClientsEntityToRecipients)
 
     /**
      * Fetches a list of all recipients for a given conversation including this very client

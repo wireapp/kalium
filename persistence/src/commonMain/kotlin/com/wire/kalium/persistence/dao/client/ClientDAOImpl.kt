@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.client
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ClientsQueries
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneNotNull
@@ -116,6 +117,15 @@ internal class ClientDAOImpl internal constructor(
             .asFlow()
             .mapToOneNotNull()
             .flowOn(queriesContext)
+
+    override suspend fun recipientOfUsers(
+        conversationId: ConversationIDEntity,
+        userIds: Set<QualifiedIDEntity>
+    ): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {
+        clientsQueries.selectRecipientsByConversationAndUserId(conversationId, userIds, mapper::fromClient)
+            .executeAsList()
+            .groupBy { it.userId }
+    }
 
     override suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>> =
         clientsQueries.selectAllClients(mapper::fromClient)

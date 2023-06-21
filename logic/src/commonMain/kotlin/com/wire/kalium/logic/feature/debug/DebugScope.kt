@@ -18,12 +18,12 @@
 
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.message.EphemeralMessageRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
@@ -74,8 +74,8 @@ class DebugScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
-    private val selfConversationIdProvider: SelfConversationIdProvider,
     private val scope: CoroutineScope,
+    private val ephemeralMessageRepository: EphemeralMessageRepository,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -149,7 +149,7 @@ class DebugScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
             selfUserId = userId,
-            selfConversationIdProvider = selfConversationIdProvider
+            ephemeralMessageRepository = ephemeralMessageRepository
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl

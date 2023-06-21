@@ -18,23 +18,21 @@
 package com.wire.kalium.logic.feature.message.ephemeral
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.EphemeralMessageRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -57,64 +55,31 @@ interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
 internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
+    private val ephemeralMessageRepository: EphemeralMessageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
-    private val selfConversationIdProvider: SelfConversationIdProvider
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
-        messageRepository.getMessageById(conversationId, messageId).map { message ->
-            when (message.status) {
-                // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
-                // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
-                Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
-                else -> {
-                    currentClientIdProvider().flatMap { currentClientId ->
-                        broadCastDeletionToConversation(messageId, conversationId, currentClientId)
-                            .flatMap {
-                                broadCastDeletionForSelfUser(messageId, conversationId, currentClientId)
-                            }
-                    }.onSuccess { deleteMessageAssetIfExists(message) }
-                        .flatMap { messageRepository.deleteMessage(messageId, conversationId) }
-                }
-            }.onFailure { failure ->
-                kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
-                if (failure is CoreFailure.Unknown) {
-                    failure.rootCause?.printStackTrace()
-                }
-            }
+        messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
+            currentClientIdProvider().flatMap { currentClientId ->
+                sendDeleteSignalFrSelfAndSender(
+                    messageId,
+                    conversationId,
+                    message.senderUserId,
+                    currentClientId
+                )
+            }.onSuccess { deleteMessageAssetIfExists(message) }
+                .flatMap { messageRepository.deleteMessage(messageId, conversationId) }
         }
 
-    private suspend fun broadCastDeletionForSelfUser(
+    private suspend fun sendDeleteSignalFrSelfAndSender(
         messageId: String,
+        originalMessageSender: UserId,
         conversationId: ConversationId,
         currentClientId: ClientId
-    ) = selfConversationIdProvider().flatMap { selfConversationIds ->
-        selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-            val regularMessage = Message.Signaling(
-                id = uuid4().toString(),
-                content = MessageContent.DeleteForMe(
-                    messageId = messageId,
-                    conversationId = conversationId
-                ),
-                conversationId = selfConversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
-                senderUserId = selfUserId,
-                senderClientId = currentClientId,
-                status = Message.Status.PENDING,
-                isSelfMessage = true
-            )
-
-            messageSender.sendMessage(regularMessage)
-        }
-    }
-
-    private suspend fun broadCastDeletionToConversation(
-        messageId: String,
-        conversationId: ConversationId,
-        currentClientId: ClientId
-    ): Either<CoreFailure, Unit> {
-        val regularMessage = Message.Signaling(
+    ): Either<CoreFailure, Unit> =
+        Message.Signaling(
             id = uuid4().toString(),
             content = MessageContent.DeleteMessage(messageId),
             conversationId = conversationId,
@@ -123,10 +88,12 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             senderClientId = currentClientId,
             status = Message.Status.PENDING,
             isSelfMessage = false
-        )
+        ).let { deleteSinglingMessage ->
+            ephemeralMessageRepository.recipientsForDeletedEphemeral(conversationId, originalMessageSender).flatMap { recipients ->
+                messageSender.sendMessage(deleteSinglingMessage, MessageTarget.Client(recipients))
+            }
+        }
 
-        return messageSender.sendMessage(regularMessage)
-    }
 
     private suspend fun deleteMessageAssetIfExists(message: Message) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
