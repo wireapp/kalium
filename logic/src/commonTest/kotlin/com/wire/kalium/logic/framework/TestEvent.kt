@@ -147,6 +147,14 @@ object TestEvent {
         transient = false
     )
 
+    fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
+        id = eventId,
+        conversationId = TestConversation.ID,
+        transient = false,
+        messageTimer = 3000,
+        senderUserId = TestUser.USER_ID
+    )
+
     fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(
         id = eventId,
         transient = false,
