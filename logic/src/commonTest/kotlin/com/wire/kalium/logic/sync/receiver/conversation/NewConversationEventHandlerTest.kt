@@ -76,7 +76,7 @@ class NewConversationEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withPersistingConversations(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(true))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
@@ -88,8 +88,8 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(event)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::persistConversations)
-            .with(eq(listOf(event.conversation)), eq(teamIdValue), eq(true))
+            .suspendFunction(arrangement.conversationRepository::persistConversationFromEvent)
+            .with(eq(event.conversation), eq(teamIdValue))
             .wasInvoked(exactly = once)
 
         verify(arrangement.userRepository)
@@ -118,7 +118,7 @@ class NewConversationEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withPersistingConversations(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(true))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
@@ -159,7 +159,7 @@ class NewConversationEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
-            .withPersistingConversations(Either.Right(Unit))
+            .withPersistingConversations(Either.Right(true))
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
@@ -194,6 +194,66 @@ class NewConversationEventHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenNewGroupConversationEvent_whenHandlingItAndAlreadyPresent_thenShouldSkipPersistingTheSystemMessagesForNewConversation() =
+        runTest {
+            // given
+            val event = Event.Conversation.NewConversation(
+                id = "eventId",
+                conversationId = TestConversation.ID,
+                transient = false,
+                timestampIso = "timestamp",
+                conversation = TestConversation.CONVERSATION_RESPONSE.copy(
+                    creator = "creatorId@creatorDomain",
+                    receiptMode = ReceiptMode.ENABLED
+                ),
+                senderUserId = TestUser.SELF.id
+            )
+
+            val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+            val teamId = TestTeam.TEAM_ID
+            val creatorQualifiedId = QualifiedID(
+                value = "creatorId",
+                domain = "creatorDomain"
+            )
+
+            val (arrangement, eventHandler) = Arrangement()
+                .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+                .withPersistingConversations(Either.Right(false))
+                .withFetchUsersIfUnknownIds(members)
+                .withSelfUserTeamId(Either.Right(teamId))
+                .withConversationStartedSystemMessage()
+                .withConversationResolvedMembersSystemMessage()
+                .withReadReceiptsSystemMessage()
+                .withQualifiedId(creatorQualifiedId)
+                .arrange()
+
+            // when
+            eventHandler.handle(event)
+
+            // then
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(
+                    arrangement.newGroupConversationSystemMessagesCreator::conversationStarted,
+                    fun2<UserId, ConversationResponse>()
+                )
+                .with(any(), eq(event.conversation))
+                .wasNotInvoked()
+
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .with(eq(event.conversationId.toDao()), eq(event.conversation))
+                .wasNotInvoked()
+
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(
+                    arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus,
+                    fun1<ConversationResponse>()
+                )
+                .with(eq(event.conversation))
+                .wasNotInvoked()
+        }
+
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -225,10 +285,10 @@ class NewConversationEventHandlerTest {
                 .thenReturn(result)
         }
 
-        fun withPersistingConversations(result: Either<StorageFailure, Unit>) = apply {
+        fun withPersistingConversations(result: Either<StorageFailure, Boolean>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::persistConversations)
-                .whenInvokedWith(any(), any(), any())
+                .suspendFunction(conversationRepository::persistConversationFromEvent)
+                .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
 
