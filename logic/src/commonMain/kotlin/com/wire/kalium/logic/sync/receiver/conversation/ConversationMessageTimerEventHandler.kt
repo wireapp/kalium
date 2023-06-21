@@ -44,20 +44,22 @@ internal class ConversationMessageTimerEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.ConversationMessageTimer) {
         updateMessageTimer(event)
-            .onSuccess {
-                val message = Message.System(
-                    uuid4().toString(),
-                    MessageContent.ConversationMessageTimerChanged(
-                        messageTimer = event.messageTimer
-                    ),
-                    event.conversationId,
-                    DateTimeUtil.currentIsoDateTimeString(),
-                    event.senderUserId,
-                    Message.Status.SENT,
-                    Message.Visibility.VISIBLE
-                )
+            .onSuccess { updated ->
+                if (updated) {
+                    val message = Message.System(
+                        uuid4().toString(),
+                        MessageContent.ConversationMessageTimerChanged(
+                            messageTimer = event.messageTimer
+                        ),
+                        event.conversationId,
+                        DateTimeUtil.currentIsoDateTimeString(),
+                        event.senderUserId,
+                        Message.Status.SENT,
+                        Message.Visibility.VISIBLE
+                    )
 
-                persistMessage(message)
+                    persistMessage(message)
+                }
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
