@@ -311,14 +311,14 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateDPoPChallenge(RANDOM_ACCESS_TOKEN,RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateDPoPChallenge(RANDOM_ACCESS_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldSucceed()
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewDpopChallengeRequest)
-            .with(anyInstanceOf(String::class),anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -343,14 +343,14 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateDPoPChallenge(RANDOM_ACCESS_TOKEN,RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateDPoPChallenge(RANDOM_ACCESS_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldFail()
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewDpopChallengeRequest)
-            .with(anyInstanceOf(String::class),anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -375,14 +375,14 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN,RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldSucceed()
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class),anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -407,14 +407,14 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN,RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldFail()
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class),anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -428,6 +428,189 @@ class E2EIRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenSendAcmeRequestSucceed_whenCallingCheckOrderRequest_thenItSucceed() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAcmeRequestApiSucceed()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withCheckOrderRequestSuccessful()
+            .withCheckOrderResponseSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.checkOrderRequest(RANDOM_URL, RANDOM_NONCE)
+
+        // Then
+        result.shouldSucceed()
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::checkOrderRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendACMERequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::checkOrderResponse)
+            .with(anyInstanceOf(ByteArray::class))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSendAcmeRequestFails_whenCallingCheckOrderRequest_thenItFail() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAcmeRequestApiFails()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withCheckOrderRequestSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.checkOrderRequest(RANDOM_URL, RANDOM_NONCE)
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::checkOrderRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendACMERequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::checkOrderResponse)
+            .with(anyInstanceOf(ByteArray::class))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenSendAcmeRequestSucceed_whenCallingFinalize_thenItSucceed() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAcmeRequestApiSucceed()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withFinalizeRequestSuccessful()
+            .withFinalizeResponseSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.finalize(RANDOM_URL, RANDOM_NONCE)
+
+        // Then
+        result.shouldSucceed()
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::finalizeRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendACMERequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::finalizeResponse)
+            .with(anyInstanceOf(ByteArray::class))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSendAcmeRequestFails_whenCallingFinalize_thenItFail() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAcmeRequestApiFails()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withFinalizeRequestSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.finalize(RANDOM_URL, RANDOM_NONCE)
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::finalizeRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendACMERequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::finalizeResponse)
+            .with(anyInstanceOf(ByteArray::class))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenSendAcmeRequestSucceed_whenCallingCertificateRequest_thenItSucceed() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAcmeRequestApiSucceed()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withCertificateRequestSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.certificateRequest(RANDOM_URL, RANDOM_NONCE)
+
+        // Then
+        result.shouldSucceed()
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::certificateRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendACMERequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSendAcmeRequestFails_whenCallingCertificateRequest_thenItFail() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAcmeRequestApiFails()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withCertificateRequestSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.certificateRequest(RANDOM_URL, RANDOM_NONCE)
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::certificateRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendACMERequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+    }
 
     private class Arrangement {
 
@@ -464,6 +647,40 @@ class E2EIRepositoryTest {
                 .function(e2eiClient::getNewAuthzRequest)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
+        }
+
+        fun withCheckOrderRequestSuccessful() = apply {
+            given(e2eiClient)
+                .function(e2eiClient::checkOrderRequest)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(RANDOM_BYTE_ARRAY)
+        }
+
+        fun withFinalizeRequestSuccessful() = apply {
+            given(e2eiClient)
+                .function(e2eiClient::finalizeRequest)
+                .whenInvokedWith(anything())
+                .thenReturn(RANDOM_BYTE_ARRAY)
+        }
+        fun withCertificateRequestSuccessful() = apply {
+            given(e2eiClient)
+                .function(e2eiClient::certificateRequest)
+                .whenInvokedWith(anything())
+                .thenReturn(RANDOM_BYTE_ARRAY)
+        }
+
+        fun withFinalizeResponseSuccessful() = apply {
+            given(e2eiClient)
+                .function(e2eiClient::finalizeResponse)
+                .whenInvokedWith(anything())
+                .thenReturn("")
+        }
+
+        fun withCheckOrderResponseSuccessful() = apply {
+            given(e2eiClient)
+                .function(e2eiClient::checkOrderResponse)
+                .whenInvokedWith(anything())
+                .thenReturn("")
         }
 
         fun withGetNewDpopChallengeRequest() = apply {
