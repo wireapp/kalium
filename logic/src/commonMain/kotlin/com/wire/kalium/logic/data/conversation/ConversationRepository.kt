@@ -50,8 +50,8 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -99,6 +99,18 @@ interface ConversationRepository {
         selfUserTeamId: String?,
         originatedFromEvent: Boolean = false
     ): Either<CoreFailure, Unit>
+
+    /**
+     * Creates a conversation from a new event
+     *
+     * @param conversation from event
+     * @param selfUserTeamId - self user team id if team user
+     * @return Either<CoreFailure, Boolean> - true if the conversation was created, false if it was already present
+     */
+    suspend fun persistConversationFromEvent(
+        conversation: ConversationResponse,
+        selfUserTeamId: String?,
+    ): Either<CoreFailure, Boolean>
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
@@ -273,6 +285,23 @@ internal class ConversationDataSource internal constructor(
         }
 
         return latestResult
+    }
+
+    override suspend fun persistConversationFromEvent(
+        conversation: ConversationResponse,
+        selfUserTeamId: String?,
+    ): Either<CoreFailure, Boolean> = wrapStorageRequest {
+        val isNewConversation = conversationDAO.getConversationBaseInfoByQualifiedID(conversation.id.toDao()) == null
+        if (isNewConversation) {
+            conversationDAO.insertConversation(
+                conversationMapper.fromApiModelToDaoModel(
+                    conversation,
+                    mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), true) },
+                    selfTeamIdProvider().getOrNull(),
+                )
+            )
+        }
+        isNewConversation
     }
 
     override suspend fun persistConversations(
