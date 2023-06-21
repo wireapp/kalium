@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.checkFKViolations
 import com.wire.kalium.persistence.db.nuke
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.kaliumLogger
@@ -55,7 +56,8 @@ internal class DatabaseExporterImpl internal constructor(
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
     override fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String? {
         // delete the backup DB file if it exists
-        if (deleteBackupDBFile()) {
+        if (!deleteBackupDBFile()) {
+            kaliumLogger.e("Failed to delete the backup DB file")
             return null
         }
 
@@ -100,7 +102,13 @@ internal class DatabaseExporterImpl internal constructor(
         } finally {
             // detach the plain DB from the user DB
             plainDatabase.sqlDriver.execute(null, "DETACH DATABASE $MAIN_DB_ALIAS", 0)
-            plainDatabase.sqlDriver.close()
+            if (plainDatabase.sqlDriver.checkFKViolations()) {
+                kaliumLogger.e("Failed to dump the user DB to the plain DB, FK violations")
+                plainDatabase.sqlDriver.close()
+                // if the dump failed, delete the backup DB file
+                deleteBackupDBFile()
+                return null
+            }
         }
         return plainDatabase.dbFileLocation()
     }
