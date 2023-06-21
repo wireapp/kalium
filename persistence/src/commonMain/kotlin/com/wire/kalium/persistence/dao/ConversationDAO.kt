@@ -207,6 +207,6 @@ interface ConversationDAO {
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?)
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
-    suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) : Boolean
+    suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?): Boolean
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
 }

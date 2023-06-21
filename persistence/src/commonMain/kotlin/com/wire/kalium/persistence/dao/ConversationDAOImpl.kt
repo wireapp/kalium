@@ -567,7 +567,7 @@ class ConversationDAOImpl(
     override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
         val previousTimer = conversationQueries.getMessageTimer(conversationId).executeAsOneOrNull()?.message_timer
         val updated = previousTimer != messageTimer
-        if(updated) {
+        if (updated) {
             conversationQueries.updateMessageTimer(messageTimer, conversationId)
         }
         updated
