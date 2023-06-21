@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -45,6 +46,14 @@ actual open class BaseDatabaseTest actual constructor() {
         TODO("Not yet implemented")
     }
 
+    actual fun doesDatabaseExist(
+        userId: UserIDEntity
+    ): Boolean = TODO("Not yet implemented")
+
     actual val encryptedDBSecret: UserDBSecret
         get() = TODO("Not yet implemented")
+
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData {
+        TODO("Not yet implemented")
+    }
 }
