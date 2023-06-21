@@ -222,6 +222,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.HISTORY_LOST -> null
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
+            MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
         }
     }
 
@@ -319,6 +320,7 @@ class MessageMapperImpl(
         is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
         is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
         is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
+        is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -405,6 +407,7 @@ class MessageMapperImpl(
         is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
+        is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
     }
 }
 

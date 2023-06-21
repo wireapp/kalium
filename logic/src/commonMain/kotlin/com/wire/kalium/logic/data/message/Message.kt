@@ -281,6 +281,10 @@ sealed interface Message {
                 is MessageContent.ConversationCreated -> mutableMapOf(
                     typeKey to "conversationCreated"
                 )
+
+                is MessageContent.MLSWrongEpochWarning -> mutableMapOf(
+                    typeKey to "mlsWrongEpochWarning"
+                )
             }
 
             val standardProperties = mapOf(

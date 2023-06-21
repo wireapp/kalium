@@ -232,6 +232,8 @@ sealed class MessageContent {
         val clientId: ClientId? = null
     ) : Regular()
 
+    object MLSWrongEpochWarning : System()
+
     object ClientAction : Signaling()
 
     object CryptoSessionReset : System()
@@ -276,6 +278,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationCreated -> "ConversationCreated"
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
+    is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
     null -> "Unknown"
 }
 
