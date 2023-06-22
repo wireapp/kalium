@@ -47,10 +47,10 @@ class MLSWrongEpochHandlerTest {
     @Test
     fun givenConversationIsNotMLS_whenHandlingEpochFailure_thenShouldNotInsertWarning() = runTest {
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
-            .withConversationByIdReturningSequence(Either.Right(proteusConversation))
+            .withProtocolByIdReturningSequence(Either.Right(proteusProtocol))
             .arrange()
 
-        mlsWrongEpochHandler.onMLSWrongEpoch(mlsConversation.id, "date")
+        mlsWrongEpochHandler.onMLSWrongEpoch(conversationId, "date")
 
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
@@ -61,10 +61,10 @@ class MLSWrongEpochHandlerTest {
     @Test
     fun givenConversationIsNotMLS_whenHandlingEpochFailure_thenShouldNotFetchConversationAgain() = runTest {
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
-            .withConversationByIdReturningSequence(Either.Right(proteusConversation))
+            .withProtocolByIdReturningSequence(Either.Right(proteusProtocol))
             .arrange()
 
-        mlsWrongEpochHandler.onMLSWrongEpoch(mlsConversation.id, "date")
+        mlsWrongEpochHandler.onMLSWrongEpoch(conversationId, "date")
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::fetchConversation)
@@ -74,9 +74,8 @@ class MLSWrongEpochHandlerTest {
 
     @Test
     fun givenMLSConversation_whenHandlingEpochFailure_thenShouldFetchConversationAgain() = runTest {
-        val conversationId = mlsConversation.id
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
-            .withConversationByIdReturning(Either.Right(mlsConversation))
+            .withProtocolByIdReturning(Either.Right(mlsProtocol))
             .arrange()
 
         mlsWrongEpochHandler.onMLSWrongEpoch(conversationId, "date")
@@ -89,11 +88,10 @@ class MLSWrongEpochHandlerTest {
 
     @Test
     fun givenUpdatedMLSConversationHasDifferentEpoch_whenHandlingEpochFailure_thenShouldRejoinTheConversation() = runTest {
-        val conversationId = mlsConversation.id
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
-            .withConversationByIdReturningSequence(
-                Either.Right(mlsConversation),
-                Either.Right(mlsConversationWithUpdatedEpoch)
+            .withProtocolByIdReturningSequence(
+                Either.Right(mlsProtocol),
+                Either.Right(mlsProtocolWithUpdatedEpoch)
             )
             .arrange()
 
@@ -107,9 +105,8 @@ class MLSWrongEpochHandlerTest {
 
     @Test
     fun givenUpdatedMLSConversationHasSameEpoch_whenHandlingEpochFailure_thenShouldNotRejoinTheConversation() = runTest {
-        val conversationId = mlsConversation.id
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
-            .withConversationByIdReturning(Either.Right(mlsConversation))
+            .withProtocolByIdReturning(Either.Right(mlsProtocol))
             .arrange()
 
         mlsWrongEpochHandler.onMLSWrongEpoch(conversationId, "date")
@@ -122,11 +119,10 @@ class MLSWrongEpochHandlerTest {
 
     @Test
     fun givenRejoiningFails_whenHandlingEpochFailure_thenShouldNotPersistAnyMessage() = runTest {
-        val conversationId = mlsConversation.id
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
-            .withConversationByIdReturningSequence(
-                Either.Right(mlsConversation),
-                Either.Right(mlsConversationWithUpdatedEpoch)
+            .withProtocolByIdReturningSequence(
+                Either.Right(mlsProtocol),
+                Either.Right(mlsProtocolWithUpdatedEpoch)
             )
             .withJoinExistingConversationReturning(Either.Left(CoreFailure.Unknown(null)))
             .arrange()
@@ -141,12 +137,11 @@ class MLSWrongEpochHandlerTest {
 
     @Test
     fun givenConversationIsRejoined_whenHandlingEpochFailure_thenShouldInsertMLSWarningWithCorrectDateAndConversation() = runTest {
-        val conversationId = mlsConversation.id
         val date = "date"
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
-            .withConversationByIdReturningSequence(
-                Either.Right(mlsConversation),
-                Either.Right(mlsConversationWithUpdatedEpoch)
+            .withProtocolByIdReturningSequence(
+                Either.Right(mlsProtocol),
+                Either.Right(mlsProtocolWithUpdatedEpoch)
             )
             .arrange()
 
@@ -157,8 +152,8 @@ class MLSWrongEpochHandlerTest {
             .with(
                 matching {
                     it.conversationId == conversationId &&
-                    it.content == MessageContent.MLSWrongEpochWarning &&
-                    it.date == date
+                            it.content == MessageContent.MLSWrongEpochWarning &&
+                            it.date == date
                 }
             )
             .wasInvoked(exactly = once)
@@ -190,16 +185,16 @@ class MLSWrongEpochHandlerTest {
 
         fun withFetchByIdSucceeding() = withFetchByIdReturning(Either.Right(Unit))
 
-        fun withConversationByIdReturning(result: Either<StorageFailure, Conversation>) = apply {
+        fun withProtocolByIdReturning(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
             given(conversationRepository)
-                    .suspendFunction(conversationRepository::baseInfoById)
-                    .whenInvokedWith(any())
-                    .thenReturn(result)
+                .suspendFunction(conversationRepository::getConversationProtocolInfo)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
 
-        fun withConversationByIdReturningSequence(vararg results: Either<StorageFailure, Conversation>) = apply {
+        fun withProtocolByIdReturningSequence(vararg results: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::baseInfoById)
+                .suspendFunction(conversationRepository::getConversationProtocolInfo)
                 .whenInvokedWith(any())
                 .thenReturnSequentially(*results)
         }
@@ -231,11 +226,10 @@ class MLSWrongEpochHandlerTest {
     }
 
     private companion object {
-        val mlsConversation = TestConversation.MLS_CONVERSATION
-        val proteusConversation = mlsConversation.copy(protocol = Conversation.ProtocolInfo.Proteus)
+        val conversationId = TestConversation.CONVERSATION.id
+        val proteusProtocol = Conversation.ProtocolInfo.Proteus
 
-        val originalProtocolInfo = mlsConversation.protocol as Conversation.ProtocolInfo.MLS
-        val protocolWithUpdatedEpoch = originalProtocolInfo.copy(epoch = originalProtocolInfo.epoch + 1U)
-        val mlsConversationWithUpdatedEpoch = mlsConversation.copy(protocol = protocolWithUpdatedEpoch)
+        val mlsProtocol = TestConversation.MLS_CONVERSATION.protocol as Conversation.ProtocolInfo.MLS
+        val mlsProtocolWithUpdatedEpoch = mlsProtocol.copy(epoch = mlsProtocol.epoch + 1U)
     }
 }

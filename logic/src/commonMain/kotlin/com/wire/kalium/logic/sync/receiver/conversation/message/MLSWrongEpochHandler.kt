@@ -55,8 +55,7 @@ internal class MLSWrongEpochHandlerImpl(
         dateIso: String,
     ) {
         logger.i("Handling MLS WrongEpoch result")
-        conversationRepository.baseInfoById(conversationId).flatMap {
-            val protocol = it.protocol
+        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocol ->
             if (protocol is Conversation.ProtocolInfo.MLS) {
                 Either.Right(protocol)
             } else {
@@ -77,9 +76,8 @@ internal class MLSWrongEpochHandlerImpl(
 
     private suspend fun getUpdatedConversationEpoch(conversationId: ConversationId): Either<CoreFailure, ULong?> {
         return conversationRepository.fetchConversation(conversationId).flatMap {
-            conversationRepository.baseInfoById(conversationId)
-        }.map { updatedConversation ->
-            val updatedProtocol = updatedConversation.protocol
+            conversationRepository.getConversationProtocolInfo(conversationId)
+        }.map { updatedProtocol ->
             (updatedProtocol as? Conversation.ProtocolInfo.MLS)?.epoch
         }
     }
