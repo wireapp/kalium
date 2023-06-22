@@ -88,7 +88,7 @@ class SyncConversationsUseCaseTest {
             .wasNotInvoked()
     }
 
-    class Arrangement {
+    private class Arrangement {
 
         val conversationRepository = mock(ConversationRepository::class)
         val systemMessageInserter = mock(SystemMessageInserter::class)

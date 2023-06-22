@@ -30,7 +30,7 @@ import com.wire.kalium.logic.functional.flatMap
 /**
  * This use case will sync against the backend the conversations of the current user.
  */
-class SyncConversationsUseCase(
+internal class SyncConversationsUseCase(
     private val conversationRepository: ConversationRepository,
     private val systemMessageInserter: SystemMessageInserter
 ) {
