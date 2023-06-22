@@ -22,17 +22,14 @@ import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.E2EIQualifiedClientId
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.user.GetSelfUserUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 interface E2EClientProvider {
@@ -81,11 +78,12 @@ class E2EIClientProviderImpl(
         return if (selfUser.name == null || selfUser.handle == null)
             Either.Left(E2EIFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
         else*/
-        //todo: Mojtaba remove hardcoded values later
+        // todo: Mojtaba remove hardcoded values later
         return Either.Right(Pair("Mojtaba Chenani", "mojtaba_wire"))
     }
 
-    private companion object {
+    companion object {
+        var hasCertificate = false
         const val ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL = "name and handle must have a value"
     }
 }
