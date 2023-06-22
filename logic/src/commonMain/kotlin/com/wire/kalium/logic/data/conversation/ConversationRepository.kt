@@ -269,7 +269,7 @@ internal class ConversationDataSource internal constructor(
                     if (conversations.conversationsFailed.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
                             .d("Handling ${conversations.conversationsFailed.size} conversations failed")
-                        handleFailedConversations(conversations.conversationsFailed)
+                        persistIncompleteConversations(conversations.conversationsFailed)
                     }
                     if (conversations.conversationsNotFound.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
@@ -767,7 +767,7 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    private suspend fun handleFailedConversations(
+    private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
