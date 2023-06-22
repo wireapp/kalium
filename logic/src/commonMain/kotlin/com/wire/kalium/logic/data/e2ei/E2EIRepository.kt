@@ -105,8 +105,8 @@ class E2EIRepositoryImpl(
             wrapApiRequest {
                 acmeApi.sendACMERequest(createOrderEndpoint, orderRequest)
             }.flatMap { apiResponse ->
-                val orderRespone = e2eiClient.setOrderResponse(apiResponse.response)
-                Either.Right(Triple(orderRespone, apiResponse.nonce, apiResponse.location))
+                val orderResponse = e2eiClient.setOrderResponse(apiResponse.response)
+                Either.Right(Triple(orderResponse, apiResponse.nonce, apiResponse.location))
             }
         }
 
