@@ -41,6 +41,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -501,6 +502,29 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
         )
 
+    }
+
+    @Test
+    fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest {
+        val conversation = conversationEntity5
+        val updatedProtocol = ConversationEntity.Protocol.MLS
+
+        conversationDAO.insertConversation(conversation)
+        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+
+        assertTrue(changed)
+        assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.protocol, updatedProtocol)
+    }
+
+    @Test
+    fun givenSameValue_whenUpdatingProtocol_thenItsReportedAsUnchanged() = runTest {
+        val conversation = conversationEntity5
+        val updatedProtocol = ConversationEntity.Protocol.PROTEUS
+
+        conversationDAO.insertConversation(conversation)
+        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+
+        assertFalse(changed)
     }
 
     @Test

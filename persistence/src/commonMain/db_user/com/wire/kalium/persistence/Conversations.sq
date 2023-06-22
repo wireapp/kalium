@@ -295,10 +295,12 @@ UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
 
-updateConversationProtocol:
+updateConversationProtocol {
 UPDATE Conversation
-SET protocol = ?
-WHERE qualified_id = ?;
+SET protocol = :protocol
+WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SELECT changes();
+}
 
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
