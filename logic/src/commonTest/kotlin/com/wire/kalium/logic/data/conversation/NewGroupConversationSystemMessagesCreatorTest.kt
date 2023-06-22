@@ -123,6 +123,27 @@ class NewGroupConversationSystemMessagesCreatorTest {
     }
 
     @Test
+    fun givenAConversation_whenPersistingAndNotGroup_ThenShouldNOTCreateASystemMessageForReceiptStatus() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .withIsASelfTeamMember()
+            .arrange()
+
+        val result =
+            sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE))
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+            })
+            .wasNotInvoked()
+    }
+
+
+    @Test
     fun givenAModelGroupConversation_whenPersistingAndValid_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
         val (arrangement, sysMessageCreator) = Arrangement()
             .withPersistMessageSuccess()
@@ -139,6 +160,25 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAModelConversation_whenPersistingAndNotGroup_ThenShouldNotCreateASystemMessageForReceiptStatus() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .withIsASelfTeamMember()
+            .arrange()
+
+        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION)
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+            })
+            .wasNotInvoked()
     }
 
     @Test
