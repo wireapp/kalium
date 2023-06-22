@@ -54,6 +54,7 @@ internal interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
     suspend operator fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,

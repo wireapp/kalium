@@ -46,5 +46,5 @@ internal class EphemeralMessageDataSource internal constructor(
     ): Either<StorageFailure, List<Recipient>> = wrapStorageRequest {
         val recipientId = setOf(senderId.toDao())
         clientDAO.recipientsIfTHeyArePartOfConversation(conversationId.toDao(), recipientId)
-    }.map (memberMapper::fromMapOfClientsEntityToRecipients)
+    }.map(memberMapper::fromMapOfClientsEntityToRecipients)
 }
