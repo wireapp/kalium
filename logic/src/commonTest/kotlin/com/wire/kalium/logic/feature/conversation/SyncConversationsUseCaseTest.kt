@@ -38,7 +38,7 @@ import kotlin.test.Test
 class SyncConversationsUseCaseTest {
 
     @Test
-    fun testGiven_whenInvoked_thenFetchConversations() = runTest {
+    fun givenUseCase_whenInvoked_thenFetchConversations() = runTest {
 
         val (arrangement, useCase) = Arrangement()
             .withGetConversationsIdsReturning(emptyList())
@@ -53,7 +53,7 @@ class SyncConversationsUseCaseTest {
     }
 
     @Test
-    fun testGivenProtocolChanges_whenInvoked_thenInsertHistoryLostSystemMessage() = runTest {
+    fun givenProtocolChanges_whenInvoked_thenInsertHistoryLostSystemMessage() = runTest {
         val conversationId = TestConversation.ID
         val (arrangement, useCase) = Arrangement()
             .withGetConversationsIdsReturning(listOf(conversationId), protocol = Conversation.Protocol.PROTEUS)
@@ -71,7 +71,7 @@ class SyncConversationsUseCaseTest {
     }
 
     @Test
-    fun testGivenProtocolIsUnchanged_whenInvoked_thenDoNotInsertHistoryLostSystemMessage() = runTest {
+    fun givenProtocolIsUnchanged_whenInvoked_thenDoNotInsertHistoryLostSystemMessage() = runTest {
         val conversationId = TestConversation.ID
         val (arrangement, useCase) = Arrangement()
             .withGetConversationsIdsReturning(listOf(conversationId), protocol = Conversation.Protocol.PROTEUS)
