@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message.ephemeral
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -44,7 +46,7 @@ import com.wire.kalium.util.DateTimeUtil
  * for the self-deleting message, before the receiver does it on the sender side, the message is simply marked as deleted
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl]
  **/
-interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
+internal interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
     /**
      * @param conversationId the conversation id that contains the self-deleting message
      * @param messageId the id of the self-deleting message
@@ -59,29 +61,61 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
+    private val selfConversationIdProvider: SelfConversationIdProvider
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
-        messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
-            currentClientIdProvider().flatMap { currentClientId ->
-                sendDeleteSignalFrSelfAndSender(
-                    messageId,
-                    conversationId,
-                    message.senderUserId,
-                    currentClientId
-                )
-            }.onSuccess { deleteMessageAssetIfExists(message) }
-                .flatMap { messageRepository.deleteMessage(messageId, conversationId) }
+        currentClientIdProvider().flatMap { currentClientId ->
+            messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
+                currentClientIdProvider().flatMap { currentClientId ->
+                    sendDeleteMessageToSelf(
+                        message.id,
+                        currentClientId
+                    )
+                }.flatMap {
+                    sendDeleteMessageToOriginalSender(
+                        message.id,
+                        message.conversationId,
+                        message.senderUserId,
+                        currentClientId
+                    )
+                }.onSuccess {
+                    deleteMessageAssetIfExists(message)
+                }.flatMap {
+                    messageRepository.deleteMessage(messageId, conversationId)
+                }
+            }
         }
 
-    private suspend fun sendDeleteSignalFrSelfAndSender(
-        messageId: String,
-        originalMessageSender: UserId,
-        conversationId: ConversationId,
+    private suspend fun sendDeleteMessageToSelf(
+        messageToDelete: String,
         currentClientId: ClientId
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Unit> = selfConversationIdProvider().flatMap { selfConversaionIdList ->
+        selfConversaionIdList.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+            Message.Signaling(
+                id = uuid4().toString(),
+                content = MessageContent.DeleteMessage(messageToDelete),
+                conversationId = selfConversationId,
+                date = DateTimeUtil.currentIsoDateTimeString(),
+                senderUserId = selfUserId,
+                senderClientId = currentClientId,
+                status = Message.Status.PENDING,
+                isSelfMessage = false
+            ).let { deleteSinglingMessage ->
+                messageSender.sendMessage(deleteSinglingMessage, MessageTarget.Conversation)
+            }
+        }
+    }
+
+    private suspend fun sendDeleteMessageToOriginalSender(
+        messageToDelete: String,
+        conversationId: ConversationId,
+        originalMessageSender: UserId,
+        currentClientId: ClientId
+    ) = ephemeralMessageRepository.recipientsForDeletedEphemeral(conversationId, originalMessageSender).flatMap { recipients ->
+        if (recipients.isEmpty()) return@flatMap Either.Right(Unit)
         Message.Signaling(
             id = uuid4().toString(),
-            content = MessageContent.DeleteMessage(messageId),
+            content = MessageContent.DeleteMessage(messageToDelete),
             conversationId = conversationId,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
@@ -89,23 +123,22 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             status = Message.Status.PENDING,
             isSelfMessage = false
         ).let { deleteSinglingMessage ->
-            ephemeralMessageRepository.recipientsForDeletedEphemeral(conversationId, originalMessageSender).flatMap { recipients ->
-                messageSender.sendMessage(deleteSinglingMessage, MessageTarget.Client(recipients))
-            }
+            messageSender.sendMessage(
+                deleteSinglingMessage,
+                MessageTarget.Client(recipients)
+            )
         }
-
+    }
 
     private suspend fun deleteMessageAssetIfExists(message: Message) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-
             assetRepository.deleteAsset(
                 assetToRemove.assetId,
                 assetToRemove.assetDomain,
                 assetToRemove.assetToken
-            )
-                .onFailure {
-                    kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
-                }
+            ).onFailure {
+                kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+            }
         }
     }
 }
