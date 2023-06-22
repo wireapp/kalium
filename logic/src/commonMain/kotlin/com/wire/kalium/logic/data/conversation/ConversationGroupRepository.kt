@@ -79,7 +79,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
-    private val newGroupConversationStartedMessageCreator: NewGroupConversationStartedMessageCreator,
+    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
@@ -107,7 +107,7 @@ internal class ConversationGroupRepositoryImpl(
                     wrapStorageRequest {
                         conversationDAO.insertConversation(conversationEntity)
                     }.flatMap {
-                        newGroupConversationStartedMessageCreator.createSystemMessage(conversationEntity)
+                        newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
                     }.flatMap {
                         newConversationMembersRepository.persistMembersAdditionToTheConversation(
                             conversationEntity.id, conversationResponse
@@ -163,8 +163,12 @@ internal class ConversationGroupRepositoryImpl(
                         }.map { Unit }
                     }
 
-                    is ConversationEntity.ProtocolInfo.MLS ->
-                        Either.Left(MLSFailure(UnsupportedOperationException("Adding service to MLS conversation is not supported")))
+                    is ConversationEntity.ProtocolInfo.MLS -> {
+                        val failure = MLSFailure.Generic(
+                            UnsupportedOperationException("Adding service to MLS conversation is not supported")
+                        )
+                        Either.Left(failure)
+                    }
                 }
             }
 

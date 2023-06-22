@@ -22,6 +22,8 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
+import com.wire.kalium.logic.data.client.UserClientRepositoryProviderImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -35,7 +37,8 @@ import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
-import com.wire.kalium.logic.feature.client.NewClientManagerImpl
+import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCase
+import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
@@ -108,10 +111,10 @@ class GlobalKaliumScope internal constructor(
 
     val sessionRepository: SessionRepository
         get() = SessionDataSource(
-                globalDatabase.value.accountsDAO,
-                globalPreferences.value.authTokenStorage,
-                serverConfigRepository
-            )
+            globalDatabase.value.accountsDAO,
+            globalPreferences.value.authTokenStorage,
+            serverConfigRepository
+        )
 
     val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
@@ -167,6 +170,12 @@ class GlobalKaliumScope internal constructor(
             sessionRepository
         )
 
+    private val userClientRepositoryProvider: UserClientRepositoryProvider
+        get() = UserClientRepositoryProviderImpl(userSessionScopeProvider.value)
+
     val observeNewClientsUseCase: ObserveNewClientsUseCase
-        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, NewClientManagerImpl)
+        get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userClientRepositoryProvider)
+
+    val clearNewClientsForUser: ClearNewClientsForUserUseCase
+        get() = ClearNewClientsForUserUseCaseImpl(userSessionScopeProvider.value)
 }

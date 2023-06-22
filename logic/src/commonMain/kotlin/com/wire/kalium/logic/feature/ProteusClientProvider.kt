@@ -27,7 +27,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.util.SecurityHelperImpl
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -63,7 +63,7 @@ class ProteusClientProviderImpl(
     override suspend fun clearLocalFiles() {
         mutex.withLock {
             withContext(dispatcher.io) {
-                _proteusClient?.clearLocalFiles()
+                (_proteusClient ?: createProteusClient()).clearLocalFiles()
                 _proteusClient = null
             }
         }
@@ -81,7 +81,7 @@ class ProteusClientProviderImpl(
     override suspend fun getOrError(): Either<CoreFailure, ProteusClient> {
         return mutex.withLock {
             _proteusClient?.let { Either.Right(it) } ?: run {
-                wrapCryptoRequest {
+                wrapProteusRequest {
                     createProteusClient().also {
                         it.openOrError()
                         _proteusClient = it

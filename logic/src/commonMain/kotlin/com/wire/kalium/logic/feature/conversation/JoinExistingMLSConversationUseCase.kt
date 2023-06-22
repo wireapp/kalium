@@ -81,6 +81,31 @@ class JoinExistingMLSConversationUseCaseImpl(
             })
         }
 
+    private suspend fun joinOrEstablishMLSGroupAndRetry(
+        conversation: Conversation
+    ): Either<CoreFailure, Unit> =
+        joinOrEstablishMLSGroup(conversation)
+            .flatMapLeft { failure ->
+                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
+                    if (failure.kaliumException.isMlsStaleMessage()) {
+                        kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
+                        // Re-fetch current epoch and try again
+                        conversationRepository.fetchConversation(conversation.id).flatMap {
+                            conversationRepository.baseInfoById(conversation.id).flatMap { conversation ->
+                                joinOrEstablishMLSGroup(conversation)
+                            }
+                        }
+                    } else if (failure.kaliumException.isMlsMissingGroupInfo()) {
+                        kaliumLogger.w("conversation has no group info, ignoring...")
+                        Either.Right(Unit)
+                    } else {
+                        Either.Left(failure)
+                    }
+                } else {
+                    Either.Left(failure)
+                }
+            }
+
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
         return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
             if (conversation.protocol.epoch == 0UL) {
@@ -110,29 +135,4 @@ class JoinExistingMLSConversationUseCaseImpl(
             Either.Right(Unit)
         }
     }
-
-    private suspend fun joinOrEstablishMLSGroupAndRetry(
-        conversation: Conversation
-    ): Either<CoreFailure, Unit> =
-        joinOrEstablishMLSGroup(conversation)
-            .flatMapLeft { failure ->
-                if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
-                    if (failure.kaliumException.isMlsStaleMessage()) {
-                        kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
-                        // Re-fetch current epoch and try again
-                        conversationRepository.fetchConversation(conversation.id).flatMap {
-                            conversationRepository.baseInfoById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(conversation)
-                            }
-                        }
-                    } else if (failure.kaliumException.isMlsMissingGroupInfo()) {
-                        kaliumLogger.w("conversation has no group info, ignoring...")
-                        Either.Right(Unit)
-                    } else {
-                        Either.Left(failure)
-                    }
-                } else {
-                    Either.Left(failure)
-                }
-            }
 }

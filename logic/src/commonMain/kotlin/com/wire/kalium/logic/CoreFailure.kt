@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic
 
+import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -29,28 +30,28 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
-sealed class CoreFailure {
+sealed interface CoreFailure {
 
     /**
      * The attempted operation requires that this client is registered.
      */
-    object MissingClientRegistration : CoreFailure()
+    object MissingClientRegistration : CoreFailure
 
     /**
      * A user has no key packages available which prevents him/her from being added
      * to an existing or new conversation.
      */
-    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure()
+    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure
 
     /**
      * It's not allowed to run the application with development API enabled when
      * connecting to the production environment.
      */
-    object DevelopmentAPINotAllowedOnProduction : CoreFailure()
+    object DevelopmentAPINotAllowedOnProduction : CoreFailure
 
-    data class Unknown(val rootCause: Throwable?) : CoreFailure()
+    data class Unknown(val rootCause: Throwable?) : CoreFailure
 
-    abstract class FeatureFailure : CoreFailure()
+    abstract class FeatureFailure : CoreFailure
 
     /**
      * It's only allowed to insert system messages as bulk for all conversations.
@@ -63,7 +64,7 @@ sealed class CoreFailure {
     object NotSupportedByProteus : FeatureFailure()
 }
 
-sealed class NetworkFailure : CoreFailure() {
+sealed class NetworkFailure : CoreFailure {
     /**
      * Failed to establish a connection with the necessary servers in order to pull/push data.
      *
@@ -101,12 +102,16 @@ sealed class NetworkFailure : CoreFailure() {
     object FederatedBackendFailure : NetworkFailure()
 }
 
-class MLSFailure(internal val exception: Exception) : CoreFailure() {
+interface MLSFailure : CoreFailure {
 
-    val rootCause: Throwable get() = exception
+    object WrongEpoch : MLSFailure
+
+    class Generic(internal val exception: Exception) : MLSFailure {
+        val rootCause: Throwable get() = exception
+    }
 }
 
-class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure() {
+class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
 
     val rootCause: Throwable get() = proteusException
 }
@@ -117,7 +122,7 @@ sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
     object WrongAssetHash : EncryptionFailure()
 }
 
-sealed class StorageFailure : CoreFailure() {
+sealed class StorageFailure : CoreFailure {
     object DataNotFound : StorageFailure()
     data class Generic(val rootCause: Throwable) : StorageFailure()
 }
@@ -151,9 +156,9 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
         }
     }
 
-internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<ProteusFailure, T> {
+internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<ProteusFailure, T> {
     return try {
-        Either.Right(cryptoRequest())
+        Either.Right(proteusRequest())
     } catch (e: ProteusException) {
         kaliumLogger.e(
             """{ "ProteusException": "${e.message},"
@@ -174,9 +179,18 @@ internal inline fun <T : Any> wrapCryptoRequest(cryptoRequest: () -> T): Either<
 internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
+    } catch (cryptoException: CryptoException) {
+        kaliumLogger.e(cryptoException.stackTraceToString())
+        val mappedFailure = when (cryptoException) {
+            is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
+            // TODO: Handle all cases explicitly.
+            //       Blocked by https://github.com/wireapp/core-crypto/pull/214
+            else -> MLSFailure.Generic(cryptoException)
+        }
+        Either.Left(mappedFailure)
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(MLSFailure(e))
+        Either.Left(MLSFailure.Generic(e))
     }
 }
 

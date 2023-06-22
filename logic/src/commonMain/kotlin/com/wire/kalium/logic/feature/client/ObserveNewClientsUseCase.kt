@@ -18,22 +18,30 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.Client
+import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
 /**
  * Observes new Clients for all the users that are logged in on device
  * returns [NewClientResult] which may be:
- * [NewClientResult.InCurrentAccount] if new Client appears for the user that is currently used.
- * [NewClientResult.InOtherAccount] if new Client appears for the user that is logged in on device, but not currently used.
+ * [NewClientResult.InCurrentAccount] if new Clients appears for the user that is currently used.
+ * [NewClientResult.InOtherAccount] if new Clients appears for the user that is logged in on device, but not currently used.
  * [NewClientResult.Error] in case of error, in most cases it means that the user for which new Client appeared
  * is no longer logged it on the device.
+ *
+ * Note:
+ * If there are new Clients for more than one logged-in User, CurrentUser has higher priority and will be returned first.
  */
 interface ObserveNewClientsUseCase {
     suspend operator fun invoke(): Flow<NewClientResult>
@@ -42,29 +50,66 @@ interface ObserveNewClientsUseCase {
 class ObserveNewClientsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val observeValidAccounts: ObserveValidAccountsUseCase,
-    private val newClientManager: NewClientManager
+    private val clientRepositoryProvider: UserClientRepositoryProvider
 ) : ObserveNewClientsUseCase {
 
-    override suspend operator fun invoke(): Flow<NewClientResult> = newClientManager.observeNewClients()
-        .map { (newClient, userId) ->
-            sessionRepository.currentSession()
-                .map { currentAccInfo ->
-                    if (currentAccInfo.userId == userId) NewClientResult.InCurrentAccount(newClient)
-                    else observeValidAccounts().firstOrNull()
-                        ?.firstOrNull { (selfUser, _) -> selfUser.id == userId }
-                        ?.let { (selfUser, _) ->
-                            NewClientResult.InOtherAccount(newClient, userId, selfUser.name, selfUser.handle)
-                        } ?: NewClientResult.Error
+    override suspend operator fun invoke(): Flow<NewClientResult> = observeValidAccounts()
+        .flatMapLatest { validAccs ->
+            val users = validAccs.map { it.first }
+            observeAllNewClients(users)
+                .map { groupByUser ->
+                    if (groupByUser.isEmpty()) return@map NewClientResult.Empty
+
+                    sessionRepository.currentSession().map { currentAccInfo ->
+                        if (groupByUser.containsKey(currentAccInfo.userId)) {
+                            NewClientResult.InCurrentAccount(
+                                groupByUser.getOrElse(currentAccInfo.userId) { listOf() },
+                                currentAccInfo.userId
+                            )
+                        } else {
+                            users.firstOrNull { selfUser -> groupByUser.containsKey(selfUser.id) }
+                                ?.let { selfUser ->
+                                    NewClientResult.InOtherAccount(
+                                        groupByUser.getOrElse(selfUser.id) { listOf() },
+                                        selfUser.id,
+                                        selfUser.name,
+                                        selfUser.handle
+                                    )
+                                } ?: NewClientResult.Empty
+                        }
+                    }.getOrElse(NewClientResult.Error)
                 }
-                .getOrElse(NewClientResult.Error)
         }
+        .filter {
+            // if newClients list is empty mean no NewClients - do not emit anything
+            (it is NewClientResult.InCurrentAccount && it.newClients.isNotEmpty()) ||
+                    (it is NewClientResult.InOtherAccount && it.newClients.isNotEmpty()) ||
+                    it is NewClientResult.Error
+        }
+
+    private suspend fun observeNewClientsForUser(userId: UserId) = clientRepositoryProvider.provide(userId)
+        .observeNewClients()
+        .mapToRightOr(listOf())
+        .map { it to userId }
+
+    private suspend fun observeAllNewClients(validAccs: List<SelfUser>): Flow<Map<UserId, List<Client>>> {
+        val observeNewClientsFlows = validAccs.map { selfUser -> observeNewClientsForUser(selfUser.id) }
+
+        return combine(observeNewClientsFlows) { newClientsListWithUserId ->
+            newClientsListWithUserId
+                .groupBy({ (_, userId) -> userId }) { (clients, _) -> clients }
+                .mapValues { (_, lists) -> lists.flatten() }
+                .filter { (_, newClients) -> newClients.isNotEmpty() }
+        }
+    }
 }
 
 sealed class NewClientResult {
     object Error : NewClientResult()
-    data class InCurrentAccount(val newClient: Client) : NewClientResult()
+    object Empty : NewClientResult()
+    data class InCurrentAccount(val newClients: List<Client>, val userId: UserId) : NewClientResult()
     data class InOtherAccount(
-        val newClient: Client,
+        val newClients: List<Client>,
         val userId: UserId,
         val userName: String?,
         val userHandle: String?

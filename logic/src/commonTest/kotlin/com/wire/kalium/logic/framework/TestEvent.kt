@@ -74,7 +74,7 @@ object TestEvent {
     )
 
     fun newClient(eventId: String = "eventId", clientId: ClientId = ClientId("client")) = Event.User.NewClient(
-        false, eventId, clientId, "2022-04-30T15:36:00.000Z", "model", ClientTypeDTO.Permanent, DeviceTypeDTO.Phone, "label"
+        false, eventId, TestClient.CLIENT
     )
 
     fun newConnection(eventId: String = "eventId") = Event.User.NewConnection(
@@ -145,6 +145,14 @@ object TestEvent {
         memberId = "memberId",
         permissionCode = permissionCode,
         transient = false
+    )
+
+    fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
+        id = eventId,
+        conversationId = TestConversation.ID,
+        transient = false,
+        messageTimer = 3000,
+        senderUserId = TestUser.USER_ID
     )
 
     fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(

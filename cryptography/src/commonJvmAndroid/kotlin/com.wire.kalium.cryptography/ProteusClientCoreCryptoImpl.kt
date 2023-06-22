@@ -39,6 +39,9 @@ class ProteusClientCoreCryptoImpl internal constructor(
     private lateinit var coreCrypto: CoreCrypto
 
     override fun clearLocalFiles(): Boolean {
+        if (::coreCrypto.isInitialized) {
+            coreCrypto.close()
+        }
         return File(path).deleteRecursively()
     }
 
