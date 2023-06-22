@@ -62,6 +62,28 @@ class NewGroupConversationSystemMessagesCreatorTest {
     }
 
     @Test
+    fun givenARemoteGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedSystemMessage() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .arrange()
+
+        val result = sysMessageCreator.conversationStarted(
+            TestUser.USER_ID,
+            TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP)
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
+            })
+            .wasInvoked(once)
+    }
+
+
+    @Test
     fun givenNotAGroupConversation_whenPersisting_ThenShouldNOTCreateAStartedSystemMessage() = runTest {
         val (arrangement, newGroupConversationCreatedHandler) = Arrangement()
             .withPersistMessageSuccess()
@@ -89,6 +111,25 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .arrange()
 
         val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE)
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+            })
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAModelGroupConversation_whenPersistingAndValid_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .withIsASelfTeamMember()
+            .arrange()
+
+        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION.copy(type = Conversation.Type.GROUP))
 
         result.shouldSucceed()
 

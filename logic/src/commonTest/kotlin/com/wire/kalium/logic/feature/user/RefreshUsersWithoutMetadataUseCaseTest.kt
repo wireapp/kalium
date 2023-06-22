@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -59,6 +60,7 @@ class RefreshUsersWithoutMetadataUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun arrange() = this to RefreshUsersWithoutMetadataUseCaseImpl(userRepository)
+        fun arrange(): Pair<Arrangement, RefreshUsersWithoutMetadataUseCase> =
+            this to RefreshUsersWithoutMetadataUseCaseImpl(userRepository)
     }
 }
