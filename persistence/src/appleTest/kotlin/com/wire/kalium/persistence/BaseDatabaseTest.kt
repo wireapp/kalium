@@ -20,8 +20,8 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.databasePath
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
-import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
@@ -45,6 +45,10 @@ actual open class BaseDatabaseTest actual constructor() {
         return databasePath(FileNameUtil.userDBName(userId), storePath)
     }
 
+    actual fun doesDatabaseExist(
+        userId: UserIDEntity
+    ): Boolean = TODO("not implemented")
+
     actual fun deleteDatabase(userId: UserIDEntity) {
         deleteDatabase(FileNameUtil.userDBName(userId), storePath)
     }
@@ -54,6 +58,8 @@ actual open class BaseDatabaseTest actual constructor() {
         passphrase: UserDBSecret?,
         enableWAL: Boolean
     ): UserDatabaseBuilder {
-        return userDatabaseBuilder(PlatformDatabaseData(storePath), userId, null, dispatcher, false)
+        return userDatabaseBuilder(platformDBData(userId), userId, null, dispatcher, false)
     }
+
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(storePath)
 }
