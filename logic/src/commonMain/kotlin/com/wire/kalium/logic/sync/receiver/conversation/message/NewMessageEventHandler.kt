@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
@@ -39,7 +40,8 @@ internal interface NewMessageEventHandler {
 internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
-    private val applicationMessageHandler: ApplicationMessageHandler
+    private val applicationMessageHandler: ApplicationMessageHandler,
+    private val mlsWrongEpochHandler: MLSWrongEpochHandler
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -86,7 +88,6 @@ internal class NewMessageEventHandlerImpl(
     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) {
         mlsMessageUnpacker.unpackMlsMessage(event)
             .onFailure {
-
                 val logMap = mapOf(
                     "event" to event.toLogMap(),
                     "errorInfo" to "$it",
@@ -94,6 +95,11 @@ internal class NewMessageEventHandlerImpl(
                 )
 
                 logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
+
+                if (it is MLSFailure.WrongEpoch) {
+                    mlsWrongEpochHandler.onMLSWrongEpoch(event.conversationId, event.timestampIso)
+                    return@onFailure
+                }
 
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,

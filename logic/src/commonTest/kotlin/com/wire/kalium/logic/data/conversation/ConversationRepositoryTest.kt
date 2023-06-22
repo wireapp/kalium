@@ -134,6 +134,52 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun givenNewConversationEvent_whenCallingPersistConversationFromEvent_thenConversationShouldBePersisted() = runTest {
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, TestUser.SELF.id, "time", CONVERSATION_RESPONSE)
+        val selfUserFlow = flowOf(TestUser.SELF)
+        val (arrangement, conversationRepository) = Arrangement()
+            .withSelfUserFlow(selfUserFlow)
+            .withExpectedConversationBase(null)
+            .arrange()
+
+        conversationRepository.persistConversation(event.conversation, "teamId")
+
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(
+                    matching { conversation ->
+                        conversation.id.value == CONVERSATION_RESPONSE.id.value
+                    }
+                )
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenNewConversationEvent_whenCallingPersistConversationFromEventAndExists_thenConversationPersistenceShouldBeSkipped() = runTest {
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, TestUser.SELF.id, "time", CONVERSATION_RESPONSE)
+        val selfUserFlow = flowOf(TestUser.SELF)
+        val (arrangement, conversationRepository) = Arrangement()
+            .withSelfUserFlow(selfUserFlow)
+            .withExpectedConversationBase(TestConversation.ENTITY)
+            .arrange()
+
+        conversationRepository.persistConversation(event.conversation, "teamId")
+
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(
+                    matching { conversation ->
+                        conversation.id.value == CONVERSATION_RESPONSE.id.value
+                    }
+                )
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenNewConversationEventWithMlsConversation_whenCallingInsertConversation_thenMlsGroupExistenceShouldBeQueried() = runTest {
         val event = Event.Conversation.NewConversation(
             "id",
@@ -1113,6 +1159,13 @@ class ConversationRepositoryTest {
         fun withExpectedConversation(conversationEntity: ConversationViewEntity?) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(conversationEntity)
+        }
+
+        fun withExpectedConversationBase(conversationEntity: ConversationEntity?) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationBaseInfoByQualifiedID)
                 .whenInvokedWith(any())
                 .thenReturn(conversationEntity)
         }

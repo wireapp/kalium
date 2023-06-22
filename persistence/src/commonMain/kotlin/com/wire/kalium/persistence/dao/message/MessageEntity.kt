@@ -190,7 +190,7 @@ sealed class MessageEntity(
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
-        CONVERSATION_CREATED
+        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING
     }
 
     enum class MemberChangeType {
@@ -293,6 +293,8 @@ sealed class MessageEntityContent {
         val senderUserId: QualifiedIDEntity,
         val senderClientId: String?,
     ) : Regular()
+
+    object MLSWrongEpochWarning : System()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,

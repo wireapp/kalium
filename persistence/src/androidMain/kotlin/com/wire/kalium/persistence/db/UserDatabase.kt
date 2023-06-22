@@ -118,7 +118,14 @@ internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
-    return platformDatabaseData.context.deleteDatabase(FileNameUtil.userDBName(userId))
+    val context = platformDatabaseData.context
+    return context.getDatabasePath(FileNameUtil.userDBName(userId))?.let {
+        if (it.exists()) {
+            context.deleteDatabase(FileNameUtil.userDBName(userId))
+        } else {
+            true
+        }
+    } ?: true
 }
 
 internal actual fun getDatabaseAbsoluteFileLocation(

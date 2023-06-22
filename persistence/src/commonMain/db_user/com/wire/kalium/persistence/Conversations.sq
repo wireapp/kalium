@@ -304,6 +304,9 @@ UPDATE Conversation
 SET message_timer = ?
 WHERE qualified_id = ?;
 
+getMessageTimer:
+SELECT message_timer FROM Conversation WHERE qualified_id = ?;
+
 updateUserMessageTimer:
 UPDATE Conversation
 SET user_message_timer = ?
