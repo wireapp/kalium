@@ -106,7 +106,7 @@ class MLSWrongEpochHandlerTest {
     }
 
     @Test
-    fun givenUpdatedMLSConversationHasSameEpoch_whenHandlingEpochFailure_thenShouldRejoinTheConversation() = runTest {
+    fun givenUpdatedMLSConversationHasSameEpoch_whenHandlingEpochFailure_thenShouldNotRejoinTheConversation() = runTest {
         val conversationId = mlsConversation.id
         val (arrangement, mlsWrongEpochHandler) = Arrangement()
             .withConversationByIdReturning(Either.Right(mlsConversation))
