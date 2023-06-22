@@ -105,7 +105,7 @@ class SyncConversationsUseCaseTest {
             protocol: Conversation.Protocol? = null
         ) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationIdsByProtocol)
+                .suspendFunction(conversationRepository::getGroupConversationIdsByProtocol)
                 .whenInvokedWith(protocol?.let { eq(it) } ?: any())
                 .thenReturn(Either.Right(conversationIds))
         }

@@ -35,7 +35,7 @@ class SyncConversationsUseCase(
     private val systemMessageBuilder: SystemMessageBuilder
 ) {
     suspend operator fun invoke(): Either<CoreFailure, Unit> =
-        conversationRepository.getConversationIdsByProtocol(Conversation.Protocol.PROTEUS)
+        conversationRepository.getGroupConversationIdsByProtocol(Conversation.Protocol.PROTEUS)
             .flatMap { proteusConversationIds ->
                 conversationRepository.fetchConversations()
                     .flatMap {
@@ -46,7 +46,7 @@ class SyncConversationsUseCase(
     private suspend fun reportConversationsWithPotentialHistoryLoss(
         proteusConversationIds: List<ConversationId>
     ): Either<StorageFailure, Unit> =
-        conversationRepository.getConversationIdsByProtocol(Conversation.Protocol.MLS)
+        conversationRepository.getGroupConversationIdsByProtocol(Conversation.Protocol.MLS)
             .flatMap { mlsConversationIds ->
                 val conversationsWithUpgradedProtocol = mlsConversationIds.intersect(proteusConversationIds)
                 for (conversationId in conversationsWithUpgradedProtocol) {

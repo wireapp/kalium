@@ -147,13 +147,23 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversations_ThenConversationIdsCanBeRetrievedByProtocol() = runTest {
-        conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertConversation(conversationEntity2)
-        insertTeamUserAndMember(team, user2, conversationEntity2.id)
+    fun givenExistingGroupConversations_whenGetGroupConversationIdsByProtocol_ThenConversationIdsWithGivenProtocolIsReturned() = runTest {
+        conversationDAO.insertConversation(conversationEntity4)
+        conversationDAO.insertConversation(conversationEntity5)
+        insertTeamUserAndMember(team, user2, conversationEntity5.id)
         val result =
-            conversationDAO.getConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
-        assertEquals(listOf(conversationEntity1.id), result)
+            conversationDAO.getGroupConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
+        assertEquals(listOf(conversationEntity5.id), result)
+    }
+
+    @Test
+    fun givenExistingSelfAndOneToOneConversations_whenGetGroupConversationIdsByProtocol_ThenAnEmptyListIsReturned() = runTest {
+        conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity5.copy(type = ConversationEntity.Type.ONE_ON_ONE))
+        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+        val result =
+            conversationDAO.getGroupConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
+        assertEquals(emptyList(), result)
     }
 
     @Test

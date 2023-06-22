@@ -182,7 +182,7 @@ interface ConversationDAO {
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
     suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
-    suspend fun getConversationIdsByProtocol(protocol: ConversationEntity.Protocol): List<QualifiedIDEntity>
+    suspend fun getGroupConversationIdsByProtocol(protocol: ConversationEntity.Protocol): List<QualifiedIDEntity>
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)

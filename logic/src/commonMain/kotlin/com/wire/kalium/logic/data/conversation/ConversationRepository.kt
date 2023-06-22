@@ -117,7 +117,7 @@ interface ConversationRepository {
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
-    suspend fun getConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>>
+    suspend fun getGroupConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
 
     /**
@@ -447,9 +447,9 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-    override suspend fun getConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>> =
+    override suspend fun getGroupConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>> =
         wrapStorageRequest {
-            conversationDAO.getConversationIdsByProtocol(protocol.toDao()).map(QualifiedIDEntity::toModel)
+            conversationDAO.getGroupConversationIdsByProtocol(protocol.toDao()).map(QualifiedIDEntity::toModel)
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =

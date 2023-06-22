@@ -402,9 +402,9 @@ class ConversationDAOImpl(
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOneOrNull()
     }
 
-    override suspend fun getConversationIdsByProtocol(protocol: ConversationEntity.Protocol): List<QualifiedIDEntity> =
+    override suspend fun getGroupConversationIdsByProtocol(protocol: ConversationEntity.Protocol): List<QualifiedIDEntity> =
         withContext(coroutineContext) {
-            conversationQueries.selectConversationIdsByProtocol(protocol).executeAsList()
+            conversationQueries.selectGroupConversationIdsByProtocol(protocol).executeAsList()
         }
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
