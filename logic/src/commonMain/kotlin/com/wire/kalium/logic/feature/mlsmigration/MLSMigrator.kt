@@ -95,7 +95,7 @@ internal class MLSMigratorImpl(
         kaliumLogger.i("finalising ${conversationId.toLogString()} to mls")
         return conversationRepository.updateProtocol(conversationId, Protocol.MLS)
             .fold({ failure ->
-                kaliumLogger.w("failed to migrate ${conversationId.toLogString()} to mls: $failure")
+                kaliumLogger.w("failed to finalise ${conversationId.toLogString()} to mls: $failure")
                 Either.Right(Unit)
             }, { updated ->
                 if (updated) {
