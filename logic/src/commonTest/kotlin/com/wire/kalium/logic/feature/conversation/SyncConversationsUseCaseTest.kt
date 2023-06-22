@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.SystemMessageBuilder
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.any
@@ -64,8 +64,8 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        verify(arrangement.systemMessageBuilder)
-            .suspendFunction(arrangement.systemMessageBuilder::insertHistoryLostProtocolChangedSystemMessage)
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertHistoryLostProtocolChangedSystemMessage)
             .with(eq(conversationId))
             .wasInvoked(exactly = once)
     }
@@ -82,8 +82,8 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        verify(arrangement.systemMessageBuilder)
-            .suspendFunction(arrangement.systemMessageBuilder::insertHistoryLostProtocolChangedSystemMessage)
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertHistoryLostProtocolChangedSystemMessage)
             .with(eq(conversationId))
             .wasNotInvoked()
     }
@@ -91,7 +91,7 @@ class SyncConversationsUseCaseTest {
     class Arrangement {
 
         val conversationRepository = mock(ConversationRepository::class)
-        val systemMessageBuilder = mock(SystemMessageBuilder::class)
+        val systemMessageInserter = mock(SystemMessageInserter::class)
 
         fun withFetchConversationsSuccessful() = apply {
             given(conversationRepository)
@@ -111,15 +111,15 @@ class SyncConversationsUseCaseTest {
         }
 
         fun withInsertHistoryLostProtocolChangedSystemMessageSuccessful() = apply {
-            given(systemMessageBuilder)
-                .suspendFunction(systemMessageBuilder::insertHistoryLostProtocolChangedSystemMessage)
+            given(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertHistoryLostProtocolChangedSystemMessage)
                 .whenInvokedWith()
                 .thenDoNothing()
         }
 
         fun arrange() = this to SyncConversationsUseCase(
             conversationRepository,
-            systemMessageBuilder
+            systemMessageInserter
         )
     }
 }

@@ -23,9 +23,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.SystemMessageBuilder
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -46,7 +45,7 @@ internal class MLSMigratorImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val systemMessageBuilder: SystemMessageBuilder
+    private val systemMessageInserter: SystemMessageInserter
 ) : MLSMigrator {
 
     override suspend fun migrateProteusConversations(): Either<CoreFailure, Unit> =
@@ -81,8 +80,8 @@ internal class MLSMigratorImpl(
         return conversationRepository.updateProtocol(conversationId, Protocol.MIXED)
             .flatMap { updated ->
                 if (updated) {
-                    systemMessageBuilder.insertProtocolChangedSystemMessage(
-                        conversationProtocolEvent(conversationId, Protocol.MIXED)
+                    systemMessageInserter.insertProtocolChangedSystemMessage(
+                        conversationId, selfUserId, Protocol.MIXED
                     )
                 }
                 establishConversation(conversationId)
@@ -100,25 +99,13 @@ internal class MLSMigratorImpl(
                 Either.Right(Unit)
             }, { updated ->
                 if (updated) {
-                    systemMessageBuilder.insertProtocolChangedSystemMessage(
-                        conversationProtocolEvent(conversationId, Protocol.MLS)
+                    systemMessageInserter.insertProtocolChangedSystemMessage(
+                        conversationId, selfUserId, Protocol.MLS
                     )
                 }
                 Either.Right(Unit)
             })
     }
-
-    private fun conversationProtocolEvent(
-        conversationId: ConversationId,
-        protocol: Protocol
-    ): Event.Conversation.ConversationProtocol =
-        Event.Conversation.ConversationProtocol(
-            id = "",
-            conversationId = conversationId,
-            transient = false,
-            protocol = protocol,
-            senderUserId = selfUserId
-        )
 
     private suspend fun establishConversation(conversationId: ConversationId) =
         conversationRepository.getConversationProtocolInfo(conversationId)

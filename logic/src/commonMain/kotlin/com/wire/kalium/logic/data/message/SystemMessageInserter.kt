@@ -18,29 +18,39 @@
 package com.wire.kalium.logic.data.message
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil
 
-interface SystemMessageBuilder {
-    suspend fun insertProtocolChangedSystemMessage(event: Event.Conversation.ConversationProtocol)
-    suspend fun insertHistoryLostProtocolChangedSystemMessage(conversationId: ConversationId)
+internal interface SystemMessageInserter {
+    suspend fun insertProtocolChangedSystemMessage(
+        conversationId: ConversationId,
+        senderUserId: UserId,
+        protocol: Conversation.Protocol
+    )
+    suspend fun insertHistoryLostProtocolChangedSystemMessage(
+        conversationId: ConversationId
+    )
 }
 
-class SystemMessageBuilderImpl(
+internal class SystemMessageInserterImpl(
     private val selfUserId: UserId,
     private val persistMessage: PersistMessageUseCase
-) : SystemMessageBuilder {
-    override suspend fun insertProtocolChangedSystemMessage(event: Event.Conversation.ConversationProtocol) {
+) : SystemMessageInserter {
+    override suspend fun insertProtocolChangedSystemMessage(
+        conversationId: ConversationId,
+        senderUserId: UserId,
+        protocol: Conversation.Protocol
+    ) {
         val message = Message.System(
             uuid4().toString(),
             MessageContent.ConversationProtocolChanged(
-                protocol = event.protocol
+                protocol = protocol
             ),
-            event.conversationId,
+            conversationId,
             DateTimeUtil.currentIsoDateTimeString(),
-            event.senderUserId,
+            senderUserId,
             Message.Status.SENT,
             Message.Visibility.VISIBLE
         )

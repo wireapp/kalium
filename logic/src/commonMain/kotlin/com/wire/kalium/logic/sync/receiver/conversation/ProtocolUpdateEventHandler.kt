@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.message.SystemMessageBuilder
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -37,7 +37,7 @@ interface ProtocolUpdateEventHandler {
 
 internal class ProtocolUpdateEventHandlerImpl(
     private val conversationDAO: ConversationDAO,
-    private val systemMessageBuilder: SystemMessageBuilder
+    private val systemMessageInserter: SystemMessageInserter
 ) : ProtocolUpdateEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -46,7 +46,11 @@ internal class ProtocolUpdateEventHandlerImpl(
         updateProtocol(event)
             .onSuccess { updated ->
                 if (updated) {
-                    systemMessageBuilder.insertProtocolChangedSystemMessage(event)
+                    systemMessageInserter.insertProtocolChangedSystemMessage(
+                        event.conversationId,
+                        event.senderUserId,
+                        event.protocol
+                    )
                 }
                 logger
                     .logEventProcessing(

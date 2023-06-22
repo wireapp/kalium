@@ -86,7 +86,7 @@ import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
-import com.wire.kalium.logic.data.message.SystemMessageBuilderImpl
+import com.wire.kalium.logic.data.message.SystemMessageInserterImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepositoryImpl
@@ -951,7 +951,7 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
-    private val systemMessageBuilder get() = SystemMessageBuilderImpl(userId, persistMessage)
+    private val systemMessageBuilder get() = SystemMessageInserterImpl(userId, persistMessage)
 
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
@@ -1041,7 +1041,7 @@ class UserSessionScope internal constructor(
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
         get() = ProtocolUpdateEventHandlerImpl(
             conversationDAO = userStorage.database.conversationDAO,
-            systemMessageBuilder = systemMessageBuilder
+            systemMessageInserter = systemMessageBuilder
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {

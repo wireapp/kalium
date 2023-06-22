@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.SystemMessageBuilder
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -33,13 +33,8 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -50,7 +45,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -169,7 +163,7 @@ class MLSMigratorTest {
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
         @Mock
-        val systemMessageBuilder = mock(classOf<SystemMessageBuilder>())
+        val systemMessageInserter = mock(classOf<SystemMessageInserter>())
 
         fun withFetchKnownUsersSucceeding() = apply {
             given(userRepository)
@@ -246,7 +240,7 @@ class MLSMigratorTest {
             userRepository,
             conversationRepository,
             mlsConversationRepository,
-            systemMessageBuilder
+            systemMessageInserter
         )
 
         init {

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.SystemMessageBuilder
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 
@@ -32,7 +32,7 @@ import com.wire.kalium.logic.functional.flatMap
  */
 class SyncConversationsUseCase(
     private val conversationRepository: ConversationRepository,
-    private val systemMessageBuilder: SystemMessageBuilder
+    private val systemMessageInserter: SystemMessageInserter
 ) {
     suspend operator fun invoke(): Either<CoreFailure, Unit> =
         conversationRepository.getGroupConversationIdsByProtocol(Conversation.Protocol.PROTEUS)
@@ -50,7 +50,7 @@ class SyncConversationsUseCase(
             .flatMap { mlsConversationIds ->
                 val conversationsWithUpgradedProtocol = mlsConversationIds.intersect(proteusConversationIds)
                 for (conversationId in conversationsWithUpgradedProtocol) {
-                    systemMessageBuilder.insertHistoryLostProtocolChangedSystemMessage(conversationId)
+                    systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(conversationId)
                 }
                 Either.Right(Unit)
             }
