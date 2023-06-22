@@ -303,6 +303,7 @@ class MessageScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
             selfUserId = selfUserId,
+            selfConversationIdProvider = selfConversationIdProvider,
             ephemeralMessageRepository = ephemeralMessageRepository
         )
 }
