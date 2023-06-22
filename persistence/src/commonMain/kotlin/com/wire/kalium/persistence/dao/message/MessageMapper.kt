@@ -185,6 +185,7 @@ object MessageMapper {
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -493,6 +494,7 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
+            MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
         }
 
         return createMessageEntity(

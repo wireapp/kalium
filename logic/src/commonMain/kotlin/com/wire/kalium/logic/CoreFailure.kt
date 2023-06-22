@@ -106,6 +106,8 @@ interface MLSFailure : CoreFailure {
 
     object WrongEpoch : MLSFailure
 
+    object ConversationDoesNotSupportMLS : MLSFailure
+
     class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
     }

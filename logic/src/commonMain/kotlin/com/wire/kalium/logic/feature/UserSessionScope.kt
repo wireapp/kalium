@@ -275,6 +275,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHa
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
@@ -953,9 +955,17 @@ class UserSessionScope internal constructor(
             userId
         )
 
+    private val mlsWrongEpochHandler: MLSWrongEpochHandler
+        get() = MLSWrongEpochHandlerImpl(
+                selfUserId = userId,
+                persistMessage = persistMessage,
+                conversationRepository = conversationRepository,
+                joinExistingMLSConversation = joinExistingMLSConversationUseCase
+        )
+
     private val newMessageHandler: NewMessageEventHandlerImpl
         get() = NewMessageEventHandlerImpl(
-            proteusUnpacker, mlsUnpacker, applicationMessageHandler
+            proteusUnpacker, mlsUnpacker, applicationMessageHandler, mlsWrongEpochHandler
         )
 
     private val newConversationHandler: NewConversationEventHandler
