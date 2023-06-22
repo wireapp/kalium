@@ -1064,8 +1064,7 @@ class UserSessionScope internal constructor(
 
     private val ephemeralMessageRepository: EphemeralMessageRepository
         get() = EphemeralMessageDataSource(
-            clientDAO = userStorage.database.clientDAO,
-            selfUserId = userId
+            clientDAO = userStorage.database.clientDAO
         )
 
     val observeSyncState: ObserveSyncStateUseCase

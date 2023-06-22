@@ -38,15 +38,13 @@ internal interface EphemeralMessageRepository {
 
 internal class EphemeralMessageDataSource internal constructor(
     private val clientDAO: ClientDAO,
-    private val selfUserId: UserId,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper()
 ) : EphemeralMessageRepository {
     override suspend fun recipientsForDeletedEphemeral(
         senderId: UserId,
         conversationId: ConversationId
     ): Either<StorageFailure, List<Recipient>> = wrapStorageRequest {
-        val recipientId = listOf(senderId, selfUserId).map(UserId::toDao).toSet()
-
-        clientDAO.recipientOfUsers(conversationId.toDao(), recipientId)
+        val recipientId = setOf(senderId.toDao())
+        clientDAO.recipientsIfTHeyArePartOfConversation(conversationId.toDao(), recipientId)
     }.map (memberMapper::fromMapOfClientsEntityToRecipients)
 }
