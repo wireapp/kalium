@@ -88,7 +88,7 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(event)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::persistConversationFromEvent)
+            .suspendFunction(arrangement.conversationRepository::persistConversation)
             .with(eq(event.conversation), eq(teamIdValue))
             .wasInvoked(exactly = once)
 
@@ -287,7 +287,7 @@ class NewConversationEventHandlerTest {
 
         fun withPersistingConversations(result: Either<StorageFailure, Boolean>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::persistConversationFromEvent)
+                .suspendFunction(conversationRepository::persistConversation)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }

@@ -48,7 +48,7 @@ internal class NewConversationEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.NewConversation) {
         conversationRepository
-            .persistConversationFromEvent(event.conversation, selfTeamIdProvider().getOrNull()?.value)
+            .persistConversation(event.conversation, selfTeamIdProvider().getOrNull()?.value, true)
             .flatMap { isNewUnhandledConversation ->
                 conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
                 Either.Right(isNewUnhandledConversation)
@@ -58,8 +58,7 @@ internal class NewConversationEventHandlerImpl(
             }.onSuccess { isNewUnhandledConversation ->
                 createSystemMessagesForNewConversation(isNewUnhandledConversation, event)
                 kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
-            }
-            .onFailure {
+            }.onFailure {
                 kaliumLogger.logEventProcessing(EventLoggingStatus.FAILURE, event, Pair("errorInfo", "$it"))
             }
     }

@@ -107,9 +107,10 @@ interface ConversationRepository {
      * @param selfUserTeamId - self user team id if team user
      * @return Either<CoreFailure, Boolean> - true if the conversation was created, false if it was already present
      */
-    suspend fun persistConversationFromEvent(
+    suspend fun persistConversation(
         conversation: ConversationResponse,
         selfUserTeamId: String?,
+        originatedFromEvent: Boolean = false
     ): Either<CoreFailure, Boolean>
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
@@ -287,16 +288,17 @@ internal class ConversationDataSource internal constructor(
         return latestResult
     }
 
-    override suspend fun persistConversationFromEvent(
+    override suspend fun persistConversation(
         conversation: ConversationResponse,
         selfUserTeamId: String?,
+        originatedFromEvent: Boolean
     ): Either<CoreFailure, Boolean> = wrapStorageRequest {
         val isNewConversation = conversationDAO.getConversationBaseInfoByQualifiedID(conversation.id.toDao()) == null
         if (isNewConversation) {
             conversationDAO.insertConversation(
                 conversationMapper.fromApiModelToDaoModel(
                     conversation,
-                    mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), true) },
+                    mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },
                     selfTeamIdProvider().getOrNull(),
                 )
             )

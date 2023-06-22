@@ -142,7 +142,7 @@ class ConversationRepositoryTest {
             .withExpectedConversationBase(null)
             .arrange()
 
-        conversationRepository.persistConversationFromEvent(event.conversation, "teamId")
+        conversationRepository.persistConversation(event.conversation, "teamId")
 
         with(arrangement) {
             verify(conversationDAO)
@@ -165,7 +165,7 @@ class ConversationRepositoryTest {
             .withExpectedConversationBase(TestConversation.ENTITY)
             .arrange()
 
-        conversationRepository.persistConversationFromEvent(event.conversation, "teamId")
+        conversationRepository.persistConversation(event.conversation, "teamId")
 
         with(arrangement) {
             verify(conversationDAO)
