@@ -143,7 +143,8 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationTimerChangedContentAdapter = TableMapper.messageConversationTimerChangedContentAdapter,
         ServiceAdapter = TableMapper.serviceAdapter,
         NewClientAdapter = TableMapper.newClientAdapter,
-        MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter
+        MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
+        MessageConversationProtocolChangedContentAdapter = TableMapper.messageConversationProtocolChangedContentAdapter
     )
 
     init {
