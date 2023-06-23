@@ -21,6 +21,9 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Use case for deleting the user account.
+ */
 class DeleteAccountUseCase internal constructor(
     private val accountRepository: AccountRepository
 ) {

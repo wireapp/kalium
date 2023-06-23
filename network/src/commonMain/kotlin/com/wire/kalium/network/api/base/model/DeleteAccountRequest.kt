@@ -21,6 +21,6 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class DeleteAccountRequest (
-    @SerialName("password")val password: String?
+internal data class DeleteAccountRequest(
+    @SerialName("password") val password: String?
 )
