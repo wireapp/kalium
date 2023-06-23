@@ -30,6 +30,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
@@ -394,6 +395,9 @@ class ConversationEventReceiverTest {
         @Mock
         val typingIndicatorHandler = mock(classOf<TypingIndicatorHandler>())
 
+        @Mock
+        val protocolUpdateEventHandler = mock(classOf<ProtocolUpdateEventHandler>())
+
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
@@ -407,7 +411,8 @@ class ConversationEventReceiverTest {
             conversationMessageTimerEventHandler = conversationMessageTimerEventHandler,
             codeUpdatedHandler = codeUpdatedHandler,
             codeDeletedHandler = codeDeletedHandler,
-            typingIndicatorHandler = typingIndicatorHandler
+            typingIndicatorHandler = typingIndicatorHandler,
+            protocolUpdateEventHandler = protocolUpdateEventHandler
         )
 
         fun arrange(block: Arrangement.() -> Unit = {}) = apply(block).run {

@@ -102,6 +102,7 @@ class EventMapper(
             is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO, transient)
         }
 
     private fun conversationTyping(
@@ -175,6 +176,18 @@ class EventMapper(
             }
         },
         cause = cause
+    )
+
+    private fun conversationProtocolUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ProtocolUpdate,
+        transient: Boolean
+    ): Event = Event.Conversation.ConversationProtocol(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        transient = transient,
+        protocol = eventContentDTO.data.protocol.toModel(),
+        senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
 
     fun conversationMessageTimerUpdate(
