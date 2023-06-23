@@ -151,15 +151,13 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
-        var verified = false
-        messageRepository.getMessageById(
-            messageUuid = messageId, conversationId = conversationId
-        ).onSuccess {
-            verified = senderUserId == it.senderUserId
-        }
-        return verified
-    }
+    /**
+     * checks if the sender of the delete message is the same as the sender of the message to be deleted
+     */
+    private fun isSenderVerified(
+        message: Message,
+        deleteMessageSenderId: UserId
+    ): Boolean = deleteMessageSenderId == message.senderUserId
 
     private suspend fun processSignaling(signaling: Message.Signaling) {
         when (val content = signaling.content) {
@@ -269,15 +267,21 @@ internal class ApplicationMessageHandlerImpl(
         senderUserId: UserId
     ) {
         messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-            (messageToRemove as? Message.Regular)?.expirationData?.let {
-                handleEphemeralMessageDeletion(
-                    messageToRemove = messageToRemove
-                )
-            } ?: handleRegularMessageDeletion(
-                messageToRemove = messageToRemove,
-                senderUserId = senderUserId
-            )
+            val canBeDeleted = isSenderVerified(messageToRemove, senderUserId)
+            if (!canBeDeleted) return
 
+            val isOriginalEphemeral = (messageToRemove as? Message.Regular)?.expirationData != null
+            if (isOriginalEphemeral) {
+                messageRepository.deleteMessage(
+                    messageUuid = messageToRemove.id,
+                    conversationId = messageToRemove.conversationId
+                )
+            } else {
+                messageRepository.markMessageAsDeleted(
+                    messageUuid = messageToRemove.id,
+                    conversationId = messageToRemove.conversationId
+                )
+            }
             removeAssetIfExists(messageToRemove)
         }
     }
@@ -288,46 +292,6 @@ internal class ApplicationMessageHandlerImpl(
                 .onFailure {
                     logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
                 }
-        }
-    }
-
-    private suspend fun handleRegularMessageDeletion(
-        messageToRemove: Message,
-        senderUserId: UserId
-    ) {
-        if (isSenderVerified(messageToRemove.id, messageToRemove.conversationId, senderUserId)) {
-            messageRepository.markMessageAsDeleted(
-                messageUuid = messageToRemove.id,
-                conversationId = messageToRemove.conversationId
-            )
-        } else {
-            logger.i(message = "Delete message sender is not verified: ${messageToRemove.content}")
-        }
-    }
-
-    /**
-     * in case of ephemeral messages, we could either receive delete signal because the message expired and we want to delete it from
-     * all the clients, or when the sender is waiting for the receiver timer to run out, after that happens
-     * the receiver sends the signal to delete the message permanently
-     * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl]
-     */
-    private suspend fun handleEphemeralMessageDeletion(
-        messageToRemove: Message.Regular
-    ) {
-        if (messageToRemove.isSelfMessage) {
-            messageRepository.deleteMessage(
-                messageUuid = messageToRemove.id,
-                conversationId = messageToRemove.conversationId
-            )
-        } else {
-            val isSelfUserSender = messageToRemove.senderUserId == selfUserId
-
-            if (isSelfUserSender) {
-                messageRepository.deleteMessage(
-                    messageUuid = messageToRemove.id,
-                    conversationId = messageToRemove.conversationId
-                )
-            }
         }
     }
 
