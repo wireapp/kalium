@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -34,15 +33,14 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
-import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
-import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
-import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
 import kotlin.time.DurationUnit
@@ -72,7 +70,6 @@ internal interface ApplicationMessageHandler {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ApplicationMessageHandlerImpl(
     private val userRepository: UserRepository,
-    private val assetRepository: AssetRepository,
     private val messageRepository: MessageRepository,
     private val assetMessageHandler: AssetMessageHandler,
     private val callManagerImpl: Lazy<CallManager>,
@@ -82,6 +79,7 @@ internal class ApplicationMessageHandlerImpl(
     private val lastReadContentHandler: LastReadContentHandler,
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
+    private val deleteMessageHandler: DeleteMessageHandler,
     private val messageEncoder: MessageContentEncoder,
     private val receiptMessageHandler: ReceiptMessageHandler,
     private val selfUserId: UserId
@@ -151,14 +149,6 @@ internal class ApplicationMessageHandlerImpl(
         }
     }
 
-    /**
-     * checks if the sender of the delete message is the same as the sender of the message to be deleted
-     */
-    private fun isSenderVerified(
-        message: Message,
-        deleteMessageSenderId: UserId
-    ): Boolean = deleteMessageSenderId == message.senderUserId
-
     private suspend fun processSignaling(signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
@@ -188,7 +178,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
-            is MessageContent.DeleteMessage -> handleDeleteMessage(content, signaling.conversationId, signaling.senderUserId)
+            is MessageContent.DeleteMessage -> deleteMessageHandler(content, signaling.conversationId, signaling.senderUserId)
             is MessageContent.DeleteForMe -> deleteForMeHandler.handle(signaling, content)
             is MessageContent.Calling -> {
                 logger.d("MessageContent.Calling")
@@ -258,40 +248,6 @@ internal class ApplicationMessageHandlerImpl(
             logger.d("Received hash = ${quotedMessageSha256.toHexString()}")
             logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
             quotedReference.copy(isVerified = false)
-        }
-    }
-
-    private suspend fun handleDeleteMessage(
-        content: MessageContent.DeleteMessage,
-        conversationId: ConversationId,
-        senderUserId: UserId
-    ) {
-        messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-            val canBeDeleted = isSenderVerified(messageToRemove, senderUserId)
-            if (!canBeDeleted) return
-
-            val isOriginalEphemeral = (messageToRemove as? Message.Regular)?.expirationData != null
-            if (isOriginalEphemeral) {
-                messageRepository.deleteMessage(
-                    messageUuid = messageToRemove.id,
-                    conversationId = messageToRemove.conversationId
-                )
-            } else {
-                messageRepository.markMessageAsDeleted(
-                    messageUuid = messageToRemove.id,
-                    conversationId = messageToRemove.conversationId
-                )
-            }
-            removeAssetIfExists(messageToRemove)
-        }
-    }
-
-    private suspend fun removeAssetIfExists(messageToRemove: Message) {
-        (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-            assetRepository.deleteAssetLocally(assetId = assetToRemove.assetId)
-                .onFailure {
-                    logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
-                }
         }
     }
 
