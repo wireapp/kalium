@@ -231,7 +231,8 @@ class CallMapperImpl(
             }
 
         return MessageTarget.Client(
-            recipients = recipients
+            recipients = recipients,
+            ignoreAll = true
         )
     }
 }

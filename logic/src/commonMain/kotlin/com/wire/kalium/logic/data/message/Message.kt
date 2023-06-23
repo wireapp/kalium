@@ -20,11 +20,11 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import kotlinx.datetime.Clock
+import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -338,8 +338,8 @@ sealed interface Message {
 
         fun timeLeftForDeletion(): Duration {
             return if (selfDeletionStatus is SelfDeletionStatus.Started) {
-                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
-
+                val currentTime = DateTimeUtil.currentInstant()
+                val timeElapsedSinceSelfDeletionStartDate = currentTime - selfDeletionStatus.selfDeletionStartDate
                 // time left for deletion it can be a negative value if the time difference between the self deletion start date and
                 // now is greater then expire after millis, we normalize it to 0 seconds
                 val timeLeft = expireAfter - timeElapsedSinceSelfDeletionStartDate

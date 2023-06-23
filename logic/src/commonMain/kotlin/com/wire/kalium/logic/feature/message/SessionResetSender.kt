@@ -67,11 +67,19 @@ class SessionResetSenderImpl internal constructor(
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = selfClientId,
+                // TODO: is this correct the
+                //  message is set to SENT before it is sent
                 status = Message.Status.SENT,
                 isSelfMessage = true
             )
             val recipient = Recipient(userId, listOf(clientId))
-            messageSender.sendMessage(message, MessageTarget.Client(listOf(recipient)))
+            messageSender.sendMessage(
+                message,
+                MessageTarget.Client(
+                    listOf(recipient),
+                    true
+                )
+            )
         }
     }
 
