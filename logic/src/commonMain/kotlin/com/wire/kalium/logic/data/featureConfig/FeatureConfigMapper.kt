@@ -90,8 +90,6 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         MLSMigrationModel(
             data.config.startTime,
             data.config.finaliseRegardlessAfter,
-            data.config.usersThreshold,
-            data.config.clientsThreshold,
             fromDTO(data.status)
         )
 
@@ -138,9 +136,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         FeatureConfigData.MLSMigration(
             MLSMigrationConfigDTO(
                 model.startTime,
-                model.endTime,
-                model.usersThreshold,
-                model.clientsThreshold
+                model.endTime
             ),
             fromModel(model.status)
         )

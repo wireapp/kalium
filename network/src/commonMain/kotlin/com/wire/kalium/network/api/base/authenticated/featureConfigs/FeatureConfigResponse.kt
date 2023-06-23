@@ -99,16 +99,10 @@ data class MLSConfigDTO(
 data class MLSMigrationConfigDTO(
     // migration start timestamp
     @SerialName("startTime")
-    val startTime: Instant,
+    val startTime: Instant?,
     // timestamp of the date until the migration has to finalise
     @SerialName("finaliseRegardlessAfter")
-    val finaliseRegardlessAfter: Instant,
-    // percentage of migrated users needed for migration to finalize (0-100)
-    @SerialName("usersThreshold")
-    val usersThreshold: Int,
-    // percentage of migrated clients needed for migration to finalize (0-100)
-    @SerialName("clientsThreshold")
-    val clientsThreshold: Int
+    val finaliseRegardlessAfter: Instant?
 )
 
 @Serializable
