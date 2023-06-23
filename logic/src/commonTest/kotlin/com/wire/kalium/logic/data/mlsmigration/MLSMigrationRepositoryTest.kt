@@ -74,8 +74,6 @@ class MLSMigrationRepositoryTest {
         val configuration = MLSMigrationModel(
             Clock.System.now(),
             Clock.System.now(),
-            75,
-            85,
             Status.ENABLED
         )
         val encodedValue = Json.encodeToString(MapperProvider.featureConfigMapper().fromModel(configuration))
@@ -98,8 +96,6 @@ class MLSMigrationRepositoryTest {
         val configuration = MLSMigrationModel(
             Clock.System.now(),
             Clock.System.now(),
-            75,
-            85,
             Status.ENABLED
         )
         val encodedValue = Json.encodeToString(MapperProvider.featureConfigMapper().fromModel(configuration))
@@ -172,7 +168,7 @@ class MLSMigrationRepositoryTest {
                         1
                     ), FeatureFlagStatusDTO.ENABLED),
                 FeatureConfigData.MLSMigration(
-                    MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, 100, 100),
+                    MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                     FeatureFlagStatusDTO.ENABLED
                 )
             )

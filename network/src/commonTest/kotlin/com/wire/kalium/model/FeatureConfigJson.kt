@@ -131,7 +131,7 @@ object FeatureConfigJson {
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.MLSMigration(
-                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, 100, 90),
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
             )
         ),

@@ -341,8 +341,6 @@ class UpdateSupportedProtocolsUseCaseTest {
             val ONGOING_MIGRATION_CONFIGURATION = MLSMigrationModel(
                 Instant.DISTANT_PAST,
                 Instant.DISTANT_FUTURE,
-                0,
-                0,
                 Status.ENABLED
             )
             val COMPLETED_MIGRATION_CONFIGURATION = ONGOING_MIGRATION_CONFIGURATION

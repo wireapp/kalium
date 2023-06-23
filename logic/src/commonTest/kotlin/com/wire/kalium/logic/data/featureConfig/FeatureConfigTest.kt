@@ -46,8 +46,6 @@ object FeatureConfigTest {
         mlsMigrationModel: MLSMigrationModel? = MLSMigrationModel(
             Instant.DISTANT_FUTURE,
             Instant.DISTANT_FUTURE,
-            100,
-            100,
             Status.ENABLED
         )
     ): FeatureConfigModel = FeatureConfigModel(

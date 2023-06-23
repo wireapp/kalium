@@ -84,10 +84,8 @@ data class MLSModel(
 )
 
 data class MLSMigrationModel(
-    val startTime: Instant,
-    val endTime: Instant,
-    val usersThreshold: Int,
-    val clientsThreshold: Int,
+    val startTime: Instant?,
+    val endTime: Instant?,
     val status: Status
 )
 
