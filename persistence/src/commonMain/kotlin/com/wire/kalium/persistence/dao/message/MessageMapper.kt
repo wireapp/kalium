@@ -183,8 +183,10 @@ object MessageMapper {
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -405,7 +407,8 @@ object MessageMapper {
         quotedAssetName: String?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
-        conversationMessageTimerChanged: Long?
+        conversationMessageTimerChanged: Long?,
+        conversationProtocolChanged: ConversationEntity.Protocol?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -488,11 +491,15 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
+            MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> MessageEntityContent.HistoryLostProtocolChanged
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
                 messageTimer = conversationMessageTimerChanged
             )
 
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessageEntityContent.ConversationProtocolChanged(
+                protocol = conversationProtocolChanged ?: ConversationEntity.Protocol.PROTEUS
+            )
         }
 
         return createMessageEntity(

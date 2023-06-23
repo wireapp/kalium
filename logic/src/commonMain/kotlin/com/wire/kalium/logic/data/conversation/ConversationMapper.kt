@@ -481,3 +481,15 @@ internal fun Conversation.Protocol.toDao(): Protocol = when (this) {
     Conversation.Protocol.MIXED -> Protocol.MIXED
     Conversation.Protocol.MLS -> Protocol.MLS
 }
+
+internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
+    ConvProtocol.PROTEUS -> Conversation.Protocol.PROTEUS
+    ConvProtocol.MIXED -> Conversation.Protocol.MIXED
+    ConvProtocol.MLS -> Conversation.Protocol.MLS
+}
+
+internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
+    Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
+    Protocol.MIXED -> Conversation.Protocol.MIXED
+    Protocol.MLS -> Conversation.Protocol.MLS
+}

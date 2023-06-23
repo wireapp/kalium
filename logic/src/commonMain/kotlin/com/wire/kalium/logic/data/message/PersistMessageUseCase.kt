@@ -92,9 +92,11 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.NewConversationReceiptMode -> false
             is MessageContent.ConversationReceiptModeChanged -> false
             is MessageContent.HistoryLost -> false
+            is MessageContent.HistoryLostProtocolChanged -> false
             is MessageContent.ConversationMessageTimerChanged -> false
             is MessageContent.MemberChange.CreationAdded -> false
             is MessageContent.MemberChange.FailedToAdd -> false
             is MessageContent.ConversationCreated -> false
+            is MessageContent.ConversationProtocolChanged -> false
         }
 }

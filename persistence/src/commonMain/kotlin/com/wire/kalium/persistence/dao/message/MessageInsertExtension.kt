@@ -201,6 +201,10 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            is MessageEntityContent.HistoryLostProtocolChanged -> {
+                /* no-op */
+            }
+
             is MessageEntityContent.ConversationReceiptModeChanged -> messagesQueries.insertConversationReceiptModeChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -222,6 +226,12 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.ConversationCreated -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.ConversationProtocolChanged -> messagesQueries.insertConversationProtocolChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                protocol = content.protocol
+            )
         }
     }
 
@@ -315,7 +325,9 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
+        is MessageEntityContent.HistoryLostProtocolChanged -> MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
+        is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
     }
 }
