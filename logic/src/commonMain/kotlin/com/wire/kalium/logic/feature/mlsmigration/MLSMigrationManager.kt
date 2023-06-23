@@ -107,5 +107,5 @@ fun MLSMigrationModel.hasMigrationStarted(): Boolean {
 }
 
 fun MLSMigrationModel.hasMigrationEnded(): Boolean {
-    return status == Status.ENABLED &&  endTime?.let { Clock.System.now() > it } ?: false
+    return status == Status.ENABLED && endTime?.let { Clock.System.now() > it } ?: false
 }
