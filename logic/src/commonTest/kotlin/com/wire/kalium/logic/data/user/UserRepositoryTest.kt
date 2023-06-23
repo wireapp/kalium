@@ -28,14 +28,12 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
-import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.QualifiedID
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
@@ -60,7 +58,6 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -247,50 +244,6 @@ class UserRepositoryTest {
     }
 
     @Test
-    fun givenANewDisplayName_whenUpdatingOk_thenShouldSucceedAndPersistTheNameLocally() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withGetSelfUserId()
-            .withUpdateDisplayNameApiRequestResponse(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
-            .arrange()
-
-        val result = userRepository.updateSelfDisplayName("newDisplayName")
-
-        with(result) {
-            shouldSucceed()
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::updateSelf)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUserDisplayName)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenANewDisplayName_whenUpdatingFails_thenShouldNotPersistLocallyTheName() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withGetSelfUserId()
-            .withUpdateDisplayNameApiRequestResponse(TestNetworkResponseError.genericResponseError())
-            .arrange()
-
-        val result = userRepository.updateSelfDisplayName("newDisplayName")
-
-        with(result) {
-            shouldFail()
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::updateSelf)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUserDisplayName)
-                .with(any(), any())
-                .wasNotInvoked()
-        }
-    }
-
-    @Test
     fun givenAKnownFederatedUser_whenGettingFromDbAndCacheExpiredOrNotPresent_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
             .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.FEDERATED))
@@ -380,42 +333,6 @@ class UserRepositoryTest {
                 .wasNotInvoked()
         }
     }
-
-    @Test
-    fun givenUpdateEmailSuccess_whenChangingEmail_thenSuccessIsReturned() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withRemoteUpdateEmail(NetworkResponse.Success(true, mapOf(), 200))
-            .arrange()
-
-        val result = userRepository.updateSelfEmail("newEmail")
-
-        with(result) {
-            shouldSucceed()
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::updateEmailAddress)
-                .with(eq("newEmail"))
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenUpdateEmailFailure_whenChangingEmail_thenFailureIsReturned() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withRemoteUpdateEmail(NetworkResponse.Error(KaliumException.GenericError(IOException())))
-            .arrange()
-
-        val result = userRepository.updateSelfEmail("newEmail")
-
-        with(result) {
-            shouldFail()
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::updateEmailAddress)
-                .with(eq("newEmail"))
-                .wasInvoked(exactly = once)
-        }
-    }
-
-// TODO other UserRepository tests
 
     private class Arrangement {
         @Mock

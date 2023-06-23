@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -49,9 +48,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
-import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
@@ -89,15 +86,11 @@ internal interface UserRepository {
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
-    suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
-    suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit>
-    suspend fun updateLocalSelfUserHandle(handle: String)
     fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
-    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
 
@@ -111,13 +104,6 @@ internal interface UserRepository {
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
 
-    /**
-     * Updates the self user's email address.
-     * @param email the new email address
-     * @return [Either.Right] with [Boolean] true if the verify email was sent and false if there are no change,
-     * otherwise [Either.Left] with [NetworkFailure]
-     */
-    suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -228,10 +214,6 @@ internal class UserDataSource internal constructor(
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
-    override suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean> = wrapApiRequest {
-        selfApi.updateEmailAddress(email)
-    }
-
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
         val selfUserDomain = selfUserId.domain
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
@@ -338,21 +320,6 @@ internal class UserDataSource internal constructor(
     override suspend fun getSelfUser(): SelfUser? =
         observeSelfUser().firstOrNull()
 
-    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
-        selfApi.changeHandle(ChangeHandleRequest(handle))
-    }
-
-    override suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit> = wrapApiRequest {
-        selfApi.updateSelf(UserUpdateRequest(displayName, null, null))
-    }.flatMap {
-        wrapStorageRequest {
-            userDAO.updateUserDisplayName(selfUserId.toDao(), displayName)
-        }
-    }
-
-    override suspend fun updateLocalSelfUserHandle(handle: String) =
-        userDAO.updateUserHandle(selfUserId.toDao(), handle)
-
     override fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
         return userDAO.observeAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
@@ -398,13 +365,6 @@ internal class UserDataSource internal constructor(
                 )
             }
         }
-
-    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
-        userDAO.updateUserAvailabilityStatus(
-            selfUserId.toDao(),
-            availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
-        )
-    }
 
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
         userDAO.updateUserAvailabilityStatus(userId.toDao(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
