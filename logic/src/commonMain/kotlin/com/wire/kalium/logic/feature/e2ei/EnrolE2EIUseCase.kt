@@ -35,7 +35,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
 ) : EnrolE2EIUseCase {
     override suspend fun invoke(idToken: String): Either<CoreFailure, E2EIEnrolmentResult> {
         var step: E2EIEnrolmentResult = E2EIEnrolmentResult.NotStarted
-        kaliumLogger.e("ACME Enrolment State:>\n $step")
+        kaliumLogger.e("E2EI --> ACME Enrolment State:>\n $step")
 
         var prevNonce = ""
 
@@ -45,7 +45,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, { directories ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeDirectories, directories.toString())
-            kaliumLogger.e("Directories:>\n $directories")
+            kaliumLogger.e("E2EI --> Directories:>\n $directories")
             directories
         })
 
@@ -53,7 +53,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.AcmeNonce, it).toCoreFailure())
         }, { acmeNonce ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNonce, acmeNonce.toString())
-            kaliumLogger.e("ACMENonce:>\n $acmeNonce")
+            kaliumLogger.e("E2EI --> ACMENonce:>\n $acmeNonce")
             acmeNonce
         })
 
@@ -63,7 +63,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, { createNewAccountNonce ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNewAccount, createNewAccountNonce)
-            kaliumLogger.e("ACMENewAccount Nonce:>\n $createNewAccountNonce")
+            kaliumLogger.e("E2EI --> ACMENewAccount Nonce:>\n $createNewAccountNonce")
             createNewAccountNonce
         })
 
@@ -73,7 +73,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, { newOrderResponse ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNewOrder, newOrderResponse.toString())
-            kaliumLogger.e("NewOrderResponse:>\n $newOrderResponse")
+            kaliumLogger.e("E2EI --> NewOrderResponse:>\n $newOrderResponse")
             newOrderResponse
         })
 
@@ -85,7 +85,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, { authzResponse ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.AcmeNewAuthz, authzResponse.toString())
-            kaliumLogger.e("NewAuthz:>\n $authzResponse")
+            kaliumLogger.e("E2EI --> NewAuthz:>\n $authzResponse")
             authzResponse
         })
 
@@ -95,7 +95,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.WireNonce, it).toCoreFailure())
         }, { wireNonce ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.WireNonce, wireNonce)
-            kaliumLogger.e("WireNonce:>\n $wireNonce")
+            kaliumLogger.e("E2EI --> WireNonce:>\n $wireNonce")
             wireNonce
         })
 
@@ -105,7 +105,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.DPoPToken, it).toCoreFailure())
         }, { dpopToken ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.DPoPToken, dpopToken)
-            kaliumLogger.e("DPoPToken:>\n $dpopToken")
+            kaliumLogger.e("E2EI --> DPoPToken:>\n $dpopToken")
             dpopToken
         })
 
@@ -115,7 +115,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, { accessToken ->
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.WireAccessToken, accessToken.toString())
-            kaliumLogger.e("AccessToken:>\n $accessToken")
+            kaliumLogger.e("E2EI --> AccessToken:>\n $accessToken")
             accessToken
         })
 
@@ -129,7 +129,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.DPoPChallenge, it.toString())
-            kaliumLogger.e("DPoPChallenge:> Passed")
+            kaliumLogger.e("E2EI --> DPoPChallenge:> Passed")
             it
         })
         prevNonce = dpopChallengeResponse.nonce
@@ -144,7 +144,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.OIDCChallenge, it.toString())
-            kaliumLogger.e("OIDCChallenge:> Passed")
+            kaliumLogger.e("E2EI --> OIDCChallenge:> Passed")
             it
         })
         prevNonce = oidcChallengeResponse.nonce
@@ -155,7 +155,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.CheckOrderRequest, it.toString())
-            kaliumLogger.e("CheckOrderRequest:> $it")
+            kaliumLogger.e("E2EI --> CheckOrderRequest:> $it")
             it
         })
 
@@ -168,7 +168,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             )
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.FinalizeRequest, it.toString())
-            kaliumLogger.e("FinalizeRequest:> ${it.first.response}")
+            kaliumLogger.e("E2EI --> FinalizeRequest:> ${it.first.response}")
             it
         })
 
@@ -178,12 +178,11 @@ class EnrolE2EIUseCaseImpl internal constructor(
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.Certificate, it).toCoreFailure())
         }, {
             step = E2EIEnrolmentResult.Success(E2EIEnrolmentResult.E2EIStep.Certificate, it.response.decodeToString())
-            kaliumLogger.e("Certificate:> ${it.response.decodeToString()}")
+            kaliumLogger.e("E2EI --> Certificate:> ${it.response.decodeToString()}")
             it
         })
 
         e2EIRepository.initMLSClientWithCertificate(certificateRequest.response.decodeToString())
-
         return Either.Right(step)
     }
 
