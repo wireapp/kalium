@@ -216,6 +216,11 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOneOrNull()
     }
 
+    override suspend fun getGroupConversationIdsByProtocol(protocol: ConversationEntity.Protocol): List<QualifiedIDEntity> =
+        withContext(coroutineContext) {
+            conversationQueries.selectGroupConversationIdsByProtocol(protocol).executeAsList()
+        }
+
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
         withContext(coroutineContext) {
             conversationQueries.selectByGroupState(groupState)
@@ -290,9 +295,9 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateConversationType(type, conversationID)
         }
 
-    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol) {
-        withContext(coroutineContext) {
-            conversationQueries.updateConversationProtocol(protocol, conversationId)
+    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean {
+        return withContext(coroutineContext) {
+            conversationQueries.updateConversationProtocol(protocol, conversationId).executeAsOne() > 0
         }
     }
 

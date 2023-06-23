@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.toDao
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -240,6 +242,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
             MessageEntity.ContentType.HISTORY_LOST -> null
+            MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
@@ -247,6 +250,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> null
             MessageEntity.ContentType.COMPOSITE -> null
             MessageEntity.ContentType.FEDERATION -> null
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
         }
     }
 
@@ -348,6 +352,7 @@ class MessageMapperImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
         is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
+        is MessageEntityContent.HistoryLostProtocolChanged -> MessageContent.HistoryLostProtocolChanged
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
@@ -357,6 +362,7 @@ class MessageMapperImpl(
             MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
             MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
         }
+        is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
     }
 }
 
@@ -566,4 +572,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
         listOf(domain),
         MessageEntity.FederationType.DELETE
     )
+
+    is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
+    MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
 }

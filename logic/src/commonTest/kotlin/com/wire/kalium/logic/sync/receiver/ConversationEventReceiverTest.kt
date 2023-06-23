@@ -29,6 +29,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
@@ -268,6 +269,9 @@ class ConversationEventReceiverTest {
         @Mock
         val deletedConversationEventHandler = mock(classOf<DeletedConversationEventHandler>())
 
+        @Mock
+        val protocolUpdateEventHandler = mock(classOf<ProtocolUpdateEventHandler>())
+
         private val featureConfigEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
@@ -278,7 +282,8 @@ class ConversationEventReceiverTest {
             mlsWelcomeHandler = mLSWelcomeEventHandler,
             renamedConversationHandler = renamedConversationEventHandler,
             receiptModeUpdateEventHandler = receiptModeUpdateEventHandler,
-            conversationMessageTimerEventHandler = conversationMessageTimerEventHandler
+            conversationMessageTimerEventHandler = conversationMessageTimerEventHandler,
+            protocolUpdateEventHandler = protocolUpdateEventHandler
         )
 
         fun arrange() = this to featureConfigEventReceiver
