@@ -21,6 +21,10 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.data.conversation.Recipient
 
 sealed class MessageTarget {
-    class Client(val recipients: List<Recipient>) : MessageTarget()
+    data class Client(
+        val recipients: List<Recipient>,
+        val ignoreAll: Boolean
+    ) : MessageTarget()
+
     object Conversation : MessageTarget()
 }
