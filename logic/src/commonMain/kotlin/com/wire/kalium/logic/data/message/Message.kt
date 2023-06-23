@@ -276,6 +276,11 @@ sealed interface Message {
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )
+
+                MessageContent.HistoryLostProtocolChanged -> mutableMapOf(
+                    typeKey to "conversationMightLostHistoryProtocolChanged"
+                )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )
@@ -286,6 +291,10 @@ sealed interface Message {
 
                 is MessageContent.MLSWrongEpochWarning -> mutableMapOf(
                     typeKey to "mlsWrongEpochWarning"
+                )
+
+                is MessageContent.ConversationProtocolChanged -> mutableMapOf(
+                    typeKey to "conversationProtocolChanged"
                 )
             }
 

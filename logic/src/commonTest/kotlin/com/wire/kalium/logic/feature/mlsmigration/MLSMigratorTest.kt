@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -32,13 +33,8 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -49,7 +45,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -167,6 +162,9 @@ class MLSMigratorTest {
         @Mock
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
+        @Mock
+        val systemMessageInserter = mock(classOf<SystemMessageInserter>())
+
         fun withFetchKnownUsersSucceeding() = apply {
             given(userRepository)
                 .suspendFunction(userRepository::fetchKnownUsers)
@@ -208,7 +206,7 @@ class MLSMigratorTest {
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(Unit))
         }
-        fun withUpdateProtocolReturns(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+        fun withUpdateProtocolReturns(result: Either<CoreFailure, Boolean> = Either.Right(true)) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateProtocol)
                 .whenInvokedWith(any(), any())
@@ -237,10 +235,12 @@ class MLSMigratorTest {
         }
 
         fun arrange() = this to MLSMigratorImpl(
+            TestUser.SELF.id,
             selfTeamIdProvider,
             userRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            systemMessageInserter
         )
 
         init {
