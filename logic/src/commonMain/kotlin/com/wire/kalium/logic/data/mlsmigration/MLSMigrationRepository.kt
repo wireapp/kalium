@@ -60,9 +60,7 @@ internal class MLSMigrationRepositoryImpl(
                     setMigrationConfiguration(
                         MLSMigrationModel( // TODO jacob debugging values while not implemented on BE
                             Instant.DISTANT_PAST,
-                            Instant.DISTANT_PAST,
-                            100,
-                            100,
+                            Instant.DISTANT_FUTURE,
                             Status.ENABLED
                         )
                     )
