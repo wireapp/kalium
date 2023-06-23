@@ -362,7 +362,8 @@ class MessageSenderTest {
             recipients = listOf(
                 Arrangement.TEST_RECIPIENT_1,
                 Arrangement.TEST_RECIPIENT_2
-            )
+            ),
+            ignoreAll = false
         )
 
         arrangement.testScope.runTest {

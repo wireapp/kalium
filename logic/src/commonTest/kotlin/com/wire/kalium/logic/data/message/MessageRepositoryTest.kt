@@ -191,7 +191,8 @@ class MessageRepositoryTest {
                         id = TEST_USER_ID,
                         clients = listOf(TEST_CLIENT_ID)
                     )
-                )
+                ),
+                ignoreAll = false
             )
         ).shouldSucceed()
 

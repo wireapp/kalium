@@ -306,7 +306,8 @@ class CallMapperTest {
                         ClientId(TestCall.CLIENT_ID_2)
                     )
                 )
-            )
+            ),
+            ignoreAll = false
         )
 
         // when
