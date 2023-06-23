@@ -85,8 +85,6 @@ class FeatureConfigRepositoryTest {
             MLSMigrationModel(
                 Instant.DISTANT_FUTURE,
                 Instant.DISTANT_FUTURE,
-                100,
-                100,
                 Status.ENABLED
             )
         )
@@ -165,7 +163,7 @@ class FeatureConfigRepositoryTest {
                 1
             ), FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.MLSMigration(
-                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, 100, 100),
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
             )
         )
