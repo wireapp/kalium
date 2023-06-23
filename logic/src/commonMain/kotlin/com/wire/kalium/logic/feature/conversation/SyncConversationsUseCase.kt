@@ -19,8 +19,13 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 
 internal interface SyncConversationsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
@@ -29,10 +34,27 @@ internal interface SyncConversationsUseCase {
  * This use case will sync against the backend the conversations of the current user.
  */
 internal class SyncConversationsUseCaseImpl(
-    private val conversationRepository: ConversationRepository
-) : SyncConversationsUseCase {
+    private val conversationRepository: ConversationRepository,
+    private val systemMessageInserter: SystemMessageInserter
+) : SyncConversationsUseCase  {
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> =
+        conversationRepository.getGroupConversationIdsByProtocol(Conversation.Protocol.PROTEUS)
+            .flatMap { proteusConversationIds ->
+                conversationRepository.fetchConversations()
+                    .flatMap {
+                        reportConversationsWithPotentialHistoryLoss(proteusConversationIds)
+                    }
+            }
 
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return conversationRepository.fetchConversations()
-    }
+    private suspend fun reportConversationsWithPotentialHistoryLoss(
+        proteusConversationIds: List<ConversationId>
+    ): Either<StorageFailure, Unit> =
+        conversationRepository.getGroupConversationIdsByProtocol(Conversation.Protocol.MLS)
+            .flatMap { mlsConversationIds ->
+                val conversationsWithUpgradedProtocol = mlsConversationIds.intersect(proteusConversationIds)
+                for (conversationId in conversationsWithUpgradedProtocol) {
+                    systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(conversationId)
+                }
+                Either.Right(Unit)
+            }
 }
