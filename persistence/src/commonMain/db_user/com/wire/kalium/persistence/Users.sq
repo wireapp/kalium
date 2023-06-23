@@ -75,8 +75,8 @@ SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, user_type =
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:
-INSERT OR IGNORE INTO User(qualified_id)
-VALUES(?);
+INSERT OR IGNORE INTO User(qualified_id, incomplete_metadata)
+VALUES(?, 1);
 
 updateSelfUser:
 UPDATE User
