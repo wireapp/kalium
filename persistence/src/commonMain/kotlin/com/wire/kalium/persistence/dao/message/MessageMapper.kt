@@ -194,6 +194,7 @@ object MessageMapper {
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
@@ -202,6 +203,7 @@ object MessageMapper {
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -439,7 +441,8 @@ object MessageMapper {
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
         federationDomainList: List<String>?,
-        federationType: MessageEntity.FederationType?
+        federationType: MessageEntity.FederationType?,
+        conversationProtocolChanged: ConversationEntity.Protocol?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -553,6 +556,7 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
+            MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> MessageEntityContent.HistoryLostProtocolChanged
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
                 messageTimer = messageTimerChanged
             )
@@ -564,6 +568,10 @@ object MessageMapper {
             MessageEntity.ContentType.FEDERATION -> MessageEntityContent.Federation(
                 domainList = federationDomainList.requireField("federationDomainList"),
                 type = federationType.requireField("federationType")
+            )
+
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessageEntityContent.ConversationProtocolChanged(
+                protocol = conversationProtocolChanged ?: ConversationEntity.Protocol.PROTEUS
             )
         }
 
