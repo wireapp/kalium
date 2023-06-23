@@ -132,8 +132,6 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
         val MIGRATION_CONFIGURATION_DISABLED = MLSMigrationModel(
             startTime = Instant.DISTANT_FUTURE,
             endTime = Instant.DISTANT_FUTURE,
-            usersThreshold = 0,
-            clientsThreshold = 0,
             status = Status.DISABLED
         )
     }

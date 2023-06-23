@@ -103,9 +103,9 @@ internal class MLSMigrationManagerImpl(
 }
 
 fun MLSMigrationModel.hasMigrationStarted(): Boolean {
-    return status == Status.ENABLED && Clock.System.now() > startTime
+    return status == Status.ENABLED && startTime?.let { Clock.System.now() > it } ?: false
 }
 
 fun MLSMigrationModel.hasMigrationEnded(): Boolean {
-    return status == Status.ENABLED && Clock.System.now() > endTime
+    return status == Status.ENABLED && endTime?.let { Clock.System.now() > it } ?: false
 }
