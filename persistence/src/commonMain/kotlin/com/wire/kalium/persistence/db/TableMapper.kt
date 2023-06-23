@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
+import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
@@ -178,7 +179,10 @@ internal object TableMapper {
     val messageConversationTimerChangedContentAdapter = MessageConversationTimerChangedContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
     )
-
+    val messageConversationProtocolChangedContentAdapter = MessageConversationProtocolChangedContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        protocolAdapter = EnumColumnAdapter()
+    )
     val unreadEventAdapter = UnreadEvent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         typeAdapter = EnumColumnAdapter(),

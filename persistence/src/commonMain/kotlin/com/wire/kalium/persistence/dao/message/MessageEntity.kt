@@ -180,10 +180,27 @@ sealed interface MessageEntity {
 
     @Serializable
     enum class ContentType {
-        TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
-        CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
-        NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
-        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS, CONVERSATION_DEGRADED_PREOTEUS,
+        TEXT,
+        ASSET,
+        KNOCK,
+        MEMBER_CHANGE,
+        MISSED_CALL,
+        RESTRICTED_ASSET,
+        CONVERSATION_RENAMED,
+        UNKNOWN,
+        FAILED_DECRYPTION,
+        REMOVED_FROM_TEAM,
+        CRYPTO_SESSION_RESET,
+        NEW_CONVERSATION_RECEIPT_MODE,
+        CONVERSATION_RECEIPT_MODE_CHANGED,
+        HISTORY_LOST,
+        HISTORY_LOST_PROTOCOL_CHANGED,
+        CONVERSATION_MESSAGE_TIMER_CHANGED,
+        CONVERSATION_CREATED,
+        MLS_WRONG_EPOCH_WARNING,
+        CONVERSATION_PROTOCOL_CHANGED,
+        CONVERSATION_DEGRADED_MLS,
+        CONVERSATION_DEGRADED_PREOTEUS,
         COMPOSITE
     }
 
@@ -313,6 +330,8 @@ sealed class MessageEntityContent {
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
+    data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
+    object HistoryLostProtocolChanged : System()
     object HistoryLost : System()
     object ConversationCreated : System()
     object ConversationDegradedMLS : System()

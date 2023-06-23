@@ -305,6 +305,10 @@ sealed interface Message {
                     typeKey to "conversationMightLostHistory"
                 )
 
+                MessageContent.HistoryLostProtocolChanged -> mutableMapOf(
+                    typeKey to "conversationMightLostHistoryProtocolChanged"
+                )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )
@@ -323,6 +327,10 @@ sealed interface Message {
 
                 is MessageContent.ConversationDegradedProteus -> mutableMapOf(
                     typeKey to "conversationDegradedProteus"
+                )
+
+                is MessageContent.ConversationProtocolChanged -> mutableMapOf(
+                    typeKey to "conversationProtocolChanged"
                 )
             }
 

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -88,7 +89,20 @@ class EventMapper(
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO, transient)
         }
+
+    private fun conversationProtocolUpdate(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ProtocolUpdate,
+        transient: Boolean
+    ): Event = Event.Conversation.ConversationProtocol(
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        transient = transient,
+        protocol = eventContentDTO.data.protocol.toModel(),
+        senderUserId = eventContentDTO.qualifiedFrom.toModel()
+    )
 
     fun conversationMessageTimerUpdate(
         id: String,

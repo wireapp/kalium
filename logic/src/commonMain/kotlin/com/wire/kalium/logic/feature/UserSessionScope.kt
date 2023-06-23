@@ -94,6 +94,7 @@ import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
+import com.wire.kalium.logic.data.message.SystemMessageInserterImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepositoryImpl
@@ -304,6 +305,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandlerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
@@ -771,7 +774,10 @@ class UserSessionScope internal constructor(
     )
 
     private val syncConversations: SyncConversationsUseCase
-        get() = SyncConversationsUseCase(conversationRepository)
+        get() = SyncConversationsUseCase(
+            conversationRepository,
+            systemMessageBuilder
+        )
 
     private val syncConnections: SyncConnectionsUseCase
         get() = SyncConnectionsUseCaseImpl(
@@ -914,10 +920,12 @@ class UserSessionScope internal constructor(
 
     private val mlsMigrator: MLSMigrator
         get() = MLSMigratorImpl(
+            userId,
             selfTeamId,
             userRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            systemMessageBuilder
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
@@ -1023,6 +1031,8 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
+    private val systemMessageBuilder get() = SystemMessageInserterImpl(userId, persistMessage)
+
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
             selfUserId = this.userId,
@@ -1124,6 +1134,12 @@ class UserSessionScope internal constructor(
             persistMessage = persistMessage
         )
 
+    private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
+        get() = ProtocolUpdateEventHandlerImpl(
+            conversationDAO = userStorage.database.conversationDAO,
+            systemMessageInserter = systemMessageBuilder
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1135,7 +1151,8 @@ class UserSessionScope internal constructor(
             mlsWelcomeHandler,
             renamedConversationHandler,
             receiptModeUpdateEventHandler,
-            conversationMessageTimerEventHandler
+            conversationMessageTimerEventHandler,
+            protocolUpdateEventHandler
         )
     }
 
