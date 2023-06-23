@@ -24,7 +24,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -343,6 +343,22 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
         ) : Conversation(id, transient, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeDeleted")
+        }
+
+        data class ConversationProtocol(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+            val protocol: Protocol,
+            val senderUserId: UserId
+        ) : Conversation(id, transient, conversationId) {
+            override fun toLogMap() = mapOf(
+                typeKey to "Conversation.ConversationProtocol",
+                idKey to id.obfuscateId(),
+                conversationIdKey to conversationId.toLogString(),
+                "protocol" to protocol.name,
+                senderUserIdKey to senderUserId.toLogString(),
+            )
         }
     }
 

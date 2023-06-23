@@ -50,6 +50,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -157,6 +158,26 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result =
             conversationDAO.getConversationsByGroupState(ConversationEntity.GroupState.ESTABLISHED)
         assertEquals(listOf(conversationEntity6.toViewEntity(user2)), result)
+    }
+
+    @Test
+    fun givenExistingGroupConversations_whenGetGroupConversationIdsByProtocol_ThenConversationIdsWithGivenProtocolIsReturned() = runTest {
+        conversationDAO.insertConversation(conversationEntity4)
+        conversationDAO.insertConversation(conversationEntity5)
+        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+        val result =
+            conversationDAO.getGroupConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
+        assertEquals(listOf(conversationEntity5.id), result)
+    }
+
+    @Test
+    fun givenExistingSelfAndOneToOneConversations_whenGetGroupConversationIdsByProtocol_ThenAnEmptyListIsReturned() = runTest {
+        conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity5.copy(type = ConversationEntity.Type.ONE_ON_ONE))
+        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+        val result =
+            conversationDAO.getGroupConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
+        assertEquals(emptyList(), result)
     }
 
     @Test
@@ -378,6 +399,29 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
         )
 
+    }
+
+    @Test
+    fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest {
+        val conversation = conversationEntity5
+        val updatedProtocol = ConversationEntity.Protocol.MLS
+
+        conversationDAO.insertConversation(conversation)
+        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+
+        assertTrue(changed)
+        assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.protocol, updatedProtocol)
+    }
+
+    @Test
+    fun givenSameValue_whenUpdatingProtocol_thenItsReportedAsUnchanged() = runTest {
+        val conversation = conversationEntity5
+        val updatedProtocol = ConversationEntity.Protocol.PROTEUS
+
+        conversationDAO.insertConversation(conversation)
+        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+
+        assertFalse(changed)
     }
 
     @Test
