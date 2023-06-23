@@ -1101,4 +1101,39 @@ class ConversationDAOTest : BaseDatabaseTest() {
             Instant.DISTANT_FUTURE
         )
     }
+
+    @Test
+    fun givenLocalConversations_whenGettingAllConversations_thenShouldReturnsOnlyConversationsWithMetadata() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        userDAO.insertUser(user1) // user with metadata
+        userDAO.insertUser(user2.copy(name = null)) // user without metadata
+
+        conversationDAO.insertMember(member1, conversationEntity1.id)
+        conversationDAO.insertMember(member2, conversationEntity1.id)
+
+        conversationDAO.getAllConversationDetails().first().let {
+            assertEquals(1, it.size)
+            assertEquals(conversationEntity1.id, it.first().id)
+        }
+    }
+
+    @Test
+    fun givenLocalConversations_whenGettingConversationsWithoutMetadata_thenShouldReturnsOnlyConversationsWithIncompleteMetadataTrue() =
+        runTest {
+            conversationDAO.insertConversation(conversationEntity1)
+            conversationDAO.insertConversation(conversationEntity2.copy(hasIncompleteMetadata = true))
+
+            userDAO.insertUser(user1)
+            userDAO.insertUser(user2)
+
+            conversationDAO.insertMember(member1, conversationEntity1.id)
+            conversationDAO.insertMember(member2, conversationEntity1.id)
+
+            conversationDAO.getConversationsWithoutMetadata().let {
+                assertEquals(1, it.size)
+                assertEquals(conversationEntity2.id, it.first())
+            }
+        }
 }
