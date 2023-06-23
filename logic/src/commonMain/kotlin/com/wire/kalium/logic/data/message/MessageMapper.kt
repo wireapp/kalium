@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.toDao
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -229,9 +231,11 @@ class MessageMapperImpl(
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> null
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> null
             MessageEntity.ContentType.HISTORY_LOST -> null
+            MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
         }
     }
 
@@ -327,9 +331,11 @@ class MessageMapperImpl(
         is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
         is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
         is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
+        is MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
         is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
         is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
         is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
+        is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -414,9 +420,11 @@ class MessageMapperImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
         is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
+        is MessageEntityContent.HistoryLostProtocolChanged -> MessageContent.HistoryLostProtocolChanged
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
+        is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
     }
 }
 

@@ -107,6 +107,11 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
         val mlsIsSupported = mlsConfiguration.supportedProtocols.contains(SupportedProtocol.MLS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
         val allSelfClientsAreMLSCapable = selfClients.all { it.isMLSCapable }
+        kaliumLogger.d(
+            "mls is supported = $mlsIsSupported, " +
+                    "all self clients are mls capable = $allSelfClientsAreMLSCapable " +
+                    "migration has ended = $mlsMigrationHasEnded"
+        )
         return mlsIsSupported && (mlsMigrationHasEnded || allSelfClientsAreMLSCapable)
     }
 
@@ -116,6 +121,10 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
     ): Boolean {
         val proteusIsSupported = mlsConfiguration.supportedProtocols.contains(SupportedProtocol.PROTEUS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
+        kaliumLogger.d(
+            "proteus is supported = $proteusIsSupported, " +
+                    "migration has ended = $mlsMigrationHasEnded"
+        )
         return proteusIsSupported || !mlsMigrationHasEnded
     }
 
