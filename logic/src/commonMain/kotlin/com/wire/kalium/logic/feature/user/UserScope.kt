@@ -133,4 +133,6 @@ class UserScope internal constructor(
     val updateEmail: UpdateEmailUseCase get() = UpdateEmailUseCase(accountRepository)
 
     val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
+
+    val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
 }
