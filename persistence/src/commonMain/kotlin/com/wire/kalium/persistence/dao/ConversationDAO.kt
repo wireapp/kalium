@@ -173,7 +173,7 @@ interface ConversationDAO {
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>>
-    suspend fun getAllProteusTeamConversations(teamId: String): List<QualifiedIDEntity>
+    suspend fun getAllTeamConversations(teamId: String, protocol: ConversationEntity.Protocol): List<QualifiedIDEntity>
     suspend fun getAllProteusTeamConversationsReadyToBeFinalised(teamId: String): List<QualifiedIDEntity>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>

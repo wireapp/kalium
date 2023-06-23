@@ -335,9 +335,9 @@ class ConversationDAOImpl(
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
-    override suspend fun getAllProteusTeamConversations(teamId: String): List<QualifiedIDEntity> {
+    override suspend fun getAllTeamConversations(teamId: String, protocol: ConversationEntity.Protocol): List<QualifiedIDEntity> {
         return withContext(coroutineContext) {
-            conversationQueries.selectAllTeamProteusConversations(teamId)
+            conversationQueries.selectAllTeamConversationsWithProtocol(protocol, teamId)
                 .executeAsList()
         }
     }

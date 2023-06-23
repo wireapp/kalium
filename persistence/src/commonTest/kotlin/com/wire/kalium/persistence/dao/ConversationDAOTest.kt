@@ -184,7 +184,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user2, conversationEntity5.id)
 
         val result =
-            conversationDAO.getAllProteusTeamConversations(teamId)
+            conversationDAO.getAllTeamConversations(teamId)
 
         assertEquals(listOf(conversationEntity5.id), result)
     }
