@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
@@ -210,6 +211,7 @@ interface ConversationRepository {
     suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
     suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer?>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
+    suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -266,7 +268,8 @@ internal class ConversationDataSource internal constructor(
                 }.onSuccess { conversations ->
                     if (conversations.conversationsFailed.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
-                            .d("Skipping ${conversations.conversationsFailed.size} conversations failed")
+                            .d("Handling ${conversations.conversationsFailed.size} conversations failed")
+                        persistIncompleteConversations(conversations.conversationsFailed)
                     }
                     if (conversations.conversationsNotFound.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
@@ -749,6 +752,31 @@ internal class ConversationDataSource internal constructor(
             conversationId = conversationId.toDao(),
             messageTimer = selfDeletionTimer.toDuration().inWholeMilliseconds
         )
+    }
+
+    override suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        val conversationsWithoutMetadata = conversationDAO.getConversationsWithoutMetadata()
+        if (conversationsWithoutMetadata.isNotEmpty()) {
+            kaliumLogger.d("Numbers of conversations to refresh: ${conversationsWithoutMetadata.size}")
+            val conversationsWithoutMetadataIds = conversationsWithoutMetadata.map { it.toApi() }
+            wrapApiRequest {
+                conversationApi.fetchConversationsListDetails(conversationsWithoutMetadataIds)
+            }.onSuccess {
+                persistConversations(it.conversationsFound, null)
+            }
+        }
+    }
+
+    private suspend fun persistIncompleteConversations(
+        conversationsFailed: List<NetworkQualifiedId>
+    ): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            if (conversationsFailed.isNotEmpty()) {
+                conversationDAO.insertConversations(conversationsFailed.map { conversationId ->
+                    conversationMapper.fromFailedGroupConversationToEntity(conversationId)
+                })
+            }
+        }
     }
 
     companion object {
