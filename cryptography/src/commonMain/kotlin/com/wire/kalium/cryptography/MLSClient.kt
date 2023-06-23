@@ -26,7 +26,7 @@ typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
 
-enum class PublicGroupStateEncryptionType {
+enum class GroupInfoEncryptionType {
     PLAINTEXT,
     JWE_ENCRYPTED
 }
@@ -37,8 +37,8 @@ enum class RatchetTreeType {
     BY_REF
 }
 
-open class PublicGroupStateBundle(
-    var encryptionType: PublicGroupStateEncryptionType,
+open class GroupInfoBundle(
+    var encryptionType: GroupInfoEncryptionType,
     var ratchetTreeType: RatchetTreeType,
     var payload: ByteArray
 )
@@ -46,7 +46,7 @@ open class PublicGroupStateBundle(
 open class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val publicGroupStateBundle: PublicGroupStateBundle
+    val groupInfoBundle: GroupInfoBundle
 )
 
 class DecryptedMessageBundle(

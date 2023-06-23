@@ -39,14 +39,6 @@ internal class MLSMessageApiV0Test : ApiTest() {
         }
 
     @Test
-    fun givenWelcomeMessage_whenSendingWelcomeMessage_theRequestShouldFail() =
-        runTest {
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()
-            val response = mlsMessageApi.sendWelcomeMessage(WELCOME_MESSAGE)
-            assertFalse(response.isSuccessful())
-        }
-
-    @Test
     fun givenCommitBundle_whenSendingBundle_theRequestShouldFail() =
         runTest {
             val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()

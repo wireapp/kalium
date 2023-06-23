@@ -254,15 +254,15 @@ actual class MLSClientImpl actual constructor(
             toPublicGroupStateBundle(value.publicGroupState)
         )
 
-        fun toPublicGroupStateBundle(value: com.wire.crypto.PublicGroupStateBundle) = PublicGroupStateBundle(
+        fun toPublicGroupStateBundle(value: com.wire.crypto.PublicGroupStateBundle) = GroupInfoBundle(
             toEncryptionType(value.encryptionType),
             toRatchetTreeType(value.ratchetTreeType),
             toByteArray(value.payload)
         )
 
         fun toEncryptionType(value: MlsPublicGroupStateEncryptionType) = when (value) {
-            MlsPublicGroupStateEncryptionType.PLAINTEXT -> PublicGroupStateEncryptionType.PLAINTEXT
-            MlsPublicGroupStateEncryptionType.JWE_ENCRYPTED -> PublicGroupStateEncryptionType.JWE_ENCRYPTED
+            MlsPublicGroupStateEncryptionType.PLAINTEXT -> GroupInfoEncryptionType.PLAINTEXT
+            MlsPublicGroupStateEncryptionType.JWE_ENCRYPTED -> GroupInfoEncryptionType.JWE_ENCRYPTED
         }
 
         fun toRatchetTreeType(value: MlsRatchetTreeType) = when (value) {
