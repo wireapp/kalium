@@ -130,6 +130,7 @@ interface ConversationRepository {
     suspend fun getRecipientById(conversationId: ConversationId, userIDList: List<UserId>): Either<StorageFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
+    suspend fun getGroupConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
 
     /**
@@ -242,7 +243,13 @@ interface ConversationRepository {
     suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
 
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
-    suspend fun updateProtocol(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Unit>
+
+    /**
+     * Update a conversation's protocol.
+     *
+     * @return **true** if the protocol was changed or **false** if the protocol was unchanged.
+     */
+    suspend fun updateProtocol(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -524,6 +531,11 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getConversationProtocolInfo(conversationId.toDao())?.let {
                 protocolInfoMapper.fromEntity(it)
             }
+        }
+
+    override suspend fun getGroupConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>> =
+        wrapStorageRequest {
+            conversationDAO.getGroupConversationIdsByProtocol(protocol.toDao()).map(QualifiedIDEntity::toModel)
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
@@ -901,14 +913,14 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateProtocol(
         conversationId: ConversationId,
         protocol: Conversation.Protocol
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Boolean> =
         wrapApiRequest {
             conversationApi.updateProtocol(conversationId.toApi(), protocol.toApi())
         }.flatMap { response ->
             when (response) {
                 UpdateConversationProtocolResponse.ProtocolUnchanged -> {
                     // no need to update conversation
-                    Either.Right(Unit)
+                    Either.Right(false)
                 }
 
                 is UpdateConversationProtocolResponse.ProtocolUpdated -> {
@@ -921,9 +933,9 @@ internal class ConversationDataSource internal constructor(
                                     conversationId = conversationId.toDao(),
                                     protocol = protocol.toDao()
                                 )
-                            }
+                            }.map {}
                         }
-                    }
+                    }.map { true }
                 }
             }
         }
