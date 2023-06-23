@@ -22,6 +22,7 @@ import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry
+import com.wire.kalium.protobuf.otr.QualifiedUserId
 import com.wire.kalium.protobuf.otr.UserEntry
 import com.wire.kalium.protobuf.otr.UserId
 import pbandk.ByteArr
@@ -56,9 +57,20 @@ internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
             is MessageApi.QualifiedMessageOption.IgnoreAll -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(ClientMismatchStrategy.IgnoreAll())
             }
+
             is MessageApi.QualifiedMessageOption.ReportAll -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll())
             }
+
+            is MessageApi.QualifiedMessageOption.IgnoreSome -> {
+                val ignoreSome = envelopeParameters.messageOption
+                QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly(
+                    ClientMismatchStrategy.IgnoreOnly(
+                        userIds = ignoreSome.userIDs.map { QualifiedUserId(it.value, it.domain) }
+                    )
+                )
+            }
+
             else -> {
                 kaliumLogger.w("[EnvelopeProtoMapper] - Other types not being handled yet.")
                 QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll())

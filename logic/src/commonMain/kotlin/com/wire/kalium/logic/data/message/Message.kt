@@ -20,10 +20,10 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
@@ -80,7 +80,8 @@ sealed interface Message {
         val editStatus: EditStatus,
         val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
-        val expectsReadConfirmation: Boolean = false
+        val expectsReadConfirmation: Boolean = false,
+        val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
     ) : Sendable, Standalone {
 
         @Suppress("LongMethod")
@@ -133,7 +134,8 @@ sealed interface Message {
                 "visibility" to "$visibility",
                 "senderClientId" to senderClientId.value.obfuscateId(),
                 "editStatus" to editStatus.toLogMap(),
-                "expectsReadConfirmation" to "$expectsReadConfirmation"
+                "expectsReadConfirmation" to "$expectsReadConfirmation",
+                "deliveryStatus" to "$deliveryStatus"
             )
 
             properties.putAll(standardProperties)
@@ -456,3 +458,12 @@ enum class AssetType {
 
 typealias ReactionsCount = Map<String, Int>
 typealias UserReactions = Set<String>
+
+sealed class DeliveryStatus {
+    data class PartialDelivery(
+        val recipientsFailedWithNoClients: List<UserId>,
+        val recipientsFailedDelivery: List<UserId>
+    ) : DeliveryStatus()
+
+    object CompleteDelivery : DeliveryStatus()
+}

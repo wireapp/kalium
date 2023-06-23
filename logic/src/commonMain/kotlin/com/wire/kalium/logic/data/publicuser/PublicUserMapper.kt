@@ -120,6 +120,6 @@ class PublicUserMapperImpl(
         availabilityStatus = UserAvailabilityStatus.NONE,
         userType = userType,
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
-        deleted = userDetailResponse.deleted ?: false
+        deleted = userDetailResponse.deleted ?: false,
     )
 }

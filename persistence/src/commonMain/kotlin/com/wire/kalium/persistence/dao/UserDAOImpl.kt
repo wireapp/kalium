@@ -49,7 +49,8 @@ class UserMapper {
             availabilityStatus = user.user_availability_status,
             userType = user.user_type,
             botService = user.bot_service,
-            deleted = user.deleted
+            deleted = user.deleted,
+            hasIncompleteMetadata = user.incomplete_metadata
         )
     }
 
@@ -69,6 +70,7 @@ class UserMapper {
         userType: UserTypeEntity,
         botService: BotIdEntity?,
         deleted: Boolean,
+        hasIncompleteMetadata: Boolean,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -87,7 +89,8 @@ class UserMapper {
             availabilityStatus = userAvailabilityStatus,
             userType = userType,
             botService = botService,
-            deleted = deleted
+            deleted = deleted,
+            hasIncompleteMetadata = hasIncompleteMetadata
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -134,7 +137,8 @@ class UserDAOImpl internal constructor(
             user.completeAssetId,
             user.userType,
             user.botService,
-            user.deleted
+            user.deleted,
+            user.hasIncompleteMetadata
         )
     }
 
@@ -154,7 +158,8 @@ class UserDAOImpl internal constructor(
                     user.completeAssetId,
                     user.userType,
                     user.botService,
-                    user.deleted
+                    user.deleted,
+                    user.hasIncompleteMetadata
                 )
             }
         }
@@ -190,7 +195,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.hasIncompleteMetadata
                     )
                 }
             }
@@ -211,7 +217,8 @@ class UserDAOImpl internal constructor(
                     user.completeAssetId,
                     user.userType,
                     user.botService,
-                    user.id,
+                    false,
+                    user.id
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
@@ -228,7 +235,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.hasIncompleteMetadata
                     )
                 }
             }
@@ -254,7 +262,8 @@ class UserDAOImpl internal constructor(
                         user.completeAssetId,
                         user.userType,
                         user.botService,
-                        user.deleted
+                        user.deleted,
+                        user.hasIncompleteMetadata
                     )
                 }
             }
@@ -384,5 +393,11 @@ class UserDAOImpl internal constructor(
 
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
         userQueries.updateUserDisplayName(displayName, selfUserId)
+    }
+
+    override suspend fun getUsersWithoutMetadata() = withContext(queriesContext) {
+        userQueries.selectUsersWithoutMetadata()
+            .executeAsList()
+            .map(mapper::toModel)
     }
 }

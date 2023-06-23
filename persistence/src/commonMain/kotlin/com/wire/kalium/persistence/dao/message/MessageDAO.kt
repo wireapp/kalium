@@ -132,5 +132,12 @@ interface MessageDAO {
 
     suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long
 
+    suspend fun insertFailedRecipientDelivery(
+        id: String,
+        conversationsId: QualifiedIDEntity,
+        recipientsFailed: List<QualifiedIDEntity>,
+        recipientFailureTypeEntity: RecipientFailureTypeEntity
+    )
+
     val platformExtensions: MessageExtensions
 }
