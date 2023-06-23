@@ -203,6 +203,10 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            is MessageEntityContent.HistoryLostProtocolChanged -> {
+                /* no-op */
+            }
+
             is MessageEntityContent.ConversationReceiptModeChanged -> messagesQueries.insertConversationReceiptModeChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -243,6 +247,12 @@ internal class MessageInsertExtensionImpl(
                     federation_type = content.type
                 )
             }
+
+            is MessageEntityContent.ConversationProtocolChanged -> messagesQueries.insertConversationProtocolChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                protocol = content.protocol
+            )
         }
     }
 
@@ -286,8 +296,10 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.ConversationMessageTimerChanged,
                 is MessageEntityContent.ConversationReceiptModeChanged,
                 is MessageEntityContent.ConversationRenamed,
+                is MessageEntityContent.ConversationProtocolChanged,
                 MessageEntityContent.CryptoSessionReset,
                 MessageEntityContent.HistoryLost,
+                MessageEntityContent.HistoryLostProtocolChanged,
                 MessageEntityContent.MLSWrongEpochWarning,
                 is MessageEntityContent.MemberChange,
                 is MessageEntityContent.NewConversationReceiptMode,
@@ -376,6 +388,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
+        is MessageEntityContent.HistoryLostProtocolChanged -> MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
         is MessageEntityContent.MLSWrongEpochWarning -> MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING
@@ -383,5 +396,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS
         is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
         is MessageEntityContent.Federation -> MessageEntity.ContentType.FEDERATION
+        is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
     }
 }

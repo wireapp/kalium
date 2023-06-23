@@ -276,6 +276,9 @@ SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS "ML
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
+selectGroupConversationIdsByProtocol:
+SELECT qualified_id FROM Conversation WHERE protocol = ? AND type IS 'GROUP';
+
 updateConversationMutingStatus:
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?
@@ -312,10 +315,12 @@ UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
 
-updateConversationProtocol:
+updateConversationProtocol {
 UPDATE Conversation
-SET protocol = ?
-WHERE qualified_id = ?;
+SET protocol = :protocol
+WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SELECT changes();
+}
 
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;

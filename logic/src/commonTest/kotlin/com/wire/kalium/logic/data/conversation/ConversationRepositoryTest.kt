@@ -1067,6 +1067,7 @@ class ConversationRepositoryTest {
 
         val (arrange, conversationRepository) = Arrangement()
             .withUpdateProtocolResponse(UPDATE_PROTOCOL_SUCCESS)
+            .withDaoUpdateProtocolSuccess()
             .arrange()
 
         // when
@@ -1319,6 +1320,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::updateAccess)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Unit)
+        }
+
+        fun withDaoUpdateProtocolSuccess() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateConversationProtocol)
+                .whenInvokedWith(any(), any())
+                .thenReturn(true)
         }
 
         fun withGetConversationProtocolInfoReturns(result: ConversationEntity.ProtocolInfo) = apply {
