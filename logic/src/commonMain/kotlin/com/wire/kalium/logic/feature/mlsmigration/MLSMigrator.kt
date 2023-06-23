@@ -53,7 +53,7 @@ internal class MLSMigratorImpl(
         selfTeamIdProvider().flatMap {
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
-            conversationRepository.getTeamConversations(teamId, Protocol.PROTEUS)
+            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.PROTEUS, teamId)
                 .flatMap {
                     it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         migrate(conversationId)
@@ -65,7 +65,7 @@ internal class MLSMigratorImpl(
         selfTeamIdProvider().flatMap {
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
-            conversationRepository.getTeamConversations(teamId, Protocol.MIXED)
+            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.MIXED, teamId)
                 .flatMap {
                     it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         finalise(conversationId)
@@ -79,7 +79,7 @@ internal class MLSMigratorImpl(
         }.flatMap { teamId ->
             userRepository.fetchKnownUsers()
                 .flatMap {
-                    conversationRepository.getTeamConversationsReadyForFinalisation(teamId)
+                    conversationRepository.getTeamConversationIdsReadyForFinalisation(teamId)
                         .flatMap {
                             it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                                 finalise(conversationId)

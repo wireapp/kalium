@@ -118,8 +118,12 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun getTeamConversations(teamId: TeamId, protocol: Conversation.Protocol): Either<StorageFailure, List<QualifiedID>>
-    suspend fun getTeamConversationsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
+    suspend fun getConversationIds(
+        type: Conversation.Type,
+        protocol: Conversation.Protocol,
+        teamId: TeamId? = null
+    ): Either<StorageFailure, List<QualifiedID>>
+    suspend fun getTeamConversationIdsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
     suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -131,7 +135,6 @@ interface ConversationRepository {
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
-    suspend fun getGroupConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
 
     /**
@@ -393,15 +396,18 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun getTeamConversations(teamId: TeamId, protocol: Conversation.Protocol): Either<StorageFailure, List<QualifiedID>> =
+    override suspend fun getConversationIds(
+        type: Conversation.Type,
+        protocol: Conversation.Protocol,
+        teamId: TeamId?
+    ): Either<StorageFailure, List<QualifiedID>> =
         wrapStorageRequest {
-            conversationDAO.getAllTeamConversations(teamId.value, protocol.toDao())
+            conversationDAO.getConversationIds(type.toDAO(), protocol.toDao(), teamId?.value)
                 .map { it.toModel() }
         }
-
-    override suspend fun getTeamConversationsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
+    override suspend fun getTeamConversationIdsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
         wrapStorageRequest {
-            conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId.value)
+            conversationDAO.getTeamConversationIdsReadyToBeFinalised(teamId.value)
                 .map { it.toModel() }
         }
 
@@ -488,11 +494,6 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getConversationProtocolInfo(conversationId.toDao())?.let {
                 protocolInfoMapper.fromEntity(it)
             }
-        }
-
-    override suspend fun getGroupConversationIdsByProtocol(protocol: Conversation.Protocol): Either<StorageFailure, List<ConversationId>> =
-        wrapStorageRequest {
-            conversationDAO.getGroupConversationIdsByProtocol(protocol.toDao()).map(QualifiedIDEntity::toModel)
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =

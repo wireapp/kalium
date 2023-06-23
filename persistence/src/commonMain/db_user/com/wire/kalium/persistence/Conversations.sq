@@ -226,9 +226,6 @@ ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
 selectAllConversations:
 SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
 
-selectAllTeamConversationsWithProtocol:
-SELECT qualified_id FROM Conversation WHERE type IS 'GROUP' AND protocol = :protocol AND team_id = :teamId;
-
 selectAllTeamProteusConversationsReadyForMigration:
 SELECT
 qualified_id,
@@ -259,8 +256,8 @@ SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS "ML
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
 
-selectGroupConversationIdsByProtocol:
-SELECT qualified_id FROM Conversation WHERE protocol = ? AND type IS 'GROUP';
+selectConversationIds:
+SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :type AND (:teamId IS NULL OR team_id = :teamId);
 
 updateConversationMutingStatus:
 UPDATE Conversation

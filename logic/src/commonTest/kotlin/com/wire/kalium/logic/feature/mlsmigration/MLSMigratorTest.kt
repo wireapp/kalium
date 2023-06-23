@@ -174,14 +174,14 @@ class MLSMigratorTest {
 
         fun withGetProteusTeamConversationsReturning(conversationsIds: List<ConversationId>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getTeamConversations)
-                .whenInvokedWith(anything())
+                .suspendFunction(conversationRepository::getConversationIds)
+                .whenInvokedWith(eq(Conversation.Type.GROUP), eq(Conversation.Protocol.PROTEUS), anything())
                 .thenReturn(Either.Right(conversationsIds))
         }
 
         fun withGetProteusTeamConversationsReadyForFinalisationReturning(conversationsIds: List<ConversationId>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getTeamConversationsReadyForFinalisation)
+                .suspendFunction(conversationRepository::getTeamConversationIdsReadyForFinalisation)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(conversationsIds))
         }
