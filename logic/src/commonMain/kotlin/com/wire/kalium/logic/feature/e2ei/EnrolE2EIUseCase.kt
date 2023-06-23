@@ -99,6 +99,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
             wireNonce
         })
 
+        //todo: Mojtaba: remove later after the backend fixed it
         delay(3000)
         val dpopToken = e2EIRepository.getDPoPToken(wireNonce).fold({
             return Either.Left(E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.DPoPToken, it).toCoreFailure())

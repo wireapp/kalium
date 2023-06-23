@@ -662,6 +662,7 @@ class E2EIRepositoryTest {
                 .whenInvokedWith(anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
+
         fun withCertificateRequestSuccessful() = apply {
             given(e2eiClient)
                 .function(e2eiClient::certificateRequest)
@@ -718,72 +719,47 @@ class E2EIRepositoryTest {
                 .thenReturn(Either.Right(mlsClient))
         }
 
-        fun withAcmeDirectoriesApiSucceed(): Arrangement {
+        fun withAcmeDirectoriesApiSucceed() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::getACMEDirectories)
                 .whenInvoked()
                 .thenReturn(NetworkResponse.Success(ACME_DIRECTORIES_RESPONSE, mapOf(), 200))
-            return this
         }
 
-        fun withAcmeDirectoriesApiFails(): Arrangement {
+        fun withAcmeDirectoriesApiFails() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::getACMEDirectories).whenInvoked()
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
-            return this
         }
 
 
-        fun withSendAcmeRequestApiSucceed(): Arrangement {
+        fun withSendAcmeRequestApiSucceed() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::sendACMERequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Success(ACME_REQUEST_RESPONSE, mapOf(), 200))
-            return this
         }
 
-        fun withSendAcmeRequestApiFails(): Arrangement {
+        fun withSendAcmeRequestApiFails() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::sendACMERequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
-            return this
         }
 
-        fun withSendChallengeRequestApiSucceed(): Arrangement {
+        fun withSendChallengeRequestApiSucceed() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::sendChallengeRequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE, mapOf(), 200))
-            return this
         }
 
-        fun withSendChallengeRequestApiFails(): Arrangement {
+        fun withSendChallengeRequestApiFails() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::sendChallengeRequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
-            return this
         }
-
-        //    suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
-        //    suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
-        //    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
-        //    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
-        //    suspend fun getWireNonce(): Either<CoreFailure, String>
-        //    suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
-        //    suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
-        //    suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
-        //            : Either<CoreFailure, ChallengeResponse>
-        //
-        //    suspend fun validateOIDCChallenge(idToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
-        //            : Either<CoreFailure, ChallengeResponse>
-        //
-        //    suspend fun validateChallenge(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
-        //    suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
-        //    suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
-        //    suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
-        //    suspend fun initMLSClientWithCertificate(certificateChain: String)
 
         @Mock
         val e2eiApi: E2EIApi = mock(classOf<E2EIApi>())
