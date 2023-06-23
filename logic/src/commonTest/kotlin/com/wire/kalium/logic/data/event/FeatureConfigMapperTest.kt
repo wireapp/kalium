@@ -76,8 +76,6 @@ class FeatureConfigMapperTest {
         assertEquals(Status.ENABLED, model?.status)
         assertEquals(Instant.DISTANT_FUTURE, model?.startTime)
         assertEquals(Instant.DISTANT_FUTURE, model?.endTime)
-        assertEquals(100, model?.usersThreshold)
-        assertEquals(80, model?.clientsThreshold)
     }
 
     @Test
@@ -173,9 +171,7 @@ class FeatureConfigMapperTest {
             FeatureConfigData.MLSMigration(
                 MLSMigrationConfigDTO(
                     Instant.DISTANT_FUTURE,
-                    Instant.DISTANT_FUTURE,
-                    100,
-                    80
+                    Instant.DISTANT_FUTURE
                 ),
                 FeatureFlagStatusDTO.ENABLED
             )

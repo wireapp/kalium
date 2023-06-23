@@ -133,7 +133,7 @@ object FeatureConfigJson {
             ),
             FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.MLSMigration(
-                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE, 100, 90),
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
             )
         ),
