@@ -360,6 +360,15 @@ class MessageDAOImpl(
         }
     }
 
+    override suspend fun insertFailedRecipientDelivery(
+        id: String,
+        conversationsId: QualifiedIDEntity,
+        recipientsFailed: List<QualifiedIDEntity>,
+        recipientFailureTypeEntity: RecipientFailureTypeEntity
+    ) = withContext(coroutineContext) {
+        queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, recipientFailureTypeEntity)
+    }
+
     override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(coroutineContext) {
         unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()
     }

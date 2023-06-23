@@ -63,6 +63,26 @@ class NewConversationMembersRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenASuccessConversationResponse_whenMembersItsEmpty_ThenShouldNotCreateTheSystemMessage() = runTest {
+        val conversationId = TestConversation.ENTITY_ID
+        val (arrangement, handler) = Arrangement()
+            .withPersistResolvedMembersSystemMessageSuccess()
+            .arrange()
+
+        val result = handler.persistMembersAdditionToTheConversation(
+            conversationId,
+            CONVERSATION_RESPONSE.copy(members = CONVERSATION_RESPONSE.members.copy(otherMembers = emptyList()))
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val conversationDAO = mock(ConversationDAO::class)
@@ -77,7 +97,9 @@ class NewConversationMembersRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun arrange() = this to NewConversationMembersRepositoryImpl(conversationDAO, lazy { newGroupConversationSystemMessagesCreator })
+        fun arrange() = this to NewConversationMembersRepositoryImpl(
+            conversationDAO,
+            lazy { newGroupConversationSystemMessagesCreator })
     }
 
     private companion object {

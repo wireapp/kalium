@@ -249,6 +249,16 @@ class ConversationRepositoryTest {
             verify(arrangement.conversationDAO)
                 .suspendFunction(arrangement.conversationDAO::insertConversations)
                 .with(
+                    matching { conversations ->
+                        conversations.any { entity ->
+                            entity.id.value == CONVERSATION_RESPONSE_DTO.conversationsFailed.first().value
+                        }
+                    }
+                ).wasInvoked(exactly = once)
+
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::insertConversations)
+                .with(
                     matching { list ->
                         list.any {
                             it.id.value == CONVERSATION_RESPONSE.id.value
@@ -889,6 +899,43 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversationWithoutMetadata_whenUpdatingMetadata_thenShouldUpdateLocally() = runTest {
+        // given
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationsWithoutMetadataId(listOf(CONVERSATION_ENTITY_ID))
+            .withFetchConversationsListDetails(
+                { it.size == 1 },
+                NetworkResponse.Success(CONVERSATION_RESPONSE_DTO, emptyMap(), HttpStatusCode.OK.value)
+            )
+            .arrange()
+
+        // when
+        val result = conversationRepository.syncConversationsWithoutMetadata()
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::getConversationsWithoutMetadata)
+                .wasInvoked(exactly = once)
+
+            verify(arrange.conversationApi)
+                .suspendFunction(arrange.conversationApi::fetchConversationsListDetails)
+                .with(matching {
+                    it.first() == CONVERSATION_ID.toApi()
+                })
+                .wasInvoked(exactly = once)
+
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::insertConversations)
+                .with(matching {
+                    it.first().id.value == CONVERSATION_RESPONSE.id.value
+                })
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -1188,6 +1235,13 @@ class ConversationRepositoryTest {
                         HttpStatusCode.OK.value
                     )
                 )
+        }
+
+        fun withConversationsWithoutMetadataId(result: List<QualifiedIDEntity>) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationsWithoutMetadata)
+                .whenInvoked()
+                .thenReturn(result)
         }
 
         fun arrange() = this to conversationRepository
