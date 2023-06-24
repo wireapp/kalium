@@ -366,8 +366,8 @@ internal class MessageSenderImpl internal constructor(
                     }
                     .onFailure {
                         val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
-                            " , " +
-                            "\"errorInfo\" : \"${it}\"}"
+                                " , " +
+                                "\"errorInfo\" : \"${it}\"}"
                         logger.e(logLine)
                     }
             }

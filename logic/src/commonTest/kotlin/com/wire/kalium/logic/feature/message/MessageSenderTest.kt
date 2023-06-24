@@ -358,7 +358,7 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val messageTarget = MessageTarget.Client(
+        val messageTarget = MessageTarget.Client.IgnoreIfMissing(
             recipients = listOf(
                 Arrangement.TEST_RECIPIENT_1,
                 Arrangement.TEST_RECIPIENT_2

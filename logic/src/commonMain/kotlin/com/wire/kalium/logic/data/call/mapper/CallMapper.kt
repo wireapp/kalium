@@ -230,7 +230,9 @@ class CallMapperImpl(
                 }
             }
 
-        return MessageTarget.Client(
+        // TODO(MO): this option is set to IgnoreIfMissing just so i do not change how it was,
+        //  but it should be changed to FailIfMissing
+        return MessageTarget.Client.IgnoreIfMissing(
             recipients = recipients
         )
     }

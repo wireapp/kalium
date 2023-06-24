@@ -337,8 +337,9 @@ class MessageDataSource(
         }
 
         val messageOption = when (messageTarget) {
-            is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
+            is MessageTarget.Client.IgnoreIfMissing -> MessageApi.QualifiedMessageOption.IgnoreAll
             is MessageTarget.Conversation -> MessageApi.QualifiedMessageOption.ReportAll
+            is MessageTarget.Client.ReportIfMissing -> MessageApi.QualifiedMessageOption.ReportSome(messageTarget.recipients.map { it.id.toApi() })
         }
 
         return wrapApiRequest {

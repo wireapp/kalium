@@ -126,10 +126,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
         ).let { deleteSinglingMessage ->
             messageSender.sendMessage(
                 deleteSinglingMessage,
-                MessageTarget.Client(
-                    recipients = recipients,
-                    ignoreAll = false
-                )
+                MessageTarget.Client.ReportIfMissing(recipients = recipients)
             )
         }
     }

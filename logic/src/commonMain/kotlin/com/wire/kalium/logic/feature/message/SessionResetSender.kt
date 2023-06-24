@@ -71,7 +71,12 @@ class SessionResetSenderImpl internal constructor(
                 isSelfMessage = true
             )
             val recipient = Recipient(userId, listOf(clientId))
-            messageSender.sendMessage(message, MessageTarget.Client(listOf(recipient)))
+            // TODO(MO): this option is set to IgnoreIfMissing just so i do not change how it was,
+            //  but it should be changed to FailIfMissing
+            messageSender.sendMessage(
+                message,
+                MessageTarget.Client.IgnoreIfMissing(listOf(recipient))
+            )
         }
     }
 
