@@ -7,6 +7,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -14,7 +15,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.datetime.Clock
 import kotlin.coroutines.CoroutineContext
 
 internal interface EphemeralMessageDeletionHandler {
@@ -167,7 +167,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                     )
                 )
 
-                val deletionStartMark = Clock.System.now()
+                val deletionStartMark = DateTimeUtil.currentInstant()
 
                 messageRepository.markSelfDeletionStartDate(
                     conversationId = message.conversationId,

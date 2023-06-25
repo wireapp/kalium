@@ -60,7 +60,7 @@ class SendConfirmationUseCase internal constructor(
         val selfUser = userRepository.observeSelfUser().first()
 
         val generatedMessageUuid = uuid4().toString()
-
+        // TODO(MO): should we user DateTimeUtil instead os Clock.System.now()?
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = generatedMessageUuid,
