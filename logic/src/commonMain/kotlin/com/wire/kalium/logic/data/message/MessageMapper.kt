@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
+import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -105,6 +106,7 @@ class MessageMapperImpl(
         }
     }
 
+    @Suppress("ComplexMethod")
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
@@ -138,7 +140,14 @@ class MessageMapperImpl(
                     reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
                     senderUserName = message.senderName,
                     isSelfMessage = message.isSelfMessage,
-                    expectsReadConfirmation = message.expectsReadConfirmation
+                    expectsReadConfirmation = message.expectsReadConfirmation,
+                    deliveryStatus = when (val recipientsFailure = message.deliveryStatus) {
+                        is DeliveryStatusEntity.CompleteDelivery -> DeliveryStatus.CompleteDelivery
+                        is DeliveryStatusEntity.PartialDelivery -> DeliveryStatus.PartialDelivery(
+                            recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
+                            recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
+                        )
+                    },
                 )
 
             is MessageEntity.System -> Message.System(

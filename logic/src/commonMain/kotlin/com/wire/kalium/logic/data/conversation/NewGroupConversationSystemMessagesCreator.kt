@@ -149,7 +149,22 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     status = Message.Status.SENT,
                     visibility = Message.Visibility.VISIBLE
                 )
+            ).also { createFailedToAddSystemMessage(conversationResponse) }
+        }
+    }
+
+    private suspend fun createFailedToAddSystemMessage(conversationResponse: ConversationResponse) {
+        if (conversationResponse.failedToAdd.isNotEmpty()) {
+            val messageStartedWithFailedMembers = Message.System(
+                uuid4().toString(),
+                MessageContent.MemberChange.FailedToAdd(conversationResponse.failedToAdd.map { it.toModel() }),
+                conversationResponse.id.toModel(),
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.SENT,
+                Message.Visibility.VISIBLE
             )
+            persistMessage(messageStartedWithFailedMembers)
         }
     }
 }
