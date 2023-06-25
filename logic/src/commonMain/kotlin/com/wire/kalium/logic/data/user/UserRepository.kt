@@ -106,14 +106,6 @@ internal interface UserRepository {
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
 
     /**
-     * Updates the self user's email address.
-     * @param email the new email address
-     * @return [Either.Right] with [Boolean] true if the verify email was sent and false if there are no change,
-     * otherwise [Either.Left] with [NetworkFailure]
-     */
-    suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
-
-    /**
      * Updates users without metadata from the server.
      */
     suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit>
@@ -216,10 +208,6 @@ internal class UserDataSource internal constructor(
             }
             persistUsers(listUserProfileDTO.usersFound)
         }
-    }
-
-    override suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean> = wrapApiRequest {
-        selfApi.updateEmailAddress(email)
     }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
