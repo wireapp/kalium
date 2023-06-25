@@ -66,35 +66,36 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
 ) : DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
         currentClientIdProvider().flatMap { currentClientId ->
-            messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
-                currentClientIdProvider().flatMap { currentClientId ->
+            messageRepository.getMessageById(conversationId, messageId)
+                .flatMap { message ->
                     sendDeleteMessageToSelf(
                         message.id,
+                        conversationId,
                         currentClientId
-                    )
-                }.flatMap {
-                    sendDeleteMessageToOriginalSender(
-                        message.id,
-                        message.conversationId,
-                        message.senderUserId,
-                        currentClientId
-                    )
-                }.onSuccess {
-                    deleteMessageAssetIfExists(message)
-                }.flatMap {
-                    messageRepository.deleteMessage(messageId, conversationId)
+                    ).flatMap {
+                        sendDeleteMessageToOriginalSender(
+                            message.id,
+                            message.conversationId,
+                            message.senderUserId,
+                            currentClientId
+                        )
+                    }.onSuccess {
+                        deleteMessageAssetIfExists(message)
+                    }.flatMap {
+                        messageRepository.deleteMessage(messageId, conversationId)
+                    }
                 }
-            }
         }
 
     private suspend fun sendDeleteMessageToSelf(
         messageToDelete: String,
+        conversationId: ConversationId,
         currentClientId: ClientId
     ): Either<CoreFailure, Unit> = selfConversationIdProvider().flatMap { selfConversaionIdList ->
         selfConversaionIdList.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
             Message.Signaling(
                 id = uuid4().toString(),
-                content = MessageContent.DeleteMessage(messageToDelete),
+                content = MessageContent.DeleteForMe(messageToDelete, conversationId),
                 conversationId = selfConversationId,
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
