@@ -28,11 +28,11 @@ sealed interface MessageTarget {
         data class ReportIfMissing(
             override val recipients: List<Recipient>
         ) : Client
+
         data class IgnoreIfMissing(
             override val recipients: List<Recipient>
         ) : Client
     }
-
 
     object Conversation : MessageTarget
 }
