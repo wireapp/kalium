@@ -104,6 +104,7 @@ object TestUser {
         userType = UserTypeEntity.EXTERNAL,
         botService = null,
         deleted = false,
+        hasIncompleteMetadata = false,
         expiresAt = null,
         supportedProtocols = setOf(SupportedProtocolEntity.MLS)
     )
