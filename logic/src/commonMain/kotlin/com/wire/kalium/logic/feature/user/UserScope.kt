@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -84,7 +83,6 @@ class UserScope internal constructor(
     private val e2EIRepository: E2EIRepository,
     private val clientRepository: ClientRepository,
     private val featureConfigRepository: FeatureConfigRepository,
-    private val slowSyncRepository: SlowSyncRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -120,8 +118,7 @@ class UserScope internal constructor(
         get() = UpdateSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
-            featureConfigRepository,
-            slowSyncRepository
+            featureConfigRepository
         )
 
     val isPasswordRequired
