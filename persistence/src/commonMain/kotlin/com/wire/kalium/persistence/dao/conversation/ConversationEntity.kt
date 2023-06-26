@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.datetime.Instant

@@ -90,7 +90,7 @@ internal open class SelfApiV0 internal constructor(
     override suspend fun updateSupportedProtocols(protocols: List<SupportedProtocolDTO>): NetworkResponse<Unit> =
         getApiNotSupportError(::updateSupportedProtocols.name, 4)
 
-    private companion object {
+    companion object {
         const val PATH_SELF = "self"
         const val PATH_HANDLE = "handle"
         const val PATH_ACCESS = "access"
