@@ -118,7 +118,7 @@ class MemberDAOTest : BaseDatabaseTest() {
 
         memberDAO.insertMembers(
             listOf(member1, member2),
-            (conversationEntity5.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            (conversationEntity5.protocolInfo as ConversationEntity.ProtocolInfo.MLSCapable).groupId
         )
 
         assertEquals(listOf(member1, member2), memberDAO.observeConversationMembers(conversationEntity5.id).first())
