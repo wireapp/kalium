@@ -79,7 +79,7 @@ interface UserConfigStorage {
     /**
      * save flag from the user settings to enable and disable MLS
      */
-    fun enableMLS(enabled: Boolean, isStatusChanged: Boolean?)
+    fun enableMLS(enabled: Boolean, notifyUserAfterMs: Long?, enablingDeadlineMs: Long?)
 
     /**
      * get the saved flag to know if MLS enabled or not
@@ -90,8 +90,6 @@ interface UserConfigStorage {
      * get Flow of the saved flag to know if MLS enabled or not
      */
     fun isMLSEnabledFlow(): Flow<IsMLSEnabledEntity>
-
-    fun setMLSEnablingAsNotified()
 
     /**
      * save flag from user settings to enable or disable Conference Calling
@@ -145,7 +143,8 @@ data class TeamSettingsSelfDeletionStatusEntity(
 @Serializable
 data class IsMLSEnabledEntity(
     @SerialName("status") val status: Boolean,
-    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
+    @SerialName("notifyUserAfter") val notifyUserAfterMs: Long?,
+    @SerialName("enablingDeadline") val enablingDeadlineMs: Long?,
 )
 
 @Serializable
@@ -249,10 +248,10 @@ class UserConfigStorageImpl(
     override fun isSecondFactorPasswordChallengeRequired(): Boolean =
         kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
 
-    override fun enableMLS(enabled: Boolean, isStatusChanged: Boolean?) {
+    override fun enableMLS(enabled: Boolean, notifyUserAfterMs: Long?, enablingDeadlineMs: Long?) {
         kaliumPreferences.putSerializable(
             ENABLE_MLS,
-            IsMLSEnabledEntity(enabled, isStatusChanged),
+            IsMLSEnabledEntity(enabled, notifyUserAfterMs, enablingDeadlineMs),
             IsMLSEnabledEntity.serializer()
         ).also {
             isMLSEnabledFlow.tryEmit(Unit)
@@ -262,7 +261,7 @@ class UserConfigStorageImpl(
     override fun isMLSEnabled(): IsMLSEnabledEntity {
         if (kaliumPreferences.hasValue(ENABLE_MLS)) {
             // migrate from old impl
-            enableMLS(kaliumPreferences.getBoolean(ENABLE_MLS_OLD, false), false)
+            enableMLS(kaliumPreferences.getBoolean(ENABLE_MLS_OLD, false), null, null)
         }
         return kaliumPreferences.getSerializable(ENABLE_MLS, IsMLSEnabledEntity.serializer())!!
     }
@@ -271,10 +270,6 @@ class UserConfigStorageImpl(
         .map { isMLSEnabled() }
         .onStart { emit(isMLSEnabled()) }
         .distinctUntilChanged()
-
-    override fun setMLSEnablingAsNotified() {
-        enableMLS(isMLSEnabled().status, false)
-    }
 
     override fun persistConferenceCalling(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)

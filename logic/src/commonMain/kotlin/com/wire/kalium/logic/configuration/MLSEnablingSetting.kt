@@ -18,9 +18,14 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.persistence.config.IsMLSEnabledEntity
+import kotlinx.datetime.Instant
 
-data class MLSEnablingSetting(val status: Boolean, val isStatusChanged: Boolean?) {
+data class MLSEnablingSetting(val status: Boolean, val notifyUserAfter: Instant?, val enablingDeadlineMs: Instant?) {
     companion object {
-        fun fromEntity(entity: IsMLSEnabledEntity) = MLSEnablingSetting(entity.status, entity.isStatusChanged)
+        fun fromEntity(entity: IsMLSEnabledEntity) = MLSEnablingSetting(
+            entity.status,
+            entity.notifyUserAfterMs?.let { Instant.fromEpochMilliseconds(it) },
+            entity.enablingDeadlineMs?.let { Instant.fromEpochMilliseconds(it) },
+        )
     }
 }

@@ -19,9 +19,11 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.MLSEnablingSetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOn
 
 /**
@@ -34,11 +36,16 @@ interface ObserveMLSEnabledUseCase {
     operator fun invoke(): Flow<MLSEnablingSetting>
 }
 
-class ObserveMLSEnabledUseCaseImpl(
+internal class ObserveMLSEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveMLSEnabledUseCase {
 
-    override fun invoke(): Flow<MLSEnablingSetting> = userConfigRepository.observeIsMLSEnabled().flowOn(dispatcher.io)
+    override fun invoke(): Flow<MLSEnablingSetting> = userConfigRepository
+        .observeIsMLSEnabled()
+        .filter { mlsSetting ->
+            mlsSetting.status && (mlsSetting.notifyUserAfter?.let { it <= DateTimeUtil.currentInstant() } ?: false)
+        }
+        .flowOn(dispatcher.io)
 
 }

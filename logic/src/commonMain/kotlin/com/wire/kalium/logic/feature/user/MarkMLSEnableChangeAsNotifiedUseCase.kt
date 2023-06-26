@@ -28,11 +28,15 @@ interface MarkMLSEnableChangeAsNotifiedUseCase {
     suspend operator fun invoke()
 }
 
-class MarkMLSEnableChangeAsNotifiedUseCaseImpl(
+internal class MarkMLSEnableChangeAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : MarkMLSEnableChangeAsNotifiedUseCase {
 
     override suspend fun invoke() {
-        userConfigRepository.setMLSEnabledChangeNotified()
+        userConfigRepository.snoozeMLSEnabledChangeNotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
+    }
+
+    companion object {
+        const val SNOOZE_MLS_ENABLE_CHANGE_MS = 24 * 60 * 60 * 1000L // 1 day
     }
 }
