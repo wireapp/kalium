@@ -246,7 +246,7 @@ class ConversationGroupRepositoryTest {
 
         conversationGroupRepository.addService(serviceID, TestConversation.ID)
             .shouldFail {
-                assertIs<MLSFailure>(it)
+                assertIs<MLSFailure.Generic>(it)
                 assertIs<UnsupportedOperationException>(it.exception)
             }
 

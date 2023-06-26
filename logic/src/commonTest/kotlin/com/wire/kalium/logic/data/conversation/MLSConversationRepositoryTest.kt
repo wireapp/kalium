@@ -20,8 +20,8 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.PublicGroupStateBundle
-import com.wire.kalium.cryptography.PublicGroupStateEncryptionType
+import com.wire.kalium.cryptography.GroupInfoBundle
+import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
@@ -304,7 +304,6 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withWaitUntilLiveSuccessful()
             .arrange()
@@ -335,7 +334,6 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
@@ -365,7 +363,6 @@ class MLSConversationRepositoryTest {
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
             .withAddMLSMemberSuccessful()
-            .withSendWelcomeMessageSuccessful()
             .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
             .withCommitPendingProposalsSuccessful()
             .withClearProposalTimerSuccessful()
@@ -619,7 +616,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
 
@@ -651,7 +647,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
@@ -750,7 +745,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
 
@@ -772,7 +766,6 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = 1)
-            .withSendWelcomeMessageSuccessful()
             .withClearProposalTimerSuccessful()
             .withWaitUntilLiveSuccessful()
             .arrange()
@@ -1048,13 +1041,6 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT_BUNDLE)
         }
 
-        fun withSendWelcomeMessageSuccessful() = apply {
-            given(mlsMessageApi)
-                .suspendFunction(mlsMessageApi::sendWelcomeMessage)
-                .whenInvokedWith(anything())
-                .then { NetworkResponse.Success(Unit, emptyMap(), 201) }
-        }
-
         fun withSendCommitBundleSuccessful(events: List<EventContentDTO> = emptyList()) = apply {
             given(mlsMessageApi)
                 .suspendFunction(mlsMessageApi::sendCommitBundle)
@@ -1143,8 +1129,8 @@ class MLSConversationRepositoryTest {
             val WELCOME = "welcome".encodeToByteArray()
             val COMMIT = "commit".encodeToByteArray()
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
-            val PUBLIC_GROUP_STATE_BUNDLE = PublicGroupStateBundle(
-                PublicGroupStateEncryptionType.PLAINTEXT,
+            val PUBLIC_GROUP_STATE_BUNDLE = GroupInfoBundle(
+                GroupInfoEncryptionType.PLAINTEXT,
                 RatchetTreeType.FULL,
                 PUBLIC_GROUP_STATE
             )

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -77,6 +78,7 @@ interface ConversationMapper {
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
+    fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -113,6 +115,7 @@ internal class ConversationMapperImpl(
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
         messageTimer = apiModel.messageTimer,
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
+        hasIncompleteMetadata = false
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -356,6 +359,31 @@ internal class ConversationMapperImpl(
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
         )
     }
+
+    /**
+     * Default values and marked as [ConversationEntity.hasIncompleteMetadata] = true.
+     * So later we can re-fetch them.
+     */
+    override fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
+        id = conversationId.toDao(),
+        name = null,
+        type = ConversationEntity.Type.GROUP,
+        teamId = null,
+        protocolInfo = ProtocolInfo.Proteus,
+        mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+        mutedTime = 0,
+        removedBy = null,
+        creatorId = "",
+        lastNotificationDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastModifiedDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastReadDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        access = emptyList(),
+        accessRole = emptyList(),
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null,
+        userMessageTimer = null,
+        hasIncompleteMetadata = true
+    )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {

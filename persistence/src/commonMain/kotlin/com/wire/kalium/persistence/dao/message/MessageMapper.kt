@@ -185,6 +185,7 @@ object MessageMapper {
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -291,7 +292,9 @@ object MessageMapper {
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionStartDate: Instant?
+        selfDeletionStartDate: Instant?,
+        recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> {
             MessageEntity.Regular(
@@ -312,7 +315,11 @@ object MessageMapper {
                 ),
                 senderName = senderName,
                 isSelfMessage = isSelfMessage,
-                expectsReadConfirmation = expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation,
+                deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
+                    recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
+                    recipientsFailedDeliveryList = recipientsFailedDeliveryList
+                )
             )
         }
 
@@ -405,7 +412,9 @@ object MessageMapper {
         quotedAssetName: String?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
-        conversationMessageTimerChanged: Long?
+        conversationMessageTimerChanged: Long?,
+        recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -493,6 +502,7 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
+            MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
         }
 
         return createMessageEntity(
@@ -511,7 +521,9 @@ object MessageMapper {
             isSelfMessage,
             expectsReadConfirmation,
             expireAfterMillis,
-            selfDeletionDate
+            selfDeletionDate,
+            recipientsFailedWithNoClientsList,
+            recipientsFailedDeliveryList
         )
     }
 

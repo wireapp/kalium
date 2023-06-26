@@ -9,9 +9,13 @@ coverage:
             default:
                 # basic
                 target: auto
-                threshold: 5%
+                threshold: 1%
                 base: auto
-        patch: false
+        patch:
+            default:
+                informational: true # don't fail the build if patch coverage is below threshold
+                target: 80%
+                base: auto
 
 # Ignoring Paths
 # --------------
@@ -24,4 +28,5 @@ ignore:
 # Diff is the Coverage Diff of the pull request.
 # Files are the files impacted by the pull request
 comment:
-    layout: diff  # accepted in any order: reach, diff, flags, and/or files
+    layout: diff, files, footer
+    behavior: default

@@ -1,9 +1,1 @@
-import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
-import kotlinx.datetime.Instant;
-
-CREATE TABLE NewClient (
-    id TEXT NOT NULL PRIMARY KEY,
-    device_type TEXT AS DeviceTypeEntity,
-    registration_date INTEGER AS Instant DEFAULT NULL,
-    model TEXT DEFAULT NULL
-);
+CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis, self_deletion_start_date);
