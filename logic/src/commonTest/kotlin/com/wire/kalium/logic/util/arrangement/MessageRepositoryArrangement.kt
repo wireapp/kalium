@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.util.arrangement
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -32,7 +33,7 @@ internal interface MessageRepositoryArrangement {
     @Mock
     val messageRepository: MessageRepository
     fun withGetMessageById(
-        result: Either<CoreFailure, Message>,
+        result: Either<StorageFailure, Message>,
         messageID: Matcher<String> = any(),
         conversationId: Matcher<ConversationId> = any()
     )
@@ -50,7 +51,7 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
     override val messageRepository: MessageRepository = mock(MessageRepository::class)
 
     override fun withGetMessageById(
-        result: Either<CoreFailure, Message>,
+        result: Either<StorageFailure, Message>,
         messageID: Matcher<String>,
         conversationId: Matcher<ConversationId>
     ) {
@@ -70,6 +71,4 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
             .whenInvokedWith(messageID, conversationId)
             .thenReturn(result)
     }
-
-
 }
