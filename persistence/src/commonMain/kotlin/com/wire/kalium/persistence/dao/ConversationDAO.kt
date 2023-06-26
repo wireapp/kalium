@@ -42,7 +42,8 @@ data class ConversationEntity(
     val receiptMode: ReceiptMode,
     val guestRoomLink: String? = null,
     val messageTimer: Long?,
-    val userMessageTimer: Long?
+    val userMessageTimer: Long?,
+    val hasIncompleteMetadata: Boolean = false
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -209,4 +210,5 @@ interface ConversationDAO {
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?): Boolean
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
+    suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
 }

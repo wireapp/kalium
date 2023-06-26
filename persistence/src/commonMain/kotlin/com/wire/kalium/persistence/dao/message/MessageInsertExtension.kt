@@ -222,6 +222,10 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.ConversationCreated -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.MLSWrongEpochWarning -> {
+                /* no-op */
+            }
         }
     }
 
@@ -317,5 +321,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
+        is MessageEntityContent.MLSWrongEpochWarning -> MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING
     }
 }

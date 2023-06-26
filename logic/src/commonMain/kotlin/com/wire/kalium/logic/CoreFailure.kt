@@ -106,6 +106,8 @@ interface MLSFailure : CoreFailure {
 
     object WrongEpoch : MLSFailure
 
+    object ConversationDoesNotSupportMLS : MLSFailure
+
     class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
     }
@@ -200,6 +202,21 @@ internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Eith
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(StorageFailure.Generic(e))
+    }
+}
+
+/**
+ * Wrap a storage request with a custom error handler that let's delegate the error handling to the caller.
+ */
+@Suppress("TooGenericExceptionCaught")
+internal inline fun <T : Any> wrapStorageRequest(
+    noinline errorHandler: (Exception) -> Either<StorageFailure, T>,
+    storageRequest: () -> T?
+): Either<StorageFailure, T> {
+    return try {
+        storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+    } catch (exception: Exception) {
+        errorHandler(exception)
     }
 }
 

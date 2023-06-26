@@ -610,6 +610,19 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(expectedNewDisplayName, persistedUser?.name)
     }
 
+    @Test
+    fun givenExistingUserWithoutMetadata_whenQueryingThem_thenShouldReturnUsersWithoutMetadata() = runTest(dispatcher) {
+        // given
+        db.userDAO.insertUser(user1.copy(name = null, handle = null, hasIncompleteMetadata = true))
+
+        // when
+        val usersWithoutMetadata = db.userDAO.getUsersWithoutMetadata()
+
+        // then
+        assertEquals(1, usersWithoutMetadata.size)
+        assertEquals(user1.id, usersWithoutMetadata.first().id)
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))

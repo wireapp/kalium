@@ -53,7 +53,8 @@ sealed class MessageEntity(
         val expireAfterMs: Long? = null,
         val selfDeletionStartDate: Instant? = null,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
-        val expectsReadConfirmation: Boolean = false
+        val expectsReadConfirmation: Boolean = false,
+        val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
     ) : MessageEntity(
         id = id,
         content = content,
@@ -189,7 +190,7 @@ sealed class MessageEntity(
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
-        CONVERSATION_CREATED
+        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING
     }
 
     enum class MemberChangeType {
@@ -292,6 +293,8 @@ sealed class MessageEntityContent {
         val senderUserId: QualifiedIDEntity,
         val senderClientId: String?,
     ) : Regular()
+
+    object MLSWrongEpochWarning : System()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,
@@ -408,3 +411,29 @@ enum class AssetTypeEntity {
 }
 
 typealias UnreadContentCountEntity = Map<MessageEntity.ContentType, Int>
+
+/**
+ * The type of the failure that happened when trying to deliver a message to a recipient.
+ */
+enum class RecipientFailureTypeEntity {
+    /**
+     * The message was not *attempted* to be delivered because there is no known clients for the recipient.
+     * It will never be delivered for these recipients.
+     */
+    NO_CLIENTS_TO_DELIVER,
+
+    /**
+     * The message was not delivered "now" because of a communication error while the backend tried to deliver it.
+     * It might be delivered later.
+     */
+    MESSAGE_DELIVERY_FAILED
+}
+
+sealed class DeliveryStatusEntity {
+    data class PartialDelivery(
+        val recipientsFailedWithNoClients: List<UserIDEntity>,
+        val recipientsFailedDelivery: List<UserIDEntity>
+    ) : DeliveryStatusEntity()
+
+    object CompleteDelivery : DeliveryStatusEntity()
+}
