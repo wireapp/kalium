@@ -47,8 +47,12 @@ class MLSMigrationWorkerImpl(
                 kaliumLogger.i("Running proteus to MLS migration")
                 updateSupportedProtocols().flatMap {
                     mlsMigrator.migrateProteusConversations().flatMap {
+                        if (configuration.hasMigrationEnded()) {
+                            mlsMigrator.finaliseAllProteusConversations()
+                        } else {
                             mlsMigrator.finaliseProteusConversations()
                         }
+                    }
                 }
             } else {
                 kaliumLogger.i("MLS migration is not enabled")
