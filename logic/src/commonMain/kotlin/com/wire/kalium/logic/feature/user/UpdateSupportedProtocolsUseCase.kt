@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -25,47 +26,31 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase.Result
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Instant
 
 /**
  * Updates the supported protocols of the current user.
- *
- * @return [Result.Success] if the supported protocols were updated successfully, [Result.Failure] otherwise.
  */
 interface UpdateSupportedProtocolsUseCase {
-    suspend operator fun invoke(): Result
-
-    sealed interface Result {
-        object Success : Result
-        data class Failure(val failure: CoreFailure) : Result
-    }
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
 internal class UpdateSupportedProtocolsUseCaseImpl(
     private val clientsRepository: ClientRepository,
     private val userRepository: UserRepository,
-    private val featureConfigRepository: FeatureConfigRepository,
-    private val slowSyncRepository: SlowSyncRepository
+    private val featureConfigRepository: FeatureConfigRepository
 ) : UpdateSupportedProtocolsUseCase {
 
-    override suspend operator fun invoke(): Result {
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> {
         kaliumLogger.d("Updating supported protocols")
-
-        slowSyncRepository.slowSyncStatus.first {
-            it is SlowSyncStatus.Complete
-        }
 
         return (userRepository.getSelfUser()?.let { selfUser ->
             supportedProtocols().flatMap { newSupportedProtocols ->
@@ -77,9 +62,17 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
                 } else {
                     Either.Right(Unit)
                 }
+            }.flatMapLeft {
+                if (it is NetworkFailure.FeatureNotSupported) {
+                    kaliumLogger.w(
+                        "Skip updating supported protocols since it's not supported by the backend API"
+                    )
+                    Either.Right(Unit)
+                } else {
+                    Either.Left(it)
+                }
             }
         } ?: Either.Left(StorageFailure.DataNotFound))
-            .fold(Result::Failure) { Result.Success }
     }
 
     private suspend fun supportedProtocols(): Either<CoreFailure, Set<SupportedProtocol>> =
