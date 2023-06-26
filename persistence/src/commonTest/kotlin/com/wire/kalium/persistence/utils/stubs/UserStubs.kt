@@ -43,5 +43,6 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         UserTypeEntity.STANDARD,
         botService = null,
         deleted = false,
+        hasIncompleteMetadata = false,
         setOf(SupportedProtocolEntity.PROTEUS)
     )

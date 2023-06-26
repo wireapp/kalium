@@ -267,7 +267,8 @@ internal class UserMapperImpl(
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
-            hasIncompleteMetadata = true
+            hasIncompleteMetadata = true,
+            supportedProtocols = null
         )
     }
 }
