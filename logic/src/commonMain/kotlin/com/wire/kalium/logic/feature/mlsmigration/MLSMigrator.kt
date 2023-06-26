@@ -38,6 +38,7 @@ import com.wire.kalium.logic.kaliumLogger
 interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>
+    suspend fun finaliseAllProteusConversations(): Either<CoreFailure, Unit>
 }
 internal class MLSMigratorImpl(
     private val selfUserId: UserId,
@@ -52,10 +53,22 @@ internal class MLSMigratorImpl(
         selfTeamIdProvider().flatMap {
             it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
         }.flatMap { teamId ->
-            conversationRepository.getProteusTeamConversations(teamId)
+            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.PROTEUS, teamId)
                 .flatMap {
                     it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                         migrate(conversationId)
+                    }
+                }
+        }
+
+    override suspend fun finaliseAllProteusConversations(): Either<CoreFailure, Unit> =
+        selfTeamIdProvider().flatMap {
+            it?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+        }.flatMap { teamId ->
+            conversationRepository.getConversationIds(Conversation.Type.GROUP, Protocol.MIXED, teamId)
+                .flatMap {
+                    it.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                        finalise(conversationId)
                     }
                 }
         }
@@ -66,7 +79,7 @@ internal class MLSMigratorImpl(
         }.flatMap { teamId ->
             userRepository.fetchAllOtherUsers()
                 .flatMap {
-                    conversationRepository.getProteusTeamConversationsReadyForFinalisation(teamId)
+                    conversationRepository.getTeamConversationIdsReadyToCompleteMigration(teamId)
                         .flatMap {
                             it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                                 finalise(conversationId)
