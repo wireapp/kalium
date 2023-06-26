@@ -466,7 +466,6 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.MIXED_CONVERSATION)
             .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
-            .withSuccessfulMemberDeletion()
             .withSuccessfulRemoveMemberFromMLSGroup()
             .withSuccessfulHandleMemberLeaveEvent()
             .arrange()

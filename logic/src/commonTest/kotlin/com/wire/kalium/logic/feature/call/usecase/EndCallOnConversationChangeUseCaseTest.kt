@@ -11,6 +11,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -174,7 +175,8 @@ class EndCallOnConversationChangeUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
             userType = UserType.INTERNAL,
             botService = null,
-            deleted = true
+            deleted = true,
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS)
         )
 
         private val groupConversationDetail = ConversationDetails.Group(

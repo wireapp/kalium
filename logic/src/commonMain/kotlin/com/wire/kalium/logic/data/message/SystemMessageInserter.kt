@@ -52,7 +52,8 @@ internal class SystemMessageInserterImpl(
             DateTimeUtil.currentIsoDateTimeString(),
             senderUserId,
             Message.Status.SENT,
-            Message.Visibility.VISIBLE
+            Message.Visibility.VISIBLE,
+            null
         )
 
         persistMessage(message)
@@ -66,7 +67,8 @@ internal class SystemMessageInserterImpl(
             DateTimeUtil.currentIsoDateTimeString(),
             selfUserId,
             Message.Status.SENT,
-            Message.Visibility.VISIBLE
+            Message.Visibility.VISIBLE,
+            null
         )
 
         persistMessage(message)
