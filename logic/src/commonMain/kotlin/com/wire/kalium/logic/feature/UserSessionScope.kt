@@ -960,7 +960,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
             messageEncoder,
             receiptMessageHandler,
             userId

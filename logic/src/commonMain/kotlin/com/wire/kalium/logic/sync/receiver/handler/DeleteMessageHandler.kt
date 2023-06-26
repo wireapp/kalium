@@ -35,7 +35,8 @@ internal interface DeleteMessageHandler {
 
 internal class DeleteMessageHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
-    private val assetRepository: AssetRepository
+    private val assetRepository: AssetRepository,
+    private val selfUserId: UserId
 ) : DeleteMessageHandler {
     override suspend fun invoke(
         content: MessageContent.DeleteMessage,
@@ -43,20 +44,32 @@ internal class DeleteMessageHandlerImpl internal constructor(
         senderUserId: UserId
     ) {
         messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-            val canBeDeleted = isSenderVerified(messageToRemove, senderUserId)
-            if (!canBeDeleted) return
-
+            val isSelfSender = messageToRemove.senderUserId == selfUserId
             val isOriginalEphemeral = (messageToRemove as? Message.Regular)?.expirationData != null
-            if (isOriginalEphemeral) {
+            if (isSelfSender && isOriginalEphemeral) {
+                /*
+                 * if self is the sender and the message is ephemeral, delete the message
+                 * without verifying the sender of the delete message
+                 */
                 messageRepository.deleteMessage(
                     messageUuid = messageToRemove.id,
                     conversationId = messageToRemove.conversationId
                 )
             } else {
-                messageRepository.markMessageAsDeleted(
-                    messageUuid = messageToRemove.id,
-                    conversationId = messageToRemove.conversationId
-                )
+                val canBeDeleted = isSenderVerified(messageToRemove, senderUserId)
+                if (!canBeDeleted) return
+
+                if (isOriginalEphemeral) {
+                    messageRepository.deleteMessage(
+                        messageUuid = messageToRemove.id,
+                        conversationId = messageToRemove.conversationId
+                    )
+                } else {
+                    messageRepository.markMessageAsDeleted(
+                        messageUuid = messageToRemove.id,
+                        conversationId = messageToRemove.conversationId
+                    )
+                }
             }
             removeAssetIfExists(messageToRemove)
         }

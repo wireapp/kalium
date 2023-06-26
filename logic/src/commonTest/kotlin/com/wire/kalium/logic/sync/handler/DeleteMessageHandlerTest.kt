@@ -44,6 +44,37 @@ import kotlin.time.Duration
 class DeleteMessageHandlerTest {
 
     @Test
+    fun givenDeleteNotFromTheOriginalSender_whenOriginalMessageIsEpheral_thenDelete() = runTest {
+        val originalMessageID = "originalMessageID"
+        val content = MessageContent.DeleteMessage(originalMessageID)
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val originalMessage =
+            TestMessage.TEXT_MESSAGE.copy(
+                senderUserId = SELF_USER_ID,
+                id = originalMessageID,
+                conversationId = conversationId,
+                expirationData = Message.ExpirationData(expireAfter = Duration.parse("PT1H"))
+            )
+
+        val (arrangement, handler) = Arrangement()
+            .withOriginalMessage(Either.Right(originalMessage))
+            .withDeleteMessage(Either.Right(Unit))
+            .arrange()
+
+        handler(
+            content = content,
+            senderUserId = UserId("requesterID", "requesterDomain"),
+            conversationId = conversationId
+        )
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::deleteMessage)
+            .with(eq(originalMessageID), eq(conversationId))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenRequesterIsNotOriginalMessageSender_whenReceivingDeleteSignal_thenMarkAsDelete() = runTest {
         val originalMessageID = "originalMessageID"
         val deleteMessageSenderID = UserId("deleteMessageSenderID", "deleteMessageSenderDomain")
@@ -161,6 +192,10 @@ class DeleteMessageHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    private companion object {
+        val SELF_USER_ID = UserId("selfID", "selfDomain")
+    }
+
 
     private class Arrangement {
 
@@ -170,7 +205,7 @@ class DeleteMessageHandlerTest {
         @Mock
         val assetRepository: AssetRepository = mock(AssetRepository::class)
 
-        private val handler: DeleteMessageHandler = DeleteMessageHandlerImpl(messageRepository, assetRepository)
+        private val handler: DeleteMessageHandler = DeleteMessageHandlerImpl(messageRepository, assetRepository, SELF_USER_ID)
 
         fun withOriginalMessage(result: Either<StorageFailure, Message>) = apply {
             given(messageRepository)
