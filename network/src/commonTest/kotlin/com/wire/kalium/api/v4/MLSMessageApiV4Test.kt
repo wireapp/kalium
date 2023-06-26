@@ -46,7 +46,7 @@ internal class MLSMessageApiV4Test : ApiTest() {
                 assertion =
                 {
                     assertPost()
-                    assertContentType(ContentType.Application.XProtoBuf)
+                    assertContentType(ContentType.Message.Mls)
                     assertPathEqual(PATH_COMMIT_BUNDLES)
                 }
             )
@@ -74,24 +74,6 @@ internal class MLSMessageApiV4Test : ApiTest() {
         }
 
     @Test
-    fun givenWelcomeMessage_whenSendingWelcomeMessage_theRequestShouldBeConfiguredCorrectly() =
-        runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                SendMLSMessageResponseJson.validMessageSentJson.rawJson,
-                statusCode = HttpStatusCode.Created,
-                assertion =
-                {
-                    assertPost()
-                    assertContentType(ContentType.Message.Mls)
-                    assertPathEqual(PATH_WELCOME_MESSAGE)
-                }
-            )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV4(networkClient)
-            val response = mlsMessageApi.sendWelcomeMessage(WELCOME_MESSAGE)
-            assertTrue(response.isSuccessful())
-        }
-
-    @Test
     fun givenCommitBundle_whenSendingBundle_theRequestShouldFail() =
         runTest {
             val mlsMessageApi: MLSMessageApi = MLSMessageApiV0()
@@ -101,11 +83,9 @@ internal class MLSMessageApiV4Test : ApiTest() {
 
     private companion object {
         const val PATH_MESSAGE = "/mls/messages"
-        const val PATH_WELCOME_MESSAGE = "/mls/welcome"
         const val PATH_COMMIT_BUNDLES = "mls/commit-bundles"
 
         val MESSAGE = MLSMessageApi.Message("ApplicationMessage".encodeToByteArray())
-        val WELCOME_MESSAGE = MLSMessageApi.WelcomeMessage("WelcomeMessage".encodeToByteArray())
         val COMMIT_BUNDLE = MLSMessageApi.CommitBundle("CommitBundle".encodeToByteArray())
     }
 }

@@ -274,7 +274,8 @@ class ConversationDAOImpl(
                 else MLS_DEFAULT_CIPHER_SUITE,
                 receiptMode,
                 messageTimer,
-                userMessageTimer
+                userMessageTimer,
+                hasIncompleteMetadata
             )
         }
     }
@@ -575,5 +576,9 @@ class ConversationDAOImpl(
 
     override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
         conversationQueries.updateUserMessageTimer(messageTimer, conversationId)
+    }
+
+    override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
 }

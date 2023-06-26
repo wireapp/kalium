@@ -32,10 +32,14 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
+import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
+import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_MEMBER_2
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestConversation
@@ -386,7 +390,7 @@ class MessageSenderTest {
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget))
+                .with(eq(message.conversationId), anything(), eq(messageTarget), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -433,7 +437,7 @@ class MessageSenderTest {
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget))
+                .with(eq(message.conversationId), anything(), eq(messageTarget), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -479,6 +483,72 @@ class MessageSenderTest {
                 .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
                 .with(eq(failure), anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenARemoteProteusConversationPartiallyFails_WhenSendingOutgoingMessage_ThenReturnSuccessAndPersistFailedRecipients() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(
+                sendEnvelopeWithResult = Either.Right(
+                    MessageSent(
+                        time = MESSAGE_SENT_TIME,
+                        failed = listOf(Arrangement.TEST_MEMBER_1)
+                    )
+                )
+            )
+            .withFailedClientsPartialSuccess()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withSendMessagePartialSuccess()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
+                .with(anything(), anything(), eq(listOf(Arrangement.TEST_MEMBER_1)))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenARemoteProteusConversationPartiallyFails_WithNoClientsWhenSendingAMessage_ThenReturnSuccessAndPersistFailedClientsAndFailedToSend() {
+        // given
+        val failedRecipient = UsersWithoutSessions(listOf(TEST_MEMBER_2))
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(
+                sendEnvelopeWithResult = Either.Right(
+                    MessageSent(
+                        time = MESSAGE_SENT_TIME,
+                        failed = failedRecipient.users
+                    )
+                )
+            )
+            .withFailedClientsPartialSuccess()
+            .withPrepareRecipientsForNewOutgoingMessage(false, failedRecipient)
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withSendMessagePartialSuccess()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistNoClientsToDeliverFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasInvoked(exactly = twice)
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasNotInvoked()
         }
     }
 
@@ -841,11 +911,14 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
                 .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(listOf(TEST_RECIPIENT_1)))
         }
 
-        fun withPrepareRecipientsForNewOutgoingMessage(failing: Boolean = false) = apply {
+        fun withPrepareRecipientsForNewOutgoingMessage(
+            failing: Boolean = false,
+            usersFailing: UsersWithoutSessions = UsersWithoutSessions.EMPTY // only relevant if failing true
+        ) = apply {
             given(sessionEstablisher)
                 .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
                 .whenInvokedWith(anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(UsersWithoutSessions.EMPTY))
+                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(usersFailing))
         }
 
         fun withCommitPendingProposals(failing: Boolean = false) = apply {
@@ -883,10 +956,10 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
                 .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
+        fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything(), anything())
                 .thenReturn(result)
         }
 
@@ -942,7 +1015,7 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
             getConversationsRecipientFailing: Boolean = false,
             prepareRecipientsForNewOutGoingMessageFailing: Boolean = false,
             createOutgoingEnvelopeFailing: Boolean = false,
-            sendEnvelopeWithResult: Either<CoreFailure, String>? = null,
+            sendEnvelopeWithResult: Either<CoreFailure, MessageSent>? = null,
             updateMessageStatusFailing: Boolean = false
         ) = apply {
             withGetMessageById()
@@ -971,16 +1044,25 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
             withUpdateMessageStatus()
         }
 
+        fun withSendMessagePartialSuccess(
+            result: Either<CoreFailure, Unit> = Either.Right(Unit),
+        ) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::persistRecipientsDeliveryFailure)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(result)
+        }
+
+        fun withFailedClientsPartialSuccess() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::persistNoClientsToDeliverFailure)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         companion object {
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
-            val TEST_MESSAGE_ENVELOPE = MessageEnvelope(
-                senderClientId = ClientId(
-                    value = "testValue",
-                ),
-                recipients = listOf(),
-                dataBlob = null
-            )
             val MESSAGE_SENT_TIME = DateTimeUtil.currentIsoDateTimeString()
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
@@ -1013,6 +1095,14 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
             val TEST_MEMBER_3 = UserId("value3", "domain3")
             val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
             val TEST_RECIPIENT_3 = Recipient(TEST_MEMBER_3, listOf(TEST_CONTACT_CLIENT_4))
+            val TEST_RECIPIENT_ENTRY = RecipientEntry(TEST_MEMBER_1, listOf())
+            val TEST_MESSAGE_ENVELOPE = MessageEnvelope(
+                senderClientId = ClientId(
+                    value = "testValue",
+                ),
+                recipients = listOf(TEST_RECIPIENT_ENTRY),
+                dataBlob = null
+            )
         }
     }
 }
