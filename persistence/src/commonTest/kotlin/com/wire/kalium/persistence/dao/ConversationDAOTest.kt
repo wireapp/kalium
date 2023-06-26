@@ -1136,4 +1136,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 assertEquals(conversationEntity2.id, it.first())
             }
         }
+
+    @Test
+    fun givenConversation_whenPersistingMembersWithoutMetadata_ThenUsersShouldBeMarkedWithIncompleteMetadataTrue() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.insertMembersWithQualifiedId(
+            listOf(Member(user1.id, Member.Role.Member)),
+            conversationEntity1.id
+        )
+
+        // then
+        val member = userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(true, member?.hasIncompleteMetadata)
+    }
 }
