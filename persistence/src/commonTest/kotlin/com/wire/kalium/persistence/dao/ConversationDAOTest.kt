@@ -1144,10 +1144,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // when
         conversationDAO.insertMembersWithQualifiedId(
-            listOf(
-                Member(user1.id, Member.Role.Member),
-                Member(selfUserId, Member.Role.Member) // adding SelfUser as a member too
-            ),
+            listOf(Member(user1.id, Member.Role.Member)),
             conversationEntity1.id
         )
 
