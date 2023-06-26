@@ -25,6 +25,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
@@ -167,6 +168,10 @@ class MLSMigrationRepositoryTest {
                         emptyList(),
                         1
                     ), FeatureFlagStatusDTO.ENABLED),
+                FeatureConfigData.E2EI(
+                    E2EIConfigDTO(null),
+                    FeatureFlagStatusDTO.ENABLED
+                ),
                 FeatureConfigData.MLSMigration(
                     MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                     FeatureFlagStatusDTO.ENABLED

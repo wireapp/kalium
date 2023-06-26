@@ -160,23 +160,48 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingGroupConversations_whenGetGroupConversationIdsByProtocol_ThenConversationIdsWithGivenProtocolIsReturned() = runTest {
+    fun givenExistingConversations_WhenGetConversationIds_ThenConversationsWithGivenProtocolIsReturned() = runTest {
         conversationDAO.insertConversation(conversationEntity4)
         conversationDAO.insertConversation(conversationEntity5)
         insertTeamUserAndMember(team, user2, conversationEntity5.id)
         val result =
-            conversationDAO.getGroupConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
+            conversationDAO.getConversationIds(ConversationEntity.Type.GROUP, ConversationEntity.Protocol.PROTEUS)
         assertEquals(listOf(conversationEntity5.id), result)
     }
 
     @Test
-    fun givenExistingSelfAndOneToOneConversations_whenGetGroupConversationIdsByProtocol_ThenAnEmptyListIsReturned() = runTest {
+    fun givenExistingConversations_WhenGetConversationIds_ThenConversationsWithGivenTeamIdIsReturned() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity4)
+        conversationDAO.insertConversation(conversationEntity5)
+        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+
+        val result =
+            conversationDAO.getConversationIds(ConversationEntity.Type.GROUP, ConversationEntity.Protocol.PROTEUS,  teamId)
+
+        assertEquals(listOf(conversationEntity5.id), result)
+    }
+
+    @Test
+    fun givenExistingConversations_WhenGetConversationIdsWithoutTeamId_ThenConversationsWithAllTeamIdsAreReturned() = runTest {
+        conversationDAO.insertConversation(conversationEntity4.copy( protocolInfo = ConversationEntity.ProtocolInfo.Proteus))
+        conversationDAO.insertConversation(conversationEntity5.copy( teamId = null))
+        insertTeamUserAndMember(team, user2, conversationEntity5.id)
+
+        val result =
+            conversationDAO.getConversationIds(ConversationEntity.Type.GROUP, ConversationEntity.Protocol.PROTEUS)
+
+        assertEquals(setOf(conversationEntity4.id, conversationEntity5.id), result.toSet())
+    }
+
+    @Test
+    fun givenExistingConversations_WhenGetConversationIds_ThenConversationsWithGivenTypeIsReturned() = runTest {
         conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
         conversationDAO.insertConversation(conversationEntity5.copy(type = ConversationEntity.Type.ONE_ON_ONE))
         insertTeamUserAndMember(team, user2, conversationEntity5.id)
         val result =
-            conversationDAO.getGroupConversationIdsByProtocol(ConversationEntity.Protocol.PROTEUS)
-        assertEquals(emptyList(), result)
+            conversationDAO.getConversationIds(ConversationEntity.Type.SELF, ConversationEntity.Protocol.PROTEUS)
+        assertEquals(listOf(conversationEntity1.id), result)
     }
 
     @Test
@@ -190,35 +215,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversations_ThenAllProteusTeamConversationsCanBeRetrieved() = runTest {
-        conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertConversation(conversationEntity4)
-        conversationDAO.insertConversation(conversationEntity5)
-        insertTeamUserAndMember(team, user2, conversationEntity5.id)
-
-        val result =
-            conversationDAO.getAllProteusTeamConversations(teamId)
-
-        assertEquals(listOf(conversationEntity5.id), result)
-    }
-
-    @Test
-    fun givenAllMembersAreMlsCapable_WhenGetAllProteusTeamConversationsReadyToBeFinalised_ThenConversationIsReturned() = runTest {
+    fun givenAllMembersAreMlsCapable_WhenGetTeamConversationIdsReadyToBeFinalised_ThenConversationIsReturned() = runTest {
         val allProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
         val selfUser = user1.copy(id = selfUserId, supportedProtocols = allProtocols)
         userDAO.insertUser(selfUser)
 
-        conversationDAO.insertConversation(conversationEntity5)
-        insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity5.id)
-        insertTeamUserAndMember(team, user3.copy(supportedProtocols = allProtocols), conversationEntity5.id)
+        conversationDAO.insertConversation(conversationEntity6)
+        insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity6.id)
+        insertTeamUserAndMember(team, user3.copy(supportedProtocols = allProtocols), conversationEntity6.id)
 
-        val result = conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId)
+        val result = conversationDAO.getTeamConversationIdsReadyToCompleteMigration(teamId)
 
-        assertEquals(listOf(conversationEntity5.id), result)
+        assertEquals(listOf(conversationEntity6.id), result)
     }
 
     @Test
-    fun givenOnlySomeMembersAreMlsCapable_WhenGetAllProteusTeamConversationsReadyToBeFinalised_ThenConversationIsNotReturned() = runTest {
+    fun givenOnlySomeMembersAreMlsCapable_WhenGetTeamConversationIdsReadyToBeFinalised_ThenConversationIsNotReturned() = runTest {
         val allProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
         val selfUser = user1.copy(id = selfUserId, supportedProtocols = allProtocols)
         userDAO.insertUser(selfUser)
@@ -227,7 +239,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity5.id)
         insertTeamUserAndMember(team, user3.copy(supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)), conversationEntity5.id)
 
-        val result = conversationDAO.getAllProteusTeamConversationsReadyToBeFinalised(teamId)
+        val result = conversationDAO.getTeamConversationIdsReadyToCompleteMigration(teamId)
 
         assertTrue(result.isEmpty())
     }
@@ -1196,7 +1208,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             QualifiedIDEntity("4", "wire.com"),
             "conversation4",
             ConversationEntity.Type.GROUP,
-            null,
+            teamId,
             ConversationEntity.ProtocolInfo.MLS(
                 "group4",
                 ConversationEntity.GroupState.ESTABLISHED,
@@ -1242,7 +1254,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             QualifiedIDEntity("6", "wire.com"),
             "conversation6",
             ConversationEntity.Type.GROUP,
-            null,
+            teamId,
             ConversationEntity.ProtocolInfo.Mixed(
                 "group6",
                 ConversationEntity.GroupState.ESTABLISHED,

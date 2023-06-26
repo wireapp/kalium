@@ -150,14 +150,17 @@ internal class ConversationDAOImpl internal constructor(
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
-    override suspend fun getAllProteusTeamConversations(teamId: String): List<QualifiedIDEntity> {
+    override suspend fun getConversationIds(
+        type: ConversationEntity.Type,
+        protocol: ConversationEntity.Protocol,
+        teamId: String?
+    ): List<QualifiedIDEntity> {
         return withContext(coroutineContext) {
-            conversationQueries.selectAllTeamProteusConversations(teamId)
-                .executeAsList()
+            conversationQueries.selectConversationIds(protocol, type, teamId).executeAsList()
         }
     }
 
-    override suspend fun getAllProteusTeamConversationsReadyToBeFinalised(teamId: String): List<QualifiedIDEntity> {
+    override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity> {
         return withContext(coroutineContext) {
             conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
                 .executeAsList()
@@ -217,11 +220,6 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
         conversationQueries.getConversationIdByGroupId(groupID).executeAsOneOrNull()
     }
-
-    override suspend fun getGroupConversationIdsByProtocol(protocol: ConversationEntity.Protocol): List<QualifiedIDEntity> =
-        withContext(coroutineContext) {
-            conversationQueries.selectGroupConversationIdsByProtocol(protocol).executeAsList()
-        }
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
         withContext(coroutineContext) {

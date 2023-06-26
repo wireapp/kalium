@@ -1,4 +1,4 @@
-import com.wire.kalium.persistence.dao.ConversationEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
