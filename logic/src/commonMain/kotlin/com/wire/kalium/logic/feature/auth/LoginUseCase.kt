@@ -136,7 +136,7 @@ internal class LoginUseCaseImpl internal constructor(
                 when (it) {
                     is NetworkFailure.ProxyError -> AuthenticationResult.Failure.SocketError
                     is NetworkFailure.ServerMiscommunication -> handleServerMiscommunication(it, isEmail, cleanUserIdentifier)
-                    is NetworkFailure.NoNetworkConnection, NetworkFailure.FederatedBackendFailure ->
+                    is NetworkFailure.NoNetworkConnection, NetworkFailure.FederatedBackendFailure, NetworkFailure.FeatureNotSupported ->
                         AuthenticationResult.Failure.Generic(it)
                 }
             }, {

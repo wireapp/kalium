@@ -18,7 +18,9 @@
 package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepository
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
@@ -29,7 +31,8 @@ interface MLSMigrationWorker {
 
 class MLSMigrationWorkerImpl(
     private val mlsMigrationRepository: MLSMigrationRepository,
-    private val mlsMigrator: MLSMigrator
+    private val mlsMigrator: MLSMigrator,
+    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase
 ) : MLSMigrationWorker {
 
     override suspend fun runMigration() {
@@ -42,8 +45,11 @@ class MLSMigrationWorkerImpl(
         mlsMigrationRepository.getMigrationConfiguration().getOrNull()?.let { configuration ->
             if (configuration.hasMigrationStarted()) {
                 kaliumLogger.i("Running proteus to MLS migration")
-                mlsMigrator.migrateProteusConversations()
-                mlsMigrator.finaliseProteusConversations()
+                updateSupportedProtocols().flatMap {
+                    mlsMigrator.migrateProteusConversations().flatMap {
+                            mlsMigrator.finaliseProteusConversations()
+                        }
+                }
             } else {
                 kaliumLogger.i("MLS migration is not enabled")
                 Either.Right(Unit)

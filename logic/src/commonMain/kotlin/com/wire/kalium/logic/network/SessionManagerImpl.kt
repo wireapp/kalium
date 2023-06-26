@@ -115,6 +115,7 @@ class SessionManagerImpl internal constructor(
                     is NetworkFailure.NoNetworkConnection -> null
                     is NetworkFailure.ProxyError -> null
                     is NetworkFailure.FederatedBackendFailure -> null
+                    is NetworkFailure.FeatureNotSupported -> null
                     is NetworkFailure.ServerMiscommunication -> {
                         onServerMissCommunication(it)
                         null

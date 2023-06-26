@@ -34,6 +34,7 @@ sealed interface SlowSyncStatus {
 enum class SlowSyncStep {
     SELF_USER,
     FEATURE_FLAGS,
+    UPDATE_SUPPORTED_PROTOCOLS,
     CONVERSATIONS,
     CONNECTIONS,
     SELF_TEAM,
