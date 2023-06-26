@@ -311,7 +311,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             clientType = null,
             label = null,
             model = null,
-            registrationDate = null
+            registrationDate = null,
+            isMLSCapable = false
         )
         clientDAO.insertClient(insertedClient2)
 

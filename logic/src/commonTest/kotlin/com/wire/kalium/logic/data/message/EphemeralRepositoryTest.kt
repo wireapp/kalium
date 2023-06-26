@@ -55,7 +55,8 @@ class EphemeralRepositoryTest {
                 true,
                 null,
                 null,
-                null
+                null,
+                false
             )
         )
 
