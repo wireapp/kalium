@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.sync.receiver.message
+package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase

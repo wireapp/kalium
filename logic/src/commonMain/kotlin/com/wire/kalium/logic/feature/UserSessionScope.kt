@@ -286,11 +286,12 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpack
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -944,7 +945,6 @@ class UserSessionScope internal constructor(
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
-            assetRepository,
             messageRepository,
             assetMessageHandler,
             callManager,
@@ -958,6 +958,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
             messageEncoder,
             receiptMessageHandler,
             userId
