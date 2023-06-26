@@ -79,12 +79,19 @@ interface UserConfigStorage {
     /**
      * save flag from the user settings to enable and disable MLS
      */
-    fun enableMLS(enabled: Boolean)
+    fun enableMLS(enabled: Boolean, isStatusChanged: Boolean?)
 
     /**
      * get the saved flag to know if MLS enabled or not
      */
-    fun isMLSEnabled(): Boolean
+    fun isMLSEnabled(): IsMLSEnabledEntity
+
+    /**
+     * get Flow of the saved flag to know if MLS enabled or not
+     */
+    fun isMLSEnabledFlow(): Flow<IsMLSEnabledEntity>
+
+    fun setMLSEnablingAsNotified()
 
     /**
      * save flag from user settings to enable or disable Conference Calling
@@ -136,6 +143,12 @@ data class TeamSettingsSelfDeletionStatusEntity(
 )
 
 @Serializable
+data class IsMLSEnabledEntity(
+    @SerialName("status") val status: Boolean,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
+)
+
+@Serializable
 sealed class SelfDeletionTimerEntity {
 
     @Serializable
@@ -166,6 +179,9 @@ class UserConfigStorageImpl(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isGuestRoomLinkEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val isMLSEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -233,11 +249,32 @@ class UserConfigStorageImpl(
     override fun isSecondFactorPasswordChallengeRequired(): Boolean =
         kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
 
-    override fun enableMLS(enabled: Boolean) {
-        kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
+    override fun enableMLS(enabled: Boolean, isStatusChanged: Boolean?) {
+        kaliumPreferences.putSerializable(
+            ENABLE_MLS,
+            IsMLSEnabledEntity(enabled, isStatusChanged),
+            IsMLSEnabledEntity.serializer()
+        ).also {
+            isMLSEnabledFlow.tryEmit(Unit)
+        }
     }
 
-    override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
+    override fun isMLSEnabled(): IsMLSEnabledEntity {
+        if (kaliumPreferences.hasValue(ENABLE_MLS)) {
+            // migrate from old impl
+            enableMLS(kaliumPreferences.getBoolean(ENABLE_MLS_OLD, false), false)
+        }
+        return kaliumPreferences.getSerializable(ENABLE_MLS, IsMLSEnabledEntity.serializer())!!
+    }
+
+    override fun isMLSEnabledFlow(): Flow<IsMLSEnabledEntity> = isMLSEnabledFlow
+        .map { isMLSEnabled() }
+        .onStart { emit(isMLSEnabled()) }
+        .distinctUntilChanged()
+
+    override fun setMLSEnablingAsNotified() {
+        enableMLS(isMLSEnabled().status, false)
+    }
 
     override fun persistConferenceCalling(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
@@ -283,7 +320,8 @@ class UserConfigStorageImpl(
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
-        const val ENABLE_MLS = "enable_mls"
+        const val ENABLE_MLS_OLD = "enable_mls"
+        const val ENABLE_MLS = "enable_mls_with_change_flag"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false

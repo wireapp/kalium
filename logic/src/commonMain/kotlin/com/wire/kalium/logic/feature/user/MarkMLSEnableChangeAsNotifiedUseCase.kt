@@ -15,32 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.fold
 
 /**
- * Checks if the current user has enabled MLS support.
+ * Mark the MLS enabling status change as notified
+ * need to be called after notifying the user about the change
+ * e.g. after showing a dialog, or a toast etc.
  */
-interface IsMLSEnabledUseCase {
-    /**
-     * @return true if MLS is enabled, false otherwise.
-     */
-    operator fun invoke(): Boolean
+interface MarkMLSEnableChangeAsNotifiedUseCase {
+    suspend operator fun invoke()
 }
 
-internal class IsMLSEnabledUseCaseImpl(
-    private val featureSupport: FeatureSupport,
+class MarkMLSEnableChangeAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
-) : IsMLSEnabledUseCase {
+) : MarkMLSEnableChangeAsNotifiedUseCase {
 
-    override operator fun invoke(): Boolean =
-        userConfigRepository.isMLSEnabled().fold({
-            false
-        }, {
-            it.status && featureSupport.isMLSSupported
-        })
+    override suspend fun invoke() {
+        userConfigRepository.setMLSEnabledChangeNotified()
+    }
 }

@@ -201,10 +201,14 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkMLSEnableChangeAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkMLSEnableChangeAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveMLSEnabledUseCase
+import com.wire.kalium.logic.feature.user.ObserveMLSEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -1242,6 +1246,10 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
+
+    val observeMLSEnabled: ObserveMLSEnabledUseCase get() = ObserveMLSEnabledUseCaseImpl(userConfigRepository)
+    val markMLSEnableChangeAsNotified: MarkMLSEnableChangeAsNotifiedUseCase
+        get() = MarkMLSEnableChangeAsNotifiedUseCaseImpl(userConfigRepository)
 
     @OptIn(DelicateKaliumApi::class)
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase

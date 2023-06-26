@@ -15,32 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.configuration.MLSEnablingSetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 
 /**
- * Checks if the current user has enabled MLS support.
+ * Observe [MLSEnablingSetting] to notify user when setting is changed
  */
-interface IsMLSEnabledUseCase {
+interface ObserveMLSEnabledUseCase {
     /**
-     * @return true if MLS is enabled, false otherwise.
+     * @return [Flow] of [MLSEnablingSetting]
      */
-    operator fun invoke(): Boolean
+    operator fun invoke(): Flow<MLSEnablingSetting>
 }
 
-internal class IsMLSEnabledUseCaseImpl(
-    private val featureSupport: FeatureSupport,
-    private val userConfigRepository: UserConfigRepository
-) : IsMLSEnabledUseCase {
+class ObserveMLSEnabledUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+) : ObserveMLSEnabledUseCase {
 
-    override operator fun invoke(): Boolean =
-        userConfigRepository.isMLSEnabled().fold({
-            false
-        }, {
-            it.status && featureSupport.isMLSSupported
-        })
+    override fun invoke(): Flow<MLSEnablingSetting> = userConfigRepository.observeIsMLSEnabled().flowOn(dispatcher.io)
+
 }

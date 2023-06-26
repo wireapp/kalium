@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeleti
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapStorageRequest
@@ -33,6 +34,7 @@ import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
@@ -43,8 +45,10 @@ interface UserConfigRepository {
     fun isFileSharingEnabledFlow(): Flow<Either<StorageFailure, FileSharingStatus>>
     fun setClassifiedDomainsStatus(enabled: Boolean, domains: List<String>): Either<StorageFailure, Unit>
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
-    fun isMLSEnabled(): Either<StorageFailure, Boolean>
+    fun isMLSEnabled(): Either<StorageFailure, MLSEnablingSetting>
+    fun observeIsMLSEnabled(): Flow<MLSEnablingSetting>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    fun setMLSEnabledChangeNotified(): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
@@ -132,11 +136,22 @@ class UserConfigDataSource(
             }
         }
 
-    override fun isMLSEnabled(): Either<StorageFailure, Boolean> =
-        wrapStorageRequest { userConfigStorage.isMLSEnabled() }
+    override fun isMLSEnabled(): Either<StorageFailure, MLSEnablingSetting> =
+        wrapStorageRequest { MLSEnablingSetting.fromEntity(userConfigStorage.isMLSEnabled()) }
+
+    override fun observeIsMLSEnabled(): Flow<MLSEnablingSetting> =
+        wrapStorageRequest { userConfigStorage.isMLSEnabledFlow() }
+            .map { flow -> flow.map { MLSEnablingSetting.fromEntity(it) } }
+            .getOrElse(flowOf())
 
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
+        wrapStorageRequest {
+            val isStatusChanged = userConfigStorage.isMLSEnabled().status == enabled
+            userConfigStorage.enableMLS(enabled, isStatusChanged)
+        }
+
+    override fun setMLSEnabledChangeNotified(): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.setMLSEnablingAsNotified() }
 
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
