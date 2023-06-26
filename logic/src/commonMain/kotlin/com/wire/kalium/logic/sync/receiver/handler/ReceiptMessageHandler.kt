@@ -16,36 +16,41 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.sync.receiver.message
+package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
-import com.wire.kalium.logic.feature.conversation.ClearConversationContent
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
+import com.wire.kalium.logic.data.user.UserId
+import kotlinx.datetime.Instant
 
-interface ClearConversationContentHandler {
+interface ReceiptMessageHandler {
     suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.Cleared
+        messageContent: MessageContent.Receipt
     )
 }
 
-internal class ClearConversationContentHandlerImpl(
-    private val clearConversationContent: ClearConversationContent,
+internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
-    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
-) : ClearConversationContentHandler {
+    private val receiptRepository: ReceiptRepository
+) : ReceiptMessageHandler {
 
     override suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.Cleared
+        messageContent: MessageContent.Receipt
     ) {
-        val isMessageComingFromOtherClient = message.senderUserId == selfUserId
-        val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
+        // Receipts from self user shouldn't happen,
+        // If it happens, it's unnecessary,
+        // and we can squish some performance by skipping it completely
+        if (message.senderUserId == selfUserId) return
 
-        if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
-            clearConversationContent(messageContent.conversationId)
-        }
+        receiptRepository.persistReceipts(
+            userId = message.senderUserId,
+            conversationId = message.conversationId,
+            date = Instant.parse(message.date),
+            type = messageContent.type,
+            messageIds = messageContent.messageIds
+        )
     }
 }

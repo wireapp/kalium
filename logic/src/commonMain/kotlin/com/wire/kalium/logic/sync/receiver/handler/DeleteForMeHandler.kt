@@ -16,13 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.sync.receiver.message
+package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.kaliumLogger
 
 interface DeleteForMeHandler {
