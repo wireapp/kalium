@@ -297,7 +297,7 @@ class CallMapperTest {
                 )
             )
         )
-        val expectedMessageTarget = MessageTarget.Client.IgnoreIfMissing(
+        val expectedMessageTarget = MessageTarget.Client(
             recipients = listOf(
                 Recipient(
                     id = TestCall.CALLER_ID,

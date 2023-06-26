@@ -185,7 +185,7 @@ class MessageRepositoryTest {
         messageRepository.sendEnvelope(
             TEST_CONVERSATION_ID,
             messageEnvelope,
-            MessageTarget.Client.IgnoreIfMissing(
+            MessageTarget.Client(
                 recipients = listOf(
                     Recipient(
                         id = TEST_USER_ID,
@@ -322,7 +322,7 @@ class MessageRepositoryTest {
             .arrange()
 
         messageRepository
-            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Client.ReportIfMissing(recipient))
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Users(listOf(TEST_USER_ID)))
             .shouldSucceed()
 
         verify(arrangement.messageApi)

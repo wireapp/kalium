@@ -19,20 +19,10 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.user.UserId
 
 sealed interface MessageTarget {
-
-    sealed interface Client : MessageTarget {
-        val recipients: List<Recipient>
-
-        data class ReportIfMissing(
-            override val recipients: List<Recipient>
-        ) : Client
-
-        data class IgnoreIfMissing(
-            override val recipients: List<Recipient>
-        ) : Client
-    }
-
+    data class Users(val userId: List<UserId>) : MessageTarget
+    class Client(val recipients: List<Recipient>) : MessageTarget
     object Conversation : MessageTarget
 }

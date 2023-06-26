@@ -236,12 +236,13 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSendWithProteus(
         message: Message.Sendable,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
     ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
         val target = when (messageTarget) {
             is MessageTarget.Client -> Either.Right(messageTarget.recipients)
             is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
+            is MessageTarget.Users -> conversationRepository.getRecipientById(conversationId, messageTarget.userId)
         }
 
         return target

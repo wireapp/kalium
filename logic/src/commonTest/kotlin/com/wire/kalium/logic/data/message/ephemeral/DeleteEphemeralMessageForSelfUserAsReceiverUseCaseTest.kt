@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.message.ephemeral
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -31,8 +30,6 @@ import com.wire.kalium.logic.util.arrangement.AssetRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.AssetRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.EphemeralMessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.EphemeralMessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.MessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.MessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
@@ -60,25 +57,22 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         val currentClientId = CURRENT_CLIENT_ID
 
         val senderUserID = UserId("senderUserId", "senderUserDomain.com")
-        val senderClient = ClientId("senderClientId")
         val message = Message.Regular(
             id = messageId,
             content = MessageContent.Text("text"),
             conversationId = conversationId,
             date = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
-            senderUserId = UserId("senderUserId", "senderUserDomain.com"),
+            senderUserId = senderUserID,
             senderClientId = currentClientId,
             status = Message.Status.PENDING,
             editStatus = Message.EditStatus.NotEdited,
             isSelfMessage = true
         )
-        val deleteMessageRecipient = listOf(Recipient(senderUserID, listOf(senderClient)))
         val (arrangement, useCase) = Arrangement()
             .arrange {
                 withCurrentClientIdSuccess(CURRENT_CLIENT_ID)
                 withSelfConversationIds(SELF_CONVERSION_ID)
                 withGetMessageById(Either.Right(message))
-                withRecipientsForDeletedEphemeralSuccess(deleteMessageRecipient)
                 withSendMessageSucceed()
                 withDeleteMessage(Either.Right(Unit))
             }
@@ -104,7 +98,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                     it.conversationId == conversationId &&
                             it.content == MessageContent.DeleteMessage(messageId)
                 }, matching {
-                    it == MessageTarget.Client.ReportIfMissing(deleteMessageRecipient)
+                    it == MessageTarget.Users(listOf(senderUserID))
                 })
             .wasInvoked(exactly = once)
 
@@ -122,7 +116,6 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
 
     private class Arrangement
         : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
-        EphemeralMessageRepositoryArrangement by EphemeralMessageRepositoryArrangementImpl(),
         MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         MessageSenderArrangement by MessageSenderArrangementImpl(),
         SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl(),
@@ -135,7 +128,6 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                 selfUserId = selfUserId,
                 selfConversationIdProvider = selfConversationIdProvider,
                 assetRepository = assetRepository,
-                ephemeralMessageRepository = ephemeralMessageRepository,
                 currentClientIdProvider = currentClientIdProvider
             )
 

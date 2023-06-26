@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -70,8 +71,10 @@ import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
@@ -106,6 +109,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
 import com.wire.kalium.persistence.dao.Member as MemberEntity
+import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("LargeClass")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -842,6 +846,43 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenSuccess_whenGettingDeleteMessageRecipients_thenSuccessIsPropagated() = runTest {
+        val user = QualifiedIDEntity("userId", "domain.com")
+        val conversationId = QualifiedIDEntity("conversationId", "domain.com")
+        val clients = listOf(
+            ClientEntity(
+                user,
+                "clientId",
+                DeviceTypeEntity.Desktop,
+                ClientTypeEntity.Permanent,
+                true,
+                true,
+                null,
+                null,
+                null
+            )
+        )
+
+        val expected = Recipient(
+            user.toModel(),
+            clients.map { ClientId(it.id) }
+        )
+
+        val (arrangement, repo) = Arrangement()
+            .withConversationRecipientByUserSuccess(mapOf(user to clients))
+            .arrange()
+
+        repo.getRecipientById(conversationId.toModel(), listOf(user.toModel())).shouldSucceed {
+            assertEquals(listOf(expected), it)
+        }
+
+        verify(arrangement.clientDao)
+            .suspendFunction(arrangement.clientDao::recipientsIfTHeyArePartOfConversation)
+            .with(eq(conversationId), eq(setOf(user)))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -1062,6 +1103,13 @@ class ConversationRepositoryTest {
                 .thenReturn(flowOf(conversationEntity))
         }
 
+        fun withConversationRecipientByUserSuccess(result: Map<UserIDEntity, List<ClientEntity>>) = apply {
+            given(clientDao)
+                .suspendFunction(clientDao::recipientsIfTHeyArePartOfConversation)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
         fun withExpectedConversation(conversationEntity: ConversationViewEntity?) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationByQualifiedID)
@@ -1110,7 +1158,7 @@ class ConversationRepositoryTest {
                 .thenReturn(NetworkResponse.Success(CONVERSATION_RENAME_RESPONSE, emptyMap(), HttpStatusCode.OK.value))
         }
 
-        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) =
+        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<ClientEntity>>) =
             apply {
                 given(clientDao)
                     .coroutine { clientDao.conversationRecipient(conversationIDEntity) }
