@@ -21,6 +21,7 @@ package com.wire.kalium.logic
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
 import com.wire.kalium.network.utils.NetworkResponse
@@ -155,6 +156,11 @@ sealed class NetworkFailure : CoreFailure {
 
     }
 
+
+    /**
+     * Failure due to a feature not supported by the current client/backend.
+     */
+    object FeatureNotSupported : NetworkFailure()
 }
 
 interface MLSFailure : CoreFailure {
@@ -231,6 +237,10 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
 
                 exception is KaliumException.GenericError && exception.cause is IOException -> {
                     Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
+                exception is APINotSupported -> {
+                    Either.Left(NetworkFailure.FeatureNotSupported)
                 }
 
                 else -> {
