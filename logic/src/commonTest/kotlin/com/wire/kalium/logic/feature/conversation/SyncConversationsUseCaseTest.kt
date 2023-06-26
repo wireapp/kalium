@@ -117,7 +117,7 @@ class SyncConversationsUseCaseTest {
                 .thenDoNothing()
         }
 
-        fun arrange() = this to SyncConversationsUseCase(
+        fun arrange() = this to SyncConversationsUseCaseImpl(
             conversationRepository,
             systemMessageInserter
         )
