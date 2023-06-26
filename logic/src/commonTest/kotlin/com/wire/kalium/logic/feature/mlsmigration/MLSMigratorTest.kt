@@ -181,7 +181,7 @@ class MLSMigratorTest {
 
         fun withGetProteusTeamConversationsReadyForFinalisationReturning(conversationsIds: List<ConversationId>) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::getTeamConversationIdsReadyForFinalisation)
+                .suspendFunction(conversationRepository::getTeamConversationIdsReadyToCompleteMigration)
                 .whenInvokedWith(anything())
                 .thenReturn(Either.Right(conversationsIds))
         }

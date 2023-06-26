@@ -211,7 +211,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity6.id)
         insertTeamUserAndMember(team, user3.copy(supportedProtocols = allProtocols), conversationEntity6.id)
 
-        val result = conversationDAO.getTeamConversationIdsReadyToBeFinalised(teamId)
+        val result = conversationDAO.getTeamConversationIdsReadyToCompleteMigration(teamId)
 
         assertEquals(listOf(conversationEntity6.id), result)
     }
@@ -226,7 +226,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity5.id)
         insertTeamUserAndMember(team, user3.copy(supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)), conversationEntity5.id)
 
-        val result = conversationDAO.getTeamConversationIdsReadyToBeFinalised(teamId)
+        val result = conversationDAO.getTeamConversationIdsReadyToCompleteMigration(teamId)
 
         assertTrue(result.isEmpty())
     }

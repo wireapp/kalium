@@ -123,7 +123,7 @@ interface ConversationRepository {
         protocol: Conversation.Protocol,
         teamId: TeamId? = null
     ): Either<StorageFailure, List<QualifiedID>>
-    suspend fun getTeamConversationIdsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
+    suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
     suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -405,9 +405,9 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getConversationIds(type.toDAO(), protocol.toDao(), teamId?.value)
                 .map { it.toModel() }
         }
-    override suspend fun getTeamConversationIdsReadyForFinalisation(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
+    override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
         wrapStorageRequest {
-            conversationDAO.getTeamConversationIdsReadyToBeFinalised(teamId.value)
+            conversationDAO.getTeamConversationIdsReadyToCompleteMigration(teamId.value)
                 .map { it.toModel() }
         }
 

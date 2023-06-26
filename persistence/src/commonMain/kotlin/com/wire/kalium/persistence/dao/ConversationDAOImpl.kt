@@ -345,7 +345,7 @@ class ConversationDAOImpl(
         }
     }
 
-    override suspend fun getTeamConversationIdsReadyToBeFinalised(teamId: String): List<QualifiedIDEntity> {
+    override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity> {
         return withContext(coroutineContext) {
             conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
                 .executeAsList()

@@ -79,7 +79,7 @@ internal class MLSMigratorImpl(
         }.flatMap { teamId ->
             userRepository.fetchKnownUsers()
                 .flatMap {
-                    conversationRepository.getTeamConversationIdsReadyForFinalisation(teamId)
+                    conversationRepository.getTeamConversationIdsReadyToCompleteMigration(teamId)
                         .flatMap {
                             it.foldToEitherWhileRight(Unit) { conversationId, _ ->
                                 finalise(conversationId)

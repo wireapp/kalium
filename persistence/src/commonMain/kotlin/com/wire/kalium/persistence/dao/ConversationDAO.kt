@@ -178,7 +178,7 @@ interface ConversationDAO {
         protocol: ConversationEntity.Protocol,
         teamId: String? = null
     ): List<QualifiedIDEntity>
-    suspend fun getTeamConversationIdsReadyToBeFinalised(teamId: String): List<QualifiedIDEntity>
+    suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
