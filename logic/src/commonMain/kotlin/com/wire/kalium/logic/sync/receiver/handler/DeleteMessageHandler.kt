@@ -55,10 +55,7 @@ internal class DeleteMessageHandlerImpl internal constructor(
                     messageUuid = messageToRemove.id,
                     conversationId = messageToRemove.conversationId
                 )
-            } else {
-                val canBeDeleted = isSenderVerified(messageToRemove, senderUserId)
-                if (!canBeDeleted) return
-
+            } else if (isSenderVerified(messageToRemove, senderUserId)) {
                 if (isOriginalEphemeral) {
                     messageRepository.deleteMessage(
                         messageUuid = messageToRemove.id,
