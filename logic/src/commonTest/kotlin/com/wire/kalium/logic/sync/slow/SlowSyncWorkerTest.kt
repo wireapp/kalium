@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -48,6 +49,7 @@ class SlowSyncWorkerTest {
     fun givenSuccess_whenPerformingSlowSync_thenRunAllUseCases() = runTest(TestKaliumDispatcher.default) {
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
@@ -115,12 +117,12 @@ class SlowSyncWorkerTest {
     }
 
     @Test
-    fun givenSyncConversationsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
-        val steps = hashSetOf(SlowSyncStep.SELF_USER, SlowSyncStep.FEATURE_FLAGS, SlowSyncStep.CONVERSATIONS)
+    fun givenUpdateSupportedProtocolsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(SlowSyncStep.SELF_USER, SlowSyncStep.FEATURE_FLAGS, SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
             .withSyncFeatureConfigsSuccess()
-            .withSyncConversationsFailure()
+            .withUpdateSupportedProtocolsFailure()
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
@@ -141,6 +143,46 @@ class SlowSyncWorkerTest {
 
         verify(arrangement.syncConversations)
             .suspendFunction(arrangement.syncConversations::invoke)
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenSyncConversationsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+            SlowSyncStep.FEATURE_FLAGS,
+            SlowSyncStep.CONVERSATIONS
+        )
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsFailure()
+            .arrange()
+
+        assertFailsWith<KaliumSyncException> {
+            worker.performSlowSyncSteps().collect {
+                assertTrue {
+                    it in steps
+                }
+            }
+        }
+
+        verify(arrangement.syncSelfUser)
+            .suspendFunction(arrangement.syncSelfUser::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.syncFeatureConfigs)
+            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.updateSupportedProtocols)
+            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.syncConversations)
+            .suspendFunction(arrangement.syncConversations::invoke)
             .wasInvoked(exactly = once)
 
         verify(arrangement.syncConnections)
@@ -152,12 +194,14 @@ class SlowSyncWorkerTest {
     fun givenSyncConnectionsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
         )
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
             .withSyncConnectionsFailure()
@@ -179,6 +223,10 @@ class SlowSyncWorkerTest {
             .suspendFunction(arrangement.syncFeatureConfigs::invoke)
             .wasInvoked(exactly = once)
 
+        verify(arrangement.updateSupportedProtocols)
+            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
+            .wasInvoked(exactly = once)
+
         verify(arrangement.syncConversations)
             .suspendFunction(arrangement.syncConversations::invoke)
             .wasInvoked(exactly = once)
@@ -196,6 +244,7 @@ class SlowSyncWorkerTest {
     fun givenSyncSelfTeamFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
@@ -203,6 +252,7 @@ class SlowSyncWorkerTest {
         )
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
@@ -223,6 +273,10 @@ class SlowSyncWorkerTest {
 
         verify(arrangement.syncFeatureConfigs)
             .suspendFunction(arrangement.syncFeatureConfigs::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.updateSupportedProtocols)
+            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
             .wasInvoked(exactly = once)
 
         verify(arrangement.syncConversations)
@@ -246,6 +300,7 @@ class SlowSyncWorkerTest {
     fun givenSyncContactsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
@@ -254,6 +309,7 @@ class SlowSyncWorkerTest {
         )
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
@@ -275,6 +331,10 @@ class SlowSyncWorkerTest {
 
         verify(arrangement.syncFeatureConfigs)
             .suspendFunction(arrangement.syncFeatureConfigs::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.updateSupportedProtocols)
+            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
             .wasInvoked(exactly = once)
 
         verify(arrangement.syncConversations)
@@ -303,6 +363,7 @@ class SlowSyncWorkerTest {
     fun givenJoinMLSConversationsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
@@ -312,6 +373,7 @@ class SlowSyncWorkerTest {
         )
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
@@ -338,6 +400,10 @@ class SlowSyncWorkerTest {
 
         verify(arrangement.syncFeatureConfigs)
             .suspendFunction(arrangement.syncFeatureConfigs::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.updateSupportedProtocols)
+            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
             .wasInvoked(exactly = once)
 
         verify(arrangement.syncConversations)
@@ -385,6 +451,9 @@ class SlowSyncWorkerTest {
         @Mock
         val joinMLSConversations: JoinExistingMLSConversationsUseCase = mock(JoinExistingMLSConversationsUseCase::class)
 
+        @Mock
+        val updateSupportedProtocols: UpdateSupportedProtocolsUseCase = mock(UpdateSupportedProtocolsUseCase::class)
+
         fun arrange() = this to SlowSyncWorkerImpl(
             syncSelfUser = syncSelfUser,
             syncFeatureConfigs = syncFeatureConfigs,
@@ -392,7 +461,8 @@ class SlowSyncWorkerTest {
             syncConnections = syncConnections,
             syncSelfTeam = syncSelfTeam,
             syncContacts = syncContacts,
-            joinMLSConversations = joinMLSConversations
+            joinMLSConversations = joinMLSConversations,
+            updateSupportedProtocols = updateSupportedProtocols
         )
 
         fun withSyncSelfUserFailure() = apply {
@@ -421,6 +491,20 @@ class SlowSyncWorkerTest {
                 .suspendFunction(syncFeatureConfigs::invoke)
                 .whenInvoked()
                 .thenReturn(success)
+        }
+
+        fun withUpdateSupportedProtocolsSuccess() = apply {
+            given(updateSupportedProtocols)
+                .suspendFunction(updateSupportedProtocols::invoke)
+                .whenInvoked()
+                .thenReturn(success)
+        }
+
+        fun withUpdateSupportedProtocolsFailure() = apply {
+            given(updateSupportedProtocols)
+                .suspendFunction(updateSupportedProtocols::invoke)
+                .whenInvoked()
+                .thenReturn(failure)
         }
 
         fun withSyncConversationsFailure() = apply {

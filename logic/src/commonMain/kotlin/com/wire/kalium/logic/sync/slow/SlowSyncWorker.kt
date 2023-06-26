@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -52,6 +53,7 @@ internal interface SlowSyncWorker {
 internal class SlowSyncWorkerImpl(
     private val syncSelfUser: SyncSelfUserUseCase,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
+    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase,
     private val syncConversations: SyncConversationsUseCase,
     private val syncConnections: SyncConnectionsUseCase,
     private val syncSelfTeam: SyncSelfTeamUseCase,
@@ -72,6 +74,7 @@ internal class SlowSyncWorkerImpl(
 
         performStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
             .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
+            .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS, updateSupportedProtocols::invoke)
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
             .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
             .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)

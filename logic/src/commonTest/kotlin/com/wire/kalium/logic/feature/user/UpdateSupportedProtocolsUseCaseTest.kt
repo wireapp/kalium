@@ -24,8 +24,6 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Arrangement.Companion.COMPLETED_MIGRATION_CONFIGURATION
@@ -43,8 +41,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -53,29 +49,8 @@ import kotlin.test.Test
 class UpdateSupportedProtocolsUseCaseTest {
 
     @Test
-    fun givenSlowSyncIsCompleted_whenInvokingUseCase_thenContinueByFetchingSelfUser() = runTest {
-        val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
-            .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = emptySet(),
-                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
-            )
-            .withGetSelfClientsSuccessful(clients = emptyList())
-            .withUpdateSupportedProtocolsSuccessful()
-            .arrange()
-
-        useCase.invoke()
-
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::getSelfUser)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
     fun givenSupportedProtocolsHasNotChanged_whenInvokingUseCase_thenSupportedProtocolsAreNotUpdated() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful(supportedProtocols = setOf(SupportedProtocol.PROTEUS))
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS),
@@ -96,7 +71,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenProteusAsSupportedProtocol_whenInvokingUseCase_thenProteusIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS),
@@ -117,7 +91,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenProteusIsNotSupportedButMigrationHasNotEnded_whenInvokingUseCase_thenProteusIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.MLS),
@@ -138,7 +111,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenProteusIsNotSupported_whenInvokingUseCase_thenProteusIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.MLS),
@@ -159,7 +131,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsSupportedAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.MLS),
@@ -182,7 +153,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsSupportedAndAllClientsAreNotCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.MLS),
@@ -206,7 +176,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsSupportedAndMigrationHasEnded_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.MLS),
@@ -230,7 +199,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMigrationIsMissingAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
@@ -253,7 +221,6 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsNotSupportedAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withSlowSyncStatusComplete()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS),
@@ -280,16 +247,6 @@ class UpdateSupportedProtocolsUseCaseTest {
         val userRepository = mock(UserRepository::class)
         @Mock
         val featureConfigRepository = mock(FeatureConfigRepository::class)
-        @Mock
-        val slowSyncRepository = mock(SlowSyncRepository::class)
-
-        fun withSlowSyncStatusComplete() = apply {
-            val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(stateFlow)
-        }
 
         fun withGetSelfUserSuccessful(supportedProtocols: Set<SupportedProtocol>? = null) = apply {
             given(userRepository)
@@ -333,8 +290,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         fun arrange() = this to UpdateSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
-            featureConfigRepository,
-            slowSyncRepository
+            featureConfigRepository
         )
 
         companion object {
