@@ -102,7 +102,7 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
 
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -296,10 +296,10 @@ class MessageDataSource(
             messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = conversationId.toDao())
         }
 
-    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
+    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
-        }.map { messageMapper.fromEntityToMessage(it) }
+        }.map(messageMapper::fromEntityToMessage)
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
