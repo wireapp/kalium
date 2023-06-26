@@ -875,6 +875,7 @@ class UserSessionScope internal constructor(
             eventRepository,
             syncSelfUser,
             syncFeatureConfigsUseCase,
+            users.updateSupportedProtocols,
             syncConversations,
             syncConnections,
             syncSelfTeamUseCase,
@@ -992,13 +993,21 @@ class UserSessionScope internal constructor(
                 mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider
             )
         })
+
+    internal val mlsMigrationWorker get() =
+        MLSMigrationWorkerImpl(
+            mlsMigrationRepository,
+            mlsMigrator,
+            users.updateSupportedProtocols
+        )
+
     internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
             kaliumConfigs,
             featureSupport,
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { users.timestampKeyRepository },
-            lazy { MLSMigrationWorkerImpl(mlsMigrationRepository, mlsMigrator) },
+            lazy { mlsMigrationWorker },
             lazy { mlsMigrationRepository }
     )
 
@@ -1435,7 +1444,6 @@ class UserSessionScope internal constructor(
             e2eiRepository,
             clientRepository,
             featureConfigRepository,
-            slowSyncRepository,
             team.isSelfATeamMember,
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
