@@ -51,7 +51,9 @@ data class FeatureConfigResponse(
     @SerialName("validateSAMLemails")
     val validateSAMLEmails: FeatureConfigData.ValidateSAMLEmails,
     @SerialName("mls")
-    val mls: FeatureConfigData.MLS?
+    val mls: FeatureConfigData.MLS?,
+    @SerialName("mlsE2EId")
+    val mlsE2EId: FeatureConfigData.MLSE2EId
 )
 
 @Serializable
@@ -91,6 +93,14 @@ data class MLSConfigDTO(
 data class SelfDeletingMessagesConfigDTO(
     @SerialName("enforcedTimeoutSeconds")
     val enforcedTimeoutSeconds: Long?
+)
+
+@Serializable
+data class MLSE2EIdConfigDTO(
+    @SerialName("acmeDiscoveryUrl")
+    val url: String,
+    @SerialName("verificationExpiration")
+    val verificationExpirationNS: Long
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -199,6 +209,15 @@ sealed class FeatureConfigData {
     data class MLS(
         @SerialName("config")
         val config: MLSConfigDTO,
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("mlsE2EId")
+    @Serializable
+    data class MLSE2EId(
+        @SerialName("config")
+        val config: MLSE2EIdConfigDTO,
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()

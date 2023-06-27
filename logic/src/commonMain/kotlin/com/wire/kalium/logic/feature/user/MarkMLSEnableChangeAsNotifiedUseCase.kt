@@ -33,7 +33,7 @@ internal class MarkMLSEnableChangeAsNotifiedUseCaseImpl(
 ) : MarkMLSEnableChangeAsNotifiedUseCase {
 
     override suspend fun invoke() {
-        userConfigRepository.snoozeMLSEnabledChangeNotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
+        userConfigRepository.snoozeMLSE2EIdNotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
     }
 
     companion object {

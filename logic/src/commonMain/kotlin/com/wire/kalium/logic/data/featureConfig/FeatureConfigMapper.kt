@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.util.DateTimeUtil
 
 interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel
@@ -33,6 +34,7 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel
     fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel
     fun fromDTO(data: FeatureConfigData.ConversationGuestLinks): ConfigsStatusModel
+    fun fromDTO(data: FeatureConfigData.MLSE2EId): MLSE2EIdModel
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -54,7 +56,8 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 ),
                 ssoModel = ConfigsStatusModel(fromDTO(sso.status)),
                 validateSAMLEmailsModel = ConfigsStatusModel(fromDTO(validateSAMLEmails.status)),
-                mlsModel = fromDTO(mls)
+                mlsModel = fromDTO(mls),
+                mlsE2EIdModel = fromDTO(mlsE2EId)
             )
         }
 
@@ -106,5 +109,14 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel =
         ConferenceCallingModel(
             status = fromDTO(data.status)
+        )
+
+    override fun fromDTO(data: FeatureConfigData.MLSE2EId): MLSE2EIdModel =
+        MLSE2EIdModel(
+            MLSE2EIdConfigModel(
+                data.config.url,
+                data.config.verificationExpirationNS
+            ),
+            fromDTO(data.status)
         )
 }

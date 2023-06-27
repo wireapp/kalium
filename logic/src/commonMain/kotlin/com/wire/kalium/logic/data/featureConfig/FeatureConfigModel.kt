@@ -34,7 +34,8 @@ data class FeatureConfigModel(
     val secondFactorPasswordChallengeModel: ConfigsStatusModel,
     val ssoModel: ConfigsStatusModel,
     val validateSAMLEmailsModel: ConfigsStatusModel,
-    val mlsModel: MLSModel
+    val mlsModel: MLSModel,
+    val mlsE2EIdModel: MLSE2EIdModel
 )
 
 enum class Status {
@@ -81,4 +82,14 @@ data class MLSModel(
 
 data class ConferenceCallingModel(
     val status: Status
+)
+
+data class MLSE2EIdModel(
+    val config: MLSE2EIdConfigModel,
+    val status: Status
+)
+
+data class MLSE2EIdConfigModel(
+    val discoverUrl: String,
+    val verificationExpirationNS: Long
 )

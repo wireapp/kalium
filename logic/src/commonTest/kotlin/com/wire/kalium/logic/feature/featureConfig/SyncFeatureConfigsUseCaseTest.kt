@@ -108,7 +108,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isMLSEnabled().shouldSucceed {
-            assertTrue(it.status)
+            assertTrue(it)
         }
     }
 
@@ -122,7 +122,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isMLSEnabled().shouldSucceed {
-            assertFalse(it.status)
+            assertFalse(it)
         }
     }
 
@@ -136,7 +136,7 @@ class SyncFeatureConfigsUseCaseTest {
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isMLSEnabled().shouldSucceed {
-            assertFalse(it.status)
+            assertFalse(it)
         }
     }
 

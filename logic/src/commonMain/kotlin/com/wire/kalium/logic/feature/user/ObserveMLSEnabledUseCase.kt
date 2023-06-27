@@ -42,7 +42,7 @@ internal class ObserveMLSEnabledUseCaseImpl(
 ) : ObserveMLSEnabledUseCase {
 
     override fun invoke(): Flow<MLSEnablingSetting> = userConfigRepository
-        .observeIsMLSEnabled()
+        .observeIsMLSE2EIdSetting()
         .filter { mlsSetting ->
             mlsSetting.status && (mlsSetting.notifyUserAfter?.let { it <= DateTimeUtil.currentInstant() } ?: false)
         }

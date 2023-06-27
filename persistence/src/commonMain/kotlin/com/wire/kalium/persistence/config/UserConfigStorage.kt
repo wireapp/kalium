@@ -79,17 +79,27 @@ interface UserConfigStorage {
     /**
      * save flag from the user settings to enable and disable MLS
      */
-    fun enableMLS(enabled: Boolean, notifyUserAfterMs: Long?, enablingDeadlineMs: Long?)
+    fun enableMLS(enabled: Boolean)
 
     /**
      * get the saved flag to know if MLS enabled or not
      */
-    fun isMLSEnabled(): IsMLSEnabledEntity
+    fun isMLSEnabled(): Boolean
 
     /**
-     * get Flow of the saved flag to know if MLS enabled or not
+     * save MLSE2EIdSetting
      */
-    fun isMLSEnabledFlow(): Flow<IsMLSEnabledEntity>
+    fun setMLSE2EIdSetting(settingEntity: MLSE2EIdSettingEntity)
+
+    /**
+     * get MLSE2EIdSetting
+     */
+    fun getMLSE2EIdSetting(): MLSE2EIdSettingEntity
+
+    /**
+     * get Flow of the saved MLSE2EIdSetting
+     */
+    fun mlsE2EIdSettingFlow(): Flow<MLSE2EIdSettingEntity>
 
     /**
      * save flag from user settings to enable or disable Conference Calling
@@ -141,8 +151,9 @@ data class TeamSettingsSelfDeletionStatusEntity(
 )
 
 @Serializable
-data class IsMLSEnabledEntity(
+data class MLSE2EIdSettingEntity(
     @SerialName("status") val status: Boolean,
+    @SerialName("discoverUrl") val discoverUrl: String,
     @SerialName("notifyUserAfter") val notifyUserAfterMs: Long?,
     @SerialName("enablingDeadline") val enablingDeadlineMs: Long?,
 )
@@ -180,7 +191,7 @@ class UserConfigStorageImpl(
     private val isGuestRoomLinkEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    private val isMLSEnabledFlow =
+    private val mlsE2EIdFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -248,27 +259,29 @@ class UserConfigStorageImpl(
     override fun isSecondFactorPasswordChallengeRequired(): Boolean =
         kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
 
-    override fun enableMLS(enabled: Boolean, notifyUserAfterMs: Long?, enablingDeadlineMs: Long?) {
+    override fun enableMLS(enabled: Boolean) {
+        kaliumPreferences.putBoolean(MLS_E2E_ID, enabled)
+    }
+
+    override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(MLS_E2E_ID, false)
+
+    override fun setMLSE2EIdSetting(settingEntity: MLSE2EIdSettingEntity) {
         kaliumPreferences.putSerializable(
-            ENABLE_MLS,
-            IsMLSEnabledEntity(enabled, notifyUserAfterMs, enablingDeadlineMs),
-            IsMLSEnabledEntity.serializer()
+            MLS_E2E_ID,
+            settingEntity,
+            MLSE2EIdSettingEntity.serializer()
         ).also {
-            isMLSEnabledFlow.tryEmit(Unit)
+            mlsE2EIdFlow.tryEmit(Unit)
         }
     }
 
-    override fun isMLSEnabled(): IsMLSEnabledEntity {
-        if (kaliumPreferences.hasValue(ENABLE_MLS)) {
-            // migrate from old impl
-            enableMLS(kaliumPreferences.getBoolean(ENABLE_MLS_OLD, false), null, null)
-        }
-        return kaliumPreferences.getSerializable(ENABLE_MLS, IsMLSEnabledEntity.serializer())!!
+    override fun getMLSE2EIdSetting(): MLSE2EIdSettingEntity {
+        return kaliumPreferences.getSerializable(MLS_E2E_ID, MLSE2EIdSettingEntity.serializer())!!
     }
 
-    override fun isMLSEnabledFlow(): Flow<IsMLSEnabledEntity> = isMLSEnabledFlow
-        .map { isMLSEnabled() }
-        .onStart { emit(isMLSEnabled()) }
+    override fun mlsE2EIdSettingFlow(): Flow<MLSE2EIdSettingEntity> = mlsE2EIdFlow
+        .map { getMLSE2EIdSetting() }
+        .onStart { emit(getMLSE2EIdSetting()) }
         .distinctUntilChanged()
 
     override fun persistConferenceCalling(enabled: Boolean) {
@@ -315,8 +328,8 @@ class UserConfigStorageImpl(
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
-        const val ENABLE_MLS_OLD = "enable_mls"
-        const val ENABLE_MLS = "enable_mls_with_change_flag"
+        const val ENABLE_MLS = "enable_mls"
+        const val MLS_E2E_ID = "mls_end_to_end_identity_setting"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false

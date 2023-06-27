@@ -41,6 +41,6 @@ internal class IsMLSEnabledUseCaseImpl(
         userConfigRepository.isMLSEnabled().fold({
             false
         }, {
-            it.status && featureSupport.isMLSSupported
+            it && featureSupport.isMLSSupported
         })
 }

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.FileSharingStatus
+import com.wire.kalium.logic.configuration.MLSEnablingSetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -34,7 +35,9 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -129,6 +132,23 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     EventLoggingStatus.SUCCESS,
                     event,
                     Pair("isDurationEnforced", (event.model.config.enforcedTimeoutSeconds ?: 0) > 0),
+                )
+            }
+
+            is Event.FeatureConfig.MLSE2EIdUpdated -> {
+                val enablingDeadlineMs = event.model.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
+                userConfigRepository.setMLSE2EIdSetting(
+                    MLSEnablingSetting(
+                        status = event.model.status == Status.ENABLED,
+                        discoverUrl = event.model.config.discoverUrl,
+                        notifyUserAfter = DateTimeUtil.currentInstant(),
+                        enablingDeadline = Instant.fromEpochMilliseconds(enablingDeadlineMs)
+                    )
+                )
+
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
                 )
             }
 
