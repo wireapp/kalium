@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
@@ -335,7 +336,7 @@ class RetryFailedMessageUseCaseTest {
 
         private val testScope = TestScope(testDispatcher.default)
 
-        fun withGetMessageById(result: Either<CoreFailure, Message>): Arrangement = apply {
+        fun withGetMessageById(result: Either<StorageFailure, Message>): Arrangement = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(anything(), anything())
