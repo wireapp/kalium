@@ -490,9 +490,8 @@ class UserSessionScope internal constructor(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider
-
-            //todo: reuse this later and fix it
-            //selfUserUseCase = users.getSelfUser
+            // TODO(revert): reuse this later and fix it
+            // TODO(revert): selfUserUseCase = users.getSelfUser
         )
     }
 

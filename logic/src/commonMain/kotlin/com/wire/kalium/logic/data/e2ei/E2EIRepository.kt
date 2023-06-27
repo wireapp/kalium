@@ -44,21 +44,17 @@ interface E2EIRepository {
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
-    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String)
-            : Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
-
-    suspend fun createAuthz(prevNonce: String, authzEndpoint: String)
-            : Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
-
+    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String):
+            Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
+    suspend fun createAuthz(prevNonce: String, authzEndpoint: String):
+            Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
     suspend fun getWireNonce(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
-    suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
-            : Either<CoreFailure, ChallengeResponse>
-
-    suspend fun validateOIDCChallenge(idToken: String, prevNonce: String, acmeChallenge: AcmeChallenge)
-            : Either<CoreFailure, ChallengeResponse>
-
+    suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge):
+            Either<CoreFailure, ChallengeResponse>
+    suspend fun validateOIDCChallenge(idToken: String, prevNonce: String, acmeChallenge: AcmeChallenge):
+            Either<CoreFailure, ChallengeResponse>
     suspend fun validateChallenge(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>

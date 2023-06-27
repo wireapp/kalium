@@ -91,7 +91,7 @@ class EnrolE2EIUseCaseImpl internal constructor(
 
         prevNonce = orderResponse.first.nonce
 
-        // todo: replace with orderResponse.third
+        // TODO(fix): replace with orderResponse.third
         val finalizeResponse = e2EIRepository.finalize(orderResponse.second, prevNonce).fold({
             return E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.FinalizeRequest, it).toEitherLeft()
         }, { it })
@@ -102,8 +102,8 @@ class EnrolE2EIUseCaseImpl internal constructor(
             return E2EIEnrolmentResult.Failed(E2EIEnrolmentResult.E2EIStep.Certificate, it).toEitherLeft()
         }, { it })
 
-        //todo: init after fixing the MLS client initialization mechanism
-        //e2EIRepository.initMLSClientWithCertificate(certificateRequest.response.decodeToString())
+        // TODO(fix): init after fixing the MLS client initialization mechanism
+        // TODO(revert): e2EIRepository.initMLSClientWithCertificate(certificateRequest.response.decodeToString())
         return Either.Right(E2EIEnrolmentResult.Success(certificateRequest.response.decodeToString()))
     }
 
