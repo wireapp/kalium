@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -124,6 +125,11 @@ internal interface UserRepository {
      * Updates users without metadata from the server.
      */
     suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit>
+
+    /**
+     * Removes broken user asset to avoid fetching it until next sync.
+     */
+    suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -475,6 +481,10 @@ internal class UserDataSource internal constructor(
         kaliumLogger.d("Numbers of users to refresh: ${usersWithoutMetadata.size}")
         val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
         fetchUsersByIds(userIds)
+    }
+
+    override suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID) = wrapStorageRequest {
+        userDAO.removeUserAsset(qualifiedID.toDao())
     }
 
     companion object {

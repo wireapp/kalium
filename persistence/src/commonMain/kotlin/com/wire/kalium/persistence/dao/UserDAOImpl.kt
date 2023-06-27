@@ -395,6 +395,10 @@ class UserDAOImpl internal constructor(
         userQueries.updateUserDisplayName(displayName, selfUserId)
     }
 
+    override suspend fun removeUserAsset(assetId: UserAssetIdEntity) {
+        userQueries.updateUserAsset(null, null, assetId)
+    }
+
     override suspend fun getUsersWithoutMetadata() = withContext(queriesContext) {
         userQueries.selectUsersWithoutMetadata()
             .executeAsList()

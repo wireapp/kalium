@@ -24,6 +24,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
 import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.data.message.Message.UploadStatus.NOT_UPLOADED
 import com.wire.kalium.logic.data.message.Message.UploadStatus.UPLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -61,6 +63,7 @@ interface GetMessageAssetUseCase {
 internal class GetMessageAssetUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val messageRepository: MessageRepository,
+    private val userRepository: UserRepository,
     private val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher
@@ -71,7 +74,7 @@ internal class GetMessageAssetUseCaseImpl(
     ): Deferred<MessageAssetResult> =
         messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).fold({
             kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
-            CompletableDeferred(MessageAssetResult.Failure(it))
+            CompletableDeferred(MessageAssetResult.Failure(it, false))
         }, { message ->
             when (val content = message.content) {
                 is MessageContent.Asset -> {
@@ -111,7 +114,15 @@ internal class GetMessageAssetUseCaseImpl(
                             kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                             // This should be called if there is an issue while downloading the asset
                             updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
-                            MessageAssetResult.Failure(it)
+                            if (it.isNotFoundFailure) {
+                                assetMetadata.assetKeyDomain?.let {domain ->
+                                    userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
+                                }
+                                MessageAssetResult.Failure(it, false)
+                            } else {
+                                MessageAssetResult.Failure(it, true)
+                            }
+
                         }, { decodedAssetPath ->
                             // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded
                             // while running this specific use case. Otherwise, recursive loop as described above kicks in.
@@ -125,7 +136,8 @@ internal class GetMessageAssetUseCaseImpl(
                 // This should never happen
                 else -> return@fold CompletableDeferred(
                     MessageAssetResult.Failure(
-                        CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message"))
+                        CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message")),
+                        isRetryNeeded = false
                     )
                 )
             }
@@ -139,5 +151,5 @@ sealed class MessageAssetResult {
         val assetName: String
     ) : MessageAssetResult()
 
-    class Failure(val coreFailure: CoreFailure) : MessageAssetResult()
+    class Failure(val coreFailure: CoreFailure, val isRetryNeeded: Boolean) : MessageAssetResult()
 }
