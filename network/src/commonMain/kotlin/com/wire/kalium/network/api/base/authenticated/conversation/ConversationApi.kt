@@ -26,7 +26,6 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.network.api.base.model.SubconversationId
-import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -49,11 +48,6 @@ interface ConversationApi {
 
     suspend fun fetchConversationDetails(
         conversationId: ConversationId
-    ): NetworkResponse<ConversationResponse>
-
-    suspend fun fetchGlobalTeamConversationDetails(
-        selfUserId: UserId,
-        teamId: TeamId
     ): NetworkResponse<ConversationResponse>
 
     suspend fun createNewConversation(
