@@ -51,7 +51,7 @@ import kotlin.test.Test
 class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
 
     @Test
-    fun givenMessage_whenDeleting_then2DeleteMessagesAreSentForSelfAndOriginalSender() = runTest {
+    fun givenMessage_whenDeleting_thenSendDeleteMessageWithOnlySelfAndOriginalSenderAsRecipient() = runTest {
         val messageId = "messageId"
         val conversationId = ConversationId("conversationId", "conversationDomain.com")
         val currentClientId = CURRENT_CLIENT_ID
@@ -83,22 +83,10 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
                 matching {
-                    it.conversationId == SELF_CONVERSION_ID.first() &&
-                            it.content == MessageContent.DeleteForMe(messageId, conversationId)
-                }, matching {
-                    it == MessageTarget.Conversation
-                })
-            .wasInvoked(exactly = once)
-
-
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching {
                     it.conversationId == conversationId &&
                             it.content == MessageContent.DeleteMessage(messageId)
                 }, matching {
-                    it == MessageTarget.Users(listOf(senderUserID))
+                    it == MessageTarget.Users(listOf(senderUserID, selfUserId))
                 })
             .wasInvoked(exactly = once)
 
@@ -126,7 +114,6 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                 messageRepository = messageRepository,
                 messageSender = messageSender,
                 selfUserId = selfUserId,
-                selfConversationIdProvider = selfConversationIdProvider,
                 assetRepository = assetRepository,
                 currentClientIdProvider = currentClientIdProvider
             )
