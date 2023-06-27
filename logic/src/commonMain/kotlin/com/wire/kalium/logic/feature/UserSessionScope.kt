@@ -167,8 +167,8 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
-import com.wire.kalium.logic.feature.e2ei.EnrolE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrolE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -489,16 +489,12 @@ class UserSessionScope internal constructor(
         E2EIClientProviderImpl(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
-            mlsClientProvider = mlsClientProvider
-            // TODO(revert): reuse this later and fix it
-            // TODO(revert): selfUserUseCase = users.getSelfUser
+            mlsClientProvider = mlsClientProvider,
+            selfUserUseCase = users.getSelfUser
         )
     }
 
-    val enrolE2EI: EnrolE2EIUseCase
-        get() = EnrolE2EIUseCaseImpl(
-            e2eiRepository
-        )
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 

@@ -155,7 +155,7 @@ internal class MLSMessageUnpackerImpl(
                             )
                         },
                         it.commitDelay,
-                        identity = it.identity?.let {identity ->
+                        identity = it.identity?.let { identity ->
                             E2EIdentity(
                                 identity.clientId,
                                 identity.handle,

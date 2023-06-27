@@ -41,8 +41,8 @@ import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrolE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrolE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
@@ -99,7 +99,7 @@ class UserScope internal constructor(
             qualifiedIdMapper
         )
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository)
-    val getEnrolE2EIUseCase: EnrolE2EIUseCase get() = EnrolE2EIUseCaseImpl(e2EIRepository)
+    val getEnrollE2EIUseCase: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)

@@ -23,7 +23,6 @@ import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -35,16 +34,16 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class EnrolE2EICertificateUseCaseTest {
+class EnrollE2EICertificateUseCaseTest {
     @Test
     fun givenLoadACMEDirectoriesFails_whenInvokeUseCase_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -115,14 +114,14 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenGetACMENonceFails_whenInvokeUseCase_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -194,7 +193,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenCreateNewAccountFails_whenInvokeUseCase_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -202,7 +201,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withCreateNewAccountResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -275,7 +274,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenCreateNewOrderFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -284,7 +283,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withCreateNewOrderResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -358,7 +357,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenCreateAuthzFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -368,7 +367,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withCreateAuthzResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -443,7 +442,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenGetWireNonceFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -454,7 +453,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withGetWireNonceResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -530,7 +529,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenGetDPoPTokenFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -542,7 +541,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withGetDPoPTokenResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -620,7 +619,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenGetWireAccessTokenFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -633,7 +632,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withGetWireAccessTokenResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -711,7 +710,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenValidateDPoPChallengeFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -725,7 +724,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withValidateDPoPChallengeResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -804,7 +803,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenValidateOIDCChallengeFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -819,7 +818,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withValidateOIDCChallengeResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -899,7 +898,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenCheckOrderRequestFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -915,7 +914,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withCheckOrderRequestResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -996,7 +995,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenFinalizeFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -1013,7 +1012,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withFinalizeResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -1091,7 +1090,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenCertificateRequestFailing_thenReturnFailure() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -1109,7 +1108,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withCertificateRequestResulting(TEST_EITHER_LEFT)
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldFail()
@@ -1188,7 +1187,7 @@ class EnrolE2EICertificateUseCaseTest {
 
     @Test
     fun givenUseCase_whenEveryStepSucceed_thenShouldSucceed() = runTest {
-        val (arrangement, enrolE2EICertificateUseCase) = Arrangement().arrange()
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         //given
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
@@ -1206,7 +1205,7 @@ class EnrolE2EICertificateUseCaseTest {
         arrangement.withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
 
         //when
-        val result = enrolE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
 
         //then
         result.shouldSucceed()
@@ -1380,7 +1379,7 @@ class EnrolE2EICertificateUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun arrange(): Pair<Arrangement, EnrolE2EIUseCase> = this to EnrolE2EIUseCaseImpl(e2EIRepository)
+        fun arrange(): Pair<Arrangement, EnrollE2EIUseCase> = this to EnrollE2EIUseCaseImpl(e2EIRepository)
     }
 
     companion object {
