@@ -40,7 +40,8 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         ssoModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         validateSAMLEmailsModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
-        mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED)
+        mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED),
+        mlsE2EIdModel: MLSE2EIdModel = MLSE2EIdModel(MLSE2EIdConfigModel("url", 10000L), Status.ENABLED)
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -55,6 +56,7 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel,
         ssoModel,
         validateSAMLEmailsModel,
-        mlsModel
+        mlsModel,
+        mlsE2EIdModel
     )
 }

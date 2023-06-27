@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
+import com.wire.kalium.logic.data.featureConfig.MLSE2EIdConfigModel
+import com.wire.kalium.logic.data.featureConfig.MLSE2EIdModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
@@ -52,6 +54,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -568,6 +571,36 @@ class SyncFeatureConfigsUseCaseTest {
                     )
                 )
             })
+    }
+
+    @Test
+    fun givenMlsE2EIdIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(mlsE2EIdModel = MLSE2EIdModel(MLSE2EIdConfigModel("url", 10000L), Status.DISABLED))
+            ).arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getMLSE2EIdSetting().shouldSucceed {
+            assertFalse(it.status)
+            assertEquals("url", it.discoverUrl)
+            assertEquals(Instant.fromEpochMilliseconds(10000L), it.enablingDeadline)
+        }
+    }
+
+    @Test
+    fun givenMlsE2EIdIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel()
+            ).arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getMLSE2EIdSetting().shouldSucceed {
+            assertTrue(it.status)
+        }
     }
 
     private class Arrangement {

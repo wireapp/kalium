@@ -30,6 +30,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSE2EIdConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -74,6 +75,10 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             MLSModel(
                 emptyList(),
+                Status.ENABLED
+            ),
+            MLSE2EIdModel(
+                MLSE2EIdConfigModel("url", 1000000L),
                 Status.ENABLED
             )
         )
@@ -145,11 +150,16 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.MLS(
                 MLSConfigDTO(
-                emptyList(),
-                ConvProtocol.MLS,
-                emptyList(),
-                1
-            ), FeatureFlagStatusDTO.ENABLED)
+                    emptyList(),
+                    ConvProtocol.MLS,
+                    emptyList(),
+                    1
+                ), FeatureFlagStatusDTO.ENABLED
+            ),
+            FeatureConfigData.MLSE2EId(
+                MLSE2EIdConfigDTO("url", 1000000L),
+                FeatureFlagStatusDTO.ENABLED
+            )
         )
 
         @Mock
