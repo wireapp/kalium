@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
@@ -37,7 +36,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
 interface NewConversationEventHandler {
-    suspend fun handle(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit>
+    suspend fun handle(event: Event.Conversation.NewConversation)
 }
 
 internal class NewConversationEventHandlerImpl(
@@ -47,29 +46,41 @@ internal class NewConversationEventHandlerImpl(
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
 ) : NewConversationEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> = conversationRepository
-        .persistConversations(listOf(event.conversation), selfTeamIdProvider().getOrNull()?.value, originatedFromEvent = true)
-        .flatMap { conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant()) }
-        .flatMap {
-            userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
-        }.onSuccess {
-            createSystemMessagesForNewConversation(event)
-            kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
-        }
-        .onFailure {
-            kaliumLogger.logEventProcessing(EventLoggingStatus.FAILURE, event, Pair("errorInfo", "$it"))
-        }
+    override suspend fun handle(event: Event.Conversation.NewConversation) {
+        conversationRepository
+            .persistConversation(event.conversation, selfTeamIdProvider().getOrNull()?.value, true)
+            .flatMap { isNewUnhandledConversation ->
+                conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
+                Either.Right(isNewUnhandledConversation)
+            }.flatMap { isNewUnhandledConversation ->
+                userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
+                Either.Right(isNewUnhandledConversation)
+            }.onSuccess { isNewUnhandledConversation ->
+                createSystemMessagesForNewConversation(isNewUnhandledConversation, event)
+                kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
+            }.onFailure {
+                kaliumLogger.logEventProcessing(EventLoggingStatus.FAILURE, event, Pair("errorInfo", "$it"))
+            }
+    }
 
     /**
      * Creates system messages for new conversation.
      * Conversation started, members added and failed, read receipt status.
+     *
+     * @param isNewUnhandledConversation if true we need to generate system messages for new conversation
+     * @param event new conversation event
      */
-    private suspend fun createSystemMessagesForNewConversation(event: Event.Conversation.NewConversation) = run {
-        newGroupConversationSystemMessagesCreator.conversationStarted(event.conversation)
-        newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
-            event.conversationId.toDao(),
-            event.conversation
-        )
-        newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation)
+    private suspend fun createSystemMessagesForNewConversation(
+        isNewUnhandledConversation: Boolean,
+        event: Event.Conversation.NewConversation
+    ) {
+        if (isNewUnhandledConversation) {
+            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation)
+            newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
+                event.conversationId.toDao(),
+                event.conversation
+            )
+            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation)
+        }
     }
 }

@@ -55,8 +55,12 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
+                // CoreCrypto
+                implementation(libs.coreCrypto)
+
                 // Concurrent collections
                 implementation(libs.concurrentCollections)
+                implementation(libs.statelyCommons)
             }
         }
         val commonTest by getting {

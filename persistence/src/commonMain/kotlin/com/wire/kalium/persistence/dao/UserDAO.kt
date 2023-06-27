@@ -52,7 +52,8 @@ data class UserEntity(
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
     val botService: BotIdEntity?,
-    val deleted: Boolean
+    val deleted: Boolean,
+    val hasIncompleteMetadata: Boolean = false
 )
 
 data class UserEntityMinimized(
@@ -192,4 +193,5 @@ interface UserDAO {
     suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>>
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
+    suspend fun getUsersWithoutMetadata(): List<UserEntity>
 }

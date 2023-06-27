@@ -274,7 +274,8 @@ class ConversationDAOImpl(
                 else MLS_DEFAULT_CIPHER_SUITE,
                 receiptMode,
                 messageTimer,
-                userMessageTimer
+                userMessageTimer,
+                hasIncompleteMetadata
             )
         }
     }
@@ -565,10 +566,19 @@ class ConversationDAOImpl(
         }.flowOn(coroutineContext)
 
     override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
-        conversationQueries.updateMessageTimer(messageTimer, conversationId)
+        val previousTimer = conversationQueries.getMessageTimer(conversationId).executeAsOneOrNull()?.message_timer
+        val updated = previousTimer != messageTimer
+        if (updated) {
+            conversationQueries.updateMessageTimer(messageTimer, conversationId)
+        }
+        updated
     }
 
     override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
         conversationQueries.updateUserMessageTimer(messageTimer, conversationId)
+    }
+
+    override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
 }

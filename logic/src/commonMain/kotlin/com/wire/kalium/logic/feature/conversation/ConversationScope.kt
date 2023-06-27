@@ -236,4 +236,9 @@ class ConversationScope internal constructor(
 
     val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
         get() = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
+
+    val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
+        get() = RefreshConversationsWithoutMetadataUseCaseImpl(
+            conversationRepository = conversationRepository
+        )
 }

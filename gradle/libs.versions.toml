@@ -36,7 +36,7 @@ pbandk = "0.14.2"
 turbine = "0.12.1"
 avs = "9.2.13"
 jna = "5.6.0"
-core-crypto = "0.8.2"
+core-crypto = "1.0.0-pre.5"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "1.1.5"
@@ -50,7 +50,7 @@ protobufCodegen = "0.9.1"
 annotation = "1.2.0"
 mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
-concurrentCollections = "2.0.0-rc1"
+stately = "2.0.0-rc1"
 
 [plugins]
 # Home-made convention plugins
@@ -172,7 +172,8 @@ pbandk-runtime-macArm64 = { module = "pro.streem.pbandk:pbandk-runtime-macosarm6
 pbandk-runtime-common = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
 benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
 apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
-concurrentCollections = { module = "co.touchlab:stately-concurrent-collections", version.ref = "concurrentCollections" }
+concurrentCollections = { module = "co.touchlab:stately-concurrent-collections", version.ref = "stately" }
+statelyCommons = { module = "co.touchlab:stately-common", version.ref = "stately" }
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }
