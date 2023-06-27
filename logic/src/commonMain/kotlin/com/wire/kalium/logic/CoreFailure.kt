@@ -113,7 +113,7 @@ interface MLSFailure : CoreFailure {
     }
 }
 
-class E2EIFailure(internal val exception: Exception) : CoreFailure() {
+class E2EIFailure(internal val exception: Exception) : CoreFailure {
 
     val rootCause: Throwable get() = exception
 }
