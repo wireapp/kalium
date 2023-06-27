@@ -343,6 +343,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         userDAO.updateUserAvailabilityStatus(SELF_USER_ID, status)
     }
 
+    // TODO(MO): should we user DateTimeUtil instead os Clock.System.now()?
     private suspend fun setConversationMutedStatus(conversationId: QualifiedIDEntity, mutedStatus: ConversationEntity.MutedStatus) {
         conversationDAO.updateConversationMutedStatus(conversationId, mutedStatus, Clock.System.now().toEpochMilliseconds())
     }
