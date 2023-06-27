@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -73,6 +74,7 @@ class DebugScope internal constructor(
     private val syncManager: SyncManager,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -147,6 +149,7 @@ class DebugScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
             selfUserId = userId,
+            selfConversationIdProvider = selfConversationIdProvider
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
