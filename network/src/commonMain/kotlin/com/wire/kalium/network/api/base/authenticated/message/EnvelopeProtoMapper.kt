@@ -18,10 +18,10 @@
 
 package com.wire.kalium.network.api.base.authenticated.message
 
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry
+import com.wire.kalium.protobuf.otr.QualifiedUserId
 import com.wire.kalium.protobuf.otr.UserEntry
 import com.wire.kalium.protobuf.otr.UserId
 import pbandk.ByteArr
@@ -51,19 +51,34 @@ internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
             )
         }
 
-        // TODO(messaging): Handle different report types, etc.
         val strategy = when (envelopeParameters.messageOption) {
             is MessageApi.QualifiedMessageOption.IgnoreAll -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(ClientMismatchStrategy.IgnoreAll())
             }
+
             is MessageApi.QualifiedMessageOption.ReportAll -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll())
             }
-            else -> {
-                kaliumLogger.w("[EnvelopeProtoMapper] - Other types not being handled yet.")
-                QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll())
+
+            is MessageApi.QualifiedMessageOption.IgnoreSome -> {
+                QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly(
+                    ClientMismatchStrategy.IgnoreOnly(
+                        envelopeParameters.messageOption.userIDs.map {
+                            QualifiedUserId(it.value, it.domain)
+                        })
+                )
+            }
+
+            is MessageApi.QualifiedMessageOption.ReportSome -> {
+                QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly(
+                    ClientMismatchStrategy.ReportOnly(
+                        envelopeParameters.messageOption.userIDs.map {
+                            QualifiedUserId(it.value, it.domain)
+                        })
+                )
             }
         }
+
         return QualifiedNewOtrMessage(
             recipients = qualifiedEntries,
             sender = otrClientIdMapper.toOtrClientId(envelopeParameters.sender),
