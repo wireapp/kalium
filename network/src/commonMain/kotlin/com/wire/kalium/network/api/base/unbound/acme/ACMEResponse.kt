@@ -33,23 +33,6 @@ data class AcmeDirectoriesResponse(
 
 @Suppress("EnforceSerializableFields")
 @Serializable
-data class AuthzDirectoriesResponse @OptIn(ExperimentalSerializationApi::class) constructor(
-    @JsonNames("issuer")
-    val issuerEndpoint: String,
-    @JsonNames("authorization_endpoint")
-    val authorizationEndpoint: String,
-    @JsonNames("token_endpoint")
-    val tokenEndpoint: String,
-    @JsonNames("jwks_uri")
-    val jwksEndpoint: String,
-    @JsonNames("userinfo_endpoint")
-    val userinfoEndpoint: String,
-    @JsonNames("device_authorization_endpoint")
-    val deviceAuthorizationEndpoint: String,
-)
-
-@Suppress("EnforceSerializableFields")
-@Serializable
 data class ACMEResponse(
     val nonce: String,
     val location: String,
@@ -64,23 +47,4 @@ data class ChallengeResponse(
     val status: String,
     val token: String,
     val nonce: String = ""
-)
-
-@kotlinx.serialization.Serializable
-data class FinalizeOrderResponse(
-    val id: String,
-    val status: String,
-    val expires: String,
-    val identifiers: List<Identifier>,
-    val authorizations: List<String>,
-    val finalize: String,
-    val notBefore: String,
-    val notAfter: String,
-    val certificate: String
-)
-
-@Serializable
-data class Identifier(
-    val type: String,
-    val value: String
 )

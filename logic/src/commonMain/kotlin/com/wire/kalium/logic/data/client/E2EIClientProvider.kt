@@ -61,9 +61,8 @@ class E2EIClientProviderImpl(
                     mlsClientProvider.getMLSClient(currentClientId).flatMap {
                         val newE2EIClient = it.newAcmeEnrollment(
                             e2eiClientId,
-                            //todo: selfUser.name,selfUser.handle
-                            "Mojtaba Chenani",
-                            "mojtaba_wire"
+                            selfUser.first,
+                            selfUser.second
                         )
                         e2EIClient = newE2EIClient
                         Either.Right(newE2EIClient)
