@@ -1280,7 +1280,7 @@ class EnrolE2EICertificateUseCaseTest {
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::initMLSClientWithCertificate)
             .with(any<String>())
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
     }
 
 
