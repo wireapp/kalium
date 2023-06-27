@@ -136,7 +136,11 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             }
 
             is Event.FeatureConfig.MLSE2EIdUpdated -> {
-                val enablingDeadlineMs = event.model.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
+                val enablingDeadlineMs = event.model.config
+                    .verificationExpirationNS
+                    .toDuration(DurationUnit.NANOSECONDS)
+                    .inWholeMilliseconds
+
                 userConfigRepository.setMLSE2EIdSetting(
                     MLSEnablingSetting(
                         status = event.model.status == Status.ENABLED,

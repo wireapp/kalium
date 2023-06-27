@@ -260,10 +260,10 @@ class UserConfigStorageImpl(
         kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
 
     override fun enableMLS(enabled: Boolean) {
-        kaliumPreferences.putBoolean(MLS_E2E_ID, enabled)
+        kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
     }
 
-    override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(MLS_E2E_ID, false)
+    override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
     override fun setMLSE2EIdSetting(settingEntity: MLSE2EIdSettingEntity) {
         kaliumPreferences.putSerializable(

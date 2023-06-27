@@ -37,8 +37,6 @@ import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
@@ -160,13 +158,13 @@ class UserConfigDataSource(
 
     override fun snoozeMLSE2EIdNotification(timeMs: Long): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            isMLSEnabledOrNull()?.let { current ->
+            getMLSE2EIdSettingEntityOrNull()?.let { current ->
                 val notifyUserAfterMs = current.notifyUserAfterMs?.plus(timeMs)
-                userConfigStorage.setMLSE2EIdSetting(current.status, current.discoverUrl, notifyUserAfterMs, current.enablingDeadlineMs)
+                userConfigStorage.setMLSE2EIdSetting(current.copy(notifyUserAfterMs = notifyUserAfterMs))
             }
         }
 
-    private fun isMLSEnabledOrNull() = wrapStorageRequest { userConfigStorage.getMLSE2EIdSetting() }.getOrNull()
+    private fun getMLSE2EIdSettingEntityOrNull() = wrapStorageRequest { userConfigStorage.getMLSE2EIdSetting() }.getOrNull()
 
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
