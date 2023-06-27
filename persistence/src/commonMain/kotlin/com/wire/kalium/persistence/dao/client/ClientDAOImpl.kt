@@ -22,7 +22,6 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneNotNull
 import kotlinx.coroutines.flow.Flow
@@ -119,7 +118,7 @@ internal class ClientDAOImpl internal constructor(
             .mapToOneNotNull()
             .flowOn(queriesContext)
 
-    override suspend fun recipientsIfTHeyArePartOfConversation(
+    override suspend fun recipientsIfTheyArePartOfConversation(
         conversationId: ConversationIDEntity,
         userIds: Set<QualifiedIDEntity>
     ): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {
@@ -182,9 +181,4 @@ internal class ClientDAOImpl internal constructor(
             .executeAsList()
             .groupBy { it.userId }
     }
-
-    override suspend fun recipientByUserID(ids: List<UserIDEntity>): Map<QualifiedIDEntity, List<Client>> {
-        TODO("Not yet implemented")
-    }
-
 }

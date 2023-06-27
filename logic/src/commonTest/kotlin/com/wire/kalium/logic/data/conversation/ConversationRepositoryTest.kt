@@ -878,7 +878,7 @@ class ConversationRepositoryTest {
         }
 
         verify(arrangement.clientDao)
-            .suspendFunction(arrangement.clientDao::recipientsIfTHeyArePartOfConversation)
+            .suspendFunction(arrangement.clientDao::recipientsIfTheyArePartOfConversation)
             .with(eq(conversationId), eq(setOf(user)))
             .wasInvoked(exactly = once)
     }
@@ -1105,7 +1105,7 @@ class ConversationRepositoryTest {
 
         fun withConversationRecipientByUserSuccess(result: Map<UserIDEntity, List<ClientEntity>>) = apply {
             given(clientDao)
-                .suspendFunction(clientDao::recipientsIfTHeyArePartOfConversation)
+                .suspendFunction(clientDao::recipientsIfTheyArePartOfConversation)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }

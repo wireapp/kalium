@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao.client
 
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -72,7 +71,6 @@ interface ClientDAO {
     suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String)
     suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
     suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
-    suspend fun recipientByUserID(ids: List<UserIDEntity>): Map<QualifiedIDEntity, List<Client>>
     suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>)
     suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
     suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
@@ -85,7 +83,7 @@ interface ClientDAO {
      * @param userIds the set of users
      * @return a map of users and their clients
      */
-    suspend fun recipientsIfTHeyArePartOfConversation(
+    suspend fun recipientsIfTheyArePartOfConversation(
         conversationId: ConversationIDEntity,
         userIds: Set<QualifiedIDEntity>
     ): Map<QualifiedIDEntity, List<Client>>

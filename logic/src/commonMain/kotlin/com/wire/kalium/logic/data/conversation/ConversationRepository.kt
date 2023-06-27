@@ -537,7 +537,7 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId,
         userIDList: List<UserId>
     ): Either<StorageFailure, List<Recipient>> = wrapStorageRequest {
-        clientDAO.recipientsIfTHeyArePartOfConversation(conversationId.toDao(), userIDList.map(UserId::toDao).toSet())
+        clientDAO.recipientsIfTheyArePartOfConversation(conversationId.toDao(), userIDList.map(UserId::toDao).toSet())
     }.map(memberMapper::fromMapOfClientsEntityToRecipients)
 
     /**
