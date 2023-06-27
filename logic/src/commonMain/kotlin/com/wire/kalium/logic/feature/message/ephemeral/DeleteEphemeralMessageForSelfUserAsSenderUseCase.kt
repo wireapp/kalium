@@ -28,7 +28,7 @@ import com.wire.kalium.logic.functional.Either
  * of GROUP or ONE_TO_ONE type
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl] for details
  **/
-interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
+internal interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
     /**
      * @param conversationId the conversation id that contains the self-deleting message
      * @param messageId the id of the self-deleting message
@@ -36,7 +36,7 @@ interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
     suspend operator fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit>
 }
 
-internal class DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
+internal class DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository
 ) : DeleteEphemeralMessageForSelfUserAsSenderUseCase {
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =

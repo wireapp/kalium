@@ -35,8 +35,8 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -241,12 +241,13 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSendWithProteus(
         message: Message.Sendable,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
     ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
         val target = when (messageTarget) {
             is MessageTarget.Client -> Either.Right(messageTarget.recipients)
             is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
+            is MessageTarget.Users -> conversationRepository.getRecipientById(conversationId, messageTarget.userId)
         }
 
         return target
@@ -388,8 +389,8 @@ internal class MessageSenderImpl internal constructor(
                     }
                     .onFailure {
                         val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
-                            " , " +
-                            "\"errorInfo\" : \"${it}\"}"
+                                " , " +
+                                "\"errorInfo\" : \"${it}\"}"
                         logger.e(logLine)
                     }
             }
