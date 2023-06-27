@@ -48,9 +48,9 @@ interface UserConfigRepository {
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
     fun isMLSEnabled(): Either<StorageFailure, Boolean>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    fun getMLSE2EIdSetting(): Either<StorageFailure, MLSEnablingSetting>
-    fun observeIsMLSE2EIdSetting(): Flow<MLSEnablingSetting>
-    fun setMLSE2EIdSetting(setting: MLSEnablingSetting): Either<StorageFailure, Unit>
+    fun getMLSE2EIdSetting(): Either<StorageFailure, MLSE2EIdSetting>
+    fun observeIsMLSE2EIdSetting(): Flow<MLSE2EIdSetting>
+    fun setMLSE2EIdSetting(setting: MLSE2EIdSetting): Either<StorageFailure, Unit>
     fun snoozeMLSE2EIdNotification(timeMs: Long): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
@@ -145,15 +145,15 @@ class UserConfigDataSource(
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
-    override fun getMLSE2EIdSetting(): Either<StorageFailure, MLSEnablingSetting> =
-        wrapStorageRequest { MLSEnablingSetting.fromEntity(userConfigStorage.getMLSE2EIdSetting()) }
+    override fun getMLSE2EIdSetting(): Either<StorageFailure, MLSE2EIdSetting> =
+        wrapStorageRequest { MLSE2EIdSetting.fromEntity(userConfigStorage.getMLSE2EIdSetting()) }
 
-    override fun observeIsMLSE2EIdSetting(): Flow<MLSEnablingSetting> =
+    override fun observeIsMLSE2EIdSetting(): Flow<MLSE2EIdSetting> =
         wrapStorageRequest { userConfigStorage.mlsE2EIdSettingFlow() }
-            .map { flow -> flow.map { MLSEnablingSetting.fromEntity(it) } }
+            .map { flow -> flow.map { MLSE2EIdSetting.fromEntity(it) } }
             .getOrElse(flowOf())
 
-    override fun setMLSE2EIdSetting(setting: MLSEnablingSetting): Either<StorageFailure, Unit> =
+    override fun setMLSE2EIdSetting(setting: MLSE2EIdSetting): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.setMLSE2EIdSetting(setting.toEntity()) }
 
     override fun snoozeMLSE2EIdNotification(timeMs: Long): Either<StorageFailure, Unit> =

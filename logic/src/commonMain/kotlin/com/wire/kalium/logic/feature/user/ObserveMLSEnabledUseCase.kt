@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.configuration.MLSEnablingSetting
+import com.wire.kalium.logic.configuration.MLSE2EIdSetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -27,13 +27,13 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOn
 
 /**
- * Observe [MLSEnablingSetting] to notify user when setting is changed
+ * Observe [MLSE2EIdSetting] to notify user when setting is changed
  */
 interface ObserveMLSEnabledUseCase {
     /**
-     * @return [Flow] of [MLSEnablingSetting]
+     * @return [Flow] of [MLSE2EIdSetting]
      */
-    operator fun invoke(): Flow<MLSEnablingSetting>
+    operator fun invoke(): Flow<MLSE2EIdSetting>
 }
 
 internal class ObserveMLSEnabledUseCaseImpl(
@@ -41,7 +41,7 @@ internal class ObserveMLSEnabledUseCaseImpl(
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveMLSEnabledUseCase {
 
-    override fun invoke(): Flow<MLSEnablingSetting> = userConfigRepository
+    override fun invoke(): Flow<MLSE2EIdSetting> = userConfigRepository
         .observeIsMLSE2EIdSetting()
         .filter { mlsSetting ->
             mlsSetting.status && (mlsSetting.notifyUserAfter?.let { it <= DateTimeUtil.currentInstant() } ?: false)

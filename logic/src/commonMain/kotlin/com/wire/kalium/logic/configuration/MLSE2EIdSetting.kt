@@ -20,7 +20,7 @@ package com.wire.kalium.logic.configuration
 import com.wire.kalium.persistence.config.MLSE2EIdSettingEntity
 import kotlinx.datetime.Instant
 
-data class MLSEnablingSetting(
+data class MLSE2EIdSetting(
     val status: Boolean,
     val discoverUrl: String,
     val notifyUserAfter: Instant?,
@@ -32,7 +32,7 @@ data class MLSEnablingSetting(
     )
 
     companion object {
-        fun fromEntity(entity: MLSE2EIdSettingEntity) = MLSEnablingSetting(
+        fun fromEntity(entity: MLSE2EIdSettingEntity) = MLSE2EIdSetting(
             entity.status,
             entity.discoverUrl,
             entity.notifyUserAfterMs?.let { Instant.fromEpochMilliseconds(it) },

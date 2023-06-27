@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.MLSEnablingSetting
+import com.wire.kalium.logic.configuration.MLSE2EIdSetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -142,7 +142,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     .inWholeMilliseconds
 
                 userConfigRepository.setMLSE2EIdSetting(
-                    MLSEnablingSetting(
+                    MLSE2EIdSetting(
                         status = event.model.status == Status.ENABLED,
                         discoverUrl = event.model.config.discoverUrl,
                         notifyUserAfter = DateTimeUtil.currentInstant(),
