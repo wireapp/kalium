@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.AcmeChallenge
@@ -28,7 +30,6 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapE2EIRequest
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
@@ -36,20 +37,19 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
-import io.ktor.utils.io.core.toByteArray
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 
 interface E2EIRepository {
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
-    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
-    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
+    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String)
+            : Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
+
+    suspend fun createAuthz(prevNonce: String, authzEndpoint: String)
+            : Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
+
     suspend fun getWireNonce(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
@@ -110,16 +110,16 @@ class E2EIRepositoryImpl(
             }
         }
 
-    override suspend fun createAuthz(prevNonce: String, authzEndpoint: String) = e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
-        val authzRequest = e2eiClient.getNewAuthzRequest(authzEndpoint, prevNonce)
-        wrapApiRequest {
-            acmeApi.sendACMERequest(authzEndpoint, authzRequest)
-        }.flatMap { apiResponse ->
-            val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
-            Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
+    override suspend fun createAuthz(prevNonce: String, authzEndpoint: String) =
+        e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            val authzRequest = e2eiClient.getNewAuthzRequest(authzEndpoint, prevNonce)
+            wrapApiRequest {
+                acmeApi.sendACMERequest(authzEndpoint, authzRequest)
+            }.flatMap { apiResponse ->
+                val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
+                Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
+            }
         }
-    }
-
 
     override suspend fun getWireNonce() = currentClientIdProvider().flatMap { clientId ->
         wrapApiRequest {
@@ -159,10 +159,11 @@ class E2EIRepositoryImpl(
             }
         }
 
-    override suspend fun validateChallenge(challengeResponse: ChallengeResponse) = e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
-        e2eiClient.setChallengeResponse(Json.encodeToString(challengeResponse).encodeToByteArray())
-        Either.Right(Unit)
-    }
+    override suspend fun validateChallenge(challengeResponse: ChallengeResponse) =
+        e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            e2eiClient.setChallengeResponse(Json.encodeToString(challengeResponse).encodeToByteArray())
+            Either.Right(Unit)
+        }
 
     override suspend fun checkOrderRequest(location: String, prevNonce: String) =
         e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
@@ -193,7 +194,6 @@ class E2EIRepositoryImpl(
                 acmeApi.sendACMERequest(location, certificateRequest)
             }.map { it }
         }
-
 
     override suspend fun initMLSClientWithCertificate(certificateChain: String) {
         e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->

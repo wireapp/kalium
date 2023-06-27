@@ -27,6 +27,7 @@ interface EnrolE2EIUseCase {
     suspend operator fun invoke(idToken: String): Either<CoreFailure, E2EIEnrolmentResult>
 }
 
+@Suppress("ReturnCount")
 class EnrolE2EIUseCaseImpl internal constructor(
     private val e2EIRepository: E2EIRepository,
 ) : EnrolE2EIUseCase {
@@ -103,7 +104,6 @@ class EnrolE2EIUseCaseImpl internal constructor(
 
         //todo: init after fixing the MLS client initialization mechanism
         //e2EIRepository.initMLSClientWithCertificate(certificateRequest.response.decodeToString())
-
         return Either.Right(E2EIEnrolmentResult.Success(certificateRequest.response.decodeToString()))
     }
 

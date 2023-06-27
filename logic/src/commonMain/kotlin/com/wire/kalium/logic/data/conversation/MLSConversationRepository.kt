@@ -79,10 +79,7 @@ data class DecryptedMessageBundle(
     val identity: E2EIdentity?
 )
 
-data class E2EIdentity(var clientId: String,
-                       var handle: String,
-                       var displayName: String,
-                       var domain: String)
+data class E2EIdentity(var clientId: String, var handle: String, var displayName: String, var domain: String)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {

@@ -17,9 +17,7 @@
  */
 package com.wire.kalium.network.api.base.unbound.acme
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonNames
 
 @Suppress("EnforceSerializableFields")
 @Serializable

@@ -489,7 +489,8 @@ class UserSessionScope internal constructor(
         E2EIClientProviderImpl(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
-            mlsClientProvider = mlsClientProvider,
+            mlsClientProvider = mlsClientProvider
+
             //todo: reuse this later and fix it
             //selfUserUseCase = users.getSelfUser
         )
