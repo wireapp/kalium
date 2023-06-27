@@ -24,5 +24,5 @@ import com.wire.kalium.logic.data.user.UserId
 sealed interface MessageTarget {
     data class Users(val userId: List<UserId>) : MessageTarget
     class Client(val recipients: List<Recipient>) : MessageTarget
-    object Conversation : MessageTarget
+    data class Conversation(val usersToIgnore: Set<UserId> = emptySet()) : MessageTarget
 }

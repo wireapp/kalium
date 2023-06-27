@@ -99,7 +99,7 @@ interface MessageSender {
      */
     suspend fun sendMessage(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation
+        messageTarget: MessageTarget = MessageTarget.Conversation()
     ): Either<CoreFailure, Unit>
 
     /**
@@ -215,7 +215,7 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSend(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation
+        messageTarget: MessageTarget = MessageTarget.Conversation()
     ): Either<CoreFailure, String> {
         return conversationRepository
             .getConversationProtocolInfo(message.conversationId)
@@ -241,7 +241,7 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSendWithProteus(
         message: Message.Sendable,
-        messageTarget: MessageTarget,
+        messageTarget: MessageTarget
     ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
         val target = when (messageTarget) {
@@ -260,7 +260,14 @@ internal class MessageSenderImpl internal constructor(
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
                     .flatMap { envelope: MessageEnvelope ->
-                        trySendingProteusEnvelope(envelope, message, messageTarget, usersWithoutSessions.users)
+                        val updatedMessageTarget = when (messageTarget) {
+                            is MessageTarget.Client,
+                            is MessageTarget.Users -> messageTarget
+
+                            is MessageTarget.Conversation ->
+                                MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
+                        }
+                        trySendingProteusEnvelope(envelope, message, updatedMessageTarget)
                     }
             }
     }
@@ -330,11 +337,10 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun trySendingProteusEnvelope(
         envelope: MessageEnvelope,
         message: Message.Sendable,
-        messageTarget: MessageTarget,
-        ignoredUsers: List<UserId> = emptyList()
+        messageTarget: MessageTarget
     ): Either<CoreFailure, String> =
         messageRepository
-            .sendEnvelope(message.conversationId, envelope, messageTarget, ignoredUsers)
+            .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
                 handleProteusError(it, "Send", message.toLogString()) {
                     attemptToSendWithProteus(message, messageTarget)

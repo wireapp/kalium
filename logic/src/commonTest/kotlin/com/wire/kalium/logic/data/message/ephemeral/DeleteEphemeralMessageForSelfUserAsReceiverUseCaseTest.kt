@@ -86,7 +86,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                     it.conversationId == SELF_CONVERSION_ID.first() &&
                             it.content == MessageContent.DeleteForMe(messageId, conversationId)
                 }, matching {
-                    it == MessageTarget.Conversation
+                    it == MessageTarget.Conversation()
                 })
             .wasInvoked(exactly = once)
 

@@ -58,7 +58,7 @@ class OnHttpRequestTest {
             conversationId = Arrangement.conversationId,
             avsSelfUserId = Arrangement.selfUserId,
             avsSelfClientId = Arrangement.selfUserCLientId,
-            messageTarget = MessageTarget.Conversation,
+            messageTarget = MessageTarget.Conversation(),
             sendInSelfConversation = true
         )
         yield()
@@ -84,7 +84,7 @@ class OnHttpRequestTest {
             conversationId = Arrangement.conversationId,
             avsSelfUserId = Arrangement.selfUserId,
             avsSelfClientId = Arrangement.selfUserCLientId,
-            messageTarget = MessageTarget.Conversation,
+            messageTarget = MessageTarget.Conversation(),
             sendInSelfConversation = false
         )
         yield()
