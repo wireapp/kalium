@@ -307,6 +307,35 @@ class MessageRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAnEnvelopeTargetedToAClientsWithFailIfMissing_whenSending_thenSShouldSetReportSomeAsOption() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val timestamp = TEST_DATETIME
+        val recipient = listOf(
+            Recipient(
+                id = TEST_USER_ID,
+                clients = listOf(TEST_CLIENT_ID)
+            )
+        )
+        val (arrangement, messageRepository) = Arrangement()
+            .withSuccessfulMessageDelivery(timestamp)
+            .arrange()
+
+        messageRepository
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Users(listOf(TEST_USER_ID)))
+            .shouldSucceed()
+
+        verify(arrangement.messageApi)
+            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
+            .with(
+                matching {
+                    (it.messageOption is MessageApi.QualifiedMessageOption.ReportSome) &&
+                            ((it.messageOption as MessageApi.QualifiedMessageOption.ReportSome)
+                                .userIDs == recipient.map { it.id })
+                }, anything()
+            )
+    }
+
     private class Arrangement {
 
         @Mock

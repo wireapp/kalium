@@ -288,7 +288,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO.insertClient(invalidClient)
         clientDAO.tryMarkInvalid(listOf(invalidClient.userId to listOf(invalidClient.id)))
 
-        clientDAO.recipientsIfTHeyArePartOfConversation(conversationEntity1.id, setOf(user.id)).also {
+        clientDAO.recipientsIfTheyArePartOfConversation(conversationEntity1.id, setOf(user.id)).also {
             assertEquals(1, it.size)
             assertEquals(listOf(client), it[user.id])
         }
@@ -316,7 +316,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO.insertClient(insertedClient2)
 
 
-        clientDAO.recipientsIfTHeyArePartOfConversation(conversationEntity1.id, setOf(user.id, user2.id)).also {
+        clientDAO.recipientsIfTheyArePartOfConversation(conversationEntity1.id, setOf(user.id, user2.id)).also {
             assertEquals(1, it.size)
             assertEquals(listOf(client), it[user.id])
             assertNull(it[user2.id])
