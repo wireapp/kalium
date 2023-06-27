@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.TestDispatcher
@@ -32,13 +33,20 @@ expect open class BaseDatabaseTest() {
         userId: UserIDEntity
     ): String
 
+    fun doesDatabaseExist(
+        userId: UserIDEntity
+    ): Boolean
+
     fun deleteDatabase(
         userId: UserIDEntity
     )
 
-    actual fun createDatabase(
+    fun platformDBData(userId: UserIDEntity): PlatformDatabaseData
+
+    fun createDatabase(
         userId: UserIDEntity,
         passphrase: UserDBSecret?,
         enableWAL: Boolean
     ): UserDatabaseBuilder
+
 }

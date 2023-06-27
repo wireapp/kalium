@@ -33,7 +33,7 @@ import com.wire.kalium.logic.feature.message.CryptoSessionMapperImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
@@ -64,16 +64,16 @@ class PreKeyDataSource(
         firstKeyId: Int,
         keysCount: Int
     ): Either<ProteusFailure, List<PreKeyCrypto>> =
-        wrapCryptoRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }
+        wrapProteusRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }
 
     override suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> =
-        wrapCryptoRequest {
+        wrapProteusRequest {
             proteusClientProvider.getOrCreate().newLastPreKey()
         }
 
     override suspend fun getLocalFingerprint(): Either<CoreFailure, ByteArray> =
         proteusClientProvider.getOrError().flatMap { proteusClient ->
-            wrapCryptoRequest {
+            wrapProteusRequest {
                 proteusClient.getLocalFingerprint()
             }
         }
@@ -118,7 +118,7 @@ class PreKeyDataSource(
         proteusClientProvider.getOrError()
             .flatMap { proteusClient ->
                 val (valid, invalid) = getMapOfSessionIdsToPreKeysAndMarkNullClientsAsInvalid(preKeyInfoList)
-                wrapCryptoRequest {
+                wrapProteusRequest {
                     proteusClient.createSessions(valid)
                 }.also {
                     wrapStorageRequest {

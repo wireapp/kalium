@@ -34,9 +34,9 @@ class ProteusClientCoreCryptoImpl internal constructor(
     private val databaseKey: ProteusDBSecret
 ) : ProteusClient {
 
+    private val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     private val path: String = "$rootDir/$KEYSTORE_NAME"
     private lateinit var coreCrypto: CoreCrypto
-    private val defaultCiphersuiteName = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
 
     override fun clearLocalFiles(): Boolean {
         if (::coreCrypto.isInitialized) {
@@ -53,7 +53,9 @@ class ProteusClientCoreCryptoImpl internal constructor(
         wrapException {
             File(rootDir).mkdirs()
             coreCrypto = CoreCrypto.deferredInit(
-                path, databaseKey.value, listOf(defaultCiphersuiteName)
+                path,
+                databaseKey.value,
+                listOf(defaultCiphersuite)
             )
             migrateFromCryptoBoxIfNecessary(coreCrypto)
             coreCrypto.proteusInit()
@@ -66,7 +68,9 @@ class ProteusClientCoreCryptoImpl internal constructor(
         if (directory.exists()) {
             wrapException {
                 coreCrypto = CoreCrypto.deferredInit(
-                    path, databaseKey.value, listOf(defaultCiphersuiteName)
+                    path,
+                    databaseKey.value,
+                    listOf(defaultCiphersuite)
                 )
                 migrateFromCryptoBoxIfNecessary(coreCrypto)
                 coreCrypto.proteusInit()

@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.ImportContentQueries
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.checkFKViolations
 import com.wire.kalium.persistence.db.migrate
 import com.wire.kalium.persistence.db.userDatabaseDriverByPath
 
@@ -41,8 +42,9 @@ internal class DatabaseImporterImpl internal constructor(
 
         userDatabaseDriverByPath(platformDatabaseData, filePath, null, false).also {
             val isMigrated = it.migrate(UserDatabase.Schema)
-            it.close()
             if (!isMigrated) throw IllegalStateException("Database is not migrated")
+            if (it.checkFKViolations()) throw IllegalStateException("Database has FK violations")
+            it.close()
         }
 
         localDatabase.database.transaction {

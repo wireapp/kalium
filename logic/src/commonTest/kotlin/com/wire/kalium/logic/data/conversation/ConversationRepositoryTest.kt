@@ -113,7 +113,7 @@ class ConversationRepositoryTest {
 
     @Test
     fun givenNewConversationEvent_whenCallingPersistConversation_thenConversationShouldBePersisted() = runTest {
-        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, "time", CONVERSATION_RESPONSE)
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, TestUser.SELF.id, "time", CONVERSATION_RESPONSE)
         val selfUserFlow = flowOf(TestUser.SELF)
         val (arrangement, conversationRepository) = Arrangement()
             .withSelfUserFlow(selfUserFlow)
@@ -134,11 +134,58 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun givenNewConversationEvent_whenCallingPersistConversationFromEvent_thenConversationShouldBePersisted() = runTest {
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, TestUser.SELF.id, "time", CONVERSATION_RESPONSE)
+        val selfUserFlow = flowOf(TestUser.SELF)
+        val (arrangement, conversationRepository) = Arrangement()
+            .withSelfUserFlow(selfUserFlow)
+            .withExpectedConversationBase(null)
+            .arrange()
+
+        conversationRepository.persistConversation(event.conversation, "teamId")
+
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(
+                    matching { conversation ->
+                        conversation.id.value == CONVERSATION_RESPONSE.id.value
+                    }
+                )
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenNewConversationEvent_whenCallingPersistConversationFromEventAndExists_thenConversationPersistenceShouldBeSkipped() = runTest {
+        val event = Event.Conversation.NewConversation("id", TestConversation.ID, false, TestUser.SELF.id, "time", CONVERSATION_RESPONSE)
+        val selfUserFlow = flowOf(TestUser.SELF)
+        val (arrangement, conversationRepository) = Arrangement()
+            .withSelfUserFlow(selfUserFlow)
+            .withExpectedConversationBase(TestConversation.ENTITY)
+            .arrange()
+
+        conversationRepository.persistConversation(event.conversation, "teamId")
+
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(
+                    matching { conversation ->
+                        conversation.id.value == CONVERSATION_RESPONSE.id.value
+                    }
+                )
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenNewConversationEventWithMlsConversation_whenCallingInsertConversation_thenMlsGroupExistenceShouldBeQueried() = runTest {
         val event = Event.Conversation.NewConversation(
             "id",
             TestConversation.ID,
             false,
+            TestUser.SELF.id,
             "time",
             CONVERSATION_RESPONSE.copy(
                 groupId = RAW_GROUP_ID,
@@ -199,6 +246,16 @@ class ConversationRepositoryTest {
             conversationRepository.fetchConversations()
 
             // then
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::insertConversations)
+                .with(
+                    matching { conversations ->
+                        conversations.any { entity ->
+                            entity.id.value == CONVERSATION_RESPONSE_DTO.conversationsFailed.first().value
+                        }
+                    }
+                ).wasInvoked(exactly = once)
+
             verify(arrangement.conversationDAO)
                 .suspendFunction(arrangement.conversationDAO::insertConversations)
                 .with(
@@ -842,6 +899,43 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenAConversationWithoutMetadata_whenUpdatingMetadata_thenShouldUpdateLocally() = runTest {
+        // given
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationsWithoutMetadataId(listOf(CONVERSATION_ENTITY_ID))
+            .withFetchConversationsListDetails(
+                { it.size == 1 },
+                NetworkResponse.Success(CONVERSATION_RESPONSE_DTO, emptyMap(), HttpStatusCode.OK.value)
+            )
+            .arrange()
+
+        // when
+        val result = conversationRepository.syncConversationsWithoutMetadata()
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::getConversationsWithoutMetadata)
+                .wasInvoked(exactly = once)
+
+            verify(arrange.conversationApi)
+                .suspendFunction(arrange.conversationApi::fetchConversationsListDetails)
+                .with(matching {
+                    it.first() == CONVERSATION_ID.toApi()
+                })
+                .wasInvoked(exactly = once)
+
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::insertConversations)
+                .with(matching {
+                    it.first().id.value == CONVERSATION_RESPONSE.id.value
+                })
+                .wasInvoked(exactly = once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
@@ -1069,6 +1163,13 @@ class ConversationRepositoryTest {
                 .thenReturn(conversationEntity)
         }
 
+        fun withExpectedConversationBase(conversationEntity: ConversationEntity?) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationBaseInfoByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(conversationEntity)
+        }
+
         fun withFetchConversationDetailsResult(
             response: NetworkResponse<ConversationResponse>,
             idMatcher: Matcher<ConversationIdDTO> = any()
@@ -1134,6 +1235,13 @@ class ConversationRepositoryTest {
                         HttpStatusCode.OK.value
                     )
                 )
+        }
+
+        fun withConversationsWithoutMetadataId(result: List<QualifiedIDEntity>) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationsWithoutMetadata)
+                .whenInvoked()
+                .thenReturn(result)
         }
 
         fun arrange() = this to conversationRepository

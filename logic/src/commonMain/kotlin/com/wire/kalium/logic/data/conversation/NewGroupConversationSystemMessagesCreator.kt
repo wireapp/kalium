@@ -41,7 +41,7 @@ import com.wire.kalium.util.DateTimeUtil
  */
 internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationStarted(conversation: ConversationEntity): Either<CoreFailure, Unit>
-    suspend fun conversationStarted(conversation: ConversationResponse): Either<CoreFailure, Unit>
+    suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse): Either<CoreFailure, Unit>
     suspend fun conversationReadReceiptStatus(conversation: Conversation): Either<CoreFailure, Unit>
     suspend fun conversationReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
     suspend fun conversationResolvedMembersAddedAndFailed(
@@ -68,12 +68,12 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         )
     }
 
-    override suspend fun conversationStarted(conversation: ConversationResponse) = run {
+    override suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse) = run {
         if (conversation.type != ConversationResponse.Type.GROUP) {
             return Either.Right(Unit)
         }
         persistConversationStartedSystemMessage(
-            conversation.creator.let { qualifiedIdMapper.fromStringToQualifiedID(it) },
+            creatorId,
             conversation.id.toModel()
         )
     }
@@ -149,7 +149,22 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     status = Message.Status.SENT,
                     visibility = Message.Visibility.VISIBLE
                 )
+            ).also { createFailedToAddSystemMessage(conversationResponse) }
+        }
+    }
+
+    private suspend fun createFailedToAddSystemMessage(conversationResponse: ConversationResponse) {
+        if (conversationResponse.failedToAdd.isNotEmpty()) {
+            val messageStartedWithFailedMembers = Message.System(
+                uuid4().toString(),
+                MessageContent.MemberChange.FailedToAdd(conversationResponse.failedToAdd.map { it.toModel() }),
+                conversationResponse.id.toModel(),
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.SENT,
+                Message.Visibility.VISIBLE
             )
+            persistMessage(messageStartedWithFailedMembers)
         }
     }
 }

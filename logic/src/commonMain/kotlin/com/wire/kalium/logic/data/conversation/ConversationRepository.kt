@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
@@ -50,8 +51,8 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -99,6 +100,19 @@ interface ConversationRepository {
         selfUserTeamId: String?,
         originatedFromEvent: Boolean = false
     ): Either<CoreFailure, Unit>
+
+    /**
+     * Creates a conversation from a new event
+     *
+     * @param conversation from event
+     * @param selfUserTeamId - self user team id if team user
+     * @return Either<CoreFailure, Boolean> - true if the conversation was created, false if it was already present
+     */
+    suspend fun persistConversation(
+        conversation: ConversationResponse,
+        selfUserTeamId: String?,
+        originatedFromEvent: Boolean = false
+    ): Either<CoreFailure, Boolean>
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
@@ -197,6 +211,7 @@ interface ConversationRepository {
     suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
     suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer?>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
+    suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -253,7 +268,8 @@ internal class ConversationDataSource internal constructor(
                 }.onSuccess { conversations ->
                     if (conversations.conversationsFailed.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
-                            .d("Skipping ${conversations.conversationsFailed.size} conversations failed")
+                            .d("Handling ${conversations.conversationsFailed.size} conversations failed")
+                        persistIncompleteConversations(conversations.conversationsFailed)
                     }
                     if (conversations.conversationsNotFound.isNotEmpty()) {
                         kaliumLogger.withFeatureId(CONVERSATIONS)
@@ -273,6 +289,27 @@ internal class ConversationDataSource internal constructor(
         }
 
         return latestResult
+    }
+
+    override suspend fun persistConversation(
+        conversation: ConversationResponse,
+        selfUserTeamId: String?,
+        originatedFromEvent: Boolean
+    ): Either<CoreFailure, Boolean> = wrapStorageRequest {
+        val isNewConversation = conversationDAO.getConversationBaseInfoByQualifiedID(conversation.id.toDao()) == null
+        if (isNewConversation) {
+            conversationDAO.insertConversation(
+                conversationMapper.fromApiModelToDaoModel(
+                    conversation,
+                    mlsGroupState = conversation.groupId?.let { mlsGroupState(idMapper.fromGroupIDEntity(it), originatedFromEvent) },
+                    selfTeamIdProvider().getOrNull(),
+                )
+            )
+            conversationDAO.insertMembersWithQualifiedId(
+                memberMapper.fromApiModelToDaoModel(conversation.members), idMapper.fromApiToDao(conversation.id)
+            )
+        }
+        isNewConversation
     }
 
     override suspend fun persistConversations(
@@ -599,7 +636,7 @@ internal class ConversationDataSource internal constructor(
             when (it) {
                 is Conversation.ProtocolInfo.MLS ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapCryptoRequest {
+                        wrapProteusRequest {
                             mlsClient.wipeConversation(it.groupId.toCrypto())
                         }
                     }.flatMap {
@@ -715,6 +752,31 @@ internal class ConversationDataSource internal constructor(
             conversationId = conversationId.toDao(),
             messageTimer = selfDeletionTimer.toDuration().inWholeMilliseconds
         )
+    }
+
+    override suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        val conversationsWithoutMetadata = conversationDAO.getConversationsWithoutMetadata()
+        if (conversationsWithoutMetadata.isNotEmpty()) {
+            kaliumLogger.d("Numbers of conversations to refresh: ${conversationsWithoutMetadata.size}")
+            val conversationsWithoutMetadataIds = conversationsWithoutMetadata.map { it.toApi() }
+            wrapApiRequest {
+                conversationApi.fetchConversationsListDetails(conversationsWithoutMetadataIds)
+            }.onSuccess {
+                persistConversations(it.conversationsFound, null)
+            }
+        }
+    }
+
+    private suspend fun persistIncompleteConversations(
+        conversationsFailed: List<NetworkQualifiedId>
+    ): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            if (conversationsFailed.isNotEmpty()) {
+                conversationDAO.insertConversations(conversationsFailed.map { conversationId ->
+                    conversationMapper.fromFailedGroupConversationToEntity(conversationId)
+                })
+            }
+        }
     }
 
     companion object {

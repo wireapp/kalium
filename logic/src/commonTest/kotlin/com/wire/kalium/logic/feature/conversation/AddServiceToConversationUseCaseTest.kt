@@ -61,12 +61,12 @@ class AddServiceToConversationUseCaseTest {
         val serviceId = ServiceId("serviceId", "provider")
 
         val (arrangement, addService) = Arrangement()
-            .withAddService(Either.Left(MLSFailure(UnsupportedOperationException())))
+            .withAddService(Either.Left(MLSFailure.Generic(UnsupportedOperationException())))
             .arrange()
 
         val result = addService(TestConversation.ID, serviceId)
         assertIs<AddServiceToConversationUseCase.Result.Failure>(result)
-        assertIs<MLSFailure>(result.cause)
+        assertIs<MLSFailure.Generic>(result.cause)
 
         verify(arrangement.conversationGroupRepository)
             .suspendFunction(arrangement.conversationGroupRepository::addService)

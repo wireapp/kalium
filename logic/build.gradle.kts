@@ -54,6 +54,9 @@ kotlin {
 
                 // Okio
                 implementation(libs.okio.core)
+
+                // CoreCrypto
+                implementation(libs.coreCrypto)
             }
         }
         val commonTest by getting {

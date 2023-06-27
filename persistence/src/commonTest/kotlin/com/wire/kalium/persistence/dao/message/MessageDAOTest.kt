@@ -1513,6 +1513,47 @@ class MessageDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenAFederatedConversation_WhenSendingAMessageWithPartialSuccess_ThenTheUsersIdsWithFailuresShouldBeInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "Conversation MessageSent With Partial Success"
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId))
+        userDAO.insertUser(userEntity1)
+        userDAO.insertUser(userEntity2)
+
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newRegularMessageEntity(
+                    messageId,
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    status = MessageEntity.Status.PENDING,
+                    // date after
+                    date = "2022-03-30T15:37:00.000Z".toInstant(),
+                    senderName = userEntity1.name!!,
+                    expectsReadConfirmation = true
+                )
+            )
+        )
+
+        // when
+        messageDAO.insertFailedRecipientDelivery(
+            messageId, conversationId, listOf(userEntity1.id, userEntity2.id), RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
+        )
+
+        // then
+        val result = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId
+        )
+
+        assertTrue {
+            ((result as MessageEntity.Regular).deliveryStatus as DeliveryStatusEntity.PartialDelivery)
+                .recipientsFailedDelivery.size == 2
+        }
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(

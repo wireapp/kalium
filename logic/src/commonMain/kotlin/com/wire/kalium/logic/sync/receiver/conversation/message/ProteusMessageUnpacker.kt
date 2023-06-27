@@ -40,7 +40,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.logic.wrapCryptoRequest
+import com.wire.kalium.logic.wrapProteusRequest
 import io.ktor.utils.io.core.toByteArray
 
 internal interface ProteusMessageUnpacker {
@@ -66,7 +66,7 @@ internal class ProteusMessageUnpackerImpl(
         )
         return proteusClientProvider.getOrError()
             .flatMap {
-                wrapCryptoRequest {
+                wrapProteusRequest {
                     it.decrypt(decodedContentBytes, cryptoSessionId)
                 }
             }
@@ -106,7 +106,7 @@ internal class ProteusMessageUnpackerImpl(
     private fun solveExternalContentForProteusMessage(
         externalInstructions: ProtoContent.ExternalMessageInstructions,
         externalData: EncryptedData
-    ): Either<CoreFailure, ProtoContent.Readable> = wrapCryptoRequest {
+    ): Either<CoreFailure, ProtoContent.Readable> = wrapProteusRequest {
         val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
         logger.d("ExternalMessage - Decrypted external message content: '$decryptedExternalMessage'")
         PlainMessageBlob(decryptedExternalMessage)

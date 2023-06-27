@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -47,7 +48,8 @@ class EventMapper(
     private val connectionMapper: ConnectionMapper,
     private val featureConfigMapper: FeatureConfigMapper,
     private val roleMapper: ConversationRoleMapper,
-    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) {
     fun fromDTO(eventResponse: EventResponse): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -207,12 +209,7 @@ class EventMapper(
         return Event.User.NewClient(
             transient = transient,
             id = id,
-            clientId = ClientId(eventNewClient.client.id),
-            registrationTime = eventNewClient.client.registrationTime,
-            model = eventNewClient.client.model,
-            clientType = eventNewClient.client.clientType,
-            deviceType = eventNewClient.client.deviceType,
-            label = eventNewClient.client.label
+            client = clientMapper.fromClientDto(eventNewClient.client)
         )
     }
 
@@ -224,6 +221,7 @@ class EventMapper(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
         eventContentDTO.data
     )

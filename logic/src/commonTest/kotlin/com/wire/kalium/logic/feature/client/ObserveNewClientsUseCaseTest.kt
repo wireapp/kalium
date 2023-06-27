@@ -20,16 +20,21 @@ package com.wire.kalium.logic.feature.client
 import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.Client
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.configure
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -48,22 +53,7 @@ class ObserveNewClientsUseCaseTest {
         val (_, observeNewClients) = Arrangement()
             .withoutValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Left(StorageFailure.DataNotFound))
-            .withNewClientManager(TestClient.CLIENT to TestUser.USER_ID)
-            .arrange()
-
-        observeNewClients().test {
-            assertEquals(NewClientResult.Error, awaitItem())
-            awaitComplete()
-        }
-    }
-
-
-    @Test
-    fun givenNewClientForOtherUser_whenNoSuchUserInValidAccs_thenNewClientErrorResult() = runTest {
-        val (_, observeNewClients) = Arrangement()
-            .withoutValidAccounts(listOf(TestUser.SELF to null))
-            .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
-            .withNewClientManager(TestClient.CLIENT to TestUser.OTHER_USER_ID)
+            .withNewClientsForUser1(listOf(TestClient.CLIENT))
             .arrange()
 
         observeNewClients().test {
@@ -74,18 +64,14 @@ class ObserveNewClientsUseCaseTest {
 
     @Test
     fun givenNewClientForCurrentUser_thenNewClientInCurrentUserResult() = runTest {
-        val (arrangement, observeNewClients) = Arrangement()
+        val (_, observeNewClients) = Arrangement()
             .withoutValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
-            .withNewClientManager(TestClient.CLIENT to TestUser.USER_ID)
+            .withNewClientsForUser1(listOf(TestClient.CLIENT))
             .arrange()
 
         observeNewClients().test {
-            assertEquals(NewClientResult.InCurrentAccount(TestClient.CLIENT), awaitItem())
-
-            verify(arrangement.observeValidAccounts)
-                .suspendFunction(arrangement.observeValidAccounts::invoke)
-                .wasNotInvoked()
+            assertEquals(NewClientResult.InCurrentAccount(listOf(TestClient.CLIENT), TestUser.USER_ID), awaitItem())
 
             awaitComplete()
         }
@@ -94,15 +80,16 @@ class ObserveNewClientsUseCaseTest {
     @Test
     fun givenNewClientForOtherUser_thenNewClientInOtherUserResult() = runTest {
         val (arrangement, observeNewClients) = Arrangement()
-            .withoutValidAccounts(listOf(TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
+            .withoutValidAccounts(listOf(TestUser.SELF to null, TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
-            .withNewClientManager(TestClient.CLIENT to TestUser.OTHER_USER_ID)
+            .withNewClientsForUser1(listOf())
+            .withNewClientsForUser2(listOf(TestClient.CLIENT))
             .arrange()
 
         observeNewClients().test {
             assertEquals(
                 NewClientResult.InOtherAccount(
-                    TestClient.CLIENT,
+                    listOf(TestClient.CLIENT),
                     TestUser.OTHER_USER_ID,
                     TestUser.SELF.name,
                     TestUser.SELF.handle
@@ -112,6 +99,41 @@ class ObserveNewClientsUseCaseTest {
             verify(arrangement.observeValidAccounts)
                 .suspendFunction(arrangement.observeValidAccounts::invoke)
                 .wasInvoked(exactly = once)
+
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenFewNewClientsForMultipleUsers_thenNewClientInCurrentUserResult() = runTest {
+        val client1 = TestClient.CLIENT
+        val client2 = TestClient.CLIENT.copy(id = ClientId("other_client"))
+        val (_, observeNewClients) = Arrangement()
+            .withoutValidAccounts(listOf(TestUser.SELF to null, TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
+            .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
+            .withNewClientsForUser1(listOf(client1))
+            .withNewClientsForUser2(listOf(client2))
+            .arrange()
+
+        observeNewClients().test {
+            assertEquals(NewClientResult.InCurrentAccount(listOf(client1), TestUser.USER_ID), awaitItem())
+
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenFewNewClientsForCurrentUsers_thenNewClientInCurrentUserResult() = runTest {
+        val client1 = TestClient.CLIENT
+        val client2 = TestClient.CLIENT.copy(id = ClientId("other_client"))
+        val (_, observeNewClients) = Arrangement()
+            .withoutValidAccounts(listOf(TestUser.SELF to null))
+            .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
+            .withNewClientsForUser1(listOf(client1, client2))
+            .arrange()
+
+        observeNewClients().test {
+            assertEquals(NewClientResult.InCurrentAccount(listOf(client1, client2), TestUser.USER_ID), awaitItem())
 
             awaitComplete()
         }
@@ -129,17 +151,33 @@ class ObserveNewClientsUseCaseTest {
         val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val newClientManager = mock(NewClientManager::class)
+        val clientRepository1 = mock(ClientRepository::class)
+
+        @Mock
+        val clientRepository2 = mock(ClientRepository::class)
+
+        @Mock
+        val userClientRepositoryProvider = configure(mock(classOf<UserClientRepositoryProvider>())) { stubsUnitByDefault = true }
 
         init {
             given(observeValidAccounts)
                 .suspendFunction(observeValidAccounts::invoke)
                 .whenInvoked()
                 .thenReturn(flowOf(listOf()))
+
+            given(userClientRepositoryProvider)
+                .function(userClientRepositoryProvider::provide)
+                .whenInvokedWith(eq(TestUser.USER_ID))
+                .thenReturn(clientRepository1)
+
+            given(userClientRepositoryProvider)
+                .function(userClientRepositoryProvider::provide)
+                .whenInvokedWith(eq(TestUser.OTHER_USER_ID))
+                .thenReturn(clientRepository2)
         }
 
         private var observeNewClientsUseCase: ObserveNewClientsUseCase =
-            ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, newClientManager)
+            ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userClientRepositoryProvider)
 
         suspend fun withCurrentSession(result: Either<StorageFailure, AccountInfo>) = apply {
             given(sessionRepository)
@@ -147,11 +185,17 @@ class ObserveNewClientsUseCaseTest {
                 .then { result }
         }
 
-        fun withNewClientManager(result: Pair<Client, UserId>) = apply {
-            given(newClientManager)
-                .suspendFunction(newClientManager::observeNewClients)
+        fun withNewClientsForUser1(result: List<Client>) = apply {
+            given(clientRepository1)
+                .suspendFunction(clientRepository1::observeNewClients)
                 .whenInvoked()
-                .then { flowOf(result) }
+                .then { flowOf(Either.Right(result)) }
+        }
+        fun withNewClientsForUser2(result: List<Client>) = apply {
+            given(clientRepository2)
+                .suspendFunction(clientRepository2::observeNewClients)
+                .whenInvoked()
+                .then { flowOf(Either.Right(result)) }
         }
 
         fun withoutValidAccounts(result: List<Pair<SelfUser, Team?>>) = apply {
