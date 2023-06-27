@@ -68,6 +68,8 @@ internal class GetMessageAssetUseCaseImpl(
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher
 ) : GetMessageAssetUseCase {
+
+    @Suppress("LongMethod")
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
@@ -115,7 +117,7 @@ internal class GetMessageAssetUseCaseImpl(
                             // This should be called if there is an issue while downloading the asset
                             updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
                             if (it.isNotFoundFailure) {
-                                assetMetadata.assetKeyDomain?.let {domain ->
+                                assetMetadata.assetKeyDomain?.let { domain ->
                                     userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
                                 }
                                 MessageAssetResult.Failure(it, false)

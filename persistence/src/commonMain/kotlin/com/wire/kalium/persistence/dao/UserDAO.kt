@@ -194,7 +194,7 @@ interface UserDAO {
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
 
-    suspend fun removeUserAsset(assetId: UserAssetIdEntity)
+    suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 
     suspend fun getUsersWithoutMetadata(): List<UserEntity>
 }
