@@ -70,6 +70,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         )
         val (arrangement, useCase) = Arrangement()
             .arrange {
+                withMarkAsDeleted(Either.Right(Unit))
                 withCurrentClientIdSuccess(CURRENT_CLIENT_ID)
                 withSelfConversationIds(SELF_CONVERSION_ID)
                 withGetMessageById(Either.Right(message))
@@ -78,6 +79,11 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
             }
 
         useCase(conversationId, messageId).shouldSucceed()
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
 
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
