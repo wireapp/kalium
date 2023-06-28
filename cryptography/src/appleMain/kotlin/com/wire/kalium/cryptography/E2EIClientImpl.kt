@@ -67,7 +67,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderResponse(order: JsonRawData) {
+    override fun checkOrderResponse(order: JsonRawData): String {
         TODO("Not yet implemented")
     }
 
@@ -75,7 +75,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeResponse(finalize: JsonRawData) {
+    override fun finalizeResponse(finalize: JsonRawData): String {
         TODO("Not yet implemented")
     }
 
