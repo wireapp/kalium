@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.E2EIQualifiedClientId
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -76,10 +77,9 @@ internal class E2EIClientProviderImpl(
 
     private suspend fun getSelfUserInfo(): Either<CoreFailure, Pair<String, String>> {
         val selfUser = userRepository.getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
-//         return if (selfUser.name == null || selfUser.handle == null)
-//             Either.Left(E2EIFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
-//         else Either.Right(Pair(selfUser.name, selfUser.handle))
-        return Either.Right(Pair("Mojtaba Chenani", "mojtaba_wire"))
+        return if (selfUser.name == null || selfUser.handle == null)
+            Either.Left(E2EIFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
+        else Either.Right(Pair(selfUser.name, selfUser.handle))
     }
 
     companion object {
