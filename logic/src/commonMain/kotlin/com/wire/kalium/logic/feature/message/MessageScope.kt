@@ -300,6 +300,7 @@ class MessageScope internal constructor(
             assetRepository = assetRepository,
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
-            selfUserId = selfUserId
+            selfUserId = selfUserId,
+            selfConversationIdProvider = selfConversationIdProvider
         )
 }
