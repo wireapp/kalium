@@ -966,10 +966,10 @@ class UserSessionScope internal constructor(
 
     private val mlsWrongEpochHandler: MLSWrongEpochHandler
         get() = MLSWrongEpochHandlerImpl(
-                selfUserId = userId,
-                persistMessage = persistMessage,
-                conversationRepository = conversationRepository,
-                joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            selfUserId = userId,
+            persistMessage = persistMessage,
+            conversationRepository = conversationRepository,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl
@@ -1288,7 +1288,7 @@ class UserSessionScope internal constructor(
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
-        get() = ObserveSecurityClassificationLabelUseCaseImpl(conversationRepository, userConfigRepository)
+        get() = ObserveSecurityClassificationLabelUseCaseImpl(conversations.observeConversationMembers, userConfigRepository)
 
     val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
         get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)

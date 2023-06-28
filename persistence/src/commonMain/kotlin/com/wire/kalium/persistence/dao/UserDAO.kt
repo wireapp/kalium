@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -53,7 +54,8 @@ data class UserEntity(
     val userType: UserTypeEntity,
     val botService: BotIdEntity?,
     val deleted: Boolean,
-    val hasIncompleteMetadata: Boolean = false
+    val hasIncompleteMetadata: Boolean = false,
+    val expiresAt: Instant?
 )
 
 data class UserEntityMinimized(
