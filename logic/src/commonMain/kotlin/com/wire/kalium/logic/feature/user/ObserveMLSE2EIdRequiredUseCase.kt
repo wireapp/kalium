@@ -29,17 +29,17 @@ import kotlinx.coroutines.flow.flowOn
 /**
  * Observe [MLSE2EIdSetting] to notify user when setting is changed
  */
-interface ObserveMLSEnabledUseCase {
+interface ObserveMLSE2EIdRequiredUseCase {
     /**
      * @return [Flow] of [MLSE2EIdSetting]
      */
     operator fun invoke(): Flow<MLSE2EIdSetting>
 }
 
-internal class ObserveMLSEnabledUseCaseImpl(
+internal class ObserveMLSE2eIdRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : ObserveMLSEnabledUseCase {
+) : ObserveMLSE2EIdRequiredUseCase {
 
     override fun invoke(): Flow<MLSE2EIdSetting> = userConfigRepository
         .observeIsMLSE2EIdSetting()

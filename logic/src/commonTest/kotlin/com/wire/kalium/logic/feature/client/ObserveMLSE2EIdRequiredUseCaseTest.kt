@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.client
 import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.MLSE2EIdSetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.user.ObserveMLSEnabledUseCase
-import com.wire.kalium.logic.feature.user.ObserveMLSEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveMLSE2EIdRequiredUseCase
+import com.wire.kalium.logic.feature.user.ObserveMLSE2eIdRequiredUseCaseImpl
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.given
@@ -33,7 +33,7 @@ import kotlin.test.assertEquals
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-class ObserveMLSEnabledUseCaseTest {
+class ObserveMLSE2EIdRequiredUseCaseTest {
 
     @Test
     fun givenSettingWithoutNotifyDate_thenNoEmitting() = runTest {
@@ -87,7 +87,7 @@ class ObserveMLSEnabledUseCaseTest {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
-        private var observeMLSEnabledUseCase: ObserveMLSEnabledUseCase = ObserveMLSEnabledUseCaseImpl(userConfigRepository)
+        private var observeMLSEnabledUseCase: ObserveMLSE2EIdRequiredUseCase = ObserveMLSE2eIdRequiredUseCaseImpl(userConfigRepository)
 
         fun withMLSE2EIdSetting(setting: MLSE2EIdSetting) = apply {
             given(userConfigRepository)
