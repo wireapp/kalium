@@ -65,7 +65,7 @@ internal class ConversationApiV4Test : ApiTest() {
     @Test
     fun givenRequest_whenFetchingSubconversationDetails_thenRequestIsConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v3.rawJson,
+            SubconversationDetailsResponseJson.v4.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
@@ -85,7 +85,7 @@ internal class ConversationApiV4Test : ApiTest() {
     @Test
     fun givenSuccessSubconversationDetails_whenFetchingSubconversationDetails_thenResponseIsParsedCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v3.rawJson,
+            SubconversationDetailsResponseJson.v4.rawJson,
             statusCode = HttpStatusCode.OK
         )
 
@@ -130,7 +130,7 @@ internal class ConversationApiV4Test : ApiTest() {
                 assertPathEqual(
                     "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub"
                 )
-                assertJsonBodyContent(SubconversationDeleteRequestJson.v3.rawJson)
+                assertJsonBodyContent(SubconversationDeleteRequestJson.v4.rawJson)
             }
         )
 
