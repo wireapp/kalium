@@ -55,7 +55,6 @@ import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -91,7 +90,6 @@ interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
     suspend fun getMLSSelfConversationId(): Either<StorageFailure, ConversationId>
 
-    suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit>
     suspend fun fetchConversations(): Either<CoreFailure, Unit>
 
     // TODO make all functions to have only logic models
@@ -241,18 +239,6 @@ internal class ConversationDataSource internal constructor(
         return fetchAllConversationsFromAPI()
     }
 
-    // TODO temporary method until backend API is changed: https://wearezeta.atlassian.net/browse/FS-1260
-    override suspend fun fetchGlobalTeamConversation(): Either<CoreFailure, Unit> =
-        selfTeamIdProvider().flatMap { teamId ->
-            teamId?.let {
-                wrapApiRequest {
-                    conversationApi.fetchGlobalTeamConversationDetails(selfUserId.toApi(), teamId.value)
-                }.flatMap {
-                    persistConversations(listOf(it), teamId.value)
-                }
-            } ?: Either.Right(Unit)
-        }
-
     private suspend fun fetchAllConversationsFromAPI(): Either<NetworkFailure, Unit> {
         var hasMore = true
         var lastPagingState: String? = null
@@ -318,8 +304,6 @@ internal class ConversationDataSource internal constructor(
         originatedFromEvent: Boolean,
     ) = wrapStorageRequest {
         val conversationEntities = conversations
-            // TODO work-around for a bug in the backend. Can be removed when fixed: https://wearezeta.atlassian.net/browse/FS-1262
-            .filter { !(it.type == ConversationResponse.Type.GLOBAL_TEAM && it.protocol == ConvProtocol.PROTEUS) }
             .map { conversationResponse ->
                 conversationMapper.fromApiModelToDaoModel(
                     conversationResponse,
