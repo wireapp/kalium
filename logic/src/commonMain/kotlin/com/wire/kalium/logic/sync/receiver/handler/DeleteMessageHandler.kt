@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 
 internal interface DeleteMessageHandler {
     suspend operator fun invoke(
@@ -43,6 +44,8 @@ internal class DeleteMessageHandlerImpl internal constructor(
         conversationId: ConversationId,
         senderUserId: UserId
     ) {
+        kaliumLogger.d("DeleteMessageHandler: $content")
+
         messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
             val isSelfSender = messageToRemove.senderUserId == selfUserId
             val isOriginalEphemeral = (messageToRemove as? Message.Regular)?.expirationData != null
@@ -78,7 +81,7 @@ internal class DeleteMessageHandlerImpl internal constructor(
     private fun isSenderVerified(
         message: Message,
         deleteMessageSenderId: UserId
-    ): Boolean = deleteMessageSenderId == message.senderUserId
+    ): Boolean = (deleteMessageSenderId == message.senderUserId || deleteMessageSenderId == selfUserId)
 
     private suspend fun removeAssetIfExists(messageToRemove: Message) {
         (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->

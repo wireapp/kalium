@@ -192,6 +192,45 @@ class DeleteMessageHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSelfIsTheOneSentTheDeleteEvent_whenReceivingDeleteSignal_thenDelete() = runTest {
+        val originalMessageID = "originalMessageID"
+        val originalMessageSenderID = UserId("originalMessageSenderID", "originalMessageSenderDomain")
+
+        val deleteMessageSenderID = SELF_USER_ID
+        val content = MessageContent.DeleteMessage(originalMessageID)
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+
+        val originalMessage =
+            TestMessage.TEXT_MESSAGE.copy(
+                senderUserId = originalMessageSenderID,
+                id = originalMessageID,
+                conversationId = conversationId,
+                expirationData = Message.ExpirationData(Duration.parse("10s"))
+            )
+        val (arrangement, handler) = Arrangement()
+            .withOriginalMessage(Either.Right(originalMessage))
+            .withDeleteMessage(Either.Right(Unit))
+            .arrange()
+
+        handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
+            .with(eq(originalMessageID), eq(conversationId))
+            .wasNotInvoked()
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::deleteMessage)
+            .with(eq(originalMessageID), eq(conversationId))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::getMessageById)
+            .with(eq(conversationId), eq(originalMessageID))
+            .wasInvoked(exactly = once)
+    }
+
     private companion object {
         val SELF_USER_ID = UserId("selfID", "selfDomain")
     }
