@@ -28,7 +28,9 @@ data class Instance(
     val name: String?,
     @JsonIgnore
     val coreLogic: CoreLogic,
+    @JsonIgnore
     val instancePath: String?,
+    @JsonIgnore
     val password: String,
     val startupTime: Long,
     val startTime: Long
