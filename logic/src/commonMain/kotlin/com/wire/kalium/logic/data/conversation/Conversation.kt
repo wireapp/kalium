@@ -154,8 +154,7 @@ data class Conversation(
         SELF,
         ONE_ON_ONE,
         GROUP,
-        CONNECTION_PENDING,
-        GLOBAL_TEAM;
+        CONNECTION_PENDING
     }
 
     enum class AccessRole {
