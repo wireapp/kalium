@@ -121,7 +121,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificateChain: String) {
+    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain) {
         TODO("Not yet implemented")
     }
 }

@@ -255,8 +255,8 @@ actual class MLSClientImpl actual constructor(
         )
     }
 
-    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificateChain: String) {
-        coreCrypto.e2eiMlsInit((e2eiClient as E2EIClientImpl).wireE2eIdentity, certificateChain)
+    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain) {
+        coreCrypto.e2eiMlsInit((e2eiClient as E2EIClientImpl).wireE2eIdentity, certificate)
     }
 
     companion object {

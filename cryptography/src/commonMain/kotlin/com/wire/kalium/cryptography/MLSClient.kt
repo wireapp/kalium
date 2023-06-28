@@ -25,6 +25,7 @@ typealias HandshakeMessage = ByteArray
 typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
+typealias CertificateChain = String
 
 enum class GroupInfoEncryptionType {
     PLAINTEXT,
@@ -279,7 +280,7 @@ interface MLSClient {
         handle: String
     ): E2EIClient
 
-    fun initMLSWithE2EI(e2eiClient: E2EIClient, certificateChain: String)
+    fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain)
 }
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

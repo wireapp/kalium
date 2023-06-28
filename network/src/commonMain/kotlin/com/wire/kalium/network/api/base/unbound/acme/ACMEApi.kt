@@ -119,6 +119,8 @@ class ACMEApiImpl internal constructor(
         const val DEX_PORT = "5556"
 
         const val PATH_DEX_CONFIGURATION = "dex/.well-known/openid-configuration"
+        // TODO: the ACME url will be provided by the backend later
+        // TODO: we need to make sure we have separated url or all-platform supported links
         const val PATH_ACME_DIRECTORIES = "acme/google-android/directory"
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
