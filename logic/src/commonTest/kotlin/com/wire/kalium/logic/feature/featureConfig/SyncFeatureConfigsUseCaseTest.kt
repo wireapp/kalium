@@ -575,9 +575,10 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenMlsE2EIdIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
+        val mlsE2EIdModel = MLSE2EIdModel(MLSE2EIdConfigModel("url", 10_000_000_000L), Status.DISABLED)
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsE2EIdModel = MLSE2EIdModel(MLSE2EIdConfigModel("url", 10000L), Status.DISABLED))
+                FeatureConfigTest.newModel(mlsE2EIdModel = mlsE2EIdModel)
             ).arrange()
 
         syncFeatureConfigsUseCase()
@@ -585,7 +586,7 @@ class SyncFeatureConfigsUseCaseTest {
         arrangement.userConfigRepository.getMLSE2EIdSetting().shouldSucceed {
             assertFalse(it.status)
             assertEquals("url", it.discoverUrl)
-            assertEquals(Instant.fromEpochMilliseconds(10000L), it.enablingDeadline)
+            assertEquals(Instant.fromEpochMilliseconds(10_000L), it.enablingDeadline)
         }
     }
 
