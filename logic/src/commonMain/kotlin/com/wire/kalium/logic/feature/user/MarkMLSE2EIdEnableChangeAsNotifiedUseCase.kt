@@ -18,25 +18,27 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 /**
  * Mark the MLS enabling status change as notified
  * need to be called after notifying the user about the change
  * e.g. after showing a dialog, or a toast etc.
  */
-interface MarkMLSEnableChangeAsNotifiedUseCase {
+interface MarkMLSE2EIdEnableChangeAsNotifiedUseCase {
     suspend operator fun invoke()
 }
 
-internal class MarkMLSEnableChangeAsNotifiedUseCaseImpl(
+internal class MarkMLSE2EIdEnableChangeAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
-) : MarkMLSEnableChangeAsNotifiedUseCase {
+) : MarkMLSE2EIdEnableChangeAsNotifiedUseCase {
 
     override suspend fun invoke() {
         userConfigRepository.snoozeMLSE2EIdNotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
     }
 
     companion object {
-        const val SNOOZE_MLS_ENABLE_CHANGE_MS = 24 * 60 * 60 * 1000L // 1 day
+        val SNOOZE_MLS_ENABLE_CHANGE_MS = 1.toDuration(DurationUnit.DAYS).inWholeMilliseconds
     }
 }
