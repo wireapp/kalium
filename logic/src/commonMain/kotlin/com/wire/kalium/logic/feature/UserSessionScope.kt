@@ -283,12 +283,12 @@ import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHa
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
@@ -490,7 +490,7 @@ class UserSessionScope internal constructor(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            selfUserUseCase = users.getSelfUser
+            userRepository = userRepository
         )
     }
 
