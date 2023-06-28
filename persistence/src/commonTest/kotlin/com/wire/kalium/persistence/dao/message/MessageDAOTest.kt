@@ -1400,13 +1400,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 type = ConversationEntity.Type.CONNECTION_PENDING
             )
         )
-        val globalTeamConversation = QualifiedIDEntity("globalTeamConversation", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(id = globalTeamConversation).copy(
-                type = ConversationEntity.Type.GLOBAL_TEAM
-            )
-        )
-
         val messageId = "systemMessage"
         userDAO.insertUser(userEntity1)
 
@@ -1438,17 +1431,12 @@ class MessageDAOTest : BaseDatabaseTest() {
             id = messageId,
             conversationId = connectionPendingConversation
         )
-        val resultForGlobalTeamConversation = messageDAO.getMessageById(
-            id = messageId,
-            conversationId = globalTeamConversation
-        )
 
         assertTrue {
             resultForSelfConversation == null &&
                     resultForOneOnOneConversation?.content == MessageEntityContent.HistoryLost &&
                     resultForGroupConversation?.content == MessageEntityContent.HistoryLost &&
-                    resultForConnectionPendingConversation == null &&
-                    resultForGlobalTeamConversation == null
+                    resultForConnectionPendingConversation == null
         }
     }
 

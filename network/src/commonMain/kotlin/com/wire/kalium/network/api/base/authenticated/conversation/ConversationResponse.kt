@@ -36,36 +36,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable
-data class GlobalTeamConversationResponse(
-    @SerialName("creator")
-    val creator: String?,
-
-    @SerialName("name")
-    val name: String?,
-
-    @SerialName("qualified_id")
-    val id: ConversationId,
-
-    @SerialName("group_id")
-    val groupId: String?,
-
-    @SerialName("epoch")
-    val epoch: ULong?,
-
-    @SerialName("team")
-    val teamId: TeamId?,
-
-    @SerialName("cipher_suite")
-    val mlsCipherSuiteTag: Int?,
-
-    @SerialName("receipt_mode")
-    val receiptMode: ReceiptMode,
-
-    @SerialName("access")
-    val access: Set<ConversationAccessDTO>
-)
-
-@Serializable
 data class ConversationResponse(
     @SerialName("creator")
     val creator: String,
@@ -124,7 +94,7 @@ data class ConversationResponse(
 
     @Suppress("MagicNumber")
     enum class Type(val id: Int) {
-        GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3), GLOBAL_TEAM(4);
+        GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3);
 
         companion object {
             fun fromId(id: Int): Type = values().first { type -> type.id == id }

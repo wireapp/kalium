@@ -94,25 +94,6 @@ object TestConversation {
         userMessageTimer = null
     )
 
-    fun GLOBAL_TEAM(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
-        ID.copy(value = "GLOBAL TEAM ID"),
-        "GLOBAL TEAM Name",
-        Conversation.Type.GLOBAL_TEAM,
-        TestTeam.TEAM_ID,
-        protocolInfo,
-        MutedConversationStatus.AllAllowed,
-        null,
-        null,
-        null,
-        lastReadDate = "2022-03-30T15:36:00.000Z",
-        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED,
-        messageTimer = null,
-        userMessageTimer = null
-    )
-
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID,
         "GROUP Name",
