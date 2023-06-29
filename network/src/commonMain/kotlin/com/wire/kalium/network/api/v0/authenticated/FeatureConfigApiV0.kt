@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.call.body
 import io.ktor.client.request.get
 
 internal open class FeatureConfigApiV0 internal constructor(
@@ -31,7 +32,11 @@ internal open class FeatureConfigApiV0 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun featureConfigs(): NetworkResponse<FeatureConfigResponse> =
-        wrapKaliumResponse { httpClient.get(FEATURE_CONFIG) }
+        wrapKaliumResponse {
+            val get = httpClient.get(FEATURE_CONFIG)
+            println("cyka ${get.body<String>()} ")
+            get
+        }
 
     companion object {
         const val FEATURE_CONFIG = "feature-configs"

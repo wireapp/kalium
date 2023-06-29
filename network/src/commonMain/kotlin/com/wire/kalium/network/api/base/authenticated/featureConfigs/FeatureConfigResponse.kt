@@ -53,7 +53,7 @@ data class FeatureConfigResponse(
     @SerialName("mls")
     val mls: FeatureConfigData.MLS?,
     @SerialName("mlsE2EId")
-    val mlsE2EId: FeatureConfigData.MLSE2EId
+    val mlsE2EId: FeatureConfigData.MLSE2EId?
 )
 
 @Serializable
@@ -98,9 +98,9 @@ data class SelfDeletingMessagesConfigDTO(
 @Serializable
 data class MLSE2EIdConfigDTO(
     @SerialName("acmeDiscoveryUrl")
-    val url: String,
+    val url: String?,
     @SerialName("verificationExpiration")
-    val verificationExpirationNS: Long
+    val verificationExpirationNS: Long?
 )
 
 @OptIn(ExperimentalSerializationApi::class)
