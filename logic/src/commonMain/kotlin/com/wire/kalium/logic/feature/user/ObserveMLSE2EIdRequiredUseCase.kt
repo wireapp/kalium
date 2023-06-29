@@ -25,27 +25,42 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlin.time.Duration
 
 /**
- * Observe [MLSE2EIdSetting] to notify user when setting is changed
+ * Observe [MLSE2EIdSetting] to notify user when setting is changed to Enabled
  */
 interface ObserveMLSE2EIdRequiredUseCase {
     /**
-     * @return [Flow] of [MLSE2EIdSetting]
+     * @return [Flow] of [MLSE2EIdRequiredResult]
      */
-    operator fun invoke(): Flow<MLSE2EIdSetting>
+    operator fun invoke(): Flow<MLSE2EIdRequiredResult>
 }
 
-internal class ObserveMLSE2eIdRequiredUseCaseImpl(
+internal class ObserveMLSE2EIdRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveMLSE2EIdRequiredUseCase {
 
-    override fun invoke(): Flow<MLSE2EIdSetting> = userConfigRepository
+    override fun invoke(): Flow<MLSE2EIdRequiredResult> = userConfigRepository
         .observeIsMLSE2EIdSetting()
+        // TODO implement re-checking for the case when notifyUserAfter is in a future (some delayed flow)
         .filter { mlsSetting ->
-            mlsSetting.status && (mlsSetting.notifyUserAfter?.let { it <= DateTimeUtil.currentInstant() } ?: false)
+            mlsSetting.status
+                    && mlsSetting.enablingDeadline != null
+                    && (mlsSetting.notifyUserAfter?.let { it <= DateTimeUtil.currentInstant() } ?: false)
+        }
+        .map { setting ->
+            if (setting.enablingDeadline!! <= DateTimeUtil.currentInstant())
+                MLSE2EIdRequiredResult.NoGracePeriod
+            else MLSE2EIdRequiredResult.WithGracePeriod(setting.enablingDeadline.minus(DateTimeUtil.currentInstant()))
         }
         .flowOn(dispatcher.io)
 
+}
+
+sealed class MLSE2EIdRequiredResult {
+    data class WithGracePeriod(val timeLeft: Duration) : MLSE2EIdRequiredResult()
+    object NoGracePeriod : MLSE2EIdRequiredResult()
 }

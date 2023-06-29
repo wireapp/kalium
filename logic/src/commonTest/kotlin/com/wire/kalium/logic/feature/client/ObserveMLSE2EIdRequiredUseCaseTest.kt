@@ -21,7 +21,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.MLSE2EIdSetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.ObserveMLSE2EIdRequiredUseCase
-import com.wire.kalium.logic.feature.user.ObserveMLSE2eIdRequiredUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveMLSE2EIdRequiredUseCaseImpl
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.given
@@ -87,7 +87,7 @@ class ObserveMLSE2EIdRequiredUseCaseTest {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
-        private var observeMLSEnabledUseCase: ObserveMLSE2EIdRequiredUseCase = ObserveMLSE2eIdRequiredUseCaseImpl(userConfigRepository)
+        private var observeMLSEnabledUseCase: ObserveMLSE2EIdRequiredUseCase = ObserveMLSE2EIdRequiredUseCaseImpl(userConfigRepository)
 
         fun withMLSE2EIdSetting(setting: MLSE2EIdSetting) = apply {
             given(userConfigRepository)

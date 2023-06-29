@@ -208,7 +208,7 @@ import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCas
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveMLSE2EIdRequiredUseCase
-import com.wire.kalium.logic.feature.user.ObserveMLSE2eIdRequiredUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveMLSE2EIdRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -1256,7 +1256,7 @@ class UserSessionScope internal constructor(
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
-    val observeMLSE2EIdRequired: ObserveMLSE2EIdRequiredUseCase get() = ObserveMLSE2eIdRequiredUseCaseImpl(userConfigRepository)
+    val observeMLSE2EIdRequired: ObserveMLSE2EIdRequiredUseCase get() = ObserveMLSE2EIdRequiredUseCaseImpl(userConfigRepository)
     val markMLSE2EIdRequiredAsNotified: MarkMLSE2EIdEnableChangeAsNotifiedUseCase
         get() = MarkMLSE2EIdEnableChangeAsNotifiedUseCaseImpl(userConfigRepository)
 
