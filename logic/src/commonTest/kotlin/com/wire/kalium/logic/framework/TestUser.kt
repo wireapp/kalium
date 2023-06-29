@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.SelfUserDTO
@@ -134,5 +135,10 @@ object TestUser {
         managedByDTO = null,
         phone = null,
         ssoID = null
+    )
+
+    val LIST_USERS_DTO = ListUsersDTO(
+        usersFailed = emptyList(),
+        usersFound = listOf(USER_PROFILE_DTO)
     )
 }
