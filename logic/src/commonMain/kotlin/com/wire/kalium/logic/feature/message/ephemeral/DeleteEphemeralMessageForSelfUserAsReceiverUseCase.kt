@@ -69,6 +69,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
                 sendDeleteMessageToSelf(
                     message.id,
+                    conversationId,
                     currentClientId
                 ).flatMap {
                     sendDeleteMessageToOriginalSender(
@@ -87,6 +88,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
 
     private suspend fun sendDeleteMessageToSelf(
         messageToDelete: String,
+        conversationId: ConversationId,
         currentClientId: ClientId
     ): Either<CoreFailure, Unit> = selfConversationIdProvider().flatMap { selfConversaionIdList ->
         selfConversaionIdList.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
