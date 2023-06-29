@@ -23,8 +23,10 @@ import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -82,13 +84,13 @@ class ObserveSecurityClassificationLabelUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val observeConversationMembersUseCase = mock(classOf<ObserveConversationMembersUseCase>())
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(
-            conversationRepository, userConfigRepository
+            observeConversationMembersUseCase, userConfigRepository
         )
 
         fun withGettingClassifiedDomainsDisabled() = apply {
@@ -106,14 +108,18 @@ class ObserveSecurityClassificationLabelUseCaseTest {
         }
 
         fun withParticipantsResponseDomains(domains: List<String>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationMembers)
+            given(observeConversationMembersUseCase)
+                .suspendFunction(observeConversationMembersUseCase::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(stubUserIds(domains)))
         }
 
         private fun stubUserIds(domains: List<String>) =
-            domains.map { domain -> Conversation.Member(UserId(uuid4().toString(), domain), Conversation.Member.Role.Member) }
+            domains.map { domain ->
+                MemberDetails(
+                    TestUser.OTHER.copy(UserId(uuid4().toString(), domain)), Conversation.Member.Role.Member
+                )
+            }
 
         fun arrange() = this to getSecurityClassificationType
     }
