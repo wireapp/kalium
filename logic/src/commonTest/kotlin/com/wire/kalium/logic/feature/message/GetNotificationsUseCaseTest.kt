@@ -53,7 +53,6 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -64,7 +63,6 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetNotificationsUseCaseTest {
 
     @Test
@@ -221,7 +219,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -238,7 +236,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -251,7 +249,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -264,7 +262,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -299,7 +297,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
