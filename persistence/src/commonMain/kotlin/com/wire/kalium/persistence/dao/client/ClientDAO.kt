@@ -83,7 +83,7 @@ interface ClientDAO {
      * @param userIds the set of users
      * @return a map of users and their clients
      */
-    suspend fun recipientsIfTheyArePartOfConversation(
+    suspend fun recipientsIfTHeyArePartOfConversation(
         conversationId: ConversationIDEntity,
         userIds: Set<QualifiedIDEntity>
     ): Map<QualifiedIDEntity, List<Client>>

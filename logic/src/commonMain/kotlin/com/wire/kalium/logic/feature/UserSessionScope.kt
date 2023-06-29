@@ -76,6 +76,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.message.EphemeralMessageDataSource
+import com.wire.kalium.logic.data.message.EphemeralMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
@@ -967,10 +969,10 @@ class UserSessionScope internal constructor(
 
     private val mlsWrongEpochHandler: MLSWrongEpochHandler
         get() = MLSWrongEpochHandlerImpl(
-                selfUserId = userId,
-                persistMessage = persistMessage,
-                conversationRepository = conversationRepository,
-                joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            selfUserId = userId,
+            persistMessage = persistMessage,
+            conversationRepository = conversationRepository,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl
@@ -1066,6 +1068,11 @@ class UserSessionScope internal constructor(
         userStorage.database.metadataDAO
     )
 
+    private val ephemeralMessageRepository: EphemeralMessageRepository
+        get() = EphemeralMessageDataSource(
+            clientDAO = userStorage.database.clientDAO
+        )
+
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
 
@@ -1147,7 +1154,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             selfConversationIdProvider,
-            this
+            this,
+            ephemeralMessageRepository
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -1170,6 +1178,7 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             userPropertyRepository,
+            ephemeralMessageRepository,
             incrementalSyncRepository,
             protoContentMapper,
             observeSelfDeletingMessages,
@@ -1289,7 +1298,7 @@ class UserSessionScope internal constructor(
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
-        get() = ObserveSecurityClassificationLabelUseCaseImpl(conversationRepository, userConfigRepository)
+        get() = ObserveSecurityClassificationLabelUseCaseImpl(conversations.observeConversationMembers, userConfigRepository)
 
     val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
         get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)

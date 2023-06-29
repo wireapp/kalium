@@ -324,8 +324,10 @@ internal class MessageSenderImpl internal constructor(
                         }
                     }
                     Either.Left(it)
-                }, {
-                    Either.Right(it)
+                }, { messageSent ->
+                    handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
+                        Either.Right(messageSent.time)
+                    }
                 })
             }
         }
@@ -460,4 +462,11 @@ internal class MessageSenderImpl internal constructor(
                 Either.Right(Unit)
             }
         }
+
+    private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
+        if (messageSent.failed.isEmpty()) Either.Right(Unit)
+        else {
+            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failed)
+        }
+
 }

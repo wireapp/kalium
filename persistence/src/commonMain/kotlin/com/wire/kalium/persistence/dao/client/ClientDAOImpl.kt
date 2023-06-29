@@ -118,7 +118,7 @@ internal class ClientDAOImpl internal constructor(
             .mapToOneNotNull()
             .flowOn(queriesContext)
 
-    override suspend fun recipientsIfTheyArePartOfConversation(
+    override suspend fun recipientsIfTHeyArePartOfConversation(
         conversationId: ConversationIDEntity,
         userIds: Set<QualifiedIDEntity>
     ): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {

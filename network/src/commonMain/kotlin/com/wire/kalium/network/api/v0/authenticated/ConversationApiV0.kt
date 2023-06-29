@@ -50,7 +50,6 @@ import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.network.api.base.model.SubconversationId
-import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
@@ -101,11 +100,6 @@ internal open class ConversationApiV0 internal constructor(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
             )
         }
-
-    override suspend fun fetchGlobalTeamConversationDetails(selfUserId: UserId, teamId: TeamId): NetworkResponse<ConversationResponse> =
-        NetworkResponse.Error(
-            APINotSupported("fetchGlobalTeamConversationDetails api is only available on API V3")
-        )
 
     /**
      * returns 201 when a new conversation is created or 200 if the conversation already existed
