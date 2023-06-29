@@ -18,9 +18,11 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
+import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 
 /**
  * Maps the [QualifiedSendMessageResponse] to a [MessageSent] object.
@@ -29,6 +31,7 @@ import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToC
  */
 interface SendMessagePartialFailureMapper {
     fun fromDTO(sendMessageResponse: QualifiedSendMessageResponse): MessageSent
+    fun fromMlsDTO(sendMLSMessageResponse: SendMLSMessageResponse): MessageSent
 }
 
 internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMapper {
@@ -43,6 +46,21 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
                 time = sendMessageResponse.time,
                 missing = mapNestedUsersIntoUserIds(sendMessageResponse.missing)
             )
+        }
+    }
+
+    override fun fromMlsDTO(sendMLSMessageResponse: SendMLSMessageResponse): MessageSent {
+        return when {
+            sendMLSMessageResponse.failedToSend.isNotEmpty() -> MessageSent(
+                time = sendMLSMessageResponse.time,
+                failed = sendMLSMessageResponse.failedToSend.map { it.toModel() }
+            )
+
+            else -> {
+                MessageSent(
+                    time = sendMLSMessageResponse.time
+                )
+            }
         }
     }
 

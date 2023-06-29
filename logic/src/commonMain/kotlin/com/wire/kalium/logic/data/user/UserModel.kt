@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -42,6 +43,7 @@ sealed class User {
     abstract val previewPicture: UserAssetId?
     abstract val completePicture: UserAssetId?
     abstract val availabilityStatus: UserAvailabilityStatus
+    abstract val expiresAt: Instant?
 }
 
 // TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
@@ -123,7 +125,8 @@ data class SelfUser(
     val connectionStatus: ConnectionState,
     override val previewPicture: UserAssetId?,
     override val completePicture: UserAssetId?,
-    override val availabilityStatus: UserAvailabilityStatus
+    override val availabilityStatus: UserAvailabilityStatus,
+    override val expiresAt: Instant? = null
 ) : User()
 
 data class OtherUserMinimized(
@@ -147,7 +150,8 @@ data class OtherUser(
     val userType: UserType,
     override val availabilityStatus: UserAvailabilityStatus,
     val botService: BotService?,
-    val deleted: Boolean
+    val deleted: Boolean,
+    override val expiresAt: Instant? = null
 ) : User() {
 
     /**
