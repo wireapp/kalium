@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.User as SQLDelightUser
 
@@ -50,7 +51,8 @@ class UserMapper {
             userType = user.user_type,
             botService = user.bot_service,
             deleted = user.deleted,
-            hasIncompleteMetadata = user.incomplete_metadata
+            hasIncompleteMetadata = user.incomplete_metadata,
+            expiresAt = user.expires_at
         )
     }
 
@@ -71,6 +73,7 @@ class UserMapper {
         botService: BotIdEntity?,
         deleted: Boolean,
         hasIncompleteMetadata: Boolean,
+        expiresAt: Instant?,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -90,7 +93,8 @@ class UserMapper {
             userType = userType,
             botService = botService,
             deleted = deleted,
-            hasIncompleteMetadata = hasIncompleteMetadata
+            hasIncompleteMetadata = hasIncompleteMetadata,
+            expiresAt = expiresAt
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -138,7 +142,8 @@ class UserDAOImpl internal constructor(
             user.userType,
             user.botService,
             user.deleted,
-            user.hasIncompleteMetadata
+            user.hasIncompleteMetadata,
+            user.expiresAt
         )
     }
 
@@ -159,7 +164,8 @@ class UserDAOImpl internal constructor(
                     user.userType,
                     user.botService,
                     user.deleted,
-                    user.hasIncompleteMetadata
+                    user.hasIncompleteMetadata,
+                    user.expiresAt
                 )
             }
         }
@@ -196,7 +202,8 @@ class UserDAOImpl internal constructor(
                         user.userType,
                         user.botService,
                         user.deleted,
-                        user.hasIncompleteMetadata
+                        user.hasIncompleteMetadata,
+                        user.expiresAt
                     )
                 }
             }
@@ -218,7 +225,8 @@ class UserDAOImpl internal constructor(
                     user.userType,
                     user.botService,
                     false,
-                    user.id
+                    user.expiresAt,
+                    user.id,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
@@ -236,7 +244,8 @@ class UserDAOImpl internal constructor(
                         user.userType,
                         user.botService,
                         user.deleted,
-                        user.hasIncompleteMetadata
+                        user.hasIncompleteMetadata,
+                        user.expiresAt
                     )
                 }
             }
@@ -263,7 +272,8 @@ class UserDAOImpl internal constructor(
                         user.userType,
                         user.botService,
                         user.deleted,
-                        user.hasIncompleteMetadata
+                        user.hasIncompleteMetadata,
+                        user.expiresAt
                     )
                 }
             }
@@ -393,6 +403,10 @@ class UserDAOImpl internal constructor(
 
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
         userQueries.updateUserDisplayName(displayName, selfUserId)
+    }
+
+    override suspend fun removeUserAsset(assetId: QualifiedIDEntity) {
+        userQueries.updateUserAsset(null, null, assetId)
     }
 
     override suspend fun getUsersWithoutMetadata() = withContext(queriesContext) {

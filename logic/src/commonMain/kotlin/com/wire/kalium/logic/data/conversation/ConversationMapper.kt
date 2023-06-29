@@ -182,10 +182,6 @@ internal class ConversationMapperImpl(
                     ConversationDetails.Self(fromDaoModel(daoModel))
                 }
 
-                ConversationEntity.Type.GLOBAL_TEAM -> {
-                    ConversationDetails.Team(fromDaoModel(daoModel))
-                }
-
                 ConversationEntity.Type.ONE_ON_ONE -> {
                     ConversationDetails.OneOne(
                         conversation = fromDaoModel(daoModel),
@@ -201,7 +197,8 @@ internal class ConversationMapperImpl(
                             completePicture = previewAssetId?.toModel(),
                             previewPicture = previewAssetId?.toModel(),
                             teamId = teamId?.let { TeamId(it) },
-                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
+                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
+                            expiresAt = null
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -235,7 +232,8 @@ internal class ConversationMapperImpl(
                         handle = null,
                         completePicture = previewAssetId?.toModel(),
                         previewPicture = previewAssetId?.toModel(),
-                        teamId = teamId?.let { TeamId(it) }
+                        teamId = teamId?.let { TeamId(it) },
+                        expiresAt = null
                     )
 
                     ConversationDetails.Connection(
@@ -417,7 +415,6 @@ internal class ConversationMapperImpl(
 
             ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
             ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
-            ConversationResponse.Type.GLOBAL_TEAM -> ConversationEntity.Type.GLOBAL_TEAM
         }
     }
 }
@@ -427,7 +424,6 @@ private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = wh
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
     ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
-    ConversationEntity.Type.GLOBAL_TEAM -> Conversation.Type.GLOBAL_TEAM
 }
 
 private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {
@@ -467,7 +463,6 @@ private fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
     Conversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
     Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
     Conversation.Type.CONNECTION_PENDING -> ConversationEntity.Type.CONNECTION_PENDING
-    Conversation.Type.GLOBAL_TEAM -> ConversationEntity.Type.GLOBAL_TEAM
 }
 
 private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = when (this) {

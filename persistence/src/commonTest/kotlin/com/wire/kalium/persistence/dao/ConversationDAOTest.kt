@@ -459,7 +459,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // given
             // established updated group
             val updatedConversation = conversationEntity2
-            val updatedDate = Instant.parse("2023-03-30T15:36:00.000Z")
+            val updatedDate = Instant.parse("2099-03-30T15:36:00.000Z")
             val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
             teamDAO.insertTeam(team)
             conversationDAO.insertConversation(updatedConversation)
@@ -1136,4 +1136,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 assertEquals(conversationEntity2.id, it.first())
             }
         }
+
+    @Test
+    fun givenConversation_whenPersistingMembersWithoutMetadata_ThenUsersShouldBeMarkedWithIncompleteMetadataTrue() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+
+        // when
+        conversationDAO.insertMembersWithQualifiedId(
+            listOf(Member(user1.id, Member.Role.Member)),
+            conversationEntity1.id
+        )
+
+        // then
+        val member = userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(true, member?.hasIncompleteMetadata)
+    }
 }
