@@ -35,6 +35,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
@@ -273,6 +274,53 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         clientDAO.insertClient(insertedClient)
         assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+    }
+
+    @Test
+    fun givenUserIsPartOfConversation_whenGettingRecipient_thenOnlyValidUserClientsAreReturned() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
+
+        clientDAO.insertClient(insertedClient)
+        val invalidClient = insertedClient.copy(id = "id2")
+        clientDAO.insertClient(invalidClient)
+        clientDAO.tryMarkInvalid(listOf(invalidClient.userId to listOf(invalidClient.id)))
+
+        clientDAO.recipientsIfTHeyArePartOfConversation(conversationEntity1.id, setOf(user.id)).also {
+            assertEquals(1, it.size)
+            assertEquals(listOf(client), it[user.id])
+        }
+    }
+
+    @Test
+    fun givenUserIsNotPartOfConversation_whenGettingRecipient_thenTheyAreNotIncludedInTheResult() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+        clientDAO.insertClient(insertedClient)
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
+
+        val user2 = newUserEntity(QualifiedIDEntity("test2", "domain"))
+        userDAO.insertUser(user2)
+        val insertedClient2 = InsertClientParam(
+            userId = user2.id,
+            id = "id01",
+            deviceType = null,
+            clientType = null,
+            label = null,
+            model = null,
+            registrationDate = null
+        )
+        clientDAO.insertClient(insertedClient2)
+
+
+        clientDAO.recipientsIfTHeyArePartOfConversation(conversationEntity1.id, setOf(user.id, user2.id)).also {
+            assertEquals(1, it.size)
+            assertEquals(listOf(client), it[user.id])
+            assertNull(it[user2.id])
+        }
     }
 
     private companion object {

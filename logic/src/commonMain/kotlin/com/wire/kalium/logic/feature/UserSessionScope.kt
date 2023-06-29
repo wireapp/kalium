@@ -76,6 +76,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.message.EphemeralMessageDataSource
+import com.wire.kalium.logic.data.message.EphemeralMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
@@ -1065,6 +1067,11 @@ class UserSessionScope internal constructor(
         userStorage.database.metadataDAO
     )
 
+    private val ephemeralMessageRepository: EphemeralMessageRepository
+        get() = EphemeralMessageDataSource(
+            clientDAO = userStorage.database.clientDAO
+        )
+
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
 
@@ -1146,7 +1153,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             selfConversationIdProvider,
-            this
+            this,
+            ephemeralMessageRepository
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -1169,6 +1177,7 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             userPropertyRepository,
+            ephemeralMessageRepository,
             incrementalSyncRepository,
             protoContentMapper,
             observeSelfDeletingMessages,
