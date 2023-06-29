@@ -21,8 +21,12 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
+import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.functional.onlyRight
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -39,19 +43,27 @@ interface ObserveSecurityClassificationLabelUseCase {
 
 internal class ObserveSecurityClassificationLabelUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
 ) : ObserveSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType> {
-        return conversationRepository.observeConversationMembers(conversationId)
-            .map { participantsIds ->
+        return combine(
+            conversationRepository.observeConversationMembers(conversationId),
+            conversationRepository.observeById(conversationId)
+        ) { conversationMembers, eitherConversation -> eitherConversation.map { Pair(conversationMembers, it) } }
+            .mapRight { (participantsIds, conversation) ->
                 val trustedDomains = getClassifiedDomainsStatus()
                 if (trustedDomains == null) {
                     null
                 } else {
-                    participantsIds.map { it.id.domain }.all { participantDomain -> trustedDomains.contains(participantDomain) }
+                    // check if conversation domain is trusted even it doesn't contain members from it
+                    trustedDomains.contains(conversation.id.domain)
+                            && participantsIds.map { it.id.domain }
+                        .all { participantDomain -> trustedDomains.contains(participantDomain) }
                 }
-            }.map { isClassified ->
+            }
+            .mapToRightOr(null)
+            .map { isClassified ->
                 when (isClassified) {
                     true -> SecurityClassificationType.CLASSIFIED
                     false -> SecurityClassificationType.NOT_CLASSIFIED

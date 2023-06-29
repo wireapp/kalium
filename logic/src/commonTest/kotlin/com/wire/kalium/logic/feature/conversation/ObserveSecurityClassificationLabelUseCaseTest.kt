@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -45,6 +46,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
     @Test
     fun givenAConversationId_WhenNoClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest {
         val (_, getConversationClassifiedType) = Arrangement()
+            .withObserveConversationSuccess("wire.com")
             .withGettingClassifiedDomainsDisabled()
             .withParticipantsResponseDomains(listOf("wire.com", "bella.com"))
             .arrange()
@@ -57,9 +59,12 @@ class ObserveSecurityClassificationLabelUseCaseTest {
     @Test
     fun givenAConversationId_WhenClassifiedFeatureFlagEnabledAndAllMembersInSameDomainAndTrusted_ThenClassificationIsClassified() =
         runTest {
+            val classifiedDomains = listOf("wire.com", "bella.com")
+            val memberDomains = listOf("wire.com", "bella.com")
             val (_, getConversationClassifiedType) = Arrangement()
-                .withGettingClassifiedDomains()
-                .withParticipantsResponseDomains(listOf("wire.com", "bella.com"))
+                .withObserveConversationSuccess("wire.com")
+                .withGettingClassifiedDomains(classifiedDomains)
+                .withParticipantsResponseDomains(memberDomains)
                 .arrange()
 
             val result = getConversationClassifiedType(TestConversation.ID)
@@ -70,14 +75,49 @@ class ObserveSecurityClassificationLabelUseCaseTest {
     @Test
     fun givenAConversationId_WhenClassifiedFeatureFlagEnabledAndSomeMembersNotInSameDomain_ThenClassificationIsNotClassified() =
         runTest {
+            val classifiedDomains = listOf("wire.com", "bella.com")
+            val memberDomains = listOf("anta.com", "bella.com")
             val (_, getConversationClassifiedType) = Arrangement()
-                .withGettingClassifiedDomains()
-                .withParticipantsResponseDomains(listOf("anta.com", "bella.com"))
+                .withObserveConversationSuccess("wire.com")
+                .withGettingClassifiedDomains(classifiedDomains)
+                .withParticipantsResponseDomains(memberDomains)
                 .arrange()
 
             val result = getConversationClassifiedType(TestConversation.ID)
 
             assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.firstOrNull())
+        }
+
+    @Test
+    fun givenAConversationId_WhenClassifiedFeatureFlagEnabledAndConversationIsNotClassified_ThenClassificationIsNotClassified() =
+        runTest {
+            val classifiedDomains = listOf("wire.com", "bella.com")
+            val memberDomains = listOf("wire.com", "bella.com")
+            val (_, getConversationClassifiedType) = Arrangement()
+                .withObserveConversationSuccess("challa.com")
+                .withGettingClassifiedDomains(classifiedDomains)
+                .withParticipantsResponseDomains(memberDomains)
+                .arrange()
+
+            val result = getConversationClassifiedType(TestConversation.ID)
+
+            assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.firstOrNull())
+        }
+
+    @Test
+    fun givenAConversationId_WhenClassifiedFeatureFlagEnabledAndConversationReturnsError_ThenClassificationIsNone() =
+        runTest {
+            val classifiedDomains = listOf("wire.com", "bella.com")
+            val memberDomains = listOf("wire.com", "bella.com")
+            val (_, getConversationClassifiedType) = Arrangement()
+                .withObserveConversationError()
+                .withGettingClassifiedDomains(classifiedDomains)
+                .withParticipantsResponseDomains(memberDomains)
+                .arrange()
+
+            val result = getConversationClassifiedType(TestConversation.ID)
+
+            assertEquals(SecurityClassificationType.NONE, result.firstOrNull())
         }
 
     private class Arrangement {
@@ -98,11 +138,11 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .thenReturn(emptyFlow())
         }
 
-        fun withGettingClassifiedDomains() = apply {
+        fun withGettingClassifiedDomains(domains: List<String>) = apply {
             given(userConfigRepository)
                 .function(userConfigRepository::getClassifiedDomainsStatus)
                 .whenInvoked()
-                .thenReturn(flowOf(Either.Right(ClassifiedDomainsStatus(true, listOf("wire.com", "bella.com")))))
+                .thenReturn(flowOf(Either.Right(ClassifiedDomainsStatus(true, domains))))
         }
 
         fun withParticipantsResponseDomains(domains: List<String>) = apply {
@@ -111,6 +151,31 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(stubUserIds(domains)))
         }
+
+        fun withObserveConversationSuccess(conversationDomain: String) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeById)
+                .whenInvokedWith(any())
+                .thenReturn(
+                    flowOf(
+                        Either.Right(
+                            TestConversation.CONVERSATION.copy(
+                                TestConversation.ID.copy(
+                                    domain = conversationDomain
+                                )
+                            )
+                        )
+                    )
+                )
+        }
+
+        fun withObserveConversationError() = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeById)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(Either.Left(StorageFailure.Generic(Throwable("error")))))
+        }
+
 
         private fun stubUserIds(domains: List<String>) =
             domains.map { domain -> Conversation.Member(UserId(uuid4().toString(), domain), Conversation.Member.Role.Member) }

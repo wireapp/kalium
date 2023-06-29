@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -116,15 +117,17 @@ internal class GetMessageAssetUseCaseImpl(
                             kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                             // This should be called if there is an issue while downloading the asset
                             updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
-                            if (it.isNotFoundFailure) {
-                                assetMetadata.assetKeyDomain?.let { domain ->
-                                    userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
+                            when {
+                                it.isNotFoundFailure -> {
+                                    assetMetadata.assetKeyDomain?.let { domain ->
+                                        userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
+                                    }
+                                    MessageAssetResult.Failure(it, false)
                                 }
-                                MessageAssetResult.Failure(it, false)
-                            } else {
-                                MessageAssetResult.Failure(it, true)
-                            }
 
+                                it is NetworkFailure.FederatedBackendFailure -> MessageAssetResult.Failure(it, false)
+                                else -> MessageAssetResult.Failure(it, true)
+                            }
                         }, { decodedAssetPath ->
                             // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded
                             // while running this specific use case. Otherwise, recursive loop as described above kicks in.
