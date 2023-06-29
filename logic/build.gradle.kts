@@ -60,7 +60,7 @@ kotlin {
 
                 // Concurrent collections
                 implementation(libs.concurrentCollections)
-                implementation(libs.statelyCommons)
+                runtimeOnly(libs.statelyCommons)
             }
         }
         val commonTest by getting {
