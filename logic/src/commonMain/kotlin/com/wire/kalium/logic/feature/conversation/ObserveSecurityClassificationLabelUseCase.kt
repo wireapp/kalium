@@ -42,24 +42,28 @@ interface ObserveSecurityClassificationLabelUseCase {
 }
 
 internal class ObserveSecurityClassificationLabelUseCaseImpl(
+    private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val conversationRepository: ConversationRepository,
-    private val userConfigRepository: UserConfigRepository,
+    private val userConfigRepository: UserConfigRepository
 ) : ObserveSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType> {
         return combine(
-            conversationRepository.observeConversationMembers(conversationId),
+            observeConversationMembers(conversationId),
             conversationRepository.observeById(conversationId)
         ) { conversationMembers, eitherConversation -> eitherConversation.map { Pair(conversationMembers, it) } }
-            .mapRight { (participantsIds, conversation) ->
+            .mapRight { (conversationMembers, conversation) ->
                 val trustedDomains = getClassifiedDomainsStatus()
                 if (trustedDomains == null) {
                     null
                 } else {
                     // check if conversation domain is trusted even it doesn't contain members from it
                     trustedDomains.contains(conversation.id.domain)
-                            && participantsIds.map { it.id.domain }
-                        .all { participantDomain -> trustedDomains.contains(participantDomain) }
+                            &&
+                    conversationMembers.all { memberDetails ->
+                        memberDetails.user.expiresAt == null
+                                && trustedDomains.contains(memberDetails.user.id.domain)
+                    }
                 }
             }
             .mapToRightOr(null)

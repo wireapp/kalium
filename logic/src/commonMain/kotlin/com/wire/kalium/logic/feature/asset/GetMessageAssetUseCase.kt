@@ -70,7 +70,7 @@ internal class GetMessageAssetUseCaseImpl(
     private val dispatcher: KaliumDispatcher
 ) : GetMessageAssetUseCase {
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String

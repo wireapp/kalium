@@ -24,8 +24,10 @@ import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -37,6 +39,8 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -120,7 +124,26 @@ class ObserveSecurityClassificationLabelUseCaseTest {
             assertEquals(SecurityClassificationType.NONE, result.firstOrNull())
         }
 
+    @Test
+    fun givenAConversationId_WhenClassifiedFeatureFlagEnabledAndAllMembersAreTemporary_ThenClassificationIsNotClassified() =
+        runTest {
+            val classifiedDomains = listOf("wire.com", "bella.com")
+            val memberDomains = listOf("wire.com", "bella.com")
+            val (_, getConversationClassifiedType) = Arrangement()
+                .withObserveConversationSuccess("wire.com")
+                .withGettingClassifiedDomains(classifiedDomains)
+                .withParticipantsResponseDomains(memberDomains, "2050-01-01T00:00:00.000Z".toInstant())
+                .arrange()
+
+            val result = getConversationClassifiedType(TestConversation.ID)
+
+            assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result.firstOrNull())
+        }
+
     private class Arrangement {
+        @Mock
+        val observeConversationMembersUseCase = mock(classOf<ObserveConversationMembersUseCase>())
+
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
@@ -128,7 +151,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(
-            conversationRepository, userConfigRepository
+            observeConversationMembersUseCase, conversationRepository, userConfigRepository
         )
 
         fun withGettingClassifiedDomainsDisabled() = apply {
@@ -145,11 +168,11 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .thenReturn(flowOf(Either.Right(ClassifiedDomainsStatus(true, domains))))
         }
 
-        fun withParticipantsResponseDomains(domains: List<String>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationMembers)
+        fun withParticipantsResponseDomains(domains: List<String>, expiresAt: Instant? = null) = apply {
+            given(observeConversationMembersUseCase)
+                .suspendFunction(observeConversationMembersUseCase::invoke)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(stubUserIds(domains)))
+                .thenReturn(flowOf(stubUserIds(domains, expiresAt)))
         }
 
         fun withObserveConversationSuccess(conversationDomain: String) = apply {
@@ -176,9 +199,15 @@ class ObserveSecurityClassificationLabelUseCaseTest {
                 .thenReturn(flowOf(Either.Left(StorageFailure.Generic(Throwable("error")))))
         }
 
-
-        private fun stubUserIds(domains: List<String>) =
-            domains.map { domain -> Conversation.Member(UserId(uuid4().toString(), domain), Conversation.Member.Role.Member) }
+        private fun stubUserIds(domains: List<String>, expiresAt: Instant?) =
+            domains.map { domain ->
+                MemberDetails(
+                    TestUser.OTHER.copy(
+                        UserId(uuid4().toString(), domain),
+                        expiresAt = expiresAt
+                    ), Conversation.Member.Role.Member
+                )
+            }
 
         fun arrange() = this to getSecurityClassificationType
     }
