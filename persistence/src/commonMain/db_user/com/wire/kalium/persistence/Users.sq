@@ -126,6 +126,9 @@ SELECT * FROM User WHERE team = ?;
 updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
 
+updateUserAsset:
+UPDATE User SET complete_asset_id = ?, preview_asset_id = ? WHERE complete_asset_id = ?;
+
 selectChanges:
 SELECT changes();
 

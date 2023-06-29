@@ -139,6 +139,34 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingUser_WhenUpdateUserHandle_ThenUserHandleIsUpdated() = runTest(dispatcher) {
+        // given
+        db.userDAO.insertUser(user1)
+        val updatedHandle = "new-handle"
+
+        // when
+        db.userDAO.updateUserHandle(user1.id, updatedHandle)
+
+        // then
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(updatedHandle, result?.handle)
+    }
+
+    @Test
+    fun givenNonExistingUser_WhenUpdateUserHandle_ThenNoChanges() = runTest(dispatcher) {
+        // given
+        val nonExistingQualifiedID = QualifiedIDEntity("non-existing-value", "non-existing-domain")
+        val updatedHandle = "new-handle"
+
+        // when
+        db.userDAO.updateUserHandle(nonExistingQualifiedID, updatedHandle)
+
+        // then
+        val result = db.userDAO.getUserByQualifiedID(nonExistingQualifiedID).first()
+        assertNull(result)
+    }
+
+    @Test
     fun givenAExistingUsers_WhenQueriedUserByUserEmail_ThenResultsIsEqualToThatUser() = runTest(dispatcher) {
         // given
         val user1 = USER_ENTITY_1
@@ -629,6 +657,34 @@ class UserDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(1, usersWithoutMetadata.size)
         assertEquals(user1.id, usersWithoutMetadata.first().id)
+    }
+
+    @Test
+    fun givenExistingUser_WhenRemoveUserAsset_ThenUserAssetIsRemoved() = runTest(dispatcher) {
+        // given
+        db.userDAO.insertUser(user1)
+        val assetId = UserAssetIdEntity("asset1", "domain")
+        val updatedUser1 = user1.copy(previewAssetId = assetId)
+
+        // when
+        db.userDAO.removeUserAsset(assetId)
+
+        // then
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(result, updatedUser1.copy(previewAssetId = null))
+    }
+
+    @Test
+    fun givenNonExistingUser_WhenRemoveUserAsset_ThenNoChanges() = runTest(dispatcher) {
+        // given
+        val assetId = UserAssetIdEntity("asset1", "domain")
+
+        // when
+        db.userDAO.removeUserAsset(assetId)
+
+        // when
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertNull(result)
     }
 
     private companion object {
