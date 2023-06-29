@@ -207,6 +207,7 @@ class MessageScope internal constructor(
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
             messageRepository,
+            userRepository,
             updateAssetMessageDownloadStatus,
             scope,
             dispatcher

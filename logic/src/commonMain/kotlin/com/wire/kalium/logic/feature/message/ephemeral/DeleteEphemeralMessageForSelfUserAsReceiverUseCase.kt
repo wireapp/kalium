@@ -67,30 +67,26 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
         currentClientIdProvider().flatMap { currentClientId ->
             messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
-                currentClientIdProvider().flatMap { currentClientId ->
-                    sendDeleteMessageToSelf(
-                        message.id,
-                        conversationId,
-                        currentClientId
-                    )
-                }.flatMap {
+                sendDeleteMessageToSelf(
+                    message.id,
+                    currentClientId
+                ).flatMap {
                     sendDeleteMessageToOriginalSender(
                         message.id,
                         message.conversationId,
                         message.senderUserId,
                         currentClientId
-                    )
-                }.onSuccess {
-                    deleteMessageAssetIfExists(message)
-                }.flatMap {
-                    messageRepository.deleteMessage(messageId, conversationId)
+                    ).onSuccess {
+                        deleteMessageAssetIfExists(message)
+                    }.flatMap {
+                        messageRepository.deleteMessage(messageId, conversationId)
+                    }
                 }
             }
         }
 
     private suspend fun sendDeleteMessageToSelf(
         messageToDelete: String,
-        conversationId: ConversationId,
         currentClientId: ClientId
     ): Either<CoreFailure, Unit> = selfConversationIdProvider().flatMap { selfConversaionIdList ->
         selfConversaionIdList.foldToEitherWhileRight(Unit) { selfConversationId, _ ->

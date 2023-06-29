@@ -41,6 +41,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import kotlinx.datetime.toInstant
 
 interface UserMapper {
     fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity
@@ -102,7 +103,8 @@ internal class UserMapperImpl(
             connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewAssetId?.toModel(),
             completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            expiresAt = expiresAt
         )
     }
 
@@ -121,7 +123,8 @@ internal class UserMapperImpl(
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = false
+            deleted = false,
+            expiresAt = expiresAt
         )
     }
 
@@ -139,7 +142,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = userDTO.deleted ?: false
+            deleted = userDTO.deleted ?: false,
+            expiresAt = expiresAt?.toInstant()
         )
     }
 
@@ -198,7 +202,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
-            deleted = false
+            deleted = false,
+            expiresAt = null
         )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -221,7 +226,8 @@ internal class UserMapperImpl(
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
-        deleted = userProfile.deleted ?: false
+        deleted = userProfile.deleted ?: false,
+        expiresAt = userProfile.expiresAt?.toInstant()
     )
 
     override fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity {
@@ -259,7 +265,8 @@ internal class UserMapperImpl(
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
-            hasIncompleteMetadata = true
+            hasIncompleteMetadata = true,
+            expiresAt = null
         )
     }
 }

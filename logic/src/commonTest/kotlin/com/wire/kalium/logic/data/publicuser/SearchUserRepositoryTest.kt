@@ -516,7 +516,8 @@ class SearchUserRepositoryTest {
             userType = UserType.FEDERATED,
             connectionStatus = ConnectionState.NOT_CONNECTED,
             botService = null,
-            deleted = false
+            deleted = false,
+            expiresAt = null
         )
 
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
@@ -571,7 +572,8 @@ class SearchUserRepositoryTest {
             availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
             userType = UserTypeEntity.EXTERNAL,
             botService = null,
-            deleted = false
+            deleted = false,
+            expiresAt = null
         )
 
         val SELF_USER = SelfUser(
@@ -586,6 +588,7 @@ class SearchUserRepositoryTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+            expiresAt = null
         )
 
     }
