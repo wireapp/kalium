@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCaseTest.Arrangement.Companion.TEST_USER_ID
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -34,6 +36,19 @@ class SendMessagePartialFailureMapperTest {
     fun testFromDTOMapping() {
         assertEquals(
             MessageSent("2022-04-21T20:56:22.393Z", listOf(TEST_USER_ID, OTHER_USER_ID_2)), mapper.fromDTO(RESULT_DTO)
+        )
+    }
+
+    @Test
+    fun testFromMlsDTOMapping() {
+        val expectedUsersFailedToSend = listOf(TEST_USER_ID, OTHER_USER_ID_2)
+        assertEquals(
+            MessageSent("2022-04-21T20:56:22.393Z", expectedUsersFailedToSend),
+            mapper.fromMlsDTO(
+                SendMLSMessageResponse("2022-04-21T20:56:22.393Z",
+                    emptyList(),
+                    expectedUsersFailedToSend.map { it.toApi() })
+            )
         )
     }
 
