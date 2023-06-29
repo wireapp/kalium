@@ -49,7 +49,7 @@ data class ConversationEntity(
 
     enum class Access { PRIVATE, INVITE, SELF_INVITE, LINK, CODE; }
 
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING, GLOBAL_TEAM }
+    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
 
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
