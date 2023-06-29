@@ -40,6 +40,7 @@ import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
+import kotlinx.datetime.toInstant
 
 interface PublicUserMapper {
     fun fromUserEntityToOtherUser(userEntity: UserEntity): OtherUser
@@ -73,7 +74,8 @@ class PublicUserMapperImpl(
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
-        deleted = userEntity.deleted
+        deleted = userEntity.deleted,
+        expiresAt = userEntity.expiresAt
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -91,7 +93,8 @@ class PublicUserMapperImpl(
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = userEntityTypeMapper.fromUserType(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
-            deleted = deleted
+            deleted = deleted,
+            expiresAt = expiresAt
         )
     }
 
@@ -121,5 +124,6 @@ class PublicUserMapperImpl(
         userType = userType,
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
         deleted = userDetailResponse.deleted ?: false,
+        expiresAt = userDetailResponse.expiresAt?.toInstant()
     )
 }

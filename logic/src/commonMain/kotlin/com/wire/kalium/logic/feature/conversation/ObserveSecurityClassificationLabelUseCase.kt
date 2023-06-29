@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.onlyRight
 import kotlinx.coroutines.flow.Flow
@@ -38,18 +37,21 @@ interface ObserveSecurityClassificationLabelUseCase {
 }
 
 internal class ObserveSecurityClassificationLabelUseCaseImpl(
-    private val conversationRepository: ConversationRepository,
+    private val observeConversationMembers: ObserveConversationMembersUseCase,
     private val userConfigRepository: UserConfigRepository
 ) : ObserveSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType> {
-        return conversationRepository.observeConversationMembers(conversationId)
-            .map { participantsIds ->
+        return observeConversationMembers(conversationId)
+            .map { memberDetailsList ->
                 val trustedDomains = getClassifiedDomainsStatus()
                 if (trustedDomains == null) {
                     null
                 } else {
-                    participantsIds.map { it.id.domain }.all { participantDomain -> trustedDomains.contains(participantDomain) }
+                    memberDetailsList.all { memberDetails ->
+                        memberDetails.user.expiresAt == null
+                                && trustedDomains.contains(memberDetails.user.id.domain)
+                    }
                 }
             }.map { isClassified ->
                 when (isClassified) {
