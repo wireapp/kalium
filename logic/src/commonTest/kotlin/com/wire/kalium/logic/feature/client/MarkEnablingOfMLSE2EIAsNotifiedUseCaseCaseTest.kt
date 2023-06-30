@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.user.MarkMLSE2EIdEnableChangeAsNotifiedUseCase
-import com.wire.kalium.logic.feature.user.MarkMLSE2EIdEnableChangeAsNotifiedUseCaseImpl
+import com.wire.kalium.logic.feature.user.MarkEnablingOfMLSE2EIAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -30,8 +30,9 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.time.Duration
 
-class MarkMLSE2EIdEnableChangeAsNotifiedUseCaseTest {
+class MarkEnablingOfMLSE2EIAsNotifiedUseCaseCaseTest {
 
     @Test
     fun whenMarkAsNotifiedIsCalled_thenSnoozeIsCalled() = runTest {
@@ -40,8 +41,8 @@ class MarkMLSE2EIdEnableChangeAsNotifiedUseCaseTest {
         useCase()
 
         verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::snoozeMLSE2EIdNotification)
-            .with(eq(MarkMLSE2EIdEnableChangeAsNotifiedUseCaseImpl.SNOOZE_MLS_ENABLE_CHANGE_MS))
+            .suspendFunction(arrangement.userConfigRepository::snoozeMLSE2EINotification)
+            .with(eq(MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl.SNOOZE_MLS_ENABLE_CHANGE_MS))
             .wasInvoked(exactly = once)
     }
 
@@ -51,14 +52,14 @@ class MarkMLSE2EIdEnableChangeAsNotifiedUseCaseTest {
 
         init {
             given(userConfigRepository)
-                .function(userConfigRepository::snoozeMLSE2EIdNotification)
-                .whenInvokedWith(any<Long>())
+                .function(userConfigRepository::snoozeMLSE2EINotification)
+                .whenInvokedWith(any<Duration>())
                 .thenReturn(Either.Right(Unit))
         }
 
-        private var markMLSE2EIdEnableChangeAsNotified: MarkMLSE2EIdEnableChangeAsNotifiedUseCase =
-            MarkMLSE2EIdEnableChangeAsNotifiedUseCaseImpl(userConfigRepository)
+        private var markMLSE2EIEnableChangeAsNotified: MarkEnablingOfMLSE2EIAsNotifiedUseCase =
+            MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 
-        fun arrange() = this to markMLSE2EIdEnableChangeAsNotified
+        fun arrange() = this to markMLSE2EIEnableChangeAsNotified
     }
 }

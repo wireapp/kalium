@@ -25,18 +25,18 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeleti
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
@@ -48,10 +48,10 @@ interface UserConfigRepository {
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
     fun isMLSEnabled(): Either<StorageFailure, Boolean>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    fun getMLSE2EIdSetting(): Either<StorageFailure, MLSE2EIdSetting>
-    fun observeIsMLSE2EIdSetting(): Flow<MLSE2EIdSetting>
-    fun setMLSE2EIdSetting(setting: MLSE2EIdSetting): Either<StorageFailure, Unit>
-    fun snoozeMLSE2EIdNotification(timeMs: Long): Either<StorageFailure, Unit>
+    fun getMLSE2EISetting(): Either<StorageFailure, MLSE2EISetting>
+    fun observeIsMLSE2EISetting(): Flow<Either<StorageFailure, MLSE2EISetting>>
+    fun setMLSE2EISetting(setting: MLSE2EISetting): Either<StorageFailure, Unit>
+    fun snoozeMLSE2EINotification(duration: Duration): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
@@ -145,26 +145,27 @@ class UserConfigDataSource(
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
-    override fun getMLSE2EIdSetting(): Either<StorageFailure, MLSE2EIdSetting> =
-        wrapStorageRequest { MLSE2EIdSetting.fromEntity(userConfigStorage.getMLSE2EIdSetting()) }
+    override fun getMLSE2EISetting(): Either<StorageFailure, MLSE2EISetting> =
+        wrapStorageRequest { userConfigStorage.getMLSE2EISetting() }
+            .map { MLSE2EISetting.fromEntity(it) }
 
-    override fun observeIsMLSE2EIdSetting(): Flow<MLSE2EIdSetting> =
-        wrapStorageRequest { userConfigStorage.mlsE2EIdSettingFlow() }
-            .map { flow -> flow.map { MLSE2EIdSetting.fromEntity(it) } }
-            .getOrElse(flowOf())
+    override fun observeIsMLSE2EISetting(): Flow<Either<StorageFailure, MLSE2EISetting>> =
+        userConfigStorage.mlsE2EISettingFlow()
+            .wrapStorageRequest()
+            .mapRight { MLSE2EISetting.fromEntity(it) }
 
-    override fun setMLSE2EIdSetting(setting: MLSE2EIdSetting): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigStorage.setMLSE2EIdSetting(setting.toEntity()) }
+    override fun setMLSE2EISetting(setting: MLSE2EISetting): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.setMLSE2EISetting(setting.toEntity()) }
 
-    override fun snoozeMLSE2EIdNotification(timeMs: Long): Either<StorageFailure, Unit> =
+    override fun snoozeMLSE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            getMLSE2EIdSettingEntityOrNull()?.let { current ->
-                val notifyUserAfterMs = current.notifyUserAfterMs?.plus(timeMs)
-                userConfigStorage.setMLSE2EIdSetting(current.copy(notifyUserAfterMs = notifyUserAfterMs))
+            getMLSE2EISettingEntityOrNull()?.let { current ->
+                val notifyUserAfterMs = current.notifyUserAfterMs?.plus(duration.inWholeMilliseconds)
+                userConfigStorage.setMLSE2EISetting(current.copy(notifyUserAfterMs = notifyUserAfterMs))
             }
         }
 
-    private fun getMLSE2EIdSettingEntityOrNull() = wrapStorageRequest { userConfigStorage.getMLSE2EIdSetting() }.getOrNull()
+    private fun getMLSE2EISettingEntityOrNull() = wrapStorageRequest { userConfigStorage.getMLSE2EISetting() }.getOrNull()
 
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {

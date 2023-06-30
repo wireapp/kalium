@@ -17,22 +17,22 @@
  */
 package com.wire.kalium.logic.configuration
 
-import com.wire.kalium.persistence.config.MLSE2EIdSettingEntity
+import com.wire.kalium.persistence.config.MLSE2EISettingEntity
 import kotlinx.datetime.Instant
 
-data class MLSE2EIdSetting(
-    val status: Boolean,
+data class MLSE2EISetting(
+    val isRequired: Boolean,
     val discoverUrl: String,
     val notifyUserAfter: Instant?,
     val enablingDeadline: Instant?
 ) {
 
-    fun toEntity() = MLSE2EIdSettingEntity(
-        status, discoverUrl, notifyUserAfter?.toEpochMilliseconds(), enablingDeadline?.toEpochMilliseconds()
+    fun toEntity() = MLSE2EISettingEntity(
+        isRequired, discoverUrl, notifyUserAfter?.toEpochMilliseconds(), enablingDeadline?.toEpochMilliseconds()
     )
 
     companion object {
-        fun fromEntity(entity: MLSE2EIdSettingEntity) = MLSE2EIdSetting(
+        fun fromEntity(entity: MLSE2EISettingEntity) = MLSE2EISetting(
             entity.status,
             entity.discoverUrl,
             entity.notifyUserAfterMs?.let { Instant.fromEpochMilliseconds(it) },

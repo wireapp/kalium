@@ -21,14 +21,14 @@ package com.wire.kalium.logic.feature.featureConfig
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.MLSE2EIdSetting
+import com.wire.kalium.logic.configuration.MLSE2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.data.featureConfig.MLSE2EIdModel
+import com.wire.kalium.logic.data.featureConfig.MLSE2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -73,7 +73,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             handleConferenceCalling(it.conferenceCallingModel)
             handlePasswordChallengeStatus(it.secondFactorPasswordChallengeModel)
             handleSelfDeletingMessagesStatus(it.selfDeletingMessagesModel)
-            handleMLSE2EIdSetting(it.mlsE2EIdModel)
+            handleMLSE2EISetting(it.mlsE2EIModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -166,11 +166,11 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }
     }
 
-    private fun handleMLSE2EIdSetting(featureConfig: MLSE2EIdModel) {
+    private fun handleMLSE2EISetting(featureConfig: MLSE2EIModel) {
         val enablingDeadlineMs = featureConfig.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
-        userConfigRepository.setMLSE2EIdSetting(
-            MLSE2EIdSetting(
-                status = featureConfig.status == Status.ENABLED,
+        userConfigRepository.setMLSE2EISetting(
+            MLSE2EISetting(
+                isRequired = featureConfig.status == Status.ENABLED,
                 discoverUrl = featureConfig.config.discoverUrl,
                 notifyUserAfter = DateTimeUtil.currentInstant(),
                 enablingDeadline = Instant.fromEpochMilliseconds(enablingDeadlineMs)

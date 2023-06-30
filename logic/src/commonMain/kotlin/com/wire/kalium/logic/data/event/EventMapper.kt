@@ -341,10 +341,10 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConversationGuestLinks)
         )
 
-        is FeatureConfigData.MLSE2EId -> Event.FeatureConfig.MLSE2EIdUpdated(
+        is FeatureConfigData.MLSE2EI -> Event.FeatureConfig.MLSE2EIUpdated(
             id,
             transient,
-            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLSE2EId)
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLSE2EI)
         )
 
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient)

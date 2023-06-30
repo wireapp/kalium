@@ -33,9 +33,7 @@ internal open class FeatureConfigApiV0 internal constructor(
 
     override suspend fun featureConfigs(): NetworkResponse<FeatureConfigResponse> =
         wrapKaliumResponse {
-            val get = httpClient.get(FEATURE_CONFIG)
-            println("cyka ${get.body<String>()} ")
-            get
+            httpClient.get(FEATURE_CONFIG)
         }
 
     companion object {

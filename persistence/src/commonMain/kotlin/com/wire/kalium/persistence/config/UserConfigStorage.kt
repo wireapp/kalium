@@ -87,19 +87,19 @@ interface UserConfigStorage {
     fun isMLSEnabled(): Boolean
 
     /**
-     * save MLSE2EIdSetting
+     * save MLSE2EISetting
      */
-    fun setMLSE2EIdSetting(settingEntity: MLSE2EIdSettingEntity)
+    fun setMLSE2EISetting(settingEntity: MLSE2EISettingEntity)
 
     /**
-     * get MLSE2EIdSetting
+     * get MLSE2EISetting
      */
-    fun getMLSE2EIdSetting(): MLSE2EIdSettingEntity
+    fun getMLSE2EISetting(): MLSE2EISettingEntity?
 
     /**
-     * get Flow of the saved MLSE2EIdSetting
+     * get Flow of the saved MLSE2EISetting
      */
-    fun mlsE2EIdSettingFlow(): Flow<MLSE2EIdSettingEntity>
+    fun mlsE2EISettingFlow(): Flow<MLSE2EISettingEntity?>
 
     /**
      * save flag from user settings to enable or disable Conference Calling
@@ -151,7 +151,7 @@ data class TeamSettingsSelfDeletionStatusEntity(
 )
 
 @Serializable
-data class MLSE2EIdSettingEntity(
+data class MLSE2EISettingEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("discoverUrl") val discoverUrl: String,
     @SerialName("notifyUserAfter") val notifyUserAfterMs: Long?,
@@ -191,7 +191,7 @@ class UserConfigStorageImpl(
     private val isGuestRoomLinkEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    private val mlsE2EIdFlow =
+    private val mlsE2EIFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -265,23 +265,23 @@ class UserConfigStorageImpl(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
-    override fun setMLSE2EIdSetting(settingEntity: MLSE2EIdSettingEntity) {
+    override fun setMLSE2EISetting(settingEntity: MLSE2EISettingEntity) {
         kaliumPreferences.putSerializable(
             MLS_E2E_ID,
             settingEntity,
-            MLSE2EIdSettingEntity.serializer()
+            MLSE2EISettingEntity.serializer()
         ).also {
-            mlsE2EIdFlow.tryEmit(Unit)
+            mlsE2EIFlow.tryEmit(Unit)
         }
     }
 
-    override fun getMLSE2EIdSetting(): MLSE2EIdSettingEntity {
-        return kaliumPreferences.getSerializable(MLS_E2E_ID, MLSE2EIdSettingEntity.serializer())!!
+    override fun getMLSE2EISetting(): MLSE2EISettingEntity? {
+        return kaliumPreferences.getSerializable(MLS_E2E_ID, MLSE2EISettingEntity.serializer())
     }
 
-    override fun mlsE2EIdSettingFlow(): Flow<MLSE2EIdSettingEntity> = mlsE2EIdFlow
-        .map { getMLSE2EIdSetting() }
-        .onStart { emit(getMLSE2EIdSetting()) }
+    override fun mlsE2EISettingFlow(): Flow<MLSE2EISettingEntity?> = mlsE2EIFlow
+        .map { getMLSE2EISetting() }
+        .onStart { emit(getMLSE2EISetting()) }
         .distinctUntilChanged()
 
     override fun persistConferenceCalling(enabled: Boolean) {

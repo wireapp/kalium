@@ -41,7 +41,7 @@ object FeatureConfigTest {
         ssoModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         validateSAMLEmailsModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED),
-        mlsE2EIdModel: MLSE2EIdModel = MLSE2EIdModel(MLSE2EIdConfigModel("url", 10000L), Status.ENABLED)
+        mlsE2EIModel: MLSE2EIModel = MLSE2EIModel(MLSE2EIConfigModel("url", 10000L), Status.ENABLED)
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -57,6 +57,6 @@ object FeatureConfigTest {
         ssoModel,
         validateSAMLEmailsModel,
         mlsModel,
-        mlsE2EIdModel
+        mlsE2EIModel
     )
 }

@@ -18,27 +18,26 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
+import kotlin.time.Duration.Companion.days
 
 /**
- * Mark the MLS enabling status change as notified
+ * Mark the MLS End-to-End Identity enabling status change as notified
  * need to be called after notifying the user about the change
  * e.g. after showing a dialog, or a toast etc.
  */
-interface MarkMLSE2EIdEnableChangeAsNotifiedUseCase {
+interface MarkEnablingOfMLSE2EIAsNotifiedUseCase {
     suspend operator fun invoke()
 }
 
-internal class MarkMLSE2EIdEnableChangeAsNotifiedUseCaseImpl(
+internal class MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
-) : MarkMLSE2EIdEnableChangeAsNotifiedUseCase {
+) : MarkEnablingOfMLSE2EIAsNotifiedUseCase {
 
     override suspend fun invoke() {
-        userConfigRepository.snoozeMLSE2EIdNotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
+        userConfigRepository.snoozeMLSE2EINotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
     }
 
     companion object {
-        val SNOOZE_MLS_ENABLE_CHANGE_MS = 1.toDuration(DurationUnit.DAYS).inWholeMilliseconds
+        val SNOOZE_MLS_ENABLE_CHANGE_MS = 1.days
     }
 }

@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.configuration.MLSE2EIdSetting
+import com.wire.kalium.logic.configuration.MLSE2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -29,38 +30,40 @@ import kotlinx.coroutines.flow.map
 import kotlin.time.Duration
 
 /**
- * Observe [MLSE2EIdSetting] to notify user when setting is changed to Enabled
+ * Observe [MLSE2EISetting] to notify user when setting is changed to Enabled
  */
-interface ObserveMLSE2EIdRequiredUseCase {
+interface ObserveMLSE2EIRequiredUseCase {
     /**
-     * @return [Flow] of [MLSE2EIdRequiredResult]
+     * @return [Flow] of [MLSE2EIRequiredResult]
      */
-    operator fun invoke(): Flow<MLSE2EIdRequiredResult>
+    operator fun invoke(): Flow<MLSE2EIRequiredResult>
 }
 
-internal class ObserveMLSE2EIdRequiredUseCaseImpl(
+internal class ObserveMLSE2EIRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : ObserveMLSE2EIdRequiredUseCase {
+) : ObserveMLSE2EIRequiredUseCase {
 
-    override fun invoke(): Flow<MLSE2EIdRequiredResult> = userConfigRepository
-        .observeIsMLSE2EIdSetting()
+    override fun invoke(): Flow<MLSE2EIRequiredResult> = userConfigRepository
+        .observeIsMLSE2EISetting()
         // TODO implement re-checking for the case when notifyUserAfter is in a future (some delayed flow)
+        .map { it.getOrNull() }
         .filter { mlsSetting ->
-            mlsSetting.status
+            mlsSetting != null
+                    && mlsSetting.isRequired
                     && mlsSetting.enablingDeadline != null
                     && (mlsSetting.notifyUserAfter?.let { it <= DateTimeUtil.currentInstant() } ?: false)
         }
         .map { setting ->
-            if (setting.enablingDeadline!! <= DateTimeUtil.currentInstant())
-                MLSE2EIdRequiredResult.NoGracePeriod
-            else MLSE2EIdRequiredResult.WithGracePeriod(setting.enablingDeadline.minus(DateTimeUtil.currentInstant()))
+            if (setting!!.enablingDeadline!! <= DateTimeUtil.currentInstant())
+                MLSE2EIRequiredResult.NoGracePeriod
+            else MLSE2EIRequiredResult.WithGracePeriod(setting.enablingDeadline!!.minus(DateTimeUtil.currentInstant()))
         }
         .flowOn(dispatcher.io)
 
 }
 
-sealed class MLSE2EIdRequiredResult {
-    data class WithGracePeriod(val timeLeft: Duration) : MLSE2EIdRequiredResult()
-    object NoGracePeriod : MLSE2EIdRequiredResult()
+sealed class MLSE2EIRequiredResult {
+    data class WithGracePeriod(val timeLeft: Duration) : MLSE2EIRequiredResult()
+    object NoGracePeriod : MLSE2EIRequiredResult()
 }

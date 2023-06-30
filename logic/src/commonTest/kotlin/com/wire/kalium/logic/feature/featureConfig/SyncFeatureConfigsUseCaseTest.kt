@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
-import com.wire.kalium.logic.data.featureConfig.MLSE2EIdConfigModel
-import com.wire.kalium.logic.data.featureConfig.MLSE2EIdModel
+import com.wire.kalium.logic.data.featureConfig.MLSE2EIConfigModel
+import com.wire.kalium.logic.data.featureConfig.MLSE2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
@@ -574,24 +574,24 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenMlsE2EIdIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
-        val mlsE2EIdModel = MLSE2EIdModel(MLSE2EIdConfigModel("url", 10_000_000_000L), Status.DISABLED)
+    fun givenMlsE2EIIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
+        val mlsE2EIModel = MLSE2EIModel(MLSE2EIConfigModel("url", 10_000_000_000L), Status.DISABLED)
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsE2EIdModel = mlsE2EIdModel)
+                FeatureConfigTest.newModel(mlsE2EIModel = mlsE2EIModel)
             ).arrange()
 
         syncFeatureConfigsUseCase()
 
-        arrangement.userConfigRepository.getMLSE2EIdSetting().shouldSucceed {
-            assertFalse(it.status)
+        arrangement.userConfigRepository.getMLSE2EISetting().shouldSucceed {
+            assertFalse(it.isRequired)
             assertEquals("url", it.discoverUrl)
             assertEquals(Instant.fromEpochMilliseconds(10_000L), it.enablingDeadline)
         }
     }
 
     @Test
-    fun givenMlsE2EIdIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
+    fun givenMlsE2EIIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel()
@@ -599,8 +599,8 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        arrangement.userConfigRepository.getMLSE2EIdSetting().shouldSucceed {
-            assertTrue(it.status)
+        arrangement.userConfigRepository.getMLSE2EISetting().shouldSucceed {
+            assertTrue(it.isRequired)
         }
     }
 
