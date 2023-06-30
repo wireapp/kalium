@@ -19,14 +19,13 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logger.obfuscateId
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -49,38 +48,32 @@ internal class MLSWelcomeEventHandlerImpl(
         mlsClientProvider
             .getMLSClient()
             .flatMap { client ->
-                wrapMLSRequest { client.processWelcomeMessage(event.message.decodeBase64Bytes()) }
-                    .flatMap { groupID ->
-                        val groupIdLogPair = Pair("groupId", groupID.obfuscateId())
+                wrapMLSRequest {
+                    client.processWelcomeMessage(event.message.decodeBase64Bytes())
+                }
+            }.flatMap { groupID ->
+                val groupIdLogPair = Pair("groupId", groupID.obfuscateId())
 
-                        wrapStorageRequest {
-                            conversationRepository.fetchConversationIfUnknown(event.conversationId)
-                                .flatMap {
-                                    conversationRepository.getConversationById(event.conversationId)?.let {
-                                        wrapStorageRequest {
-                                            conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
-                                        }
-                                    } ?: run {
-                                        Either.Left(StorageFailure.DataNotFound)
-                                    }
-                                }
-                        }.onSuccess {
-                            kaliumLogger
-                                .logEventProcessing(
-                                    EventLoggingStatus.SUCCESS,
-                                    event,
-                                    Pair("info", "Established mls conversation from welcome message"),
-                                    groupIdLogPair
-                                )
-                        }.onFailure {
-                            kaliumLogger
-                                .logEventProcessing(
-                                    EventLoggingStatus.FAILURE,
-                                    event,
-                                    groupIdLogPair
-                                )
-                        }
+                wrapStorageRequest {
+                    conversationRepository.fetchConversationIfUnknown(event.conversationId).map {
+                        conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
                     }
+                }.onSuccess {
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.SUCCESS,
+                            event,
+                            Pair("info", "Established mls conversation from welcome message"),
+                            groupIdLogPair
+                        )
+                }.onFailure {
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.FAILURE,
+                            event,
+                            groupIdLogPair
+                        )
+                }
             }
     }
 }
