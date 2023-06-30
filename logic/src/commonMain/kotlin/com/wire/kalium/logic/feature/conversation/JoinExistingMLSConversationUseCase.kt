@@ -109,14 +109,23 @@ class JoinExistingMLSConversationUseCaseImpl(
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
         return if (conversation.protocol is Conversation.ProtocolInfo.MLSCapable) {
             if (conversation.protocol.epoch == 0UL) {
-                if (conversation.type == Conversation.Type.SELF) {
-                    kaliumLogger.i("Establish group for ${conversation.type}")
-                    mlsConversationRepository.establishMLSGroup(
-                        conversation.protocol.groupId,
-                        emptyList()
-                    )
-                } else {
-                    Either.Right(Unit)
+                kaliumLogger.i("Establish group for ${conversation.type}")
+                when (conversation.type) {
+                    Conversation.Type.SELF -> {
+                        mlsConversationRepository.establishMLSGroup(
+                            conversation.protocol.groupId,
+                            emptyList()
+                        )
+                    }
+                    Conversation.Type.ONE_ON_ONE -> {
+                        conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                            mlsConversationRepository.establishMLSGroup(
+                                conversation.protocol.groupId,
+                                listOf(members.first())
+                            )
+                        }
+                    }
+                    else -> Either.Right(Unit)
                 }
             } else {
                 wrapApiRequest {

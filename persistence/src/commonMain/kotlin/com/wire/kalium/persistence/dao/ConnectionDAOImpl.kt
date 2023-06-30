@@ -155,6 +155,10 @@ class ConnectionDAOImpl(
         connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
     }
 
+    override suspend fun updateConnectionConversation(conversationId: QualifiedIDEntity, userId: QualifiedIDEntity) {
+        connectionsQueries.updateConnectionConversation(conversationId, userId)
+    }
+
     override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(queriesContext) {
         connectionsQueries.transaction {
             connectionsQueries.deleteConnection(conversationId)

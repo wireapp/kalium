@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.UpdateConnectionsProtocolUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -49,7 +50,7 @@ internal interface SlowSyncWorker {
     suspend fun performSlowSyncSteps(): Flow<SlowSyncStep>
 }
 
-// TODO(test): Make testable by converting internal usecases into interfaces
+// TODO(test): Make testable by converting internal use cases into interfaces
 @Suppress("LongParameterList")
 internal class SlowSyncWorkerImpl(
     private val syncSelfUser: SyncSelfUserUseCase,
@@ -59,7 +60,8 @@ internal class SlowSyncWorkerImpl(
     private val syncConnections: SyncConnectionsUseCase,
     private val syncSelfTeam: SyncSelfTeamUseCase,
     private val syncContacts: SyncContactsUseCase,
-    private val joinMLSConversations: JoinExistingMLSConversationsUseCase
+    private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
+    private val updateConnectionsProtocol: UpdateConnectionsProtocolUseCase
 ) : SlowSyncWorker {
 
     private val logger = kaliumLogger.withFeatureId(SYNC)
@@ -81,6 +83,7 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
+            .continueWithStep(SlowSyncStep.UPDATE_SELECTED_PROTOCOLS, updateConnectionsProtocol::invoke)
             .onFailure {
                 throw KaliumSyncException("Failure during SlowSync", it)
             }

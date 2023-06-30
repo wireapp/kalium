@@ -126,6 +126,8 @@ interface ConversationRepository {
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
+
+    suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, Conversation>
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
@@ -446,6 +448,15 @@ internal class ConversationDataSource internal constructor(
             Either.Right(Unit)
         }
     }
+
+    override suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, Conversation> =
+        wrapApiRequest {
+            conversationApi.fetchMlsOneToOneConversation(userId.toApi())
+        }.flatMap {
+            // TODO fill in the member if it's missing from the member list
+            val selfUserTeamId = selfTeamIdProvider().getOrNull()
+            persistConversations(listOf(it), selfUserTeamId?.value)
+        }
 
     // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
     @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))

@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionState.ACCEPTED
@@ -38,12 +39,15 @@ import com.wire.kalium.logic.data.user.ConnectionState.MISSING_LEGALHOLD_CONSENT
 import com.wire.kalium.logic.data.user.ConnectionState.NOT_CONNECTED
 import com.wire.kalium.logic.data.user.ConnectionState.PENDING
 import com.wire.kalium.logic.data.user.ConnectionState.SENT
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.conversation.EstablishMLSOneToOneUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -63,13 +67,16 @@ import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.toInstant
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(userId: UserId): Either<CoreFailure, Unit>
+    suspend fun updateProtocolForConnection(connection: Connection): Either<CoreFailure, Unit>
     suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection>
     suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
@@ -87,9 +94,12 @@ internal class ConnectionDataSource(
     private val connectionApi: ConnectionApi,
     private val userDetailsApi: UserDetailsApi,
     private val userDAO: UserDAO,
+    private val messageDAO: MessageDAO,
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
+    private val establishMlsOneToOne: EstablishMLSOneToOneUseCase,
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
     private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
@@ -116,6 +126,54 @@ internal class ConnectionDataSource(
 
         return latestResult
     }
+
+    override suspend fun updateProtocolForConnection(connection: Connection): Either<CoreFailure, Unit> =
+        commonProtocolsWithUser(connection.qualifiedToId)?.let { commonProtocols ->
+            when {
+                commonProtocols.contains(SupportedProtocol.MLS) -> {
+                    establishMlsOneToOne(connection.qualifiedToId).flatMap { conversationId ->
+                        if (connection.qualifiedConversationId == conversationId) {
+                            Either.Right(Unit)
+                        } else {
+                            wrapStorageRequest {
+                                messageDAO.moveMessages(
+                                    from = connection.qualifiedConversationId.toDao(),
+                                    to = conversationId.toDao()
+                                )
+                            }.flatMap {
+                                wrapStorageRequest {
+                                    connectionDAO.updateConnectionConversation(
+                                        conversationId =  conversationId.toDao(),
+                                        userId = connection.qualifiedToId.toDao()
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                commonProtocols.contains(SupportedProtocol.PROTEUS) -> {
+                    // We don't support migrating from MLS to Proteus but we do allow
+                    // going from readonly to proteus.
+                    // TODO clear readonly flag for any existing 1-1 conversation
+                    // conversationRepository.updateConversationReadonlyStatus(connection.qualifiedConversationId, false)
+                    Either.Right(Unit)
+                }
+
+                else -> {
+                    // TODO mark any existing 1-1 conversation as readonly
+                    // conversationRepository.updateConversationReadonlyStatus(connection.qualifiedConversationId, true)
+                    Either.Right(Unit)
+                }
+            }
+        } ?: Either.Right(Unit)
+
+    private suspend fun commonProtocolsWithUser(userId: UserId): Set<SupportedProtocol>? =
+        userRepository.getKnownUser(userId).first()?.supportedProtocols?.let { otherProtocols ->
+            userRepository.getSelfUser()?.supportedProtocols?.let { selfProtocols ->
+                otherProtocols.intersect(selfProtocols)
+            }
+        }
 
     private suspend fun syncConnectionsStatuses(connections: List<ConnectionDTO>) {
         connections.forEach { connectionDTO ->

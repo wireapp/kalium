@@ -147,6 +147,8 @@ interface ConversationApi {
         protocol: ConvProtocol
     ): NetworkResponse<UpdateConversationProtocolResponse>
 
+    suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse>
+
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(
             APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
