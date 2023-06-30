@@ -37,6 +37,7 @@ class AutoVersionAuthScopeUseCase(
     private val serverLinks: ServerConfig.Links,
     private val coreLogic: CoreLogicCommon,
 ) {
+
     suspend operator fun invoke(
         proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None
     ): Result =
