@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -27,6 +28,7 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.util.shouldFail
@@ -36,6 +38,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserReques
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -228,6 +231,33 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun whenFetchingKnownUsers_thenShouldFetchFromDatabaseAndApiAndSucceed() = runTest {
+        // Given
+        val knownUserEntities = listOf(
+            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
+            TestUser.ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
+        )
+        val knownUserIds = knownUserEntities.map { UserId(it.id.value, it.id.domain) }.toSet()
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetAllUsers(knownUserEntities)
+            .withSuccessfulGetMultipleUsers()
+            .arrange()
+
+        // When
+        userRepository.fetchKnownUsers().shouldSucceed()
+
+        // Then
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::getAllUsers)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(ListUserRequest.qualifiedIds(knownUserIds.map { userId -> userId.toApi() })))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenSelfUserIsUnknown_whenObservingSelfUser_thenShouldAttemptToFetchIt() = runTest {
         val selfUserIdChannel = Channel<String?>(Channel.UNLIMITED)
         selfUserIdChannel.send(null)
@@ -335,6 +365,25 @@ class UserRepositoryTest {
                 .wasNotInvoked()
         }
     }
+
+    @Test
+    fun whenRemovingUserBrokenAsset_thenShouldCallDaoAndSucceed() = runTest {
+        // Given
+        val qualifiedIdToRemove = QualifiedID(value = "id", domain = "domain")
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulRemoveUserAsset()
+            .arrange()
+
+        // When
+        userRepository.removeUserBrokenAsset(qualifiedIdToRemove).shouldSucceed()
+
+        // Then
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::removeUserAsset)
+            .with(any())
+            .wasInvoked()
+    }
+
 
     private class Arrangement {
         @Mock
@@ -469,6 +518,27 @@ class UserRepositoryTest {
                 .suspendFunction(selfApi::updateEmailAddress)
                 .whenInvokedWith(any())
                 .thenReturn(result)
+        }
+
+        fun withSuccessfulRemoveUserAsset() = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::removeUserAsset)
+                .whenInvokedWith(any())
+                .then { Either.Right(Unit) }
+        }
+
+        fun withSuccessfulGetAllUsers(userEntities: List<UserEntity>) = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::getAllUsers)
+                .whenInvoked()
+                .then { flowOf(userEntities) }
+        }
+
+        fun withSuccessfulGetMultipleUsers() = apply {
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .then { NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) }
         }
 
         fun arrange() = this to userRepository

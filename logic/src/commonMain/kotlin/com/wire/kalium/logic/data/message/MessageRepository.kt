@@ -145,7 +145,7 @@ interface MessageRepository {
         messageOption: BroadcastMessageOption
     ): Either<CoreFailure, String>
 
-    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
+    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, MessageSent>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
@@ -438,11 +438,11 @@ class MessageDataSource(
         })
     }
 
-    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String> =
+    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message)
         }.flatMap { response ->
-            Either.Right(response.time)
+            Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
         }
 
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> = wrapStorageRequest {

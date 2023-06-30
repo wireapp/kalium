@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.EphemeralMessageRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -82,6 +83,7 @@ class MessageScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val userPropertyRepository: UserPropertyRepository,
+    private val ephemeralMessageRepository: EphemeralMessageRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val protoContentMapper: ProtoContentMapper,
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
@@ -205,6 +207,7 @@ class MessageScope internal constructor(
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
             messageRepository,
+            userRepository,
             updateAssetMessageDownloadStatus,
             scope,
             dispatcher
@@ -301,6 +304,7 @@ class MessageScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageSender = messageSender,
             selfUserId = selfUserId,
-            selfConversationIdProvider = selfConversationIdProvider
+            selfConversationIdProvider = selfConversationIdProvider,
+            ephemeralMessageRepository = ephemeralMessageRepository
         )
 }
