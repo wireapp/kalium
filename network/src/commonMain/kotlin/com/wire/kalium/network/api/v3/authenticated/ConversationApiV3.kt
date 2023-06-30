@@ -22,23 +22,17 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.QualifiedID
-import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.delete
-import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -73,13 +67,6 @@ internal open class ConversationApiV3 internal constructor(
         apiModelMapper.fromApiV3(it)
     }
 
-    override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
-            httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_GROUP_INFO"
-            )
-        }
-
     override suspend fun updateAccess(
         conversationId: ConversationId,
         updateConversationAccessRequest: UpdateConversationAccessRequest
@@ -100,52 +87,5 @@ internal open class ConversationApiV3 internal constructor(
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
-    }
-
-    override suspend fun fetchSubconversationDetails(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): NetworkResponse<SubconversationResponse> =
-        wrapKaliumResponse {
-            httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId"
-            )
-        }
-
-    override suspend fun fetchSubconversationGroupInfo(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
-            httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId/groupinfo"
-            )
-        }
-
-    override suspend fun deleteSubconversation(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId,
-        deleteRequest: SubconversationDeleteRequest
-    ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId"
-            ) {
-                setBody(deleteRequest)
-            }
-        }
-
-    override suspend fun leaveSubconversation(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-        httpClient.delete(
-            "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/subconversations/$subconversationId/self"
-        )
-    }
-
-    companion object {
-        const val PATH_GROUP_INFO = "groupinfo"
     }
 }
