@@ -42,8 +42,10 @@ import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequest
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
+import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -51,6 +53,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -415,6 +418,15 @@ internal class ConversationApiV0Test : ApiTest() {
 
         // then
         assertIs<NetworkResponse.Success<Unit>>(response)
+    }
+
+    @Test
+    fun givenRequest_whenFetchingMlsOneToOneConversation_thenRequestShouldFail() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(responseBody = "", statusCode = HttpStatusCode.OK)
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.fetchMlsOneToOneConversation(UserId("domain", "id"))
+
+        assertFalse(response.isSuccessful())
     }
 
     private companion object {
