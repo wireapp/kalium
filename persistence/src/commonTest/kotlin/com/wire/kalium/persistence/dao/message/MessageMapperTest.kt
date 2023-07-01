@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertIs

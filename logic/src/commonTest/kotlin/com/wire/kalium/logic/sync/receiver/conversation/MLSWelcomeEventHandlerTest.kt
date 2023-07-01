@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any

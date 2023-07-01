@@ -47,8 +47,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.coroutines.flow.Flow
 

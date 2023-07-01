@@ -279,12 +279,12 @@ import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHa
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandlerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
@@ -482,6 +482,7 @@ class UserSessionScope internal constructor(
             mlsClientProvider,
             selfTeamId,
             userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
             authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
@@ -504,7 +505,7 @@ class UserSessionScope internal constructor(
 
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
-            userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
             lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
 
@@ -549,6 +550,7 @@ class UserSessionScope internal constructor(
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
             userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
             userStorage.database.connectionDAO,
             authenticatedNetworkContainer.connectionApi,
             authenticatedNetworkContainer.userDetailsApi,
@@ -561,6 +563,7 @@ class UserSessionScope internal constructor(
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedNetworkContainer.userSearchApi,
         userStorage.database.conversationDAO,
+        userStorage.database.memberDAO,
         userStorage.database.userDAO,
         userStorage.database.metadataDAO
     )
@@ -996,7 +999,7 @@ class UserSessionScope internal constructor(
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
-            userStorage.database.conversationDAO, userRepository, persistMessage
+            userStorage.database.memberDAO, userRepository, persistMessage
         )
     private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
