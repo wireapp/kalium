@@ -763,7 +763,7 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
 
-            verify(arrangement.conversationDAO)
+            verify(arrangement.memberDAO)
                 .suspendFunction(arrangement.memberDAO::observeIsUserMember)
                 .with(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
                 .wasInvoked(exactly = once)
