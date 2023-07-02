@@ -1,4 +1,4 @@
-import com.wire.kalium.persistence.dao.Member.Role;
+import com.wire.kalium.persistence.dao.member.MemberEntity.Role;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
 CREATE TABLE Member (
@@ -17,6 +17,7 @@ VALUES (?, ?, ?);
 deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;
 
+-- TODO: replace LIKE with absolute value
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation LIKE ('%' || :searchQuery || '%');
 

@@ -7,9 +7,6 @@ CREATE TABLE Asset (
     PRIMARY KEY (key)
 );
 
-deleteAllAssets:
-DELETE FROM Asset;
-
 deleteAsset:
 DELETE FROM Asset WHERE key = ?;
 

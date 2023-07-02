@@ -35,32 +35,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
 
-internal interface ClearConversationContent {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
-}
-
-internal class ClearConversationContentImpl(
-    private val conversationRepository: ConversationRepository,
-    private val assetRepository: AssetRepository
-) : ClearConversationContent {
-
-    override suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
-        return conversationRepository.getAssetMessages(conversationId).flatMap { conversationAssetMessages ->
-            conversationAssetMessages.forEach { message ->
-                val messageContent: MessageContent = message.content
-
-                if (messageContent is MessageContent.Asset) {
-                    with(messageContent.value.remoteData) {
-                        assetRepository.deleteAssetLocally(assetId)
-                    }
-                }
-            }
-
-            conversationRepository.deleteAllMessages(conversationId)
-        }
-    }
-}
-
 /**
  * This use case will clear all messages from a conversation and notify other clients, using the self conversation.
  */
@@ -78,7 +52,7 @@ interface ClearConversationContentUseCase {
 }
 
 internal class ClearConversationContentUseCaseImpl(
-    private val clearConversationContent: ClearConversationContent,
+    private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -86,7 +60,7 @@ internal class ClearConversationContentUseCaseImpl(
 ) : ClearConversationContentUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): ClearConversationContentUseCase.Result =
-        clearConversationContent(conversationId).flatMap {
+        conversationRepository.clearContent(conversationId).flatMap {
             currentClientIdProvider().flatMap { currentClientId ->
                 selfConversationIdProvider().flatMap { selfConversationIds ->
                     selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
