@@ -313,3 +313,8 @@ selectConversationIdsWithoutMetadata:
 SELECT qualified_id
 FROM Conversation
 WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
+
+clearContent {
+DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
+DELETE FROM Message WHERE conversation_id = :conversationId;
+}

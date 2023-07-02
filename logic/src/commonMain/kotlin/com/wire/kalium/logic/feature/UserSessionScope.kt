@@ -141,7 +141,6 @@ import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
@@ -949,26 +948,29 @@ class UserSessionScope internal constructor(
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler
-        get() = ApplicationMessageHandlerImpl(
-            userRepository,
-            assetRepository,
-            messageRepository,
-            assetMessageHandler,
-            callManager,
-            persistMessage,
-            persistReaction,
-            MessageTextEditHandlerImpl(messageRepository),
-            LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
-            ClearConversationContentHandlerImpl(
-                ClearConversationContentImpl(conversationRepository, assetRepository),
-                userId,
-                isMessageSentInSelfConversation,
-            ),
-            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            messageEncoder,
-            receiptMessageHandler,
-            userId
-        )
+        get()  {
+            val convRepo = conversationRepository
+            return ApplicationMessageHandlerImpl(
+                userRepository,
+                assetRepository,
+                messageRepository,
+                assetMessageHandler,
+                callManager,
+                persistMessage,
+                persistReaction,
+                MessageTextEditHandlerImpl(messageRepository),
+                LastReadContentHandlerImpl(convRepo, userId, isMessageSentInSelfConversation),
+                ClearConversationContentHandlerImpl(
+                    convRepo,
+                    userId,
+                    isMessageSentInSelfConversation,
+                ),
+                DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
+                messageEncoder,
+                receiptMessageHandler,
+                userId
+            )
+        }
 
     private val mlsWrongEpochHandler: MLSWrongEpochHandler
         get() = MLSWrongEpochHandlerImpl(
