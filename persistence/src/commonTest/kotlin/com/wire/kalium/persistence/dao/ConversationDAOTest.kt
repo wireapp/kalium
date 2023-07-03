@@ -459,7 +459,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // given
             // established updated group
             val updatedConversation = conversationEntity2
-            val updatedDate = Instant.parse("2023-03-30T15:36:00.000Z")
+            val updatedDate = Instant.parse("2099-03-30T15:36:00.000Z")
             val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
             teamDAO.insertTeam(team)
             conversationDAO.insertConversation(updatedConversation)
