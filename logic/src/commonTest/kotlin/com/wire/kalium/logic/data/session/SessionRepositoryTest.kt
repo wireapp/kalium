@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
@@ -86,9 +87,13 @@ class SessionRepositoryTest {
         val authTokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
 
         @Mock
+        val kaliumConfigs: KaliumConfigs = mock(KaliumConfigs::class)
+
+        @Mock
         val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
 
-        private val sessionRepository = SessionDataSource(accountsDAO, authTokenStorage, serverConfigRepository, sessionMapper, idMapper)
+        private val sessionRepository =
+            SessionDataSource(accountsDAO, authTokenStorage, serverConfigRepository, kaliumConfigs, sessionMapper, idMapper)
 
         val validAccountIndoEntity = AccountInfoEntity(userIDEntity = UserIDEntity("1", "domain"), null)
 
