@@ -102,7 +102,7 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
 
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -145,7 +145,7 @@ interface MessageRepository {
         messageOption: BroadcastMessageOption
     ): Either<CoreFailure, String>
 
-    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String>
+    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, MessageSent>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
@@ -296,10 +296,10 @@ class MessageDataSource(
             messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = conversationId.toDao())
         }
 
-    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
+    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
-        }.map { messageMapper.fromEntityToMessage(it) }
+        }.map(messageMapper::fromEntityToMessage)
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -438,11 +438,11 @@ class MessageDataSource(
         })
     }
 
-    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, String> =
+    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message)
         }.flatMap { response ->
-            Either.Right(response.time)
+            Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
         }
 
     override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> = wrapStorageRequest {

@@ -19,6 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.message
 
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -27,5 +28,7 @@ data class SendMLSMessageResponse(
     @SerialName("time")
     val time: String,
     @SerialName("events")
-    val events: List<EventContentDTO>
+    val events: List<EventContentDTO>,
+    @SerialName("failed_to_send")
+    val failedToSend: List<QualifiedID> = emptyList()
 )

@@ -19,12 +19,14 @@
 package com.wire.kalium.network.api.v4.unauthenticated.networkContainer
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.v4.unauthenticated.DomainLookupApiV4
 import com.wire.kalium.network.api.v4.unauthenticated.LoginApiV4
 import com.wire.kalium.network.api.v4.unauthenticated.RegisterApiV4
 import com.wire.kalium.network.api.v4.unauthenticated.SSOLoginApiV4
@@ -36,7 +38,7 @@ import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
-class UnauthenticatedNetworkContainerV4 constructor(
+class UnauthenticatedNetworkContainerV4 internal constructor(
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
     engine: HttpClientEngine = defaultHttpEngine(backendLinks.links.apiProxy, proxyCredentials),
@@ -48,6 +50,7 @@ class UnauthenticatedNetworkContainerV4 constructor(
     ) {
     override val loginApi: LoginApi get() = LoginApiV4(unauthenticatedNetworkClient)
     override val verificationCodeApi: VerificationCodeApi get() = VerificationCodeApiV4(unauthenticatedNetworkClient)
+    override val domainLookupApi: DomainLookupApi get() = DomainLookupApiV4(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiV4(unauthenticatedNetworkClient)
     override val sso: SSOLoginApi get() = SSOLoginApiV4(unauthenticatedNetworkClient)
     override val appVersioningApi: AppVersioningApi get() = AppVersioningApiImpl(unauthenticatedNetworkClient)

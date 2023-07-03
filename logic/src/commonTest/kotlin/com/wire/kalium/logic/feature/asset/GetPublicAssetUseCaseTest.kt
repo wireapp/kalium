@@ -19,10 +19,16 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
+import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -42,11 +48,14 @@ class GetPublicAssetUseCaseTest {
     @Mock
     private val assetRepository = mock(classOf<AssetRepository>())
 
+    @Mock
+    private val userRepository = mock(classOf<UserRepository>())
+
     private lateinit var getPublicAsset: GetAvatarAssetUseCase
 
     @BeforeTest
     fun setUp() {
-        getPublicAsset = GetAvatarAssetUseCaseImpl(assetRepository)
+        getPublicAsset = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     }
 
     @Test
@@ -71,7 +80,7 @@ class GetPublicAssetUseCaseTest {
     }
 
     @Test
-    fun givenACallToGetAPublicAsset_whenEverythingThereIsAnError_thenShouldReturnsAFailureResult() = runTest {
+    fun givenACallToGetAPublicAsset_whenEverythingThereIsAnError_thenShouldReturnsAFailureResultWithRetryEnabled() = runTest {
         val assetKey = UserAssetId("value1", "domain")
 
         given(assetRepository)
@@ -83,10 +92,89 @@ class GetPublicAssetUseCaseTest {
 
         assertEquals(PublicAssetResult.Failure::class, publicAsset::class)
         assertEquals(CoreFailure.Unknown::class, (publicAsset as PublicAssetResult.Failure).coreFailure::class)
+        assertEquals(true, publicAsset.isRetryNeeded)
+
 
         verify(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)
             .with(eq(assetKey.value), eq(assetKey.domain))
             .wasInvoked(exactly = once)
     }
+
+    @Test
+    fun givenACallToGetAPublicAsset_whenThereIsAnNotFoundError_thenShouldReturnsAFailureResultWithRetryDisabled() = runTest {
+        val assetKey = UserAssetId("value1", "domain")
+
+        given(assetRepository)
+            .suspendFunction(assetRepository::downloadPublicAsset)
+            .whenInvokedWith(eq(assetKey.value), eq(assetKey.domain))
+            .thenReturn(
+                Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(
+                            ErrorResponse(
+                                404,
+                                "asset not found",
+                                "asset-not-found"
+                            )
+                        )
+                    )
+                )
+            )
+
+        given(userRepository)
+            .suspendFunction(userRepository::removeUserBrokenAsset)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+
+        val publicAsset = getPublicAsset(assetKey)
+
+        assertEquals(PublicAssetResult.Failure::class, publicAsset::class)
+        assertEquals(NetworkFailure.ServerMiscommunication::class, (publicAsset as PublicAssetResult.Failure).coreFailure::class)
+        assertEquals(false, publicAsset.isRetryNeeded)
+
+
+        verify(assetRepository)
+            .suspendFunction(assetRepository::downloadPublicAsset)
+            .with(eq(assetKey.value), eq(assetKey.domain))
+            .wasInvoked(exactly = once)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::removeUserBrokenAsset)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenACallToGetAPublicAsset_whenThereIsAnFederatedError_thenShouldReturnsAFailureResultWithRetryDisabled() = runTest {
+        val assetKey = UserAssetId("value1", "domain")
+
+        given(assetRepository)
+            .suspendFunction(assetRepository::downloadPublicAsset)
+            .whenInvokedWith(eq(assetKey.value), eq(assetKey.domain))
+            .thenReturn(Either.Left(NetworkFailure.FederatedBackendFailure))
+
+        given(userRepository)
+            .suspendFunction(userRepository::removeUserBrokenAsset)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+
+        val publicAsset = getPublicAsset(assetKey)
+
+        assertEquals(PublicAssetResult.Failure::class, publicAsset::class)
+        assertEquals(NetworkFailure.FederatedBackendFailure::class, (publicAsset as PublicAssetResult.Failure).coreFailure::class)
+        assertEquals(false, publicAsset.isRetryNeeded)
+
+
+        verify(assetRepository)
+            .suspendFunction(assetRepository::downloadPublicAsset)
+            .with(eq(assetKey.value), eq(assetKey.domain))
+            .wasInvoked(exactly = once)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::removeUserBrokenAsset)
+            .with(any())
+            .wasNotInvoked()
+    }
+
 }

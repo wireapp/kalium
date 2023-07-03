@@ -16,41 +16,36 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.sync.receiver.message
+package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.user.UserId
-import kotlinx.datetime.Instant
+import com.wire.kalium.logic.feature.conversation.ClearConversationContent
 
-interface ReceiptMessageHandler {
+interface ClearConversationContentHandler {
     suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.Receipt
+        messageContent: MessageContent.Cleared
     )
 }
 
-internal class ReceiptMessageHandlerImpl(
+internal class ClearConversationContentHandlerImpl(
+    private val clearConversationContent: ClearConversationContent,
     private val selfUserId: UserId,
-    private val receiptRepository: ReceiptRepository
-) : ReceiptMessageHandler {
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
+) : ClearConversationContentHandler {
 
     override suspend fun handle(
         message: Message.Signaling,
-        messageContent: MessageContent.Receipt
+        messageContent: MessageContent.Cleared
     ) {
-        // Receipts from self user shouldn't happen,
-        // If it happens, it's unnecessary,
-        // and we can squish some performance by skipping it completely
-        if (message.senderUserId == selfUserId) return
+        val isMessageComingFromOtherClient = message.senderUserId == selfUserId
+        val isMessageDestinedForSelfConversation: Boolean = isMessageSentInSelfConversation(message)
 
-        receiptRepository.persistReceipts(
-            userId = message.senderUserId,
-            conversationId = message.conversationId,
-            date = Instant.parse(message.date),
-            type = messageContent.type,
-            messageIds = messageContent.messageIds
-        )
+        if (isMessageComingFromOtherClient && isMessageDestinedForSelfConversation) {
+            clearConversationContent(messageContent.conversationId)
+        }
     }
 }

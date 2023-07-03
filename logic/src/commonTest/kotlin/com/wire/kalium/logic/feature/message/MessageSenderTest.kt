@@ -798,7 +798,7 @@ class MessageSenderTest {
     }
 
     @Test
-fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart() {
+    fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart() {
         val duration = Duration.parse("PT1M")
         val message = TestMessage.TEXT_MESSAGE.copy(
             expirationData = Message.ExpirationData(duration)
@@ -823,6 +823,31 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
         }
     }
 
+    @Test
+    fun givenARemoteMlsConversationPartiallyFails_whenSendingAMessage_ThenReturnSuccessAndPersistFailedToSendUsers() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withCommitPendingProposals()
+            .withSendMlsMessage(
+                sendMlsMessageWithResult = Either.Right(MessageSent(MESSAGE_SENT_TIME, listOf(TEST_MEMBER_2))),
+            )
+            .withWaitUntilLiveOrFailure()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withSendMessagePartialSuccess()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasInvoked(once)
+        }
+    }
 
     private class Arrangement {
         @Mock
@@ -887,7 +912,7 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TestMessage.TEXT_MESSAGE))
+                .thenReturn(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
         fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
@@ -964,7 +989,7 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
         }
 
         fun withSendOutgoingMlsMessage(
-            result: Either<CoreFailure, String> = Either.Right(MESSAGE_SENT_TIME),
+            result: Either<CoreFailure, MessageSent> = Either.Right(MessageSent(MESSAGE_SENT_TIME)),
             times: Int = Int.MAX_VALUE
         ) = apply {
             var invocationCounter = 0
@@ -1035,7 +1060,7 @@ fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart()
         }
 
         fun withSendMlsMessage(
-            sendMlsMessageWithResult: Either<CoreFailure, String>? = null,
+            sendMlsMessageWithResult: Either<CoreFailure, MessageSent>? = null,
         ) = apply {
             withGetMessageById()
             withGetProtocolInfo(protocolInfo = MLS_PROTOCOL_INFO)

@@ -80,6 +80,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.message.EphemeralMessageDataSource
+import com.wire.kalium.logic.data.message.EphemeralMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
@@ -292,11 +294,12 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHan
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -421,7 +424,8 @@ class UserSessionScope internal constructor(
     )
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
-        sessionManager.getProxyCredentials()
+        sessionManager.getProxyCredentials(),
+         globalScope.serverConfigRepository
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -971,7 +975,6 @@ class UserSessionScope internal constructor(
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
-            assetRepository,
             messageRepository,
             assetMessageHandler,
             callManager,
@@ -985,6 +988,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
             messageEncoder,
             receiptMessageHandler,
             userId
@@ -992,10 +996,10 @@ class UserSessionScope internal constructor(
 
     private val mlsWrongEpochHandler: MLSWrongEpochHandler
         get() = MLSWrongEpochHandlerImpl(
-                selfUserId = userId,
-                persistMessage = persistMessage,
-                conversationRepository = conversationRepository,
-                joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            selfUserId = userId,
+            persistMessage = persistMessage,
+            conversationRepository = conversationRepository,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase
         )
 
     private val newMessageHandler: NewMessageEventHandlerImpl
@@ -1025,7 +1029,7 @@ class UserSessionScope internal constructor(
     private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-            mlsClientProvider, userStorage.database.conversationDAO
+            mlsClientProvider, userStorage.database.conversationDAO, conversationRepository
         )
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
@@ -1090,6 +1094,11 @@ class UserSessionScope internal constructor(
         authenticatedNetworkContainer.logoutApi,
         userStorage.database.metadataDAO
     )
+
+    private val ephemeralMessageRepository: EphemeralMessageRepository
+        get() = EphemeralMessageDataSource(
+            clientDAO = userStorage.database.clientDAO
+        )
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
@@ -1172,7 +1181,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             selfConversationIdProvider,
-            this
+            this,
+            ephemeralMessageRepository
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -1195,6 +1205,7 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             userPropertyRepository,
+            ephemeralMessageRepository,
             incrementalSyncRepository,
             protoContentMapper,
             observeSelfDeletingMessages,
@@ -1315,7 +1326,9 @@ class UserSessionScope internal constructor(
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
-        get() = ObserveSecurityClassificationLabelUseCaseImpl(conversationRepository, userConfigRepository)
+        get() = ObserveSecurityClassificationLabelUseCaseImpl(
+            conversations.observeConversationMembers, conversationRepository, userConfigRepository
+        )
 
     val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
         get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)
