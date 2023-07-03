@@ -86,9 +86,13 @@ class SessionRepositoryTest {
         val authTokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
 
         @Mock
+        val kaliumConfigs: KaliumConfigs = mock(KaliumConfigs::class)
+
+        @Mock
         val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
 
-        private val sessionRepository = SessionDataSource(accountsDAO, authTokenStorage, serverConfigRepository, sessionMapper, idMapper)
+        private val sessionRepository =
+            SessionDataSource(accountsDAO, authTokenStorage, serverConfigRepository, kaliumConfigs, sessionMapper, idMapper)
 
         val validAccountIndoEntity = AccountInfoEntity(userIDEntity = UserIDEntity("1", "domain"), null)
 
