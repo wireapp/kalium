@@ -41,7 +41,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ObserveMLSE2EIRequiredUseCaseTest {
+class ObserveE2EIRequiredUseCaseTest {
 
     @Test
     fun givenSettingWithoutNotifyDate_thenNoEmitting() = runTest {
@@ -50,7 +50,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -82,7 +82,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
 
         useCase().test {
             assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod }
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -131,7 +131,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -143,7 +143,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
