@@ -1,8 +1,7 @@
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+import com.wire.kalium.persistence.dao.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.collections.List;
 import kotlinx.datetime.Instant;
-import kotlin.Boolean;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -34,8 +33,7 @@ CREATE TABLE Conversation (
     receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
     guest_room_link TEXT,
     message_timer INTEGER DEFAULT(NULL),
-    user_message_timer INTEGER DEFAULT(NULL),
-    incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0
+    user_message_timer INTEGER DEFAULT(NULL)
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -51,8 +49,8 @@ deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 insertConversation:
-INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 type = excluded.type,
@@ -72,8 +70,7 @@ mls_last_keying_material_update_date  = excluded.mls_last_keying_material_update
 mls_cipher_suite = excluded.mls_cipher_suite,
 receipt_mode = excluded.receipt_mode,
 message_timer = excluded.message_timer,
-user_message_timer = excluded.user_message_timer,
-incomplete_metadata = excluded.incomplete_metadata;
+user_message_timer = excluded.user_message_timer;
 
 updateConversation:
 UPDATE Conversation
@@ -210,12 +207,9 @@ LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = C
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails
-WHERE type IS NOT 'SELF'
-AND (
-    type IS 'GROUP' AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
-    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
-)
+WHERE type IS NOT 'SELF' AND
+(type IS 'GROUP' AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
+OR (type IS NOT 'GROUP' AND otherUserId IS NOT NULL)) -- show other conversation- todo: problem here! if the sync wasn't succesful the the user seems to be null!
 AND (protocol IS 'PROTEUS' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
 ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
 
@@ -266,6 +260,9 @@ UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
 
 selectProposalTimers:
 SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE protocol = ? AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
+
+isUserMember:
+SELECT user FROM Member WHERE conversation = ? AND user = ?;
 
 whoDeletedMeInConversation:
 SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = 'REMOVED' AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY creation_date DESC LIMIT 1;

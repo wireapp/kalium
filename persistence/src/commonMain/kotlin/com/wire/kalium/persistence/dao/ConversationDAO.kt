@@ -209,4 +209,5 @@ interface ConversationDAO {
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
+    suspend fun clearContent(conversationId: QualifiedIDEntity)
 }
