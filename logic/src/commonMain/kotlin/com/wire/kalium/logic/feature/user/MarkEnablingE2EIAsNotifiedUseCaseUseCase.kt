@@ -25,13 +25,13 @@ import kotlin.time.Duration.Companion.days
  * need to be called after notifying the user about the change
  * e.g. after showing a dialog, or a toast etc.
  */
-interface MarkEnablingOfMLSE2EIAsNotifiedUseCase {
+interface MarkEnablingE2EIAsNotifiedUseCaseUseCase {
     suspend operator fun invoke()
 }
 
-internal class MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl(
+internal class MarkEnablingE2EIAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
-) : MarkEnablingOfMLSE2EIAsNotifiedUseCase {
+) : MarkEnablingE2EIAsNotifiedUseCaseUseCase {
 
     override suspend fun invoke() {
         userConfigRepository.snoozeE2EINotification(SNOOZE_MLS_ENABLE_CHANGE_MS)

@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.user.MarkEnablingOfMLSE2EIAsNotifiedUseCase
-import com.wire.kalium.logic.feature.user.MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl
+import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseUseCase
+import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -32,7 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration
 
-class MarkEnablingOfMLSE2EIAsNotifiedUseCaseCaseTest {
+class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
     @Test
     fun whenMarkAsNotifiedIsCalled_thenSnoozeIsCalled() = runTest {
@@ -42,7 +42,7 @@ class MarkEnablingOfMLSE2EIAsNotifiedUseCaseCaseTest {
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
-            .with(eq(MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl.SNOOZE_MLS_ENABLE_CHANGE_MS))
+            .with(eq(MarkEnablingE2EIAsNotifiedUseCaseImpl.SNOOZE_MLS_ENABLE_CHANGE_MS))
             .wasInvoked(exactly = once)
     }
 
@@ -57,8 +57,8 @@ class MarkEnablingOfMLSE2EIAsNotifiedUseCaseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        private var markMLSE2EIEnableChangeAsNotified: MarkEnablingOfMLSE2EIAsNotifiedUseCase =
-            MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl(userConfigRepository)
+        private var markMLSE2EIEnableChangeAsNotified: MarkEnablingE2EIAsNotifiedUseCaseUseCase =
+            MarkEnablingE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 
         fun arrange() = this to markMLSE2EIEnableChangeAsNotified
     }

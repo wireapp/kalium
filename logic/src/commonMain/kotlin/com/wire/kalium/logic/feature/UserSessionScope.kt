@@ -203,8 +203,8 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
-import com.wire.kalium.logic.feature.user.MarkEnablingOfMLSE2EIAsNotifiedUseCase
-import com.wire.kalium.logic.feature.user.MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl
+import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseUseCase
+import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
@@ -1268,8 +1268,8 @@ class UserSessionScope internal constructor(
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
     val observeE2EIRequired: ObserveE2EIRequiredUseCase get() = ObserveE2EIRequiredUseCaseImpl(userConfigRepository)
-    val markMLSE2EIRequiredAsNotified: MarkEnablingOfMLSE2EIAsNotifiedUseCase
-        get() = MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl(userConfigRepository)
+    val markE2EIRequiredAsNotified: MarkEnablingE2EIAsNotifiedUseCaseUseCase
+        get() = MarkEnablingE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 
     @OptIn(DelicateKaliumApi::class)
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
