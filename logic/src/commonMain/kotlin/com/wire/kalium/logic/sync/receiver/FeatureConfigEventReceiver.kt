@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.E2EISetting
+import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -141,8 +141,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     .toDuration(DurationUnit.NANOSECONDS)
                     .inWholeMilliseconds
 
-                userConfigRepository.setE2EISetting(
-                    E2EISetting(
+                userConfigRepository.setE2EISettings(
+                    E2EISettings(
                         isRequired = event.model.status == Status.ENABLED,
                         discoverUrl = event.model.config.discoverUrl,
                         notifyUserAfter = DateTimeUtil.currentInstant(),

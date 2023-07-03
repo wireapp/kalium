@@ -89,17 +89,17 @@ interface UserConfigStorage {
     /**
      * save MLSE2EISetting
      */
-    fun setE2EISetting(settingEntity: E2EISettingEntity)
+    fun setE2EISettings(settingEntity: E2EISettingsEntity)
 
     /**
      * get MLSE2EISetting
      */
-    fun getE2EISetting(): E2EISettingEntity?
+    fun getE2EISettings(): E2EISettingsEntity?
 
     /**
      * get Flow of the saved MLSE2EISetting
      */
-    fun e2EISettingFlow(): Flow<E2EISettingEntity?>
+    fun e2EISettingsFlow(): Flow<E2EISettingsEntity?>
 
     /**
      * save flag from user settings to enable or disable Conference Calling
@@ -151,7 +151,7 @@ data class TeamSettingsSelfDeletionStatusEntity(
 )
 
 @Serializable
-data class E2EISettingEntity(
+data class E2EISettingsEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("discoverUrl") val discoverUrl: String,
     @SerialName("notifyUserAfter") val notifyUserAfterMs: Long?,
@@ -265,23 +265,23 @@ class UserConfigStorageImpl(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
-    override fun setE2EISetting(settingEntity: E2EISettingEntity) {
+    override fun setE2EISettings(settingEntity: E2EISettingsEntity) {
         kaliumPreferences.putSerializable(
             MLS_E2E_ID,
             settingEntity,
-            E2EISettingEntity.serializer()
+            E2EISettingsEntity.serializer()
         ).also {
             mlsE2EIFlow.tryEmit(Unit)
         }
     }
 
-    override fun getE2EISetting(): E2EISettingEntity? {
-        return kaliumPreferences.getSerializable(MLS_E2E_ID, E2EISettingEntity.serializer())
+    override fun getE2EISettings(): E2EISettingsEntity? {
+        return kaliumPreferences.getSerializable(MLS_E2E_ID, E2EISettingsEntity.serializer())
     }
 
-    override fun e2EISettingFlow(): Flow<E2EISettingEntity?> = mlsE2EIFlow
-        .map { getE2EISetting() }
-        .onStart { emit(getE2EISetting()) }
+    override fun e2EISettingsFlow(): Flow<E2EISettingsEntity?> = mlsE2EIFlow
+        .map { getE2EISettings() }
+        .onStart { emit(getE2EISettings()) }
         .distinctUntilChanged()
 
     override fun persistConferenceCalling(enabled: Boolean) {

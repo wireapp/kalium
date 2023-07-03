@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.client
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.configuration.E2EISetting
+import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.E2EIRequiredResult
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
@@ -154,9 +154,9 @@ class ObserveMLSE2EIRequiredUseCaseTest {
         private var observeMLSEnabledUseCase: ObserveE2EIRequiredUseCase =
             ObserveE2EIRequiredUseCaseImpl(userConfigRepository, testDispatcher)
 
-        fun withMLSE2EISetting(setting: E2EISetting) = apply {
+        fun withMLSE2EISetting(setting: E2EISettings) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeIsE2EISetting)
+                .function(userConfigRepository::observeE2EISettings)
                 .whenInvoked()
                 .then { flowOf(Either.Right(setting)) }
         }
@@ -165,6 +165,6 @@ class ObserveMLSE2EIRequiredUseCaseTest {
     }
 
     companion object {
-        private val MLS_E2EI_SETTING = E2EISetting(true, "some_url", null, null)
+        private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null, null)
     }
 }

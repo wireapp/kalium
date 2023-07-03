@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.configuration.E2EISetting
+import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlin.time.Duration
 
 /**
- * Observe [E2EISetting] to notify user when setting is changed to Enabled
+ * Observe [E2EISettings] to notify user when setting is changed to Enabled
  */
 interface ObserveE2EIRequiredUseCase {
     /**
@@ -50,7 +50,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
 ) : ObserveE2EIRequiredUseCase {
 
     override fun invoke(): Flow<E2EIRequiredResult> = userConfigRepository
-        .observeIsE2EISetting()
+        .observeE2EISettings()
         .map { it.getOrNull() }
         .filterNotNull()
         .filter { setting -> setting.isRequired && setting.gracePeriodEnd != null }
@@ -62,7 +62,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         .flowOn(dispatcher)
 }
 
-private fun Flow<E2EISetting>.delayUntilNotifyTime(): Flow<E2EISetting> = flatMapLatest { setting ->
+private fun Flow<E2EISettings>.delayUntilNotifyTime(): Flow<E2EISettings> = flatMapLatest { setting ->
     val delayMillis = setting.notifyUserAfter
         ?.minus(DateTimeUtil.currentInstant())
         ?.inWholeMilliseconds

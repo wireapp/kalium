@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.featureConfig
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.E2EISetting
+import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -73,7 +73,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             handleConferenceCalling(it.conferenceCallingModel)
             handlePasswordChallengeStatus(it.secondFactorPasswordChallengeModel)
             handleSelfDeletingMessagesStatus(it.selfDeletingMessagesModel)
-            handleMLSE2EISetting(it.mlsE2EIModel)
+            handleMLSE2EISettings(it.mlsE2EIModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -166,10 +166,10 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }
     }
 
-    private fun handleMLSE2EISetting(featureConfig: MLSE2EIModel) {
+    private fun handleMLSE2EISettings(featureConfig: MLSE2EIModel) {
         val gracePeriodEndMs = featureConfig.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
-        userConfigRepository.setE2EISetting(
-            E2EISetting(
+        userConfigRepository.setE2EISettings(
+            E2EISettings(
                 isRequired = featureConfig.status == Status.ENABLED,
                 discoverUrl = featureConfig.config.discoverUrl,
                 notifyUserAfter = DateTimeUtil.currentInstant(),

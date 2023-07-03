@@ -48,9 +48,9 @@ interface UserConfigRepository {
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
     fun isMLSEnabled(): Either<StorageFailure, Boolean>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
-    fun getE2EISetting(): Either<StorageFailure, E2EISetting>
-    fun observeIsE2EISetting(): Flow<Either<StorageFailure, E2EISetting>>
-    fun setE2EISetting(setting: E2EISetting): Either<StorageFailure, Unit>
+    fun getE2EISettings(): Either<StorageFailure, E2EISettings>
+    fun observeE2EISettings(): Flow<Either<StorageFailure, E2EISettings>>
+    fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit>
     fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
@@ -145,27 +145,27 @@ class UserConfigDataSource(
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
-    override fun getE2EISetting(): Either<StorageFailure, E2EISetting> =
-        wrapStorageRequest { userConfigStorage.getE2EISetting() }
-            .map { E2EISetting.fromEntity(it) }
+    override fun getE2EISettings(): Either<StorageFailure, E2EISettings> =
+        wrapStorageRequest { userConfigStorage.getE2EISettings() }
+            .map { E2EISettings.fromEntity(it) }
 
-    override fun observeIsE2EISetting(): Flow<Either<StorageFailure, E2EISetting>> =
-        userConfigStorage.e2EISettingFlow()
+    override fun observeE2EISettings(): Flow<Either<StorageFailure, E2EISettings>> =
+        userConfigStorage.e2EISettingsFlow()
             .wrapStorageRequest()
-            .mapRight { E2EISetting.fromEntity(it) }
+            .mapRight { E2EISettings.fromEntity(it) }
 
-    override fun setE2EISetting(setting: E2EISetting): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigStorage.setE2EISetting(setting.toEntity()) }
+    override fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.setE2EISettings(setting.toEntity()) }
 
     override fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             getE2EISettingEntityOrNull()?.let { current ->
                 val notifyUserAfterMs = current.notifyUserAfterMs?.plus(duration.inWholeMilliseconds)
-                userConfigStorage.setE2EISetting(current.copy(notifyUserAfterMs = notifyUserAfterMs))
+                userConfigStorage.setE2EISettings(current.copy(notifyUserAfterMs = notifyUserAfterMs))
             }
         }
 
-    private fun getE2EISettingEntityOrNull() = wrapStorageRequest { userConfigStorage.getE2EISetting() }.getOrNull()
+    private fun getE2EISettingEntityOrNull() = wrapStorageRequest { userConfigStorage.getE2EISettings() }.getOrNull()
 
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
