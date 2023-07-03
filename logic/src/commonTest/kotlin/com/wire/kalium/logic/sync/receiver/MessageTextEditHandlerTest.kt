@@ -18,15 +18,15 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -158,7 +158,7 @@ class MessageTextEditHandlerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withCurrentMessageByIdReturning(result: Either<CoreFailure, Message>) = apply {
+        fun withCurrentMessageByIdReturning(result: Either<StorageFailure, Message>) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(anything(), anything())
