@@ -24,7 +24,6 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.EphemeralMessageRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -58,7 +57,6 @@ internal interface DeleteEphemeralMessageForSelfUserAsReceiverUseCase {
 internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
-    private val ephemeralMessageRepository: EphemeralMessageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val messageSender: MessageSender,
     private val selfUserId: UserId,
@@ -85,7 +83,6 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                         messageRepository.deleteMessage(messageId, conversationId)
                     }
                 }
-            }
         }
 
     private suspend fun sendDeleteMessageToSelf(
