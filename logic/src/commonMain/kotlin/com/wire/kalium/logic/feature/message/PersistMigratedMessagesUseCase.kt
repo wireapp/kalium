@@ -36,6 +36,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -50,6 +51,7 @@ interface PersistMigratedMessagesUseCase {
     ): Either<CoreFailure, Unit>
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class PersistMigratedMessagesUseCaseImpl(
     private val selfUserId: UserId,
     private val migrationDAO: MigrationDAO,
