@@ -459,7 +459,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             // given
             // established updated group
             val updatedConversation = conversationEntity2
-            val updatedDate = Instant.parse("2023-03-30T15:36:00.000Z")
+            val updatedDate = Instant.DISTANT_FUTURE
             val updatedGroupId = (updatedConversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
             teamDAO.insertTeam(team)
             conversationDAO.insertConversation(updatedConversation)
@@ -467,14 +467,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             // pending outdated group
             val outDatedConversation1 = conversationEntity3
-            val outdatedDate1 = Instant.parse("2019-03-30T15:36:00.000Z")
+            val outdatedDate1 = Instant.DISTANT_PAST
             val outdatedGroupId1 = (outDatedConversation1.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
             conversationDAO.insertConversation(outDatedConversation1)
             conversationDAO.updateKeyingMaterial(outdatedGroupId1, outdatedDate1)
 
             // established outdated group
             val outDatedConversation2 = conversationEntity4
-            val outdatedDate2 = Instant.parse("2019-03-30T15:36:00.000Z")
+            val outdatedDate2 = Instant.DISTANT_PAST
             val outdatedGroupId2 = (outDatedConversation2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
             conversationDAO.insertConversation(outDatedConversation2)
             conversationDAO.updateKeyingMaterial(outdatedGroupId2, outdatedDate2)
