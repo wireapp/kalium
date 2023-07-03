@@ -24,16 +24,23 @@ import com.wire.kalium.logic.feature.user.MLSE2EIRequiredResult
 import com.wire.kalium.logic.feature.user.ObserveMLSE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveMLSE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.minutes
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveMLSE2EIRequiredUseCaseTest {
 
     @Test
@@ -43,7 +50,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            awaitComplete()
+            expectNoEvents()
         }
     }
 
@@ -75,18 +82,44 @@ class ObserveMLSE2EIRequiredUseCaseTest {
 
         useCase().test {
             assertTrue { awaitItem() == MLSE2EIRequiredResult.NoGracePeriod }
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun givenSettingWithNotifyDateInFuture_thenEmitResultWithDelay() = runTest(TestKaliumDispatcher.io) {
+        val delayDuration = 10.minutes
+        val setting = MLS_E2EI_SETTING.copy(
+            notifyUserAfter = DateTimeUtil.currentInstant().plus(delayDuration),
+            enablingDeadline = DateTimeUtil.currentInstant()
+        )
+        val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
+            .withMLSE2EISetting(setting)
+            .arrange()
+
+        useCase().test {
+            advanceTimeBy(delayDuration.minus(1.minutes).inWholeMilliseconds)
+            expectNoEvents()
+
+            advanceTimeBy(delayDuration.inWholeMilliseconds)
+            assertTrue { awaitItem() == MLSE2EIRequiredResult.NoGracePeriod }
             awaitComplete()
         }
     }
 
     @Test
-    fun givenSettingWithNotifyDateInFuture_thenEmitResult() = runTest {
-        val setting = MLS_E2EI_SETTING.copy(notifyUserAfter = DateTimeUtil.currentInstant().plus(1.days))
-        val (_, useCase) = Arrangement()
+    fun givenSettingWithNotifyDateInPast_thenEmitResultWithoutDelay() = runTest(TestKaliumDispatcher.io) {
+        val setting = MLS_E2EI_SETTING.copy(
+            notifyUserAfter = DateTimeUtil.currentInstant(),
+            enablingDeadline = DateTimeUtil.currentInstant()
+        )
+        val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
             .arrange()
 
         useCase().test {
+            advanceTimeBy(1000L)
+            assertTrue { awaitItem() == MLSE2EIRequiredResult.NoGracePeriod }
             awaitComplete()
         }
     }
@@ -98,7 +131,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            awaitComplete()
+            expectNoEvents()
         }
     }
 
@@ -110,15 +143,16 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            awaitComplete()
+            expectNoEvents()
         }
     }
 
-    private class Arrangement {
+    private class Arrangement(testDispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()) {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
-        private var observeMLSEnabledUseCase: ObserveMLSE2EIRequiredUseCase = ObserveMLSE2EIRequiredUseCaseImpl(userConfigRepository)
+        private var observeMLSEnabledUseCase: ObserveMLSE2EIRequiredUseCase =
+            ObserveMLSE2EIRequiredUseCaseImpl(userConfigRepository, testDispatcher)
 
         fun withMLSE2EISetting(setting: MLSE2EISetting) = apply {
             given(userConfigRepository)

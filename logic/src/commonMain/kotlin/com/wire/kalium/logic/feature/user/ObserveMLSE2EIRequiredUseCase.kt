@@ -21,12 +21,17 @@ import com.wire.kalium.logic.configuration.MLSE2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlin.time.Duration
 
 /**
@@ -41,26 +46,30 @@ interface ObserveMLSE2EIRequiredUseCase {
 
 internal class ObserveMLSE2EIRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
 ) : ObserveMLSE2EIRequiredUseCase {
 
     override fun invoke(): Flow<MLSE2EIRequiredResult> = userConfigRepository
         .observeIsMLSE2EISetting()
-        // TODO implement re-checking for the case when notifyUserAfter is in a future (some delayed flow)
         .map { it.getOrNull() }
-        .filter { mlsSetting ->
-            mlsSetting != null
-                    && mlsSetting.isRequired
-                    && mlsSetting.enablingDeadline != null
-                    && (mlsSetting.notifyUserAfter?.let { it <= DateTimeUtil.currentInstant() } ?: false)
-        }
+        .filterNotNull()
+        .filter { setting -> setting.isRequired && setting.enablingDeadline != null }
+        .delayUntilNotifyTime()
         .map { setting ->
-            if (setting!!.enablingDeadline!! <= DateTimeUtil.currentInstant())
+            if (setting.enablingDeadline!! <= DateTimeUtil.currentInstant())
                 MLSE2EIRequiredResult.NoGracePeriod
-            else MLSE2EIRequiredResult.WithGracePeriod(setting.enablingDeadline!!.minus(DateTimeUtil.currentInstant()))
+            else MLSE2EIRequiredResult.WithGracePeriod(setting.enablingDeadline.minus(DateTimeUtil.currentInstant()))
         }
-        .flowOn(dispatcher.io)
+        .flowOn(dispatcher)
+}
 
+private fun Flow<MLSE2EISetting>.delayUntilNotifyTime(): Flow<MLSE2EISetting> = flatMapLatest { setting ->
+    val delayMillis = setting.notifyUserAfter
+        ?.minus(DateTimeUtil.currentInstant())
+        ?.inWholeMilliseconds
+        ?.coerceAtLeast(0L)
+        ?: 0L
+    flowOf(setting).onStart { delay(delayMillis) }
 }
 
 sealed class MLSE2EIRequiredResult {
