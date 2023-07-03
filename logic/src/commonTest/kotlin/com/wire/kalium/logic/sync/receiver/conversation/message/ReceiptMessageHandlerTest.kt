@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
