@@ -583,10 +583,10 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        arrangement.userConfigRepository.getMLSE2EISetting().shouldSucceed {
+        arrangement.userConfigRepository.getE2EISetting().shouldSucceed {
             assertFalse(it.isRequired)
             assertEquals("url", it.discoverUrl)
-            assertEquals(Instant.fromEpochMilliseconds(10_000L), it.enablingDeadline)
+            assertEquals(Instant.fromEpochMilliseconds(10_000L), it.gracePeriodEnd)
         }
     }
 
@@ -599,7 +599,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        arrangement.userConfigRepository.getMLSE2EISetting().shouldSucceed {
+        arrangement.userConfigRepository.getE2EISetting().shouldSucceed {
             assertTrue(it.isRequired)
         }
     }

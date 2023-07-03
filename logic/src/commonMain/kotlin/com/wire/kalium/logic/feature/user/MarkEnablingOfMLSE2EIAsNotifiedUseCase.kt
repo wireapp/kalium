@@ -34,7 +34,7 @@ internal class MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl(
 ) : MarkEnablingOfMLSE2EIAsNotifiedUseCase {
 
     override suspend fun invoke() {
-        userConfigRepository.snoozeMLSE2EINotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
+        userConfigRepository.snoozeE2EINotification(SNOOZE_MLS_ENABLE_CHANGE_MS)
     }
 
     companion object {

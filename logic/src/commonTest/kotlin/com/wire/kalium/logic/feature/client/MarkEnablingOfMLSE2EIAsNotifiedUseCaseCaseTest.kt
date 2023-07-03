@@ -41,7 +41,7 @@ class MarkEnablingOfMLSE2EIAsNotifiedUseCaseCaseTest {
         useCase()
 
         verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::snoozeMLSE2EINotification)
+            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
             .with(eq(MarkEnablingOfMLSE2EIAsNotifiedUseCaseImpl.SNOOZE_MLS_ENABLE_CHANGE_MS))
             .wasInvoked(exactly = once)
     }
@@ -52,7 +52,7 @@ class MarkEnablingOfMLSE2EIAsNotifiedUseCaseCaseTest {
 
         init {
             given(userConfigRepository)
-                .function(userConfigRepository::snoozeMLSE2EINotification)
+                .function(userConfigRepository::snoozeE2EINotification)
                 .whenInvokedWith(any<Duration>())
                 .thenReturn(Either.Right(Unit))
         }

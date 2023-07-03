@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.MLSE2EISetting
+import com.wire.kalium.logic.configuration.E2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -136,17 +136,17 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             }
 
             is Event.FeatureConfig.MLSE2EIUpdated -> {
-                val enablingDeadlineMs = event.model.config
+                val gracePeriodEndMs = event.model.config
                     .verificationExpirationNS
                     .toDuration(DurationUnit.NANOSECONDS)
                     .inWholeMilliseconds
 
-                userConfigRepository.setMLSE2EISetting(
-                    MLSE2EISetting(
+                userConfigRepository.setE2EISetting(
+                    E2EISetting(
                         isRequired = event.model.status == Status.ENABLED,
                         discoverUrl = event.model.config.discoverUrl,
                         notifyUserAfter = DateTimeUtil.currentInstant(),
-                        enablingDeadline = Instant.fromEpochMilliseconds(enablingDeadlineMs)
+                        gracePeriodEnd = Instant.fromEpochMilliseconds(gracePeriodEndMs)
                     )
                 )
 

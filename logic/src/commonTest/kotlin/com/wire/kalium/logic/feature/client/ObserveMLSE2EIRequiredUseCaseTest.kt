@@ -18,11 +18,11 @@
 package com.wire.kalium.logic.feature.client
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.configuration.MLSE2EISetting
+import com.wire.kalium.logic.configuration.E2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.MLSE2EIRequiredResult
-import com.wire.kalium.logic.feature.user.ObserveMLSE2EIRequiredUseCase
-import com.wire.kalium.logic.feature.user.ObserveMLSE2EIRequiredUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
+import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
@@ -58,7 +58,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
     fun givenSettingWithNotifyDateInPast_thenEmitResult() = runTest {
         val setting = MLS_E2EI_SETTING.copy(
             notifyUserAfter = DateTimeUtil.currentInstant(),
-            enablingDeadline = DateTimeUtil.currentInstant().plus(2.days)
+            gracePeriodEnd = DateTimeUtil.currentInstant().plus(2.days)
         )
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
@@ -74,7 +74,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
     fun givenSettingWithDeadlineInPast_thenEmitResult() = runTest {
         val setting = MLS_E2EI_SETTING.copy(
             notifyUserAfter = DateTimeUtil.currentInstant(),
-            enablingDeadline = DateTimeUtil.currentInstant()
+            gracePeriodEnd = DateTimeUtil.currentInstant()
         )
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
@@ -91,7 +91,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
         val delayDuration = 10.minutes
         val setting = MLS_E2EI_SETTING.copy(
             notifyUserAfter = DateTimeUtil.currentInstant().plus(delayDuration),
-            enablingDeadline = DateTimeUtil.currentInstant()
+            gracePeriodEnd = DateTimeUtil.currentInstant()
         )
         val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
@@ -111,7 +111,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
     fun givenSettingWithNotifyDateInPast_thenEmitResultWithoutDelay() = runTest(TestKaliumDispatcher.io) {
         val setting = MLS_E2EI_SETTING.copy(
             notifyUserAfter = DateTimeUtil.currentInstant(),
-            enablingDeadline = DateTimeUtil.currentInstant()
+            gracePeriodEnd = DateTimeUtil.currentInstant()
         )
         val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
@@ -151,12 +151,12 @@ class ObserveMLSE2EIRequiredUseCaseTest {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
-        private var observeMLSEnabledUseCase: ObserveMLSE2EIRequiredUseCase =
-            ObserveMLSE2EIRequiredUseCaseImpl(userConfigRepository, testDispatcher)
+        private var observeMLSEnabledUseCase: ObserveE2EIRequiredUseCase =
+            ObserveE2EIRequiredUseCaseImpl(userConfigRepository, testDispatcher)
 
-        fun withMLSE2EISetting(setting: MLSE2EISetting) = apply {
+        fun withMLSE2EISetting(setting: E2EISetting) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeIsMLSE2EISetting)
+                .function(userConfigRepository::observeIsE2EISetting)
                 .whenInvoked()
                 .then { flowOf(Either.Right(setting)) }
         }
@@ -165,6 +165,6 @@ class ObserveMLSE2EIRequiredUseCaseTest {
     }
 
     companion object {
-        private val MLS_E2EI_SETTING = MLSE2EISetting(true, "some_url", null, null)
+        private val MLS_E2EI_SETTING = E2EISetting(true, "some_url", null, null)
     }
 }

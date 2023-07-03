@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.configuration.MLSE2EISetting
+import com.wire.kalium.logic.configuration.E2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
@@ -35,35 +35,35 @@ import kotlinx.coroutines.flow.onStart
 import kotlin.time.Duration
 
 /**
- * Observe [MLSE2EISetting] to notify user when setting is changed to Enabled
+ * Observe [E2EISetting] to notify user when setting is changed to Enabled
  */
-interface ObserveMLSE2EIRequiredUseCase {
+interface ObserveE2EIRequiredUseCase {
     /**
      * @return [Flow] of [MLSE2EIRequiredResult]
      */
     operator fun invoke(): Flow<MLSE2EIRequiredResult>
 }
 
-internal class ObserveMLSE2EIRequiredUseCaseImpl(
+internal class ObserveE2EIRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
-) : ObserveMLSE2EIRequiredUseCase {
+) : ObserveE2EIRequiredUseCase {
 
     override fun invoke(): Flow<MLSE2EIRequiredResult> = userConfigRepository
-        .observeIsMLSE2EISetting()
+        .observeIsE2EISetting()
         .map { it.getOrNull() }
         .filterNotNull()
-        .filter { setting -> setting.isRequired && setting.enablingDeadline != null }
+        .filter { setting -> setting.isRequired && setting.gracePeriodEnd != null }
         .delayUntilNotifyTime()
         .map { setting ->
-            if (setting.enablingDeadline!! <= DateTimeUtil.currentInstant())
+            if (setting.gracePeriodEnd!! <= DateTimeUtil.currentInstant())
                 MLSE2EIRequiredResult.NoGracePeriod
-            else MLSE2EIRequiredResult.WithGracePeriod(setting.enablingDeadline.minus(DateTimeUtil.currentInstant()))
+            else MLSE2EIRequiredResult.WithGracePeriod(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
         }
         .flowOn(dispatcher)
 }
 
-private fun Flow<MLSE2EISetting>.delayUntilNotifyTime(): Flow<MLSE2EISetting> = flatMapLatest { setting ->
+private fun Flow<E2EISetting>.delayUntilNotifyTime(): Flow<E2EISetting> = flatMapLatest { setting ->
     val delayMillis = setting.notifyUserAfter
         ?.minus(DateTimeUtil.currentInstant())
         ?.inWholeMilliseconds
@@ -73,6 +73,6 @@ private fun Flow<MLSE2EISetting>.delayUntilNotifyTime(): Flow<MLSE2EISetting> = 
 }
 
 sealed class MLSE2EIRequiredResult {
-    data class WithGracePeriod(val timeLeft: Duration) : MLSE2EIRequiredResult()
+    data class WithGracePeriod(val gracePeriod: Duration) : MLSE2EIRequiredResult()
     object NoGracePeriod : MLSE2EIRequiredResult()
 }

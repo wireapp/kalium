@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.featureConfig
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.MLSE2EISetting
+import com.wire.kalium.logic.configuration.E2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -167,13 +167,13 @@ internal class SyncFeatureConfigsUseCaseImpl(
     }
 
     private fun handleMLSE2EISetting(featureConfig: MLSE2EIModel) {
-        val enablingDeadlineMs = featureConfig.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
-        userConfigRepository.setMLSE2EISetting(
-            MLSE2EISetting(
+        val gracePeriodEndMs = featureConfig.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
+        userConfigRepository.setE2EISetting(
+            E2EISetting(
                 isRequired = featureConfig.status == Status.ENABLED,
                 discoverUrl = featureConfig.config.discoverUrl,
                 notifyUserAfter = DateTimeUtil.currentInstant(),
-                enablingDeadline = Instant.fromEpochMilliseconds(enablingDeadlineMs)
+                gracePeriodEnd = Instant.fromEpochMilliseconds(gracePeriodEndMs)
             )
         )
     }
