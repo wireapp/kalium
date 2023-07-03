@@ -1542,6 +1542,129 @@ class MessageDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenExistingMessagesAtSource_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = "1",
+                senderUserId = userEntity1.id,
+                conversationId = source.id,
+                content = MessageEntityContent.Text(messageBody = "Message 1")
+            ),
+            newRegularMessageEntity(
+                id = "2",
+                senderUserId = userEntity1.id,
+                conversationId = source.id,
+                content = MessageEntityContent.Text(messageBody = "Message 2")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        // when
+        messageDAO.moveMessages(source.id, destination.id)
+
+        // then
+        val retrievedMessages = messageDAO.getMessagesByConversationAndVisibility(
+            destination.id,
+            10,
+            0,
+            listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertEquals(
+            allMessages.map { it.content }.toSet(),
+            retrievedMessages.map { it.content }.toSet())
+    }
+
+    @Test
+    fun givenExistingMessagesAtSourceAndDestination_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = "1",
+                senderUserId = userEntity1.id,
+                conversationId = source.id,
+                content = MessageEntityContent.Text(messageBody = "Message 1")
+            ),
+            newRegularMessageEntity(
+                id = "2",
+                senderUserId = userEntity1.id,
+                conversationId = destination.id,
+                content = MessageEntityContent.Text(messageBody = "Message 2")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        // when
+        messageDAO.moveMessages(source.id, destination.id)
+
+        // then
+        val retrievedMessages = messageDAO.getMessagesByConversationAndVisibility(
+            destination.id,
+            10,
+            0,
+            listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertEquals(
+            allMessages.map { it.content }.toSet(),
+            retrievedMessages.map { it.content }.toSet())
+    }
+
+    @Test
+    fun givenNoExistingMessagesAtSource_whenMovingMessages_thenExistingMessagesAreAccessibleAtDestination() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = "1",
+                senderUserId = userEntity1.id,
+                conversationId = destination.id,
+                content = MessageEntityContent.Text(messageBody = "Message 1")
+            ),
+            newRegularMessageEntity(
+                id = "2",
+                senderUserId = userEntity1.id,
+                conversationId = destination.id,
+                content = MessageEntityContent.Text(messageBody = "Message 2")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        // when
+        messageDAO.moveMessages(source.id, destination.id)
+
+        // then
+        val retrievedMessages = messageDAO.getMessagesByConversationAndVisibility(
+            destination.id,
+            10,
+            0,
+            listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertEquals(
+            allMessages.map { it.content }.toSet(),
+            retrievedMessages.map { it.content }.toSet())
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(
