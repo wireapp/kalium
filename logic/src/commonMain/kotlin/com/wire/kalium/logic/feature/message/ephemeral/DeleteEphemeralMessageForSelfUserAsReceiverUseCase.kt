@@ -85,6 +85,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                         messageRepository.deleteMessage(messageId, conversationId)
                     }
                 }
+            }
         }
 
     private suspend fun sendDeleteMessageToSelf(

@@ -15,14 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.auth.login
 
-package com.wire.kalium.network.api.base.unauthenticated
-
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class SSOSettingsResponse(
-    @SerialName("default_sso_code")
-    val defaultCode: String?
+data class DomainLookupResult(
+    val configJsonUrl: String,
+    val webappWelcomeUrl: String
 )

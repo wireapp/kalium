@@ -78,7 +78,7 @@ internal class DeleteMessageHandlerImpl internal constructor(
     private fun isSenderVerified(
         message: Message,
         deleteMessageSenderId: UserId
-    ): Boolean = deleteMessageSenderId == message.senderUserId
+    ): Boolean = (deleteMessageSenderId == message.senderUserId || deleteMessageSenderId == selfUserId)
 
     private suspend fun removeAssetIfExists(messageToRemove: Message) {
         (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->

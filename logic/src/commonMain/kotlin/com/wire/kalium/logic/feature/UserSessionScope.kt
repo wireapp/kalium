@@ -418,7 +418,8 @@ class UserSessionScope internal constructor(
     )
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
-        sessionManager.getProxyCredentials()
+        sessionManager.getProxyCredentials(),
+         globalScope.serverConfigRepository
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -1002,7 +1003,7 @@ class UserSessionScope internal constructor(
     private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-            mlsClientProvider, userStorage.database.conversationDAO
+            mlsClientProvider, userStorage.database.conversationDAO, conversationRepository
         )
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
@@ -1298,7 +1299,9 @@ class UserSessionScope internal constructor(
     val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
-        get() = ObserveSecurityClassificationLabelUseCaseImpl(conversations.observeConversationMembers, userConfigRepository)
+        get() = ObserveSecurityClassificationLabelUseCaseImpl(
+            conversations.observeConversationMembers, conversationRepository, userConfigRepository
+        )
 
     val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
         get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)
