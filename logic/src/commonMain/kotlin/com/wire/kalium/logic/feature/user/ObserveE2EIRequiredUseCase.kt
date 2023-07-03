@@ -39,9 +39,9 @@ import kotlin.time.Duration
  */
 interface ObserveE2EIRequiredUseCase {
     /**
-     * @return [Flow] of [MLSE2EIRequiredResult]
+     * @return [Flow] of [E2EIRequiredResult]
      */
-    operator fun invoke(): Flow<MLSE2EIRequiredResult>
+    operator fun invoke(): Flow<E2EIRequiredResult>
 }
 
 internal class ObserveE2EIRequiredUseCaseImpl(
@@ -49,16 +49,15 @@ internal class ObserveE2EIRequiredUseCaseImpl(
     private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
 ) : ObserveE2EIRequiredUseCase {
 
-    override fun invoke(): Flow<MLSE2EIRequiredResult> = userConfigRepository
+    override fun invoke(): Flow<E2EIRequiredResult> = userConfigRepository
         .observeIsE2EISetting()
         .map { it.getOrNull() }
         .filterNotNull()
         .filter { setting -> setting.isRequired && setting.gracePeriodEnd != null }
         .delayUntilNotifyTime()
         .map { setting ->
-            if (setting.gracePeriodEnd!! <= DateTimeUtil.currentInstant())
-                MLSE2EIRequiredResult.NoGracePeriod
-            else MLSE2EIRequiredResult.WithGracePeriod(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
+            if (setting.gracePeriodEnd!! <= DateTimeUtil.currentInstant()) E2EIRequiredResult.NoGracePeriod
+            else E2EIRequiredResult.WithGracePeriod(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
         }
         .flowOn(dispatcher)
 }
@@ -72,7 +71,7 @@ private fun Flow<E2EISetting>.delayUntilNotifyTime(): Flow<E2EISetting> = flatMa
     flowOf(setting).onStart { delay(delayMillis) }
 }
 
-sealed class MLSE2EIRequiredResult {
-    data class WithGracePeriod(val gracePeriod: Duration) : MLSE2EIRequiredResult()
-    object NoGracePeriod : MLSE2EIRequiredResult()
+sealed class E2EIRequiredResult {
+    data class WithGracePeriod(val gracePeriod: Duration) : E2EIRequiredResult()
+    object NoGracePeriod : E2EIRequiredResult()
 }

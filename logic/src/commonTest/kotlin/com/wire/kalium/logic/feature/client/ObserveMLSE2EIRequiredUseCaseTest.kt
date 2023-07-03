@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.client
 import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.E2EISetting
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.user.MLSE2EIRequiredResult
+import com.wire.kalium.logic.feature.user.E2EIRequiredResult
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.functional.Either
@@ -65,7 +65,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            assertTrue { awaitItem() is MLSE2EIRequiredResult.WithGracePeriod }
+            assertTrue { awaitItem() is E2EIRequiredResult.WithGracePeriod }
             awaitComplete()
         }
     }
@@ -81,7 +81,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
-            assertTrue { awaitItem() == MLSE2EIRequiredResult.NoGracePeriod }
+            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod }
             expectNoEvents()
         }
     }
@@ -102,7 +102,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
             expectNoEvents()
 
             advanceTimeBy(delayDuration.inWholeMilliseconds)
-            assertTrue { awaitItem() == MLSE2EIRequiredResult.NoGracePeriod }
+            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod }
             awaitComplete()
         }
     }
@@ -119,7 +119,7 @@ class ObserveMLSE2EIRequiredUseCaseTest {
 
         useCase().test {
             advanceTimeBy(1000L)
-            assertTrue { awaitItem() == MLSE2EIRequiredResult.NoGracePeriod }
+            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod }
             awaitComplete()
         }
     }
