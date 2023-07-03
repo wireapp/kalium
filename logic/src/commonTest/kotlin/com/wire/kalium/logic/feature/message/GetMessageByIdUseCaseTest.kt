@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.message
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -45,7 +44,7 @@ class GetMessageByIdUseCaseTest {
     @Test
     fun givenMessageAndConversationId_whenInvokingUseCase_thenShouldCallMessageRepository() = runTest(testDispatchers.io) {
         val (arrangement, getMessageByIdUseCase) = Arrangement()
-            .withRepositoryMessageByIdReturning(CONVERSATION_ID, MESSAGE_ID, Either.Left(CoreFailure.Unknown(null)))
+            .withRepositoryMessageByIdReturning(CONVERSATION_ID, MESSAGE_ID, Either.Left(StorageFailure.DataNotFound))
             .arrange()
 
         getMessageByIdUseCase(CONVERSATION_ID, MESSAGE_ID)
@@ -92,7 +91,7 @@ class GetMessageByIdUseCaseTest {
         suspend fun withRepositoryMessageByIdReturning(
             conversationId: ConversationId,
             messageId: String,
-            response: Either<CoreFailure, Message>
+            response: Either<StorageFailure, Message>
         ) = apply {
             given(messageRepository)
                 .coroutine { messageRepository.getMessageById(conversationId, messageId) }
