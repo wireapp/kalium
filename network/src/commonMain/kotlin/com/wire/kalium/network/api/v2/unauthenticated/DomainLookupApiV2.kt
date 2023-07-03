@@ -15,14 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v2.unauthenticated
 
-package com.wire.kalium.network.api.base.unauthenticated
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v0.unauthenticated.DomainLookupApiV0
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class SSOSettingsResponse(
-    @SerialName("default_sso_code")
-    val defaultCode: String?
-)
+internal open class DomainLookupApiV2 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : DomainLookupApiV0(unauthenticatedNetworkClient)

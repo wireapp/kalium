@@ -174,6 +174,43 @@ class GetMessageAssetUseCaseTest {
                 .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
                 .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
                 .wasInvoked(exactly = once)
+
+            verify(arrangement.userRepository)
+                .suspendFunction(arrangement.userRepository::removeUserBrokenAsset)
+                .with(any())
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenACallToGetAMessageAsset_whenAssetReturnsFederationError_thenShouldReturnAFailureResultWithRetryDisabled() =
+        runTest(testDispatcher.default) {
+            // Given
+            val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+            val someMessageId = "some-message-id"
+            val federatedBackendFailure = NetworkFailure.FederatedBackendFailure
+            val (arrangement, getMessageAsset) = Arrangement()
+                .withDownloadAssetErrorResponse(federatedBackendFailure)
+                .withSuccessfulDownloadStatusUpdate()
+                .withSuccessfulDeleteUserAsset()
+                .arrange()
+
+            // When
+            val result = getMessageAsset(someConversationId, someMessageId).await()
+
+            // Then
+            assertTrue(result is MessageAssetResult.Failure)
+            assertEquals(result.coreFailure::class, federatedBackendFailure::class)
+            assertEquals(false, result.isRetryNeeded)
+
+            verify(arrangement.updateAssetMessageDownloadStatus)
+                .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+                .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
+                .wasInvoked(once)
+
+            verify(arrangement.userRepository)
+                .suspendFunction(arrangement.userRepository::removeUserBrokenAsset)
+                .with(any())
+                .wasNotInvoked()
         }
 
     @Test

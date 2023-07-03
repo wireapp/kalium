@@ -912,7 +912,7 @@ class MessageSenderTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TestMessage.TEXT_MESSAGE))
+                .thenReturn(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
         fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {

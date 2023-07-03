@@ -69,6 +69,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             messageRepository.getMessageById(conversationId, messageId).flatMap { message ->
                 sendDeleteMessageToSelf(
                     message.id,
+                    conversationId,
                     currentClientId
                 ).flatMap {
                     sendDeleteMessageToOriginalSender(
@@ -87,18 +88,19 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
 
     private suspend fun sendDeleteMessageToSelf(
         messageToDelete: String,
+        conversationId: ConversationId,
         currentClientId: ClientId
     ): Either<CoreFailure, Unit> = selfConversationIdProvider().flatMap { selfConversaionIdList ->
         selfConversaionIdList.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
             Message.Signaling(
                 id = uuid4().toString(),
-                content = MessageContent.DeleteMessage(messageToDelete),
+                content = MessageContent.DeleteForMe(messageToDelete, conversationId),
                 conversationId = selfConversationId,
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
-                isSelfMessage = false
+                isSelfMessage = true
             ).let { deleteSinglingMessage ->
                 messageSender.sendMessage(deleteSinglingMessage, MessageTarget.Conversation)
             }
@@ -120,7 +122,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             senderUserId = selfUserId,
             senderClientId = currentClientId,
             status = Message.Status.PENDING,
-            isSelfMessage = false
+            isSelfMessage = true
         ).let { deleteSinglingMessage ->
             messageSender.sendMessage(
                 deleteSinglingMessage,
