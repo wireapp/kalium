@@ -396,7 +396,7 @@ com.wire.kalium.logic.sync.receiver
 com.wire.kalium.logic.sync.receiver.asset
 com.wire.kalium.logic.sync.receiver.conversation
 com.wire.kalium.logic.sync.receiver.conversation.message
-com.wire.kalium.logic.sync.receiver.message
+com.wire.kalium.logic.sync.receiver.handler
 com.wire.kalium.logic.sync.slow
 com.wire.kalium.logic.util
 module:network
