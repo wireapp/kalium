@@ -261,32 +261,32 @@ internal open class ConversationApiV0 internal constructor(
         }
 
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
-        getApiNotSupportError(::fetchMlsOneToOneConversation.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError(::fetchMlsOneToOneConversation.name, MIN_API_VERSION_MLS)
 
     override suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
-        getApiNotSupportError(::fetchSubconversationDetails.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError(::fetchSubconversationDetails.name, MIN_API_VERSION_MLS)
 
     override suspend fun deleteSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId,
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
-        getApiNotSupportError(::deleteSubconversation.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError(::deleteSubconversation.name, MIN_API_VERSION_MLS)
 
     override suspend fun fetchSubconversationGroupInfo(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
-        getApiNotSupportError(::fetchSubconversationGroupInfo.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError(::fetchSubconversationGroupInfo.name, MIN_API_VERSION_MLS)
 
     override suspend fun leaveSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<Unit> =
-        getApiNotSupportError(::leaveSubconversation.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError(::leaveSubconversation.name, MIN_API_VERSION_MLS)
 
     protected suspend fun handleConversationMemberAddedResponse(
         httpResponse: HttpResponse

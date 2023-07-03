@@ -88,7 +88,7 @@ internal open class SelfApiV0 internal constructor(
 
     @Suppress("MagicNumber")
     override suspend fun updateSupportedProtocols(protocols: List<SupportedProtocolDTO>): NetworkResponse<Unit> =
-        getApiNotSupportError(::updateSupportedProtocols.name, 4)
+        getApiNotSupportedError(::updateSupportedProtocols.name, 4)
 
     companion object {
         const val PATH_SELF = "self"
