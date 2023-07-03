@@ -330,6 +330,7 @@ class MessageRepositoryTest {
         )
         val (arrangement, messageRepository) = Arrangement()
             .withSuccessfulMessageDelivery(timestamp)
+            .withFailedToSendMapping(emptyList())
             .arrange()
 
         messageRepository
