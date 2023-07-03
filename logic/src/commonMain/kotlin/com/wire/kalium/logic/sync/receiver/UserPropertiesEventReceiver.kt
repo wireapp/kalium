@@ -18,10 +18,12 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -32,15 +34,17 @@ class UserPropertiesEventReceiverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : UserPropertiesEventReceiver {
 
-    override suspend fun onEvent(event: Event.UserProperty) {
-        when (event) {
+    override suspend fun onEvent(event: Event.UserProperty): Either<CoreFailure, Unit> {
+        return when (event) {
             is Event.UserProperty.ReadReceiptModeSet -> {
                 handleReadReceiptMode(event)
             }
         }
     }
 
-    private fun handleReadReceiptMode(event: Event.UserProperty.ReadReceiptModeSet) {
+    private fun handleReadReceiptMode(
+        event: Event.UserProperty.ReadReceiptModeSet
+    ): Either<CoreFailure, Unit> =
         userConfigRepository
             .setReadReceiptsStatus(event.value)
             .onSuccess {
@@ -58,5 +62,4 @@ class UserPropertiesEventReceiverImpl internal constructor(
                         Pair("errorInfo", "$it")
                     )
             }
-    }
 }

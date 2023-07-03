@@ -172,6 +172,17 @@ class UserEventReceiverTest {
             currentClientIdProvider
         )
 
+        init {
+            withSaveNewClientSucceeding()
+        }
+
+        fun withSaveNewClientSucceeding() = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::saveNewClientEvent)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withCurrentClientIdIs(clientId: ClientId) = apply {
             given(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)

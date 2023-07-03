@@ -57,8 +57,6 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         const val selfDeletionDurationKey = "selfDeletionDuration"
     }
 
-    fun shouldUpdateLastProcessedEventId() = !transient
-
     open fun toLogString(): String {
         return "${toLogMap().toJsonElement()}"
     }

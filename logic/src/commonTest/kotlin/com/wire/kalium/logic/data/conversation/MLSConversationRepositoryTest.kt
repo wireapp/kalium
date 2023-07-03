@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
@@ -74,7 +74,6 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.twice
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -85,7 +84,6 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
@@ -865,7 +863,6 @@ class MLSConversationRepositoryTest {
     }
 
 
-
     @Test
     fun givenSuccessResponse_whenSendingCommitBundle_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
         val (_, mlsConversationRepository) = Arrangement()
@@ -940,6 +937,17 @@ class MLSConversationRepositoryTest {
         val epochsFlow = MutableSharedFlow<GroupID>()
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
+
+        init {
+            withCommitBundleEventReceiverSucceeding()
+        }
+
+        fun withCommitBundleEventReceiverSucceeding() = apply {
+            given(commitBundleEventReceiver)
+                .suspendFunction(commitBundleEventReceiver::onEvent)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
 
         fun withGetConversationByGroupIdSuccessful() = apply {
             given(conversationDAO)

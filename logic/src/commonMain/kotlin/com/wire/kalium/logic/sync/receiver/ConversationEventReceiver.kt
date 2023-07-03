@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
@@ -47,20 +49,64 @@ internal class ConversationEventReceiverImpl(
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler,
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler
 ) : ConversationEventReceiver {
-    override suspend fun onEvent(event: Event.Conversation) {
-        when (event) {
-            is Event.Conversation.NewMessage -> newMessageHandler.handleNewProteusMessage(event)
-            is Event.Conversation.NewMLSMessage -> newMessageHandler.handleNewMLSMessage(event)
-            is Event.Conversation.NewConversation -> newConversationHandler.handle(event)
-            is Event.Conversation.DeletedConversation -> deletedConversationHandler.handle(event)
+    override suspend fun onEvent(event: Event.Conversation): Either<CoreFailure, Unit> {
+        // TODO: Make sure errors are accounted for by each handler.
+        //       onEvent now requires Either, so we can propagate errors,
+        //       but not all handlers are using it yet.
+        //       Returning Either.Right is the equivalent of how it was originally working.
+        return when (event) {
+            is Event.Conversation.NewMessage -> {
+                newMessageHandler.handleNewProteusMessage(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.NewMLSMessage -> {
+                newMessageHandler.handleNewMLSMessage(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.NewConversation -> {
+                newConversationHandler.handle(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.DeletedConversation -> {
+                deletedConversationHandler.handle(event)
+                Either.Right(Unit)
+            }
+
             is Event.Conversation.MemberJoin -> memberJoinHandler.handle(event)
+
             is Event.Conversation.MemberLeave -> memberLeaveHandler.handle(event)
-            is Event.Conversation.MemberChanged -> memberChangeHandler.handle(event)
-            is Event.Conversation.MLSWelcome -> mlsWelcomeHandler.handle(event)
-            is Event.Conversation.RenamedConversation -> renamedConversationHandler.handle(event)
-            is Event.Conversation.ConversationReceiptMode -> receiptModeUpdateEventHandler.handle(event)
-            is Event.Conversation.AccessUpdate -> TODO()
-            is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
+
+            is Event.Conversation.MemberChanged -> {
+                memberChangeHandler.handle(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.MLSWelcome -> {
+                mlsWelcomeHandler.handle(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.RenamedConversation -> {
+                renamedConversationHandler.handle(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.ConversationReceiptMode -> {
+                receiptModeUpdateEventHandler.handle(event)
+                Either.Right(Unit)
+            }
+
+            is Event.Conversation.AccessUpdate -> {
+                TODO()
+            }
+
+            is Event.Conversation.ConversationMessageTimer -> {
+                conversationMessageTimerEventHandler.handle(event)
+                Either.Right(Unit)
+            }
         }
     }
 }
