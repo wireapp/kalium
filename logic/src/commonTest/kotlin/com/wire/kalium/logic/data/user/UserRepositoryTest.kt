@@ -68,7 +68,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryTest {
 
     @Test
@@ -365,6 +364,54 @@ class UserRepositoryTest {
                 .wasNotInvoked()
         }
     }
+
+    @Test
+    fun givenThereAreUsersWithoutMetadata_whenSyncingUsers_thenShouldUpdateThem() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withDaoReturningNoMetadataUsers(listOf(TestUser.ENTITY.copy(name = null)))
+            .withSuccessfulGetMultipleUsersApiRequest(ListUsersDTO(emptyList(), listOf(TestUser.USER_PROFILE_DTO)))
+            .arrange()
+
+        // when
+        userRepository.syncUsersWithoutMetadata()
+            .shouldSucceed()
+
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertUsers)
+            .with(matching {
+                it.first().name != null
+            })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenThereAreNOUsersWithoutMetadata_whenSyncingUsers_thenShouldNOTUpdateThem() = runTest {
+        // given
+        val (arrangement, userRepository) = Arrangement()
+            .withDaoReturningNoMetadataUsers(listOf())
+            .arrange()
+
+        // when
+        userRepository.syncUsersWithoutMetadata()
+            .shouldSucceed()
+
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertUsers)
+            .with(any())
+            .wasNotInvoked()
+    }
+
 
     @Test
     fun whenRemovingUserBrokenAsset_thenShouldCallDaoAndSucceed() = runTest {
