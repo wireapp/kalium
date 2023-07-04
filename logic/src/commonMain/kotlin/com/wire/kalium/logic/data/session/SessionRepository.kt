@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.auth.Account
 import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.feature.auth.AuthTokens
 import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -84,6 +85,7 @@ internal class SessionDataSource(
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
     private val serverConfigRepository: ServerConfigRepository,
+    private val kaliumConfigs: KaliumConfigs,
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
@@ -99,7 +101,7 @@ internal class SessionDataSource(
                 authTokens.userId.toDao(),
                 sessionMapper.toSsoIdEntity(ssoId),
                 serverConfigId,
-                isPersistentWebSocketEnabled = false
+                isPersistentWebSocketEnabled = kaliumConfigs.isWebSocketEnabledByDefault
             )
         }.flatMap {
             wrapStorageRequest {

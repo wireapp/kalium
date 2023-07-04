@@ -27,6 +27,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
@@ -137,6 +138,43 @@ class GetPublicAssetUseCaseTest {
             .suspendFunction(assetRepository::downloadPublicAsset)
             .with(eq(assetKey.value), eq(assetKey.domain))
             .wasInvoked(exactly = once)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::removeUserBrokenAsset)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenACallToGetAPublicAsset_whenThereIsAnFederatedError_thenShouldReturnsAFailureResultWithRetryDisabled() = runTest {
+        val assetKey = UserAssetId("value1", "domain")
+
+        given(assetRepository)
+            .suspendFunction(assetRepository::downloadPublicAsset)
+            .whenInvokedWith(eq(assetKey.value), eq(assetKey.domain))
+            .thenReturn(Either.Left(NetworkFailure.FederatedBackendFailure))
+
+        given(userRepository)
+            .suspendFunction(userRepository::removeUserBrokenAsset)
+            .whenInvokedWith(anything())
+            .thenReturn(Either.Right(Unit))
+
+        val publicAsset = getPublicAsset(assetKey)
+
+        assertEquals(PublicAssetResult.Failure::class, publicAsset::class)
+        assertEquals(NetworkFailure.FederatedBackendFailure::class, (publicAsset as PublicAssetResult.Failure).coreFailure::class)
+        assertEquals(false, publicAsset.isRetryNeeded)
+
+
+        verify(assetRepository)
+            .suspendFunction(assetRepository::downloadPublicAsset)
+            .with(eq(assetKey.value), eq(assetKey.domain))
+            .wasInvoked(exactly = once)
+
+        verify(userRepository)
+            .suspendFunction(userRepository::removeUserBrokenAsset)
+            .with(any())
+            .wasNotInvoked()
     }
 
 }

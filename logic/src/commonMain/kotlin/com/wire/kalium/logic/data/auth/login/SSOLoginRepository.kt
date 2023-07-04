@@ -20,8 +20,10 @@ package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
 
@@ -42,10 +44,12 @@ interface SSOLoginRepository {
     suspend fun metaData(): Either<NetworkFailure, String>
 
     suspend fun settings(): Either<NetworkFailure, SSOSettingsResponse>
+    suspend fun domainLookup(domain: String): Either<NetworkFailure, DomainLookupResult>
 }
 
 class SSOLoginRepositoryImpl(
-    private val ssoLogin: SSOLoginApi
+    private val ssoLogin: SSOLoginApi,
+    private val domainLookup: DomainLookupApi
 ) : SSOLoginRepository {
 
     override suspend fun initiate(
@@ -74,5 +78,11 @@ class SSOLoginRepositoryImpl(
 
     override suspend fun settings(): Either<NetworkFailure, SSOSettingsResponse> = wrapApiRequest {
         ssoLogin.settings()
+    }
+
+     override suspend fun domainLookup(domain: String): Either<NetworkFailure, DomainLookupResult> = wrapApiRequest {
+        domainLookup.lookup(domain)
+    }.map {
+        DomainLookupResult(it.configJsonUrl, it.webappWelcomeUrl)
     }
 }

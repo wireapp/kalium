@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.BroadcastMessageTarget
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -39,7 +39,7 @@ import kotlinx.coroutines.withContext
  * @see [UserAvailabilityStatus]
  */
 class UpdateSelfAvailabilityStatusUseCase internal constructor(
-    private val userRepository: UserRepository,
+    private val accountRepository: AccountRepository,
     private val messageSender: MessageSender,
     private val provideClientId: CurrentClientIdProvider,
     private val selfUserId: QualifiedID,
@@ -50,7 +50,7 @@ class UpdateSelfAvailabilityStatusUseCase internal constructor(
      */
     suspend operator fun invoke(status: UserAvailabilityStatus) {
         withContext(dispatchers.io) {
-            userRepository.updateSelfUserAvailabilityStatus(status)
+            accountRepository.updateSelfUserAvailabilityStatus(status)
             provideClientId().flatMap { selfClientId ->
                 val id = uuid4().toString()
 
