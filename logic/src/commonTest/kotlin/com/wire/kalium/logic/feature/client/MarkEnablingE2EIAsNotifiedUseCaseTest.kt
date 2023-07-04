@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseUseCase
+import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -57,7 +57,7 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        private var markMLSE2EIEnableChangeAsNotified: MarkEnablingE2EIAsNotifiedUseCaseUseCase =
+        private var markMLSE2EIEnableChangeAsNotified: MarkEnablingE2EIAsNotifiedUseCase =
             MarkEnablingE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 
         fun arrange() = this to markMLSE2EIEnableChangeAsNotified
