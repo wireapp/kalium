@@ -137,6 +137,4 @@ class DefaultSetup(setupParallelism: Int) : SetupStep {
 
         return Monkey(accountData, coreLogic.getSessionScope(loginResult.authData.userId))
     }
-
-
 }

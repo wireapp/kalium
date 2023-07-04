@@ -44,7 +44,7 @@ tasks.jar {
 }
 
 kotlin {
-    val jvmTarget = jvm() {
+    val jvmTarget = jvm {
         commonJvmConfig(includeNativeInterop = false)
         tasks.named("run", JavaExec::class) {
             isIgnoreExitValue = true
@@ -52,12 +52,12 @@ kotlin {
             standardOutput = System.out
         }
     }
-    macosX64() {
+    macosX64 {
         binaries {
             executable()
         }
     }
-    macosArm64() {
+    macosArm64 {
         binaries {
             executable()
         }

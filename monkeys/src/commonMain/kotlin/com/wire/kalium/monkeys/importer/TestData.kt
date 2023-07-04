@@ -28,20 +28,31 @@ data class TestDataJsonModel(
 
 @Serializable
 data class BackendDataJsonModel(
+    @SerialName("api")
     val api: String,
+    @SerialName("accounts")
     val accounts: String,
+    @SerialName("webSocket")
     val webSocket: String,
+    @SerialName("blackList")
     val blackList: String,
+    @SerialName("teams")
     val teams: String,
+    @SerialName("website")
     val website: String,
+    @SerialName("title")
     val title: String,
+    @SerialName("passwordForUsers")
     val passwordForUsers: String,
+    @SerialName("domain")
     val domain: String,
+    @SerialName("users")
     val users: List<UserAccountDataJsonModel>
 )
 
 @Serializable
 data class UserAccountDataJsonModel(
+    @SerialName("email")
     val email: String,
     @SerialName("id")
     val unqualifiedId: String
