@@ -36,7 +36,7 @@ sealed interface Message {
     val content: MessageContent
     val conversationId: ConversationId
     val date: String
-    val senderUserId: UserId
+    val senderUserId: UserId?
     val status: Status
 
     /**
@@ -231,7 +231,7 @@ sealed interface Message {
         override val content: MessageContent.System,
         override val conversationId: ConversationId,
         override val date: String,
-        override val senderUserId: UserId,
+        override val senderUserId: UserId?,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         // TODO(refactor): move senderName to inside the specific `content`
@@ -276,6 +276,7 @@ sealed interface Message {
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )
@@ -293,7 +294,7 @@ sealed interface Message {
                 "id" to id.obfuscateId(),
                 "conversationId" to "${conversationId.toLogString()}",
                 "date" to date,
-                "senderUserId" to senderUserId.value.obfuscateId(),
+                "senderUserId" to (senderUserId?.value?.obfuscateId() ?: "Unknown"),
                 "status" to "$status",
                 "visibility" to "$visibility",
             )
@@ -446,7 +447,7 @@ data class MessagePreview(
     val date: String,
     val visibility: Message.Visibility,
     val isSelfMessage: Boolean,
-    val senderUserId: UserId
+    val senderUserId: UserId?
 )
 
 enum class AssetType {

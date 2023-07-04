@@ -210,6 +210,12 @@ interface ConversationRepository {
     suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer?>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
     suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
+
+    suspend fun getConversationIdsByDomain(domain: String): Either<CoreFailure, List<ConversationId>>
+    suspend fun getMemberIdsByTheSameDomainInConversation(
+        domain: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, List<UserId>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -749,6 +755,17 @@ internal class ConversationDataSource internal constructor(
                 persistConversations(it.conversationsFound, null)
             }
         }
+    }
+
+    override suspend fun getConversationIdsByDomain(domain: String): Either<CoreFailure, List<ConversationId>> = wrapStorageRequest {
+        conversationDAO.getConversationIdsByDomain(domain).map { it.toModel() }
+    }
+
+    override suspend fun getMemberIdsByTheSameDomainInConversation(
+        domain: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, List<UserId>> = wrapStorageRequest {
+        conversationDAO.getMemberIdsByTheSameDomainInConversation(domain, conversationId.toDao()).map { it.toModel() }
     }
 
     private suspend fun persistIncompleteConversations(

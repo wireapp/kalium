@@ -530,7 +530,7 @@ class ConversationDAOImpl(
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
         withContext(coroutineContext) {
-            conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
+            conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()?.sender_user_id
         }
 
     override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String) =
@@ -581,4 +581,16 @@ class ConversationDAOImpl(
     override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(coroutineContext) {
         conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
+
+    override suspend fun getConversationIdsByDomain(domain: String): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        conversationQueries.selectConversationIdsByDomain(domain).executeAsList()
+    }
+
+    override suspend fun getMemberIdsByTheSameDomainInConversation(
+        domain: String,
+        conversationId: ConversationIDEntity
+    ): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        memberQueries.getMembersWithSameDomainFromConversation(domain, conversationId).executeAsList()
+    }
+
 }

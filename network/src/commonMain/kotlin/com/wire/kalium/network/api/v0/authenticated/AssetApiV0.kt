@@ -66,7 +66,9 @@ internal open class AssetApiV0 internal constructor(
         tempFileSink: Sink
     ): NetworkResponse<Unit> = runCatching {
         httpClient.prepareGet(buildAssetsPath(assetId, assetDomain)) {
-            assetToken?.let { header(HEADER_ASSET_TOKEN, it) }
+            if (assetToken.isNullOrBlank()) {
+                header(HEADER_ASSET_TOKEN, assetToken)
+            }
         }.execute { httpResponse ->
             if (httpResponse.status.isSuccess()) {
                 handleAssetContentDownload(httpResponse, tempFileSink)

@@ -316,3 +316,6 @@ selectConversationIdsWithoutMetadata:
 SELECT qualified_id
 FROM Conversation
 WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
+
+selectConversationIdsByDomain:
+SELECT qualified_id FROM Conversation WHERE qualified_id LIKE ('%@' || :domain);

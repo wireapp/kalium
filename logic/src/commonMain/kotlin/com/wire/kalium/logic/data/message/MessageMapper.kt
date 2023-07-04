@@ -98,7 +98,7 @@ class MessageMapperImpl(
                 content = message.content.toMessageEntityContent(),
                 conversationId = message.conversationId.toDao(),
                 date = message.date.toInstant(),
-                senderUserId = message.senderUserId.toDao(),
+                senderUserId = message.senderUserId?.toDao(),
                 status = status,
                 visibility = visibility,
                 senderName = message.senderUserName,
@@ -155,7 +155,7 @@ class MessageMapperImpl(
                 content = message.content.toMessageContent(),
                 conversationId = message.conversationId.toModel(),
                 date = message.date.toIsoDateTimeString(),
-                senderUserId = message.senderUserId.toModel(),
+                senderUserId = message.senderUserId?.toModel(),
                 status = status,
                 visibility = message.visibility.toModel(),
                 senderUserName = message.senderName,
@@ -171,7 +171,7 @@ class MessageMapperImpl(
             date = message.date,
             visibility = message.visibility.toModel(),
             isSelfMessage = message.isSelfMessage,
-            senderUserId = message.senderUserId.toModel()
+            senderUserId = message.senderUserId?.toModel()
         )
     }
 

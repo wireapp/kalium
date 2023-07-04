@@ -166,7 +166,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
-            val removedBy: UserId,
+            val removedBy: UserId?,
             val removedList: List<UserId>,
             val timestampIso: String
         ) : Conversation(id, transient, conversationId) {
@@ -175,7 +175,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 typeKey to "Conversation.MemberLeave",
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
-                "removedBy" to removedBy.toLogString(),
+                "removedBy" to removedBy?.toLogString(),
                 timestampIsoKey to timestampIso
             )
         }

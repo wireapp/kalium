@@ -13,7 +13,7 @@ CREATE TABLE Message (
       content_type TEXT AS ContentType NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       creation_date INTEGER AS Instant NOT NULL,
-      sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
+      sender_user_id TEXT AS QualifiedIDEntity,
       sender_client_id TEXT,
       status TEXT AS MessageEntity.Status NOT NULL,
       last_edit_date INTEGER AS Instant,

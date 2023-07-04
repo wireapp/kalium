@@ -5,6 +5,7 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
+import com.wire.kalium.persistence.util.requireField
 import kotlinx.datetime.Instant
 
 internal fun MessageEntityContent.Asset.hasValidRemoteData() =
@@ -176,7 +177,7 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.MissedCall -> messagesQueries.insertMissedCallMessage(
                 message_id = message.id,
                 conversation_id = message.conversationId,
-                caller_id = message.senderUserId
+                caller_id = message.senderUserId.requireField("senderUserId")
             )
 
             is MessageEntityContent.Knock -> {
@@ -276,6 +277,7 @@ internal class MessageInsertExtensionImpl(
                 message.conversationId
             )
                 .executeAsOneOrNull()
+                ?.sender_user_id
             isQuotingSelfUser = senderId == selfUserIDEntity
         }
         when {

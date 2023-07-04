@@ -196,7 +196,7 @@ object MessageMapper {
         contentType: MessageEntity.ContentType,
         date: Instant,
         visibility: MessageEntity.Visibility,
-        senderUserId: UserIDEntity,
+        senderUserId: UserIDEntity?,
         isEphemeral: Boolean,
         senderName: String?,
         senderConnectionStatus: ConnectionEntity.State?,
@@ -249,7 +249,7 @@ object MessageMapper {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
         date: Instant,
-        senderUserId: QualifiedIDEntity,
+        senderUserId: QualifiedIDEntity?,
         isSelfDelete: Boolean,
         senderName: String?,
         senderPreviewAssetId: QualifiedIDEntity?,
@@ -280,7 +280,7 @@ object MessageMapper {
         id: String,
         conversationId: QualifiedIDEntity,
         date: Instant,
-        senderUserId: QualifiedIDEntity,
+        senderUserId: QualifiedIDEntity?,
         senderClientId: String?,
         status: MessageEntity.Status,
         lastEdit: Instant?,
@@ -302,7 +302,7 @@ object MessageMapper {
                 id = id,
                 conversationId = conversationId,
                 date = date,
-                senderUserId = senderUserId,
+                senderUserId = senderUserId.requireField("senderUserId"),
                 senderClientId = senderClientId!!,
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
@@ -346,7 +346,7 @@ object MessageMapper {
         conversationId: QualifiedIDEntity,
         contentType: MessageEntity.ContentType,
         date: Instant,
-        senderUserId: QualifiedIDEntity,
+        senderUserId: QualifiedIDEntity?,
         senderClientId: String?,
         status: MessageEntity.Status,
         lastEditTimestamp: Instant?,
@@ -475,7 +475,7 @@ object MessageMapper {
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
                 isDecryptionResolved = isDecryptionResolved ?: false,
-                senderUserId = senderUserId,
+                senderUserId = senderUserId.requireField("senderUserId"),
                 senderClientId = senderClientId
             )
 

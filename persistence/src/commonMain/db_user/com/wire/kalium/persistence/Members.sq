@@ -43,3 +43,8 @@ WHERE conversation IN (
     JOIN Conversation ON Conversation.qualified_id = Member.conversation
     WHERE Member.user = ? AND Conversation.type = 'GROUP'
 ) AND Member.user = ?;
+
+getMembersWithSameDomainFromConversation:
+SELECT user
+FROM Member
+WHERE user LIKE ('%@' || :domain) AND conversation = :conversation;

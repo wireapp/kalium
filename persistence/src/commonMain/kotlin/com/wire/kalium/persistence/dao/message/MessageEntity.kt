@@ -33,7 +33,7 @@ sealed class MessageEntity(
     open val content: MessageEntityContent,
     open val conversationId: QualifiedIDEntity,
     open val date: Instant,
-    open val senderUserId: QualifiedIDEntity,
+    open val senderUserId: QualifiedIDEntity?,
     open val status: Status,
     open val visibility: Visibility,
     open val isSelfMessage: Boolean,
@@ -71,7 +71,7 @@ sealed class MessageEntity(
         override val content: MessageEntityContent.System,
         override val conversationId: QualifiedIDEntity,
         override val date: Instant,
-        override val senderUserId: QualifiedIDEntity,
+        override val senderUserId: QualifiedIDEntity?,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
@@ -330,14 +330,14 @@ data class MessagePreviewEntity(
     val date: String,
     val visibility: MessageEntity.Visibility,
     val isSelfMessage: Boolean,
-    val senderUserId: QualifiedIDEntity,
+    val senderUserId: QualifiedIDEntity?,
 )
 
 data class NotificationMessageEntity(
     val id: String,
     val contentType: MessageEntity.ContentType,
     val isSelfDelete: Boolean,
-    val senderUserId: QualifiedIDEntity,
+    val senderUserId: QualifiedIDEntity?,
     val senderImage: UserAssetIdEntity?,
 
     val date: Instant,
