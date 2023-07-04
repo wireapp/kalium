@@ -70,13 +70,15 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                         message.id,
                         conversationId,
                         currentClientId
-                    ).flatMap {
-                        sendDeleteMessageToOriginalSender(
-                            message.id,
-                            message.conversationId,
-                            message.senderUserId!!, // TODO Mohamad can we somehow secure this case from getMessageById
-                            currentClientId
-                        )
+                    ).onSuccess {
+                        message.senderUserId?.let { senderUserId ->
+                            sendDeleteMessageToOriginalSender(
+                                message.id,
+                                message.conversationId,
+                                senderUserId,
+                                currentClientId
+                            )
+                        }
                     }.onSuccess {
                         deleteMessageAssetIfExists(message)
                     }.flatMap {
