@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
-import com.wire.kalium.logic.data.featureConfig.MLSE2EIConfigModel
-import com.wire.kalium.logic.data.featureConfig.MLSE2EIModel
+import com.wire.kalium.logic.data.featureConfig.E2EIConfigModel
+import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
@@ -574,11 +574,11 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenMlsE2EIIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
-        val mlsE2EIModel = MLSE2EIModel(MLSE2EIConfigModel("url", 10_000_000_000L), Status.DISABLED)
+    fun givenE2EIIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
+        val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000_000_000L), Status.DISABLED)
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsE2EIModel = mlsE2EIModel)
+                FeatureConfigTest.newModel(e2EIModel = e2EIModel)
             ).arrange()
 
         syncFeatureConfigsUseCase()
@@ -591,7 +591,7 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenMlsE2EIIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
+    fun givenE2EIIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel()

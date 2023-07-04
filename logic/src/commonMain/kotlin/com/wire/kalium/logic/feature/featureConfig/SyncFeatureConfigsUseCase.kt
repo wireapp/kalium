@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.data.featureConfig.MLSE2EIModel
+import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -73,7 +73,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             handleConferenceCalling(it.conferenceCallingModel)
             handlePasswordChallengeStatus(it.secondFactorPasswordChallengeModel)
             handleSelfDeletingMessagesStatus(it.selfDeletingMessagesModel)
-            handleMLSE2EISettings(it.mlsE2EIModel)
+            handleE2EISettings(it.e2EIModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -166,7 +166,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }
     }
 
-    private fun handleMLSE2EISettings(featureConfig: MLSE2EIModel) {
+    private fun handleE2EISettings(featureConfig: E2EIModel) {
         val gracePeriodEndMs = featureConfig.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
         userConfigRepository.setE2EISettings(
             E2EISettings(

@@ -191,7 +191,7 @@ class UserConfigStorageImpl(
     private val isGuestRoomLinkEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    private val mlsE2EIFlow =
+    private val e2EIFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -267,19 +267,19 @@ class UserConfigStorageImpl(
 
     override fun setE2EISettings(settingEntity: E2EISettingsEntity) {
         kaliumPreferences.putSerializable(
-            MLS_E2E_ID,
+            E2EI_SETTINGS,
             settingEntity,
             E2EISettingsEntity.serializer()
         ).also {
-            mlsE2EIFlow.tryEmit(Unit)
+            e2EIFlow.tryEmit(Unit)
         }
     }
 
     override fun getE2EISettings(): E2EISettingsEntity? {
-        return kaliumPreferences.getSerializable(MLS_E2E_ID, E2EISettingsEntity.serializer())
+        return kaliumPreferences.getSerializable(E2EI_SETTINGS, E2EISettingsEntity.serializer())
     }
 
-    override fun e2EISettingsFlow(): Flow<E2EISettingsEntity?> = mlsE2EIFlow
+    override fun e2EISettingsFlow(): Flow<E2EISettingsEntity?> = e2EIFlow
         .map { getE2EISettings() }
         .onStart { emit(getE2EISettings()) }
         .distinctUntilChanged()
@@ -329,7 +329,7 @@ class UserConfigStorageImpl(
         const val GUEST_ROOM_LINK = "guest_room_link"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
-        const val MLS_E2E_ID = "mls_end_to_end_identity_setting"
+        const val E2EI_SETTINGS = "end_to_end_identity_settings"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false

@@ -77,8 +77,8 @@ class FeatureConfigRepositoryTest {
                 emptyList(),
                 Status.ENABLED
             ),
-            MLSE2EIModel(
-                MLSE2EIConfigModel("url", 1000000L),
+            E2EIModel(
+                E2EIConfigModel("url", 1000000L),
                 Status.ENABLED
             )
         )
