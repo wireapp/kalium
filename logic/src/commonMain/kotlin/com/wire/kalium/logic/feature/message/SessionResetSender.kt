@@ -71,7 +71,10 @@ class SessionResetSenderImpl internal constructor(
                 isSelfMessage = true
             )
             val recipient = Recipient(userId, listOf(clientId))
-            messageSender.sendMessage(message, MessageTarget.Client(listOf(recipient)))
+            messageSender.sendMessage(
+                message,
+                MessageTarget.Client(listOf(recipient))
+            )
         }
     }
 
