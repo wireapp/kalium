@@ -44,7 +44,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
             MigratedMessage(
                 conversationId = qualifiedConversation,
                 senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
-                senderClientId = ClientId(fromClientId),
+                senderClientId = ClientId(fromClientId.orEmpty()),
                 timestamp = Instant.parse(time).toEpochMilliseconds(),
                 content = "",
                 unencryptedProto = ProtoContent.Readable(
@@ -65,7 +65,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
             MigratedMessage(
                 conversationId = qualifiedConversation,
                 senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
-                senderClientId = ClientId(fromClientId),
+                senderClientId = ClientId(fromClientId.orEmpty()),
                 timestamp = Instant.parse(time).toEpochMilliseconds(),
                 content = "",
                 unencryptedProto = ProtoContent.Readable(
@@ -76,8 +76,8 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                             name = data.info?.name,
                             mimeType = mimeType,
                             remoteData = AssetContent.RemoteData(
-                                otrKey = data.otrKey?.toString()?.toByteArray() ?: ByteArray(0),
-                                sha256 = data.sha256?.toString()?.toByteArray() ?: ByteArray(0),
+                                otrKey = data.otrKey?.values?.map { it.toByte() }?.toByteArray() ?: ByteArray(0),
+                                sha256 = data.sha256?.values?.map { it.toByte() }?.toByteArray() ?: ByteArray(0),
                                 assetId = data.key ?: "",
                                 assetToken = data.token,
                                 assetDomain = data.domain,
