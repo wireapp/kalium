@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapToRightOr
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
@@ -47,6 +48,7 @@ interface ObserveNewClientsUseCase {
     suspend operator fun invoke(): Flow<NewClientResult>
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveNewClientsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
     private val observeValidAccounts: ObserveValidAccountsUseCase,
