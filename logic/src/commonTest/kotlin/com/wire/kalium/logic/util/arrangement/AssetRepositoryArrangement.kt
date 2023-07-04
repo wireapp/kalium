@@ -15,14 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.util.arrangement
 
-package com.wire.kalium.logic.feature.message
+import com.wire.kalium.logic.data.asset.AssetRepository
+import io.mockative.Mock
+import io.mockative.mock
 
-import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.user.UserId
+internal interface AssetRepositoryArrangement {
+    @Mock
+    val assetRepository: AssetRepository
+}
 
-sealed interface MessageTarget {
-    data class Users(val userId: List<UserId>) : MessageTarget
-    class Client(val recipients: List<Recipient>) : MessageTarget
-    data class Conversation(val usersToIgnore: Set<UserId> = emptySet()) : MessageTarget
+internal open class AssetRepositoryArrangementImpl : AssetRepositoryArrangement {
+    @Mock
+    override val assetRepository: AssetRepository = mock(AssetRepository::class)
 }
