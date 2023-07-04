@@ -102,7 +102,7 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message>
+    suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
 
     suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -130,7 +130,6 @@ interface MessageRepository {
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget,
-        ignoredUsers: List<UserId> = emptyList()
     ): Either<CoreFailure, MessageSent>
 
     /**
@@ -296,10 +295,10 @@ class MessageDataSource(
             messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = conversationId.toDao())
         }
 
-    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Message> =
+    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
-        }.map { messageMapper.fromEntityToMessage(it) }
+        }.map(messageMapper::fromEntityToMessage)
 
     override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -345,8 +344,7 @@ class MessageDataSource(
     override suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget,
-        ignoredUsers: List<UserId>
+        messageTarget: MessageTarget
     ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
@@ -364,7 +362,7 @@ class MessageDataSource(
                     MessagePriority.HIGH,
                     false,
                     envelope.dataBlob?.data,
-                    messageTarget.toOption(ignoredUsers)
+                    messageTarget.toOption()
                 ),
                 conversationId.toApi(),
             )
@@ -382,17 +380,16 @@ class MessageDataSource(
         })
     }
 
-    private fun MessageTarget.toOption(ignoredUsers: List<UserId>) = when (this) {
-        is MessageTarget.Client -> {
-            if (ignoredUsers.isNotEmpty()) kaliumLogger.w("Ignoring specific users is not supported for client targets")
-            MessageApi.QualifiedMessageOption.IgnoreAll
-        }
+    private fun MessageTarget.toOption() = when (this) {
+        is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
 
-        is MessageTarget.Conversation -> if (ignoredUsers.isNotEmpty()) {
-            MessageApi.QualifiedMessageOption.IgnoreSome(ignoredUsers.map { it.toApi() })
+        is MessageTarget.Conversation -> if (this.usersToIgnore.isNotEmpty()) {
+            MessageApi.QualifiedMessageOption.IgnoreSome(this.usersToIgnore.map { it.toApi() })
         } else {
             MessageApi.QualifiedMessageOption.ReportAll
         }
+
+        is MessageTarget.Users -> MessageApi.QualifiedMessageOption.ReportSome(this.userId.map { it.toApi() })
     }
 
     override suspend fun broadcastEnvelope(

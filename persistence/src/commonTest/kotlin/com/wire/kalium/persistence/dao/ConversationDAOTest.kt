@@ -64,7 +64,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
     private lateinit var memberDAO: MemberDAO
-    private lateinit var assertDAO: AssetDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -76,7 +75,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO = db.userDAO
         teamDAO = db.teamDAO
         memberDAO = db.memberDAO
-        assertDAO = db.assetDAO
     }
 
     @Test

@@ -15,14 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.user
 
-package com.wire.kalium.logic.feature.message
+import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.user.AccountRepository
+import com.wire.kalium.logic.functional.fold
 
-import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.user.UserId
+/**
+ * Use case for deleting the user account.
+ */
+class DeleteAccountUseCase internal constructor(
+    private val accountRepository: AccountRepository
+) {
+    suspend operator fun invoke(password: String?): Result =
+        accountRepository.deleteAccount(password)
+            .fold(Result::Failure, { Result.Success })
 
-sealed interface MessageTarget {
-    data class Users(val userId: List<UserId>) : MessageTarget
-    class Client(val recipients: List<Recipient>) : MessageTarget
-    data class Conversation(val usersToIgnore: Set<UserId> = emptySet()) : MessageTarget
+    sealed class Result {
+        object Success : Result()
+        data class Failure(val networkFailure: NetworkFailure) : Result()
+    }
 }

@@ -124,6 +124,7 @@ interface ConversationRepository {
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
+    suspend fun getRecipientById(conversationId: ConversationId, userIDList: List<UserId>): Either<StorageFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
@@ -547,6 +548,13 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest {
             clientDAO.conversationRecipient(conversationId.toDao())
         }.map(memberMapper::fromMapOfClientsEntityToRecipients)
+
+    override suspend fun getRecipientById(
+        conversationId: ConversationId,
+        userIDList: List<UserId>
+    ): Either<StorageFailure, List<Recipient>> = wrapStorageRequest {
+        clientDAO.recipientsIfTheyArePartOfConversation(conversationId.toDao(), userIDList.map(UserId::toDao).toSet())
+    }.map(memberMapper::fromMapOfClientsEntityToRecipients)
 
     /**
      * Fetches a list of all recipients for a given conversation including this very client

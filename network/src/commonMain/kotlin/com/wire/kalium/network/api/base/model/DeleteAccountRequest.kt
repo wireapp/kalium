@@ -15,14 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.model
 
-package com.wire.kalium.logic.feature.message
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.user.UserId
-
-sealed interface MessageTarget {
-    data class Users(val userId: List<UserId>) : MessageTarget
-    class Client(val recipients: List<Recipient>) : MessageTarget
-    data class Conversation(val usersToIgnore: Set<UserId> = emptySet()) : MessageTarget
-}
+@Serializable
+internal data class DeleteAccountRequest(
+    @SerialName("password") val password: String?
+)

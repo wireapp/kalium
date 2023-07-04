@@ -390,7 +390,7 @@ class MessageSenderTest {
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget), anything())
+                .with(eq(message.conversationId), anything(), eq(messageTarget))
                 .wasInvoked(exactly = once)
         }
     }
@@ -414,7 +414,7 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val messageTarget = MessageTarget.Conversation
+        val messageTarget = MessageTarget.Conversation()
 
         arrangement.testScope.runTest {
             // when
@@ -437,7 +437,7 @@ class MessageSenderTest {
 
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget), anything())
+                .with(eq(message.conversationId), anything(), eq(messageTarget))
                 .wasInvoked(exactly = once)
         }
     }
@@ -912,7 +912,7 @@ class MessageSenderTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TestMessage.TEXT_MESSAGE))
+                .thenReturn(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
         fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
@@ -984,7 +984,7 @@ class MessageSenderTest {
         fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(result)
         }
 

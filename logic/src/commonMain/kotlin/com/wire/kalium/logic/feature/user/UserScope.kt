@@ -21,12 +21,12 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
@@ -61,6 +61,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 @Suppress("LongParameterList")
 class UserScope internal constructor(
     private val userRepository: UserRepository,
+    private val accountRepository: AccountRepository,
     private val searchUserRepository: SearchUserRepository,
     private val syncManager: SyncManager,
     private val assetRepository: AssetRepository,
@@ -74,7 +75,6 @@ class UserScope internal constructor(
     private val userPropertyRepository: UserPropertyRepository,
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
-    private val conversationRepository: ConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -96,13 +96,13 @@ class UserScope internal constructor(
         )
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
-    val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(userRepository, validateUserHandleUseCase, syncManager)
+    val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
     val getKnownUser: GetKnownUserUseCase get() = GetKnownUserUseCaseImpl(userRepository)
     val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase get() = RefreshUsersWithoutMetadataUseCaseImpl(userRepository)
     val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
-        get() = UpdateSelfAvailabilityStatusUseCase(userRepository, messageSender, clientIdProvider, selfUserId)
+        get() = UpdateSelfAvailabilityStatusUseCase(accountRepository, messageSender, clientIdProvider, selfUserId)
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 
@@ -131,9 +131,11 @@ class UserScope internal constructor(
 
     val persistMigratedUsers: PersistMigratedUsersUseCase get() = PersistMigratedUsersUseCaseImpl(userRepository)
 
-    val updateDisplayName: UpdateDisplayNameUseCase get() = UpdateDisplayNameUseCaseImpl(userRepository)
+    val updateDisplayName: UpdateDisplayNameUseCase get() = UpdateDisplayNameUseCaseImpl(accountRepository)
 
-    val updateEmail: UpdateEmailUseCase get() = UpdateEmailUseCase(userRepository)
+    val updateEmail: UpdateEmailUseCase get() = UpdateEmailUseCase(accountRepository)
 
     val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
+
+    val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
 }
