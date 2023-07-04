@@ -39,4 +39,5 @@ interface SelfApi {
      * true if the email address was updated, it is the same email address
      */
     suspend fun updateEmailAddress(email: String): NetworkResponse<Boolean>
+    suspend fun deleteAccount(password: String?): NetworkResponse<Unit>
 }

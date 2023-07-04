@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -45,8 +45,8 @@ class UpdateDisplayNameUseCaseTest {
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Success)
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateSelfDisplayName)
+        verify(arrangement.accountRepository)
+            .suspendFunction(arrangement.accountRepository::updateSelfDisplayName)
             .with(any())
             .wasInvoked(once)
     }
@@ -60,8 +60,8 @@ class UpdateDisplayNameUseCaseTest {
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Failure)
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateSelfDisplayName)
+        verify(arrangement.accountRepository)
+            .suspendFunction(arrangement.accountRepository::updateSelfDisplayName)
             .with(any())
             .wasInvoked(once)
     }
@@ -69,23 +69,23 @@ class UpdateDisplayNameUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val accountRepository = mock(classOf<AccountRepository>())
 
         fun withSuccessfulUploadResponse() = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::updateSelfDisplayName)
+            given(accountRepository)
+                .suspendFunction(accountRepository::updateSelfDisplayName)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withErrorResponse() = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::updateSelfDisplayName)
+            given(accountRepository)
+                .suspendFunction(accountRepository::updateSelfDisplayName)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
         }
 
-        fun arrange() = this to UpdateDisplayNameUseCaseImpl(userRepository)
+        fun arrange() = this to UpdateDisplayNameUseCaseImpl(accountRepository)
     }
 
     companion object {
