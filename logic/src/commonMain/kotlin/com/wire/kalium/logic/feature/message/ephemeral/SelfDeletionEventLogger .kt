@@ -25,7 +25,7 @@ import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-object SelfDeletionEventLogger {
+internal object SelfDeletionEventLogger {
     fun log(
         loggingSelfDeletionEvent: LoggingSelfDeletionEvent
     ) {
@@ -33,7 +33,7 @@ object SelfDeletionEventLogger {
     }
 }
 
-sealed class LoggingSelfDeletionEvent(
+internal sealed class LoggingSelfDeletionEvent(
     open val message: Message.Regular,
     open val expirationData: Message.ExpirationData
 ) {
