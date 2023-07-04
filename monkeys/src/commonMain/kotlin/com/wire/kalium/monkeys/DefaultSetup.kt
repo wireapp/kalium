@@ -18,6 +18,7 @@
 package com.wire.kalium.monkeys
 
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
@@ -42,19 +43,20 @@ class DefaultSetup(setupParallelism: Int) : SetupStep {
         coreLogic: CoreLogic,
         accountGroups: List<List<UserData>>
     ): List<List<Monkey>> = coroutineScope {
-        println("### Getting versioned backend")
-        val authScope = getAuthScope(coreLogic)
-
         println("### LOGGING IN ALL USERS")
         val monkeyGroups = accountGroups.map { group ->
             group.map { accountData ->
                 async(dispatcher) {
+                    println("### Getting versioned backend")
+                    val authScope = getAuthScope(coreLogic, accountData.backend)
                     acquireMonkeySessions(accountData, authScope, coreLogic)
                 }
             }.awaitAll()
         }
 
         registerAllClients(monkeyGroups)
+
+        // TODO: Connection requests between multiple federated backends
 
         monkeyGroups
     }
@@ -88,8 +90,20 @@ class DefaultSetup(setupParallelism: Int) : SetupStep {
         }
     }
 
-    private suspend fun getAuthScope(coreLogic: CoreLogic): AuthenticationScope {
-        val result = coreLogic.versionedAuthenticationScope(MonkeyApplication.ANTA_SERVER_CONFIGS).invoke()
+    private suspend fun getAuthScope(coreLogic: CoreLogic, backend: Backend): AuthenticationScope {
+        val result = coreLogic.versionedAuthenticationScope(
+            ServerConfig.Links(
+                api = backend.api,
+                accounts = backend.accounts,
+                webSocket = backend.webSocket,
+                blackList = backend.blackList,
+                teams = backend.teams,
+                website = backend.website,
+                title = backend.title,
+                isOnPremises = true,
+                apiProxy = null
+            )
+        ).invoke()
         if (result !is AutoVersionAuthScopeUseCase.Result.Success) {
             error("Invalid backend for whatever reason")
         }

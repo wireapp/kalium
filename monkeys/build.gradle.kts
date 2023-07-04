@@ -24,6 +24,8 @@ import com.wire.kalium.plugins.commonJvmConfig
 plugins {
     application
     kotlin("multiplatform")
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
 
@@ -73,6 +75,8 @@ kotlin {
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
+
+                implementation(libs.ktxSerialization)
             }
         }
         val jvmMain by getting {

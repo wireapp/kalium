@@ -22,19 +22,21 @@ package com.wire.kalium.monkeys
 
 import co.touchlab.kermit.LogWriter
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.monkeys.importer.TestDataImporter
 import kotlinx.coroutines.runBlocking
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
+    private val dataFilePath by argument(help = "path to the test data file")
     private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.VERBOSE)
     private val logOutputFile by option(help = "output file for logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
@@ -56,10 +58,15 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         }
 
         coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
-        runMonkeys(coreLogic, SimpleTestSequence())
+        val users = TestDataImporter().importFromFile(dataFilePath)
+        runMonkeys(coreLogic, users, SimpleTestSequence())
     }
 
-    private suspend fun runMonkeys(coreLogic: CoreLogic, testSequence: TestSequence) = with(testSequence) {
+    private suspend fun runMonkeys(
+        coreLogic: CoreLogic,
+        users: List<UserData>,
+        testSequence: TestSequence
+    ) = with(testSequence) {
         val monkeyGroups = split(users)
         val monkeyScopes = setup(coreLogic, monkeyGroups)
         val conversations = createConversations(monkeyScopes)
@@ -71,17 +78,6 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     companion object {
         val HOME_DIRECTORY: String = homeDirectory()
         val GROUP_TYPE = ConversationOptions.Protocol.MLS
-        val ANTA_SERVER_CONFIGS = ServerConfig.Links(
-            api = "https://nginz-https.anta.wire.link",
-            accounts = "https://account.anta.wire.link/",
-            webSocket = "https://nginz-ssl.anta.wire.link/",
-            blackList = "https://clientblacklist.wire.com/staging",
-            teams = "https://teams.anta.wire.link/",
-            website = "https://example.org",
-            title = "Anta Backend",
-            isOnPremises = true,
-            apiProxy = null
-        )
     }
 
 }
