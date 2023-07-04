@@ -72,6 +72,9 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
+import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -107,10 +110,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
-import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
-@OptIn(ExperimentalCoroutinesApi::class)
 class ConversationRepositoryTest {
 
     @Test
@@ -1250,7 +1251,10 @@ class ConversationRepositoryTest {
                 .thenReturn(NetworkResponse.Success(CONVERSATION_RENAME_RESPONSE, emptyMap(), HttpStatusCode.OK.value))
         }
 
-        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<ClientEntity>>) =
+        suspend fun withConversationRecipients(
+            conversationIDEntity: ConversationIDEntity,
+            result: Map<QualifiedIDEntity, List<ClientEntity>>
+        ) =
             apply {
                 given(clientDao)
                     .coroutine { clientDao.conversationRecipient(conversationIDEntity) }
