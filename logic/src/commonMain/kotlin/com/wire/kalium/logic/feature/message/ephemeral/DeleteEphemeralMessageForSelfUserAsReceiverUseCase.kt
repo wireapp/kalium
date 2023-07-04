@@ -74,7 +74,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                         sendDeleteMessageToOriginalSender(
                             message.id,
                             message.conversationId,
-                            message.senderUserId,
+                            message.senderUserId!!, // TODO Mohamad can we somehow secure this case from getMessageById
                             currentClientId
                         )
                     }.onSuccess {
