@@ -138,7 +138,7 @@ internal fun provideBaseHttpClient(
 
     if (installCompression) {
         install(ContentEncoding) {
-             gzip()
+            gzip()
             identity()
         }
     }
