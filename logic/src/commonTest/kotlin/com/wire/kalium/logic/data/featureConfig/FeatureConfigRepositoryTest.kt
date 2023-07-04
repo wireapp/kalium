@@ -30,7 +30,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSE2EIConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -156,8 +156,8 @@ class FeatureConfigRepositoryTest {
                     1
                 ), FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.MLSE2EI(
-                MLSE2EIConfigDTO("url", 1000000L),
+            FeatureConfigData.E2EI(
+                E2EIConfigDTO("url", 1000000L),
                 FeatureFlagStatusDTO.ENABLED
             )
         )

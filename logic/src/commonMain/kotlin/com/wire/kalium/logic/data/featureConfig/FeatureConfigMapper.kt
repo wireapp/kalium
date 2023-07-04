@@ -33,7 +33,7 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel
     fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel
     fun fromDTO(data: FeatureConfigData.ConversationGuestLinks): ConfigsStatusModel
-    fun fromDTO(data: FeatureConfigData.MLSE2EI?): E2EIModel
+    fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -110,7 +110,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             status = fromDTO(data.status)
         )
 
-    override fun fromDTO(data: FeatureConfigData.MLSE2EI?): E2EIModel =
+    override fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel =
         E2EIModel(
             E2EIConfigModel(
                 data?.config?.url ?: "",

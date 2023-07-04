@@ -29,7 +29,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSE2EIConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -145,8 +145,8 @@ class FeatureConfigMapperTest {
                     1
                 ), FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.MLSE2EI(
-                MLSE2EIConfigDTO("url", 1_000_000L),
+            FeatureConfigData.E2EI(
+                E2EIConfigDTO("url", 1_000_000L),
                 FeatureFlagStatusDTO.ENABLED
             )
         )
