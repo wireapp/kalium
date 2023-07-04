@@ -20,12 +20,13 @@ package com.wire.kalium.persistence.dao.client
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -44,6 +45,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     private lateinit var clientDAO: ClientDAO
     private lateinit var userDAO: UserDAO
     private lateinit var conversationDAO: ConversationDAO
+    private lateinit var memberDAO: MemberDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -53,6 +55,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO = db.clientDAO
         userDAO = db.userDAO
         conversationDAO = db.conversationDAO
+        memberDAO = db.memberDAO
     }
 
     @Test
@@ -219,7 +222,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         clientDAO.insertClient(insertedClient2)
         clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
         conversationDAO.insertConversations(listOf(conversationEntity1))
-        conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
+        memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Admin), conversationEntity1.id)
         val actual = clientDAO.conversationRecipient(conversationEntity1.id)
         assertEquals(expected, actual)
     }
@@ -281,7 +284,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         val user = user
         userDAO.insertUser(user)
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
+        memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Admin), conversationEntity1.id)
 
         clientDAO.insertClient(insertedClient)
         val invalidClient = insertedClient.copy(id = "id2")
@@ -300,7 +303,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertMember(Member(user.id, Member.Role.Admin), conversationEntity1.id)
+        memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Admin), conversationEntity1.id)
 
         val user2 = newUserEntity(QualifiedIDEntity("test2", "domain"))
         userDAO.insertUser(user2)

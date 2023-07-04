@@ -18,10 +18,10 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAssetIdEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -345,7 +345,6 @@ data class NotificationMessageEntity(
     val text: String?,
     val assetMimeType: String?,
     val isQuotingSelf: Boolean,
-
     val conversationId: QualifiedIDEntity,
     val conversationName: String?,
     val mutedStatus: ConversationEntity.MutedStatus,

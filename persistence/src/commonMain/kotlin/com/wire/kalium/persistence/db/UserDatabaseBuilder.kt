@@ -28,8 +28,6 @@ import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.MigrationDAO
@@ -50,6 +48,10 @@ import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
@@ -163,9 +165,16 @@ class UserDatabaseBuilder internal constructor(
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
             database.conversationsQueries,
-            database.usersQueries,
             database.membersQueries,
             database.unreadEventsQueries,
+            queriesContext
+        )
+
+    val memberDAO: MemberDAO
+        get() = MemberDAOImpl(
+            database.membersQueries,
+            database.usersQueries,
+            database.conversationsQueries,
             queriesContext
         )
 
