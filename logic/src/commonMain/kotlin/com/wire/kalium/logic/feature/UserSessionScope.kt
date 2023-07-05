@@ -186,6 +186,12 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
@@ -283,6 +289,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessa
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
@@ -964,9 +971,33 @@ class UserSessionScope internal constructor(
             userId
         )
 
-    private val newMessageHandler: NewMessageEventHandlerImpl
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
+
+    private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase
+        get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            currentClientIdProvider = clientIdProvider,
+            messageSender = messages.messageSender,
+            selfUserId = userId,
+            selfConversationIdProvider = selfConversationIdProvider
+        )
+
+    internal val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler =
+        EphemeralMessageDeletionHandlerImpl(
+            userSessionCoroutineScope = this,
+            messageRepository = messageRepository,
+            deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
+            deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
+        )
+
+    private val newMessageHandler: NewMessageEventHandler
         get() = NewMessageEventHandlerImpl(
-            proteusUnpacker, mlsUnpacker, applicationMessageHandler
+            proteusUnpacker, mlsUnpacker, applicationMessageHandler,
+            { conversationId, messageId ->
+                ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
+            }, userId
         )
 
     private val newConversationHandler: NewConversationEventHandler

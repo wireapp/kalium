@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -44,7 +46,7 @@ internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
     private val applicationMessageHandler: ApplicationMessageHandler,
-    private val enqueueMessageSelfDeletionUseCase: EnqueueMessageSelfDeletionUseCase,
+    private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId
 ) : NewMessageEventHandler {
 
@@ -130,7 +132,7 @@ internal class NewMessageEventHandlerImpl(
 
     private fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {
         if (result.senderUserId == selfUserId && result.content.expiresAfterMillis != null) {
-            enqueueMessageSelfDeletionUseCase(
+            enqueueSelfDeletion(
                 result.conversationId,
                 result.content.messageUid
             )
