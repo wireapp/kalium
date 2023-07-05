@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer.Comp
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -47,8 +49,12 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val selfUserId: UserId
 ) : FeatureConfigEventReceiver {
 
-    override suspend fun onEvent(event: Event.FeatureConfig) {
+    override suspend fun onEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> {
         handleFeatureConfigEvent(event)
+        // TODO: Make sure errors are accounted for.
+        //       onEvent now requires Either, so we can propagate errors.
+        //       Returning Either.Right is the equivalent of how it was originally working.
+        return Either.Right(Unit)
     }
 
     @Suppress("LongMethod", "ComplexMethod")
