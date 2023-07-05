@@ -942,9 +942,7 @@ class UserSessionScope internal constructor(
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler
-        get() {
-            val convRepo = conversationRepository
-            return ApplicationMessageHandlerImpl(
+        get() = ApplicationMessageHandlerImpl(
                 userRepository,
                 messageRepository,
                 assetMessageHandler,
@@ -952,9 +950,9 @@ class UserSessionScope internal constructor(
                 persistMessage,
                 persistReaction,
                 MessageTextEditHandlerImpl(messageRepository),
-                LastReadContentHandlerImpl(convRepo, userId, isMessageSentInSelfConversation),
-                ClearConversationContentHandlerImpl(
-                    convRepo,
+                LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
+            ClearConversationContentHandlerImpl(
+                conversationRepository,
                     userId,
                     isMessageSentInSelfConversation,
                 ),
@@ -964,7 +962,7 @@ class UserSessionScope internal constructor(
                 receiptMessageHandler,
                 userId
             )
-        }
+
 
     private val newMessageHandler: NewMessageEventHandlerImpl
         get() = NewMessageEventHandlerImpl(
