@@ -303,12 +303,6 @@ class NewMessageEventHandlerTest {
             SELF_USER_ID
         )
 
-        fun withEnqueueSelfDeleteSuccess() = apply {
-            given(ephemeralMessageDeletionHandler)
-                .function(ephemeralMessageDeletionHandler::startSelfDeletion)
-                .whenInvokedWith(any(), any())
-        }
-
         fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult>) = apply {
             given(proteusMessageUnpacker)
                 .suspendFunction(proteusMessageUnpacker::unpackProteusMessage)
