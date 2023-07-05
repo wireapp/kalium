@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
+import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
@@ -466,6 +467,19 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
                 selfDeletionDurationKey to model.config.enforcedTimeoutSeconds
+            )
+        }
+
+        data class MLSE2EIUpdated(
+            override val id: String,
+            override val transient: Boolean,
+            val model: E2EIModel
+        ) : FeatureConfig(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.MLSE2EIUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+                "config" to model.config
             )
         }
 
