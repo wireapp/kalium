@@ -51,6 +51,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageFor
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
+import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
@@ -113,7 +114,7 @@ class MessageScope internal constructor(
     private val messageSendingInterceptor: MessageSendingInterceptor
         get() = MessageSendingInterceptorImpl(messageContentEncoder, messageRepository)
 
-    internal val ephemeralMessageDeletionHandler =
+    internal val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler =
         EphemeralMessageDeletionHandlerImpl(
             userSessionCoroutineScope = scope,
             messageRepository = messageRepository,
