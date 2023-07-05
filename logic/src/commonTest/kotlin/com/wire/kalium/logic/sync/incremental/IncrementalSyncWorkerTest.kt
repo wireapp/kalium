@@ -19,13 +19,15 @@
 package com.wire.kalium.logic.sync.incremental
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.configure
+import io.mockative.any
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -41,6 +43,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertFailsWith
 
 class IncrementalSyncWorkerTest {
 
@@ -80,6 +83,7 @@ class IncrementalSyncWorkerTest {
                 awaitComplete()
             }
         }
+
     @Test
     fun givenGathererEmitsEventDuringPendingSource_whenPerformingIncrementalSync_thenWorkerShouldEmitPendingSource() =
         runTest(TestKaliumDispatcher.default) {
@@ -116,13 +120,33 @@ class IncrementalSyncWorkerTest {
         assertEquals(exception, resultException)
     }
 
+    @Test
+    fun givenProcessorFails_whenPerformingIncrementalSync_thenShouldThrowKaliumSyncException() = runTest {
+        val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
+        val (_, worker) = Arrangement()
+            .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
+            .withEventGathererReturning(flowOf(TestEvent.memberJoin()))
+            .withEventProcessorFailingWith(coreFailureCause)
+            .arrange()
+
+        val resultException = assertFailsWith<KaliumSyncException> {
+            worker.processEventsWhilePolicyAllowsFlow().collect()
+        }
+
+        assertEquals(coreFailureCause, resultException.coreFailureCause)
+    }
+
     private class Arrangement {
 
         @Mock
-        val eventProcessor: EventProcessor = configure(mock(EventProcessor::class)) { stubsUnitByDefault = true }
+        val eventProcessor: EventProcessor = mock(EventProcessor::class)
 
         @Mock
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
+
+        init {
+            withEventProcessorSucceeding()
+        }
 
         fun withEventGathererReturning(eventFlow: Flow<Event>) = apply {
             given(eventGatherer)
@@ -145,11 +169,19 @@ class IncrementalSyncWorkerTest {
                 .thenThrow(throwable)
         }
 
-        private val incrementalSyncWorker = IncrementalSyncWorkerImpl(
+        fun withEventProcessorReturning(result: Either<CoreFailure, Unit>) = apply {
+            given(eventProcessor)
+                .suspendFunction(eventProcessor::processEvent)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(Unit))
+
+        fun withEventProcessorFailingWith(failure: CoreFailure) = withEventProcessorReturning(Either.Left(failure))
+
+        fun arrange() = this to IncrementalSyncWorkerImpl(
             eventGatherer, eventProcessor
         )
-
-        fun arrange() = this to incrementalSyncWorker
-
     }
 }
