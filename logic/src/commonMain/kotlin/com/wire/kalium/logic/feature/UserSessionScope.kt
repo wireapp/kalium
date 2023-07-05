@@ -418,7 +418,7 @@ class UserSessionScope internal constructor(
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
-         globalScope.serverConfigRepository
+        globalScope.serverConfigRepository
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -530,11 +530,12 @@ class UserSessionScope internal constructor(
         selfTeamId
     )
 
-    private val accountRepository: AccountRepository get() = AccountRepositoryImpl(
-        userDAO = userStorage.database.userDAO,
-        selfUserId = userId,
-        selfApi = authenticatedNetworkContainer.selfApi
-    )
+    private val accountRepository: AccountRepository
+        get() = AccountRepositoryImpl(
+            userDAO = userStorage.database.userDAO,
+            selfUserId = userId,
+            selfApi = authenticatedNetworkContainer.selfApi
+        )
 
     internal val pushTokenRepository: PushTokenRepository
         get() = PushTokenDataSource(userStorage.database.metadataDAO)
@@ -955,29 +956,26 @@ class UserSessionScope internal constructor(
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler
-        get()  {
-            val convRepo = conversationRepository
-            return ApplicationMessageHandlerImpl(
-                userRepository,
-
-                messageRepository,
-                assetMessageHandler,
-                callManager,
-                persistMessage,
-                persistReaction,
-                MessageTextEditHandlerImpl(messageRepository),
-                LastReadContentHandlerImpl(convRepo, userId, isMessageSentInSelfConversation),
-                ClearConversationContentHandlerImpl(
-                    convRepo,
-                    userId,
-                    isMessageSentInSelfConversation,
-                ),
-                DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
-                messageEncoder,
-                receiptMessageHandler,
-                userId
-            )
-        }
+        get() = ApplicationMessageHandlerImpl(
+            userRepository,
+            messageRepository,
+            assetMessageHandler,
+            callManager,
+            persistMessage,
+            persistReaction,
+            MessageTextEditHandlerImpl(messageRepository),
+            LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
+            ClearConversationContentHandlerImpl(
+                conversationRepository,
+                userId,
+                isMessageSentInSelfConversation,
+            ),
+            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
+            messageEncoder,
+            receiptMessageHandler,
+            userId
+        )
 
     private val mlsWrongEpochHandler: MLSWrongEpochHandler
         get() = MLSWrongEpochHandlerImpl(

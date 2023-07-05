@@ -114,6 +114,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(true)
             .withMessageSending(false)
+
             .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
