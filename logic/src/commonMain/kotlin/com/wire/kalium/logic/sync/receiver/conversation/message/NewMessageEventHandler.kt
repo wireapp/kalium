@@ -27,11 +27,7 @@ import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
-import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
-import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
