@@ -283,6 +283,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessa
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
@@ -965,9 +966,12 @@ class UserSessionScope internal constructor(
             userId
         )
 
-    private val newMessageHandler: NewMessageEventHandlerImpl
+    private val newMessageHandler: NewMessageEventHandler
         get() = NewMessageEventHandlerImpl(
-            proteusUnpacker, mlsUnpacker, applicationMessageHandler
+            proteusUnpacker, mlsUnpacker, applicationMessageHandler,
+            { conversationId, messageId ->
+                messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
+            }, userId
         )
 
     private val newConversationHandler: NewConversationEventHandler
