@@ -59,7 +59,9 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.MLSWelcome -> mlsWelcomeHandler.handle(event)
             is Event.Conversation.RenamedConversation -> renamedConversationHandler.handle(event)
             is Event.Conversation.ConversationReceiptMode -> receiptModeUpdateEventHandler.handle(event)
-            is Event.Conversation.AccessUpdate -> TODO()
+            is Event.Conversation.AccessUpdate -> {
+                /* no-op */
+            }
             is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
         }
     }

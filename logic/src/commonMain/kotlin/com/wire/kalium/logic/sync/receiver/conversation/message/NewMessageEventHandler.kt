@@ -25,7 +25,11 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -39,7 +43,9 @@ internal interface NewMessageEventHandler {
 internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
-    private val applicationMessageHandler: ApplicationMessageHandler
+    private val applicationMessageHandler: ApplicationMessageHandler,
+    private val enqueueMessageSelfDeletionUseCase: EnqueueMessageSelfDeletionUseCase,
+    private val selfUserId: UserId
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -74,7 +80,10 @@ internal class NewMessageEventHandlerImpl(
                     )
                 )
             }.onSuccess {
-                handleSuccessfulResult(it)
+                if (it is MessageUnpackResult.ApplicationMessage) {
+                    handleSuccessfulResult(it)
+                    onMessageInserted(it)
+                }
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
@@ -107,7 +116,10 @@ internal class NewMessageEventHandlerImpl(
                     )
                 )
             }.onSuccess {
-                handleSuccessfulResult(it)
+                if (it is MessageUnpackResult.ApplicationMessage) {
+                    handleSuccessfulResult(it)
+                    onMessageInserted(it)
+                }
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
@@ -116,17 +128,22 @@ internal class NewMessageEventHandlerImpl(
             }
     }
 
-    private suspend fun handleSuccessfulResult(result: MessageUnpackResult) {
-        if (result is MessageUnpackResult.ApplicationMessage) {
-            applicationMessageHandler.handleContent(
-                conversationId = result.conversationId,
-                timestampIso = result.timestampIso,
-                senderUserId = result.senderUserId,
-                senderClientId = result.senderClientId,
-                content = result.content
+    private fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {
+        if (result.senderUserId == selfUserId && result.content.expiresAfterMillis != null) {
+            enqueueMessageSelfDeletionUseCase(
+                result.conversationId,
+                result.content.messageUid
             )
-        } else {
-            // NO-OP. Pure Protocol messages are handled by the unpackers
         }
+    }
+
+    private suspend fun handleSuccessfulResult(result: MessageUnpackResult.ApplicationMessage) {
+        applicationMessageHandler.handleContent(
+            conversationId = result.conversationId,
+            timestampIso = result.timestampIso,
+            senderUserId = result.senderUserId,
+            senderClientId = result.senderClientId,
+            content = result.content
+        )
     }
 }
