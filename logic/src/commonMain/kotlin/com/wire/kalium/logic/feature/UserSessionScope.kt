@@ -423,7 +423,8 @@ class UserSessionScope internal constructor(
     )
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
-        sessionManager.getProxyCredentials()
+        sessionManager.getProxyCredentials(),
+         globalScope.serverConfigRepository
     )
 
     private val userConfigRepository: UserConfigRepository
