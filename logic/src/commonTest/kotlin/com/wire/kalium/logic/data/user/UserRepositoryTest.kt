@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -438,7 +439,7 @@ class UserRepositoryTest {
         // Given
         val (arrangement, userRepository) = Arrangement()
             .withGetSelfUserId()
-            .withDaoReturningUsers(
+            .withDaoObservingByConnectionStatusReturning(
                 listOf(
                     TestUser.ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
                     TestUser.ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
@@ -459,6 +460,36 @@ class UserRepositoryTest {
 
         verify(arrangement.userDAO)
             .function(arrangement.userDAO::observeAllUsersByConnectionStatus)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun whenObservingKnowUsersNotInConversation_thenShouldReturnUsersThatHaveMetadata() = runTest {
+        // Given
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withDaoObservingNotInConversationReturning(
+                listOf(
+                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
+                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
+                )
+            )
+            .arrange()
+
+        // When
+        userRepository.observeAllKnownUsersNotInConversation(TestConversation.ID).test {
+            // Then
+            awaitItem().also {
+                val users = it.getOrNull()
+                assertEquals(1, users!!.size)
+                assertTrue { users.first().name == TestUser.ENTITY.name }
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        verify(arrangement.userDAO)
+            .function(arrangement.userDAO::observeUsersNotInConversation)
             .with(any())
             .wasInvoked(once)
     }
@@ -523,9 +554,16 @@ class UserRepositoryTest {
                 .thenReturn(selfUserIdStringFlow)
         }
 
-        fun withDaoReturningUsers(userEntities: List<UserEntity>) = apply {
+        fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserEntity>) = apply {
             given(userDAO)
                 .function(userDAO::observeAllUsersByConnectionStatus)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(userEntities))
+        }
+
+        fun withDaoObservingNotInConversationReturning(userEntities: List<UserEntity>) = apply {
+            given(userDAO)
+                .function(userDAO::observeUsersNotInConversation)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(userEntities))
         }
