@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
+/**
+ * End call when conversation is deleted, user is not a member anymore or user is deleted.
+ */
 interface EndCallOnConversationChangeUseCase {
     suspend operator fun invoke()
 }
