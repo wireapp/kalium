@@ -145,6 +145,8 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.GetConversationMLSVerificationStatusUseCase
+import com.wire.kalium.logic.feature.conversation.GetConversationMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -423,7 +425,7 @@ class UserSessionScope internal constructor(
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
-         globalScope.serverConfigRepository
+        globalScope.serverConfigRepository
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -535,11 +537,12 @@ class UserSessionScope internal constructor(
         selfTeamId
     )
 
-    private val accountRepository: AccountRepository get() = AccountRepositoryImpl(
-        userDAO = userStorage.database.userDAO,
-        selfUserId = userId,
-        selfApi = authenticatedNetworkContainer.selfApi
-    )
+    private val accountRepository: AccountRepository
+        get() = AccountRepositoryImpl(
+            userDAO = userStorage.database.userDAO,
+            selfUserId = userId,
+            selfApi = authenticatedNetworkContainer.selfApi
+        )
 
     internal val pushTokenRepository: PushTokenRepository
         get() = PushTokenDataSource(userStorage.database.metadataDAO)
@@ -1325,6 +1328,14 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
+
+    val getConversationMLSVerificationStatus: GetConversationMLSVerificationStatusUseCase
+        get() = GetConversationMLSVerificationStatusUseCaseImpl(
+            featureSupport,
+            clientRepository,
+            conversationRepository,
+            mlsConversationRepository
+        )
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
