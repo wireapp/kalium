@@ -31,7 +31,9 @@ internal open class FeatureConfigApiV0 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun featureConfigs(): NetworkResponse<FeatureConfigResponse> =
-        wrapKaliumResponse { httpClient.get(FEATURE_CONFIG) }
+        wrapKaliumResponse {
+            httpClient.get(FEATURE_CONFIG)
+        }
 
     companion object {
         const val FEATURE_CONFIG = "feature-configs"

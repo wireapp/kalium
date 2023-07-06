@@ -20,8 +20,8 @@ package com.wire.kalium.persistence.dao.call
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CallsQueries
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil

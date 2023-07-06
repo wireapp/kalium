@@ -63,10 +63,11 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
@@ -123,6 +124,7 @@ interface ConversationRepository {
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
+    suspend fun getRecipientById(conversationId: ConversationId, userIDList: List<UserId>): Either<StorageFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
@@ -218,6 +220,7 @@ internal class ConversationDataSource internal constructor(
     private val mlsClientProvider: MLSClientProvider,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val conversationDAO: ConversationDAO,
+    private val memberDAO: MemberDAO,
     private val conversationApi: ConversationApi,
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
@@ -291,7 +294,7 @@ internal class ConversationDataSource internal constructor(
                     selfTeamIdProvider().getOrNull(),
                 )
             )
-            conversationDAO.insertMembersWithQualifiedId(
+            memberDAO.insertMembersWithQualifiedId(
                 memberMapper.fromApiModelToDaoModel(conversation.members), idMapper.fromApiToDao(conversation.id)
             )
         }
@@ -318,7 +321,7 @@ internal class ConversationDataSource internal constructor(
             }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
-            conversationDAO.insertMembersWithQualifiedId(
+            memberDAO.insertMembersWithQualifiedId(
                 memberMapper.fromApiModelToDaoModel(conversationsResponse.members), idMapper.fromApiToDao(conversationsResponse.id)
             )
         }
@@ -451,26 +454,26 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
-        conversationDAO.getAllMembers(conversationID.toDao()).map { members ->
+        memberDAO.observeConversationMembers(conversationID.toDao()).map { members ->
             members.map(memberMapper::fromDaoModel)
         }
 
     override suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
-        conversationDAO.getAllMembers(conversationId.toDao()).first().map { it.user.toModel() }
+        memberDAO.observeConversationMembers(conversationId.toDao()).first().map { it.user.toModel() }
     }
 
     override suspend fun persistMembers(
         members: List<Conversation.Member>,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationDAO.insertMembersWithQualifiedId(
+        memberDAO.insertMembersWithQualifiedId(
             members.map(memberMapper::toDaoModel), conversationID.toDao()
         )
     }
 
     override suspend fun updateMemberFromEvent(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.updateMember(memberMapper.toDaoModel(member), conversationID.toDao())
+            memberDAO.updateMemberRole(member.id.toDao(), conversationID.toDao(), conversationRoleMapper.toDAO(member.role))
         }
 
     override suspend fun deleteMembersFromEvent(
@@ -478,7 +481,7 @@ internal class ConversationDataSource internal constructor(
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.deleteMembersByQualifiedID(
+            memberDAO.deleteMembersByQualifiedID(
                 userIDList.map { it.toDao() },
                 conversationID.toDao()
             )
@@ -553,6 +556,13 @@ internal class ConversationDataSource internal constructor(
             clientDAO.conversationRecipient(conversationId.toDao())
         }.map(memberMapper::fromMapOfClientsEntityToRecipients)
 
+    override suspend fun getRecipientById(
+        conversationId: ConversationId,
+        userIDList: List<UserId>
+    ): Either<StorageFailure, List<Recipient>> = wrapStorageRequest {
+        clientDAO.recipientsIfTheyArePartOfConversation(conversationId.toDao(), userIDList.map(UserId::toDao).toSet())
+    }.map(memberMapper::fromMapOfClientsEntityToRecipients)
+
     /**
      * Fetches a list of all recipients for a given conversation including this very client
      */
@@ -605,7 +615,7 @@ internal class ConversationDataSource internal constructor(
         )
     }.flatMap {
         wrapStorageRequest {
-            conversationDAO.updateConversationMemberRole(
+            memberDAO.updateConversationMemberRole(
                 conversationId = conversationId.toDao(),
                 userId = userId.toDao(),
                 role = conversationRoleMapper.toDAO(role)
@@ -649,7 +659,7 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
-        conversationDAO.observeIsUserMember(conversationId.toDao(), userId.toDao())
+        memberDAO.observeIsUserMember(conversationId.toDao(), userId.toDao())
             .wrapStorageRequest()
 
     override suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?> = wrapStorageRequest {

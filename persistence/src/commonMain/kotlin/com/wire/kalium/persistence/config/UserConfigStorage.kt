@@ -87,6 +87,21 @@ interface UserConfigStorage {
     fun isMLSEnabled(): Boolean
 
     /**
+     * save MLSE2EISetting
+     */
+    fun setE2EISettings(settingEntity: E2EISettingsEntity)
+
+    /**
+     * get MLSE2EISetting
+     */
+    fun getE2EISettings(): E2EISettingsEntity?
+
+    /**
+     * get Flow of the saved MLSE2EISetting
+     */
+    fun e2EISettingsFlow(): Flow<E2EISettingsEntity?>
+
+    /**
      * save flag from user settings to enable or disable Conference Calling
      */
     fun persistConferenceCalling(enabled: Boolean)
@@ -136,6 +151,14 @@ data class TeamSettingsSelfDeletionStatusEntity(
 )
 
 @Serializable
+data class E2EISettingsEntity(
+    @SerialName("status") val status: Boolean,
+    @SerialName("discoverUrl") val discoverUrl: String,
+    @SerialName("notifyUserAfter") val notifyUserAfterMs: Long?,
+    @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
+)
+
+@Serializable
 sealed class SelfDeletionTimerEntity {
 
     @Serializable
@@ -166,6 +189,9 @@ class UserConfigStorageImpl(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isGuestRoomLinkEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val e2EIFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -239,6 +265,25 @@ class UserConfigStorageImpl(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
+    override fun setE2EISettings(settingEntity: E2EISettingsEntity) {
+        kaliumPreferences.putSerializable(
+            E2EI_SETTINGS,
+            settingEntity,
+            E2EISettingsEntity.serializer()
+        ).also {
+            e2EIFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun getE2EISettings(): E2EISettingsEntity? {
+        return kaliumPreferences.getSerializable(E2EI_SETTINGS, E2EISettingsEntity.serializer())
+    }
+
+    override fun e2EISettingsFlow(): Flow<E2EISettingsEntity?> = e2EIFlow
+        .map { getE2EISettings() }
+        .onStart { emit(getE2EISettings()) }
+        .distinctUntilChanged()
+
     override fun persistConferenceCalling(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
     }
@@ -284,6 +329,7 @@ class UserConfigStorageImpl(
         const val GUEST_ROOM_LINK = "guest_room_link"
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
+        const val E2EI_SETTINGS = "end_to_end_identity_settings"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false

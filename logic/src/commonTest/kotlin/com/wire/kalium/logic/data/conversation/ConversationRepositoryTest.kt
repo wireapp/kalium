@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -42,6 +43,8 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -65,13 +68,16 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
+import com.wire.kalium.persistence.dao.client.Client as ClientEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
@@ -83,7 +89,6 @@ import io.mockative.any
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.fun2
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.matching
@@ -105,10 +110,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
-import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
-@OptIn(ExperimentalCoroutinesApi::class)
 class ConversationRepositoryTest {
 
     @Test
@@ -552,9 +555,9 @@ class ConversationRepositoryTest {
                 }
                 .wasInvoked(exactly = once)
 
-            verify(conversationDAO)
+            verify(memberDAO)
                 .coroutine {
-                    conversationDAO.updateConversationMemberRole(
+                    memberDAO.updateConversationMemberRole(
                         conversationId.toDao(),
                         userId.toDao(),
                         MapperProvider.conversationRoleMapper().toDAO(newRole)
@@ -763,8 +766,8 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
 
-            verify(arrangement.conversationDAO)
-                .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
+            verify(arrangement.memberDAO)
+                .suspendFunction(arrangement.memberDAO::observeIsUserMember)
                 .with(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
                 .wasInvoked(exactly = once)
 
@@ -788,8 +791,8 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
 
-            verify(arrangement.conversationDAO)
-                .suspendFunction(arrangement.conversationDAO::observeIsUserMember)
+            verify(arrangement.memberDAO)
+                .suspendFunction(arrangement.memberDAO::observeIsUserMember)
                 .with(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
                 .wasInvoked(exactly = once)
 
@@ -900,6 +903,43 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun givenSuccess_whenGettingDeleteMessageRecipients_thenSuccessIsPropagated() = runTest {
+        val user = QualifiedIDEntity("userId", "domain.com")
+        val conversationId = QualifiedIDEntity("conversationId", "domain.com")
+        val clients = listOf(
+            ClientEntity(
+                user,
+                "clientId",
+                DeviceTypeEntity.Desktop,
+                ClientTypeEntity.Permanent,
+                true,
+                true,
+                null,
+                null,
+                null
+            )
+        )
+
+        val expected = Recipient(
+            user.toModel(),
+            clients.map { ClientId(it.id) }
+        )
+
+        val (arrangement, repo) = Arrangement()
+            .withConversationRecipientByUserSuccess(mapOf(user to clients))
+            .arrange()
+
+        repo.getRecipientById(conversationId.toModel(), listOf(user.toModel())).shouldSucceed {
+            assertEquals(listOf(expected), it)
+        }
+
+        verify(arrangement.clientDao)
+            .suspendFunction(arrangement.clientDao::recipientsIfTheyArePartOfConversation)
+            .with(eq(conversationId), eq(setOf(user)))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenAConversationWithoutMetadata_whenUpdatingMetadata_thenShouldUpdateLocally() = runTest {
         // given
         val (arrange, conversationRepository) = Arrangement()
@@ -936,7 +976,8 @@ class ConversationRepositoryTest {
         }
     }
 
-    private class Arrangement {
+    private class Arrangement :
+        MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
 
@@ -973,6 +1014,7 @@ class ConversationRepositoryTest {
                 mlsClientProvider,
                 selfTeamIdProvider,
                 conversationDAO,
+                memberDAO,
                 conversationApi,
                 messageDAO,
                 clientDao,
@@ -985,10 +1027,7 @@ class ConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .thenDoNothing()
 
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-                .whenInvokedWith(anything(), anything())
-                .thenDoNothing()
+            withInsertMemberWithConversationIdSuccess()
 
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateConversationMutedStatus)
@@ -1129,10 +1168,7 @@ class ConversationRepositoryTest {
         }
 
         fun withDaoUpdateConversationMemberRoleSuccess() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateConversationMemberRole)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Unit)
+            withUpdateMemberRoleSuccess()
         }
 
         fun withSuccessfulConversationDeletion() = apply {
@@ -1143,10 +1179,7 @@ class ConversationRepositoryTest {
         }
 
         fun withExpectedIsUserMemberFlow(expectedIsUserMember: Flow<Boolean>) = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::observeIsUserMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(expectedIsUserMember)
+            withObserveIsUserMember(expectedIsUserMember)
         }
 
         fun withExpectedObservableConversation(conversationEntity: ConversationViewEntity? = null) = apply {
@@ -1154,6 +1187,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(conversationEntity))
+        }
+
+        fun withConversationRecipientByUserSuccess(result: Map<UserIDEntity, List<ClientEntity>>) = apply {
+            given(clientDao)
+                .suspendFunction(clientDao::recipientsIfTheyArePartOfConversation)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
         }
 
         fun withExpectedConversation(conversationEntity: ConversationViewEntity?) = apply {
@@ -1211,7 +1251,10 @@ class ConversationRepositoryTest {
                 .thenReturn(NetworkResponse.Success(CONVERSATION_RENAME_RESPONSE, emptyMap(), HttpStatusCode.OK.value))
         }
 
-        suspend fun withConversationRecipients(conversationIDEntity: ConversationIDEntity, result: Map<QualifiedIDEntity, List<Client>>) =
+        suspend fun withConversationRecipients(
+            conversationIDEntity: ConversationIDEntity,
+            result: Map<QualifiedIDEntity, List<ClientEntity>>
+        ) =
             apply {
                 given(clientDao)
                     .coroutine { clientDao.conversationRecipient(conversationIDEntity) }
