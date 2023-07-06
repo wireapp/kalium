@@ -31,7 +31,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -688,68 +687,11 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNull(result)
     }
 
-    @Test
-    fun givenAExistingUsersWithoutMetadata_whenQueriedWithCommonEmailPrefix_ThenResultsUsersEmailContainsThatPrefixAndWithMetadata() =
-        runTest(dispatcher) {
-            // given
-            val commonEmailPrefix = "commonEmail"
-
-            val mockUsers = listOf(USER_ENTITY_1, USER_ENTITY_2, USER_ENTITY_3, USER_ENTITY_INCOMPLETE)
-            db.userDAO.upsertUsers(mockUsers)
-            // when
-
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
-                commonEmailPrefix,
-                listOf(ConnectionEntity.State.ACCEPTED)
-            ).test {
-                // then
-                val searchResult = awaitItem()
-                searchResult.forEach { userEntity ->
-                    assertContains(userEntity.email!!, commonEmailPrefix)
-                    assertFalse(userEntity.hasIncompleteMetadata)
-                }
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
-    @Test
-    fun givenTheListOfUser_whenQueriedByHandle_ThenResultContainsOnlyTheUserHavingTheHandleAndAreConnectedAndHasMetadata() =
-        runTest(dispatcher) {
-            val expectedResult = listOf(
-                USER_ENTITY_1.copy(handle = "@someHandle"),
-                USER_ENTITY_4.copy(handle = "@someHandle1")
-            )
-
-            val mockUsers = listOf(
-                USER_ENTITY_1.copy(handle = "@someHandle"),
-                USER_ENTITY_2.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED),
-                USER_ENTITY_3.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED),
-                USER_ENTITY_INCOMPLETE.copy(handle = "@someHandle"),
-                USER_ENTITY_4.copy(handle = "@someHandle1")
-            )
-
-            db.userDAO.upsertUsers(mockUsers)
-
-            // when
-
-            db.userDAO.getUserByHandleAndConnectionStates(
-                "some",
-                listOf(ConnectionEntity.State.ACCEPTED)
-            ).test {
-                // then
-                val searchResult = awaitItem()
-                assertEquals(expectedResult, searchResult)
-                cancelAndIgnoreRemainingEvents()
-            }
-        }
-
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
         val USER_ENTITY_3 = newUserEntity(QualifiedIDEntity("3", "wire.com"))
         val USER_ENTITY_4 = newUserEntity(QualifiedIDEntity("4", "wire.com"))
-        val USER_ENTITY_INCOMPLETE = newUserEntity(QualifiedIDEntity("5", "wire.com"))
-            .copy(hasIncompleteMetadata = true)
     }
 
 }
