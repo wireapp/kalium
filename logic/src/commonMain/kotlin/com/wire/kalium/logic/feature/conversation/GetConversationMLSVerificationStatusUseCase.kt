@@ -34,6 +34,12 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+/**
+ * Operation that fetches [MLSVerificationStatus] of the specific conversation
+ *
+ * @param conversationId
+ * @return [MLSVerificationStatus] of the conversation
+ */
 interface GetConversationMLSVerificationStatusUseCase {
     suspend operator fun invoke(conversationId: ConversationId): MLSVerificationStatus
 }
