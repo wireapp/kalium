@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
@@ -152,7 +153,7 @@ internal class ApplicationMessageHandlerImpl(
     private suspend fun processSignaling(signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
-                logger.i(message = "Ignored Signaling Message received: $signaling")
+                logger.i(message = "Ignored Signaling Message received: ${signaling.content.getType()}")
             }
 
             is MessageContent.Availability -> {
