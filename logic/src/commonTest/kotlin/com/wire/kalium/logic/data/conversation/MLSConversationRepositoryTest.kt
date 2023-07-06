@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.RatchetTreeType
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -901,6 +902,61 @@ class MLSConversationRepositoryTest {
         assertEquals(Arrangement.GROUP_ID, epochChange.await())
     }
 
+    @Test
+    fun givenVerifiedConversation_whenGetGroupVerify_thenVerifiedReturned() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetGroupVerifyReturn(true)
+            .arrange()
+
+        assertEquals(
+            Either.Right(MLSVerificationStatus.VERIFIED),
+            mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
+        )
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::getGroupVerify)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNotVerifiedConversation_whenGetGroupVerify_thenNotVerifiedReturned() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetGroupVerifyReturn(false)
+            .arrange()
+
+        assertEquals(
+            Either.Right(MLSVerificationStatus.NOT_VERIFIED),
+            mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
+        )
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::getGroupVerify)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNoMLSClient_whenGetGroupVerify_thenErrorReturned() = runTest {
+        val failure = CoreFailure.Unknown(RuntimeException("Error!"))
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientFailed(failure)
+            .withGetGroupVerifyReturn(false)
+            .arrange()
+
+        assertEquals(
+            Either.Left(failure),
+            mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
+        )
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::getGroupVerify)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     class Arrangement {
         val idMapper: IdMapper = IdMapperImpl()
 
@@ -989,6 +1045,13 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClientProvider::getMLSClient)
                 .whenInvokedWith(anything())
                 .then { Either.Right(mlsClient) }
+        }
+
+        fun withGetMLSClientFailed(failure: CoreFailure.Unknown) = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getMLSClient)
+                .whenInvokedWith(anything())
+                .then { Either.Left(failure) }
         }
 
         fun withAddMLSMemberSuccessful() = apply {
@@ -1098,6 +1161,13 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(syncManager::waitUntilLiveOrFailure)
                 .whenInvoked()
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withGetGroupVerifyReturn(isVerified: Boolean) = apply {
+            given(mlsClient)
+                .function(mlsClient::getGroupVerify)
+                .whenInvokedWith(anything())
+                .thenReturn(isVerified)
         }
 
         fun arrange() = this to MLSConversationDataSource(
