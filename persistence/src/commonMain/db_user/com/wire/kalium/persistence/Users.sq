@@ -113,12 +113,14 @@ SELECT * FROM User
 WHERE (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
-AND connection_status IN :connectionStatuses;
+AND connection_status IN :connectionStatuses
+AND incomplete_metadata = 0;
 
 selectByHandleAndConnectionState:
 SELECT * FROM User
 WHERE handle LIKE ('%' || :searchQuery || '%')
-AND connection_status IN :connectionStatuses;
+AND connection_status IN :connectionStatuses
+AND incomplete_metadata = 0;
 
 selectUsersByTeam:
 SELECT * FROM User WHERE team = ?;
@@ -141,13 +143,15 @@ WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation ==
 AND  (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
-AND connection_status = "ACCEPTED";
+AND connection_status = "ACCEPTED"
+AND incomplete_metadata = 0;
 
 getUsersNotInConversationByHandle:
 SELECT * FROM User AS user
 WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
 AND handle LIKE ('%' || :searchQuery || '%')
-AND connection_status = "ACCEPTED";
+AND connection_status = "ACCEPTED"
+AND incomplete_metadata = 0;
 
 getUsersNotPartOfTheConversation:
 SELECT * FROM User AS user

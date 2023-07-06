@@ -180,6 +180,45 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenAUserAndConversationMembers_whenGettingUsersByHandle_ThenReturnUserMatchingTheHandleAndNotInTheConversationAndMetadata() =
+        runTest {
+            // given
+            val userThatIsPartOfConversation = newUserEntity(QualifiedIDEntity("3", "someDomain")).copy(handle = "handleMatch")
+            val userWithNoMetadata =
+                newUserEntity(QualifiedIDEntity("no-data", "someDomain")).copy(handle = "handleMatch", hasIncompleteMetadata = true)
+
+            val allUsers = listOf(
+                user1.copy(handle = "handleMatch"),
+                user2.copy(handle = "handleMatch"),
+                userThatIsPartOfConversation
+            )
+
+            userDAO.upsertUsers(allUsers + userWithNoMetadata)
+
+            val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
+
+            createTestConversation(
+                conversationId, listOf(
+                    MemberEntity(
+                        user = QualifiedIDEntity(
+                            "3", "someDomain"
+                        ), role = MemberEntity.Role.Admin
+                    )
+                )
+            )
+
+            // when
+
+            userDAO.getUsersNotInConversationByHandle(conversationId, "handleMatch")
+                .test {
+                    // then
+                    val result = awaitItem()
+                    assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                    cancelAndIgnoreRemainingEvents()
+                }
+        }
+
+    @Test
     fun givenAUserAndConversationMembers_whenGettingUsersByEmail_ThenReturnUserMatchingTheEmailAndNotInTheConversation() = runTest {
         // given
         val userThatIsPartOfConversation = newUserEntity(QualifiedIDEntity("3", "someDomain")).copy(email = "emailMatch")
@@ -216,40 +255,43 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAUserAndConversationMembers_whenGettingUsersByName_ThenReturnUserMatchingTheEmailAndNotInTheConversation() = runTest {
-        // given
-        val userThatIsPartOfConversation = newUserEntity(QualifiedIDEntity("3", "someDomain")).copy(name = "nameMatch")
+    fun givenAUserAndConversationMembers_whenGettingUsersByEmail_ThenReturnUserMatchingTheEmailAndNotInTheConversationAndWithMetadata() =
+        runTest {
+            // given
+            val userThatIsPartOfConversation = newUserEntity(QualifiedIDEntity("3", "someDomain")).copy(email = "emailMatch")
+            val userWithOutMetadata =
+                newUserEntity(QualifiedIDEntity("nodata", "someDomain")).copy(email = "emailMatch", hasIncompleteMetadata = true)
 
-        val allUsers = listOf(
-            user1.copy(name = "nameMatch"),
-            user2.copy(name = "nameMatch"),
-            userThatIsPartOfConversation
-        )
+            val allUsers = listOf(
+                user1.copy(email = "emailMatch"),
+                user2.copy(email = "emailMatch"),
+                userThatIsPartOfConversation
+            )
 
-        userDAO.upsertUsers(allUsers)
+            userDAO.upsertUsers(allUsers + userWithOutMetadata)
 
-        val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
+            val conversationId = QualifiedIDEntity(value = "someValue", domain = "someDomain")
 
-        createTestConversation(
-            conversationId, listOf(
-                MemberEntity(
-                    user = QualifiedIDEntity(
-                        "3", "someDomain"
-                    ), role = MemberEntity.Role.Admin
+            createTestConversation(
+                conversationId, listOf(
+                    MemberEntity(
+                        user = QualifiedIDEntity(
+                            "3", "someDomain"
+                        ), role = MemberEntity.Role.Admin
+                    )
                 )
             )
-        )
 
-        // when
+            // when
 
-        userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "nameMatch")
-            .test {
-                // then
-                val result = awaitItem()
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
-                cancelAndIgnoreRemainingEvents()
-            }
-    }
+            userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "emailMatch")
+                .test {
+                    // then
+                    val result = awaitItem()
+                    assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                    cancelAndIgnoreRemainingEvents()
+                }
+        }
 
     private suspend fun createTestConversation(conversationIDEntity: QualifiedIDEntity, members: List<MemberEntity>) {
         conversationDAO.insertConversation(
