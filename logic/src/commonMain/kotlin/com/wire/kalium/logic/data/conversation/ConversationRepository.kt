@@ -32,7 +32,6 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
@@ -69,7 +68,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
@@ -181,16 +179,9 @@ interface ConversationRepository {
     suspend fun deleteConversation(conversationId: ConversationId): Either<CoreFailure, Unit>
 
     /**
-     * Gets all of the conversation messages that are assets
-     */
-    suspend fun getAssetMessages(
-        conversationId: ConversationId,
-    ): Either<CoreFailure, List<Message>>
-
-    /**
      * Deletes all conversation messages
      */
-    suspend fun deleteAllMessages(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun clearContent(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
 
@@ -643,19 +634,9 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-    override suspend fun getAssetMessages(
-        conversationId: ConversationId,
-    ): Either<StorageFailure, List<Message>> =
+    override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            messageDAO.getConversationMessagesByContentType(
-                conversationId.toDao(),
-                MessageEntity.ContentType.ASSET
-            ).map(messageMapper::fromEntityToMessage)
-        }
-
-    override suspend fun deleteAllMessages(conversationId: ConversationId): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            messageDAO.deleteAllConversationMessages(conversationId.toDao())
+            conversationDAO.clearContent(conversationId.toDao())
         }
 
     override suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
