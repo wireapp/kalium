@@ -417,7 +417,7 @@ class UserSessionScope internal constructor(
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
-         globalScope.serverConfigRepository
+        globalScope.serverConfigRepository
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -864,7 +864,7 @@ class UserSessionScope internal constructor(
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository
         get() = MLSPublicKeysRepositoryImpl(
-            authenticatedNetworkContainer.mlsPublicKeyApi,
+            authenticatedNetworkContainer.mlsPublicKeyApi
         )
 
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
@@ -945,26 +945,25 @@ class UserSessionScope internal constructor(
 
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
-                userRepository,
-                messageRepository,
-                assetMessageHandler,
-                callManager,
-                persistMessage,
-                persistReaction,
-                MessageTextEditHandlerImpl(messageRepository),
-                LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
+            userRepository,
+            messageRepository,
+            assetMessageHandler,
+            callManager,
+            persistMessage,
+            persistReaction,
+            MessageTextEditHandlerImpl(messageRepository),
+            LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
-                    userId,
-                    isMessageSentInSelfConversation,
-                ),
-                DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-                DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
-                messageEncoder,
-                receiptMessageHandler,
-                userId
-            )
-
+                userId,
+                isMessageSentInSelfConversation,
+            ),
+            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
+            messageEncoder,
+            receiptMessageHandler,
+            userId
+        )
 
     private val newMessageHandler: NewMessageEventHandler
         get() = NewMessageEventHandlerImpl(
