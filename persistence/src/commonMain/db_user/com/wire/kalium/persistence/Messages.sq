@@ -578,14 +578,6 @@ SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND
 selectMessagesFromUserByStatus:
 SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
 
-getConversationMessagesByContentType:
-SELECT * FROM MessageDetailsView
-WHERE MessageDetailsView.conversationId = :conversation_id AND contentType = :content_type;
-
-deleteAllConversationMessages:
-DELETE FROM Message
-WHERE conversation_id IS :conversation_id;
-
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
 

@@ -21,11 +21,11 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.functional.getOrElse
 
-interface IsMessageSentInSelfConversationUseCase {
+internal interface IsMessageSentInSelfConversationUseCase {
     suspend operator fun invoke(message: Message): Boolean
 }
 
-internal class IsMessageSentInSelfConversationUseCaseImpl(
+internal class IsMessageSentInSelfConversationUseCaseImpl internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider
 ) : IsMessageSentInSelfConversationUseCase {
 

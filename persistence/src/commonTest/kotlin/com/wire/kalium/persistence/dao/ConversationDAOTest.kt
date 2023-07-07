@@ -20,6 +20,8 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -55,6 +57,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var messageDAO: MessageDAO
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
+    private lateinit var assetDAO: AssetDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -65,6 +68,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         messageDAO = db.messageDAO
         userDAO = db.userDAO
         teamDAO = db.teamDAO
+        assetDAO = db.assetDAO
     }
 
     @Test
@@ -483,16 +487,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
         }
 
+
     @Test
     fun givenConversationWithMessages_whenDeletingAll_ThenTheConversationHasNoMessages() =
         runTest {
             // given
             val conversation = conversationEntity1
-
             teamDAO.insertTeam(team)
             conversationDAO.insertConversation(conversation)
             userDAO.insertUser(user1)
-
             val messages = buildList {
                 repeat(10) {
                     add(
@@ -503,22 +506,55 @@ class ConversationDAOTest : BaseDatabaseTest() {
                         )
                     )
                 }
+                add(
+                    newRegularMessageEntity(
+                        content = MessageEntityContent.Asset(
+                            assetSizeInBytes = 123L,
+                            assetName = "assetName",
+                            assetMimeType = "assetMimeType",
+                            assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
+                            assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                            assetOtrKey = ByteArray(32),
+                            assetSha256Key = ByteArray(32),
+                            assetId = "assetId",
+                            assetEncryptionAlgorithm = "assetEncryptionAlgorithm"
+                        ),
+                        id = "11",
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                        visibility = MessageEntity.Visibility.VISIBLE
+                    )
+                )
             }
+
+            assetDAO.insertAsset(
+                AssetEntity(
+                    key = "assetId",
+                    dataSize = 123,
+                    dataPath = "dataPath",
+                    domain = "domain",
+                    downloadedDate = null
+                )
+            )
 
             messageDAO.insertOrIgnoreMessages(messages)
 
             // when
-            messageDAO.deleteAllConversationMessages(conversation.id)
+            conversationDAO.clearContent(conversation.id)
 
             // then
-            val result = messageDAO.getMessagesByConversationAndVisibility(
+            messageDAO.getMessagesByConversationAndVisibility(
                 conversation.id,
                 100,
                 0,
                 listOf(MessageEntity.Visibility.VISIBLE)
-            ).first()
+            ).first().also { result ->
+                assertTrue(result.isEmpty())
+            }
 
-            assertTrue(result.isEmpty())
+            assetDAO.getAssetByKey("assetId").first().also { result ->
+                assertNull(result)
+            }
         }
 
     // Mateusz : This test is failing because of some weird issue, I do not want to block this feature
