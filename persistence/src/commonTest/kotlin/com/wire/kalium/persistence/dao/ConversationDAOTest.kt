@@ -20,6 +20,8 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -62,6 +64,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
     private lateinit var memberDAO: MemberDAO
+    private lateinit var assertDAO: AssetDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -73,6 +76,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO = db.userDAO
         teamDAO = db.teamDAO
         memberDAO = db.memberDAO
+        assertDAO = db.assetDAO
     }
 
     @Test
@@ -379,27 +383,59 @@ class ConversationDAOTest : BaseDatabaseTest() {
                         )
                     )
                 }
+                add(
+                    newRegularMessageEntity(
+                        content = MessageEntityContent.Asset(
+                            assetSizeInBytes = 123L,
+                            assetName = "assetName",
+                            assetMimeType = "assetMimeType",
+                            assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
+                            assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                            assetOtrKey = ByteArray(32),
+                            assetSha256Key = ByteArray(32),
+                            assetId = "assetId",
+                            assetEncryptionAlgorithm = "assetEncryptionAlgorithm"
+                        ),
+                        id = "11",
+                        conversationId = conversation.id,
+                        senderUserId = user1.id,
+                        visibility = MessageEntity.Visibility.VISIBLE
+                    )
+                )
             }
+
+            assertDAO.insertAsset(
+                AssetEntity(
+                    key = "assetId",
+                    dataSize = 123,
+                    dataPath = "dataPath",
+                    domain = "domain",
+                    downloadedDate = null
+                )
+            )
 
             messageDAO.insertOrIgnoreMessages(messages)
 
             // when
-            messageDAO.deleteAllConversationMessages(conversation.id)
+            conversationDAO.clearContent(conversation.id)
 
             // then
-            val result = messageDAO.getMessagesByConversationAndVisibility(
+            messageDAO.getMessagesByConversationAndVisibility(
                 conversation.id,
                 100,
                 0,
                 listOf(MessageEntity.Visibility.VISIBLE)
-            ).first()
+            ).first().also { result ->
+                assertTrue(result.isEmpty())
+            }
 
-            assertTrue(result.isEmpty())
+            assertDAO.getAssetByKey("assetId").first().also { result ->
+                assertNull(result)
+            }
         }
-
-    // Mateusz : This test is failing because of some weird issue, I do not want to block this feature
-    // Therefore I will comment it, I am in very unstable and low bandwith internet now and to run test
-    // I need new version of xCode which will take me ages to download untill I am home from the trip
+// Mateusz : This test is failing because of some weird issue, I do not want to block this feature
+// Therefore I will comment it, I am in very unstable and low bandwith internet now and to run test
+// I need new version of xCode which will take me ages to download untill I am home from the trip
 //     @Test
 //     fun givenAConversationHasAssets_whenGettingConversationAssets_ThenReturnThoseAssets() =
 //         runTest {
