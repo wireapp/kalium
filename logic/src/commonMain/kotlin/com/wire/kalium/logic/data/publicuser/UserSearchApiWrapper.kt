@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.SelfUser
@@ -32,17 +31,18 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchRequest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import kotlinx.coroutines.FlowPreview
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 
 internal interface UserSearchApiWrapper {
     /*
@@ -60,10 +60,10 @@ internal interface UserSearchApiWrapper {
 internal class UserSearchApiWrapperImpl(
     private val userSearchApi: UserSearchApi,
     private val conversationDAO: ConversationDAO,
+    private val memberDAO: MemberDAO,
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : UserSearchApiWrapper {
 
     override suspend fun search(
@@ -92,7 +92,7 @@ internal class UserSearchApiWrapperImpl(
 
         // if we do not exclude the conversation members, we just return empty list
         val conversationMembersId = if (searchUsersOptions.conversationExcluded is ConversationMemberExcludedOptions.ConversationExcluded) {
-            conversationDAO.getAllMembers(
+            memberDAO.observeConversationMembers(
                 qualifiedID = searchUsersOptions.conversationExcluded.conversationId.toDao()
             ).firstOrNull()?.map { it.user.toModel() }
         } else {
@@ -131,7 +131,7 @@ internal class UserSearchApiWrapperImpl(
     // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository and SearchUserReopsitory what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
-    @OptIn(FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getSelfUser(): SelfUser {
         return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()

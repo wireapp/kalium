@@ -20,6 +20,9 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,10 +41,11 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     private val conversationEntity1 = newConversationEntity()
 
-    private val member1 = Member(user1.id, Member.Role.Admin)
+    private val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
 
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
+    private lateinit var memberDAO: MemberDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -50,6 +54,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
+        memberDAO = db.memberDAO
     }
 
     @Test
@@ -57,7 +62,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         userDAO.insertUser(user1)
 
         conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.insertMember(member1, conversationEntity1.id)
+        memberDAO.insertMember(member1, conversationEntity1.id)
 
         val result = userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(user1, result)
@@ -75,10 +80,10 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         createTestConversation(
             conversationId, listOf(
-                Member(
+                MemberEntity(
                     user = QualifiedIDEntity(
                         "3", "someDomain"
-                    ), role = Member.Role.Admin
+                    ), role = MemberEntity.Role.Admin
                 )
             )
         )
@@ -101,11 +106,11 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         createTestConversation(
             conversationId, listOf(
-                Member(
-                    user = user1.id, role = Member.Role.Admin
+                MemberEntity(
+                    user = user1.id, role = MemberEntity.Role.Admin
                 ),
-                Member(
-                    user = user2.id, role = Member.Role.Member
+                MemberEntity(
+                    user = user2.id, role = MemberEntity.Role.Member
                 ),
             )
         )
@@ -155,10 +160,10 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         createTestConversation(
             conversationId, listOf(
-                Member(
+                MemberEntity(
                     user = QualifiedIDEntity(
                         "3", "someDomain"
-                    ), role = Member.Role.Admin
+                    ), role = MemberEntity.Role.Admin
                 )
             )
         )
@@ -191,10 +196,10 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         createTestConversation(
             conversationId, listOf(
-                Member(
+                MemberEntity(
                     user = QualifiedIDEntity(
                         "3", "someDomain"
-                    ), role = Member.Role.Admin
+                    ), role = MemberEntity.Role.Admin
                 )
             )
         )
@@ -227,10 +232,10 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         createTestConversation(
             conversationId, listOf(
-                Member(
+                MemberEntity(
                     user = QualifiedIDEntity(
                         "3", "someDomain"
-                    ), role = Member.Role.Admin
+                    ), role = MemberEntity.Role.Admin
                 )
             )
         )
@@ -246,12 +251,12 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             }
     }
 
-    private suspend fun createTestConversation(conversationIDEntity: QualifiedIDEntity, members: List<Member>) {
+    private suspend fun createTestConversation(conversationIDEntity: QualifiedIDEntity, members: List<MemberEntity>) {
         conversationDAO.insertConversation(
             newConversationEntity(conversationIDEntity)
         )
 
-        conversationDAO.insertMembersWithQualifiedId(
+        memberDAO.insertMembersWithQualifiedId(
             memberList = members, conversationID = conversationIDEntity
         )
     }

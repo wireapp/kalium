@@ -19,7 +19,7 @@
 package com.wire.kalium.persistence.adapter
 
 import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
 internal class ConversationAccessRoleListAdapter : ColumnAdapter<List<ConversationEntity.AccessRole>, String> {
     override fun decode(databaseValue: String): List<ConversationEntity.AccessRole> =

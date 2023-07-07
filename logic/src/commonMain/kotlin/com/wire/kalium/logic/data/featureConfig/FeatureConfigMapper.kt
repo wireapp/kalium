@@ -33,6 +33,7 @@ interface FeatureConfigMapper {
     fun fromDTO(data: FeatureConfigData.FileSharing): ConfigsStatusModel
     fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel
     fun fromDTO(data: FeatureConfigData.ConversationGuestLinks): ConfigsStatusModel
+    fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel
 }
 
 class FeatureConfigMapperImpl : FeatureConfigMapper {
@@ -54,7 +55,8 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
                 ),
                 ssoModel = ConfigsStatusModel(fromDTO(sso.status)),
                 validateSAMLEmailsModel = ConfigsStatusModel(fromDTO(validateSAMLEmails.status)),
-                mlsModel = fromDTO(mls)
+                mlsModel = fromDTO(mls),
+                e2EIModel = fromDTO(mlsE2EI)
             )
         }
 
@@ -106,5 +108,14 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(data: FeatureConfigData.ConferenceCalling): ConferenceCallingModel =
         ConferenceCallingModel(
             status = fromDTO(data.status)
+        )
+
+    override fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel =
+        E2EIModel(
+            E2EIConfigModel(
+                data?.config?.url ?: "",
+                data?.config?.verificationExpirationNS ?: 0L
+            ),
+            fromDTO(data?.status ?: FeatureFlagStatusDTO.DISABLED)
         )
 }

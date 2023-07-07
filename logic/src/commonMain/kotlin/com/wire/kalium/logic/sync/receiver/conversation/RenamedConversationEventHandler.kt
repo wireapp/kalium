@@ -31,7 +31,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 
 interface RenamedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.RenamedConversation)

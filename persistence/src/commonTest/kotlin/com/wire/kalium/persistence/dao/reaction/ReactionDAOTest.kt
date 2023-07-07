@@ -19,8 +19,8 @@
 package com.wire.kalium.persistence.dao.reaction
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity

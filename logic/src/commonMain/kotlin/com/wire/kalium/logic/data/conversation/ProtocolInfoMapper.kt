@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
 interface ProtocolInfoMapper {
     fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo): Conversation.ProtocolInfo

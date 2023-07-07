@@ -203,10 +203,14 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCase
+import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkSelfDeletionStatusAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
+import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -484,6 +488,7 @@ class UserSessionScope internal constructor(
             mlsClientProvider,
             selfTeamId,
             userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
             authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
@@ -506,7 +511,7 @@ class UserSessionScope internal constructor(
 
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
-            userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
             lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
 
@@ -557,6 +562,7 @@ class UserSessionScope internal constructor(
     private val connectionRepository: ConnectionRepository
         get() = ConnectionDataSource(
             userStorage.database.conversationDAO,
+            userStorage.database.memberDAO,
             userStorage.database.connectionDAO,
             authenticatedNetworkContainer.connectionApi,
             authenticatedNetworkContainer.userDetailsApi,
@@ -569,6 +575,7 @@ class UserSessionScope internal constructor(
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedNetworkContainer.userSearchApi,
         userStorage.database.conversationDAO,
+        userStorage.database.memberDAO,
         userStorage.database.userDAO,
         userStorage.database.metadataDAO
     )
@@ -1004,7 +1011,7 @@ class UserSessionScope internal constructor(
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
-            userStorage.database.conversationDAO, userRepository, persistMessage
+            userStorage.database.memberDAO, userRepository, persistMessage
         )
     private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
@@ -1261,6 +1268,10 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
+
+    val observeE2EIRequired: ObserveE2EIRequiredUseCase get() = ObserveE2EIRequiredUseCaseImpl(userConfigRepository)
+    val markE2EIRequiredAsNotified: MarkEnablingE2EIAsNotifiedUseCase
+        get() = MarkEnablingE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 
     @OptIn(DelicateKaliumApi::class)
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase
