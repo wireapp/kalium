@@ -124,7 +124,7 @@ data class WebTextData(
     @SerialName("content") val text: String,
 //     @SerialName("quote") val quote: WebTextQuote?,
 //     @SerialName("mentions") val mentions: List<String>?,
-    @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
+    @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean?,
     @SerialName("legal_hold_status") val legalHoldStatus: Int?
 )
 
@@ -158,10 +158,10 @@ data class WebKnockData(
 
 @Serializable
 data class WebAssetInfo(
-    @SerialName("height") val height: Int?,
+    @SerialName("height") val height: String?,
     @SerialName("name") val name: String?,
     @SerialName("tag") val tag: String?,
-    @SerialName("width") val width: Int?
+    @SerialName("width") val width: String?
 )
 
 @Serializable
