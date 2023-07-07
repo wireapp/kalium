@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.user
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
@@ -25,11 +26,13 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -39,9 +42,9 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -58,7 +61,6 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -66,6 +68,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class UserRepositoryTest {
@@ -431,6 +434,65 @@ class UserRepositoryTest {
             .wasInvoked()
     }
 
+    @Test
+    fun whenObservingKnowUsers_thenShouldReturnUsersThatHaveMetadata() = runTest {
+        // Given
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withDaoObservingByConnectionStatusReturning(
+                listOf(
+                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
+                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
+                )
+            )
+            .arrange()
+
+        // When
+        userRepository.observeAllKnownUsers().test {
+            // Then
+            awaitItem().also {
+                val users = it.getOrNull()
+                assertEquals(1, users!!.size)
+                assertTrue { users.first().name == TestUser.ENTITY.name }
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        verify(arrangement.userDAO)
+            .function(arrangement.userDAO::observeAllUsersByConnectionStatus)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun whenObservingKnowUsersNotInConversation_thenShouldReturnUsersThatHaveMetadata() = runTest {
+        // Given
+        val (arrangement, userRepository) = Arrangement()
+            .withGetSelfUserId()
+            .withDaoObservingNotInConversationReturning(
+                listOf(
+                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
+                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
+                )
+            )
+            .arrange()
+
+        // When
+        userRepository.observeAllKnownUsersNotInConversation(TestConversation.ID).test {
+            // Then
+            awaitItem().also {
+                val users = it.getOrNull()
+                assertEquals(1, users!!.size)
+                assertTrue { users.first().name == TestUser.ENTITY.name }
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        verify(arrangement.userDAO)
+            .function(arrangement.userDAO::observeUsersNotInConversation)
+            .with(any())
+            .wasInvoked(once)
+    }
 
     private class Arrangement {
         @Mock
@@ -490,6 +552,20 @@ class UserRepositoryTest {
                 .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(eq(SELF_USER_ID_KEY))
                 .thenReturn(selfUserIdStringFlow)
+        }
+
+        fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserEntity>) = apply {
+            given(userDAO)
+                .function(userDAO::observeAllUsersByConnectionStatus)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(userEntities))
+        }
+
+        fun withDaoObservingNotInConversationReturning(userEntities: List<UserEntity>) = apply {
+            given(userDAO)
+                .function(userDAO::observeUsersNotInConversation)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(userEntities))
         }
 
         fun withSuccessfulGetUsersInfo() = apply {
