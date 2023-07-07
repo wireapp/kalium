@@ -334,7 +334,7 @@ internal class UserDataSource internal constructor(
             .wrapStorageRequest()
             .mapRight { users ->
                 users
-                    .filter { it.id != selfUserId && !it.deleted }
+                    .filter { it.id != selfUserId && !it.deleted && !it.hasIncompleteMetadata }
                     .map { userEntity -> publicUserMapper.fromUserEntityToOtherUser(userEntity) }
             }
     }
@@ -385,7 +385,7 @@ internal class UserDataSource internal constructor(
             .wrapStorageRequest()
             .mapRight { users ->
                 users
-                    .filter { !it.deleted }
+                    .filter { !it.deleted && !it.hasIncompleteMetadata }
                     .map { publicUserMapper.fromUserEntityToOtherUser(it) }
             }
     }
