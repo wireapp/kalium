@@ -42,12 +42,10 @@ import io.mockative.any
 import io.mockative.matching
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
 
     @Test
@@ -95,19 +93,6 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                     it == MessageTarget.Conversation()
                 })
             .wasInvoked(exactly = once)
-
-
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching {
-                    it.conversationId == SELF_CONVERSION_ID.first() &&
-                            it.content == MessageContent.DeleteForMe(messageId, conversationId)
-                }, matching {
-                    it == MessageTarget.Conversation()
-                })
-            .wasInvoked(exactly = once)
-
 
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
