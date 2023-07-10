@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -32,6 +33,7 @@ import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -56,10 +58,10 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
 
         with(arrangement) {
-            verify(clearConversationContent)
-                .suspendFunction(clearConversationContent::invoke)
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::clearContent)
                 .with(anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             verify(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)
@@ -89,14 +91,14 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
 
         with(arrangement) {
-            verify(clearConversationContent)
-                .suspendFunction(clearConversationContent::invoke)
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::clearContent)
                 .with(anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             verify(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
@@ -112,6 +114,7 @@ class ClearConversationContentUseCaseTest {
             .withClearConversationContent(true)
             .withCurrentClientId(true)
             .withMessageSending(false)
+
             .withSelfConversationIds(listOf(selfConversationId))
             .arrange()
 
@@ -122,19 +125,19 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
 
         with(arrangement) {
-            verify(clearConversationContent)
-                .suspendFunction(clearConversationContent::invoke)
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::clearContent)
                 .with(anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             verify(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -155,19 +158,19 @@ class ClearConversationContentUseCaseTest {
         assertIs<ClearConversationContentUseCase.Result.Success>(result)
 
         with(arrangement) {
-            verify(clearConversationContent)
-                .suspendFunction(clearConversationContent::invoke)
+            verify(conversationRepository)
+                .suspendFunction(conversationRepository::clearContent)
                 .with(anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             verify(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
 
             verify(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .with(anything(), anything())
-                .wasInvoked(Times(1))
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -178,8 +181,7 @@ class ClearConversationContentUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val clearConversationContent = mock(classOf<ClearConversationContent>())
-
+        val conversationRepository = mock(classOf<ConversationRepository>())
         @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
@@ -189,13 +191,11 @@ class ClearConversationContentUseCaseTest {
         @Mock
         val messageSender = mock(classOf<MessageSender>())
 
-        fun withClearConversationContent(isSuccessFull: Boolean): Arrangement {
-            given(clearConversationContent)
-                .suspendFunction(clearConversationContent::invoke)
+        fun withClearConversationContent(isSuccessFull: Boolean) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::clearContent)
                 .whenInvokedWith(anything())
                 .thenReturn(if (isSuccessFull) Either.Right(Unit) else Either.Left(CoreFailure.Unknown(Throwable("an error"))))
-
-            return this
         }
 
         fun withCurrentClientId(isSuccessFull: Boolean): Arrangement {
@@ -224,7 +224,7 @@ class ClearConversationContentUseCaseTest {
         }
 
         fun arrange() = this to ClearConversationContentUseCaseImpl(
-            clearConversationContent,
+            conversationRepository,
             messageSender,
             TestUser.SELF.id,
             currentClientIdProvider,

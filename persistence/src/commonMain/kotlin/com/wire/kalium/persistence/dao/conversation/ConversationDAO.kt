@@ -80,4 +80,5 @@ interface ConversationDAO {
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?): Boolean
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
+    suspend fun clearContent(conversationId: QualifiedIDEntity)
 }

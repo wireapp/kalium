@@ -18,6 +18,7 @@
 
 package com.wire.kalium.api.v0.message
 
+import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
@@ -25,6 +26,7 @@ import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserToCli
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
+import com.wire.kalium.protobuf.otr.QualifiedUserId
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -32,7 +34,7 @@ import kotlin.test.assertTrue
 
 class EnvelopeProtoMapperTest {
 
-    private val envelopeProtoMapper = EnvelopeProtoMapperImpl()
+    private val envelopeProtoMapper: EnvelopeProtoMapper = EnvelopeProtoMapperImpl()
 
     @Test
     fun givenEnvelopeWithData_whenMappingToProtobuf_thenBlobShouldMatch() {
@@ -91,29 +93,47 @@ class EnvelopeProtoMapperTest {
     }
 
     @Test
-    fun givenEnvelopeWithDataAndStrategy_whenMappingToProtobuf_thenClientIdsShouldMatchAndStrategyShouldBeMapped() {
-        val user = UserId("0822753e-dead-4f1a-acfc-a55d223cc76b", "example.com")
-        val recipients: QualifiedUserToClientToEncMsgMap = mapOf(
-            Pair(user, mapOf(Pair("241b5be49179d81b", ByteArray(0))))
+    fun givenMessageWithIgnoreSomeFlag_whenMapping_thenItIsMappedCorrectly() {
+        val data = byteArrayOf(0x42, 0x13, 0x69)
+        val usersToIgnore = listOf(
+            UserId("0822753e-dead-4f1a-acfc-a55d223cc76b", "example.com")
         )
-
+        val expected = usersToIgnore.map { QualifiedUserId(it.value, it.domain) }
         val encoded = envelopeProtoMapper.encodeToProtobuf(
             MessageApi.Parameters.QualifiedDefaultParameters(
                 sender = TEST_SENDER,
-                recipients = recipients,
+                recipients = mapOf(),
                 nativePush = true,
                 priority = MessagePriority.HIGH,
                 transient = false,
-                externalBlob = null,
-                messageOption = MessageApi.QualifiedMessageOption.IgnoreSome(listOf(user))
+                externalBlob = data,
+                messageOption = MessageApi.QualifiedMessageOption.IgnoreSome(usersToIgnore)
             )
         )
-
         val newOtrMessage = QualifiedNewOtrMessage.decodeFromByteArray(encoded)
-        val clients = newOtrMessage.recipients[0].entries[0].clients
+        assertEquals(expected, newOtrMessage.ignoreOnly?.userIds)
+    }
 
-        assertEquals(2601774246987946011L, clients[0].client.client)
-        assertTrue(newOtrMessage.clientMismatchStrategy is QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly)
+    @Test
+    fun givenMessageWithReportSomeSomeFlag_whenMapping_thenItIsMappedCorrectly() {
+        val data = byteArrayOf(0x42, 0x13, 0x69)
+        val usersToIgnore = listOf(
+            UserId("0822753e-dead-4f1a-acfc-a55d223cc76b", "example.com")
+        )
+        val expected = usersToIgnore.map { QualifiedUserId(it.value, it.domain) }
+        val encoded = envelopeProtoMapper.encodeToProtobuf(
+            MessageApi.Parameters.QualifiedDefaultParameters(
+                sender = TEST_SENDER,
+                recipients = mapOf(),
+                nativePush = true,
+                priority = MessagePriority.HIGH,
+                transient = false,
+                externalBlob = data,
+                messageOption = MessageApi.QualifiedMessageOption.ReportSome(usersToIgnore)
+            )
+        )
+        val newOtrMessage = QualifiedNewOtrMessage.decodeFromByteArray(encoded)
+        assertEquals(expected, newOtrMessage.reportOnly?.userIds)
     }
 
     private companion object {
