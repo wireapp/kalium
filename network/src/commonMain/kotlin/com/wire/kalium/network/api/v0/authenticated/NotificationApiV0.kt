@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.serialization.decodeFromString
 
 internal open class NotificationApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
