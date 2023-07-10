@@ -1,3 +1,3 @@
 UPDATE Reaction
-SET emoji = "❤️"
-WHERE emoji = "❤";
+SET emoji = '❤️'
+WHERE emoji = '❤';
