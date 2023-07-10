@@ -74,7 +74,6 @@ class EventDataSource(
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> =
         currentClientId().flatMap { clientId -> liveEventsFlow(clientId) }
 
-    @OptIn(FlowPreview::class)
     private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Event>>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map {
             it.map { webSocketEvent ->
