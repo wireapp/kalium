@@ -101,6 +101,13 @@ class MessageMapperImpl(
                 status = status,
                 visibility = visibility,
                 senderName = message.senderUserName,
+                expireAfterMs = message.expirationData?.let { it.expireAfter.inWholeMilliseconds },
+                selfDeletionStartDate = message.expirationData?.let {
+                    when (val status = it.selfDeletionStatus) {
+                        is Message.ExpirationData.SelfDeletionStatus.Started -> status.selfDeletionStartDate
+                        is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
+                    }
+                },
             )
         }
     }
@@ -150,6 +157,13 @@ class MessageMapperImpl(
                 status = status,
                 visibility = message.visibility.toModel(),
                 senderUserName = message.senderName,
+                expirationData = message.expireAfterMs?.let {
+                    Message.ExpirationData(
+                        expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                        selfDeletionStatus = message.selfDeletionStartDate
+                            ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
+                            ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                }
             )
         }
     }

@@ -34,7 +34,7 @@ internal object SelfDeletionEventLogger {
 }
 
 internal sealed class LoggingSelfDeletionEvent(
-    open val message: Message.Regular,
+    open val message: Message,
     open val expirationData: Message.ExpirationData
 ) {
     private companion object {
@@ -61,7 +61,7 @@ internal sealed class LoggingSelfDeletionEvent(
     }
 
     data class SelfSelfDeletionAlreadyRequested(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
@@ -72,7 +72,7 @@ internal sealed class LoggingSelfDeletionEvent(
     }
 
     data class MarkingSelfSelfDeletionStartDate(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData,
         val startDate: Instant
     ) : LoggingSelfDeletionEvent(message, expirationData) {
@@ -85,7 +85,7 @@ internal sealed class LoggingSelfDeletionEvent(
     }
 
     data class WaitingForSelfDeletion(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData,
         val delayWaitTime: Duration
     ) : LoggingSelfDeletionEvent(message, expirationData) {
@@ -98,7 +98,7 @@ internal sealed class LoggingSelfDeletionEvent(
     }
 
     data class StartingSelfSelfDeletion(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData,
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
@@ -109,49 +109,49 @@ internal sealed class LoggingSelfDeletionEvent(
     }
 
     data class AttemptingToDelete(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
-                "deletion-status" to "attempting-to-delete",
-                "is-self-user-sender" to message.isSelfMessage.toString()
+                "deletion-status" to "attempting-to-delete"
+                //"is-self-user-sender" to message.isSelfMessage.toString()
             )
         }
     }
 
     data class SuccessfullyDeleted(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData,
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "self-deletion-succeed",
-                "is-self-user-sender" to message.isSelfMessage.toString()
+               // "is-self-user-sender" to message.isSelfMessage.toString()
             )
         }
     }
 
     data class InvalidMessageStatus(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
-                "deletion-status" to "invalid-message-status",
-                "is-self-user-sender" to message.isSelfMessage.toString(),
+                "deletion-status" to "invalid-message-status"
+                //"is-self-user-sender" to ,
             )
         }
     }
     data class SelfDeletionFailed(
-        override val message: Message.Regular,
+        override val message: Message,
         override val expirationData: Message.ExpirationData,
         val coreFailure: CoreFailure
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "self-deletion-failed",
-                "is-self-user-sender" to message.isSelfMessage.toString(),
+                //"is-self-user-sender" to message.isSelfMessage.toString(),
                 "reason" to coreFailure.toString()
             )
         }
