@@ -118,7 +118,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                     null
                 )
             } else {
-                null;
+                null
             }
         }
 
