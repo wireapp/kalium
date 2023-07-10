@@ -62,6 +62,7 @@ class MessageMapperImpl(
         val status = when (message.status) {
             Message.Status.PENDING -> MessageEntity.Status.PENDING
             Message.Status.SENT -> MessageEntity.Status.SENT
+            Message.Status.DELIVERED -> MessageEntity.Status.DELIVERED
             Message.Status.READ -> MessageEntity.Status.READ
             Message.Status.FAILED -> MessageEntity.Status.FAILED
             Message.Status.FAILED_REMOTELY -> MessageEntity.Status.FAILED_REMOTELY
@@ -111,6 +112,7 @@ class MessageMapperImpl(
         val status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
             MessageEntity.Status.SENT -> Message.Status.SENT
+            MessageEntity.Status.DELIVERED -> Message.Status.DELIVERED
             MessageEntity.Status.READ -> Message.Status.READ
             MessageEntity.Status.FAILED -> Message.Status.FAILED
             MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY

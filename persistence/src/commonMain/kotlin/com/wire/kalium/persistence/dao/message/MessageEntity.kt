@@ -99,6 +99,11 @@ sealed class MessageEntity(
         SENT,
 
         /**
+         * The message was delivered but not read.
+         */
+        DELIVERED,
+
+        /**
          * The message was marked as read locally.
          */
         READ,
