@@ -213,7 +213,7 @@ SELECT * FROM ConversationDetails
 WHERE type IS NOT 'SELF'
 AND (
     type IS 'GROUP' AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
-    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+    OR (type IS NOT 'GROUP' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos and connection requests if they have user metadata
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
 )
 AND (protocol IS 'PROTEUS' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
