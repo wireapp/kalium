@@ -113,7 +113,7 @@ class MessageMapperImpl(
     }
 
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
-        val status = when (message.status) {
+        val status: Message.Status = when (message.status) {
             MessageEntity.Status.PENDING -> Message.Status.PENDING
             MessageEntity.Status.SENT -> Message.Status.SENT
             MessageEntity.Status.READ -> Message.Status.READ
@@ -121,52 +121,54 @@ class MessageMapperImpl(
             MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
         }
         return when (message) {
-            is MessageEntity.Regular ->
-                Message.Regular(
-                    id = message.id,
-                    content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
-                    conversationId = message.conversationId.toModel(),
-                    date = message.date.toIsoDateTimeString(),
-                    senderUserId = message.senderUserId.toModel(),
-                    senderClientId = ClientId(message.senderClientId),
-                    status = status,
-                    editStatus = when (val editStatus = message.editStatus) {
-                        MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-                        is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
-                    },
-                    expirationData = message.expireAfterMs?.let {
-                        Message.ExpirationData(
-                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                            selfDeletionStatus = message.selfDeletionStartDate
-                                ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                                ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
-                    },
-                    visibility = message.visibility.toModel(),
-                    reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
-                    senderUserName = message.senderName,
-                    isSelfMessage = message.isSelfMessage,
-                    expectsReadConfirmation = message.expectsReadConfirmation
-                )
-
-            is MessageEntity.System -> Message.System(
-                id = message.id,
-                content = message.content.toMessageContent(),
-                conversationId = message.conversationId.toModel(),
-                date = message.date.toIsoDateTimeString(),
-                senderUserId = message.senderUserId.toModel(),
-                status = status,
-                visibility = message.visibility.toModel(),
-                senderUserName = message.senderName,
-                expirationData = message.expireAfterMs?.let {
-                    Message.ExpirationData(
-                        expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                        selfDeletionStatus = message.selfDeletionStartDate
-                            ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                            ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
-                }
-            )
+            is MessageEntity.Regular -> mapRegularMessage(message, status)
+            is MessageEntity.System -> mapSystemMessage(message, status)
         }
     }
+
+    private fun mapRegularMessage(message: MessageEntity.Regular, status: Message.Status) = Message.Regular(
+        id = message.id,
+        content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
+        conversationId = message.conversationId.toModel(),
+        date = message.date.toIsoDateTimeString(),
+        senderUserId = message.senderUserId.toModel(),
+        senderClientId = ClientId(message.senderClientId),
+        status = status,
+        editStatus = when (val editStatus = message.editStatus) {
+            MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
+            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+        },
+        expirationData = message.expireAfterMs?.let {
+            Message.ExpirationData(
+                expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                selfDeletionStatus = message.selfDeletionStartDate
+                    ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+        },
+        visibility = message.visibility.toModel(),
+        reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
+        senderUserName = message.senderName,
+        isSelfMessage = message.isSelfMessage,
+        expectsReadConfirmation = message.expectsReadConfirmation
+    )
+
+    private fun mapSystemMessage(message: MessageEntity.System, status: Message.Status) = Message.System(
+        id = message.id,
+        content = message.content.toMessageContent(),
+        conversationId = message.conversationId.toModel(),
+        date = message.date.toIsoDateTimeString(),
+        senderUserId = message.senderUserId.toModel(),
+        status = status,
+        visibility = message.visibility.toModel(),
+        senderUserName = message.senderName,
+        expirationData = message.expireAfterMs?.let {
+            Message.ExpirationData(
+                expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                selfDeletionStatus = message.selfDeletionStartDate
+                    ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+        }
+    )
 
     override fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview {
         return MessagePreview(

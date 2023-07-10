@@ -115,7 +115,6 @@ internal sealed class LoggingSelfDeletionEvent(
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "attempting-to-delete"
-                //"is-self-user-sender" to message.isSelfMessage.toString()
             )
         }
     }
@@ -127,7 +126,6 @@ internal sealed class LoggingSelfDeletionEvent(
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "self-deletion-succeed",
-               // "is-self-user-sender" to message.isSelfMessage.toString()
             )
         }
     }
@@ -139,10 +137,10 @@ internal sealed class LoggingSelfDeletionEvent(
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "invalid-message-status"
-                //"is-self-user-sender" to ,
             )
         }
     }
+
     data class SelfDeletionFailed(
         override val message: Message,
         override val expirationData: Message.ExpirationData,
@@ -151,7 +149,6 @@ internal sealed class LoggingSelfDeletionEvent(
         override fun eventJsonMap(): Map<String, String> {
             return mapOf(
                 "deletion-status" to "self-deletion-failed",
-                //"is-self-user-sender" to message.isSelfMessage.toString(),
                 "reason" to coreFailure.toString()
             )
         }
