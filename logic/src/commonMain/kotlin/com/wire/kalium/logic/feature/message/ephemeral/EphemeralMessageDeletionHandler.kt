@@ -3,6 +3,7 @@ package com.wire.kalium.logic.feature.message.ephemeral
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
@@ -48,7 +49,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                     )
                 } else {
                     kaliumLogger.i(
-                        "Self deletion requested for message without expiration data or a system message: $message"
+                        "Self deletion requested for message without expiration data: ${message.content.getType()}"
                     )
                 }
             }

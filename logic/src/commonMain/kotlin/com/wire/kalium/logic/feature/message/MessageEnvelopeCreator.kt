@@ -84,7 +84,7 @@ class MessageEnvelopeCreatorImpl(
             messageUid = message.id,
             messageContent = message.content,
             expectsReadConfirmation = expectsReadConfirmation,
-            expiresAfterMillis = (message as? Message.Regular)?.expirationData?.expireAfter?.inWholeMilliseconds
+            expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds
         )
 
         return createEnvelope(actualMessageContent, recipients, senderClientId)
