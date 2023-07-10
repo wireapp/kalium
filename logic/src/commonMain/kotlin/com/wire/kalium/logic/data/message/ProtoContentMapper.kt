@@ -142,9 +142,27 @@ class ProtoContentMapperImpl(
                 )
             }
 
-            else -> {
-                throw IllegalArgumentException("Unexpected message content type for ephemeral message: ${readableContent.getType()}")
+            is MessageContent.Knock -> {
+                val knock = GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
+                Ephemeral.Content.Knock(knock.value)
             }
+
+            is MessageContent.FailedDecryption,
+            is MessageContent.RestrictedAsset,
+            is MessageContent.Unknown,
+            is MessageContent.Availability,
+            is MessageContent.Calling,
+            is MessageContent.Cleared,
+            MessageContent.ClientAction,
+            is MessageContent.DeleteForMe,
+            is MessageContent.DeleteMessage,
+            MessageContent.Ignored,
+            is MessageContent.LastRead,
+            is MessageContent.Reaction,
+            is MessageContent.Receipt,
+            is MessageContent.TextEdited -> throw IllegalArgumentException(
+                "Unexpected message content type: ${readableContent.getType()}"
+            )
         }
         return GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = expireAfterMillis, content = ephemeralContent))
     }
@@ -216,7 +234,9 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
-            else -> {
+
+            is GenericMessage.Content.External,
+            null -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
                 MessageContent.Ignored
             }
@@ -355,7 +375,7 @@ class ProtoContentMapperImpl(
             }
 
             null -> {
-                kaliumLogger.w("Edit content is unexpected. Message UUID = $genericMessage.")
+                kaliumLogger.w("Edit content is unexpected. Message UUID = ${genericMessage.messageId.obfuscateId()}")
                 MessageContent.Ignored
             }
         }
@@ -448,8 +468,16 @@ class ProtoContentMapperImpl(
                 unpackAsset(genericAssetContent)
             }
 
+            is Ephemeral.Content.Knock -> {
+                MessageContent.Knock(
+                    ephemeralContent.value.hotKnock
+                )
+            }
+
             // Handle self-deleting Location messages when they are implemented
-            else -> {
+            is Ephemeral.Content.Image,
+            is Ephemeral.Content.Location,
+            null -> {
                 MessageContent.Ignored
             }
         }
