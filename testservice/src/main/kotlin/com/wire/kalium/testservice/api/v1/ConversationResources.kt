@@ -227,6 +227,7 @@ class ConversationResources(private val instanceService: InstanceService) {
                     data,
                     fileName,
                     type,
+                    messageTimer,
                     invalidHash,
                     otherAlgorithm,
                     otherHash
@@ -249,7 +250,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     data,
                     type,
                     height,
-                    width
+                    width,
+                    messageTimer
                 )
             }
         }
@@ -363,7 +365,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     ConversationId(conversationId, conversationDomain),
                     text,
                     mentions,
-                    firstMessageId
+                    firstMessageId,
+                    messageTimer
                 )
             }
         }
