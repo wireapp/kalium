@@ -33,6 +33,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.utils.IgnoreIOS
+import com.wire.kalium.persistence.utils.stubs.TestStubs
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
@@ -805,6 +806,27 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
+    }
+
+    @Test
+    fun givenDomain_WhenGetConversationIdsByDomain_ThenReturnListOfQualifiedIDs() = runTest(dispatcher) {
+        // given
+        val domain = "wire.com"
+        val conversation1 = TestStubs.conversationEntity1.copy(id = QualifiedIDEntity("conversation1", domain))
+        val conversation2 = TestStubs.conversationEntity2.copy(id = QualifiedIDEntity("conversation2", domain))
+        val conversation3 = TestStubs.conversationEntity3.copy(id = QualifiedIDEntity("conversation3", "otherdomain.com"))
+
+        conversationDAO.insertConversation(conversation1)
+        conversationDAO.insertConversation(conversation2)
+        conversationDAO.insertConversation(conversation3)
+
+        // when
+        val result = conversationDAO.getConversationIdsByDomain(domain)
+
+        // then
+        assertEquals(2, result.size)
+        assertTrue(result.contains(conversation1.id))
+        assertTrue(result.contains(conversation2.id))
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {

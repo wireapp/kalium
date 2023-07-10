@@ -29,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MemberDAOTest : BaseDatabaseTest() {
 
@@ -324,5 +325,36 @@ class MemberDAOTest : BaseDatabaseTest() {
         val member = userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(true, member?.hasIncompleteMetadata)
     }
+
+    @Test
+    fun givenMembersWithSameDomainInConversation_WhenGetMemberIdsByTheSameDomainInConversation_ThenReturnListOfQualifiedIDs() =
+        runTest(dispatcher) {
+            // given
+            val conversation = TestStubs.conversationEntity1
+            val conversationID = conversation.id
+            val otherDomain = "anta.com"
+            val domain = conversation.id.domain
+            val user1 = TestStubs.user1
+            val user2 = TestStubs.user2
+            val user3 = TestStubs.user3.copy(id = QualifiedIDEntity("3", otherDomain))
+
+            userDAO.insertUser(user1)
+            userDAO.insertUser(user2)
+            userDAO.insertUser(user3)
+
+            conversationDAO.insertConversation(conversation)
+
+            memberDAO.insertMember(TestStubs.member1, conversationID)
+            memberDAO.insertMember(TestStubs.member2, conversationID)
+            memberDAO.insertMember(TestStubs.member3.copy(user = QualifiedIDEntity("3", otherDomain)), conversationID)
+
+            // when
+            val result = memberDAO.getMemberIdsByTheSameDomainInConversation(domain, conversationID)
+
+            // then
+            assertEquals(2, result.size)
+            assertTrue(result.contains(user1.id))
+            assertTrue(result.contains(user2.id))
+        }
 
 }

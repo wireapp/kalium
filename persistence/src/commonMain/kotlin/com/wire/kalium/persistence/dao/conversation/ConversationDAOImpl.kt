@@ -315,4 +315,8 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
     }
+
+    override suspend fun getConversationIdsByDomain(domain: String): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        conversationQueries.selectConversationIdsByDomain(domain).executeAsList()
+    }
 }

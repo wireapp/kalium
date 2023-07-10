@@ -318,3 +318,6 @@ clearContent {
 DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
 DELETE FROM Message WHERE conversation_id = :conversationId;
 }
+
+selectConversationIdsByDomain:
+SELECT qualified_id FROM Conversation WHERE qualified_id LIKE ('%@' || :domain);

@@ -50,6 +50,10 @@ interface MemberDAO {
     )
 
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
+    suspend fun getMemberIdsByTheSameDomainInConversation(
+        domain: String,
+        conversationID: QualifiedIDEntity
+    ): List<QualifiedIDEntity>
 }
 
 internal class MemberDAOImpl internal constructor(
@@ -153,4 +157,11 @@ internal class MemberDAOImpl internal constructor(
             .flowOn(coroutineContext)
             .mapToOneOrNull()
             .map { it != null }
+
+    override suspend fun getMemberIdsByTheSameDomainInConversation(
+        domain: String,
+        conversationID: QualifiedIDEntity
+    ): List<QualifiedIDEntity> = withContext(coroutineContext) {
+        memberQueries.getMembersWithSameDomainFromConversation(domain, conversationID).executeAsList()
+    }
 }

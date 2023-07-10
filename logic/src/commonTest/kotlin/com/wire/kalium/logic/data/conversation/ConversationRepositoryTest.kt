@@ -976,6 +976,55 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun whenGettingConversationIdsByDomain_thenShouldFetchFromDatabaseAndSucceed() = runTest {
+        // given
+        val domain = "testDomain"
+        val knownConversationIds = listOf(
+            QualifiedIDEntity(value = "id1", domain = domain),
+            QualifiedIDEntity(value = "id2", domain = domain)
+        )
+        val (arrangement, conversationRepository) = Arrangement()
+            .withSuccessfulGetConversationIdsByDomain(knownConversationIds)
+            .arrange()
+
+        // when
+        val result = conversationRepository.getConversationIdsByDomain(domain)
+
+        // then
+        result.shouldSucceed()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::getConversationIdsByDomain)
+            .with(eq(domain))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenGettingMemberIdsByTheSameDomainInConversation_thenShouldFetchFromDatabaseAndSucceed() = runTest {
+        // given
+        val domain = "testDomain"
+        val conversationId = ConversationId(value = "convId", domain = domain)
+        val knownUserIds = listOf(
+            QualifiedIDEntity(value = "id1", domain = domain),
+            QualifiedIDEntity(value = "id2", domain = domain)
+        )
+        val (arrangement, conversationRepository) = Arrangement()
+            .withSuccessfulGetMemberIdsByTheSameDomainInConversation(knownUserIds)
+            .arrange()
+
+        // when
+        val result = conversationRepository.getMemberIdsByTheSameDomainInConversation(domain, conversationId)
+
+        // then
+        result.shouldSucceed()
+
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::getMemberIdsByTheSameDomainInConversation)
+            .with(eq(domain), eq(conversationId.toDao()))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -1285,6 +1334,20 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getConversationsWithoutMetadata)
                 .whenInvoked()
                 .thenReturn(result)
+        }
+
+        fun withSuccessfulGetConversationIdsByDomain(conversationIdEntities: List<QualifiedIDEntity>) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getConversationIdsByDomain)
+                .whenInvokedWith(any())
+                .thenReturn(conversationIdEntities)
+        }
+
+        fun withSuccessfulGetMemberIdsByTheSameDomainInConversation(userIdEntities: List<QualifiedIDEntity>) = apply {
+            given(memberDAO)
+                .suspendFunction(memberDAO::getMemberIdsByTheSameDomainInConversation)
+                .whenInvokedWith(any(), any())
+                .thenReturn(userIdEntities)
         }
 
         fun arrange() = this to conversationRepository
