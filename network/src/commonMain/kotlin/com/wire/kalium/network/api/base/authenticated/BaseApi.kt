@@ -21,7 +21,7 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface BaseApi {
-    fun getApiNotSupportError(apiName: String, apiVersion: Int) = NetworkResponse.Error(
+    fun getApiNotSupportedError(apiName: String, apiVersion: Int) = NetworkResponse.Error(
         APINotSupported("${this::class.simpleName}: $apiName api is only available on API V$apiVersion")
     )
 }
