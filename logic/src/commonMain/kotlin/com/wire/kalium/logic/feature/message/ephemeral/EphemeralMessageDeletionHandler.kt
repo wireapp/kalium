@@ -209,10 +209,10 @@ internal class EphemeralMessageDeletionHandlerImpl(
         messageRepository.getEphemeralMessagesMarkedForDeletion()
             .onSuccess { ephemeralMessages ->
                 ephemeralMessages.forEach { ephemeralMessage ->
-                    if (ephemeralMessage.expirationData != null) {
+                    ephemeralMessage.expirationData?.let { expirationData ->
                         enqueueSelfDeletion(
                             message = ephemeralMessage,
-                            expirationData = ephemeralMessage.expirationData!!
+                            expirationData = expirationData
                         )
                     }
                 }

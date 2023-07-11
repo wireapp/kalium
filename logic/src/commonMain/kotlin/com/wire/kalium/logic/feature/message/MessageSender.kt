@@ -229,8 +229,8 @@ internal class MessageSenderImpl internal constructor(
     }
 
     private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
-        if (message.expirationData != null) {
-            enqueueSelfDeletion(message, message.expirationData!!)
+        message.expirationData?.let { expirationData ->
+            enqueueSelfDeletion(message, expirationData)
         }
     }
 
