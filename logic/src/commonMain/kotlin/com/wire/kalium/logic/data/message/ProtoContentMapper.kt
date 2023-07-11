@@ -235,7 +235,10 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
 
-            is GenericMessage.Content.External,
+            is GenericMessage.Content.External -> {
+                kaliumLogger.w("External content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
+                MessageContent.Ignored
+            }
             null -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
                 MessageContent.Ignored
