@@ -37,9 +37,10 @@ sealed class SelfDeletionTimer {
      * Represents a self deletion timer that is imposed by the team or conversation settings that can't be changed by the user
      * @param enforcedDuration the team or conversation imposed timer
      */
-    sealed class Enforced(val enforcedDuration: Duration) : SelfDeletionTimer() {
-        data class ByTeam(val duration: Duration) : Enforced(duration)
-        data class ByGroup(val duration: Duration) : Enforced(duration)
+    sealed class Enforced : SelfDeletionTimer() {
+        abstract val enforcedDuration: Duration
+        data class ByTeam(override val enforcedDuration: Duration) : Enforced()
+        data class ByGroup(override val enforcedDuration: Duration) : Enforced()
     }
 
     fun toDuration(): Duration = when (this) {

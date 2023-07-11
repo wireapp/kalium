@@ -28,11 +28,14 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
+import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 /**
@@ -44,7 +47,8 @@ class SendKnockUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
-    private val messageSendFailureHandler: MessageSendFailureHandler
+    private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase
 ) {
 
     /**
@@ -60,6 +64,15 @@ class SendKnockUseCase internal constructor(
         }
 
         val generatedMessageUuid = uuid4().toString()
+        val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().let {
+            when (it) {
+                SelfDeletionTimer.Disabled -> null
+                is SelfDeletionTimer.Enabled -> it.userDuration
+                is SelfDeletionTimer.Enforced -> it.enforcedDuration
+            }
+        }.let {
+            if (it == Duration.ZERO) null else it
+        }
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Regular(
@@ -71,7 +84,8 @@ class SendKnockUseCase internal constructor(
                 senderClientId = currentClientId,
                 status = Message.Status.PENDING,
                 editStatus = Message.EditStatus.NotEdited,
-                isSelfMessage = true
+                isSelfMessage = true,
+                expirationData = messageTimer?.let { Message.ExpirationData(it) }
             )
             persistMessage(message)
                 .flatMap { messageSender.sendMessage(message) }

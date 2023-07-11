@@ -74,13 +74,10 @@ class SendTextMessageUseCase internal constructor(
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
         val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().let {
-            val logMap = it.toLogString(eventDescription = "Sending text message with self-deletion timer")
-            if (it != SelfDeletionTimer.Disabled) kaliumLogger.d("$SELF_DELETION_LOG_TAG: $logMap")
             when (it) {
                 SelfDeletionTimer.Disabled -> null
                 is SelfDeletionTimer.Enabled -> it.userDuration
-                is SelfDeletionTimer.Enforced.ByGroup -> it.duration
-                is SelfDeletionTimer.Enforced.ByTeam -> it.duration
+                is SelfDeletionTimer.Enforced -> it.enforcedDuration
             }
         }.let {
             if (it == Duration.ZERO) null else it
