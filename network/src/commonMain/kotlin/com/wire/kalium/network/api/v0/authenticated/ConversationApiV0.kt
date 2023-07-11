@@ -267,38 +267,33 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
+    override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
+        getApiNotSupportedError(::fetchMlsOneToOneConversation.name, MIN_API_VERSION_MLS)
+
     override suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
-        NetworkResponse.Error(
-            APINotSupported("MLS: fetchSubconversationDetails api is only available on API V5")
-        )
+        getApiNotSupportedError(::fetchSubconversationDetails.name, MIN_API_VERSION_MLS)
 
     override suspend fun fetchSubconversationGroupInfo(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
-        NetworkResponse.Error(
-            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V5")
-        )
+        getApiNotSupportedError(::fetchSubconversationGroupInfo.name, MIN_API_VERSION_MLS)
 
     override suspend fun deleteSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId,
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
-        NetworkResponse.Error(
-            APINotSupported("MLS: deleteSubconversation api is only available on API V5")
-        )
+        getApiNotSupportedError(::deleteSubconversation.name, MIN_API_VERSION_MLS)
 
     override suspend fun leaveSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<Unit> =
-        NetworkResponse.Error(
-            APINotSupported("MLS: leaveSubconversation api is only available on API V5")
-        )
+        getApiNotSupportedError(::leaveSubconversation.name, MIN_API_VERSION_MLS)
 
     protected suspend fun handleConversationMemberAddedResponse(
         httpResponse: HttpResponse
@@ -419,11 +414,8 @@ internal open class ConversationApiV0 internal constructor(
         const val PATH_BOTS = "bots"
         const val QUERY_KEY_CODE = "code"
         const val QUERY_KEY_KEY = "key"
-        const val QUERY_KEY_START = "start"
-        const val QUERY_KEY_SIZE = "size"
-        const val QUERY_KEY_IDS = "qualified_ids"
         const val PATH_TYPING_NOTIFICATION = "typing"
-
         const val MAX_CONVERSATION_DETAILS_COUNT = 1000
+        const val MIN_API_VERSION_MLS = 5
     }
 }

@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.v5.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolRequest
@@ -28,6 +29,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SubconversationId
+import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -119,10 +121,16 @@ internal open class ConversationApiV5 internal constructor(
         NetworkResponse.Error(KaliumException.GenericError(e))
     }
 
+    override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_CONVERSATIONS/$PATH_ONE_TO_ONE/${userId.domain}/${userId.value}")
+        }
+
     companion object {
         const val PATH_PROTOCOL = "protocol"
         const val PATH_GROUP_INFO = "groupinfo"
         const val PATH_SUBCONVERSATIONS = "subconversations"
+        const val PATH_ONE_TO_ONE = "one2one"
     }
 
 }
