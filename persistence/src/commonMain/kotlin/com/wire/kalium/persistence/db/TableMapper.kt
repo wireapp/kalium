@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
 import com.wire.kalium.persistence.MessageNewConversationReceiptModeContent
+import com.wire.kalium.persistence.MessageRecipientFailure
 import com.wire.kalium.persistence.MessageRestrictedAssetContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
@@ -161,7 +162,8 @@ internal object TableMapper {
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter,
         user_typeAdapter = EnumColumnAdapter(),
-        bot_serviceAdapter = BotServiceAdapter()
+        bot_serviceAdapter = BotServiceAdapter(),
+        expires_atAdapter = InstantTypeAdapter
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
@@ -189,5 +191,11 @@ internal object TableMapper {
     val newClientAdapter = NewClient.Adapter(
         device_typeAdapter = EnumColumnAdapter(),
         registration_dateAdapter = InstantTypeAdapter
+    )
+
+    val messageRecipientFailureAdapter = MessageRecipientFailure.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        recipient_failure_listAdapter = QualifiedIDListAdapter,
+        recipient_failure_typeAdapter = EnumColumnAdapter()
     )
 }

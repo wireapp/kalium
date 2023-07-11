@@ -1,0 +1,25 @@
+{
+  "backends": [
+    {
+      "api": "https://nginz-https.anta.wire.link",
+      "accounts": "https://account.anta.wire.link/",
+      "webSocket": "https://nginz-ssl.anta.wire.link/",
+      "blackList": "https://clientblacklist.wire.com/staging",
+      "teams": "https://teams.anta.wire.link/",
+      "website": "https://example.org",
+      "title": "Anta Backend",
+      "passwordForUsers": "Aqa123456!",
+      "domain": "anta.wire.link",
+      "users": [
+        {
+          "email": "smoketester+65e02b3d42@wire.com",
+          "id": "a2baeed1-53f3-4a22-a161-7d61abf4456f"
+        },
+        {
+          "email": "smoketester+3cbe9db208@wire.com",
+          "id": "33ec2e20-9bed-44b2-b891-a1dbaf3da158"
+        }
+      ]
+    }
+  ]
+}

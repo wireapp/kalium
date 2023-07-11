@@ -42,12 +42,22 @@ internal class PersistReactionUseCaseImpl(
         senderUserId: UserId,
         date: String
     ): Either<CoreFailure, Unit> {
+        val emojiSet = reaction.emojiSet.map {
+            // If we receive the heavy black heart unicode, we convert it to the emoji version.
+            // This is a compatibility layer, so we properly handle reactions sent from older clients
+            // This does not cover the fact that we send the new emoji to older clients.
+            if (it == "❤") { // \u2764
+                "❤️" // \u2764\ufe0f (heavy black heart + variation selector 16)
+            } else {
+                it
+            }
+        }.toSet()
         return reactionRepository.updateReaction(
             reaction.messageId,
             conversationId,
             senderUserId,
             date,
-            reaction.emojiSet
+            emojiSet
         )
     }
 }

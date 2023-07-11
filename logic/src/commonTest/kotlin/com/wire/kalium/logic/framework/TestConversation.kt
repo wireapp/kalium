@@ -42,9 +42,10 @@ import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
-import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.ConversationViewEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -79,25 +80,6 @@ object TestConversation {
         ID.copy(value = "SELF ID"),
         "SELF Name",
         Conversation.Type.SELF,
-        TestTeam.TEAM_ID,
-        protocolInfo,
-        MutedConversationStatus.AllAllowed,
-        null,
-        null,
-        null,
-        lastReadDate = "2022-03-30T15:36:00.000Z",
-        access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-        accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        creatorId = null,
-        receiptMode = Conversation.ReceiptMode.DISABLED,
-        messageTimer = null,
-        userMessageTimer = null
-    )
-
-    fun GLOBAL_TEAM(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
-        ID.copy(value = "GLOBAL TEAM ID"),
-        "GLOBAL TEAM Name",
-        Conversation.Type.GLOBAL_TEAM,
         TestTeam.TEAM_ID,
         protocolInfo,
         MutedConversationStatus.AllAllowed,
@@ -165,7 +147,7 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member,
+        selfRole = MemberEntity.Role.Member,
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null
@@ -308,7 +290,7 @@ object TestConversation {
         mlsProposalTimer = null,
         mutedTime = 0L,
         removedBy = null,
-        selfRole = com.wire.kalium.persistence.dao.Member.Role.Member,
+        selfRole = MemberEntity.Role.Member,
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null

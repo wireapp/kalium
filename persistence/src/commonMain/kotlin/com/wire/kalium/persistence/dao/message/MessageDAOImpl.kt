@@ -24,10 +24,10 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
@@ -43,7 +43,7 @@ import kotlinx.datetime.toInstant
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions", "LongParameterList")
-class MessageDAOImpl(
+internal class MessageDAOImpl internal constructor(
     private val queries: MessagesQueries,
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -51,7 +51,8 @@ class MessageDAOImpl(
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext
-) : MessageDAO, MessageInsertExtension by MessageInsertExtensionImpl(queries, unreadEventsQueries, conversationsQueries, selfUserId) {
+) : MessageDAO,
+    MessageInsertExtension by MessageInsertExtensionImpl(queries, unreadEventsQueries, conversationsQueries, selfUserId) {
     private val mapper = MessageMapper
     private val unreadEventMapper = UnreadEventMapper
 
@@ -272,20 +273,6 @@ class MessageDAOImpl(
         }
     }
 
-    override suspend fun getConversationMessagesByContentType(
-        conversationId: QualifiedIDEntity,
-        contentType: MessageEntity.ContentType
-    ): List<MessageEntity> = withContext(coroutineContext) {
-        queries.getConversationMessagesByContentType(conversationId, contentType, mapper::toEntityMessageFromView)
-            .executeAsList()
-    }
-
-    override suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity) {
-        withContext(coroutineContext) {
-            queries.deleteAllConversationMessages(conversationId)
-        }
-    }
-
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
@@ -358,6 +345,15 @@ class MessageDAOImpl(
         return withContext(coroutineContext) {
             queries.markSelfDeletionStartDate(selfDeletionStartDate, conversationId, messageId)
         }
+    }
+
+    override suspend fun insertFailedRecipientDelivery(
+        id: String,
+        conversationsId: QualifiedIDEntity,
+        recipientsFailed: List<QualifiedIDEntity>,
+        recipientFailureTypeEntity: RecipientFailureTypeEntity
+    ) = withContext(coroutineContext) {
+        queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, recipientFailureTypeEntity)
     }
 
     override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(coroutineContext) {

@@ -96,7 +96,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                         withContext(coroutineContext) {
                             async {
                                 val isUpdateRequired = authenticationScopeProvider
-                                    .provide(serverConfig, proxyCredentials)
+                                    .provide(serverConfig, proxyCredentials, serverConfigRepository)
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
                                 serverConfig.id to isUpdateRequired
                             }

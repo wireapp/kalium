@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -40,6 +41,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import kotlinx.datetime.toInstant
 
 interface UserMapper {
     fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity
@@ -78,6 +80,8 @@ interface UserMapper {
         connectionState: ConnectionEntity.State,
         userTypeEntity: UserTypeEntity
     ): UserEntity
+
+    fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity
 }
 
 internal class UserMapperImpl(
@@ -99,7 +103,8 @@ internal class UserMapperImpl(
             connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
             previewAssetId?.toModel(),
             completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus)
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            expiresAt = expiresAt
         )
     }
 
@@ -118,7 +123,8 @@ internal class UserMapperImpl(
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = false
+            deleted = false,
+            expiresAt = expiresAt
         )
     }
 
@@ -136,7 +142,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = UserTypeEntity.STANDARD,
             botService = null,
-            deleted = userDTO.deleted ?: false
+            deleted = userDTO.deleted ?: false,
+            expiresAt = expiresAt?.toInstant()
         )
     }
 
@@ -195,7 +202,8 @@ internal class UserMapperImpl(
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
-            deleted = false
+            deleted = false,
+            expiresAt = null
         )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -218,7 +226,8 @@ internal class UserMapperImpl(
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
-        deleted = userProfile.deleted ?: false
+        deleted = userProfile.deleted ?: false,
+        expiresAt = userProfile.expiresAt?.toInstant()
     )
 
     override fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity {
@@ -234,5 +243,30 @@ internal class UserMapperImpl(
                     ?: persistedEntity.completeAssetId
             )
         }
+    }
+
+    /**
+     * Default values and marked as [UserEntity.hasIncompleteMetadata] = true.
+     * So later we can re-fetch them.
+     */
+    override fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity {
+        return UserEntity(
+            id = userId.toDao(),
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            accentId = 1,
+            team = null,
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = null,
+            completeAssetId = null,
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = UserTypeEntity.STANDARD,
+            botService = null,
+            deleted = false,
+            hasIncompleteMetadata = true,
+            expiresAt = null
+        )
     }
 }

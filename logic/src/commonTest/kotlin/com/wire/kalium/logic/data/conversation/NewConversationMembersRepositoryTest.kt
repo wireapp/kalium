@@ -21,6 +21,8 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
@@ -29,7 +31,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.persistence.dao.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -52,8 +53,8 @@ class NewConversationMembersRepositoryTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::insertMembersWithQualifiedId)
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::insertMembersWithQualifiedId)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -63,9 +64,28 @@ class NewConversationMembersRepositoryTest {
             .wasInvoked(once)
     }
 
-    private class Arrangement {
-        @Mock
-        val conversationDAO = mock(ConversationDAO::class)
+    @Test
+    fun givenASuccessConversationResponse_whenMembersItsEmpty_ThenShouldNotCreateTheSystemMessage() = runTest {
+        val conversationId = TestConversation.ENTITY_ID
+        val (arrangement, handler) = Arrangement()
+            .withPersistResolvedMembersSystemMessageSuccess()
+            .arrange()
+
+        val result = handler.persistMembersAdditionToTheConversation(
+            conversationId,
+            CONVERSATION_RESPONSE.copy(members = CONVERSATION_RESPONSE.members.copy(otherMembers = emptyList()))
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::insertMembersWithQualifiedId)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    private class Arrangement :
+        MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
@@ -77,7 +97,9 @@ class NewConversationMembersRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun arrange() = this to NewConversationMembersRepositoryImpl(conversationDAO, lazy { newGroupConversationSystemMessagesCreator })
+        fun arrange() = this to NewConversationMembersRepositoryImpl(
+            memberDAO,
+            lazy { newGroupConversationSystemMessagesCreator })
     }
 
     private companion object {

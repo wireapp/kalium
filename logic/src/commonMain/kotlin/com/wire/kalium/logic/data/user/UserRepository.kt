@@ -19,13 +19,14 @@
 package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -49,9 +50,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
-import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
@@ -89,15 +88,11 @@ internal interface UserRepository {
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
-    suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit>
-    suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit>
-    suspend fun updateLocalSelfUserHandle(handle: String)
     fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
-    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
     fun observeAllKnownUsersNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<OtherUser>>>
 
@@ -112,12 +107,14 @@ internal interface UserRepository {
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
 
     /**
-     * Updates the self user's email address.
-     * @param email the new email address
-     * @return [Either.Right] with [Boolean] true if the verify email was sent and false if there are no change,
-     * otherwise [Either.Left] with [NetworkFailure]
+     * Updates users without metadata from the server.
      */
-    suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
+    suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit>
+
+    /**
+     * Removes broken user asset to avoid fetching it until next sync.
+     */
+    suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -197,39 +194,32 @@ internal class UserDataSource internal constructor(
         return fetchUsersByIds(ids.toSet())
     }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
-        val selfUserDomain = selfUserId.domain
-        qualifiedUserIdList.groupBy { it.domain }
-            .filter { it.value.isNotEmpty() }
-            .map { (domain: String, usersOnDomain: List<UserId>) ->
-                when (selfUserDomain == domain) {
-                    true -> fetchMultipleUsers(usersOnDomain)
-                    false -> {
-                        usersOnDomain.forEach { userId ->
-                            fetchUserInfo(userId).fold({
-                                kaliumLogger.w("Ignoring external users details")
-                            }) { kaliumLogger.d("External users details saved") }
-                        }
-                        Either.Right(Unit)
-                    }
-                }
-            }
-
-        return Either.Right(Unit)
-    }
-
-    private suspend fun fetchMultipleUsers(qualifiedUsersOnSameDomainList: List<UserId>) = wrapApiRequest {
-        userDetailsApi.getMultipleUsers(
-            ListUserRequest.qualifiedIds(qualifiedUsersOnSameDomainList.map { userId -> userId.toApi() })
-        )
-    }.flatMap { listUserProfileDTO -> persistUsers(listUserProfileDTO.usersFound) }
-
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
-    override suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean> = wrapApiRequest {
-        selfApi.updateEmailAddress(email)
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
+        if (qualifiedUserIdList.isEmpty()) {
+            return Either.Right(Unit)
+        }
+
+        return wrapApiRequest {
+            userDetailsApi.getMultipleUsers(
+                ListUserRequest.qualifiedIds(qualifiedUserIdList.map { userId -> userId.toApi() })
+            )
+        }.flatMap { listUserProfileDTO ->
+            if (listUserProfileDTO.usersFailed.isNotEmpty()) {
+                kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
+                persistIncompleteUsers(listUserProfileDTO.usersFailed)
+            }
+            persistUsers(listUserProfileDTO.usersFound)
+        }
+    }
+
+    private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
+        usersFailed.map { userMapper.fromFailedUserToEntity(it) }.forEach {
+            userDAO.insertUser(it)
+        }
     }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
@@ -338,28 +328,13 @@ internal class UserDataSource internal constructor(
     override suspend fun getSelfUser(): SelfUser? =
         observeSelfUser().firstOrNull()
 
-    override suspend fun updateSelfHandle(handle: String): Either<NetworkFailure, Unit> = wrapApiRequest {
-        selfApi.changeHandle(ChangeHandleRequest(handle))
-    }
-
-    override suspend fun updateSelfDisplayName(displayName: String): Either<CoreFailure, Unit> = wrapApiRequest {
-        selfApi.updateSelf(UserUpdateRequest(displayName, null, null))
-    }.flatMap {
-        wrapStorageRequest {
-            userDAO.updateUserDisplayName(selfUserId.toDao(), displayName)
-        }
-    }
-
-    override suspend fun updateLocalSelfUserHandle(handle: String) =
-        userDAO.updateUserHandle(selfUserId.toDao(), handle)
-
     override fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
         return userDAO.observeAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .wrapStorageRequest()
             .mapRight { users ->
                 users
-                    .filter { it.id != selfUserId && !it.deleted }
+                    .filter { it.id != selfUserId && !it.deleted && !it.hasIncompleteMetadata }
                     .map { userEntity -> publicUserMapper.fromUserEntityToOtherUser(userEntity) }
             }
     }
@@ -399,13 +374,6 @@ internal class UserDataSource internal constructor(
             }
         }
 
-    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
-        userDAO.updateUserAvailabilityStatus(
-            selfUserId.toDao(),
-            availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
-        )
-    }
-
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
         userDAO.updateUserAvailabilityStatus(userId.toDao(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
@@ -417,7 +385,7 @@ internal class UserDataSource internal constructor(
             .wrapStorageRequest()
             .mapRight { users ->
                 users
-                    .filter { !it.deleted }
+                    .filter { !it.deleted && !it.hasIncompleteMetadata }
                     .map { publicUserMapper.fromUserEntityToOtherUser(it) }
             }
     }
@@ -465,6 +433,18 @@ internal class UserDataSource internal constructor(
                 }
             )
         }
+
+    override suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.getUsersWithoutMetadata()
+    }.flatMap { usersWithoutMetadata ->
+        kaliumLogger.d("Numbers of users to refresh: ${usersWithoutMetadata.size}")
+        val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
+        fetchUsersByIds(userIds)
+    }
+
+    override suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID) = wrapStorageRequest {
+        userDAO.removeUserAsset(qualifiedID.toDao())
+    }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"

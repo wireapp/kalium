@@ -19,19 +19,19 @@
 package com.wire.kalium.persistence.adapter
 
 import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.Member
+import com.wire.kalium.persistence.dao.member.MemberEntity
 
-internal object MemberRoleAdapter : ColumnAdapter<Member.Role, String> {
-    override fun decode(databaseValue: String): Member.Role = when (databaseValue) {
-        ADMIN -> Member.Role.Admin
-        MEMBER -> Member.Role.Member
-        else -> Member.Role.Unknown(databaseValue)
+internal object MemberRoleAdapter : ColumnAdapter<MemberEntity.Role, String> {
+    override fun decode(databaseValue: String): MemberEntity.Role = when (databaseValue) {
+        ADMIN -> MemberEntity.Role.Admin
+        MEMBER -> MemberEntity.Role.Member
+        else -> MemberEntity.Role.Unknown(databaseValue)
     }
 
-    override fun encode(value: Member.Role): String = when (value) {
-        Member.Role.Admin -> ADMIN
-        Member.Role.Member -> MEMBER
-        is Member.Role.Unknown -> value.name
+    override fun encode(value: MemberEntity.Role): String = when (value) {
+        MemberEntity.Role.Admin -> ADMIN
+        MemberEntity.Role.Member -> MEMBER
+        is MemberEntity.Role.Unknown -> value.name
     }
 
     private const val ADMIN = "wire_admin"

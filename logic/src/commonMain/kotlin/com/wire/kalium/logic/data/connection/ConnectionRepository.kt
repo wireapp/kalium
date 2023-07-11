@@ -59,10 +59,11 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.toInstant
@@ -83,6 +84,7 @@ interface ConnectionRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ConnectionDataSource(
     private val conversationDAO: ConversationDAO,
+    private val memberDAO: MemberDAO,
     private val connectionDAO: ConnectionDAO,
     private val connectionApi: ConnectionApi,
     private val userDetailsApi: UserDetailsApi,
@@ -258,8 +260,8 @@ internal class ConnectionDataSource(
             }
 
             ACCEPTED -> {
-                conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                    member = Member(user = connection.qualifiedToId.toDao(), Member.Role.Member),
+                memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+                    member = MemberEntity(user = connection.qualifiedToId.toDao(), MemberEntity.Role.Member),
                     conversationID = connection.qualifiedConversationId.toDao(),
                     status = connectionStatusMapper.toDaoModel(connection.status)
                 )
@@ -278,9 +280,9 @@ internal class ConnectionDataSource(
 
     private suspend fun updateConversationMemberFromConnection(connection: Connection) =
         wrapStorageRequest {
-            conversationDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
                 // TODO(IMPORTANT!!!!!!): setting a default value for member role is incorrect and can lead to unexpected behaviour
-                member = Member(user = connection.qualifiedToId.toDao(), Member.Role.Member),
+                member = MemberEntity(user = connection.qualifiedToId.toDao(), MemberEntity.Role.Member),
                 status = connectionStatusMapper.toDaoModel(connection.status),
                 conversationID = connection.qualifiedConversationId.toDao()
             )

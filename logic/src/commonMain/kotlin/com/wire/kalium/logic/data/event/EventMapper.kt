@@ -221,6 +221,7 @@ class EventMapper(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
         eventContentDTO.data
     )
@@ -338,6 +339,12 @@ class EventMapper(
             id,
             transient,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConversationGuestLinks)
+        )
+
+        is FeatureConfigData.E2EI -> Event.FeatureConfig.MLSE2EIUpdated(
+            id,
+            transient,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.E2EI)
         )
 
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient)

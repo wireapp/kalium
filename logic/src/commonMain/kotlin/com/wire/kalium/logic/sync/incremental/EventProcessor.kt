@@ -19,10 +19,13 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -37,11 +40,14 @@ import com.wire.kalium.util.serialization.toJsonElement
  */
 internal interface EventProcessor {
     /**
-     * Process the [event], and persist the last processed event ID.
+     * Process the [event], and persist the last processed event ID if the event
+     * is not transient.
+     * If the processing fails, the last processed event ID will not be updated.
+     * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
      * @see EventRepository.lastEventId
      * @see EventRepository.updateLastProcessedEventId
      */
-    suspend fun processEvent(event: Event)
+    suspend fun processEvent(event: Event): Either<CoreFailure, Unit>
 }
 
 internal class EventProcessorImpl(
@@ -57,26 +63,26 @@ internal class EventProcessorImpl(
         kaliumLogger.withFeatureId(EVENT_RECEIVER)
     }
 
-    override suspend fun processEvent(event: Event) {
-        when (event) {
-            is Event.Conversation -> conversationEventReceiver.onEvent(event)
-            is Event.User -> userEventReceiver.onEvent(event)
-            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-            is Event.Unknown -> {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SKIPPED,
-                        event
-                    )
-            }
-            is Event.Team -> teamEventReceiver.onEvent(event)
-            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
+    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> = when (event) {
+        is Event.Conversation -> conversationEventReceiver.onEvent(event)
+        is Event.User -> userEventReceiver.onEvent(event)
+        is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
+        is Event.Unknown -> {
+            kaliumLogger
+                .logEventProcessing(
+                    EventLoggingStatus.SKIPPED,
+                    event
+                )
+            // Skipping event = success
+            Either.Right(Unit)
         }
 
+        is Event.Team -> teamEventReceiver.onEvent(event)
+        is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
+    }.onSuccess {
         val logMap = mapOf<String, Any>(
             "event" to event.toLogMap()
         )
-
         if (event.shouldUpdateLastProcessedEventId()) {
             eventRepository.updateLastProcessedEventId(event.id)
             logger.i("Updated lastProcessedEventId: ${logMap.toJsonElement()}")
@@ -84,4 +90,6 @@ internal class EventProcessorImpl(
             logger.i("Skipping update of lastProcessedEventId: ${logMap.toJsonElement()}")
         }
     }
+
+    private fun Event.shouldUpdateLastProcessedEventId(): Boolean = !transient
 }

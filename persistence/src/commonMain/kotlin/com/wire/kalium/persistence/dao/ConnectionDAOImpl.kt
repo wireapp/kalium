@@ -67,7 +67,9 @@ private class ConnectionMapper {
         user_availability_status: UserAvailabilityStatusEntity?,
         user_type: UserTypeEntity?,
         bot_service: BotIdEntity?,
-        deleted: Boolean?
+        deleted: Boolean?,
+        incomplete_metadata: Boolean?,
+        expires_at: Instant?
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
@@ -92,6 +94,8 @@ private class ConnectionMapper {
             userType = user_type.requireField("user_type"),
             botService = bot_service,
             deleted = deleted.requireField("deleted"),
+            hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata"),
+            expiresAt = expires_at
         ) else null
     )
 

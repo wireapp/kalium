@@ -18,11 +18,13 @@
 
 package com.wire.kalium.logic
 
+import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -30,6 +32,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 sealed interface CoreFailure {
+
+    val isNotFoundFailure: Boolean
+        get() = this is NetworkFailure.ServerMiscommunication
+                && this.kaliumException is KaliumException.InvalidRequestError
+                && this.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
 
     /**
      * The attempted operation requires that this client is registered.
@@ -93,6 +100,7 @@ sealed class NetworkFailure : CoreFailure {
         override fun toString(): String {
             return "ServerMiscommunication(cause = $rootCause)"
         }
+
     }
 
     /**
@@ -101,9 +109,15 @@ sealed class NetworkFailure : CoreFailure {
     object FederatedBackendFailure : NetworkFailure()
 }
 
-class MLSFailure(internal val exception: Exception) : CoreFailure {
+interface MLSFailure : CoreFailure {
 
-    val rootCause: Throwable get() = exception
+    object WrongEpoch : MLSFailure
+
+    object ConversationDoesNotSupportMLS : MLSFailure
+
+    class Generic(internal val exception: Exception) : MLSFailure {
+        val rootCause: Throwable get() = exception
+    }
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
@@ -174,9 +188,18 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
 internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
+    } catch (cryptoException: CryptoException) {
+        kaliumLogger.e(cryptoException.stackTraceToString())
+        val mappedFailure = when (cryptoException) {
+            is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
+            // TODO: Handle all cases explicitly.
+            //       Blocked by https://github.com/wireapp/core-crypto/pull/214
+            else -> MLSFailure.Generic(cryptoException)
+        }
+        Either.Left(mappedFailure)
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(MLSFailure(e))
+        Either.Left(MLSFailure.Generic(e))
     }
 }
 
@@ -186,6 +209,21 @@ internal inline fun <T : Any> wrapStorageRequest(storageRequest: () -> T?): Eith
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(StorageFailure.Generic(e))
+    }
+}
+
+/**
+ * Wrap a storage request with a custom error handler that let's delegate the error handling to the caller.
+ */
+@Suppress("TooGenericExceptionCaught")
+internal inline fun <T : Any> wrapStorageRequest(
+    noinline errorHandler: (Exception) -> Either<StorageFailure, T>,
+    storageRequest: () -> T?
+): Either<StorageFailure, T> {
+    return try {
+        storageRequest()?.let { data -> Either.Right(data) } ?: Either.Left(StorageFailure.DataNotFound)
+    } catch (exception: Exception) {
+        errorHandler(exception)
     }
 }
 

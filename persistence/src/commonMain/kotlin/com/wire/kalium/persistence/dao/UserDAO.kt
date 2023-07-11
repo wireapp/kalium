@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -52,7 +53,9 @@ data class UserEntity(
     val availabilityStatus: UserAvailabilityStatusEntity,
     val userType: UserTypeEntity,
     val botService: BotIdEntity?,
-    val deleted: Boolean
+    val deleted: Boolean,
+    val hasIncompleteMetadata: Boolean = false,
+    val expiresAt: Instant?
 )
 
 data class UserEntityMinimized(
@@ -192,4 +195,8 @@ interface UserDAO {
     suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>>
     suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
+
+    suspend fun removeUserAsset(assetId: QualifiedIDEntity)
+
+    suspend fun getUsersWithoutMetadata(): List<UserEntity>
 }

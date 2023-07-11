@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -142,7 +143,7 @@ class ProtoContentMapperImpl(
             }
 
             else -> {
-                throw IllegalArgumentException("Unexpected message content type: $readableContent")
+                throw IllegalArgumentException("Unexpected message content type for ephemeral message: ${readableContent.getType()}")
             }
         }
         return GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = expireAfterMillis, content = ephemeralContent))
@@ -216,7 +217,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
             else -> {
-                kaliumLogger.w("Null content when parsing protobuf. Message UUID = $genericMessage.")
+                kaliumLogger.w("Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
                 MessageContent.Ignored
             }
         }
@@ -265,13 +266,7 @@ class ProtoContentMapperImpl(
     private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
         val emoji = protoContent.value.emoji
         val emojiSet = emoji?.split(',')
-            ?.map {
-                it.trim().let { trimmedReaction ->
-                    if (trimmedReaction == "❤️") {
-                        "❤"
-                    } else trimmedReaction
-                }
-            }
+            ?.map { it.trim() }
             ?.filter { it.isNotBlank() }
             ?.toSet()
             ?: emptySet()

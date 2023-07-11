@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import kotlinx.datetime.toInstant
@@ -31,6 +32,7 @@ import kotlinx.datetime.toInstant
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
     const val TEST_DATE_STRING = "2000-01-01T12:00:00.000Z"
+    val TEST_MESSAGE_SENT = MessageSent(TEST_DATE_STRING)
     val TEST_DATE = TEST_DATE_STRING.toInstant()
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID

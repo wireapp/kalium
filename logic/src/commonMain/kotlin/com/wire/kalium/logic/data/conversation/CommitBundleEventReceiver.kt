@@ -18,7 +18,10 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.EventReceiver
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
@@ -30,11 +33,16 @@ class CommitBundleEventReceiverImpl(
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler
 ) : CommitBundleEventReceiver {
-    override suspend fun onEvent(event: Event.Conversation) {
-        when (event) {
+    override suspend fun onEvent(event: Event.Conversation): Either<CoreFailure, Unit> {
+        return when (event) {
             is Event.Conversation.MemberJoin -> memberJoinEventHandler.handle(event)
             is Event.Conversation.MemberLeave -> memberLeaveEventHandler.handle(event)
-            else -> kaliumLogger.w("Unexpected event received by commit bundle: ${event.toLogString()}")
+            else -> {
+                // This should never happen. If it does, we assume a catastrophic failure and stop event processing.
+                val exception = IllegalArgumentException("Unexpected event received by commit bundle: ${event.toLogString()}")
+                kaliumLogger.e("Unexpected event received by commit bundle: ${event.toLogString()}", exception)
+                Either.Left(MLSFailure.Generic(exception))
+            }
         }
     }
 }

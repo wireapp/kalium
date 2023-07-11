@@ -32,10 +32,14 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageSent
+import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
+import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
+import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_MEMBER_2
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestConversation
@@ -410,7 +414,7 @@ class MessageSenderTest {
             isSelfMessage = false
         )
 
-        val messageTarget = MessageTarget.Conversation
+        val messageTarget = MessageTarget.Conversation()
 
         arrangement.testScope.runTest {
             // when
@@ -479,6 +483,72 @@ class MessageSenderTest {
                 .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
                 .with(eq(failure), anything(), anything(), anything(), anything())
                 .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenARemoteProteusConversationPartiallyFails_WhenSendingOutgoingMessage_ThenReturnSuccessAndPersistFailedRecipients() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(
+                sendEnvelopeWithResult = Either.Right(
+                    MessageSent(
+                        time = MESSAGE_SENT_TIME,
+                        failed = listOf(Arrangement.TEST_MEMBER_1)
+                    )
+                )
+            )
+            .withFailedClientsPartialSuccess()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withSendMessagePartialSuccess()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
+                .with(anything(), anything(), eq(listOf(Arrangement.TEST_MEMBER_1)))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenARemoteProteusConversationPartiallyFails_WithNoClientsWhenSendingAMessage_ThenReturnSuccessAndPersistFailedClientsAndFailedToSend() {
+        // given
+        val failedRecipient = UsersWithoutSessions(listOf(TEST_MEMBER_2))
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(
+                sendEnvelopeWithResult = Either.Right(
+                    MessageSent(
+                        time = MESSAGE_SENT_TIME,
+                        failed = failedRecipient.users
+                    )
+                )
+            )
+            .withFailedClientsPartialSuccess()
+            .withPrepareRecipientsForNewOutgoingMessage(false, failedRecipient)
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withSendMessagePartialSuccess()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistNoClientsToDeliverFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasInvoked(exactly = twice)
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasNotInvoked()
         }
     }
 
@@ -727,6 +797,58 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+    fun givenError_WhenSendingOutgoingSelfDeleteMessage_ThenTheTimerShouldNotStart() {
+        val duration = Duration.parse("PT1M")
+        val message = TestMessage.TEXT_MESSAGE.copy(
+            expirationData = Message.ExpirationData(duration)
+        )
+
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withSendProteusMessage(true, true)
+            .withPromoteMessageToSentUpdatingServerTime()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message)
+
+            // then
+            result.shouldFail()
+            verify(arrangement.selfDeleteMessageSenderHandler)
+                .function(arrangement.selfDeleteMessageSenderHandler::enqueueSelfDeletion)
+                .with(eq(message))
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenARemoteMlsConversationPartiallyFails_whenSendingAMessage_ThenReturnSuccessAndPersistFailedToSendUsers() {
+        // given
+        val (arrangement, messageSender) = Arrangement()
+            .withCommitPendingProposals()
+            .withSendMlsMessage(
+                sendMlsMessageWithResult = Either.Right(MessageSent(MESSAGE_SENT_TIME, listOf(TEST_MEMBER_2))),
+            )
+            .withWaitUntilLiveOrFailure()
+            .withPromoteMessageToSentUpdatingServerTime()
+            .withSendMessagePartialSuccess()
+            .arrange()
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
+                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
+                .wasInvoked(once)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -790,7 +912,7 @@ class MessageSenderTest {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TestMessage.TEXT_MESSAGE))
+                .thenReturn(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
         fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
@@ -814,11 +936,14 @@ class MessageSenderTest {
                 .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(listOf(TEST_RECIPIENT_1)))
         }
 
-        fun withPrepareRecipientsForNewOutgoingMessage(failing: Boolean = false) = apply {
+        fun withPrepareRecipientsForNewOutgoingMessage(
+            failing: Boolean = false,
+            usersFailing: UsersWithoutSessions = UsersWithoutSessions.EMPTY // only relevant if failing true
+        ) = apply {
             given(sessionEstablisher)
                 .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
                 .whenInvokedWith(anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(UsersWithoutSessions.EMPTY))
+                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(usersFailing))
         }
 
         fun withCommitPendingProposals(failing: Boolean = false) = apply {
@@ -856,7 +981,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
+        fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything(), anything())
@@ -864,7 +989,7 @@ class MessageSenderTest {
         }
 
         fun withSendOutgoingMlsMessage(
-            result: Either<CoreFailure, String> = Either.Right(MESSAGE_SENT_TIME),
+            result: Either<CoreFailure, MessageSent> = Either.Right(MessageSent(MESSAGE_SENT_TIME)),
             times: Int = Int.MAX_VALUE
         ) = apply {
             var invocationCounter = 0
@@ -915,7 +1040,7 @@ class MessageSenderTest {
             getConversationsRecipientFailing: Boolean = false,
             prepareRecipientsForNewOutGoingMessageFailing: Boolean = false,
             createOutgoingEnvelopeFailing: Boolean = false,
-            sendEnvelopeWithResult: Either<CoreFailure, String>? = null,
+            sendEnvelopeWithResult: Either<CoreFailure, MessageSent>? = null,
             updateMessageStatusFailing: Boolean = false
         ) = apply {
             withGetMessageById()
@@ -935,7 +1060,7 @@ class MessageSenderTest {
         }
 
         fun withSendMlsMessage(
-            sendMlsMessageWithResult: Either<CoreFailure, String>? = null,
+            sendMlsMessageWithResult: Either<CoreFailure, MessageSent>? = null,
         ) = apply {
             withGetMessageById()
             withGetProtocolInfo(protocolInfo = MLS_PROTOCOL_INFO)
@@ -944,16 +1069,25 @@ class MessageSenderTest {
             withUpdateMessageStatus()
         }
 
+        fun withSendMessagePartialSuccess(
+            result: Either<CoreFailure, Unit> = Either.Right(Unit),
+        ) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::persistRecipientsDeliveryFailure)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(result)
+        }
+
+        fun withFailedClientsPartialSuccess() = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::persistNoClientsToDeliverFailure)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         companion object {
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
-            val TEST_MESSAGE_ENVELOPE = MessageEnvelope(
-                senderClientId = ClientId(
-                    value = "testValue",
-                ),
-                recipients = listOf(),
-                dataBlob = null
-            )
             val MESSAGE_SENT_TIME = DateTimeUtil.currentIsoDateTimeString()
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
@@ -986,6 +1120,14 @@ class MessageSenderTest {
             val TEST_MEMBER_3 = UserId("value3", "domain3")
             val TEST_RECIPIENT_2 = Recipient(TEST_MEMBER_2, listOf(TEST_CONTACT_CLIENT_3))
             val TEST_RECIPIENT_3 = Recipient(TEST_MEMBER_3, listOf(TEST_CONTACT_CLIENT_4))
+            val TEST_RECIPIENT_ENTRY = RecipientEntry(TEST_MEMBER_1, listOf())
+            val TEST_MESSAGE_ENVELOPE = MessageEnvelope(
+                senderClientId = ClientId(
+                    value = "testValue",
+                ),
+                recipients = listOf(TEST_RECIPIENT_ENTRY),
+                dataBlob = null
+            )
         }
     }
 }

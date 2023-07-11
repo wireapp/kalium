@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
@@ -39,12 +40,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.CreateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
-import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
-import com.wire.kalium.persistence.dao.ConversationViewEntity
-import com.wire.kalium.persistence.dao.ProposalTimerEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -77,6 +78,7 @@ interface ConversationMapper {
     fun toApiModel(name: String?, members: List<UserId>, teamId: String?, options: ConversationOptions): CreateConversationRequest
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
+    fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -113,6 +115,7 @@ internal class ConversationMapperImpl(
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
         messageTimer = apiModel.messageTimer,
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
+        hasIncompleteMetadata = false
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -179,10 +182,6 @@ internal class ConversationMapperImpl(
                     ConversationDetails.Self(fromDaoModel(daoModel))
                 }
 
-                ConversationEntity.Type.GLOBAL_TEAM -> {
-                    ConversationDetails.Team(fromDaoModel(daoModel))
-                }
-
                 ConversationEntity.Type.ONE_ON_ONE -> {
                     ConversationDetails.OneOne(
                         conversation = fromDaoModel(daoModel),
@@ -198,7 +197,8 @@ internal class ConversationMapperImpl(
                             completePicture = previewAssetId?.toModel(),
                             previewPicture = previewAssetId?.toModel(),
                             teamId = teamId?.let { TeamId(it) },
-                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
+                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
+                            expiresAt = null
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -232,7 +232,8 @@ internal class ConversationMapperImpl(
                         handle = null,
                         completePicture = previewAssetId?.toModel(),
                         previewPicture = previewAssetId?.toModel(),
-                        teamId = teamId?.let { TeamId(it) }
+                        teamId = teamId?.let { TeamId(it) },
+                        expiresAt = null
                     )
 
                     ConversationDetails.Connection(
@@ -357,6 +358,31 @@ internal class ConversationMapperImpl(
         )
     }
 
+    /**
+     * Default values and marked as [ConversationEntity.hasIncompleteMetadata] = true.
+     * So later we can re-fetch them.
+     */
+    override fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity = ConversationEntity(
+        id = conversationId.toDao(),
+        name = null,
+        type = ConversationEntity.Type.GROUP,
+        teamId = null,
+        protocolInfo = ProtocolInfo.Proteus,
+        mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+        mutedTime = 0,
+        removedBy = null,
+        creatorId = "",
+        lastNotificationDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastModifiedDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        lastReadDate = "1970-01-01T00:00:00.000Z".toInstant(),
+        access = emptyList(),
+        accessRole = emptyList(),
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = null,
+        userMessageTimer = null,
+        hasIncompleteMetadata = true
+    )
+
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
             ConvProtocol.MLS -> ProtocolInfo.MLS(
@@ -389,7 +415,6 @@ internal class ConversationMapperImpl(
 
             ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
             ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
-            ConversationResponse.Type.GLOBAL_TEAM -> ConversationEntity.Type.GLOBAL_TEAM
         }
     }
 }
@@ -399,7 +424,6 @@ private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = wh
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.ONE_ON_ONE
     ConversationEntity.Type.GROUP -> Conversation.Type.GROUP
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.CONNECTION_PENDING
-    ConversationEntity.Type.GLOBAL_TEAM -> Conversation.Type.GLOBAL_TEAM
 }
 
 private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {
@@ -439,7 +463,6 @@ private fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
     Conversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
     Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
     Conversation.Type.CONNECTION_PENDING -> ConversationEntity.Type.CONNECTION_PENDING
-    Conversation.Type.GLOBAL_TEAM -> ConversationEntity.Type.GLOBAL_TEAM
 }
 
 private fun Conversation.AccessRole.toDAO(): ConversationEntity.AccessRole = when (this) {

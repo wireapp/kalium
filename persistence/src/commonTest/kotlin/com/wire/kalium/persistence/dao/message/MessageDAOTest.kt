@@ -19,11 +19,11 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -1400,13 +1400,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 type = ConversationEntity.Type.CONNECTION_PENDING
             )
         )
-        val globalTeamConversation = QualifiedIDEntity("globalTeamConversation", "someDomain")
-        conversationDAO.insertConversation(
-            newConversationEntity(id = globalTeamConversation).copy(
-                type = ConversationEntity.Type.GLOBAL_TEAM
-            )
-        )
-
         val messageId = "systemMessage"
         userDAO.insertUser(userEntity1)
 
@@ -1438,17 +1431,12 @@ class MessageDAOTest : BaseDatabaseTest() {
             id = messageId,
             conversationId = connectionPendingConversation
         )
-        val resultForGlobalTeamConversation = messageDAO.getMessageById(
-            id = messageId,
-            conversationId = globalTeamConversation
-        )
 
         assertTrue {
             resultForSelfConversation == null &&
                     resultForOneOnOneConversation?.content == MessageEntityContent.HistoryLost &&
                     resultForGroupConversation?.content == MessageEntityContent.HistoryLost &&
-                    resultForConnectionPendingConversation == null &&
-                    resultForGlobalTeamConversation == null
+                    resultForConnectionPendingConversation == null
         }
     }
 
@@ -1510,6 +1498,47 @@ class MessageDAOTest : BaseDatabaseTest() {
                     && replyMessage.content is MessageEntityContent.Text
                     && (replyMessage.content as MessageEntityContent.Text).quotedMessageId == quotedMessageId
                     && (replyMessage.content as MessageEntityContent.Text).quotedMessage == null
+        }
+    }
+
+    @Test
+    fun givenAFederatedConversation_WhenSendingAMessageWithPartialSuccess_ThenTheUsersIdsWithFailuresShouldBeInserted() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("1", "someDomain")
+        val messageId = "Conversation MessageSent With Partial Success"
+        conversationDAO.insertConversation(newConversationEntity(id = conversationId))
+        userDAO.insertUser(userEntity1)
+        userDAO.insertUser(userEntity2)
+
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newRegularMessageEntity(
+                    messageId,
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    status = MessageEntity.Status.PENDING,
+                    // date after
+                    date = "2022-03-30T15:37:00.000Z".toInstant(),
+                    senderName = userEntity1.name!!,
+                    expectsReadConfirmation = true
+                )
+            )
+        )
+
+        // when
+        messageDAO.insertFailedRecipientDelivery(
+            messageId, conversationId, listOf(userEntity1.id, userEntity2.id), RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED
+        )
+
+        // then
+        val result = messageDAO.getMessageById(
+            id = messageId,
+            conversationId = conversationId
+        )
+
+        assertTrue {
+            ((result as MessageEntity.Regular).deliveryStatus as DeliveryStatusEntity.PartialDelivery)
+                .recipientsFailedDelivery.size == 2
         }
     }
 

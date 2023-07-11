@@ -18,10 +18,10 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import kotlinx.coroutines.flow.Flow
@@ -88,14 +88,6 @@ interface MessageDAO {
     )
 
     suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
-
-    suspend fun getConversationMessagesByContentType(
-        conversationId: QualifiedIDEntity,
-        contentType: MessageEntity.ContentType
-    ): List<MessageEntity>
-
-    suspend fun deleteAllConversationMessages(conversationId: QualifiedIDEntity)
-
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
     suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>>
@@ -131,6 +123,13 @@ interface MessageDAO {
     suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant)
 
     suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long
+
+    suspend fun insertFailedRecipientDelivery(
+        id: String,
+        conversationsId: QualifiedIDEntity,
+        recipientsFailed: List<QualifiedIDEntity>,
+        recipientFailureTypeEntity: RecipientFailureTypeEntity
+    )
 
     val platformExtensions: MessageExtensions
 }

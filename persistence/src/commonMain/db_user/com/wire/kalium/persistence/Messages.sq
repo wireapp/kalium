@@ -2,6 +2,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.Boolean;
 import kotlin.Int;
 import kotlin.collections.List;
@@ -33,6 +34,7 @@ CREATE INDEX message_visibility_index ON Message(visibility);
 CREATE INDEX message_sender_user_index ON Message(sender_user_id);
 CREATE INDEX message_conversation_index ON Message(conversation_id);
 CREATE INDEX message_status_index ON Message(status);
+CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis, self_deletion_start_date);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,
@@ -185,6 +187,17 @@ CREATE TABLE MessageConversationTimerChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageRecipientFailure (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      recipient_failure_list TEXT AS List<QualifiedIDEntity> NOT NULL, -- list of user ids that have failed to receive the message
+      recipient_failure_type TEXT AS RecipientFailureTypeEntity NOT NULL, -- failure type, indicating the reason why this users have failed to receive the message
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
+);
+
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -286,7 +299,9 @@ QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
-ConversationTimerChangedContent.message_timer AS messageTimerChanged
+ConversationTimerChangedContent.message_timer AS messageTimerChanged,
+FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
+FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -297,6 +312,8 @@ LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent
 LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
 LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 
 -- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
@@ -577,14 +594,6 @@ SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND
 selectMessagesFromUserByStatus:
 SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
 
-getConversationMessagesByContentType:
-SELECT * FROM MessageDetailsView
-WHERE MessageDetailsView.conversationId = :conversation_id AND contentType = :content_type;
-
-deleteAllConversationMessages:
-DELETE FROM Message
-WHERE conversation_id IS :conversation_id;
-
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
 
@@ -643,3 +652,7 @@ markSelfDeletionStartDate:
 UPDATE Message
 SET self_deletion_start_date = ?
 WHERE  conversation_id = ? AND id = ?;
+
+insertMessageRecipientsFailure:
+INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
+VALUES(?, ?, ?, ?);

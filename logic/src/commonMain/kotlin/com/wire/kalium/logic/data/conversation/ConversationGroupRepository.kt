@@ -47,8 +47,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.coroutines.flow.Flow
 
@@ -163,8 +163,12 @@ internal class ConversationGroupRepositoryImpl(
                         }.map { Unit }
                     }
 
-                    is ConversationEntity.ProtocolInfo.MLS ->
-                        Either.Left(MLSFailure(UnsupportedOperationException("Adding service to MLS conversation is not supported")))
+                    is ConversationEntity.ProtocolInfo.MLS -> {
+                        val failure = MLSFailure.Generic(
+                            UnsupportedOperationException("Adding service to MLS conversation is not supported")
+                        )
+                        Either.Left(failure)
+                    }
                 }
             }
 

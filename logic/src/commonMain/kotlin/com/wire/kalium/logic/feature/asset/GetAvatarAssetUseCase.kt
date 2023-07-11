@@ -19,8 +19,10 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 import okio.Path
 
@@ -35,11 +37,22 @@ interface GetAvatarAssetUseCase {
     suspend operator fun invoke(assetKey: UserAssetId): PublicAssetResult
 }
 
-internal class GetAvatarAssetUseCaseImpl(private val assetDataSource: AssetRepository) : GetAvatarAssetUseCase {
+internal class GetAvatarAssetUseCaseImpl(
+    private val assetDataSource: AssetRepository,
+    private val userRepository: UserRepository
+) : GetAvatarAssetUseCase {
     override suspend fun invoke(assetKey: UserAssetId): PublicAssetResult =
         // TODO(important!!): do local lookup for the profile pic before downloading a new one
         assetDataSource.downloadPublicAsset(assetKey.value, assetKey.domain).fold({
-            PublicAssetResult.Failure(it)
+            when {
+                it.isNotFoundFailure -> {
+                    userRepository.removeUserBrokenAsset(assetKey)
+                    PublicAssetResult.Failure(it, false)
+                }
+
+                it is NetworkFailure.FederatedBackendFailure -> PublicAssetResult.Failure(it, false)
+                else -> PublicAssetResult.Failure(it, true)
+            }
         }) {
             PublicAssetResult.Success(it)
         }
@@ -47,5 +60,5 @@ internal class GetAvatarAssetUseCaseImpl(private val assetDataSource: AssetRepos
 
 sealed class PublicAssetResult {
     class Success(val assetPath: Path) : PublicAssetResult()
-    class Failure(val coreFailure: CoreFailure) : PublicAssetResult()
+    class Failure(val coreFailure: CoreFailure, val isRetryNeeded: Boolean) : PublicAssetResult()
 }

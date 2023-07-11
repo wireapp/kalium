@@ -74,7 +74,7 @@ internal class OnSendOTR(
             try {
                 val messageTarget = if (myClientsOnly) {
                     callingLogger.i("[OnSendOTR] -> Route calling message via self conversation")
-                    MessageTarget.Conversation
+                    MessageTarget.Conversation()
                 } else {
                     callingLogger.i("[OnSendOTR] -> Decoding Recipients")
                     targetRecipientsJson?.let { recipientsJson ->
@@ -82,7 +82,7 @@ internal class OnSendOTR(
 
                         callingLogger.i("[OnSendOTR] -> Mapping Recipients")
                         callMapper.toClientMessageTarget(callClientList = callClientList)
-                    } ?: MessageTarget.Conversation
+                    } ?: MessageTarget.Conversation()
                 }
 
                 callingLogger.i("[OnSendOTR] -> Success")

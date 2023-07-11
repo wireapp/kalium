@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
@@ -32,14 +34,14 @@ import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -56,12 +58,12 @@ class UserSearchApiWrapperTest {
     @Test
     fun givenUserSearchIncludesContactMember_whenSearchingForUsersExcludingSelfUser_ThenResultDoesNotContainTheContactMembers() = runTest {
         val conversationMembers = listOf(
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     "value1",
                     "someDomain"
                 ),
-                role = Member.Role.Member
+                role = MemberEntity.Role.Member
             )
         )
 
@@ -108,25 +110,25 @@ class UserSearchApiWrapperTest {
     @Test
     fun givenUserSearchIncludesOnlyContactMembers_WhenSearchingForUsersExcludingSelfUser_ThenResultIsEmpty() = runTest {
         val conversationMembers = listOf(
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     "value1",
                     "someDomain"
                 ),
-                role = Member.Role.Member
+                role = MemberEntity.Role.Member
             ),
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     "value2",
                     "someDomain"
                 ),
-                role = Member.Role.Member
+                role = MemberEntity.Role.Member
             ),
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     "value3",
                     "someDomain"
-                ), role = Member.Role.Member
+                ), role = MemberEntity.Role.Member
             )
         )
 
@@ -258,31 +260,31 @@ class UserSearchApiWrapperTest {
         val selfUser = Arrangement.generateSelfUser(QualifiedID("selfUserId", "someDomain"))
 
         val conversationMembers = listOf(
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     "value1",
                     "someDomain"
                 ),
-                role = Member.Role.Member
+                role = MemberEntity.Role.Member
             ),
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     "value2",
                     "someDomain"
                 ),
-                role = Member.Role.Member
+                role = MemberEntity.Role.Member
             ),
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     "value3",
                     "someDomain"
-                ), role = Member.Role.Member
+                ), role = MemberEntity.Role.Member
             ),
-            Member(
+            MemberEntity(
                 user = QualifiedIDEntity(
                     selfUser.id.value,
                     selfUser.id.domain
-                ), role = Member.Role.Member
+                ), role = MemberEntity.Role.Member
             )
         )
 
@@ -315,7 +317,8 @@ class UserSearchApiWrapperTest {
         assertTrue { result.value.found == 0 }
     }
 
-    private class Arrangement {
+    private class Arrangement :
+        MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         @Mock
         private val userSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
@@ -333,15 +336,12 @@ class UserSearchApiWrapperTest {
         private val conversationDAO: ConversationDAO = mock(classOf<ConversationDAO>())
 
         fun withSuccessConversationExcludedFullSearch(
-            conversationMembers: List<Member>,
+            conversationMembers: List<MemberEntity>,
             searchApiUsers: List<ContactDTO>,
             selfUser: SelfUser = SELF_USER
         ): Arrangement {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getAllMembers)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(conversationMembers))
 
+            withObserveConversationMembers(flowOf(conversationMembers))
             given(metadataDAO)
                 .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
@@ -404,7 +404,14 @@ class UserSearchApiWrapperTest {
             return this
         }
 
-        fun arrange() = this to UserSearchApiWrapperImpl(userSearchApi, conversationDAO, userDAO, metadataDAO, userMapper)
+        fun arrange() = this to UserSearchApiWrapperImpl(
+            userSearchApi,
+            conversationDAO,
+            memberDAO,
+            userDAO,
+            metadataDAO,
+            userMapper
+        ) as UserSearchApiWrapper
 
         companion object {
             fun generateContactDTO(id: UserId): ContactDTO {
@@ -441,6 +448,7 @@ class UserSearchApiWrapperTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+                    expiresAt = null
                 )
             }
 
@@ -456,6 +464,7 @@ class UserSearchApiWrapperTest {
                 previewPicture = null,
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.AVAILABLE,
+                expiresAt = null
             )
 
             const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
@@ -474,7 +483,8 @@ class UserSearchApiWrapperTest {
                 availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
                 userType = UserTypeEntity.EXTERNAL,
                 botService = null,
-                deleted = false
+                deleted = false,
+                expiresAt = null
             )
         }
     }

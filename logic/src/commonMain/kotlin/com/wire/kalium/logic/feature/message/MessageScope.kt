@@ -205,6 +205,7 @@ class MessageScope internal constructor(
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
             messageRepository,
+            userRepository,
             updateAssetMessageDownloadStatus,
             scope,
             dispatcher
@@ -274,7 +275,7 @@ class MessageScope internal constructor(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            ephemeralNotificationsManager = EphemeralNotificationsManager
+            deleteConversationNotificationsManager = DeleteConversationNotificationsManagerImpl
         )
 
     internal val sendConfirmation: SendConfirmationUseCase

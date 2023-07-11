@@ -39,7 +39,8 @@ data class KaliumConfigs(
     val selfDeletingMessages: Boolean = true,
     val wipeOnCookieInvalid: Boolean = false,
     val wipeOnDeviceRemoval: Boolean = false,
-    val wipeOnRootedDevice: Boolean = false
+    val wipeOnRootedDevice: Boolean = false,
+    val isWebSocketEnabledByDefault: Boolean = false
 )
 
 sealed interface BuildFileRestrictionState {

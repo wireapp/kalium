@@ -30,7 +30,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.util.DateTimeUtil
 
 interface ConversationMessageTimerEventHandler {
@@ -44,20 +44,22 @@ internal class ConversationMessageTimerEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.ConversationMessageTimer) {
         updateMessageTimer(event)
-            .onSuccess {
-                val message = Message.System(
-                    uuid4().toString(),
-                    MessageContent.ConversationMessageTimerChanged(
-                        messageTimer = event.messageTimer
-                    ),
-                    event.conversationId,
-                    DateTimeUtil.currentIsoDateTimeString(),
-                    event.senderUserId,
-                    Message.Status.SENT,
-                    Message.Visibility.VISIBLE
-                )
+            .onSuccess { updated ->
+                if (updated) {
+                    val message = Message.System(
+                        uuid4().toString(),
+                        MessageContent.ConversationMessageTimerChanged(
+                            messageTimer = event.messageTimer
+                        ),
+                        event.conversationId,
+                        DateTimeUtil.currentIsoDateTimeString(),
+                        event.senderUserId,
+                        Message.Status.SENT,
+                        Message.Visibility.VISIBLE
+                    )
 
-                persistMessage(message)
+                    persistMessage(message)
+                }
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,

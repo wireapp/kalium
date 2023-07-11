@@ -35,7 +35,9 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.message.getType
+import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -44,6 +46,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.network.exceptions.KaliumException
@@ -94,7 +97,10 @@ interface MessageSender {
      * @param message that will be sent
      * @see [sendPendingMessage]
      */
-    suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget = MessageTarget.Conversation): Either<CoreFailure, Unit>
+    suspend fun sendMessage(
+        message: Message.Sendable,
+        messageTarget: MessageTarget = MessageTarget.Conversation()
+    ): Either<CoreFailure, Unit>
 
     /**
      * Attempts to send the given [BroadcastMessage] to suitable recipients.
@@ -190,7 +196,7 @@ internal class MessageSenderImpl internal constructor(
                         millis = millis
                     )
                     Unit
-                }.also {
+                }.onSuccess {
                     startSelfDeletionIfNeeded(message)
                 }
             }
@@ -209,7 +215,7 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSend(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation
+        messageTarget: MessageTarget = MessageTarget.Conversation()
     ): Either<CoreFailure, String> {
         return conversationRepository
             .getConversationProtocolInfo(message.conversationId)
@@ -241,20 +247,40 @@ internal class MessageSenderImpl internal constructor(
         val target = when (messageTarget) {
             is MessageTarget.Client -> Either.Right(messageTarget.recipients)
             is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
+            is MessageTarget.Users -> conversationRepository.getRecipientById(conversationId, messageTarget.userId)
         }
 
         return target
             .flatMap { recipients ->
                 sessionEstablisher
                     .prepareRecipientsForNewOutgoingMessage(recipients)
-                    .map { recipients }
-            }.flatMap { recipients ->
+                    .flatMap { handleUsersWithNoClientsToDeliver(conversationId, message.id, it) }
+                    .map { recipients to it }
+            }.flatMap { (recipients, usersWithoutSessions) ->
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
-                    .flatMap { envelope ->
-                        trySendingProteusEnvelope(envelope, message, messageTarget)
+                    .flatMap { envelope: MessageEnvelope ->
+                        val updatedMessageTarget = when (messageTarget) {
+                            is MessageTarget.Client,
+                            is MessageTarget.Users -> messageTarget
+
+                            is MessageTarget.Conversation ->
+                                MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
+                        }
+                        trySendingProteusEnvelope(envelope, message, updatedMessageTarget)
                     }
             }
+    }
+
+    private suspend fun handleUsersWithNoClientsToDeliver(
+        conversationId: ConversationId,
+        messageId: String,
+        usersWithoutSessions: UsersWithoutSessions
+    ): Either<CoreFailure, UsersWithoutSessions> = if (usersWithoutSessions.hasMissingSessions()) {
+        messageRepository.persistNoClientsToDeliverFailure(conversationId, messageId, usersWithoutSessions.users)
+            .flatMap { Either.Right(usersWithoutSessions) }
+    } else {
+        Either.Right(usersWithoutSessions)
     }
 
     private suspend fun attemptToBroadcastWithProteus(
@@ -298,8 +324,10 @@ internal class MessageSenderImpl internal constructor(
                         }
                     }
                     Either.Left(it)
-                }, {
-                    Either.Right(it)
+                }, { messageSent ->
+                    handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
+                        Either.Right(messageSent.time)
+                    }
                 })
             }
         }
@@ -316,10 +344,14 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
-                handleProteusError(it, "Send", message.toLogString()) { attemptToSend(message, messageTarget) }
-            }, {
+                handleProteusError(it, "Send", message.toLogString()) {
+                    attemptToSendWithProteus(message, messageTarget)
+                }
+            }, { messageSent ->
                 logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
-                Either.Right(it)
+                handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
+                    Either.Right(messageSent.time)
+                }
             })
 
     /**
@@ -365,8 +397,8 @@ internal class MessageSenderImpl internal constructor(
                     }
                     .onFailure {
                         val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
-                            " , " +
-                            "\"errorInfo\" : \"${it}\"}"
+                                " , " +
+                                "\"errorInfo\" : \"${it}\"}"
                         logger.e(logLine)
                     }
             }
@@ -411,4 +443,30 @@ internal class MessageSenderImpl internal constructor(
 
         return BroadcastMessageOption.ReportSome(filteredOut.toList()) to receivers
     }
+
+    /**
+     * At this point the message was SENT, here we are mapping/persisting the recipients that couldn't get the message.
+     */
+    private suspend fun handleRecipientsDeliveryFailure(envelope: MessageEnvelope, message: Message, messageSent: MessageSent) =
+        if (messageSent.failed.isEmpty()) Either.Right(Unit)
+        else {
+            val usersWithoutSessions = messageSent.failed.filter { failedIds -> failedIds !in envelope.recipients.map { it.userId } }
+            if (usersWithoutSessions.isNotEmpty()) {
+                messageRepository.persistNoClientsToDeliverFailure(message.conversationId, message.id, usersWithoutSessions)
+            }
+
+            val filteredUsersFailed = messageSent.failed.minus(usersWithoutSessions.toSet())
+            if (filteredUsersFailed.isNotEmpty()) {
+                messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, filteredUsersFailed)
+            } else {
+                Either.Right(Unit)
+            }
+        }
+
+    private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
+        if (messageSent.failed.isEmpty()) Either.Right(Unit)
+        else {
+            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failed)
+        }
+
 }

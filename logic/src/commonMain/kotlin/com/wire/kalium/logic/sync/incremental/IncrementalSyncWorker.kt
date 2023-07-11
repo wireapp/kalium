@@ -20,7 +20,9 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.KaliumSyncException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.channelFlow
@@ -54,7 +56,9 @@ internal class IncrementalSyncWorkerImpl(
         launch {
             eventGatherer.gatherEvents().cancellable().collect {
                 // TODO make sure that event process is not cancel in a midway
-                eventProcessor.processEvent(it)
+                eventProcessor.processEvent(it).onFailure { failure ->
+                    throw KaliumSyncException("Failed to process event. Aborting Sync for a retry", failure)
+                }
             }
             // When events are all consumed, cancel the source job to complete the channelFlow
             sourceJob.cancel()

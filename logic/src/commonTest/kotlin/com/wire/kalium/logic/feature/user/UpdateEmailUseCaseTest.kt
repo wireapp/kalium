@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -46,8 +46,8 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Success.VerificationEmailSent>(result)
 
-        verify(arrange.userRepository)
-            .suspendFunction(arrange.userRepository::updateSelfEmail)
+        verify(arrange.accountRepository)
+            .suspendFunction(arrange.accountRepository::updateSelfEmail)
             .with(eq("email"))
             .wasInvoked(exactly = once)
     }
@@ -60,8 +60,8 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Success.NoChange>(result)
 
-        verify(arrange.userRepository)
-            .suspendFunction(arrange.userRepository::updateSelfEmail)
+        verify(arrange.accountRepository)
+            .suspendFunction(arrange.accountRepository::updateSelfEmail)
             .with(eq("email"))
             .wasInvoked(exactly = once)
     }
@@ -74,8 +74,8 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Failure.GenericFailure>(result)
 
-        verify(arrange.userRepository)
-            .suspendFunction(arrange.userRepository::updateSelfEmail)
+        verify(arrange.accountRepository)
+            .suspendFunction(arrange.accountRepository::updateSelfEmail)
             .with(eq("email"))
             .wasInvoked(exactly = once)
     }
@@ -98,8 +98,8 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Failure.EmailAlreadyInUse>(result)
 
-        verify(arrange.userRepository)
-            .suspendFunction(arrange.userRepository::updateSelfEmail)
+        verify(arrange.accountRepository)
+            .suspendFunction(arrange.accountRepository::updateSelfEmail)
             .with(eq("email"))
             .wasInvoked(exactly = once)
     }
@@ -122,8 +122,8 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Failure.InvalidEmail>(result)
 
-        verify(arrange.userRepository)
-            .suspendFunction(arrange.userRepository::updateSelfEmail)
+        verify(arrange.accountRepository)
+            .suspendFunction(arrange.accountRepository::updateSelfEmail)
             .with(eq("email"))
             .wasInvoked(exactly = once)
     }
@@ -131,20 +131,20 @@ class UpdateEmailUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userRepository = mock(UserRepository::class)
+        val accountRepository = mock(AccountRepository::class)
 
-        private val useCase = UpdateEmailUseCase(userRepository)
+        private val useCase = UpdateEmailUseCase(accountRepository)
 
         fun withUpdateSelfEmailSuccess(isEmailUpdated: Boolean) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::updateSelfEmail)
+            given(accountRepository)
+                .suspendFunction(accountRepository::updateSelfEmail)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(isEmailUpdated))
         }
 
         fun withUpdateSelfEmailFailure(error: NetworkFailure) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::updateSelfEmail)
+            given(accountRepository)
+                .suspendFunction(accountRepository::updateSelfEmail)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(error))
         }

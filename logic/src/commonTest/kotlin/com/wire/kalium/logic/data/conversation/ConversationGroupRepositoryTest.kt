@@ -35,6 +35,8 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
@@ -54,23 +56,19 @@ import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.ConversationViewEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.eq
 import io.mockative.fun1
-import io.mockative.fun2
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -78,10 +76,8 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import com.wire.kalium.persistence.dao.Member as MemberEntity
 
 @Suppress("LargeClass")
-@OptIn(ExperimentalCoroutinesApi::class)
 class ConversationGroupRepositoryTest {
 
     @Test
@@ -91,7 +87,6 @@ class ConversationGroupRepositoryTest {
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
-            .withInsertMembersWithQualifiedIdSucceeds()
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .arrange()
@@ -124,7 +119,6 @@ class ConversationGroupRepositoryTest {
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
-            .withInsertMembersWithQualifiedIdSucceeds()
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .arrange()
@@ -246,7 +240,7 @@ class ConversationGroupRepositoryTest {
 
         conversationGroupRepository.addService(serviceID, TestConversation.ID)
             .shouldFail {
-                assertIs<MLSFailure>(it)
+                assertIs<MLSFailure.Generic>(it)
                 assertIs<UnsupportedOperationException>(it.exception)
             }
 
@@ -378,7 +372,6 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
-            .withSuccessfulMemberDeletion()
             .withSuccessfulLeaveMLSGroup()
             .withSuccessfulHandleMemberLeaveEvent()
             .arrange()
@@ -406,18 +399,12 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withDeleteMemberAPISucceedChanged()
-            .withSuccessfulMemberDeletion()
             .withSuccessfulRemoveMemberFromMLSGroup()
             .arrange()
 
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
             .shouldSucceed()
 
-        // this function called in the mlsRepo
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::deleteMemberByQualifiedID)
-            .with(anything(), anything())
-            .wasNotInvoked()
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::removeMembersFromMLSGroup)
             .with(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
@@ -659,7 +646,8 @@ class ConversationGroupRepositoryTest {
         assertEquals(LINK, result.first())
     }
 
-    private class Arrangement {
+    private class Arrangement :
+        MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         @Mock
         val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
@@ -713,14 +701,6 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(Either.Right(Unit))
-            return this
-        }
-
-        fun withInsertMembersWithQualifiedIdSucceeds(): Arrangement {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::insertMembersWithQualifiedId, fun2<List<MemberEntity>, QualifiedIDEntity>())
-                .whenInvokedWith(any(), any())
-                .thenDoNothing()
             return this
         }
 
@@ -888,13 +868,6 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
-        }
-
-        fun withSuccessfulMemberDeletion() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::deleteMemberByQualifiedID)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
         }
 
         fun withSuccessfulHandleMemberJoinEvent() = apply {

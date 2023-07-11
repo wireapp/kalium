@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageList
 import com.wire.kalium.network.api.v3.authenticated.KeyPackageApiV3
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
@@ -53,6 +54,7 @@ internal open class KeyPackageApiV4 internal constructor(
         keyPackages: List<KeyPackage>
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
+            kaliumLogger.v("Keypackages Count: ${keyPackages.size}")
             httpClient.post("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId") {
                 setBody(KeyPackageList(keyPackages))
             }

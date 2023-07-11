@@ -81,36 +81,6 @@ class JoinExistingMLSConversationUseCaseImpl(
             })
         }
 
-    private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            if (conversation.protocol.epoch == 0UL) {
-                if (
-                    conversation.type == Conversation.Type.GLOBAL_TEAM ||
-                    conversation.type == Conversation.Type.SELF
-                ) {
-                    kaliumLogger.i("Establish group for ${conversation.type}")
-                    mlsConversationRepository.establishMLSGroup(
-                        conversation.protocol.groupId,
-                        emptyList()
-                    )
-                } else {
-                    Either.Right(Unit)
-                }
-            } else {
-                wrapApiRequest {
-                    conversationApi.fetchGroupInfo(conversation.id.toApi())
-                }.flatMap { groupInfo ->
-                    mlsConversationRepository.joinGroupByExternalCommit(
-                        conversation.protocol.groupId,
-                        groupInfo
-                    )
-                }
-            }
-        } else {
-            Either.Right(Unit)
-        }
-    }
-
     private suspend fun joinOrEstablishMLSGroupAndRetry(
         conversation: Conversation
     ): Either<CoreFailure, Unit> =
@@ -135,4 +105,31 @@ class JoinExistingMLSConversationUseCaseImpl(
                     Either.Left(failure)
                 }
             }
+
+    private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
+        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
+            if (conversation.protocol.epoch == 0UL) {
+                if (conversation.type == Conversation.Type.SELF) {
+                    kaliumLogger.i("Establish group for ${conversation.type}")
+                    mlsConversationRepository.establishMLSGroup(
+                        conversation.protocol.groupId,
+                        emptyList()
+                    )
+                } else {
+                    Either.Right(Unit)
+                }
+            } else {
+                wrapApiRequest {
+                    conversationApi.fetchGroupInfo(conversation.id.toApi())
+                }.flatMap { groupInfo ->
+                    mlsConversationRepository.joinGroupByExternalCommit(
+                        conversation.protocol.groupId,
+                        groupInfo
+                    )
+                }
+            }
+        } else {
+            Either.Right(Unit)
+        }
+    }
 }

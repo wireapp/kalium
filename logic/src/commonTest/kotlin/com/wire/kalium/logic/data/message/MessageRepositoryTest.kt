@@ -24,23 +24,29 @@ import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.BroadcastMessageOption
 import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
+import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
@@ -58,6 +64,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MessageRepositoryTest {
@@ -140,11 +147,12 @@ class MessageRepositoryTest {
 
         val (_, messageRepository) = Arrangement()
             .withSuccessfulMessageDelivery(timestamp)
+            .withFailedToSendMapping(emptyList())
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertSame(it.time, TEST_DATETIME)
             }
     }
 
@@ -157,11 +165,12 @@ class MessageRepositoryTest {
 
         val (arrangement, messageRepository) = Arrangement()
             .withSuccessfulMessageDelivery(timestamp)
+            .withFailedToSendMapping(emptyList())
             .arrange()
 
-        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+        messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertSame(it.time, TEST_DATETIME)
             }
 
         with(arrangement) {
@@ -180,6 +189,7 @@ class MessageRepositoryTest {
 
         val (arrangement, messageRepository) = Arrangement()
             .withSuccessfulMessageDelivery(timestamp)
+            .withFailedToSendMapping(emptyList())
             .arrange()
 
         messageRepository.sendEnvelope(
@@ -212,10 +222,11 @@ class MessageRepositoryTest {
 
         val (arrangement, messageRepository) = Arrangement()
             .withSuccessfulMessageDelivery(timestamp)
+            .withFailedToSendMapping(emptyList())
             .arrange()
 
         messageRepository
-            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation)
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed()
 
         verify(arrangement.messageApi)
@@ -307,6 +318,117 @@ class MessageRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAnEnvelopeTargetedToAClientsWithFailIfMissing_whenSending_thenSShouldSetReportSomeAsOption() = runTest {
+        val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
+        val timestamp = TEST_DATETIME
+        val recipient = listOf(
+            Recipient(
+                id = TEST_USER_ID,
+                clients = listOf(TEST_CLIENT_ID)
+            )
+        )
+        val (arrangement, messageRepository) = Arrangement()
+            .withSuccessfulMessageDelivery(timestamp)
+            .withFailedToSendMapping(emptyList())
+            .arrange()
+
+        messageRepository
+            .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Users(listOf(TEST_USER_ID)))
+            .shouldSucceed()
+
+        verify(arrangement.messageApi)
+            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
+            .with(
+                matching {
+                    (it.messageOption is MessageApi.QualifiedMessageOption.ReportSome) &&
+                            ((it.messageOption as MessageApi.QualifiedMessageOption.ReportSome)
+                                .userIDs == recipient.map { it.id })
+                }, anything()
+            )
+    }
+
+    @Test
+    fun whenPersistingFailedDeliveryRecipients_thenDAOFunctionIsCalled() = runTest {
+        val messageID = TEST_MESSAGE_ID
+        val conversationID = TEST_CONVERSATION_ID
+        val listOfUserIds = listOf(TEST_USER_ID, OTHER_USER_ID_2)
+        val expectedFailedUsers = listOfUserIds.map { it.toDao() }
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withInsertFailedRecipients()
+            .arrange()
+
+        messageRepository.persistRecipientsDeliveryFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
+
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
+            .with(
+                eq(messageID),
+                eq(conversationID.toDao()),
+                eq(expectedFailedUsers),
+                eq(RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED)
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenPersistingFailedNoClientsRecipients_thenDAOFunctionIsCalled() = runTest {
+        val messageID = TEST_MESSAGE_ID
+        val conversationID = TEST_CONVERSATION_ID
+        val listOfUserIds = listOf(TEST_USER_ID, OTHER_USER_ID_2)
+        val expectedFailedUsers = listOfUserIds.map { it.toDao() }
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withInsertFailedRecipients()
+            .arrange()
+
+        messageRepository.persistNoClientsToDeliverFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
+
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
+            .with(
+                eq(messageID),
+                eq(conversationID.toDao()),
+                eq(expectedFailedUsers),
+                eq(RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER)
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenCallingSendMlsMessage_AndFailedUsers_thenAPIFunctionIsCalledAndPartialFailureMapped() = runTest {
+        val conversationID = TEST_CONVERSATION_ID
+        val listOfUserIds = listOf(TEST_USER_ID, OTHER_USER_ID_2)
+        val expectedFailedUsers = listOfUserIds.map { it.toApi() }
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withMlsSendMessageResponse(SendMLSMessageResponse(TEST_DATETIME, listOf(), expectedFailedUsers))
+            .withFailedToSendMlsMapping(listOfUserIds)
+            .arrange()
+
+        val result = messageRepository.sendMLSMessage(conversationID, MLSMessageApi.Message(ByteArray(0)))
+        result.shouldSucceed()
+
+        assertTrue {
+            (result as Either.Right).value.failed.isNotEmpty()
+        }
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendMessage)
+            .with(
+                matching {
+                    it.value.contentToString() == ByteArray(0).contentToString()
+                },
+            )
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.sendMessagePartialFailureMapper)
+            .function(arrangement.sendMessagePartialFailureMapper::fromMlsDTO)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -323,6 +445,9 @@ class MessageRepositoryTest {
 
         @Mock
         val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
+
+        @Mock
+        val sendMessagePartialFailureMapper = mock(SendMessagePartialFailureMapper::class)
 
         @Mock
         val messageMapper = mock(MessageMapper::class)
@@ -368,6 +493,40 @@ class MessageRepositoryTest {
             return this
         }
 
+        fun withFailedToSendMlsMapping(failedToSend: List<UserId>) = apply {
+            given(sendMessagePartialFailureMapper)
+                .function(sendMessagePartialFailureMapper::fromMlsDTO)
+                .whenInvokedWith(anything())
+                .then { MessageSent(TEST_DATETIME, failedToSend) }
+        }
+
+        fun withFailedToSendMapping(failedToSend: List<UserId>) = apply {
+            given(sendMessagePartialFailureMapper)
+                .function(sendMessagePartialFailureMapper::fromDTO)
+                .whenInvokedWith(anything())
+                .then { MessageSent(TEST_DATETIME, failedToSend) }
+        }
+
+        fun withMlsSendMessageResponse(
+            timestamp: SendMLSMessageResponse = SendMLSMessageResponse(
+                TEST_DATETIME,
+                listOf(),
+                listOf()
+            )
+        ): Arrangement {
+            given(mlsMessageApi)
+                .suspendFunction(mlsMessageApi::sendMessage)
+                .whenInvokedWith(anything())
+                .then {
+                    NetworkResponse.Success(
+                        timestamp,
+                        emptyMap(),
+                        201
+                    )
+                }
+            return this
+        }
+
         fun withSuccessfulMessageBroadcasting(timestamp: String): Arrangement {
             given(messageApi)
                 .suspendFunction(messageApi::qualifiedBroadcastMessage)
@@ -396,8 +555,16 @@ class MessageRepositoryTest {
             messageMapper = messageMapper,
             assetMapper = assetMapper,
             selfUserId = SELF_USER_ID,
-            sendMessageFailureMapper = sendMessageFailureMapper
+            sendMessageFailureMapper = sendMessageFailureMapper,
+            sendMessagePartialFailureMapper = sendMessagePartialFailureMapper
         )
+
+        fun withInsertFailedRecipients() = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::insertFailedRecipientDelivery)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .then { _, _, _, _ -> Unit }
+        }
     }
 
     private companion object {
@@ -431,6 +598,15 @@ class MessageRepositoryTest {
             status = Message.Status.SENT,
             editStatus = Message.EditStatus.NotEdited,
             isSelfMessage = false
+        )
+
+        val TEST_FAILED_DELIVERY_USERS: Map<String, Map<String, List<String>>> = mapOf(
+            TEST_USER_ID.domain to mapOf(
+                TEST_USER_ID.value to listOf(TEST_CLIENT_ID.value, ClientId("clientId2").value),
+                OTHER_USER_ID_2.value to listOf(
+                    TEST_CLIENT_ID.value, ClientId("clientId2").value
+                )
+            )
         )
     }
 }

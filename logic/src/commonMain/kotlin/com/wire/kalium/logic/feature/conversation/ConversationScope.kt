@@ -188,7 +188,7 @@ class ConversationScope internal constructor(
 
     val clearConversationContent: ClearConversationContentUseCase
         get() = ClearConversationContentUseCaseImpl(
-            clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
+            conversationRepository,
             messageSender,
             selfUserId,
             currentClientIdProvider,
@@ -236,4 +236,9 @@ class ConversationScope internal constructor(
 
     val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
         get() = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
+
+    val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
+        get() = RefreshConversationsWithoutMetadataUseCaseImpl(
+            conversationRepository = conversationRepository
+        )
 }

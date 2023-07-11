@@ -32,8 +32,11 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -52,6 +55,7 @@ import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -107,30 +111,107 @@ class GetMessageAssetUseCaseTest {
 
         // Then
         assertTrue(result is MessageAssetResult.Failure)
+        assertFalse(result.isRetryNeeded)
+
     }
 
     @Test
-    fun givenACallToGetAMessageAsset_whenThereIsNoInternetConnection_thenShouldReturnAFailureResult() = runTest(testDispatcher.default) {
-        // Given
-        val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
-        val someMessageId = "some-message-id"
-        val connectionFailure = NetworkFailure.NoNetworkConnection(null)
-        val (arrangement, getMessageAsset) = Arrangement()
-            .withDownloadAssetErrorResponse(connectionFailure)
-            .withSuccessfulDownloadStatusUpdate()
-            .arrange()
+    fun givenACallToGetAMessageAsset_whenThereIsNoInternetConnection_thenShouldReturnAFailureResultWithRetryEnabled() =
+        runTest(testDispatcher.default) {
+            // Given
+            val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+            val someMessageId = "some-message-id"
+            val connectionFailure = NetworkFailure.NoNetworkConnection(null)
+            val (arrangement, getMessageAsset) = Arrangement()
+                .withDownloadAssetErrorResponse(connectionFailure)
+                .withSuccessfulDownloadStatusUpdate()
+                .arrange()
 
-        // When
-        val result = getMessageAsset(someConversationId, someMessageId).await()
+            // When
+            val result = getMessageAsset(someConversationId, someMessageId).await()
 
-        // Then
-        assertTrue(result is MessageAssetResult.Failure)
-        assertEquals(result.coreFailure::class, connectionFailure::class)
-        verify(arrangement.updateAssetMessageDownloadStatus)
-            .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
-            .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
-            .wasInvoked(exactly = once)
-    }
+            // Then
+            assertTrue(result is MessageAssetResult.Failure)
+            assertEquals(result.coreFailure::class, connectionFailure::class)
+            assertEquals(true, result.isRetryNeeded)
+
+            verify(arrangement.updateAssetMessageDownloadStatus)
+                .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+                .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenACallToGetAMessageAsset_whenAssetNotFound_thenShouldReturnAFailureResultWithRetryDisabled() =
+        runTest(testDispatcher.default) {
+            // Given
+            val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+            val someMessageId = "some-message-id"
+            val notFoundFailure = NetworkFailure.ServerMiscommunication(
+                KaliumException.InvalidRequestError(
+                    ErrorResponse(
+                        404,
+                        "asset not found",
+                        "asset-not-found"
+                    )
+                )
+            )
+            val (arrangement, getMessageAsset) = Arrangement()
+                .withDownloadAssetErrorResponse(notFoundFailure)
+                .withSuccessfulDownloadStatusUpdate()
+                .withSuccessfulDeleteUserAsset()
+                .arrange()
+
+            // When
+            val result = getMessageAsset(someConversationId, someMessageId).await()
+
+            // Then
+            assertTrue(result is MessageAssetResult.Failure)
+            assertEquals(result.coreFailure::class, notFoundFailure::class)
+            assertEquals(false, result.isRetryNeeded)
+
+            verify(arrangement.updateAssetMessageDownloadStatus)
+                .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+                .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.userRepository)
+                .suspendFunction(arrangement.userRepository::removeUserBrokenAsset)
+                .with(any())
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenACallToGetAMessageAsset_whenAssetReturnsFederationError_thenShouldReturnAFailureResultWithRetryDisabled() =
+        runTest(testDispatcher.default) {
+            // Given
+            val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
+            val someMessageId = "some-message-id"
+            val federatedBackendFailure = NetworkFailure.FederatedBackendFailure
+            val (arrangement, getMessageAsset) = Arrangement()
+                .withDownloadAssetErrorResponse(federatedBackendFailure)
+                .withSuccessfulDownloadStatusUpdate()
+                .withSuccessfulDeleteUserAsset()
+                .arrange()
+
+            // When
+            val result = getMessageAsset(someConversationId, someMessageId).await()
+
+            // Then
+            assertTrue(result is MessageAssetResult.Failure)
+            assertEquals(result.coreFailure::class, federatedBackendFailure::class)
+            assertEquals(false, result.isRetryNeeded)
+
+            verify(arrangement.updateAssetMessageDownloadStatus)
+                .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
+                .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
+                .wasInvoked(once)
+
+            verify(arrangement.userRepository)
+                .suspendFunction(arrangement.userRepository::removeUserBrokenAsset)
+                .with(any())
+                .wasNotInvoked()
+        }
 
     @Test
     fun givenAssetNotDownloadedButAlreadyUploaded_whenGettingAsset_thenFetchAssetAndDownloadIfNeeded() = runTest(testDispatcher.default) {
@@ -183,6 +264,9 @@ class GetMessageAssetUseCaseTest {
         val messageRepository = mock(classOf<MessageRepository>())
 
         @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
+        @Mock
         val assetDataSource = mock(classOf<AssetRepository>())
 
         @Mock
@@ -231,7 +315,10 @@ class GetMessageAssetUseCaseTest {
         }
 
         val getMessageAssetUseCase =
-            GetMessageAssetUseCaseImpl(assetDataSource, messageRepository, updateAssetMessageDownloadStatus, testScope, testDispatcher)
+            GetMessageAssetUseCaseImpl(
+                assetDataSource, messageRepository, userRepository,
+                updateAssetMessageDownloadStatus, testScope, testDispatcher
+            )
 
         fun withSuccessfulFlow(
             conversationId: ConversationId,
@@ -286,6 +373,13 @@ class GetMessageAssetUseCaseTest {
                 .thenReturn(UpdateDownloadStatusResult.Success)
         }
 
+        fun withSuccessfulDeleteUserAsset(): Arrangement = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::removeUserBrokenAsset)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withGetMessageErrorResponse(): Arrangement {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
@@ -294,7 +388,7 @@ class GetMessageAssetUseCaseTest {
             return this
         }
 
-        fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure.NoNetworkConnection): Arrangement {
+        fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure): Arrangement {
             convId = ConversationId("", "")
             encryptionKey = AES256Key(ByteArray(0))
             msgId = ""

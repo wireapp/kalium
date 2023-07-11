@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -114,6 +115,38 @@ class NewMessageEventHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenMLSEventFailsWithWrongEpoch_whenHandling_shouldCallWrongEpochHandler() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+
+        newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
+
+        verify(arrangement.mlsWrongEpochHandler)
+            .suspendFunction(arrangement.mlsWrongEpochHandler::onMLSWrongEpoch)
+            .with(eq(newMessageEvent.conversationId),eq(newMessageEvent.timestampIso))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMLSEventFailsWithWrongEpoch_whenHandling_shouldNotPersistDecryptionErrorMessage() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+
+        newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
+
+        verify(arrangement.applicationMessageHandler)
+            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -127,8 +160,14 @@ class NewMessageEventHandlerTest {
             stubsUnitByDefault = true
         }
 
+        @Mock
+        val mlsWrongEpochHandler = mock(classOf<MLSWrongEpochHandler>())
+
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
-            proteusMessageUnpacker, mlsMessageUnpacker, applicationMessageHandler
+            proteusMessageUnpacker,
+            mlsMessageUnpacker,
+            applicationMessageHandler,
+            mlsWrongEpochHandler
         )
 
         fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult>) = apply {
