@@ -85,6 +85,7 @@ internal class ConversationApiV4Test : ApiTest() {
         )
     }
 
+    @Test
     fun given200Response_whenUpdatingConversationProtocol_thenEventIsParsedCorrectly() = runTest {
         val conversationId = ConversationId("conversationId", "conversationDomain")
 
@@ -206,10 +207,34 @@ internal class ConversationApiV4Test : ApiTest() {
         assertIs<UpdateConversationProtocolResponse.ProtocolUnchanged>(response.value)
     }
 
+    @Test
+    fun whenCallingFetchMlsOneToOneConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            FETCH_CONVERSATION_RESPONSE,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("$PATH_CONVERSATIONS/one2one/${USER_ID.domain}/${USER_ID.value}")
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        conversationApi.fetchMlsOneToOneConversation(USER_ID)
+    }
+
+    @Test
+    fun given200Response_whenCallingFetchMlsOneToOneConversation_thenResponseIsParsedCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(FETCH_CONVERSATION_RESPONSE, statusCode = HttpStatusCode.OK)
+        val conversationApi = ConversationApiV4(networkClient)
+
+        assertTrue(conversationApi.fetchMlsOneToOneConversation(USER_ID).isSuccessful())
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_PROTOCOL = "protocol"
+        val USER_ID = UserId("id", "domain")
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v4_withFailedToAdd.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
+        val FETCH_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
     }
 }

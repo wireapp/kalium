@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.conversation
 
+import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
@@ -31,7 +32,7 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 
 @Suppress("TooManyFunctions")
-interface ConversationApi {
+interface ConversationApi : BaseApi {
 
     /**
      * Fetch conversations id's in a paginated fashion, including federated conversations
@@ -109,6 +110,10 @@ interface ConversationApi {
         code: String,
         key: String
     ): NetworkResponse<LimitedConversationInfo>
+
+    suspend fun fetchMlsOneToOneConversation(
+        userId: UserId
+    ): NetworkResponse<ConversationResponse>
 
     suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
