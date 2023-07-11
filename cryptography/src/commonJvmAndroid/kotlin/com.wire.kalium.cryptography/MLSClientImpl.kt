@@ -249,7 +249,7 @@ actual class MLSClientImpl actual constructor(
         )
     }
 
-    override fun getGroupVerify(groupId: MLSGroupId): Boolean =
+    override fun isGroupVerified(groupId: MLSGroupId): Boolean =
         !coreCrypto.e2eiIsDegraded(toUByteList(groupId.decodeBase64Bytes()))
 
     companion object {

@@ -231,8 +231,8 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun getGroupVerify(groupId: MLSGroupId): Boolean {
-        TODO("Not yet implemented")
+    override fun isGroupVerified(groupId: MLSGroupId): Boolean {
+        TODO("Not supported on apple devices")
     }
 
     companion object {

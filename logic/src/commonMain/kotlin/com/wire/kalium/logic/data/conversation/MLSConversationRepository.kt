@@ -97,7 +97,7 @@ interface MLSConversationRepository {
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun observeEpochChanges(): Flow<GroupID>
-    suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, MLSVerificationStatus>
+    suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, ConversationVerificationStatus>
 }
 
 private enum class CommitStrategy {
@@ -424,12 +424,12 @@ class MLSConversationDataSource(
             }
         }
 
-    override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, MLSVerificationStatus> =
+    override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, ConversationVerificationStatus> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest { mlsClient.getGroupVerify(idMapper.toCryptoModel(groupID)) }
+            wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
         }.map {
-            if (it) MLSVerificationStatus.VERIFIED
-            else MLSVerificationStatus.NOT_VERIFIED
+            if (it) ConversationVerificationStatus.VERIFIED
+            else ConversationVerificationStatus.NOT_VERIFIED
         }
 
     private suspend fun retryOnCommitFailure(

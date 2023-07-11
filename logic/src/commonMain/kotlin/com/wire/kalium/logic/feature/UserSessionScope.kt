@@ -144,8 +144,8 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.GetConversationMLSVerificationStatusUseCase
-import com.wire.kalium.logic.feature.conversation.GetConversationMLSVerificationStatusUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCase
+import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -1328,8 +1328,8 @@ class UserSessionScope internal constructor(
         }
     }
 
-    val getConversationMLSVerificationStatus: GetConversationMLSVerificationStatusUseCase
-        get() = GetConversationMLSVerificationStatusUseCaseImpl(
+    val getConversationMLSVerificationStatus: GetConversationVerificationStatusUseCase
+        get() = GetConversationVerificationStatusUseCaseImpl(
             featureSupport,
             clientRepository,
             conversationRepository,

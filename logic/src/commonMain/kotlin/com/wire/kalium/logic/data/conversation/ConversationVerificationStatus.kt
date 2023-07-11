@@ -17,6 +17,6 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-enum class MLSVerificationStatus {
+enum class ConversationVerificationStatus {
     NOT_VERIFIED, VERIFIED, DEGRADED
 }

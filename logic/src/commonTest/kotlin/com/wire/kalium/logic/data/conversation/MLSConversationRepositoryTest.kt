@@ -910,12 +910,12 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            Either.Right(MLSVerificationStatus.VERIFIED),
+            Either.Right(ConversationVerificationStatus.VERIFIED),
             mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
         )
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::getGroupVerify)
+            .function(arrangement.mlsClient::isGroupVerified)
             .with(any())
             .wasInvoked(once)
     }
@@ -928,12 +928,12 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            Either.Right(MLSVerificationStatus.NOT_VERIFIED),
+            Either.Right(ConversationVerificationStatus.NOT_VERIFIED),
             mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
         )
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::getGroupVerify)
+            .function(arrangement.mlsClient::isGroupVerified)
             .with(any())
             .wasInvoked(once)
     }
@@ -952,7 +952,7 @@ class MLSConversationRepositoryTest {
         )
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::getGroupVerify)
+            .function(arrangement.mlsClient::isGroupVerified)
             .with(any())
             .wasNotInvoked()
     }
@@ -1165,7 +1165,7 @@ class MLSConversationRepositoryTest {
 
         fun withGetGroupVerifyReturn(isVerified: Boolean) = apply {
             given(mlsClient)
-                .function(mlsClient::getGroupVerify)
+                .function(mlsClient::isGroupVerified)
                 .whenInvokedWith(anything())
                 .thenReturn(isVerified)
         }
