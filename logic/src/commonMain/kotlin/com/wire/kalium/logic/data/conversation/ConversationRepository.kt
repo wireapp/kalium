@@ -51,7 +51,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -619,7 +618,7 @@ internal class ConversationDataSource internal constructor(
             when (it) {
                 is Conversation.ProtocolInfo.MLS ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapProteusRequest {
+                        wrapMLSRequest {
                             mlsClient.wipeConversation(it.groupId.toCrypto())
                         }
                     }.flatMap {

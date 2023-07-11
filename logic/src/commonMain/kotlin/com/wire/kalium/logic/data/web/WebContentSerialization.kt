@@ -23,6 +23,6 @@ import kotlinx.serialization.modules.polymorphic
 
 internal val webEventContentSerializationModule = SerializersModule {
     polymorphic(WebEventContent::class) {
-        default { WebEventContent.Unknown.serializer() }
+        defaultDeserializer { WebEventContent.Unknown.serializer() }
     }
 }
