@@ -135,9 +135,6 @@ internal class SelfApiV0Test : ApiTest() {
         assertFalse(response.isSuccessful())
     }
 
-
-
-
     private companion object {
         const val PATH_SELF = "/self"
         val VALID_SELF_RESPONSE = UserDTOJson.valid
