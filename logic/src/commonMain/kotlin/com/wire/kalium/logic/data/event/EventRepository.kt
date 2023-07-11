@@ -36,7 +36,6 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import com.wire.kalium.persistence.dao.MetadataDAO
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
@@ -74,7 +73,6 @@ class EventDataSource(
     override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> =
         currentClientId().flatMap { clientId -> liveEventsFlow(clientId) }
 
-    @OptIn(FlowPreview::class)
     private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Event>>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map {
             it.map { webSocketEvent ->
