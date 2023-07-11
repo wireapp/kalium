@@ -19,7 +19,9 @@
 package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.v4.ConversationApiV4Test
 import com.wire.kalium.model.EventContentDTOJson
+import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
 import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -27,13 +29,17 @@ import com.wire.kalium.network.api.base.authenticated.conversation.Subconversati
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 internal class ConversationApiV5Test : ApiTest() {
 
@@ -181,8 +187,32 @@ internal class ConversationApiV5Test : ApiTest() {
         assertIs<UpdateConversationProtocolResponse.ProtocolUnchanged>(response.value)
     }
 
+    @Test
+    fun whenCallingFetchMlsOneToOneConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            FETCH_CONVERSATION_RESPONSE,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("${PATH_CONVERSATIONS}/one2one/${USER_ID.domain}/${USER_ID.value}")
+            }
+        )
+        val conversationApi = ConversationApiV5(networkClient)
+        conversationApi.fetchMlsOneToOneConversation(USER_ID)
+    }
+
+    @Test
+    fun given200Response_whenCallingFetchMlsOneToOneConversation_thenResponseIsParsedCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(FETCH_CONVERSATION_RESPONSE, statusCode = HttpStatusCode.OK)
+        val conversationApi = ConversationApiV5(networkClient)
+
+        assertTrue(conversationApi.fetchMlsOneToOneConversation(USER_ID).isSuccessful())
+    }
+
     companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_PROTOCOL = "protocol"
+        val USER_ID = UserId("id", "domain")
+        val FETCH_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
     }
 }

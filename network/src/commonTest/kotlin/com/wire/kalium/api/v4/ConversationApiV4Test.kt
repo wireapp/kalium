@@ -19,8 +19,8 @@
 package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.EventContentDTOJson
+import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.model.ConversationId
