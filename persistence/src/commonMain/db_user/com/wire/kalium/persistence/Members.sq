@@ -47,4 +47,3 @@ WHERE conversation IN (
 
 isUserMember:
 SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;
-

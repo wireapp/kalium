@@ -44,7 +44,7 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 //       For example, one for Members, one for Protocol/MLS-related things, etc.
 //       Even if they operate on the same table underneath, these DAOs can represent/do different things.
 @Suppress("TooManyFunctions")
-class ConversationDAOImpl(
+internal class ConversationDAOImpl internal constructor(
     private val conversationQueries: ConversationsQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
@@ -310,5 +310,9 @@ class ConversationDAOImpl(
 
     override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(coroutineContext) {
         conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
+    }
+
+    override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        conversationQueries.clearContent(conversationId)
     }
 }

@@ -2,6 +2,18 @@ instanceCreationTimeoutInSeconds: 60
 instanceMaximumRuntimeInMinutes: 10
 instanceCleanupPeriodInMinutes: 5
 
+# dropwizard configuration
+server:
+    applicationConnectors:
+    - type: http
+      port: 8080
+      bindHost: 0.0.0.0
+    adminConnectors:
+    - type: http
+      port: 8081
+      # limit administrative monitoring to loopback
+      bindHost: 127.0.0.1
+
 # the only required property is resourcePackage, for more config options see below
 swagger:
     resourcePackage: com.wire.kalium.testservice.api.v1

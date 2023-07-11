@@ -32,6 +32,7 @@ import io.mockative.mock
 internal interface MessageRepositoryArrangement {
     @Mock
     val messageRepository: MessageRepository
+
     fun withGetMessageById(
         result: Either<StorageFailure, Message>,
         messageID: Matcher<String> = any(),
@@ -44,6 +45,11 @@ internal interface MessageRepositoryArrangement {
         conversationId: Matcher<ConversationId> = any()
     )
 
+    fun withMarkAsDeleted(
+        result: Either<StorageFailure, Unit>,
+        messageID: Matcher<String> = any(),
+        conversationId: Matcher<ConversationId> = any()
+    )
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
@@ -68,6 +74,17 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
     ) {
         given(messageRepository)
             .suspendFunction(messageRepository::deleteMessage)
+            .whenInvokedWith(messageID, conversationId)
+            .thenReturn(result)
+    }
+
+    override fun withMarkAsDeleted(
+        result: Either<StorageFailure, Unit>,
+        messageID: Matcher<String>,
+        conversationId: Matcher<ConversationId>
+    )  {
+        given(messageRepository)
+            .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(messageID, conversationId)
             .thenReturn(result)
     }
