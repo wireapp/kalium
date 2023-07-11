@@ -44,7 +44,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
             MigratedMessage(
                 conversationId = qualifiedConversation,
                 senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
-                senderClientId = ClientId(fromClientId),
+                senderClientId = ClientId(fromClientId.orEmpty()),
                 timestamp = Instant.parse(time).toEpochMilliseconds(),
                 content = "",
                 unencryptedProto = ProtoContent.Readable(
@@ -52,7 +52,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                     MessageContent.Text(
                         data.text,
                     ),
-                    data.expectsReadConfirmation
+                    data.expectsReadConfirmation ?: false
                 ),
                 encryptedProto = null,
                 null,
@@ -60,57 +60,68 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                 null
             )
         }
+
         is WebEventContent.Conversation.AssetMessage -> {
+            val otrKey = data.otrKey?.values?.map { it.toByte() }?.toByteArray()
+            val sha256 = data.sha256?.values?.map { it.toByte() }?.toByteArray()
             val mimeType = data.contentType ?: ""
-            MigratedMessage(
-                conversationId = qualifiedConversation,
-                senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
-                senderClientId = ClientId(fromClientId),
-                timestamp = Instant.parse(time).toEpochMilliseconds(),
-                content = "",
-                unencryptedProto = ProtoContent.Readable(
-                    id,
-                    MessageContent.Asset(
-                        AssetContent(
-                            sizeInBytes = data.contentLength ?: 0,
-                            name = data.info?.name,
-                            mimeType = mimeType,
-                            remoteData = AssetContent.RemoteData(
-                                otrKey = data.otrKey?.toString()?.toByteArray() ?: ByteArray(0),
-                                sha256 = data.sha256?.toString()?.toByteArray() ?: ByteArray(0),
-                                assetId = data.key ?: "",
-                                assetToken = data.token,
-                                assetDomain = data.domain,
-                                encryptionAlgorithm = null
+            if (otrKey != null && sha256 != null) {
+                MigratedMessage(
+                    conversationId = qualifiedConversation,
+                    senderUserId = qualifiedFrom ?: QualifiedID(from, selfUserDomain),
+                    senderClientId = ClientId(fromClientId.orEmpty()),
+                    timestamp = Instant.parse(time).toEpochMilliseconds(),
+                    content = "",
+                    unencryptedProto = ProtoContent.Readable(
+                        id,
+                        MessageContent.Asset(
+                            AssetContent(
+                                sizeInBytes = data.contentLength ?: 0,
+                                name = data.info?.name,
+                                mimeType = mimeType,
+                                remoteData = AssetContent.RemoteData(
+                                    otrKey = otrKey,
+                                    sha256 = sha256,
+                                    assetId = data.key ?: "",
+                                    assetToken = data.token,
+                                    assetDomain = data.domain,
+                                    encryptionAlgorithm = null
+                                ),
+                                metadata = when {
+                                    mimeType.contains("image/") && data.info?.width != null -> AssetContent.AssetMetadata.Image(
+                                        width = data.info.width.replace("px", "").toInt(),
+                                        height = data.info.height!!.toInt()
+                                    )
+
+                                    mimeType.contains("video/") -> AssetContent.AssetMetadata.Video(
+                                        width = null,
+                                        height = null,
+                                        durationMs = null
+                                    )
+
+                                    mimeType.contains("audio/") -> AssetContent.AssetMetadata.Audio(
+                                        durationMs = data.meta?.duration,
+                                        normalizedLoudness = data.meta?.loudness?.toString()?.toByteArray() ?: ByteArray(0)
+                                    )
+
+                                    else -> null
+                                },
+                                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
+                                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                             ),
-                            metadata = when {
-                                mimeType.contains("image/") -> AssetContent.AssetMetadata.Image(
-                                    width = data.info!!.width!!,
-                                    height = data.info.height!!
-                                )
-                                mimeType.contains("video/") -> AssetContent.AssetMetadata.Video(
-                                    width = null,
-                                    height = null,
-                                    durationMs = null
-                                )
-                                mimeType.contains("audio/") -> AssetContent.AssetMetadata.Audio(
-                                    durationMs = data.meta?.duration,
-                                    normalizedLoudness = data.meta?.loudness?.toString()?.toByteArray() ?: ByteArray(0)
-                                )
-                                else -> null
-                            },
-                            uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                            downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                         ),
+                        data.expectsReadConfirmation
                     ),
-                    data.expectsReadConfirmation
-                ),
-                encryptedProto = null,
-                null,
-                null,
+                    encryptedProto = null,
+                    null,
+                    null,
+                    null
+                )
+            } else {
                 null
-            )
+            }
         }
+
         else -> null // TODO handle other cases
     }
 }

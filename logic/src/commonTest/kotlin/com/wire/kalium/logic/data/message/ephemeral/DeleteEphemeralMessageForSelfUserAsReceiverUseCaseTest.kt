@@ -42,12 +42,10 @@ import io.mockative.any
 import io.mockative.matching
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
 
     @Test
@@ -70,6 +68,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         )
         val (arrangement, useCase) = Arrangement()
             .arrange {
+                withMarkAsDeleted(Either.Right(Unit))
                 withCurrentClientIdSuccess(CURRENT_CLIENT_ID)
                 withSelfConversationIds(SELF_CONVERSION_ID)
                 withGetMessageById(Either.Right(message))
@@ -78,6 +77,11 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
             }
 
         useCase(conversationId, messageId).shouldSucceed()
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
 
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
@@ -89,7 +93,6 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                     it == MessageTarget.Conversation()
                 })
             .wasInvoked(exactly = once)
-
 
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)

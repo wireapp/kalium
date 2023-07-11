@@ -39,7 +39,6 @@ import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -61,6 +60,7 @@ import kotlin.time.Duration.Companion.seconds
 class ConversationDAOTest : BaseDatabaseTest() {
 
     private lateinit var conversationDAO: ConversationDAO
+    private lateinit var connectionDAO: ConnectionDAO
     private lateinit var messageDAO: MessageDAO
     private lateinit var userDAO: UserDAO
     private lateinit var teamDAO: TeamDAO
@@ -73,6 +73,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true)
         conversationDAO = db.conversationDAO
+        connectionDAO = db.connectionDAO
         messageDAO = db.messageDAO
         userDAO = db.userDAO
         teamDAO = db.teamDAO
@@ -788,6 +789,56 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         conversationDAO.getAllConversations().first().forEach {
             assertEquals(instant.toEpochMilliseconds(), it.lastNotificationDate!!.toEpochMilliseconds())
+        }
+    }
+
+    @Test
+    fun givenConnectionRequestAndUserWithName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+        val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
+        val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
+        val connectionEntity = ConnectionEntity(
+            conversationId = conversationId.value,
+            from = selfUserId.value,
+            lastUpdateDate = Instant.DISTANT_PAST,
+            qualifiedConversationId = conversationId,
+            qualifiedToId = user1.id,
+            status = ConnectionEntity.State.PENDING,
+            toId = user1.id.value,
+        )
+
+        userDAO.insertUser(user1)
+        conversationDAO.insertConversation(conversation)
+        connectionDAO.insertConnection(connectionEntity)
+
+        conversationDAO.getAllConversationDetails().first().let {
+            assertEquals(1, it.size)
+            val result = it.first()
+
+            assertEquals(conversationId, result.id)
+            assertEquals(ConversationEntity.Type.CONNECTION_PENDING, result.type)
+        }
+    }
+
+    @Test
+    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+        val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
+        val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
+        val connectionEntity = ConnectionEntity(
+            conversationId = conversationId.value,
+            from = selfUserId.value,
+            lastUpdateDate = Instant.DISTANT_PAST,
+            qualifiedConversationId = conversationId,
+            qualifiedToId = user1.id,
+            status = ConnectionEntity.State.PENDING,
+            toId = user1.id.value,
+        )
+
+        userDAO.insertUser(user1.copy(name = null))
+        conversationDAO.insertConversation(conversation)
+        connectionDAO.insertConnection(connectionEntity)
+
+        conversationDAO.getAllConversationDetails().first().let {
+            assertEquals(0, it.size)
         }
     }
 
