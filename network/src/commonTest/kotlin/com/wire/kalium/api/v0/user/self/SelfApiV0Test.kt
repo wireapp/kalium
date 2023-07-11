@@ -105,8 +105,6 @@ internal class SelfApiV0Test : ApiTest() {
         }
     }
 
-
-
     @Test
     fun givenUpdateEmailFailure_whenChangingSelfEmail_thenFailureIsReturned() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
@@ -134,9 +132,6 @@ internal class SelfApiV0Test : ApiTest() {
 
         assertFalse(response.isSuccessful())
     }
-
-
-
 
     private companion object {
         const val PATH_SELF = "/self"

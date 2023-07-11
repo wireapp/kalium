@@ -19,8 +19,9 @@
 package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.EventContentDTOJson
+import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
 import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
@@ -34,10 +35,11 @@ import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.UnreachableRemoteBackends
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,6 +47,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class ConversationApiV4Test : ApiTest() {
 
     @Test
@@ -274,10 +277,34 @@ internal class ConversationApiV4Test : ApiTest() {
             )
         }
 
+    @Test
+    fun whenCallingFetchMlsOneToOneConversation_thenTheRequestShouldBeConfiguredOK() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            FETCH_CONVERSATION_RESPONSE,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("$PATH_CONVERSATIONS/one2one/${USER_ID.domain}/${USER_ID.value}")
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        conversationApi.fetchMlsOneToOneConversation(USER_ID)
+    }
+
+    @Test
+    fun given200Response_whenCallingFetchMlsOneToOneConversation_thenResponseIsParsedCorrectly() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(FETCH_CONVERSATION_RESPONSE, statusCode = HttpStatusCode.OK)
+        val conversationApi = ConversationApiV4(networkClient)
+
+        assertTrue(conversationApi.fetchMlsOneToOneConversation(USER_ID).isSuccessful())
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_MEMBERS = "members"
         const val PATH_PROTOCOL = "protocol"
+        val USER_ID = UserId("id", "domain")
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
+        val FETCH_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
     }
 }
