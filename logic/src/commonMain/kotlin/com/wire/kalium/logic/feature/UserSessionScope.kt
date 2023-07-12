@@ -220,6 +220,10 @@ import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlag
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCaseImpl
+import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCase
+import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
+import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCase
+import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatus
 import com.wire.kalium.logic.feature.user.webSocketStatus.GetPersistentWebSocketStatusImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCase
@@ -1315,6 +1319,12 @@ class UserSessionScope internal constructor(
 
     val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
         get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)
+
+    val persistScreenshotCensoringConfig: PersistScreenshotCensoringConfigUseCase
+        get() = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
+
+    val observeScreenshotCensoringConfig: ObserveScreenshotCensoringConfigUseCase
+        get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
 
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories
