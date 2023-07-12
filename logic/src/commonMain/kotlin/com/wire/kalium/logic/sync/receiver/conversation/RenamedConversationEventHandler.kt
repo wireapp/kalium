@@ -53,6 +53,7 @@ internal class RenamedConversationEventHandlerImpl(
                     date = event.timestampIso,
                     senderUserId = event.senderUserId,
                     status = Message.Status.SENT,
+                    expirationData = null
                 )
                 persistMessage(message)
                 logger

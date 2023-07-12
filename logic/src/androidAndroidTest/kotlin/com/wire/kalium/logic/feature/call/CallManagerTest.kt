@@ -148,7 +148,8 @@ class CallManagerTest {
             senderUserId = UserId(value = "value", domain = "domain"),
             senderClientId = ClientId(value = "value"),
             status = Message.Status.SENT,
-            isSelfMessage = false
+            isSelfMessage = false,
+            expirationData = null
         )
     }
 }
