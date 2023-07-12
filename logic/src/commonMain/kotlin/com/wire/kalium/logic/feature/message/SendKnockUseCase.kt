@@ -64,15 +64,9 @@ class SendKnockUseCase internal constructor(
         }
 
         val generatedMessageUuid = uuid4().toString()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().let {
-            when (it) {
-                SelfDeletionTimer.Disabled -> null
-                is SelfDeletionTimer.Enabled -> it.userDuration
-                is SelfDeletionTimer.Enforced -> it.enforcedDuration
-            }
-        }.let {
-            if (it == Duration.ZERO) null else it
-        }
+        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
+            .first()
+            .duration
 
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Regular(

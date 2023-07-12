@@ -690,7 +690,7 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         conversationDAO.updateUserMessageTimer(
             conversationId = conversationId.toDao(),
-            messageTimer = selfDeletionTimer.toDuration().inWholeMilliseconds
+            messageTimer = selfDeletionTimer.duration?.inWholeMilliseconds
         )
     }
 

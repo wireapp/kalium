@@ -66,12 +66,12 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
 
     private fun onTeamEnabled(conversation: Either<StorageFailure, Conversation>, considerSelfUserSettings: Boolean): SelfDeletionTimer =
         conversation.fold({
-            SelfDeletionTimer.Enabled(ZERO)
+            SelfDeletionTimer.Enabled(null)
         }, {
             when {
                 it.messageTimer.isPositiveNotNull() -> SelfDeletionTimer.Enforced.ByGroup(it.messageTimer)
                 considerSelfUserSettings && it.userMessageTimer.isPositiveNotNull() -> SelfDeletionTimer.Enabled(it.userMessageTimer)
-                else -> SelfDeletionTimer.Enabled(ZERO)
+                else -> SelfDeletionTimer.Enabled(null)
             }
         })
 }
