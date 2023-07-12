@@ -75,7 +75,8 @@ internal class NewConversationEventHandlerImpl(
                     DateTimeUtil.currentIsoDateTimeString(),
                     qualifiedIdMapper.fromStringToQualifiedID(event.conversation.creator),
                     Message.Status.SENT,
-                    Message.Visibility.VISIBLE
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
                 persistMessage(message)
                 kaliumLogger

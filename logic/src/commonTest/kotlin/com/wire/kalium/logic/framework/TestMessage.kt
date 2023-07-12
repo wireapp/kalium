@@ -71,6 +71,7 @@ object TestMessage {
         date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         status = Message.Status.PENDING,
+        expirationData = null
     )
 
     fun assetMessage(assetId: String = TEST_MESSAGE_ID) = Message.Regular(
@@ -118,6 +119,7 @@ object TestMessage {
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.SENT,
-        isSelfMessage = false
+        isSelfMessage = false,
+        expirationData = null
     )
 }
