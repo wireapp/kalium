@@ -27,7 +27,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.isPositiveNotNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlin.time.Duration.Companion.ZERO
 
 /**
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]

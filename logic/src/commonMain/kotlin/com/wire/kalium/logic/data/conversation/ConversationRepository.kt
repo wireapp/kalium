@@ -77,9 +77,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")

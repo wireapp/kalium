@@ -162,7 +162,11 @@ class ProtoContentMapperImpl(
             is MessageContent.LastRead,
             is MessageContent.Reaction,
             is MessageContent.Receipt,
-            is MessageContent.TextEdited -> throw IllegalArgumentException("Unexpected message content type for ephemeral message: ${readableContent.getType()}")
+            is MessageContent.TextEdited ->
+                throw IllegalArgumentException(
+                    "Unexpected message content type for ephemeral message:" +
+                            " ${readableContent.getType()}"
+                )
         }
         return GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = expireAfterMillis, content = ephemeralContent))
     }
