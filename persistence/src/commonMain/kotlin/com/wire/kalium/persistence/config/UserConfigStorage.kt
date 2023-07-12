@@ -336,7 +336,7 @@ class UserConfigStorageImpl(
 
     override fun persistScreenshotCensoring(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_SCREENSHOT_CENSORING, enabled).also {
-            isReadReceiptsEnabledFlow.tryEmit(Unit)
+            isScreenshotCensoringEnabledFlow.tryEmit(Unit)
         }
     }
 
