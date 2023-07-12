@@ -181,6 +181,7 @@ sealed class MessageContent {
         data class Removed(override val members: List<UserId>) : MemberChange(members)
         data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
         data class CreationAdded(override val members: List<UserId>) : MemberChange(members)
+        data class FederationRemoved(override val members: List<UserId>) : MemberChange(members)
     }
 
     data class LastRead(
@@ -279,6 +280,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
     is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
+    is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
     null -> "Unknown"
 }
 
@@ -331,6 +333,11 @@ sealed class MessagePreviewContent {
         data class MissedCall(override val username: String?) : WithUser(username)
 
     }
+
+    data class FederatedMembersRemoved(
+        val isSelfUserRemoved: Boolean,
+        val otherUserIdList: List<UserId> // TODO add usernames
+    ) : MessagePreviewContent()
 
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent()
 

@@ -163,6 +163,12 @@ object MessageMapper {
                         isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                         otherUserIdList = userIdList.filterNot { it == selfUserId },
                     )
+
+                    MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessagePreviewEntityContent.FederatedMembersRemoved(
+                        isContainSelfUserId = userIdList
+                            .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                        otherUserIdList = userIdList.filterNot { it == selfUserId },
+                    )
                 }
             }
 

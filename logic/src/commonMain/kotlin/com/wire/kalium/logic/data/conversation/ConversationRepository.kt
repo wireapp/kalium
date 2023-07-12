@@ -140,7 +140,6 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun updateMutedStatusLocally(
@@ -207,6 +206,11 @@ interface ConversationRepository {
         domain: String,
         conversationId: ConversationId
     ): Either<CoreFailure, List<UserId>>
+
+    suspend fun getConversationWithMembersWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Either<CoreFailure, Map<ConversationId, List<UserId>>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -469,17 +473,6 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateMemberFromEvent(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             memberDAO.updateMemberRole(member.id.toDao(), conversationID.toDao(), conversationRoleMapper.toDAO(member.role))
-        }
-
-    override suspend fun deleteMembersFromEvent(
-        userIDList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            memberDAO.deleteMembersByQualifiedID(
-                userIDList.map { it.toDao() },
-                conversationID.toDao()
-            )
         }
 
     override suspend fun getConversationsByGroupState(
@@ -753,6 +746,15 @@ internal class ConversationDataSource internal constructor(
         conversationId: ConversationId
     ): Either<CoreFailure, List<UserId>> = wrapStorageRequest {
         memberDAO.getMemberIdsByTheSameDomainInConversation(domain, conversationId.toDao()).map { it.toModel() }
+    }
+
+    override suspend fun getConversationWithMembersWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Either<CoreFailure, Map<ConversationId, List<UserId>>> = wrapStorageRequest {
+        memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
+            .mapKeys { it.key.toModel() }
+            .mapValues { it.value.map { idEntity -> idEntity.toModel() } }
     }
 
     private suspend fun persistIncompleteConversations(

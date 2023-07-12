@@ -18,12 +18,12 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
@@ -45,14 +45,32 @@ class FederationEventReceiverImpl internal constructor(
     override suspend fun onEvent(event: Event.Federation): Either<CoreFailure, Unit> {
         when (event) {
             is Event.Federation.Delete -> handleDeleteEvent(event)
+            is Event.Federation.ConnectionRemoved -> handleConnectionRemovedEvent(event)
         }
         return Either.Right(Unit)
+    }
+
+    private suspend fun handleDeleteEvent(event: Event.Federation.Delete) = withContext(dispatchers.io) {
 
     }
 
+
     // TODO KBX handle all cases
-    private suspend fun handleDeleteEvent(event: Event.Federation.Delete) =
+    private suspend fun handleConnectionRemovedEvent(event: Event.Federation.ConnectionRemoved) =
         withContext(dispatchers.io) {
+            val firstDomain = event.domains.first()
+            val secondDomain = event.domains.last()
+
+            conversationRepository.getConversationWithMembersWithBothDomains(firstDomain, secondDomain)
+                .onSuccess {
+                    it.forEach {
+                        // TODO
+//                         when(it.key.domain) {
+//                            firstDomain ->
+//                         }
+                    }
+                }
+
             conversationRepository.getConversationIdsByDomain(selfUserId.domain).map { conversationIds ->
                 conversationIds.map { conversationId ->
                     event.domains.map {
@@ -80,4 +98,10 @@ class FederationEventReceiverImpl internal constructor(
                         )
                 }
         }
+
+    fun removeUsersFromConversation(conversationId: ConversationId) {
+
+    }
+
+
 }

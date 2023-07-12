@@ -317,6 +317,12 @@ class MessageMapperImpl(
 
                 is MessageContent.MemberChange.FailedToAdd ->
                     MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
+
+                is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(
+                    memberUserIdList,
+                    MessageEntity.MemberChangeType.FEDERATION_REMOVED
+                )
+
             }
         }
 
@@ -404,6 +410,7 @@ class MessageMapperImpl(
                 MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
                 MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
                 MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
+                MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
             }
         }
 
@@ -450,6 +457,12 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
+
+    is MessagePreviewEntityContent.FederatedMembersRemoved -> MessagePreviewContent.FederatedMembersRemoved(
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
 
     is MessagePreviewEntityContent.MembersCreationAdded -> MessagePreviewContent.WithUser.MembersCreationAdded(
         senderName = senderName,

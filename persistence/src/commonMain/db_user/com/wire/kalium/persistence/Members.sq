@@ -52,3 +52,8 @@ getMembersWithSameDomainFromConversation:
 SELECT user
 FROM Member
 WHERE user LIKE ('%@' || :domain) AND conversation = :conversation;
+
+getMembersFromOneOfTwoDomains:
+SELECT *
+FROM Member
+WHERE conversation LIKE ('%@' || :firstDomain) OR conversation LIKE ('%@' || :secondDomain);

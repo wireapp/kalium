@@ -611,13 +611,26 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class Delete(
             override val id: String,
             override val transient: Boolean,
-            val domains: List<String>,
+            val domain: String,
         ) : Federation(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Federation.Delete",
                 idKey to id.obfuscateId(),
                 "transient" to "$transient",
-                "domains" to "$domains"
+                "domains" to domain
+            )
+        }
+
+        data class ConnectionRemoved(
+            override val id: String,
+            override val transient: Boolean,
+            val domains: List<String>,
+        ) : Federation(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Federation.ConnectionRemoved",
+                idKey to id.obfuscateId(),
+                "transient" to "$transient",
+                "domains" to domains
             )
         }
     }

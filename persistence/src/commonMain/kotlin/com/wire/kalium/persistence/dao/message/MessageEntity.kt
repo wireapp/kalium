@@ -194,7 +194,7 @@ sealed class MessageEntity(
     }
 
     enum class MemberChangeType {
-        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD
+        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED
     }
 
     enum class Visibility {
@@ -385,6 +385,11 @@ sealed class MessagePreviewEntityContent {
 
     data class MembersCreationAdded(
         val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
+    data class FederatedMembersRemoved(
         val otherUserIdList: List<UserIDEntity>,
         val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()

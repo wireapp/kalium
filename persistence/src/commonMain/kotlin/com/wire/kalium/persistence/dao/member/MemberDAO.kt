@@ -54,6 +54,11 @@ interface MemberDAO {
         domain: String,
         conversationID: QualifiedIDEntity
     ): List<QualifiedIDEntity>
+
+    suspend fun getConversationWithUserIdsWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Map<QualifiedIDEntity, List<UserIDEntity>>
 }
 
 internal class MemberDAOImpl internal constructor(
@@ -163,5 +168,18 @@ internal class MemberDAOImpl internal constructor(
         conversationID: QualifiedIDEntity
     ): List<QualifiedIDEntity> = withContext(coroutineContext) {
         memberQueries.getMembersWithSameDomainFromConversation(domain, conversationID).executeAsList()
+    }
+
+    override suspend fun getConversationWithUserIdsWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Map<QualifiedIDEntity, List<UserIDEntity>> = withContext(coroutineContext) {
+        memberQueries.getMembersFromOneOfTwoDomains(firstDomain, secondDomain).executeAsList()
+            .groupBy { it.conversation }
+            .filter { (_, members) ->
+                members.any { it.conversation.domain == firstDomain } &&
+                        members.any { it.conversation.domain == secondDomain }
+            }
+            .mapValues { it.value.map { member -> member.user } }
     }
 }
