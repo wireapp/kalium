@@ -20,18 +20,18 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class GetConversationMLSVerificationStatusUseCaseTest {
+class GetConversationVerificationStatusUseCaseTest {
 
     @Test
-    fun givenNoMLSClientIsRegistered_whenInvokingUseCase_thenGetConversationMLSVerificationStatusIsNotCalled() =
+    fun givenNoMLSClientIsRegistered_whenInvokingUseCase_thengetConversationVerificationStatusIsNotCalled() =
         runTest {
-            val (arrangement, getConversationMLSVerificationStatus) = Arrangement()
+            val (arrangement, getConversationVerificationStatus) = Arrangement()
                 .withGetConversationsByIdSuccessful(Arrangement.PROTEUS_CONVERSATION1)
                 .arrange()
 
             assertEquals(
                 ConversationVerificationStatusResult.Success(ConversationProtocol.PROTEUS, ConversationVerificationStatus.NOT_VERIFIED),
-                getConversationMLSVerificationStatus(Arrangement.PROTEUS_CONVERSATION1.id)
+                getConversationVerificationStatus(Arrangement.PROTEUS_CONVERSATION1.id)
             )
 
             verify(arrangement.mlsConversationRepository)
@@ -41,29 +41,29 @@ class GetConversationMLSVerificationStatusUseCaseTest {
         }
 
     @Test
-    fun givenNonRecoverableFailure_whenInvokingUseCase_thenGetConversationMLSVerificationStatusIsVerified() = runTest {
-        val (arrangement, getConversationMLSVerificationStatus) = Arrangement()
+    fun givenNonRecoverableFailure_whenInvokingUseCase_thenGetConversationVerificationStatusIsVerified() = runTest {
+        val (arrangement, getConversationVerificationStatus) = Arrangement()
             .withGetConversationsByIdSuccessful()
             .withMLSGroupVerificationStatus(ConversationVerificationStatus.VERIFIED)
             .arrange()
 
         assertEquals(
             ConversationVerificationStatusResult.Success(ConversationProtocol.MLS, ConversationVerificationStatus.VERIFIED),
-            getConversationMLSVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
+            getConversationVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
         )
     }
 
     @Test
-    fun givenNonRecoverableFailureAndNotVerifiedMLSStatus_whenInvokingUseCase_thenGetConversationMLSVerificationStatusIsVerified() =
+    fun givenNonRecoverableFailureAndNotVerifiedMLSStatus_whenInvokingUseCase_thenGetConversationVerificationStatusIsVerified() =
         runTest {
-            val (arrangement, getConversationMLSVerificationStatus) = Arrangement()
+            val (arrangement, getConversationVerificationStatus) = Arrangement()
                 .withGetConversationsByIdSuccessful()
                 .withMLSGroupVerificationStatus(ConversationVerificationStatus.NOT_VERIFIED)
                 .arrange()
 
             assertEquals(
                 ConversationVerificationStatusResult.Success(ConversationProtocol.MLS, ConversationVerificationStatus.NOT_VERIFIED),
-                getConversationMLSVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
+                getConversationVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
             )
         }
 

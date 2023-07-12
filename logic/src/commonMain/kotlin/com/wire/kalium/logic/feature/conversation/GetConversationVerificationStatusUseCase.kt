@@ -68,7 +68,7 @@ class GetConversationVerificationStatusUseCaseImpl(
     private suspend fun getConversationProteusVerificationStatus(
         conversationId: ConversationId
     ): Either<CoreFailure, ConversationVerificationStatusResult> {
-        // TODO
+        // TODO  needs to be handled by for Proteus conversation that is not implemented yet
         return Either.Right(
             ConversationVerificationStatusResult.Success(
                 ConversationProtocol.PROTEUS,
