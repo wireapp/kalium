@@ -20,11 +20,16 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import kotlinx.coroutines.flow.first
 
 /**
@@ -37,20 +42,31 @@ import kotlinx.coroutines.flow.first
  */
 class GetOrCreateOneToOneConversationUseCase(
     private val conversationRepository: ConversationRepository,
-    private val conversationGroupRepository: ConversationGroupRepository
+    private val conversationGroupRepository: ConversationGroupRepository,
+    private val establishMLSOneToOne: EstablishMLSOneToOneUseCase,
+    private val userConfigRepository: UserConfigRepository
 ) {
-
     suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         // TODO: filter out self user from the list (just in case of client bug that leads to self user to be included part of the list)
         return conversationRepository.observeOneToOneConversationWithOtherUser(otherUserId)
             .first()
             .fold({ conversationFailure ->
                 if (conversationFailure is StorageFailure.DataNotFound) {
-                    conversationGroupRepository.createGroupConversation(usersList = listOf(otherUserId))
-                        .fold(
-                            CreateConversationResult::Failure,
-                            CreateConversationResult::Success
-                        )
+                    userConfigRepository.getDefaultProtocol().flatMap { defaultProtocol ->
+                        when (defaultProtocol) {
+                            SupportedProtocol.MLS ->
+                                establishMLSOneToOne(otherUserId)
+                                    .flatMap {
+                                        conversationRepository.detailsById(it)
+                                    }
+
+                            SupportedProtocol.PROTEUS ->
+                                conversationGroupRepository.createGroupConversation(usersList = listOf(otherUserId))
+                        }
+                    }.fold(
+                        CreateConversationResult::Failure,
+                        CreateConversationResult::Success
+                    )
                 } else {
                     CreateConversationResult.Failure(conversationFailure)
                 }
