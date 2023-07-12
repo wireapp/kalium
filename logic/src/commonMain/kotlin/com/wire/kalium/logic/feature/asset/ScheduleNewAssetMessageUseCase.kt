@@ -135,8 +135,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             when (it) {
                 SelfDeletionTimer.Disabled -> null
                 is SelfDeletionTimer.Enabled -> it.userDuration
-                is SelfDeletionTimer.Enforced.ByGroup -> it.duration
-                is SelfDeletionTimer.Enforced.ByTeam -> it.duration
+                is SelfDeletionTimer.Enforced -> it.enforcedDuration
             }
         }.let {
             if (it == Duration.ZERO) null else it

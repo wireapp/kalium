@@ -142,9 +142,27 @@ class ProtoContentMapperImpl(
                 )
             }
 
-            else -> {
-                throw IllegalArgumentException("Unexpected message content type for ephemeral message: ${readableContent.getType()}")
+            is MessageContent.Knock -> {
+                val knock = GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
+                Ephemeral.Content.Knock(
+                    knock.value
+                )
             }
+
+            is MessageContent.FailedDecryption,
+            is MessageContent.RestrictedAsset,
+            is MessageContent.Unknown,
+            is MessageContent.Availability,
+            is MessageContent.Calling,
+            is MessageContent.Cleared,
+            MessageContent.ClientAction,
+            is MessageContent.DeleteForMe,
+            is MessageContent.DeleteMessage,
+            MessageContent.Ignored,
+            is MessageContent.LastRead,
+            is MessageContent.Reaction,
+            is MessageContent.Receipt,
+            is MessageContent.TextEdited -> throw IllegalArgumentException("Unexpected message content type for ephemeral message: ${readableContent.getType()}")
         }
         return GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = expireAfterMillis, content = ephemeralContent))
     }
