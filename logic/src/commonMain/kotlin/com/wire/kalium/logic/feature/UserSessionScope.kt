@@ -1330,8 +1330,6 @@ class UserSessionScope internal constructor(
 
     val getConversationMLSVerificationStatus: GetConversationVerificationStatusUseCase
         get() = GetConversationVerificationStatusUseCaseImpl(
-            featureSupport,
-            clientRepository,
             conversationRepository,
             mlsConversationRepository
         )

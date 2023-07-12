@@ -1,13 +1,11 @@
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationVerificationStatus
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
@@ -23,52 +21,28 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class GetConversationMLSVerificationStatusUseCaseTest {
-    @Test
-    fun givenMLSSupportIsDisabled_whenInvokingUseCase_thenGetConversationMLSVerificationStatusIsNotCalled() =
-        runTest {
-            val (arrangement, getConversationMLSVerificationStatus) = Arrangement()
-                .withIsMLSSupported(false)
-                .withGetConversationsByIdSuccessful()
-                .withJoinByExternalCommitSuccessful()
-                .arrange()
-
-            assertEquals(
-                ConversationVerificationStatusResult.Success(ConversationProtocol.PROTEUS, ConversationVerificationStatus.NOT_VERIFIED),
-                getConversationMLSVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
-            )
-
-            verify(arrangement.mlsConversationRepository)
-                .suspendFunction(arrangement.mlsConversationRepository::getConversationVerificationStatus)
-                .with(eq(Arrangement.MLS_CONVERSATION1))
-                .wasNotInvoked()
-        }
 
     @Test
     fun givenNoMLSClientIsRegistered_whenInvokingUseCase_thenGetConversationMLSVerificationStatusIsNotCalled() =
         runTest {
             val (arrangement, getConversationMLSVerificationStatus) = Arrangement()
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(false)
-                .withGetConversationsByIdSuccessful()
-                .withJoinByExternalCommitSuccessful()
+                .withGetConversationsByIdSuccessful(Arrangement.PROTEUS_CONVERSATION1)
                 .arrange()
 
             assertEquals(
                 ConversationVerificationStatusResult.Success(ConversationProtocol.PROTEUS, ConversationVerificationStatus.NOT_VERIFIED),
-                getConversationMLSVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
+                getConversationMLSVerificationStatus(Arrangement.PROTEUS_CONVERSATION1.id)
             )
 
             verify(arrangement.mlsConversationRepository)
                 .suspendFunction(arrangement.mlsConversationRepository::getConversationVerificationStatus)
-                .with(eq(Arrangement.MLS_CONVERSATION1))
+                .with(eq(Arrangement.PROTEUS_CONVERSATION1))
                 .wasNotInvoked()
         }
 
     @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_thenGetConversationMLSVerificationStatusIsVerified() = runTest {
         val (arrangement, getConversationMLSVerificationStatus) = Arrangement()
-            .withIsMLSSupported(true)
-            .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful()
             .withMLSGroupVerificationStatus(ConversationVerificationStatus.VERIFIED)
             .arrange()
@@ -83,8 +57,6 @@ class GetConversationMLSVerificationStatusUseCaseTest {
     fun givenNonRecoverableFailureAndNotVerifiedMLSStatus_whenInvokingUseCase_thenGetConversationMLSVerificationStatusIsVerified() =
         runTest {
             val (arrangement, getConversationMLSVerificationStatus) = Arrangement()
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful()
                 .withMLSGroupVerificationStatus(ConversationVerificationStatus.NOT_VERIFIED)
                 .arrange()
@@ -98,20 +70,12 @@ class GetConversationMLSVerificationStatusUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
-
-        @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
-
-        @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         fun arrange() = this to GetConversationVerificationStatusUseCaseImpl(
-            featureSupport,
-            clientRepository,
             conversationRepository,
             mlsConversationRepository
         )
@@ -132,26 +96,6 @@ class GetConversationMLSVerificationStatusUseCaseTest {
                 .thenReturn(Either.Right(status))
         }
 
-        fun withJoinByExternalCommitSuccessful() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
-        }
-
-        fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::hasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(Either.Right(result))
-        }
-
         companion object {
             val GROUP_ID1 = GroupID("group1")
 
@@ -163,6 +107,10 @@ class GetConversationMLSVerificationStatusUseCaseTest {
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
+            ).copy(id = ConversationId("id1", "domain"))
+
+            val PROTEUS_CONVERSATION1 = TestConversation.GROUP(
+                Conversation.ProtocolInfo.Proteus
             ).copy(id = ConversationId("id1", "domain"))
         }
     }
