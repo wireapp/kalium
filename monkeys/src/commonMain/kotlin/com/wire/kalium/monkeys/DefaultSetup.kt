@@ -29,8 +29,6 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -46,19 +44,61 @@ class DefaultSetup(setupParallelism: Int) : SetupStep {
         println("### LOGGING IN ALL USERS")
         val monkeyGroups = accountGroups.map { group ->
             group.map { accountData ->
-                async(dispatcher) {
-                    println("### Getting versioned backend")
-                    val authScope = getAuthScope(coreLogic, accountData.backend)
-                    acquireMonkeySessions(accountData, authScope, coreLogic)
-                }
-            }.awaitAll()
+                println("### Getting versioned backend")
+                val authScope = getAuthScope(coreLogic, accountData.backend)
+                acquireMonkeySessions(accountData, authScope, coreLogic)
+            }
         }
 
         registerAllClients(monkeyGroups)
 
-        // TODO: Connection requests between multiple federated backends
+        establishConnectionBetweenMonkeys(monkeyGroups)
 
         monkeyGroups
+    }
+
+    private suspend fun establishConnectionBetweenMonkeys(monkeyGroups: List<List<Monkey>>) {
+        val backendMonkeyMap = monkeyGroups.flatten()
+            .groupBy { it.user.backend }
+
+        val alreadyProcessedBackends = mutableSetOf<Backend>()
+        for ((backend, monkeys) in backendMonkeyMap) {
+            for ((otherBackend, otherMonkeys) in backendMonkeyMap) {
+                if (otherBackend == backend) continue
+                if (alreadyProcessedBackends.contains(otherBackend)) {
+                    // Accept connection requests
+                    acceptAllConnectionRequests(monkeys, otherMonkeys)
+                } else {
+                    // Send connection requests
+                    sendConnectionRequests(monkeys, otherMonkeys)
+                }
+            }
+            alreadyProcessedBackends += backend
+        }
+    }
+
+    private suspend fun sendConnectionRequests(
+        senders: List<Monkey>,
+        otherMonkeys: List<Monkey>
+    ) {
+        senders.forEach { monkey ->
+            otherMonkeys.forEach { otherMonkey ->
+                monkey.operationScope.connection.sendConnectionRequest(otherMonkey.user.userId)
+                // TODO: Handle error
+            }
+        }
+    }
+
+    private suspend fun acceptAllConnectionRequests(
+        receivers: List<Monkey>,
+        otherMonkeys: List<Monkey>
+    ) {
+        receivers.forEach { monkey ->
+            otherMonkeys.forEach { otherMonkey ->
+                monkey.operationScope.connection.acceptConnectionRequest(otherMonkey.user.userId)
+                // TODO: Handle error
+            }
+        }
     }
 
     private suspend fun registerAllClients(monkeyGroups: List<List<Monkey>>) = coroutineScope {
