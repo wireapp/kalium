@@ -22,7 +22,8 @@ import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 
 class DefaultConversationCreation : ConversationCreation {
     override suspend fun invoke(
-        monkeyGroups: List<List<Monkey>>
+        monkeyGroups: List<List<Monkey>>,
+        protocol: ConversationOptions.Protocol
     ): List<MonkeyConversation> = monkeyGroups.map { group ->
         val groupCreator = group.first()
         val userScope = groupCreator.operationScope
@@ -30,7 +31,7 @@ class DefaultConversationCreation : ConversationCreation {
         val conversationResult = userScope.conversations.createGroupConversation(
             name = "By Monkey '${groupCreator.user.email}'",
             userIdList = group.map { it.user.userId },
-            options = ConversationOptions(protocol = MonkeyApplication.GROUP_TYPE)
+            options = ConversationOptions(protocol = protocol)
         )
 
         if (conversationResult !is CreateGroupConversationUseCase.Result.Success) {
