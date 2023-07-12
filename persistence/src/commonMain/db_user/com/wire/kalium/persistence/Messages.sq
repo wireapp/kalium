@@ -434,9 +434,6 @@ DELETE FROM Message WHERE id = ? AND conversation_id = ?;
 deleteMessageMentions:
 DELETE FROM MessageMention WHERE  message_id = ? AND conversation_id = ?;
 
-deleteMessageById:
-DELETE FROM Message WHERE id = ?;
-
 markMessageAsDeleted {
    UPDATE Message
    SET visibility = 'DELETED'

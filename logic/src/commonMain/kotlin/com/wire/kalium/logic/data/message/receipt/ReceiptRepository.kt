@@ -58,7 +58,7 @@ class ReceiptRepositoryImpl(
         messageIds: List<String>
     ) {
         receiptDAO.insertReceipts(
-            userId = userId.toDao(),
+            userId = userId.toDao() ,
             conversationId = conversationId.toDao(),
             date = date,
             type = receiptsMapper.toTypeEntity(type),
