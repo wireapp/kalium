@@ -385,6 +385,11 @@ internal class MessageDAOImpl internal constructor(
         queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, recipientFailureTypeEntity)
     }
 
+    override suspend fun moveMessages(from: ConversationIDEntity, to: ConversationIDEntity) =
+        withContext(coroutineContext) {
+            queries.moveMessages(to, from)
+        }
+
     override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(coroutineContext) {
         unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()
     }

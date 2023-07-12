@@ -506,3 +506,8 @@ WHERE  conversation_id = ? AND id = ?;
 insertMessageRecipientsFailure:
 INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
 VALUES(?, ?, ?, ?);
+
+moveMessages:
+UPDATE Message
+SET conversation_id = :to
+WHERE conversation_id = :from;
