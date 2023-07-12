@@ -83,15 +83,27 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         assertEquals(false, result[1].shouldNotify)
     }
 
+    @Test
+    fun givenConnection_WhenUpdatingConnectionConversation_ThenItIsUpdated() = runTest {
+        val newConversationId = QualifiedIDEntity("new", "wire.com")
+        db.connectionDAO.insertConnection(connection1)
+        db.connectionDAO.updateConnectionConversation(newConversationId, connection1.qualifiedToId)
+        val result = db.connectionDAO.getConnectionRequests().first()
+        assertEquals(newConversationId, result[0].qualifiedConversationId)
+        assertEquals(newConversationId.value, result[0].conversationId)
+    }
+
     companion object {
+        val OTHER_USER_ID = QualifiedIDEntity("me", "wire.com")
+
         private fun connectionEntity(id: String = "0") = ConnectionEntity(
-            conversationId = "$id@wire.com",
+            conversationId = id,
             from = "from_string",
             lastUpdateDate = "2022-03-30T15:36:00.000Z".toInstant(),
             qualifiedConversationId = QualifiedIDEntity(id, "wire.com"),
-            qualifiedToId = QualifiedIDEntity("me", "wire.com"),
+            qualifiedToId = OTHER_USER_ID,
             status = ConnectionEntity.State.PENDING,
-            toId = "me@wire.com",
+            toId = OTHER_USER_ID.value,
             shouldNotify = true
         )
     }

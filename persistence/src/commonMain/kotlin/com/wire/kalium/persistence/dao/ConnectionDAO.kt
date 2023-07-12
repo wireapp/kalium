@@ -66,6 +66,7 @@ interface ConnectionDAO {
     suspend fun insertConnection(connectionEntity: ConnectionEntity)
     suspend fun insertConnections(users: List<ConnectionEntity>)
     suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String)
+    suspend fun updateConnectionConversation(conversationId: QualifiedIDEntity, userId: QualifiedIDEntity)
     suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity)
     suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>>
     suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity)
