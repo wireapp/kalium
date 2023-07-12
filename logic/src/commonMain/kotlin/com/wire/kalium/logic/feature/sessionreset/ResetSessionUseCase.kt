@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.SessionResetSender
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -41,6 +42,7 @@ import kotlinx.coroutines.withContext
 interface ResetSessionUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userId: UserId, clientId: ClientId): ResetSessionResult
 }
+
 internal class ResetSessionUseCaseImpl internal constructor(
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionResetSender: SessionResetSender,
@@ -54,6 +56,7 @@ internal class ResetSessionUseCaseImpl internal constructor(
         clientId: ClientId
     ): ResetSessionResult = withContext(dispatchers.io) {
         return@withContext proteusClientProvider.getOrError().fold({
+            kaliumLogger.e("Failed to get proteus client for session reset $it")
             return@fold ResetSessionResult.Failure(it)
         }, { proteusClient ->
             val cryptoUserID = idMapper.toCryptoQualifiedIDId(userId)
@@ -68,14 +71,21 @@ internal class ResetSessionUseCaseImpl internal constructor(
                 userId = userId,
                 clientId = clientId
             ).flatMap {
+                kaliumLogger.e("Successfully sent session reset message")
                 messageRepository.markMessagesAsDecryptionResolved(
                     conversationId,
                     userId,
                     clientId
                 )
             }.fold(
-                { ResetSessionResult.Failure(it) },
-                { ResetSessionResult.Success }
+                {
+                    kaliumLogger.e("Failed to mark decryption error as resolved")
+                    ResetSessionResult.Failure(it)
+                },
+                {
+                    kaliumLogger.e("Successfully marked decryption error as resolved")
+                    ResetSessionResult.Success
+                }
             )
 
         })
