@@ -131,5 +131,7 @@ interface MessageDAO {
         recipientFailureTypeEntity: RecipientFailureTypeEntity
     )
 
+    suspend fun moveMessages(from: ConversationIDEntity, to: ConversationIDEntity)
+
     val platformExtensions: MessageExtensions
 }
