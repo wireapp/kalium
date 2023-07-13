@@ -485,7 +485,8 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedNetworkContainer.clientApi
+            authenticatedNetworkContainer.clientApi,
+            slowSyncRepository
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -988,7 +989,7 @@ class UserSessionScope internal constructor(
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
-            conversationRepository, userRepository, persistMessage
+            conversationRepository, userRepository, persistMessage, userId
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(

@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.UnreadEventType
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -48,6 +49,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.slow.CURRENT_VERSION
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapCryptoRequest
 import com.wire.kalium.logic.wrapMLSRequest
@@ -95,7 +97,8 @@ interface ConversationRepository {
     suspend fun persistConversations(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
-        originatedFromEvent: Boolean = false
+        originatedFromEvent: Boolean = false,
+        invalidateMembers: Boolean = false
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
@@ -201,6 +204,7 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
+    private val slowSyncRepository: SlowSyncRepository, // temporary to resolve issue https://wearezeta.atlassian.net/browse/WPB-3047
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -208,7 +212,7 @@ internal class ConversationDataSource internal constructor(
     private val conversationRoleMapper: ConversationRoleMapper = MapperProvider.conversationRoleMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
-    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
+    private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
 ) : ConversationRepository {
 
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
@@ -251,7 +255,18 @@ internal class ConversationDataSource internal constructor(
                         kaliumLogger.withFeatureId(CONVERSATIONS)
                             .d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
-                    persistConversations(conversations.conversationsFound, selfTeamIdProvider().getOrNull()?.value)
+                    // temporary solution to force invalidating all removed members
+                    val lastVersion = slowSyncRepository.getSlowSyncVersion()
+
+                    persistConversations(
+                        conversations = conversations.conversationsFound,
+                        selfUserTeamId = selfTeamIdProvider().getOrNull()?.value,
+                        invalidateMembers = CURRENT_VERSION > lastVersion
+                    )
+                    if(CURRENT_VERSION > lastVersion) {
+                        slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
+                    }
+
                 }.onFailure {
                     kaliumLogger.withFeatureId(CONVERSATIONS).e("Error fetching conversation details $it")
                 }
@@ -271,6 +286,7 @@ internal class ConversationDataSource internal constructor(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
         originatedFromEvent: Boolean,
+        invalidateMembers: Boolean
     ) = wrapStorageRequest {
         val conversationEntities = conversations
             // TODO work-around for a bug in the backend. Can be removed when fixed: https://wearezeta.atlassian.net/browse/FS-1262
@@ -289,8 +305,14 @@ internal class ConversationDataSource internal constructor(
             }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
+            // do the cleanup of members from conversation in case when self user rejoined conversation
+            // and may not received any member remove or leave events
+            if (invalidateMembers) {
+                conversationDAO.deleteMembersFromConversation(idMapper.fromApiToDao(conversationsResponse.id))
+            }
             conversationDAO.insertMembersWithQualifiedId(
-                memberMapper.fromApiModelToDaoModel(conversationsResponse.members), idMapper.fromApiToDao(conversationsResponse.id)
+                memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                idMapper.fromApiToDao(conversationsResponse.id)
             )
         }
     }
@@ -374,7 +396,7 @@ internal class ConversationDataSource internal constructor(
             conversationApi.fetchConversationDetails(conversationID.toApi())
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
-            persistConversations(listOf(it), selfUserTeamId?.value)
+            persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
         }
     }
 

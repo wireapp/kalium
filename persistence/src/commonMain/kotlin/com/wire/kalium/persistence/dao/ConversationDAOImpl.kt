@@ -401,6 +401,11 @@ class ConversationDAOImpl(
             nonSuspendInsertMembersWithQualifiedId(memberList, conversationID)
         }
 
+    override suspend fun deleteMembersFromConversation(conversationID: QualifiedIDEntity) =
+        withContext(coroutineContext) {
+            memberQueries.deleteMembersFromConversation(conversationID)
+        }
+
     private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
         memberQueries.transaction {
             for (member: Member in memberList) {
@@ -408,14 +413,6 @@ class ConversationDAOImpl(
                 memberQueries.insertMember(member.user, conversationID, member.role)
             }
         }
-
-    override suspend fun insertMembers(memberList: List<Member>, groupId: String) {
-        withContext(coroutineContext) {
-            getConversationByGroupID(groupId).firstOrNull()?.let {
-                nonSuspendInsertMembersWithQualifiedId(memberList, it.id)
-            }
-        }
-    }
 
     override suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
         member: Member,
