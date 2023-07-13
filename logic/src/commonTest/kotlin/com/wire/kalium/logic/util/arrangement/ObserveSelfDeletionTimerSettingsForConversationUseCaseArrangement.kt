@@ -57,5 +57,4 @@ open class ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
             ).thenReturn(result)
     }
 
-
 }
