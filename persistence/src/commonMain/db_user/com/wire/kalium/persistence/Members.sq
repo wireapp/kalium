@@ -17,6 +17,9 @@ VALUES (?, ?, ?);
 deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;
 
+deleteMembersFromConversation:
+DELETE FROM Member WHERE conversation = ?;
+
 -- TODO: replace LIKE with absolute value
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation LIKE ('%' || :searchQuery || '%');
