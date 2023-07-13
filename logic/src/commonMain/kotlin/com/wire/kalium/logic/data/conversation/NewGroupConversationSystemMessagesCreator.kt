@@ -86,7 +86,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
             status = Message.Status.SENT,
-            visibility = Message.Visibility.VISIBLE
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
         )
     )
 
@@ -126,7 +127,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
             status = Message.Status.SENT,
-            visibility = Message.Visibility.VISIBLE
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
         )
     )
 
@@ -147,7 +149,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = selfUserId,
                     status = Message.Status.SENT,
-                    visibility = Message.Visibility.VISIBLE
+                    visibility = Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
             ).also { createFailedToAddSystemMessage(conversationResponse) }
         }
@@ -162,7 +165,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
                 Message.Status.SENT,
-                Message.Visibility.VISIBLE
+                Message.Visibility.VISIBLE,
+                expirationData = null
             )
             persistMessage(messageStartedWithFailedMembers)
         }

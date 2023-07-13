@@ -161,5 +161,6 @@ class DebugScope internal constructor(
             messageRepository = messageRepository,
             deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
             deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
+            selfUserId = userId
         )
 }
