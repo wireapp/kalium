@@ -143,7 +143,13 @@ internal class ApplicationMessageHandlerImpl(
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.SENT,
-                    isSelfMessage = senderUserId == selfUserId
+                    isSelfMessage = senderUserId == selfUserId,
+                    expirationData = content.expiresAfterMillis?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                        )
+                    }
                 )
                 processSignaling(signalingMessage)
             }
@@ -171,7 +177,8 @@ internal class ApplicationMessageHandlerImpl(
                     date = signaling.date,
                     senderUserId = signaling.senderUserId,
                     status = signaling.status,
-                    senderUserName = signaling.senderUserName
+                    senderUserName = signaling.senderUserName,
+                    expirationData = null
                 )
 
                 logger.i(message = "Persisting crypto session reset system message..")

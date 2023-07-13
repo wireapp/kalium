@@ -73,7 +73,8 @@ internal class ClearConversationContentUseCaseImpl(
                             senderUserId = selfUserId,
                             senderClientId = currentClientId,
                             status = Message.Status.PENDING,
-                            isSelfMessage = true
+                            isSelfMessage = true,
+                            expirationData = null
                         )
                         messageSender.sendMessage(regularMessage)
                     }

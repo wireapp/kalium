@@ -120,6 +120,7 @@ class MessageScope internal constructor(
             messageRepository = messageRepository,
             deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
             deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
+            selfUserId = selfUserId
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
@@ -255,7 +256,8 @@ class MessageScope internal constructor(
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
-            messageSendFailureHandler
+            messageSendFailureHandler,
+            observeSelfDeletingMessages
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase

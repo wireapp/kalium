@@ -58,7 +58,8 @@ class UpdateMessageTimerUseCaseImpl internal constructor(
                     DateTimeUtil.currentIsoDateTimeString(),
                     selfUserId,
                     Message.Status.SENT,
-                    Message.Visibility.VISIBLE
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
                 persistMessage(message)
             }
