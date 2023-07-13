@@ -90,10 +90,10 @@ class MessageMapperImpl(
                 is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                 is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
             },
-            expireAfterMs = message.expirationData?.let { it.expireAfter.inWholeMilliseconds },
+            expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
             selfDeletionStartDate = message.expirationData?.let {
-                when (val status = it.selfDeletionStatus) {
-                    is Message.ExpirationData.SelfDeletionStatus.Started -> status.selfDeletionStartDate
+                when (it.selfDeletionStatus) {
+                    is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
                     is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
                 }
             },
@@ -116,13 +116,13 @@ class MessageMapperImpl(
         status = status,
         visibility = visibility,
         senderName = message.senderUserName,
-        expireAfterMs = message.expirationData?.let { it.expireAfter.inWholeMilliseconds },
+        expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
         selfDeletionStartDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
                 is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
-        },
+        }
     )
 
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
@@ -162,7 +162,14 @@ class MessageMapperImpl(
         reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
         senderUserName = message.senderName,
         isSelfMessage = message.isSelfMessage,
-        expectsReadConfirmation = message.expectsReadConfirmation
+        expectsReadConfirmation = message.expectsReadConfirmation,
+        deliveryStatus = when (val recipientsFailure = message.deliveryStatus) {
+            is DeliveryStatusEntity.CompleteDelivery -> DeliveryStatus.CompleteDelivery
+            is DeliveryStatusEntity.PartialDelivery -> DeliveryStatus.PartialDelivery(
+                recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
+                recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
+            )
+        }
     )
 
     private fun mapSystemMessage(message: MessageEntity.System, status: Message.Status) = Message.System(
