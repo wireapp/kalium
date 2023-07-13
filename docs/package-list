@@ -133,6 +133,7 @@ $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/deriveSecret/#kotlin.
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/encryptMessage/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]encrypt-message.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/generateKeyPackages/#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]generate-key-packages.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/getPublicKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]get-public-key.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/isGroupVerified/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]is-group-verified.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/joinByExternalCommit/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]join-by-external-commit.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/joinConversation/#kotlin.String#[Error type: Unresolved type for ULong]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]join-conversation.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/members/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]members.html
