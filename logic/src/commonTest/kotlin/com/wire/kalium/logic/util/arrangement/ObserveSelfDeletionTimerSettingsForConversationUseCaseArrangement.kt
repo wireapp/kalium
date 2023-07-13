@@ -24,6 +24,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matchers.Matcher
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
@@ -33,8 +34,8 @@ interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
 
     fun withConversationTimer(
         result: Flow<SelfDeletionTimer>,
-        conversationId: ConversationId? = null,
-        considerSelfUserSettings: Boolean? = null
+        conversationId: Matcher<ConversationId> = any(),
+        considerSelfUserSettings: Matcher<Boolean> = any()
     )
 }
 
@@ -46,15 +47,14 @@ open class ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
 
     override fun withConversationTimer(
         result: Flow<SelfDeletionTimer>,
-        conversationId: ConversationId?,
-        considerSelfUserSettings: Boolean?
+        conversationId: Matcher<ConversationId>,
+        considerSelfUserSettings: Matcher<Boolean>
     ) {
         given(observeSelfDeletionTimerSettingsForConversation)
             .suspendFunction(observeSelfDeletionTimerSettingsForConversation::invoke)
             .whenInvokedWith(
-                conversationId?.let { eq(it) } ?: any(),
-                considerSelfUserSettings?.let { eq(it) } ?: any()
+                conversationId,
+                considerSelfUserSettings
             ).thenReturn(result)
     }
-
 }
