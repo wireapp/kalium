@@ -120,4 +120,8 @@ actual class MLSClientImpl actual constructor(
     override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
         TODO("Not yet implemented")
     }
+
+    override fun isGroupVerified(groupId: MLSGroupId): Boolean {
+        TODO("Not supported on js")
+    }
 }
