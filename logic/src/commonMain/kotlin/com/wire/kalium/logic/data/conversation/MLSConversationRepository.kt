@@ -56,8 +56,8 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsClientMismatch
 import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.Flow
@@ -100,6 +100,7 @@ interface MLSConversationRepository {
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun observeEpochChanges(): Flow<GroupID>
+    suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, ConversationVerificationStatus>
 }
 
 private enum class CommitStrategy {
@@ -424,6 +425,14 @@ class MLSConversationDataSource(
                     )
                 }
             }
+        }
+
+    override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, ConversationVerificationStatus> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
+        }.map {
+            if (it) ConversationVerificationStatus.VERIFIED
+            else ConversationVerificationStatus.NOT_VERIFIED
         }
 
     private suspend fun retryOnCommitFailure(

@@ -235,6 +235,10 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
+    override fun isGroupVerified(groupId: MLSGroupId): Boolean {
+        TODO("Not supported on apple devices")
+    }
+
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()

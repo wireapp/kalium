@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.message.ProtoContent.ExternalMessageInstructions
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo.Proteus
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.protobuf.messages.GenericMessage
 
 /**

@@ -1,4 +1,4 @@
-import com.wire.kalium.persistence.dao.ConversationEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.collections.List;
 import kotlinx.datetime.Instant;
@@ -213,7 +213,7 @@ SELECT * FROM ConversationDetails
 WHERE type IS NOT 'SELF'
 AND (
     type IS 'GROUP' AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
-    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+    OR (type IS NOT 'GROUP' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos and connection requests if they have user metadata
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
 )
 AND (protocol IS 'PROTEUS' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
@@ -267,9 +267,6 @@ UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
 selectProposalTimers:
 SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE protocol = ? AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
 
-isUserMember:
-SELECT user FROM Member WHERE conversation = ? AND user = ?;
-
 whoDeletedMeInConversation:
 SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = 'REMOVED' AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY creation_date DESC LIMIT 1;
 
@@ -316,3 +313,8 @@ selectConversationIdsWithoutMetadata:
 SELECT qualified_id
 FROM Conversation
 WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
+
+clearContent {
+DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
+DELETE FROM Message WHERE conversation_id = :conversationId;
+}

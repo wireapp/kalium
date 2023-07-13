@@ -281,6 +281,8 @@ interface MLSClient {
     ): E2EIClient
 
     fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain)
+
+    fun isGroupVerified(groupId: MLSGroupId): Boolean
 }
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

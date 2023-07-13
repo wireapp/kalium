@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
+import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -30,11 +32,14 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer.Comp
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -47,8 +52,12 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val selfUserId: UserId
 ) : FeatureConfigEventReceiver {
 
-    override suspend fun onEvent(event: Event.FeatureConfig) {
+    override suspend fun onEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> {
         handleFeatureConfigEvent(event)
+        // TODO: Make sure errors are accounted for.
+        //       onEvent now requires Either, so we can propagate errors.
+        //       Returning Either.Right is the equivalent of how it was originally working.
+        return Either.Right(Unit)
     }
 
     @Suppress("LongMethod", "ComplexMethod")
@@ -129,6 +138,27 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     EventLoggingStatus.SUCCESS,
                     event,
                     Pair("isDurationEnforced", (event.model.config.enforcedTimeoutSeconds ?: 0) > 0),
+                )
+            }
+
+            is Event.FeatureConfig.MLSE2EIUpdated -> {
+                val gracePeriodEndMs = event.model.config
+                    .verificationExpirationNS
+                    .toDuration(DurationUnit.NANOSECONDS)
+                    .inWholeMilliseconds
+
+                userConfigRepository.setE2EISettings(
+                    E2EISettings(
+                        isRequired = event.model.status == Status.ENABLED,
+                        discoverUrl = event.model.config.discoverUrl,
+                        notifyUserAfter = DateTimeUtil.currentInstant(),
+                        gracePeriodEnd = Instant.fromEpochMilliseconds(gracePeriodEndMs)
+                    )
+                )
+
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
                 )
             }
 

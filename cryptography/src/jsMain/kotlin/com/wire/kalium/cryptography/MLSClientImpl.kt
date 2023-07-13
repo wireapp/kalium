@@ -124,4 +124,8 @@ actual class MLSClientImpl actual constructor(
     override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain) {
         TODO("Not yet implemented")
     }
+
+    override fun isGroupVerified(groupId: MLSGroupId): Boolean {
+        TODO("Not supported on js")
+    }
 }

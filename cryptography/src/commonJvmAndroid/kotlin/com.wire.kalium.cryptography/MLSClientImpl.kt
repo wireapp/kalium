@@ -259,6 +259,9 @@ actual class MLSClientImpl actual constructor(
         coreCrypto.e2eiMlsInit((e2eiClient as E2EIClientImpl).wireE2eIdentity, certificate)
     }
 
+    override fun isGroupVerified(groupId: MLSGroupId): Boolean =
+        !coreCrypto.e2eiIsDegraded(toUByteList(groupId.decodeBase64Bytes()))
+
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()

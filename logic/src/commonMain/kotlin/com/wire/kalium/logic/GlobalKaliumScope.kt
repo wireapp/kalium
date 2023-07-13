@@ -113,7 +113,8 @@ class GlobalKaliumScope internal constructor(
         get() = SessionDataSource(
             globalDatabase.value.accountsDAO,
             globalPreferences.value.authTokenStorage,
-            serverConfigRepository
+            serverConfigRepository,
+            kaliumConfigs
         )
 
     val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase

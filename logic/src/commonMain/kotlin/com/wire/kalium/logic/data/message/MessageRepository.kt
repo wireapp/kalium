@@ -50,7 +50,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -130,7 +130,6 @@ interface MessageRepository {
         conversationId: ConversationId,
         envelope: MessageEnvelope,
         messageTarget: MessageTarget,
-        ignoredUsers: List<UserId> = emptyList()
     ): Either<CoreFailure, MessageSent>
 
     /**
@@ -345,8 +344,7 @@ class MessageDataSource(
     override suspend fun sendEnvelope(
         conversationId: ConversationId,
         envelope: MessageEnvelope,
-        messageTarget: MessageTarget,
-        ignoredUsers: List<UserId>
+        messageTarget: MessageTarget
     ): Either<CoreFailure, MessageSent> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
             recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
@@ -364,7 +362,7 @@ class MessageDataSource(
                     MessagePriority.HIGH,
                     false,
                     envelope.dataBlob?.data,
-                    messageTarget.toOption(ignoredUsers)
+                    messageTarget.toOption()
                 ),
                 conversationId.toApi(),
             )
@@ -382,17 +380,16 @@ class MessageDataSource(
         })
     }
 
-    private fun MessageTarget.toOption(ignoredUsers: List<UserId>) = when (this) {
-        is MessageTarget.Client -> {
-            if (ignoredUsers.isNotEmpty()) kaliumLogger.w("Ignoring specific users is not supported for client targets")
-            MessageApi.QualifiedMessageOption.IgnoreAll
-        }
+    private fun MessageTarget.toOption() = when (this) {
+        is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
 
-        is MessageTarget.Conversation -> if (ignoredUsers.isNotEmpty()) {
-            MessageApi.QualifiedMessageOption.IgnoreSome(ignoredUsers.map { it.toApi() })
+        is MessageTarget.Conversation -> if (this.usersToIgnore.isNotEmpty()) {
+            MessageApi.QualifiedMessageOption.IgnoreSome(this.usersToIgnore.map { it.toApi() })
         } else {
             MessageApi.QualifiedMessageOption.ReportAll
         }
+
+        is MessageTarget.Users -> MessageApi.QualifiedMessageOption.ReportSome(this.userId.map { it.toApi() })
     }
 
     override suspend fun broadcastEnvelope(

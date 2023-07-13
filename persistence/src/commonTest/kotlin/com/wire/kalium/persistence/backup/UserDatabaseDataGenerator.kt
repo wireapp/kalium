@@ -21,10 +21,7 @@
 package com.wire.kalium.persistence.backup
 
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.ConversationViewEntity
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -33,6 +30,9 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -459,7 +459,7 @@ class UserDatabaseDataGenerator(
     @Suppress("StringTemplate")
     suspend fun generateAndInsertGroupConversations(
         conversationAmount: Int,
-        membersGenerate: (ConversationIDEntity) -> List<Member>
+        membersGenerate: (ConversationIDEntity) -> List<MemberEntity>
     ): List<ConversationViewEntity> {
         val groupConversationPrefix = "${databasePrefix}GroupConversation${generatedConversationsCount}"
 
@@ -494,7 +494,7 @@ class UserDatabaseDataGenerator(
             val members = membersGenerate(conversationId)
 
             members.forEach { member ->
-                userDatabaseBuilder.conversationDAO.insertMember(member, conversationId)
+                userDatabaseBuilder.memberDAO.insertMember(member, conversationId)
             }
 
             generatedConversationsCount += 1
@@ -506,17 +506,17 @@ class UserDatabaseDataGenerator(
     private suspend fun generateAndInsertConversationMembers(conversationId: QualifiedIDEntity, membersPerGroup: Int) {
         for (index in generatedUsersCount + 1..membersPerGroup) {
             val userEntity = generateUser()
-            userDatabaseBuilder.conversationDAO.insertMember(Member(userEntity.id, Member.Role.Member), conversationId)
+            userDatabaseBuilder.memberDAO.insertMember(MemberEntity(userEntity.id, MemberEntity.Role.Member), conversationId)
         }
     }
 
-    fun generateMembers(amount: Int): List<Member> {
-        val members = mutableListOf<Member>()
+    fun generateMembers(amount: Int): List<MemberEntity> {
+        val members = mutableListOf<MemberEntity>()
 
         for (index in generatedUsersCount + 1..amount) {
             val userEntity = generateUser()
 
-            members.add(Member(userEntity.id, Member.Role.Member))
+            members.add(MemberEntity(userEntity.id, MemberEntity.Role.Member))
         }
 
         return members
