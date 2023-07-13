@@ -169,6 +169,7 @@ interface ConversationDAO {
     suspend fun insertMember(member: Member, conversationID: QualifiedIDEntity)
     suspend fun updateMember(member: Member, conversationID: QualifiedIDEntity)
     suspend fun insertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity)
+    suspend fun insertMembers(memberList: List<Member>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String)
@@ -209,5 +210,5 @@ interface ConversationDAO {
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun clearContent(conversationId: QualifiedIDEntity)
-    suspend fun deleteMembersFromConversation(conversationID: QualifiedIDEntity)
+    suspend fun updateFullMemberList(memberList: List<Member>, conversationID: QualifiedIDEntity)
 }
