@@ -262,7 +262,7 @@ internal class ConversationDataSource internal constructor(
                         selfUserTeamId = selfTeamIdProvider().getOrNull()?.value,
                         invalidateMembers = CURRENT_VERSION > lastVersion
                     )
-                    if(CURRENT_VERSION > lastVersion) {
+                    if (CURRENT_VERSION > lastVersion) {
                         slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
                     }
 
