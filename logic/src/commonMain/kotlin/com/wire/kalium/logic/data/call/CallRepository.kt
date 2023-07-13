@@ -347,7 +347,8 @@ internal class CallDataSource(
                 DateTimeUtil.currentIsoDateTimeString(),
                 qualifiedUserId,
                 Message.Status.SENT,
-                Message.Visibility.VISIBLE
+                Message.Visibility.VISIBLE,
+                expirationData = null,
             )
             persistMessage(message)
         } ?: callingLogger.i("[CallRepository] -> Unable to persist Missed Call due to missing Caller ID")

@@ -53,7 +53,8 @@ internal class NewGroupConversationStartedMessageCreatorImpl(
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
                 Message.Status.SENT,
-                Message.Visibility.VISIBLE
+                Message.Visibility.VISIBLE,
+                expirationData = null
             )
         )
     }

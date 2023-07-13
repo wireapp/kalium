@@ -131,7 +131,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
-    private val enqueueSelfDeletion: (Message.Regular, Message.ExpirationData) -> Unit,
+    private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -229,8 +229,8 @@ internal class MessageSenderImpl internal constructor(
     }
 
     private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
-        if (message is Message.Regular && message.expirationData != null) {
-            enqueueSelfDeletion(message, message.expirationData)
+        message.expirationData?.let { expirationData ->
+            enqueueSelfDeletion(message, expirationData)
         }
     }
 
