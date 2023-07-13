@@ -46,6 +46,7 @@ class BananaPerGroupCommand(private val amountOfMessages: Int) : MonkeyCommand {
             }
 
             if (firstConversation != null) {
+                println("Requesting banana=$currentMessage from ${randomUser.user.email}")
                 userScope.messages.sendTextMessage(
                     firstConversation.id,
                     "give me $currentMessage bananas! ${emoji.random()}",

@@ -277,6 +277,8 @@ interface MLSClient {
         displayName: String,
         handle: String
     ): E2EIClient
+
+    fun isGroupVerified(groupId: MLSGroupId): Boolean
 }
 
 expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

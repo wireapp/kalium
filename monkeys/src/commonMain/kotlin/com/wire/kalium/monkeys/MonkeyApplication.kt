@@ -24,6 +24,7 @@ import co.touchlab.kermit.LogWriter
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
@@ -40,6 +41,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.VERBOSE)
     private val logOutputFile by option(help = "output file for logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
+    private val proteus by option(help = "run using proteus protocol").flag()
 
     override fun run() = runBlocking {
         val coreLogic = coreLogic(
@@ -67,9 +69,10 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         users: List<UserData>,
         testSequence: TestSequence
     ) = with(testSequence) {
+        val protocol = if (proteus) ConversationOptions.Protocol.PROTEUS else ConversationOptions.Protocol.MLS
         val monkeyGroups = split(users)
         val monkeyScopes = setup(coreLogic, monkeyGroups)
-        val conversations = createConversations(monkeyScopes)
+        val conversations = createConversations(monkeyScopes, protocol)
         commands.forEach { command ->
             command(conversations)
         }
@@ -77,7 +80,6 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     companion object {
         val HOME_DIRECTORY: String = homeDirectory()
-        val GROUP_TYPE = ConversationOptions.Protocol.MLS
     }
 
 }
