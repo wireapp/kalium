@@ -64,7 +64,7 @@ class OnIncomingCall(
                 status = status,
                 callerId = qualifiedIdMapper.fromStringToQualifiedID(userId).toString(),
                 isMuted = isMuted,
-                isCameraOn = isVideoCall,
+                isCameraOn = false,
                 type = mappedConversationType,
                 isCbrEnabled = kaliumConfigs.forceConstantBitrateCalls
             )
