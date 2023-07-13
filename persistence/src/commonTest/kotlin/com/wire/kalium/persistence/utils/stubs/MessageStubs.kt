@@ -71,5 +71,7 @@ fun newSystemMessageEntity(
     senderUserId = senderUserId,
     status = status,
     visibility = visibility,
-    senderName = "senderName"
+    senderName = "senderName",
+    expireAfterMs = null,
+    selfDeletionStartDate = null
 )

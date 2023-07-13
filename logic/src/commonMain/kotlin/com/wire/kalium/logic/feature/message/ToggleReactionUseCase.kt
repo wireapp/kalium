@@ -114,7 +114,8 @@ class ToggleReactionUseCase internal constructor(
                     senderUserId = userId,
                     senderClientId = clientId,
                     status = Message.Status.PENDING,
-                    isSelfMessage = true
+                    isSelfMessage = true,
+                    expirationData = null
                 )
                 messageSender.sendMessage(regularMessage)
             }
@@ -141,7 +142,8 @@ class ToggleReactionUseCase internal constructor(
                     senderUserId = userId,
                     senderClientId = clientId,
                     status = Message.Status.PENDING,
-                    isSelfMessage = true
+                    isSelfMessage = true,
+                    expirationData = null
                 )
                 messageSender.sendMessage(regularMessage)
             }.flatMapLeft {

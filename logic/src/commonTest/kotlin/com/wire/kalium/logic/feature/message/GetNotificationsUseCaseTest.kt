@@ -462,7 +462,8 @@ class GetNotificationsUseCaseTest {
                 conversationId = conversationId,
                 date = "some_time",
                 senderUserId = senderId,
-                status = Message.Status.SENT
+                status = Message.Status.SENT,
+                expirationData = null
             )
 
         private fun notificationMessageText(

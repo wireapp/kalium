@@ -85,7 +85,8 @@ internal class MemberJoinEventHandlerImpl(
                     date = event.timestampIso,
                     senderUserId = event.addedBy,
                     status = Message.Status.SENT,
-                    visibility = Message.Visibility.VISIBLE
+                    visibility = Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
                 persistMessage(message)
                 kaliumLogger
