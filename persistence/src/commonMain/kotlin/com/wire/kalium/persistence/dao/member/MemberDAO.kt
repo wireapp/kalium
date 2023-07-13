@@ -50,6 +50,7 @@ interface MemberDAO {
     )
 
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
+    suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
 }
 
 internal class MemberDAOImpl internal constructor(
@@ -153,4 +154,15 @@ internal class MemberDAOImpl internal constructor(
             .flowOn(coroutineContext)
             .mapToOneOrNull()
             .map { it != null }
+
+    override suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
+        withContext(coroutineContext) {
+            memberQueries.transaction {
+                memberQueries.deleteMembersFromConversation(conversationID)
+                for (member: MemberEntity in memberList) {
+                    userQueries.insertOrIgnoreUserId(member.user)
+                    memberQueries.insertMember(member.user, conversationID, member.role)
+                }
+            }
+        }
 }

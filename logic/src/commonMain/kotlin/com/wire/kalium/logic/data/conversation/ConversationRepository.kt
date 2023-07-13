@@ -317,12 +317,12 @@ internal class ConversationDataSource internal constructor(
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
             if (invalidateMembers) {
-                conversationDAO.updateFullMemberList(
+                memberDAO.updateFullMemberList(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
                 )
             } else {
-                conversationDAO.insertMembersWithQualifiedId(
+                memberDAO.insertMembersWithQualifiedId(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
                 )

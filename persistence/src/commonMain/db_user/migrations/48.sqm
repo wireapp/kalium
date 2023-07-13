@@ -1,5 +1,1 @@
-UPDATE Reaction
-SET emoji = '❤️'
-WHERE emoji = '❤';
-
-CREATE INDEX member_conversation_index ON Member(conversation);
+CREATE INDEX IF NOT EXISTS member_conversation_index ON Member(conversation);
