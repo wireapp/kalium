@@ -144,7 +144,9 @@ class ProtoContentMapperImpl(
 
             is MessageContent.Knock -> {
                 val knock = GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
-                Ephemeral.Content.Knock(knock.value)
+                Ephemeral.Content.Knock(
+                    knock.value
+                )
             }
 
             is MessageContent.FailedDecryption,
