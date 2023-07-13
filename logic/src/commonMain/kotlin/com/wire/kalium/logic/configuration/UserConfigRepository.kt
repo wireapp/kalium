@@ -20,6 +20,8 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
@@ -183,13 +185,11 @@ class UserConfigDataSource(
 
     private fun getE2EINotificationTimeOrNull() = wrapStorageRequest { userConfigStorage.getE2EINotificationTime() }.getOrNull()
 
-    override fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit> {
-        TODO("Not yet implemented")
-    }
+    override fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.persistDefaultProtocol(protocol.toDao()) }
 
-    override fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> {
-        TODO("Not yet implemented")
-    }
+    override fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
+        wrapStorageRequest { userConfigStorage.defaultProtocol().toModel() }
 
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {

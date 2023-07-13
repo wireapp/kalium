@@ -88,7 +88,7 @@ data class MLSConfigDTO(
     @SerialName("protocolToggleUsers")
     val protocolToggleUsers: List<String>,
     @SerialName("defaultProtocol")
-    val defaultProtocol: ConvProtocol,
+    val defaultProtocol: SupportedProtocolDTO,
     @SerialName("supportedProtocols")
     val supportedProtocols: List<SupportedProtocolDTO> = listOf(SupportedProtocolDTO.PROTEUS),
     @SerialName("allowedCipherSuites")
