@@ -255,7 +255,8 @@ class MessageScope internal constructor(
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
-            messageSendFailureHandler
+            messageSendFailureHandler,
+            observeSelfDeletingMessages
         )
 
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase

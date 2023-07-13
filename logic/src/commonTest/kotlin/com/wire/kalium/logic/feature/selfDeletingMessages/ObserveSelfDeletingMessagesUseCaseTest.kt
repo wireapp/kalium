@@ -62,7 +62,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         verify(arrangement.userConfigRepository)
             .coroutine { observeTeamSettingsSelfDeletingStatus() }
             .wasInvoked(exactly = once)
-        assertEquals(storedConversationStatus.messageTimer, result.first().toDuration())
+        assertEquals(storedConversationStatus.messageTimer, result.first().duration)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -128,7 +128,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             .wasInvoked(exactly = once)
 
 
-        assertEquals(storedTeamSettingsDuration, result.first().toDuration())
+        assertEquals(storedTeamSettingsDuration, result.first().duration)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -157,7 +157,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
 //         verify(arrangement.userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
 //             .wasNotInvoked()
-        assertEquals(conversationDuration, result.first().toDuration())
+        assertEquals(conversationDuration, result.first().duration)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -192,7 +192,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             .with(any())
             .wasInvoked(exactly = once)
 
-        assertEquals(storedConversationStatus.messageTimer, result.first().toDuration())
+        assertEquals(storedConversationStatus.messageTimer, result.first().duration)
     }
 
     private companion object {

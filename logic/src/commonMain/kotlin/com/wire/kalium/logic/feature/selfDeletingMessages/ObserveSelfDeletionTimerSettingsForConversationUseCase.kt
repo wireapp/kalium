@@ -27,7 +27,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.isPositiveNotNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlin.time.Duration.Companion.ZERO
 
 /**
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]
@@ -66,12 +65,12 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
 
     private fun onTeamEnabled(conversation: Either<StorageFailure, Conversation>, considerSelfUserSettings: Boolean): SelfDeletionTimer =
         conversation.fold({
-            SelfDeletionTimer.Enabled(ZERO)
+            SelfDeletionTimer.Enabled(null)
         }, {
             when {
                 it.messageTimer.isPositiveNotNull() -> SelfDeletionTimer.Enforced.ByGroup(it.messageTimer)
                 considerSelfUserSettings && it.userMessageTimer.isPositiveNotNull() -> SelfDeletionTimer.Enabled(it.userMessageTimer)
-                else -> SelfDeletionTimer.Enabled(ZERO)
+                else -> SelfDeletionTimer.Enabled(null)
             }
         })
 }
