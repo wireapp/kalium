@@ -1,0 +1,28 @@
+name: Sync RC and DEV
+on:
+  push:
+    branches:
+      - release/candidate
+
+jobs:
+  sync-branches:
+    runs-on: ubuntu-latest
+    name: Syncing branches RC and DEV
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Opening pull request
+        id: pull
+        uses: tretuna/sync-branches@1.4.0
+        with:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          FROM_BRANCH: "release/candidate"
+          TO_BRANCH: "develop"
+          TEAM_REVIEWERS: '["android"]'
+          CONTENT_COMPARISON: true
+          PULL_REQUEST_IS_DRAFT: true
+          PULL_REQUEST_TITLE: ${{ github.event.head_commit.message }}
