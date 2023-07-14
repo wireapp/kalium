@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
+@Suppress("TooManyFunctions")
 interface MemberDAO {
     suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity)
     suspend fun updateMemberRole(userId: UserIDEntity, conversationID: QualifiedIDEntity, newRole: MemberEntity.Role)
@@ -53,6 +54,7 @@ interface MemberDAO {
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
 }
 
+@Suppress("TooManyFunctions")
 internal class MemberDAOImpl internal constructor(
     private val memberQueries: MembersQueries,
     private val userQueries: UsersQueries,
