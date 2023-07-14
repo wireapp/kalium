@@ -10,12 +10,17 @@ CREATE TABLE Member (
     FOREIGN KEY (user) REFERENCES User(qualified_id) ON DELETE CASCADE
 );
 
+CREATE INDEX member_conversation_index ON Member(conversation);
+
 insertMember:
 INSERT OR IGNORE INTO Member(user, conversation, role)
 VALUES (?, ?, ?);
 
 deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;
+
+deleteMembersFromConversation:
+DELETE FROM Member WHERE conversation = ?;
 
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation LIKE ('%' || :searchQuery || '%');
