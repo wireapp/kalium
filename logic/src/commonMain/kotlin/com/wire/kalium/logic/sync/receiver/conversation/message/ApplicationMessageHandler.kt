@@ -206,12 +206,13 @@ internal class ApplicationMessageHandlerImpl(
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
         when (val content = message.content) {
-            // Persist Messages - > lists
             is MessageContent.Text -> handleTextMessage(message, content)
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message)
-            is MessageContent.RestrictedAsset -> TODO()
+            is MessageContent.RestrictedAsset -> {
+                /* no-op */
+            }
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
