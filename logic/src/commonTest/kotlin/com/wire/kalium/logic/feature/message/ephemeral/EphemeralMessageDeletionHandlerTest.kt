@@ -2,6 +2,7 @@ package com.wire.kalium.logic.feature.message.ephemeral
 
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -181,6 +182,7 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = timeUntilExpiration,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
+                senderUserId = SELF_USER_ID,
                 isSelfMessage = true,
                 status = Message.Status.SENT
             )
@@ -337,6 +339,7 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = timeUntilExpiration,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
+                senderUserId = SELF_USER_ID,
                 isSelfMessage = true,
                 status = Message.Status.SENT
             )
@@ -475,6 +478,7 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 1.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
+                senderUserId = SELF_USER_ID,
                 isSelfMessage = true,
                 status = Message.Status.SENT
             )
@@ -485,6 +489,7 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 2.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
+                senderUserId = SELF_USER_ID,
                 isSelfMessage = true,
                 status = Message.Status.SENT
             )
@@ -495,6 +500,7 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 3.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
+                senderUserId = SELF_USER_ID,
                 isSelfMessage = true,
                 status = Message.Status.SENT
             )
@@ -505,6 +511,7 @@ class EphemeralMessageDeletionHandlerTest {
                     expireAfter = 4.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
                 ),
+                senderUserId = SELF_USER_ID,
                 isSelfMessage = true,
                 status = Message.Status.SENT
             )
@@ -612,6 +619,7 @@ class EphemeralMessageDeletionHandlerTest {
         runTest(testDispatcher.default) {
             // given
             val oneSecondsEphemeralMessage = TestMessage.TEXT_MESSAGE.copy(
+                senderUserId = SELF_USER_ID,
                 expirationData = Message.ExpirationData(
                     expireAfter = 1.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
@@ -703,66 +711,75 @@ class EphemeralMessageDeletionHandlerTest {
 
     private fun TestScope.advanceTimeBy(duration: Duration) = advanceTimeBy(duration.inWholeMilliseconds)
 
-}
 
-private class Arrangement(private val coroutineScope: CoroutineScope, private val dispatcher: TestKaliumDispatcher) {
-
-    @Mock
-    val messageRepository = mock(classOf<MessageRepository>())
-
-    @Mock
-    val deleteEphemeralMessageForSelfUserAsReceiver = mock(
-        classOf<DeleteEphemeralMessageForSelfUserAsReceiverUseCase>()
-    )
-
-    @Mock
-    val deleteEphemeralMessageForSelfUserAsSender = mock(classOf<DeleteEphemeralMessageForSelfUserAsSenderUseCase>())
-
-    fun withMessageRepositoryReturningMessage(message: Message): Arrangement {
-        given(messageRepository)
-            .suspendFunction(messageRepository::getMessageById)
-            .whenInvokedWith(any(), any())
-            .then { _, _ -> Either.Right(message) }
-
-        return this
+    private companion object {
+        val SELF_USER_ID = UserId("self-user-id", "self-user-domain")
     }
 
-    fun withMessageRepositoryMarkingSelfDeletionStartDate(): Arrangement {
-        given(messageRepository)
-            .suspendFunction(messageRepository::markSelfDeletionStartDate)
-            .whenInvokedWith(any(), any(), any())
-            .then { _, _, _ -> Either.Right(Unit) }
+    private class Arrangement(
+        private val coroutineScope: CoroutineScope,
+        private val dispatcher: TestKaliumDispatcher
+    ) {
 
-        return this
+        @Mock
+        val messageRepository = mock(classOf<MessageRepository>())
+
+        @Mock
+        val deleteEphemeralMessageForSelfUserAsReceiver = mock(
+            classOf<DeleteEphemeralMessageForSelfUserAsReceiverUseCase>()
+        )
+
+        @Mock
+        val deleteEphemeralMessageForSelfUserAsSender = mock(classOf<DeleteEphemeralMessageForSelfUserAsSenderUseCase>())
+
+        fun withMessageRepositoryReturningMessage(message: Message): Arrangement {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getMessageById)
+                .whenInvokedWith(any(), any())
+                .then { _, _ -> Either.Right(message) }
+
+            return this
+        }
+
+        fun withMessageRepositoryMarkingSelfDeletionStartDate(): Arrangement {
+            given(messageRepository)
+                .suspendFunction(messageRepository::markSelfDeletionStartDate)
+                .whenInvokedWith(any(), any(), any())
+                .then { _, _, _ -> Either.Right(Unit) }
+
+            return this
+        }
+
+        fun withDeletingMessage(): Arrangement {
+            given(deleteEphemeralMessageForSelfUserAsReceiver)
+                .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
+                .whenInvokedWith(any(), any())
+                .then { _, _ -> Either.Right(Unit) }
+            given(deleteEphemeralMessageForSelfUserAsSender)
+                .suspendFunction(deleteEphemeralMessageForSelfUserAsSender::invoke)
+                .whenInvokedWith(any(), any())
+                .then { _, _ -> Either.Right(Unit) }
+
+            return this
+        }
+
+        fun withMessageRepositoryReturningPendingEphemeralMessages(messages: List<Message>): Arrangement {
+            given(messageRepository)
+                .suspendFunction(messageRepository::getEphemeralMessagesMarkedForDeletion)
+                .whenInvoked()
+                .then { Either.Right(messages) }
+
+            return this
+        }
+
+        fun arrange() = this to EphemeralMessageDeletionHandlerImpl(
+            messageRepository,
+            SELF_USER_ID,
+            dispatcher,
+            deleteEphemeralMessageForSelfUserAsReceiver,
+            deleteEphemeralMessageForSelfUserAsSender,
+            coroutineScope
+        )
     }
 
-    fun withDeletingMessage(): Arrangement {
-        given(deleteEphemeralMessageForSelfUserAsReceiver)
-            .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
-            .whenInvokedWith(any(), any())
-            .then { _, _ -> Either.Right(Unit) }
-        given(deleteEphemeralMessageForSelfUserAsSender)
-            .suspendFunction(deleteEphemeralMessageForSelfUserAsSender::invoke)
-            .whenInvokedWith(any(), any())
-            .then { _, _ -> Either.Right(Unit) }
-
-        return this
-    }
-
-    fun withMessageRepositoryReturningPendingEphemeralMessages(messages: List<Message>): Arrangement {
-        given(messageRepository)
-            .suspendFunction(messageRepository::getEphemeralMessagesMarkedForDeletion)
-            .whenInvoked()
-            .then { Either.Right(messages) }
-
-        return this
-    }
-
-    fun arrange() = this to EphemeralMessageDeletionHandlerImpl(
-        messageRepository,
-        dispatcher,
-        deleteEphemeralMessageForSelfUserAsReceiver,
-        deleteEphemeralMessageForSelfUserAsSender,
-        coroutineScope
-    )
 }

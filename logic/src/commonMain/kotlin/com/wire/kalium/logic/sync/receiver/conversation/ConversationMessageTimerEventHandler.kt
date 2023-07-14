@@ -55,7 +55,8 @@ internal class ConversationMessageTimerEventHandlerImpl(
                         DateTimeUtil.currentIsoDateTimeString(),
                         event.senderUserId,
                         Message.Status.SENT,
-                        Message.Visibility.VISIBLE
+                        Message.Visibility.VISIBLE,
+                        expirationData = null
                     )
 
                     persistMessage(message)

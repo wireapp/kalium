@@ -29,6 +29,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MemberDAOTest : BaseDatabaseTest() {
 
@@ -323,6 +325,40 @@ class MemberDAOTest : BaseDatabaseTest() {
         // then
         val member = userDAO.getUserByQualifiedID(user1.id).first()
         assertEquals(true, member?.hasIncompleteMetadata)
+    }
+
+    @Test
+    fun givenConversationWithExistingMember_whenUpdateFullMemberListIsCalled_thenExistingMemberIsRemovedAndNewMembersAreAdded() = runTest {
+        // Given
+        val conversationID = TestStubs.conversationEntity1.id
+        val memberList = listOf(
+            MemberEntity(TestStubs.user1.id, MemberEntity.Role.Admin),
+            MemberEntity(TestStubs.user2.id, MemberEntity.Role.Member)
+        )
+
+        // Insert a conversation, user, and a member into the conversation to test the deletion operation
+        val oldMember = MemberEntity(TestStubs.user3.id, MemberEntity.Role.Member)
+        userDAO.insertUser(TestStubs.user3)
+        conversationDAO.insertConversation(TestStubs.conversationEntity1)
+        memberDAO.insertMember(oldMember, conversationID)
+
+        // Ensure all new users are inserted before calling updateFullMemberList
+        memberList.forEach { member ->
+            userDAO.insertUser(TestStubs.user1.copy(id = member.user))
+        }
+
+        // When
+        memberDAO.updateFullMemberList(memberList, conversationID)
+
+        // Then
+        // Fetch the members of the conversation
+        val fetchedMembers = memberDAO.observeConversationMembers(conversationID).first()
+
+        // Assert that the old member was deleted
+        assertFalse(fetchedMembers.any { it.user == oldMember.user })
+
+        // Assert that the new members were inserted
+        assertTrue(fetchedMembers.containsAll(memberList))
     }
 
 }

@@ -38,6 +38,7 @@ sealed interface Message {
     val date: String
     val senderUserId: UserId
     val status: Status
+    val expirationData: ExpirationData?
 
     /**
      * Messages that can be sent from one client to another.
@@ -78,7 +79,7 @@ sealed interface Message {
         override val isSelfMessage: Boolean,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
-        val expirationData: ExpirationData? = null,
+        override val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
@@ -154,6 +155,7 @@ sealed interface Message {
         override val status: Status,
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean,
+        override val expirationData: ExpirationData?
     ) : Sendable {
         override fun toLogString(): String {
             val typeKey = "type"
@@ -234,9 +236,10 @@ sealed interface Message {
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
+        override val expirationData: ExpirationData?,
         // TODO(refactor): move senderName to inside the specific `content`
         //                 instead of having it nullable in all system messages
-        val senderUserName: String? = null,
+        val senderUserName: String? = null
     ) : Message, Standalone {
         fun toLogString(): String {
 
