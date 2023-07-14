@@ -222,7 +222,9 @@ class UserDatabaseDataGenerator(
                     senderUserId = senderUser.id,
                     status = MessageEntity.Status.values()[index % MessageEntity.Status.values().size],
                     visibility = sanitizedVisibility,
-                    senderName = "$messagePrefix SenderName"
+                    senderName = "$messagePrefix SenderName",
+                    expireAfterMs = null,
+                    selfDeletionStartDate = null
                 )
             )
 

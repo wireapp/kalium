@@ -332,7 +332,9 @@ object MessageMapper {
             status = status,
             visibility = visibility,
             senderName = senderName,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            expireAfterMs = expireAfterMillis,
+            selfDeletionStartDate = selfDeletionStartDate
         )
     }
 

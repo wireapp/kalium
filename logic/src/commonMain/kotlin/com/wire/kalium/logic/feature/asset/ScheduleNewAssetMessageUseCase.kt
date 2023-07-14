@@ -41,7 +41,6 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -60,7 +59,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okio.Path
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 
 interface ScheduleNewAssetMessageUseCase {
@@ -128,19 +126,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
 
-        val messageTimer = selfDeleteTimer(conversationId, true).first().let {
-            val logMap = it.toLogString(eventDescription = "Sending asset message with self-deletion timer")
-            if (it != SelfDeletionTimer.Disabled) kaliumLogger.d("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
-
-            when (it) {
-                SelfDeletionTimer.Disabled -> null
-                is SelfDeletionTimer.Enabled -> it.userDuration
-                is SelfDeletionTimer.Enforced.ByGroup -> it.duration
-                is SelfDeletionTimer.Enforced.ByTeam -> it.duration
-            }
-        }.let {
-            if (it == Duration.ZERO) null else it
-        }
+        val messageTimer = selfDeleteTimer(conversationId, true)
+            .first()
+            .duration
 
         return withContext(dispatcher.io) {
             // We persist the asset with temporary id and message right away so that it can be displayed on the conversation screen loading
@@ -172,25 +160,12 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                             )
                         }
                     }
-
                     launch {
                         uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
                             .onSuccess {
                                 // We delete asset added temporarily that was used to show the loading
                                 assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
                             }
-                    }.invokeOnCompletion { cause ->
-                        if (cause is CancellationException) {
-                            kaliumLogger.d(
-                                "Asset upload was cancelled, " +
-                                        "for message with id ${message.id} and conversationId $conversationId"
-                            )
-                        } else {
-                            kaliumLogger.d(
-                                "Asset uploaded successfully, " +
-                                        "for message with id ${message.id} and conversationId $conversationId"
-                            )
-                        }
                     }
                 }
             }
