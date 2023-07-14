@@ -43,6 +43,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -950,6 +951,40 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.getAllConversations().first().forEach {
             assertEquals(instant.toEpochMilliseconds(), it.lastNotificationDate!!.toEpochMilliseconds())
         }
+    }
+
+    @Test
+    fun givenConversationWithExistingMember_whenUpdateFullMemberListIsCalled_thenExistingMemberIsRemovedAndNewMembersAreAdded() = runTest {
+        // Given
+        val conversationID = conversationEntity1.id
+        val memberList = listOf(
+            Member(user1.id, Member.Role.Admin),
+            Member(user2.id, Member.Role.Member)
+        )
+
+        // Insert a conversation, user, and a member into the conversation to test the deletion operation
+        val oldMember = Member(user3.id, Member.Role.Member)
+        userDAO.insertUser(user3)
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertMember(oldMember, conversationID)
+
+        // Ensure all new users are inserted before calling updateFullMemberList
+        memberList.forEach { member ->
+            userDAO.insertUser(user1.copy(id = member.user))
+        }
+
+        // When
+        conversationDAO.updateFullMemberList(memberList, conversationID)
+
+        // Then
+        // Fetch the members of the conversation
+        val fetchedMembers = conversationDAO.getAllMembers(conversationID).first()
+
+        // Assert that the old member was deleted
+        assertFalse(fetchedMembers.any { it.user == oldMember.user })
+
+        // Assert that the new members were inserted
+        assertTrue(fetchedMembers.containsAll(memberList))
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {

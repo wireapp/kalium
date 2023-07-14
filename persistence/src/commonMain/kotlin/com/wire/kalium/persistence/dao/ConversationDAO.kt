@@ -210,4 +210,5 @@ interface ConversationDAO {
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun clearContent(conversationId: QualifiedIDEntity)
+    suspend fun updateFullMemberList(memberList: List<Member>, conversationID: QualifiedIDEntity)
 }

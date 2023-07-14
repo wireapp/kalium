@@ -401,6 +401,17 @@ class ConversationDAOImpl(
             nonSuspendInsertMembersWithQualifiedId(memberList, conversationID)
         }
 
+    override suspend fun updateFullMemberList(memberList: List<Member>, conversationID: QualifiedIDEntity) =
+        withContext(coroutineContext) {
+            memberQueries.transaction {
+                memberQueries.deleteMembersFromConversation(conversationID)
+                for (member: Member in memberList) {
+                    userQueries.insertOrIgnoreUserId(member.user)
+                    memberQueries.insertMember(member.user, conversationID, member.role)
+                }
+            }
+        }
+
     private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<Member>, conversationID: QualifiedIDEntity) =
         memberQueries.transaction {
             for (member: Member in memberList) {
