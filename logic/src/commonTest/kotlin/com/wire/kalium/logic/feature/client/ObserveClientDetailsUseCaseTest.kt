@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
@@ -95,16 +96,7 @@ class ObserveClientDetailsUseCaseTest {
     private companion object {
         val USER_ID = UserId("user_id", "domain")
         val CLIENT_ID = PlainId(value = "client_id_1")
-        val CLIENT = Client(
-            id = CLIENT_ID,
-            type = ClientType.Permanent,
-            registrationTime = Instant.DISTANT_FUTURE,
-            deviceType = DeviceType.Desktop,
-            label = null,
-            model = "Mac ox",
-            isVerified = false,
-            isValid = true
-        )
+        val CLIENT = TestClient.CLIENT
         val CLIENT_RESULT = CLIENT.copy(id = PlainId(value = "client_id_1"))
     }
 

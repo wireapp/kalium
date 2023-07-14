@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -52,7 +53,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenValidClientIsRetained_whenRegisteringAClient_thenDoNotRegisterNewAndReturnPersistedClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
+        val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Success(client))
@@ -81,7 +82,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenInvalidClientIsRetained_whenRegisteringAClient_thenClearDataAndRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
+        val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
@@ -129,7 +130,7 @@ class GetOrRegisterClientUseCaseTest {
     @Test
     fun givenClientNotRetained_whenRegisteringAClient_thenRegisterNewClient() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_FUTURE, isVerified = false, isValid = true, null, "label", null)
+        val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
