@@ -88,7 +88,7 @@ internal class ApplicationMessageHandlerImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
 
-    @Suppress("ComplexMethod, LongMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     override suspend fun handleContent(
         conversationId: ConversationId,
         timestampIso: String,
