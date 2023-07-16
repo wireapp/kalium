@@ -124,6 +124,10 @@ sealed interface Message {
                 is MessageContent.Unknown -> mutableMapOf(
                     typeKey to "unknown"
                 )
+
+                is MessageContent.Composite -> mutableMapOf(
+                    typeKey to "composite"
+                )
             }
 
             val standardProperties = mapOf(
@@ -209,7 +213,15 @@ sealed interface Message {
 
                 MessageContent.Ignored -> mutableMapOf(
                     typeKey to "ignored",
-                    "content" to "$content",
+                    "content" to content.getType(),
+                )
+
+                is MessageContent.ButtonAction -> mutableMapOf(
+                    typeKey to "buttonAction"
+                )
+
+                is MessageContent.ButtonActionConfirmation -> mutableMapOf(
+                    typeKey to "buttonActionConfirmation"
                 )
             }
 
@@ -279,6 +291,7 @@ sealed interface Message {
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )

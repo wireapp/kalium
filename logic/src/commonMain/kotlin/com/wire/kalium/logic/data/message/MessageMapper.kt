@@ -216,6 +216,8 @@ class MessageMapperImpl(
             )
         }
         return when (message.contentType) {
+
+            MessageEntity.ContentType.COMPOSITE,
             MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
                 author = sender,
                 text = message.text.orEmpty(),
@@ -326,6 +328,7 @@ class MessageMapperImpl(
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
+        is MessageContent.Composite -> TODO()
     }
 
     @Suppress("ComplexMethod")
@@ -404,6 +407,11 @@ class MessageMapperImpl(
             this.senderUserId.toModel(),
             ClientId(this.senderClientId.orEmpty())
         )
+
+        is MessageEntityContent.Composite -> MessageContent.Composite(
+            this.text?.toMessageContent(hidden) as MessageContent.Text,
+            this.buttonList.map { MessageContent.Composite.Button(text = it.text, id = it.id, isSelected = it.isSelected, isPending = it.isPending) }
+        )
     }
 
     private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
@@ -467,25 +475,25 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.MemberJoined -> MessagePreviewContent.WithUser.MemberJoined(senderName)
     is MessagePreviewEntityContent.MemberLeft -> MessagePreviewContent.WithUser.MemberLeft(senderName)
     is MessagePreviewEntityContent.MembersAdded -> MessagePreviewContent.WithUser.MembersAdded(
-        senderName = senderName,
+        username = senderName,
         isSelfUserAdded = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
     is MessagePreviewEntityContent.MembersRemoved -> MessagePreviewContent.WithUser.MembersRemoved(
-        senderName = senderName,
+        username = senderName,
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
     is MessagePreviewEntityContent.MembersCreationAdded -> MessagePreviewContent.WithUser.MembersCreationAdded(
-        senderName = senderName,
+        username = senderName,
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
     is MessagePreviewEntityContent.MembersFailedToAdded -> MessagePreviewContent.WithUser.MembersFailedToAdd(
-        senderName = senderName,
+        username = senderName,
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )

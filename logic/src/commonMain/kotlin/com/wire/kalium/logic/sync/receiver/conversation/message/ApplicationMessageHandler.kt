@@ -111,6 +111,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                     is MessageContent.LastRead -> Message.Visibility.HIDDEN
                     is MessageContent.Cleared -> Message.Visibility.HIDDEN
+                    is MessageContent.Composite -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -200,22 +201,27 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
+            is MessageContent.ButtonAction -> TODO()
+            is MessageContent.ButtonActionConfirmation -> TODO()
         }
     }
 
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
         when (val content = message.content) {
-            // Persist Messages - > lists
             is MessageContent.Text -> handleTextMessage(message, content)
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message)
-            is MessageContent.RestrictedAsset -> TODO()
+            is MessageContent.RestrictedAsset -> {
+                /* no-op */
+            }
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
+
+            is MessageContent.Composite -> persistMessage(message)
         }
     }
 

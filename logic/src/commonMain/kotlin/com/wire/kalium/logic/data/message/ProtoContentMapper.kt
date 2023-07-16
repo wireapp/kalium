@@ -117,8 +117,18 @@ class ProtoContentMapperImpl(
             is MessageContent.TextEdited -> packEdited(readableContent)
             is MessageContent.FailedDecryption, is MessageContent.RestrictedAsset, is MessageContent.Unknown, MessageContent.Ignored ->
                 throw IllegalArgumentException(
-                    "Unexpected message content type: $readableContent"
+                    "Unexpected message content type: ${readableContent.getType()}"
                 )
+
+            is MessageContent.Composite -> throw IllegalArgumentException(
+                "Unexpected message content type: ${readableContent.getType()}"
+            )
+
+            is MessageContent.ButtonActionConfirmation -> throw IllegalArgumentException(
+                "Unexpected message content type: ${readableContent.getType()}"
+            )
+
+            is MessageContent.ButtonAction -> TODO()
         }
     }
 
@@ -165,6 +175,10 @@ class ProtoContentMapperImpl(
             is MessageContent.TextEdited -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
+
+            is MessageContent.Composite -> TODO()
+            is MessageContent.ButtonAction -> TODO()
+            is MessageContent.ButtonActionConfirmation -> TODO()
         }
         return GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = expireAfterMillis, content = ephemeralContent))
     }
@@ -219,12 +233,21 @@ class ProtoContentMapperImpl(
                 )
             )
 
-            is GenericMessage.Content.ButtonAction -> MessageContent.Unknown(typeName, encodedContent.data, true)
-            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.Unknown(typeName, encodedContent.data, true)
+            is GenericMessage.Content.Composite -> unpackComposite(protoContent)
+
+            is GenericMessage.Content.ButtonAction -> MessageContent.ButtonAction(
+                buttonId = protoContent.value.buttonId,
+                buttonAction = protoContent.value.referenceMessageId
+            )
+
+            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.ButtonActionConfirmation(
+                referenceMessageId = protoContent.value.referenceMessageId,
+                buttonId = protoContent.value.buttonId
+            )
+
             is GenericMessage.Content.Calling -> unpackCalling(protoContent)
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
-            is GenericMessage.Content.Composite -> MessageContent.Unknown(typeName, encodedContent.data)
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
@@ -241,6 +264,7 @@ class ProtoContentMapperImpl(
                 kaliumLogger.w("External content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
                 MessageContent.Ignored
             }
+
             null -> {
                 kaliumLogger.w("Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
                 MessageContent.Ignored
@@ -489,6 +513,41 @@ class ProtoContentMapperImpl(
         // keys or asset id,so we need to overwrite one with the other one
         return MessageContent.Asset(
             value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value)
+        )
+    }
+
+    private fun unpackComposite(protoContent: GenericMessage.Content.Composite): MessageContent.Composite {
+        val text = protoContent.value.items.firstNotNullOfOrNull { item ->
+            item.text
+        }?.let { text ->
+            MessageContent.Text(
+                value = text.content,
+                mentions = text.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
+                quotedMessageReference = text.quote?.let { quote ->
+                    MessageContent.QuoteReference(
+                        quotedMessageId = quote.quotedMessageId,
+                        quotedMessageSha256 = quote.quotedMessageSha256?.array,
+                        isVerified = false
+                    )
+                },
+                quotedMessageDetails = null
+            )
+        }
+
+        val buttonList = protoContent.value.items.mapNotNull {
+            it.button?.let { button ->
+                MessageContent.Composite.Button(
+                    text = button.text,
+                    id = button.id,
+                    isSelected = false,
+                    isPending = false
+                )
+            }
+        }
+
+        return MessageContent.Composite(
+            textContent = text,
+            buttonList = buttonList
         )
     }
 

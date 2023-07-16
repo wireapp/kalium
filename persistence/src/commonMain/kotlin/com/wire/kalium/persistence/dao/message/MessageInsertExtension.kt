@@ -3,6 +3,7 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import kotlinx.datetime.Instant
@@ -31,6 +32,7 @@ internal class MessageInsertExtensionImpl(
     private val messagesQueries: MessagesQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
+    private val buttonContentQueries: ButtonContentQueries,
     private val selfUserIDEntity: UserIDEntity
 ) : MessageInsertExtension {
 
@@ -219,10 +221,27 @@ internal class MessageInsertExtensionImpl(
                 message_timer = content.messageTimer
             )
 
-            is MessageEntityContent.ConversationCreated -> {
-                /* no-op */
-            }
+            is MessageEntityContent.Composite -> {
+                    content.text?.let { text ->
+                        messagesQueries.insertMessageTextContent(
+                            message_id = message.id,
+                            conversation_id = message.conversationId,
+                            text_body = text.messageBody,
+                            quoted_message_id = text.quotedMessageId,
+                            is_quote_verified = text.isQuoteVerified
+                        )
+                    }
+                    content.buttonList.forEach { button ->
+                        buttonContentQueries.insertButton(
+                            message_id = message.id,
+                            conversation_id = message.conversationId,
+                            id = button.id,
+                            text = button.text
+                        )
+                    }
+                }
 
+            is MessageEntityContent.ConversationCreated,
             is MessageEntityContent.MLSWrongEpochWarning -> {
                 /* no-op */
             }
@@ -249,6 +268,7 @@ internal class MessageInsertExtensionImpl(
 
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
+                is MessageEntityContent.Composite,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
@@ -263,7 +283,19 @@ internal class MessageInsertExtensionImpl(
                     message.date
                 )
 
-                else -> {}
+                is MessageEntityContent.Unknown,
+                MessageEntityContent.ConversationCreated,
+                is MessageEntityContent.ConversationMessageTimerChanged,
+                is MessageEntityContent.ConversationReceiptModeChanged,
+                is MessageEntityContent.ConversationRenamed,
+                MessageEntityContent.CryptoSessionReset,
+                MessageEntityContent.HistoryLost,
+                MessageEntityContent.MLSWrongEpochWarning,
+                is MessageEntityContent.MemberChange,
+                is MessageEntityContent.NewConversationReceiptMode,
+                is MessageEntityContent.TeamMemberRemoved -> {
+                    /* no-op */
+                }
             }
         }
     }
@@ -322,5 +354,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
         is MessageEntityContent.MLSWrongEpochWarning -> MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING
+        is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
     }
 }
