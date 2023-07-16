@@ -31,9 +31,11 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.Button
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
+import com.wire.kalium.protobuf.messages.Composite
 import com.wire.kalium.protobuf.messages.Confirmation
 import com.wire.kalium.protobuf.messages.Ephemeral
 import com.wire.kalium.protobuf.messages.External
@@ -120,16 +122,43 @@ class ProtoContentMapperImpl(
                     "Unexpected message content type: ${readableContent.getType()}"
                 )
 
-            is MessageContent.Composite -> throw IllegalArgumentException(
-                "Unexpected message content type: ${readableContent.getType()}"
-            )
+            is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation)
 
-            is MessageContent.ButtonActionConfirmation -> throw IllegalArgumentException(
-                "Unexpected message content type: ${readableContent.getType()}"
-            )
-
+            is MessageContent.ButtonActionConfirmation -> TODO()
             is MessageContent.ButtonAction -> TODO()
         }
+    }
+
+    private fun packComposite(
+        readableContent: MessageContent.Composite,
+        expectsReadConfirmation: Boolean
+    ): GenericMessage.Content.Composite {
+        val items: MutableList<Composite.Item> = mutableListOf()
+
+        readableContent.textContent?.let {
+            val text = packText(it, expectsReadConfirmation)
+            Composite.Item.Content.Text(text.value).also {
+                items.add(Composite.Item(it))
+            }
+        }
+        readableContent.buttonList.map {
+            Composite.Item.Content.Button(
+                button = Button(
+                    text = it.text,
+                    id = it.id
+                )
+            )
+        }.also {
+            items.addAll(it.map { Composite.Item(it) })
+        }
+
+        val composite = GenericMessage.Content.Composite(
+            Composite(
+                items = items,
+                expectsReadConfirmation = expectsReadConfirmation
+            )
+        )
+        return composite
     }
 
     private fun mapEphemeralContent(
@@ -172,13 +201,12 @@ class ProtoContentMapperImpl(
             is MessageContent.LastRead,
             is MessageContent.Reaction,
             is MessageContent.Receipt,
+            is MessageContent.Composite,
+            is MessageContent.ButtonAction,
+            is MessageContent.ButtonActionConfirmation,
             is MessageContent.TextEdited -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
-
-            is MessageContent.Composite -> TODO()
-            is MessageContent.ButtonAction -> TODO()
-            is MessageContent.ButtonActionConfirmation -> TODO()
         }
         return GenericMessage.Content.Ephemeral(Ephemeral(expireAfterMillis = expireAfterMillis, content = ephemeralContent))
     }
