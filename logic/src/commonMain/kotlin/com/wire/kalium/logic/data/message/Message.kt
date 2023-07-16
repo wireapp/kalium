@@ -161,6 +161,7 @@ sealed interface Message {
         override val isSelfMessage: Boolean,
         override val expirationData: ExpirationData?
     ) : Sendable {
+        @Suppress("LongMethod")
         override fun toLogString(): String {
             val typeKey = "type"
 
@@ -193,17 +194,14 @@ sealed interface Message {
 
                 is MessageContent.Availability -> mutableMapOf(
                     typeKey to "availability",
-                    "content" to "$content",
                 )
 
                 is MessageContent.Cleared -> mutableMapOf(
                     typeKey to "cleared",
-                    "content" to "$content",
                 )
 
                 is MessageContent.Reaction -> mutableMapOf(
                     typeKey to "reaction",
-                    "content" to "$content",
                 )
 
                 is MessageContent.Receipt -> mutableMapOf(
@@ -307,7 +305,7 @@ sealed interface Message {
 
             val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
-                "conversationId" to "${conversationId.toLogString()}",
+                "conversationId" to conversationId.toLogString(),
                 "date" to date,
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "status" to "$status",

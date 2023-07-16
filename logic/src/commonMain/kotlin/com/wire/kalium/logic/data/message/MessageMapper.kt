@@ -410,7 +410,14 @@ class MessageMapperImpl(
 
         is MessageEntityContent.Composite -> MessageContent.Composite(
             this.text?.toMessageContent(hidden) as MessageContent.Text,
-            this.buttonList.map { MessageContent.Composite.Button(text = it.text, id = it.id, isSelected = it.isSelected, isPending = it.isPending) }
+            this.buttonList.map {
+                MessageContent.Composite.Button(
+                    text = it.text,
+                    id = it.id,
+                    isSelected = it.isSelected,
+                    isPending = it.isPending
+                )
+            }
         )
     }
 

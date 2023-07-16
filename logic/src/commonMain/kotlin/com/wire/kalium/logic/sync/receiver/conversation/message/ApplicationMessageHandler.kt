@@ -88,7 +88,7 @@ internal class ApplicationMessageHandlerImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod, LongMethod")
     override suspend fun handleContent(
         conversationId: ConversationId,
         timestampIso: String,
@@ -216,6 +216,7 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.RestrictedAsset -> {
                 /* no-op */
             }
+
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)

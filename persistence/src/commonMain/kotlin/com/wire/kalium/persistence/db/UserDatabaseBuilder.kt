@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.cache.LRUCache
-import com.wire.kalium.persistence.content.ButtonContent
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
