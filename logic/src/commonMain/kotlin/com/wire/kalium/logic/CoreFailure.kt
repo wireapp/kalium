@@ -38,6 +38,10 @@ sealed interface CoreFailure {
                 && this.kaliumException is KaliumException.InvalidRequestError
                 && this.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
 
+    val hasUnreachableDomainsError: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure
+                && this.label == "federation-unreachable-domains-error" && this.domains.isNotEmpty()
+
     /**
      * The attempted operation requires that this client is registered.
      */
@@ -106,7 +110,7 @@ sealed class NetworkFailure : CoreFailure {
     /**
      * Failure due to a federated backend context
      */
-    object FederatedBackendFailure : NetworkFailure()
+    data class FederatedBackendFailure(val label: String, val domains: List<String> = emptyList()) : NetworkFailure()
 }
 
 interface MLSFailure : CoreFailure {
@@ -146,7 +150,8 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             val exception = result.kException
             when {
                 exception is KaliumException.FederationError -> {
-                    Either.Left(NetworkFailure.FederatedBackendFailure)
+                    val cause = exception.errorResponse.cause
+                    Either.Left(NetworkFailure.FederatedBackendFailure(exception.errorResponse.label, cause?.domains.orEmpty()))
                 }
 
                 // todo SocketException is platform specific so need to wrap it in our own exceptions

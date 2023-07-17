@@ -35,6 +35,7 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUse
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
@@ -179,6 +180,11 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.addMember(
                 addParticipantRequest, conversationId.toApi()
             )
+        }.onFailure { error ->
+            if (error.hasUnreachableDomainsError) {
+                // todo(ym) handle unreachable domains retry, cleanup of users under this unreachable domains.
+                return Either.Left(error)
+            }
         }.onSuccess { response ->
             if (response is ConversationMemberAddedResponse.Changed) {
                 memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
@@ -186,6 +192,8 @@ internal class ConversationGroupRepositoryImpl(
         }.map {
             Either.Right(Unit)
         }
+
+    private fun handle
 
     override suspend fun deleteMember(
         userId: UserId,
