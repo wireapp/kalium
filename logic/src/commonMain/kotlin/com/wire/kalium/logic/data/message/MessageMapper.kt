@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
+import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -266,12 +267,7 @@ class MessageMapperImpl(
 
     @Suppress("ComplexMethod")
     override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regularMessage) {
-        is MessageContent.Text -> MessageEntityContent.Text(
-            messageBody = regularMessage.value,
-            mentions = regularMessage.mentions.map { messageMentionMapper.fromModelToDao(it) },
-            quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
-            isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
-        )
+        is MessageContent.Text -> toTextEntity(regularMessage)
 
         is MessageContent.Asset -> with(regularMessage.value) {
             val assetWidth = when (metadata) {
@@ -328,8 +324,23 @@ class MessageMapperImpl(
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
-        is MessageContent.Composite -> TODO()
+        is MessageContent.Composite -> MessageEntityContent.Composite(
+            text = regularMessage.textContent?.let(this::toTextEntity),
+            buttonList = regularMessage.buttonList.map { ButtonEntity(
+                id = it.id,
+                text = it.text,
+                isPending = it.isPending,
+                isSelected = it.isSelected
+            ) },
+        )
     }
+
+    private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
+        messageBody = textContent.value,
+        mentions = textContent.mentions.map { messageMentionMapper.fromModelToDao(it) },
+        quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
+        isQuoteVerified = textContent.quotedMessageReference?.isVerified,
+    )
 
     @Suppress("ComplexMethod")
     private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
