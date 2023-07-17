@@ -1,12 +1,11 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import kotlin.Boolean;
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntityContent;
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.Int;
+import kotlin.Boolean;
 import kotlin.collections.List;
 import kotlinx.datetime.Instant;
 
