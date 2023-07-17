@@ -60,12 +60,12 @@ class MessageMapperImpl(
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
         val status = when (message.status) {
-            Message.Status.PENDING -> MessageEntity.Status.PENDING
-            Message.Status.SENT -> MessageEntity.Status.SENT
-            Message.Status.DELIVERED -> MessageEntity.Status.DELIVERED
-            Message.Status.READ -> MessageEntity.Status.READ
-            Message.Status.FAILED -> MessageEntity.Status.FAILED
-            Message.Status.FAILED_REMOTELY -> MessageEntity.Status.FAILED_REMOTELY
+            Message.Status.Delivered -> MessageEntity.Status.DELIVERED
+            Message.Status.Pending -> MessageEntity.Status.PENDING
+            Message.Status.Read -> MessageEntity.Status.READ
+            Message.Status.Sent -> MessageEntity.Status.SENT
+            Message.Status.Failed -> MessageEntity.Status.FAILED
+            Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
         }
         val visibility = message.visibility.toEntityVisibility()
         return when (message) {
@@ -77,6 +77,7 @@ class MessageMapperImpl(
                 senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
+                readCount = if (status is Message.Status.Read) 5 else 0,
                 editStatus = when (message.editStatus) {
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
@@ -110,12 +111,12 @@ class MessageMapperImpl(
     @Suppress("ComplexMethod")
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
         val status = when (message.status) {
-            MessageEntity.Status.PENDING -> Message.Status.PENDING
-            MessageEntity.Status.SENT -> Message.Status.SENT
-            MessageEntity.Status.DELIVERED -> Message.Status.DELIVERED
-            MessageEntity.Status.READ -> Message.Status.READ
-            MessageEntity.Status.FAILED -> Message.Status.FAILED
-            MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
+            MessageEntity.Status.PENDING -> Message.Status.Pending
+            MessageEntity.Status.SENT -> Message.Status.Sent
+            MessageEntity.Status.DELIVERED -> Message.Status.Delivered
+            MessageEntity.Status.READ -> Message.Status.Read
+            MessageEntity.Status.FAILED -> Message.Status.Failed
+            MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FailedRemotely
         }
         return when (message) {
             is MessageEntity.Regular ->

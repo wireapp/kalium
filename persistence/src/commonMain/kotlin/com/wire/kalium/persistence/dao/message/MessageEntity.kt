@@ -55,6 +55,7 @@ sealed class MessageEntity(
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
+        val readCount: Long = 0
     ) : MessageEntity(
         id = id,
         content = content,

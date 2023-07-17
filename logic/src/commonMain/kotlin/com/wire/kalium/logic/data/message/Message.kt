@@ -276,6 +276,7 @@ sealed interface Message {
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )
@@ -304,8 +305,17 @@ sealed interface Message {
         }
     }
 
-    enum class Status {
-        PENDING, SENT, DELIVERED, READ, FAILED, FAILED_REMOTELY
+    sealed class Status {
+        object Pending : Status()
+        object Sent : Status()
+
+        object Delivered : Status()
+
+        object Read : Status()
+
+        object Failed : Status()
+
+        object FailedRemotely : Status()
     }
 
     sealed class EditStatus {
