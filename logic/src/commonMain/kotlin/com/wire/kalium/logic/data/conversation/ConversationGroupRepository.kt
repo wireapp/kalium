@@ -182,7 +182,7 @@ internal class ConversationGroupRepositoryImpl(
             )
         }.onFailure { error ->
             if (error.hasUnreachableDomainsError) {
-                // todo(ym) handle unreachable domains retry, cleanup of users under this unreachable domains.
+                // todo(ym) handle unreachable domains retry, cleanup of users under these unreachable domains.
                 return Either.Left(error)
             }
         }.onSuccess { response ->
@@ -192,8 +192,6 @@ internal class ConversationGroupRepositoryImpl(
         }.map {
             Either.Right(Unit)
         }
-
-    private fun handle
 
     override suspend fun deleteMember(
         userId: UserId,
