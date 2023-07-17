@@ -53,6 +53,7 @@ interface MessageMapper {
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
 
+@Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
