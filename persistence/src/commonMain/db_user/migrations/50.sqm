@@ -2,6 +2,8 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.collections.List;
 
+ALTER TABLE Conversation ADD COLUMN informed_about_degraded_mls_verification INTEGER AS Boolean NOT NULL DEFAULT 0;
+
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE TABLE ConversationVerificationDegraded (
