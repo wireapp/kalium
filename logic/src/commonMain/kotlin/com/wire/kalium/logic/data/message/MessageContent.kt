@@ -174,8 +174,9 @@ sealed class MessageContent {
             val isSelected: Boolean
         )
     }
+
     /**
-     * Notifies the author of a [Composite] message that a user has 
+     * Notifies the author of a [Composite] message that a user has
      * selected one of its buttons.
      * @see Composite
      * @see ButtonActionConfirmation
@@ -183,14 +184,15 @@ sealed class MessageContent {
     data class ButtonAction(
         /**
          * The ID of the original composite message.
-         */ 
+         */
         val referencedMessageId: String,
-        
+
         /**
          * ID of the button that was selected.
          */
         val buttonId: String
     ) : Signaling()
+
     /**
      * Message sent by the author of a [Composite] to
      * notify which button should be marked as selected.
@@ -337,6 +339,7 @@ sealed interface MessagePreviewContent {
 
     sealed interface WithUser : MessagePreviewContent {
         val username: String?
+
         data class Text(override val username: String?, val messageBody: String?) : WithUser
 
         data class Asset(override val username: String?, val type: AssetType) : WithUser
