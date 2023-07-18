@@ -232,7 +232,6 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-
     override fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
