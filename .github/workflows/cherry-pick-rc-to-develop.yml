@@ -29,21 +29,9 @@ jobs:
                   echo "New branch name: $NEW_BRANCH_NAME"
                   echo "::set-output name=newBranchName::$NEW_BRANCH_NAME"
 
-            - name: Check if changes only in kalium submodule
-              id: check_changes
-              run: |
-                  NUM_CHANGES=$(git diff origin/develop --name-only | grep -v '^kalium/' | wc -l)
-                  if [ "$NUM_CHANGES" -gt 0 ]; then
-                    echo "::set-output name=shouldCherryPick::true"
-                  else
-                    echo "No changes outside of kalium submodule, skipping cherry-pick"
-                    echo "::set-output name=shouldCherryPick::false"
-                  fi
-
             - uses: fregante/setup-git-user@v2
 
             - name: Cherry-pick commits
-              if: steps.check_changes.outputs.shouldCherryPick == 'true'
               run: |
                   git fetch origin develop:develop
                   git checkout -b ${{ steps.extract.outputs.newBranchName }} develop
@@ -54,7 +42,6 @@ jobs:
                   git push origin ${{ steps.extract.outputs.newBranchName }}
 
             - name: Create PR
-              if: steps.check_changes.outputs.shouldCherryPick == 'true'
               env:
                   PR_TITLE: ${{ github.event.pull_request.title }}
                   PR_BRANCH: ${{ steps.extract.outputs.newBranchName }}
