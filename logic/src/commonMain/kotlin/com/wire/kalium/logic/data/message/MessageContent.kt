@@ -191,10 +191,23 @@ sealed class MessageContent {
          */
         val buttonId: String
     ) : Signaling()
-
+    /**
+     * Message sent by the author of a [Composite] to
+     * notify which button should be marked as selected.
+     * For example, after we send [ButtonAction], the author might reply
+     * with [ButtonActionConfirmation] to confirm that the button event was processed.
+     * @see ButtonAction
+     * @see Composite
+     */
     data class ButtonActionConfirmation(
-        val referenceMessageId: String,
-        val buttonId: String?, // if not present, no button is accepted
+        /**
+         * ID fo the original composite message
+         */
+        val referencedMessageId: String,
+        /**
+         * ID of the selected button. Null if no button should be marked as selected.
+         */
+        val buttonId: String?,
     ) : Signaling()
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
