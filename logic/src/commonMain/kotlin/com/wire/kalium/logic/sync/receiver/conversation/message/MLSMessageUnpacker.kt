@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.E2EIdentity
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
@@ -107,17 +108,21 @@ internal class MLSMessageUnpackerImpl(
     ): Either<CoreFailure, DecryptedMessageBundle?> =
         messageEvent.subconversationId?.let { subconversationId ->
             subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subconversationId)?.let { groupID ->
-                logger.d("Decrypting MLS for " +
-                        "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
-                        "subconversationId = $subconversationId " +
-                        "groupID = ${groupID.value.obfuscateId()}")
+                logger.d(
+                    "Decrypting MLS for " +
+                            "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
+                            "subconversationId = $subconversationId " +
+                            "groupID = ${groupID.value.obfuscateId()}"
+                )
                 decryptMessageContent(messageEvent.content.decodeBase64Bytes(), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLS) {
-                logger.d("Decrypting MLS for " +
-                        "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
-                        "groupID = ${protocolInfo.groupId.value.obfuscateId()}")
+                logger.d(
+                    "Decrypting MLS for " +
+                            "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
+                            "groupID = ${protocolInfo.groupId.value.obfuscateId()}"
+                )
                 decryptMessageContent(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {
                 Either.Right(null)
@@ -130,7 +135,7 @@ internal class MLSMessageUnpackerImpl(
                 mlsClient.decryptMessage(
                     idMapper.toCryptoModel(groupID),
                     encryptedContent
-                ).let {
+                ).let { it ->
                     if (it.hasEpochChanged) {
                         logger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                         epochsFlow.emit(groupID)
@@ -149,7 +154,15 @@ internal class MLSMessageUnpackerImpl(
                                 senderClientId
                             )
                         },
-                        it.commitDelay
+                        it.commitDelay,
+                        identity = it.identity?.let { identity ->
+                            E2EIdentity(
+                                identity.clientId,
+                                identity.handle,
+                                identity.displayName,
+                                identity.domain
+                            )
+                        }
                     )
                 }
             }
