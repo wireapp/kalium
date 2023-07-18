@@ -189,13 +189,15 @@ internal class ConversationGroupRepositoryImpl(
 
         return when (apiResult) {
             is Either.Left -> {
-                if (apiResult.value is NetworkFailure.FederatedBackendFailure && apiResult.value.hasUnreachableDomainsError) {
-                    val usersReqState =
-                        addingMembersFailureMapper.mapToUsersRequestState(userIdList, apiResult.value, previousUserIdsExcluded)
+                if (apiResult.value.hasUnreachableDomainsError) {
+                    val usersReqState = addingMembersFailureMapper.mapToUsersRequestState(
+                        userIdList,
+                        apiResult.value as NetworkFailure.FederatedBackendFailure,
+                        previousUserIdsExcluded
+                    )
+                    // retry adding filtered members to the conversation
                     tryAddMembersToCloudAndStorage(
-                        usersReqState.usersThatCanBeAdded.toList(),
-                        conversationId,
-                        usersReqState.usersThatCannotBeAdded.toSet()
+                        usersReqState.usersThatCanBeAdded.toList(), conversationId, usersReqState.usersThatCannotBeAdded.toSet()
                     )
                 } else {
                     Either.Left(apiResult.value)
