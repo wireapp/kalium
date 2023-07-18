@@ -100,7 +100,7 @@ $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/certificateRequest/#
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderRequest/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/check-order-request.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/check-order-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/checkOrderResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/check-order-response.html
-$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/createDpopToken/#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/create-dpop-token.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/createDpopToken/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/create-dpop-token.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/directoryResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/directory-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/directoryResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/directory-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/finalizeRequest/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/finalize-request.html
@@ -119,6 +119,7 @@ $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setChallengeResponse
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setChallengeResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-challenge-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOrderResponse/#[Error type: Unresolved type for JsonRawData]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[apple]-e2-e-i-client-impl/set-order-response.html
 $dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/setOrderResponse/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/set-order-response.html
+$dokka.location:com.wire.kalium.cryptography/E2EIClientImpl/wireE2eIdentity/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-e2-e-i-client-impl/wire-e2e-identity.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/addMember/#kotlin.String#kotlin.collections.List[[Error type: Unresolved type for Pair<CryptoQualifiedClientId, MLSKeyPackage>][com.wire.kalium.cryptography.CryptoQualifiedClientId,kotlin.ByteArray]]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]add-member.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/clearLocalFiles/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]clear-local-files.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/clearPendingCommit/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]clear-pending-commit.html
@@ -133,12 +134,13 @@ $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/deriveSecret/#kotlin.
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/encryptMessage/#kotlin.String#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]encrypt-message.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/generateKeyPackages/#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]generate-key-packages.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/getPublicKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]get-public-key.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/initMLSWithE2EI/#com.wire.kalium.cryptography.E2EIClient#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]init-m-l-s-with-e2-e-i.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/isGroupVerified/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]is-group-verified.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/joinByExternalCommit/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]join-by-external-commit.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/joinConversation/#kotlin.String#[Error type: Unresolved type for ULong]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]join-conversation.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/members/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]members.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/mergePendingGroupFromExternalCommit/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]merge-pending-group-from-external-commit.html
-$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/newAcmeEnrollment/#com.wire.kalium.cryptography.CryptoQualifiedClientId#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]new-acme-enrollment.html
+$dokka.location:com.wire.kalium.cryptography/MLSClientImpl/newAcmeEnrollment/#com.wire.kalium.cryptography.E2EIQualifiedClientId#kotlin.String#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]new-acme-enrollment.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/processWelcomeMessage/#kotlin.ByteArray/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]process-welcome-message.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/removeMember/#kotlin.String#kotlin.collections.List[com.wire.kalium.cryptography.CryptoQualifiedClientId]/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]remove-member.html
 $dokka.location:com.wire.kalium.cryptography/MLSClientImpl/updateKeyingMaterial/#kotlin.String/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-m-l-s-client-impl/[jvm]update-keying-material.html
@@ -323,6 +325,7 @@ com.wire.kalium.logic.data.client
 com.wire.kalium.logic.data.client.remote
 com.wire.kalium.logic.data.connection
 com.wire.kalium.logic.data.conversation
+com.wire.kalium.logic.data.e2ei
 com.wire.kalium.logic.data.event
 com.wire.kalium.logic.data.featureConfig
 com.wire.kalium.logic.data.id
@@ -367,6 +370,7 @@ com.wire.kalium.logic.feature.conversation.guestroomlink
 com.wire.kalium.logic.feature.conversation.keyingmaterials
 com.wire.kalium.logic.feature.conversation.messagetimer
 com.wire.kalium.logic.feature.debug
+com.wire.kalium.logic.feature.e2ei
 com.wire.kalium.logic.feature.featureConfig
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.message
