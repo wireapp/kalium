@@ -28,16 +28,18 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Suppress("LongParameterList")
-sealed class MessageEntity(
-    open val id: String,
-    open val content: MessageEntityContent,
-    open val conversationId: QualifiedIDEntity,
-    open val date: Instant,
-    open val senderUserId: QualifiedIDEntity,
-    open val status: Status,
-    open val visibility: Visibility,
-    open val isSelfMessage: Boolean,
-) {
+sealed interface MessageEntity {
+    val id: String
+    val content: MessageEntityContent
+    val conversationId: QualifiedIDEntity
+    val date: Instant
+    val senderUserId: QualifiedIDEntity
+    val status: Status
+    val visibility: Visibility
+    val isSelfMessage: Boolean
+    val expireAfterMs: Long?
+    val selfDeletionStartDate: Instant?
+
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
@@ -47,24 +49,15 @@ sealed class MessageEntity(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
         override val isSelfMessage: Boolean = false,
+        override val expireAfterMs: Long? = null,
+        override val selfDeletionStartDate: Instant? = null,
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
-        val expireAfterMs: Long? = null,
-        val selfDeletionStartDate: Instant? = null,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
-    ) : MessageEntity(
-        id = id,
-        content = content,
-        conversationId = conversationId,
-        date = date,
-        senderUserId = senderUserId,
-        status = status,
-        visibility = visibility,
-        isSelfMessage = isSelfMessage
-    )
+    ) : MessageEntity
 
     data class System(
         override val id: String,
@@ -73,19 +66,12 @@ sealed class MessageEntity(
         override val date: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
+        override val expireAfterMs: Long?,
+        override val selfDeletionStartDate: Instant?,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
-    ) : MessageEntity(
-        id = id,
-        content = content,
-        conversationId = conversationId,
-        date = date,
-        senderUserId = senderUserId,
-        status = status,
-        visibility = visibility,
-        isSelfMessage = isSelfMessage
-    )
+    ) : MessageEntity
 
     enum class Status {
         /**

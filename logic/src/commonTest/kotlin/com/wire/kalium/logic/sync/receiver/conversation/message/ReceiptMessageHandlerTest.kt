@@ -142,7 +142,8 @@ class ReceiptMessageHandlerTest {
                 senderUserId = senderUserId,
                 senderClientId = ClientId("SomeClientId"),
                 status = Message.Status.SENT,
-                isSelfMessage = false
+                isSelfMessage = false,
+                expirationData = null
             ),
             messageContent = content
         )
