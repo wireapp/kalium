@@ -340,7 +340,7 @@ sealed interface MessagePreviewContent {
     sealed interface WithUser : MessagePreviewContent {
         val username: String?
 
-        data class Text(override val username: String?, val messageBody: String?) : WithUser
+        data class Text(override val username: String?, val messageBody: String) : WithUser
 
         data class Asset(override val username: String?, val type: AssetType) : WithUser
 

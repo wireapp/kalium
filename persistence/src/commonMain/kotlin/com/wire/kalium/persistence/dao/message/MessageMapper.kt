@@ -178,13 +178,6 @@ object MessageMapper {
 
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
 
-            MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Text(
-                senderName = senderName,
-                // composite messages can have no text since they are just a collection of Text and Buttons
-                // so if the collection have no text we just set it is null therefore no need to require it
-                messageBody = text
-            )
-
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
@@ -193,6 +186,7 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
         }
     }

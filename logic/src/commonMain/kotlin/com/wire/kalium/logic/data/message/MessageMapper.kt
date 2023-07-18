@@ -218,8 +218,6 @@ class MessageMapperImpl(
             )
         }
         return when (message.contentType) {
-
-            MessageEntity.ContentType.COMPOSITE,
             MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
                 author = sender,
                 text = message.text.orEmpty(),
@@ -263,6 +261,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
+            MessageEntity.ContentType.COMPOSITE -> null
         }
     }
 
