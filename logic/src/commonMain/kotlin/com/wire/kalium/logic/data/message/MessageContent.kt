@@ -174,10 +174,22 @@ sealed class MessageContent {
             val isSelected: Boolean
         )
     }
-
+    /**
+     * Notifies the author of a [Composite] message that a user has 
+     * selected one of its buttons.
+     * @see Composite
+     * @see ButtonActionConfirmation
+     */
     data class ButtonAction(
-        val buttonId: String,
-        val buttonAction: String
+        /**
+         * The ID of the original composite message.
+         */ 
+        val referencedMessageId: String,
+        
+        /**
+         * ID of the button that was selected.
+         */
+        val buttonId: String
     ) : Signaling()
 
     data class ButtonActionConfirmation(
