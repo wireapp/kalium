@@ -171,8 +171,7 @@ sealed class MessageContent {
         data class Button(
             val text: String,
             val id: String,
-            val isSelected: Boolean,
-            val isPending: Boolean
+            val isSelected: Boolean
         )
     }
 

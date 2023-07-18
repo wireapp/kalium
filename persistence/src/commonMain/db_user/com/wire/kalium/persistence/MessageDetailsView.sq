@@ -118,7 +118,7 @@ FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliver
 
 IFNULL(
     (SELECT '[' ||
-            GROUP_CONCAT('{"text":"' || text || '", "id":"' || id || '""is_selected":' || is_selected || '"is_pending":' || is_pending || '}')
+            GROUP_CONCAT('{"text":"' || text || '", "id":"' || id || '""is_selected":' || is_selected || '}')
         || ']'
     FROM ButtonContent
     WHERE ButtonContent.message_id = Message.id

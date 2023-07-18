@@ -66,7 +66,7 @@ class CompositeMessageTest : BaseDatabaseTest() {
             content = MessageEntityContent.Composite(
                 MessageEntityContent.Text("text"),
                 listOf(
-                    ButtonEntity("text", "id", false, false)
+                    ButtonEntity("text", "id", false)
                 )
             )
         )
@@ -84,34 +84,6 @@ class CompositeMessageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun compositeMessage_whenMarkingButtonAsPending_thenItIsMarked() = runTest {
-        val conversation = conversationEntity1
-        conversationDAO.insertConversation(conversation)
-        userDAO.insertUser(userEntity1)
-
-        val compositeMessage = newRegularMessageEntity().copy(
-            senderUserId = userEntity1.id,
-            conversationId = conversation.id,
-            content = MessageEntityContent.Composite(
-                MessageEntityContent.Text("text"),
-                listOf(
-                    ButtonEntity("text1", "id1", false, false),
-                    ButtonEntity("tex2", "id2", false, false),
-                    ButtonEntity("tex3", "id3", false, false),
-                    ButtonEntity("tex4", "id4", false, false)
-                )
-            )
-        )
-        messageDAO.insertOrIgnoreMessages(listOf(compositeMessage))
-
-        compositeMessageDAO.markAsPending(compositeMessage.id, compositeMessage.conversationId, "id2")
-        messageDAO.getMessageById(compositeMessage.id, compositeMessage.conversationId).also {
-            assertEquals(4, (it?.content as MessageEntityContent.Composite).buttonList.size)
-            assertTrue { (it.content as MessageEntityContent.Composite).buttonList[1].isPending }
-        }
-    }
-
-    @Test
     fun givenCompositeMessage_whenMarkingButtonAsSelected_thenOnlyOneItIsMarked() = runTest {
         val conversation = conversationEntity1
         conversationDAO.insertConversation(conversation)
@@ -123,10 +95,10 @@ class CompositeMessageTest : BaseDatabaseTest() {
             content = MessageEntityContent.Composite(
                 MessageEntityContent.Text("text"),
                 listOf(
-                    ButtonEntity("text1", "id1", false, false),
-                    ButtonEntity("tex2", "id2", false, false),
-                    ButtonEntity("tex3", "id3", false, false),
-                    ButtonEntity("tex4", "id4", false, false)
+                    ButtonEntity("text1", "id1", false),
+                    ButtonEntity("tex2", "id2", false),
+                    ButtonEntity("tex3", "id3", false),
+                    ButtonEntity("tex4", "id4", false)
                 )
             )
         )
@@ -149,40 +121,6 @@ class CompositeMessageTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenCompositeMessageWithPendingButton_whenDisablePending_thenIsPendingIsFalse() = runTest {
-        val conversation = conversationEntity1
-        conversationDAO.insertConversation(conversation)
-        userDAO.insertUser(userEntity1)
-
-        val compositeMessage = newRegularMessageEntity().copy(
-            senderUserId = userEntity1.id,
-            conversationId = conversation.id,
-            content = MessageEntityContent.Composite(
-                MessageEntityContent.Text("text"),
-                listOf(
-                    ButtonEntity("text1", "id1", false, false),
-                    ButtonEntity("tex2", "id2", false, false),
-                    ButtonEntity("tex3", "id3", false, false),
-                    ButtonEntity("tex4", "id4", false, false)
-                )
-            )
-        )
-        messageDAO.insertOrIgnoreMessages(listOf(compositeMessage))
-
-        compositeMessageDAO.markAsPending(compositeMessage.id, compositeMessage.conversationId, "id2")
-        messageDAO.getMessageById(compositeMessage.id, compositeMessage.conversationId).also {
-            assertEquals(4, (it?.content as MessageEntityContent.Composite).buttonList.size)
-            assertTrue { (it.content as MessageEntityContent.Composite).buttonList[1].isPending }
-        }
-
-        compositeMessageDAO.disablePending(compositeMessage.id, compositeMessage.conversationId, "id2")
-        messageDAO.getMessageById(compositeMessage.id, compositeMessage.conversationId).also {
-            assertEquals(4, (it?.content as MessageEntityContent.Composite).buttonList.size)
-            assertFalse { (it.content as MessageEntityContent.Composite).buttonList[1].isPending }
-        }
-    }
-
-    @Test
     fun givenCompositeMessageWithSelection_whenResetSelection_thenSelectionIsFalse() = runTest {
         val conversation = conversationEntity1
         conversationDAO.insertConversation(conversation)
@@ -194,10 +132,10 @@ class CompositeMessageTest : BaseDatabaseTest() {
             content = MessageEntityContent.Composite(
                 MessageEntityContent.Text("text"),
                 listOf(
-                    ButtonEntity("text1", "id1", false, false),
-                    ButtonEntity("tex2", "id2", false, false),
-                    ButtonEntity("tex3", "id3", false, false),
-                    ButtonEntity("tex4", "id4", false, false)
+                    ButtonEntity("text1", "id1", false),
+                    ButtonEntity("tex2", "id2", false),
+                    ButtonEntity("tex3", "id3", false),
+                    ButtonEntity("tex4", "id4", false)
                 )
             )
         )

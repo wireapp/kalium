@@ -567,8 +567,7 @@ class ProtoContentMapperImpl(
                 MessageContent.Composite.Button(
                     text = button.text,
                     id = button.id,
-                    isSelected = false,
-                    isPending = false
+                    isSelected = false
                 )
             }
         }

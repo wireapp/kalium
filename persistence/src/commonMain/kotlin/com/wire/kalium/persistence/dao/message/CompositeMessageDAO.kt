@@ -23,19 +23,6 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
 interface CompositeMessageDAO {
-
-    suspend fun markAsPending(
-        messageId: String,
-        conversationId: QualifiedIDEntity,
-        buttonId: String
-    )
-
-    suspend fun disablePending(
-        messageId: String,
-        conversationId: QualifiedIDEntity,
-        buttonId: String
-    )
-
     suspend fun markAsSelected(
         messageId: String,
         conversationId: QualifiedIDEntity,
@@ -52,14 +39,6 @@ internal class CompositeMessageDAOImpl internal constructor(
     private val buttonContentQueries: ButtonContentQueries,
     private val context: CoroutineContext
 ) : CompositeMessageDAO {
-    override suspend fun markAsPending(messageId: String, conversationId: QualifiedIDEntity, buttonId: String) = withContext(context) {
-        buttonContentQueries.markPending(conversation_id = conversationId, message_id = messageId, id = buttonId)
-    }
-
-    override suspend fun disablePending(messageId: String, conversationId: QualifiedIDEntity, buttonId: String) = withContext(context) {
-        buttonContentQueries.disablePending(conversation_id = conversationId, message_id = messageId, id = buttonId)
-    }
-
     override suspend fun markAsSelected(messageId: String, conversationId: QualifiedIDEntity, buttonId: String) = withContext(context) {
         buttonContentQueries.markSelected(conversation_id = conversationId, message_id = messageId, id = buttonId)
     }

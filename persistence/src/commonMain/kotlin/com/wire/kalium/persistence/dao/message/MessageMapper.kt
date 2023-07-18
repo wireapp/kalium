@@ -180,8 +180,8 @@ object MessageMapper {
 
             MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Text(
                 senderName = senderName,
-                // composite messages can have not text since they are just a collection of Text and Buttons
-                // so it the collection have no text we just set it is null therefore no need to require it
+                // composite messages can have no text since they are just a collection of Text and Buttons
+                // so if the collection have no text we just set it is null therefore no need to require it
                 messageBody = text
             )
 

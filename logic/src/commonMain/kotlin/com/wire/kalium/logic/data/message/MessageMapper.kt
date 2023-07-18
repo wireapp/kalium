@@ -330,7 +330,6 @@ class MessageMapperImpl(
             buttonList = regularMessage.buttonList.map { ButtonEntity(
                 id = it.id,
                 text = it.text,
-                isPending = it.isPending,
                 isSelected = it.isSelected
             ) },
         )
@@ -426,8 +425,7 @@ class MessageMapperImpl(
                 MessageContent.Composite.Button(
                     text = it.text,
                     id = it.id,
-                    isSelected = it.isSelected,
-                    isPending = it.isPending
+                    isSelected = it.isSelected
                 )
             }
         )

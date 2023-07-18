@@ -440,9 +440,7 @@ class ButtonEntity(
     @SerialName("text") val text: String,
     @SerialName("id") val id: String,
     @Serializable(with = BooleanIntSerializer::class)
-    @SerialName("is_selected") val isSelected: Boolean,
-    @Serializable(with = BooleanIntSerializer::class)
-    @SerialName("is_pending") val isPending: Boolean
+    @SerialName("is_selected") val isSelected: Boolean
 )
 
 @OptIn(ExperimentalSerializationApi::class)
