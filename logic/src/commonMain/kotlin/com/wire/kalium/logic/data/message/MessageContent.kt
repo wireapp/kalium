@@ -21,6 +21,8 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MessageButtonId
+import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -185,12 +187,12 @@ sealed class MessageContent {
         /**
          * The ID of the original composite message.
          */
-        val referencedMessageId: String,
+        val referencedMessageId: MessageId,
 
         /**
          * ID of the button that was selected.
          */
-        val buttonId: String
+        val buttonId: MessageButtonId
     ) : Signaling()
 
     /**
@@ -205,11 +207,11 @@ sealed class MessageContent {
         /**
          * ID fo the original composite message
          */
-        val referencedMessageId: String,
+        val referencedMessageId: MessageId,
         /**
          * ID of the selected button. Null if no button should be marked as selected.
          */
-        val buttonId: String?,
+        val buttonId: MessageButtonId?,
     ) : Signaling()
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case

@@ -60,3 +60,6 @@ data class QualifiedClientID(
     val clientId: ClientId,
     val userId: UserId
 )
+
+typealias MessageId = String
+typealias MessageButtonId = String
