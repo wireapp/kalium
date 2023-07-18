@@ -179,7 +179,7 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId,
         previousUserIdsExcluded: Set<UserId> = emptySet(),
     ): Either<CoreFailure, Unit> {
-        val result = wrapApiRequest {
+        val apiResult = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
             conversationApi.addMember(
@@ -187,25 +187,25 @@ internal class ConversationGroupRepositoryImpl(
             )
         }
 
-        return when (result) {
+        return when (apiResult) {
             is Either.Left -> {
-                if (result.value is NetworkFailure.FederatedBackendFailure) {
+                if (apiResult.value is NetworkFailure.FederatedBackendFailure) {
                     val usersReqState =
-                        addingMembersFailureMapper.mapToUsersRequestState(userIdList, result.value, previousUserIdsExcluded)
+                        addingMembersFailureMapper.mapToUsersRequestState(userIdList, apiResult.value, previousUserIdsExcluded)
                     tryAddMembersToCloudAndStorage(
                         usersReqState.usersThatCanBeAdded.toList(),
                         conversationId,
                         usersReqState.usersThatCannotBeAdded.toSet()
                     )
                 } else {
-                    Either.Left(result.value)
+                    Either.Left(apiResult.value)
                 }
             }
 
             is Either.Right -> {
-                if (result.value is ConversationMemberAddedResponse.Changed) {
+                if (apiResult.value is ConversationMemberAddedResponse.Changed) {
                     memberJoinEventHandler.handle(
-                        eventMapper.conversationMemberJoin(LocalId.generate(), result.value.event, true)
+                        eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true)
                     )
                 }
                 if (previousUserIdsExcluded.isNotEmpty()) {
