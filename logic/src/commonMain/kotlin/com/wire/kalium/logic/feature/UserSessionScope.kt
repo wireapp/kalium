@@ -42,6 +42,8 @@ import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.E2EClientProvider
+import com.wire.kalium.logic.data.client.E2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
@@ -62,6 +64,8 @@ import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
+import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -166,6 +170,8 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -479,6 +485,26 @@ class UserSessionScope internal constructor(
             epochsFlow,
             proposalTimersFlow
         )
+
+    private val e2eiRepository: E2EIRepository
+        get() = E2EIRepositoryImpl(
+            authenticatedNetworkContainer.e2eiApi,
+            globalScope.unboundNetworkContainer.acmeApi,
+            e2EIClientProvider,
+            mlsClientProvider,
+            clientIdProvider
+        )
+
+    private val e2EIClientProvider: E2EClientProvider by lazy {
+        E2EIClientProviderImpl(
+            userId = userId,
+            currentClientIdProvider = clientIdProvider,
+            mlsClientProvider = mlsClientProvider,
+            userRepository = userRepository
+        )
+    }
+
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
@@ -1215,7 +1241,8 @@ class UserSessionScope internal constructor(
             userPropertyRepository,
             messages.messageSender,
             clientIdProvider,
-            team.isSelfATeamMember
+            team.isSelfATeamMember,
+            e2eiRepository
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
