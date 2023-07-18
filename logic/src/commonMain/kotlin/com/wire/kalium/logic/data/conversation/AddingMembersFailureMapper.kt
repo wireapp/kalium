@@ -25,12 +25,12 @@ internal interface AddingMembersFailureMapper {
      * Will map the [initialUsersIds] and split accordingly excluding users with domain failures.
      * @param initialUsersIds the list of users that were initially requested to be added to the conversation
      * @param federatedBackendFailure the [NetworkFailure.FederatedBackendFailure] that contains the domains that failed
-     * @param usersThatCannotBeAdded the previous attempt of list of users that cannot be added to the conversation
+     * @param previousUserIdsExcluded the previous attempt of list of users that cannot be added to the conversation
      */
     fun mapToUsersRequestState(
         initialUsersIds: List<UserId>,
         federatedBackendFailure: NetworkFailure.FederatedBackendFailure,
-        usersThatCannotBeAdded: Set<UserId> = emptySet(),
+        previousUserIdsExcluded: Set<UserId> = emptySet(),
     ): AddingMembersRequestState
 }
 
@@ -38,7 +38,7 @@ internal class AddingMembersFailureMapperImpl : AddingMembersFailureMapper {
     override fun mapToUsersRequestState(
         initialUsersIds: List<UserId>,
         federatedBackendFailure: NetworkFailure.FederatedBackendFailure,
-        usersThatCannotBeAdded: Set<UserId>
+        previousUserIdsExcluded: Set<UserId>
     ): AddingMembersRequestState {
         val domainsToExclude = federatedBackendFailure.domains
         // splitting the initialUsersIds into users with failures[true] and users without failures[false]
@@ -46,13 +46,13 @@ internal class AddingMembersFailureMapperImpl : AddingMembersFailureMapper {
             domainsToExclude.contains(it.domain)
         }
         return AddingMembersRequestState(
-            usersThatCanBeAdded = groupedUsersWithFailure[false] ?: emptyList(),
-            usersThatCannotBeAdded = groupedUsersWithFailure[true]?.toSet().orEmpty() + usersThatCannotBeAdded
+            usersThatCanBeAdded = groupedUsersWithFailure[false]?.toSet().orEmpty(),
+            usersThatCannotBeAdded = groupedUsersWithFailure[true]?.toSet().orEmpty() + previousUserIdsExcluded
         )
     }
 }
 
 data class AddingMembersRequestState(
-    val usersThatCanBeAdded: List<UserId>,
+    val usersThatCanBeAdded: Set<UserId>,
     val usersThatCannotBeAdded: Set<UserId>,
 )

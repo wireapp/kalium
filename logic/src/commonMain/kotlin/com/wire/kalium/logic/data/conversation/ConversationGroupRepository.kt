@@ -177,7 +177,7 @@ internal class ConversationGroupRepositoryImpl(
     private suspend fun tryAddMembersToCloudAndStorage(
         userIdList: List<UserId>,
         conversationId: ConversationId,
-        userIdListToExclude: Set<UserId> = emptySet(),
+        previousUserIdsExcluded: Set<UserId> = emptySet(),
     ): Either<CoreFailure, Unit> {
         val result = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
@@ -190,9 +190,10 @@ internal class ConversationGroupRepositoryImpl(
         return when (result) {
             is Either.Left -> {
                 if (result.value is NetworkFailure.FederatedBackendFailure) {
-                    val usersReqState = addingMembersFailureMapper.mapToUsersRequestState(userIdList, result.value, userIdListToExclude)
+                    val usersReqState =
+                        addingMembersFailureMapper.mapToUsersRequestState(userIdList, result.value, previousUserIdsExcluded)
                     tryAddMembersToCloudAndStorage(
-                        usersReqState.usersThatCanBeAdded,
+                        usersReqState.usersThatCanBeAdded.toList(),
                         conversationId,
                         usersReqState.usersThatCannotBeAdded.toSet()
                     )
@@ -207,9 +208,9 @@ internal class ConversationGroupRepositoryImpl(
                         eventMapper.conversationMemberJoin(LocalId.generate(), result.value.event, true)
                     )
                 }
-                if (userIdListToExclude.isNotEmpty()) {
+                if (previousUserIdsExcluded.isNotEmpty()) {
                     // todo(ym): persist members failed system message.
-                    kaliumLogger.d("[${userIdListToExclude.size}] members were not added to the conversation")
+                    kaliumLogger.d("[${previousUserIdsExcluded.size}] members were not added to the conversation")
                 }
                 Either.Right(Unit)
             }
