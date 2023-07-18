@@ -314,7 +314,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             clientType = null,
             label = null,
             model = null,
-            registrationDate = null
+            registrationDate = null,
+            lastActive = null
         )
         clientDAO.insertClient(insertedClient2)
 
@@ -336,7 +337,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             clientType = null,
             label = null,
             model = null,
-            registrationDate = null
+            registrationDate = null,
+            lastActive = null
         )
         val client = insertedClient.toClient()
 
@@ -377,5 +379,6 @@ private fun InsertClientParam.toClient(): Client =
         isVerified = false,
         label = label,
         model = model,
-        registrationDate = registrationDate
+        registrationDate = registrationDate,
+        lastActive = lastActive
     )

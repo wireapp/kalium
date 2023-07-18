@@ -18,10 +18,27 @@
 
 package com.wire.kalium.logic.util
 
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.days
 
 class CommonUtilsTest {
+
+    @Test
+    fun givenDurationOfLessThanAWeek_thenInWholeWeeksReturnsZero() {
+        assertEquals(0, 6.days.inWholeWeeks)
+    }
+
+    @Test
+    fun givenDurationOfMoreThanAWeek_thenInWholeWeeksReturnsOne() {
+        assertEquals(1, 7.days.inWholeWeeks)
+    }
+
+    @Test
+    fun givenDurationOfMoreThanTwoWeeks_thenInWholeWeeksReturnsTwo() {
+        assertEquals(2, 15.days.inWholeWeeks)
+    }
 
     @Test
     fun givenAFileName_whenGettingItsFileExtension_itReturnsItCorrectly() {
