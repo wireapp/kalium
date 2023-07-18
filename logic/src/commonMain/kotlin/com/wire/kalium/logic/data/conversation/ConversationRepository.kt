@@ -76,6 +76,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
 interface ConversationRepository {
@@ -198,6 +199,11 @@ interface ConversationRepository {
     suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
     suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
+    suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean>
+    suspend fun setInformedAboutDegradedMLSVerificationFlag(
+        conversationId: ConversationId,
+        isInformed: Boolean
+    ): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -725,6 +731,19 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
+    override suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean> =
+        wrapStorageRequest {
+            conversationDAO.isInformedAboutDegradedMLSVerification(conversationId.toDao())
+        }
+
+    override suspend fun setInformedAboutDegradedMLSVerificationFlag(
+        conversationId: ConversationId,
+        isInformed: Boolean
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
+        }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>

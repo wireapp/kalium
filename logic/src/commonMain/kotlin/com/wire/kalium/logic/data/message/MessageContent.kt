@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -240,6 +241,7 @@ sealed class MessageContent {
 
     object HistoryLost : System()
     object ConversationCreated : System()
+    data class VerificationDegraded(val protocol: Conversation.Protocol?): System()
 }
 
 /**
@@ -279,6 +281,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
     is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
+    is MessageContent.VerificationDegraded -> "Verification status degraded"
     null -> "Unknown"
 }
 

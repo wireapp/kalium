@@ -290,6 +290,10 @@ sealed interface Message {
                 is MessageContent.MLSWrongEpochWarning -> mutableMapOf(
                     typeKey to "mlsWrongEpochWarning"
                 )
+
+                is MessageContent.VerificationDegraded -> mutableMapOf(
+                    typeKey to "verificationDegraded"
+                )
             }
 
             val standardProperties = mapOf(

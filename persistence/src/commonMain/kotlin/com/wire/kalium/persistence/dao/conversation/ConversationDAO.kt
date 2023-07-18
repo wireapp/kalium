@@ -81,4 +81,6 @@ interface ConversationDAO {
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
+    suspend fun isInformedAboutDegradedMLSVerification(conversationId: QualifiedIDEntity) : Boolean
+    suspend fun setInformedAboutDegradedMLSVerificationFlag(conversationId: QualifiedIDEntity, isInformed: Boolean)
 }

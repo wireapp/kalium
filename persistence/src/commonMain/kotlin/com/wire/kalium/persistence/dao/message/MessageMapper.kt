@@ -186,6 +186,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.VERIFICATION_DEGRADED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -416,7 +417,8 @@ object MessageMapper {
         conversationReceiptModeChanged: Boolean?,
         conversationMessageTimerChanged: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
-        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        conversationProtocol: ConversationEntity.Protocol?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -505,6 +507,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
+            MessageEntity.ContentType.VERIFICATION_DEGRADED -> MessageEntityContent.VerificationDegraded(conversationProtocol)
         }
 
         return createMessageEntity(

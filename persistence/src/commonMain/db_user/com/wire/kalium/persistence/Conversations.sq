@@ -35,7 +35,8 @@ CREATE TABLE Conversation (
     guest_room_link TEXT,
     message_timer INTEGER DEFAULT(NULL),
     user_message_timer INTEGER DEFAULT(NULL),
-    incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0
+    incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
+    informed_about_degraded_mls_verification INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -121,6 +122,15 @@ SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
 updateConversationReadDate:
 UPDATE Conversation
 SET last_read_date = :last_read_date
+WHERE qualified_id = :qualified_id;
+
+isInformedAboutDegradedMLSVerification:
+SELECT informed_about_degraded_mls_verification FROM Conversation
+WHERE qualified_id = :qualified_id;
+
+updateInformedAboutDegradedMLSVerification:
+UPDATE Conversation
+SET informed_about_degraded_mls_verification = ?
 WHERE qualified_id = :qualified_id;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS

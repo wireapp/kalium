@@ -315,4 +315,13 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
     }
+
+    override suspend fun isInformedAboutDegradedMLSVerification(conversationId: QualifiedIDEntity): Boolean =
+        conversationQueries.isInformedAboutDegradedMLSVerification(conversationId).executeAsOne()
+
+    override suspend fun setInformedAboutDegradedMLSVerificationFlag(conversationId: QualifiedIDEntity, isInformed: Boolean) {
+        withContext(coroutineContext) {
+            conversationQueries.updateInformedAboutDegradedMLSVerification(isInformed, conversationId)
+        }
+    }
 }

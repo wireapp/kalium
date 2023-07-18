@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
@@ -55,7 +57,8 @@ interface MessageMapper {
 class MessageMapperImpl(
     private val selfUserId: UserId,
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
@@ -259,6 +262,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
+            MessageEntity.ContentType.VERIFICATION_DEGRADED -> null
         }
     }
 
@@ -357,6 +361,7 @@ class MessageMapperImpl(
         is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
         is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
         is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
+        is MessageContent.VerificationDegraded -> MessageEntityContent.VerificationDegraded(conversationMapper.toDaoModel(protocol))
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -444,6 +449,7 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
+        is MessageEntityContent.VerificationDegraded -> MessageContent.VerificationDegraded(conversationMapper.fromDaoModel(protocol))
     }
 }
 
