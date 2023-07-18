@@ -25,6 +25,7 @@ typealias HandshakeMessage = ByteArray
 typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
+typealias CertificateChain = String
 
 enum class GroupInfoEncryptionType {
     PLAINTEXT,
@@ -53,7 +54,8 @@ class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
-    val hasEpochChanged: Boolean
+    val hasEpochChanged: Boolean,
+    val identity: E2EIdentity?
 )
 
 @JvmInline
@@ -273,10 +275,12 @@ interface MLSClient {
      * @return wire end to end identity client
      */
     fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
+        clientId: E2EIQualifiedClientId,
         displayName: String,
         handle: String
     ): E2EIClient
+
+    fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain)
 
     fun isGroupVerified(groupId: MLSGroupId): Boolean
 }

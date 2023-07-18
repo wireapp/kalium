@@ -20,6 +20,8 @@
 
 package com.wire.kalium.cryptography
 
+import io.ktor.util.encodeBase64
+
 typealias MLSGroupId = String
 
 data class CryptoClientId(val value: String) {
@@ -68,4 +70,18 @@ data class CryptoQualifiedClientId(
             )
         }
     }
+}
+
+data class E2EIdentity(
+    var clientId: String,
+    var handle: String,
+    var displayName: String,
+    var domain: String
+)
+
+data class E2EIQualifiedClientId(
+    val value: String,
+    val userId: CryptoQualifiedID
+) {
+    override fun toString() = "${userId.value.encodeBase64()}:${value}@${userId.domain}"
 }

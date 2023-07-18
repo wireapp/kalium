@@ -24,7 +24,7 @@ import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class E2EIClientImpl(
-    private val wireE2eIdentity: WireE2eIdentity
+    val wireE2eIdentity: WireE2eIdentity
 ) : E2EIClient {
 
     private val defaultDPoPTokenExpiry: UInt = 30U
@@ -50,7 +50,7 @@ class E2EIClientImpl(
     override fun setAuthzResponse(authz: JsonRawData) =
         toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(toUByteList(authz)))
 
-    override fun createDpopToken(accessTokenUrl: String, backendNonce: String) =
+    override fun createDpopToken(backendNonce: String) =
         wireE2eIdentity.createDpopToken(expirySecs = defaultDPoPTokenExpiry, backendNonce)
 
     override fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
@@ -65,16 +65,14 @@ class E2EIClientImpl(
     override fun checkOrderRequest(orderUrl: String, previousNonce: String) =
         toByteArray(wireE2eIdentity.checkOrderRequest(orderUrl, previousNonce))
 
-    override fun checkOrderResponse(order: JsonRawData) {
+    override fun checkOrderResponse(order: JsonRawData) =
         wireE2eIdentity.checkOrderResponse(toUByteList(order))
-    }
 
     override fun finalizeRequest(previousNonce: String) =
         toByteArray(wireE2eIdentity.finalizeRequest(previousNonce))
 
-    override fun finalizeResponse(finalize: JsonRawData) {
+    override fun finalizeResponse(finalize: JsonRawData) =
         wireE2eIdentity.finalizeResponse(toUByteList(finalize))
-    }
 
     override fun certificateRequest(previousNonce: String) =
         toByteArray(wireE2eIdentity.certificateRequest(previousNonce))
@@ -86,7 +84,7 @@ class E2EIClientImpl(
 
         fun toNewAcmeOrder(value: com.wire.crypto.NewAcmeOrder) = NewAcmeOrder(
             value.delegate.toUByteArray().asByteArray(),
-            value.authorizations,
+            value.authorizations
         )
 
         private fun toAcmeChallenge(value: com.wire.crypto.AcmeChallenge) = AcmeChallenge(

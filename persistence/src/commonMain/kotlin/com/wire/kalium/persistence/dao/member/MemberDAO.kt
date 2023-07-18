@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
+@Suppress("TooManyFunctions")
 interface MemberDAO {
     suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity)
     suspend fun updateMemberRole(userId: UserIDEntity, conversationID: QualifiedIDEntity, newRole: MemberEntity.Role)
@@ -50,8 +51,10 @@ interface MemberDAO {
     )
 
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
+    suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
 }
 
+@Suppress("TooManyFunctions")
 internal class MemberDAOImpl internal constructor(
     private val memberQueries: MembersQueries,
     private val userQueries: UsersQueries,
@@ -119,7 +122,7 @@ internal class MemberDAOImpl internal constructor(
     }
 
     override suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>> {
-        return memberQueries.selectAllMembersByConversation(qualifiedID.value)
+        return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
@@ -153,4 +156,15 @@ internal class MemberDAOImpl internal constructor(
             .flowOn(coroutineContext)
             .mapToOneOrNull()
             .map { it != null }
+
+    override suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
+        withContext(coroutineContext) {
+            memberQueries.transaction {
+                memberQueries.deleteMembersFromConversation(conversationID)
+                for (member: MemberEntity in memberList) {
+                    userQueries.insertOrIgnoreUserId(member.user)
+                    memberQueries.insertMember(member.user, conversationID, member.role)
+                }
+            }
+        }
 }

@@ -92,7 +92,8 @@ interface ConversationRepository {
     suspend fun persistConversations(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
-        originatedFromEvent: Boolean = false
+        originatedFromEvent: Boolean = false,
+        invalidateMembers: Boolean = false
     ): Either<CoreFailure, Unit>
 
     /**
@@ -256,7 +257,12 @@ internal class ConversationDataSource internal constructor(
                         kaliumLogger.withFeatureId(CONVERSATIONS)
                             .d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
-                    persistConversations(conversations.conversationsFound, selfTeamIdProvider().getOrNull()?.value)
+                    persistConversations(
+                        conversations = conversations.conversationsFound,
+                        selfUserTeamId = selfTeamIdProvider().getOrNull()?.value,
+                        invalidateMembers = true
+                    )
+
                 }.onFailure {
                     kaliumLogger.withFeatureId(CONVERSATIONS).e("Error fetching conversation details $it")
                 }
@@ -297,6 +303,7 @@ internal class ConversationDataSource internal constructor(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
         originatedFromEvent: Boolean,
+        invalidateMembers: Boolean
     ) = wrapStorageRequest {
         val conversationEntities = conversations
             .map { conversationResponse ->
@@ -313,9 +320,19 @@ internal class ConversationDataSource internal constructor(
             }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
-            memberDAO.insertMembersWithQualifiedId(
-                memberMapper.fromApiModelToDaoModel(conversationsResponse.members), idMapper.fromApiToDao(conversationsResponse.id)
-            )
+            // do the cleanup of members from conversation in case when self user rejoined conversation
+            // and may not received any member remove or leave events
+            if (invalidateMembers) {
+                memberDAO.updateFullMemberList(
+                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                    idMapper.fromApiToDao(conversationsResponse.id)
+                )
+            } else {
+                memberDAO.insertMembersWithQualifiedId(
+                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                    idMapper.fromApiToDao(conversationsResponse.id)
+                )
+            }
         }
     }
 
@@ -398,7 +415,7 @@ internal class ConversationDataSource internal constructor(
             conversationApi.fetchConversationDetails(conversationID.toApi())
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
-            persistConversations(listOf(it), selfUserTeamId?.value)
+            persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
         }
     }
 
