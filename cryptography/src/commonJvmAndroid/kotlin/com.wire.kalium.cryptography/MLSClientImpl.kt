@@ -90,6 +90,7 @@ actual class MLSClientImpl actual constructor(
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     private val defaultE2EIExpiry: UInt = 90U
+    private val defaultMLSCredentialType: MlsCredentialType = MlsCredentialType.BASIC
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), listOf(defaultCiphersuite))
@@ -105,11 +106,12 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(defaultCiphersuite, amount.toUInt()).map { it.toUByteArray().asByteArray() }
+        return coreCrypto.clientKeypackages(defaultCiphersuite, defaultMLSCredentialType, amount.toUInt())
+            .map { it.toUByteArray().asByteArray() }
     }
 
     override fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite)
+        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, defaultMLSCredentialType)
     }
 
     override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -255,8 +257,52 @@ actual class MLSClientImpl actual constructor(
         )
     }
 
-    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain) {
-        coreCrypto.e2eiMlsInit((e2eiClient as E2EIClientImpl).wireE2eIdentity, certificate)
+    override fun e2eiNewActivationEnrollment(
+        displayName: String,
+        handle: String,
+        expiryDays: UInt,
+        cipherSuite: String
+    ): E2EIClient {
+        return E2EIClientImpl(
+            coreCrypto.e2eiNewActivationEnrollment(
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuite
+            )
+        )
+    }
+
+    override fun e2eiNewRotateEnrollment(
+        displayName: String?,
+        handle: String?,
+        expiryDays: UInt,
+        ciphetSuite: String
+    ): E2EIClient {
+        return E2EIClientImpl(
+            coreCrypto.e2eiNewRotateEnrollment(
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuite
+            )
+        )
+    }
+
+    override fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
+        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain)
+    }
+
+    override fun e2eiRotateAll(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ) {
+        coreCrypto.e2eiRotateAll(
+            (enrollment as E2EIClientImpl).wireE2eIdentity,
+            certificateChain,
+            newMLSKeyPackageCount
+        )
     }
 
     override fun isGroupVerified(groupId: MLSGroupId): Boolean =

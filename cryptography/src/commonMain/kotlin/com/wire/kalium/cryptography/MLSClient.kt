@@ -270,7 +270,7 @@ interface MLSClient {
     fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
     /**
-     * Enroll Wire E2EIdentity ACME Client for E2
+     * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
      *
      * @return wire end to end identity client
      */
@@ -280,8 +280,45 @@ interface MLSClient {
         handle: String
     ): E2EIClient
 
-    fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain)
+    /**
+     * Enroll Wire E2EIdentity Client for E2EI when MLSClient already initialized
+     *
+     * @return wire end to end identity client
+     */
+    fun e2eiNewActivationEnrollment(
+        displayName: String,
+        handle: String,
+        expiryDays: UInt,
+        cipherSuite: String
+    ): E2EIClient
 
+    /**
+     * Enroll Wire E2EI Enrollment Client for renewing certificate
+     *
+     * @return wire end to end identity client
+     */
+    fun e2eiNewRotateEnrollment(
+        displayName: String?,
+        handle: String?,
+        expiryDays: UInt,
+        ciphetSuite: String
+    ): E2EIClient
+
+    /**
+     * Init MLSClient after enrollment
+     */
+    fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain)
+
+    /**
+     * Generate new keypackages after E2EI certificate issued
+     */
+    fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt)
+
+    /**
+     * Conversation E2EI Verification Status
+     *
+     * @return the conversation verification status
+     */
     fun isGroupVerified(groupId: MLSGroupId): Boolean
 }
 
