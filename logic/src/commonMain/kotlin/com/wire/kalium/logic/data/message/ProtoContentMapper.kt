@@ -265,11 +265,11 @@ class ProtoContentMapperImpl(
 
             is GenericMessage.Content.ButtonAction -> MessageContent.ButtonAction(
                 buttonId = protoContent.value.buttonId,
-                buttonAction = protoContent.value.referenceMessageId
+                referencedMessageId = protoContent.value.referenceMessageId
             )
 
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.ButtonActionConfirmation(
-                referenceMessageId = protoContent.value.referenceMessageId,
+                referencedMessageId = protoContent.value.referenceMessageId,
                 buttonId = protoContent.value.buttonId
             )
 

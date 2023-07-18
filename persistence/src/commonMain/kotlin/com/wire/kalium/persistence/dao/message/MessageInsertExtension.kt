@@ -221,26 +221,7 @@ internal class MessageInsertExtensionImpl(
                 message_timer = content.messageTimer
             )
 
-            is MessageEntityContent.Composite -> {
-                    content.text?.let { text ->
-                        messagesQueries.insertMessageTextContent(
-                            message_id = message.id,
-                            conversation_id = message.conversationId,
-                            text_body = text.messageBody,
-                            quoted_message_id = text.quotedMessageId,
-                            is_quote_verified = text.isQuoteVerified
-                        )
-                    }
-                    content.buttonList.forEach { button ->
-                        buttonContentQueries.insertButton(
-                            message_id = message.id,
-                            conversation_id = message.conversationId,
-                            id = button.id,
-                            text = button.text
-                        )
-                    }
-                }
-
+            is MessageEntityContent.Composite -> insertCompositeMessage(content, message)
             is MessageEntityContent.ConversationCreated,
             is MessageEntityContent.MLSWrongEpochWarning -> {
                 /* no-op */
@@ -331,6 +312,29 @@ internal class MessageInsertExtensionImpl(
                 UnreadEventTypeEntity.MESSAGE,
                 message.conversationId,
                 message.date
+            )
+        }
+    }
+
+    private fun insertCompositeMessage(
+        content: MessageEntityContent.Composite,
+        message: MessageEntity
+    ) {
+        content.text?.let { text ->
+            messagesQueries.insertMessageTextContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                text_body = text.messageBody,
+                quoted_message_id = text.quotedMessageId,
+                is_quote_verified = text.isQuoteVerified
+            )
+        }
+        content.buttonList.forEach { button ->
+            buttonContentQueries.insertButton(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                id = button.id,
+                text = button.text
             )
         }
     }
