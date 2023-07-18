@@ -110,7 +110,7 @@ sealed class NetworkFailure : CoreFailure {
     /**
      * Failure due to a federated backend context
      */
-    data class FederatedBackendFailure(val label: String, val domains: List<String> = emptyList()) : NetworkFailure()
+    class FederatedBackendFailure(val label: String, val domains: List<String> = emptyList()) : NetworkFailure()
 }
 
 interface MLSFailure : CoreFailure {

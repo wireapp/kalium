@@ -34,8 +34,8 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
@@ -86,6 +86,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
+    private val addingMembersFailureMapper: AddingMembersFailureMapper = MapperProvider.addingMembersFailureMapper(),
 ) : ConversationGroupRepository {
 
     override suspend fun createGroupConversation(
@@ -139,7 +140,7 @@ internal class ConversationGroupRepositoryImpl(
             .flatMap { protocol ->
                 when (protocol) {
                     is ConversationEntity.ProtocolInfo.Proteus ->
-                        addMembersToCloudAndStorage(userIdList, conversationId)
+                        tryAddMembersToCloudAndStorage(userIdList, conversationId)
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
                         mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
@@ -173,25 +174,35 @@ internal class ConversationGroupRepositoryImpl(
                 }
             }
 
-    private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit> =
+    private suspend fun tryAddMembersToCloudAndStorage(
+        userIdList: List<UserId>,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> =
         wrapApiRequest {
             val users = userIdList.map { it.toApi() }
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
             conversationApi.addMember(
                 addParticipantRequest, conversationId.toApi()
             )
-        }.onFailure { error ->
+        }.fold({ error ->
             if (error.hasUnreachableDomainsError) {
-                // todo(ym) handle unreachable domains retry, cleanup of users under these unreachable domains.
-                return Either.Left(error)
+                addMembers(
+                    addingMembersFailureMapper.mapUsersThatCanBeAdded(
+                        userIdList, error as NetworkFailure.FederatedBackendFailure
+                    ),
+                    conversationId
+                )
+            } else {
+                Either.Left(error)
             }
-        }.onSuccess { response ->
+        }, { response ->
             if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
+                memberJoinEventHandler.handle(
+                    eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true)
+                )
             }
-        }.map {
             Either.Right(Unit)
-        }
+        })
 
     override suspend fun deleteMember(
         userId: UserId,
