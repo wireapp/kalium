@@ -241,7 +241,7 @@ sealed class MessageContent {
 
     object HistoryLost : System()
     object ConversationCreated : System()
-    data class VerificationDegraded(val protocol: Conversation.Protocol?): System()
+    data class VerificationDegraded(val protocol: Conversation.Protocol?) : System()
 }
 
 /**

@@ -302,7 +302,7 @@ sealed class MessageEntityContent {
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     object HistoryLost : System()
     object ConversationCreated : System()
-    data class VerificationDegraded(val protocol: ConversationEntity.Protocol?): System()
+    data class VerificationDegraded(val protocol: ConversationEntity.Protocol?) : System()
 }
 
 /**
