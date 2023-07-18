@@ -34,9 +34,9 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.wrapApiRequest
@@ -176,33 +176,45 @@ internal class ConversationGroupRepositoryImpl(
 
     private suspend fun tryAddMembersToCloudAndStorage(
         userIdList: List<UserId>,
-        conversationId: ConversationId
-    ): Either<CoreFailure, Unit> =
-        wrapApiRequest {
+        conversationId: ConversationId,
+        userIdListToExclude: Set<UserId> = emptySet(),
+    ): Either<CoreFailure, Unit> {
+        val result = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
             conversationApi.addMember(
                 addParticipantRequest, conversationId.toApi()
             )
-        }.fold({ error ->
-            if (error.hasUnreachableDomainsError) {
-                addMembers(
-                    addingMembersFailureMapper.mapUsersThatCanBeAdded(
-                        userIdList, error as NetworkFailure.FederatedBackendFailure
-                    ),
-                    conversationId
-                )
-            } else {
-                Either.Left(error)
+        }
+
+        return when (result) {
+            is Either.Left -> {
+                if (result.value is NetworkFailure.FederatedBackendFailure) {
+                    val usersReqState = addingMembersFailureMapper.mapToUsersRequestState(userIdList, result.value, userIdListToExclude)
+                    tryAddMembersToCloudAndStorage(
+                        usersReqState.usersThatCanBeAdded,
+                        conversationId,
+                        usersReqState.usersThatCannotBeAdded.toSet()
+                    )
+                } else {
+                    Either.Left(result.value)
+                }
             }
-        }, { response ->
-            if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(
-                    eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true)
-                )
+
+            is Either.Right -> {
+                if (result.value is ConversationMemberAddedResponse.Changed) {
+                    memberJoinEventHandler.handle(
+                        eventMapper.conversationMemberJoin(LocalId.generate(), result.value.event, true)
+                    )
+                }
+                if (userIdListToExclude.isNotEmpty()) {
+                    // todo(ym): persist members failed system message.
+                    kaliumLogger.d("[${userIdListToExclude.size}] members were not added to the conversation")
+                }
+                Either.Right(Unit)
             }
-            Either.Right(Unit)
-        })
+        }
+    }
 
     override suspend fun deleteMember(
         userId: UserId,
