@@ -176,12 +176,18 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
-        val applicationMessage = coreCrypto.encryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))
+        val applicationMessage =
+            coreCrypto.encryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))
         return toByteArray(applicationMessage)
     }
 
     override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
-        return toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)))
+        return toDecryptedMessageBundle(
+            coreCrypto.decryptMessage(
+                toUByteList(groupId.decodeBase64Bytes()),
+                toUByteList(message)
+            )
+        )
     }
 
     override fun commitAccepted(groupId: MLSGroupId) {
@@ -237,7 +243,7 @@ actual class MLSClientImpl actual constructor(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewEnrollment(
                 clientId.toString(),
@@ -247,6 +253,10 @@ actual class MLSClientImpl actual constructor(
                 defaultCiphersuite
             )
         )
+    }
+
+    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain) {
+        coreCrypto.e2eiMlsInit((e2eiClient as E2EIClientImpl).wireE2eIdentity, certificate)
     }
 
     override fun isGroupVerified(groupId: MLSGroupId): Boolean =
@@ -296,7 +306,10 @@ actual class MLSClientImpl actual constructor(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) },
-            value.hasEpochChanged
+            value.hasEpochChanged,
+            value.identity?.let {
+                E2EIdentity(it.clientId, it.handle, it.displayName, it.domain)
+            }
         )
     }
 

@@ -75,8 +75,11 @@ data class ApplicationMessage(
 data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
-    val commitDelay: Long?
+    val commitDelay: Long?,
+    val identity: E2EIdentity?
 )
+
+data class E2EIdentity(var clientId: String, var handle: String, var displayName: String, var domain: String)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {

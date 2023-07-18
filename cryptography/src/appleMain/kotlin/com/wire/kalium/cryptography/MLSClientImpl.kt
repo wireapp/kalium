@@ -227,7 +227,11 @@ actual class MLSClientImpl actual constructor(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override fun initMLSWithE2EI(e2eiClient: E2EIClient, certificate: CertificateChain) {
         TODO("Not yet implemented")
     }
 
@@ -279,7 +283,8 @@ actual class MLSClientImpl actual constructor(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
-            value.hasEpochChanged
+            value.hasEpochChanged,
+            identity = null
         )
     }
 
