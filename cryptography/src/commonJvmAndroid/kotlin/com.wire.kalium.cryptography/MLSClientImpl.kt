@@ -259,9 +259,7 @@ actual class MLSClientImpl actual constructor(
 
     override fun e2eiNewActivationEnrollment(
         displayName: String,
-        handle: String,
-        expiryDays: UInt,
-        cipherSuite: String
+        handle: String
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewActivationEnrollment(
@@ -275,9 +273,7 @@ actual class MLSClientImpl actual constructor(
 
     override fun e2eiNewRotateEnrollment(
         displayName: String?,
-        handle: String?,
-        expiryDays: UInt,
-        ciphetSuite: String
+        handle: String?
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewRotateEnrollment(

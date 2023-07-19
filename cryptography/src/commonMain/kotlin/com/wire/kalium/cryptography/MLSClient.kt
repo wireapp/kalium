@@ -287,9 +287,7 @@ interface MLSClient {
      */
     fun e2eiNewActivationEnrollment(
         displayName: String,
-        handle: String,
-        expiryDays: UInt,
-        cipherSuite: String
+        handle: String
     ): E2EIClient
 
     /**
@@ -299,9 +297,7 @@ interface MLSClient {
      */
     fun e2eiNewRotateEnrollment(
         displayName: String?,
-        handle: String?,
-        expiryDays: UInt,
-        ciphetSuite: String
+        handle: String?
     ): E2EIClient
 
     /**
