@@ -253,7 +253,7 @@ class ProtoContentMapperImpl(
         val typeName = genericMessage.content?.value?.let { it as? pbandk.Message }?.descriptor?.name
 
         val readableContent = when (val protoContent = genericMessage.content) {
-            is GenericMessage.Content.Text -> unpackText(protoContent)
+            is GenericMessage.Content.Text -> unpackText(protoContent.value)
             is GenericMessage.Content.Asset -> unpackAsset(protoContent)
             is GenericMessage.Content.Availability -> MessageContent.Availability(
                 availabilityMapper.fromProtoAvailabilityToModel(
@@ -472,16 +472,26 @@ class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackText(protoContent: GenericMessage.Content.Text) = MessageContent.Text(
-        value = protoContent.value.content,
-        mentions = protoContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
-        quotedMessageReference = protoContent.value.quote?.let {
+    private fun unpackText(protoContent: Text) = MessageContent.Text(
+        value = protoContent.content,
+        mentions = protoContent.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
+        quotedMessageReference = protoContent.quote?.let {
             MessageContent.QuoteReference(
                 quotedMessageId = it.quotedMessageId, quotedMessageSha256 = it.quotedMessageSha256?.array, isVerified = false
             )
         },
         quotedMessageDetails = null
     )
+
+    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<MessageContent.Composite.Button> = compositeItemList.mapNotNull {
+        it.button?.let { button ->
+            MessageContent.Composite.Button(
+                text = button.text,
+                id = button.id,
+                isSelected = false
+            )
+        }
+    }
 
     private fun packAsset(readableContent: MessageContent.Asset, expectsReadConfirmation: Boolean): GenericMessage.Content.Asset {
         return GenericMessage.Content.Asset(
@@ -505,7 +515,7 @@ class ProtoContentMapperImpl(
                         expectsReadConfirmation = ephemeralContent.value.expectsReadConfirmation
                     )
                 )
-                unpackText(genericMessageTextContent)
+                unpackText(genericMessageTextContent.value)
             }
 
             is Ephemeral.Content.Asset -> {
@@ -547,30 +557,8 @@ class ProtoContentMapperImpl(
     private fun unpackComposite(protoContent: GenericMessage.Content.Composite): MessageContent.Composite {
         val text = protoContent.value.items.firstNotNullOfOrNull { item ->
             item.text
-        }?.let { text ->
-            MessageContent.Text(
-                value = text.content,
-                mentions = text.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
-                quotedMessageReference = text.quote?.let { quote ->
-                    MessageContent.QuoteReference(
-                        quotedMessageId = quote.quotedMessageId,
-                        quotedMessageSha256 = quote.quotedMessageSha256?.array,
-                        isVerified = false
-                    )
-                },
-                quotedMessageDetails = null
-            )
-        }
-
-        val buttonList = protoContent.value.items.mapNotNull {
-            it.button?.let { button ->
-                MessageContent.Composite.Button(
-                    text = button.text,
-                    id = button.id,
-                    isSelected = false
-                )
-            }
-        }
+        }?.let(::unpackText)
+        val buttonList = unpackButtonList(protoContent.value.items)
 
         return MessageContent.Composite(
             textContent = text,
