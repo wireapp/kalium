@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -50,9 +51,16 @@ internal class MessageDAOImpl internal constructor(
     private val unreadEventsQueries: UnreadEventsQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
-    private val coroutineContext: CoroutineContext
+    private val coroutineContext: CoroutineContext,
+    buttonContentQueries: ButtonContentQueries
 ) : MessageDAO,
-    MessageInsertExtension by MessageInsertExtensionImpl(queries, unreadEventsQueries, conversationsQueries, selfUserId) {
+    MessageInsertExtension by MessageInsertExtensionImpl(
+        queries,
+        unreadEventsQueries,
+        conversationsQueries,
+        buttonContentQueries,
+        selfUserId
+    ) {
     private val mapper = MessageMapper
     private val unreadEventMapper = UnreadEventMapper
 

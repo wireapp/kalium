@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.protobuf.messages.Button
 import kotlinx.datetime.Instant
 
 sealed class MessageContent {
@@ -163,6 +164,54 @@ sealed class MessageContent {
 
     data class Knock(val hotKnock: Boolean) : Regular()
 
+    data class Composite(
+        val textContent: Text?,
+        val buttonList: List<Button>
+    ) : Regular() {
+        data class Button(
+            val text: String,
+            val id: String,
+            val isSelected: Boolean
+        )
+    }
+
+    /**
+     * Notifies the author of a [Composite] message that a user has
+     * selected one of its buttons.
+     * @see Composite
+     * @see ButtonActionConfirmation
+     */
+    data class ButtonAction(
+        /**
+         * The ID of the original composite message.
+         */
+        val referencedMessageId: String,
+
+        /**
+         * ID of the button that was selected.
+         */
+        val buttonId: String
+    ) : Signaling()
+
+    /**
+     * Message sent by the author of a [Composite] to
+     * notify which button should be marked as selected.
+     * For example, after we send [ButtonAction], the author might reply
+     * with [ButtonActionConfirmation] to confirm that the button event was processed.
+     * @see ButtonAction
+     * @see Composite
+     */
+    data class ButtonActionConfirmation(
+        /**
+         * ID fo the original composite message
+         */
+        val referencedMessageId: String,
+        /**
+         * ID of the selected button. Null if no button should be marked as selected.
+         */
+        val buttonId: String?,
+    ) : Signaling()
+
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
         val typeName: String? = null,
         val encodedData: ByteArray? = null,
@@ -253,7 +302,6 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.Knock -> "Knock"
     is MessageContent.RestrictedAsset -> "RestrictedAsset"
     is MessageContent.Text -> "Text"
-    is MessageContent.Unknown -> "Unknown"
     is MessageContent.Availability -> "Availability"
     is MessageContent.Calling -> "Calling"
     is MessageContent.Cleared -> "Cleared"
@@ -279,63 +327,69 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
     is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
-    null -> "Unknown"
+    is MessageContent.Composite -> "Composite"
+    is MessageContent.ButtonAction -> "ButtonAction"
+    is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
+    is MessageContent.Unknown -> "Unknown"
+
+    null -> "null"
 }
 
-sealed class MessagePreviewContent {
+sealed interface MessagePreviewContent {
 
-    sealed class WithUser(open val username: String?) : MessagePreviewContent() {
+    sealed interface WithUser : MessagePreviewContent {
+        val username: String?
 
-        data class Text(override val username: String?, val messageBody: String) : WithUser(username)
+        data class Text(override val username: String?, val messageBody: String) : WithUser
 
-        data class Asset(override val username: String?, val type: AssetType) : WithUser(username)
+        data class Asset(override val username: String?, val type: AssetType) : WithUser
 
-        data class MentionedSelf(override val username: String?) : WithUser(username)
+        data class MentionedSelf(override val username: String?) : WithUser
 
-        data class QuotedSelf(override val username: String?) : WithUser(username)
+        data class QuotedSelf(override val username: String?) : WithUser
 
-        data class Knock(override val username: String?) : WithUser(username)
+        data class Knock(override val username: String?) : WithUser
 
-        data class MemberLeft(override val username: String?) : WithUser(username)
+        data class MemberLeft(override val username: String?) : WithUser
 
-        data class MemberJoined(override val username: String?) : WithUser(username)
+        data class MemberJoined(override val username: String?) : WithUser
 
         data class MembersAdded(
-            val senderName: String?,
+            override val username: String?,
             val isSelfUserAdded: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames
-        ) : WithUser(senderName)
+        ) : WithUser
 
         data class MembersRemoved(
-            val senderName: String?,
+            override val username: String?,
             val isSelfUserRemoved: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames
-        ) : WithUser(senderName)
+        ) : WithUser
 
         data class MembersFailedToAdd(
-            val senderName: String?,
+            override val username: String?,
             val isSelfUserRemoved: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames
-        ) : WithUser(senderName)
+        ) : WithUser
 
         data class MembersCreationAdded(
-            val senderName: String?,
+            override val username: String?,
             val isSelfUserRemoved: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames
-        ) : WithUser(senderName)
+        ) : WithUser
 
-        data class ConversationNameChange(val adminName: String?) : WithUser(adminName)
+        data class ConversationNameChange(override val username: String?) : WithUser
 
-        data class TeamMemberRemoved(val userName: String?) : WithUser(userName)
+        data class TeamMemberRemoved(override val username: String?) : WithUser
 
-        data class MissedCall(override val username: String?) : WithUser(username)
+        data class MissedCall(override val username: String?) : WithUser
 
     }
 
-    data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent()
+    data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent
 
-    object CryptoSessionReset : MessagePreviewContent()
+    object CryptoSessionReset : MessagePreviewContent
 
-    object Unknown : MessagePreviewContent()
+    object Unknown : MessagePreviewContent
 
 }

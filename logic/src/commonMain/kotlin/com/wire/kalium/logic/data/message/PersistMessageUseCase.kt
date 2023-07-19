@@ -97,5 +97,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MemberChange.FailedToAdd -> false
             is MessageContent.ConversationCreated -> false
             is MessageContent.MLSWrongEpochWarning -> false
+            is MessageContent.Composite -> true
+            is MessageContent.ButtonAction -> false
+            is MessageContent.ButtonActionConfirmation -> false
         }
 }
