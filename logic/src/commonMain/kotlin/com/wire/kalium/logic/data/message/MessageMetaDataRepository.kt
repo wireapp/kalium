@@ -36,7 +36,7 @@ interface MessageMetaDataRepository {
     ): Either<StorageFailure, UserId>
 }
 
-internal class MessageMetaDataDatasource internal constructor(
+internal class MessageMetaDataDataSource internal constructor(
     private val messageMetaDataDAO: MessageMetaDataDAO
 ) : MessageMetaDataRepository {
     override suspend fun originalSenderId(conversationId: ConversationId, messageId: MessageId): Either<StorageFailure, UserId> =

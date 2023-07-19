@@ -79,6 +79,8 @@ import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageMetaDataDataSource
+import com.wire.kalium.logic.data.message.MessageMetaDataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -524,6 +526,9 @@ class UserSessionScope internal constructor(
             messageDAO = userStorage.database.messageDAO,
             selfUserId = userId
         )
+
+    private val messageMetaDataRepository: MessageMetaDataRepository
+        get() = MessageMetaDataDataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
 
     private val userRepository: UserRepository = UserDataSource(
         userStorage.database.userDAO,
@@ -1196,6 +1201,7 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             protoContentMapper,
             observeSelfDeletingMessages,
+            messageMetaDataRepository,
             this
         )
     val users: UserScope
