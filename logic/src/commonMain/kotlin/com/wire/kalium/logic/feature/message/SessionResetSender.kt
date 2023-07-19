@@ -67,7 +67,7 @@ class SessionResetSenderImpl internal constructor(
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = selfClientId,
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 isSelfMessage = true
             )
             val recipient = Recipient(userId, listOf(clientId))

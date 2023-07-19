@@ -113,7 +113,7 @@ class ToggleReactionUseCase internal constructor(
                     date = date,
                     senderUserId = userId,
                     senderClientId = clientId,
-                    status = Message.Status.PENDING,
+                    status = Message.Status.Pending,
                     isSelfMessage = true
                 )
                 messageSender.sendMessage(regularMessage)
@@ -140,7 +140,7 @@ class ToggleReactionUseCase internal constructor(
                     date = date,
                     senderUserId = userId,
                     senderClientId = clientId,
-                    status = Message.Status.PENDING,
+                    status = Message.Status.Pending,
                     isSelfMessage = true
                 )
                 messageSender.sendMessage(regularMessage)

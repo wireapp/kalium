@@ -69,7 +69,7 @@ class SendKnockUseCase internal constructor(
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
-                status = Message.Status.PENDING,
+                status = Message.Status.Pending,
                 editStatus = Message.EditStatus.NotEdited,
                 isSelfMessage = true
             )

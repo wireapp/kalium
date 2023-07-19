@@ -67,7 +67,6 @@ class MessageMapperImpl(
             Message.Status.Failed -> MessageEntity.Status.FAILED
             Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
         }
-        val visibility = message.visibility.toEntityVisibility()
         return when (message) {
             is Message.Regular -> MessageEntity.Regular(
                 id = message.id,
@@ -77,7 +76,7 @@ class MessageMapperImpl(
                 senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
-                readCount = if (status is Message.Status.Read) 5 else 0,
+                readCount = if (message.status is Message.Status.Read) 5 else 0,
                 editStatus = when (message.editStatus) {
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
@@ -89,7 +88,7 @@ class MessageMapperImpl(
                         is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
                     }
                 },
-                visibility = visibility,
+                visibility = message.visibility.toEntityVisibility(),
                 senderName = message.senderUserName,
                 isSelfMessage = message.isSelfMessage,
                 expectsReadConfirmation = message.expectsReadConfirmation
@@ -102,7 +101,7 @@ class MessageMapperImpl(
                 date = message.date.toInstant(),
                 senderUserId = message.senderUserId.toDao(),
                 status = status,
-                visibility = visibility,
+                visibility = message.visibility.toEntityVisibility(),
                 senderName = message.senderUserName,
             )
         }

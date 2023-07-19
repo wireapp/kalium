@@ -119,7 +119,7 @@ internal class OnHttpRequest(
             date = date,
             senderUserId = userId,
             senderClientId = clientId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             isSelfMessage = true
         )
 

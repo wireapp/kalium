@@ -105,7 +105,7 @@ class SendTextMessageUseCase internal constructor(
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = clientId,
-                status = Message.Status.PENDING,
+                status = Message.Status.Pending,
                 editStatus = Message.EditStatus.NotEdited,
                 expirationData = messageTimer?.let { Message.ExpirationData(it) },
                 isSelfMessage = true

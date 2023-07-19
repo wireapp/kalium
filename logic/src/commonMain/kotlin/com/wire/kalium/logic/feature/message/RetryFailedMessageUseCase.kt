@@ -73,7 +73,7 @@ class RetryFailedMessageUseCase internal constructor(
         messageRepository.getMessageById(conversationId, messageId)
             .flatMap { message ->
                 when (message.status) {
-                    Message.Status.FAILED -> { // TODO should it also cover status FAILED_REMOTELY?
+                    Message.Status.Failed -> { // TODO should it also cover status FAILED_REMOTELY?
                         messageRepository.updateMessageStatus(
                             messageStatus = MessageEntity.Status.PENDING,
                             conversationId = message.conversationId,
@@ -125,7 +125,7 @@ class RetryFailedMessageUseCase internal constructor(
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = message.senderUserId,
                     senderClientId = message.senderClientId,
-                    status = Message.Status.PENDING,
+                    status = Message.Status.Pending,
                     isSelfMessage = true
                 )
                 retrySendingMessage(editMessage)
