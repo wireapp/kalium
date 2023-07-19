@@ -141,15 +141,8 @@ class ProtoContentMapperImpl(
                 items.add(Composite.Item(it))
             }
         }
-        readableContent.buttonList.map {
-            Composite.Item.Content.Button(
-                button = Button(
-                    text = it.text,
-                    id = it.id
-                )
-            )
-        }.also {
-            items.addAll(it.map { Composite.Item(it) })
+        packButtonList(readableContent.buttonList).also {
+            items.addAll(it)
         }
 
         val composite = GenericMessage.Content.Composite(
@@ -468,6 +461,17 @@ class ProtoContentMapperImpl(
                 mentions = mentions,
                 quote = quote,
                 expectsReadConfirmation = expectsReadConfirmation
+            )
+        )
+    }
+
+    private fun packButtonList(buttonList: List<MessageContent.Composite.Button>): List<Composite.Item> = buttonList.map {
+        Composite.Item(
+            Composite.Item.Content.Button(
+                button = Button(
+                    text = it.text,
+                    id = it.id
+                )
             )
         )
     }
