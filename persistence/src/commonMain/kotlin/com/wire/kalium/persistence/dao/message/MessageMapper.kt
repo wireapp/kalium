@@ -186,7 +186,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.VERIFICATION_DEGRADED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_DEGRADED -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -507,7 +507,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
-            MessageEntity.ContentType.VERIFICATION_DEGRADED -> MessageEntityContent.VerificationDegraded(conversationProtocol)
+            MessageEntity.ContentType.CONVERSATION_DEGRADED -> MessageEntityContent.ConversationDegraded(conversationProtocol)
         }
 
         return createMessageEntity(

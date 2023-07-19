@@ -261,7 +261,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
-            MessageEntity.ContentType.VERIFICATION_DEGRADED -> null
+            MessageEntity.ContentType.CONVERSATION_DEGRADED -> null
         }
     }
 
@@ -360,7 +360,7 @@ class MessageMapperImpl(
         is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
         is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
         is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
-        is MessageContent.VerificationDegraded -> MessageEntityContent.VerificationDegraded(conversationMapper.toDaoModel(protocol))
+        is MessageContent.ConversationDegraded -> MessageEntityContent.ConversationDegraded(conversationMapper.toDaoModel(protocol))
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -448,7 +448,7 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
-        is MessageEntityContent.VerificationDegraded -> MessageContent.VerificationDegraded(conversationMapper.fromDaoModel(protocol))
+        is MessageEntityContent.ConversationDegraded -> MessageContent.ConversationDegraded(conversationMapper.fromDaoModel(protocol))
     }
 }
 

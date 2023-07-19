@@ -36,7 +36,7 @@ CREATE TABLE Conversation (
     message_timer INTEGER DEFAULT(NULL),
     user_message_timer INTEGER DEFAULT(NULL),
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
-    informed_about_degraded_mls_verification INTEGER AS Boolean NOT NULL DEFAULT 0
+    is_mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 -- Optimise comparisons and sorting by dates:

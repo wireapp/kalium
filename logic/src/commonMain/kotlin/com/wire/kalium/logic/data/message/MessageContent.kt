@@ -241,7 +241,7 @@ sealed class MessageContent {
 
     object HistoryLost : System()
     object ConversationCreated : System()
-    data class VerificationDegraded(val protocol: Conversation.Protocol?) : System()
+    data class ConversationDegraded(val protocol: Conversation.Protocol?) : System()
 }
 
 /**
@@ -281,7 +281,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
     is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
-    is MessageContent.VerificationDegraded -> "Verification status degraded"
+    is MessageContent.ConversationDegraded -> "Verification status degraded"
     null -> "Unknown"
 }
 

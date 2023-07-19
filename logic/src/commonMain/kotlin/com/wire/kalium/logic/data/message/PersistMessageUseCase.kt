@@ -97,6 +97,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MemberChange.FailedToAdd -> false
             is MessageContent.ConversationCreated -> false
             is MessageContent.MLSWrongEpochWarning -> false
-            is MessageContent.VerificationDegraded -> false
+            is MessageContent.ConversationDegraded -> false
         }
 }

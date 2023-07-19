@@ -291,8 +291,8 @@ sealed interface Message {
                     typeKey to "mlsWrongEpochWarning"
                 )
 
-                is MessageContent.VerificationDegraded -> mutableMapOf(
-                    typeKey to "verificationDegraded"
+                is MessageContent.ConversationDegraded -> mutableMapOf(
+                    typeKey to "conversationDegraded"
                 )
             }
 

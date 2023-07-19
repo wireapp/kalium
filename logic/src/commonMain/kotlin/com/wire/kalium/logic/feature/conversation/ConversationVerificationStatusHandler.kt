@@ -52,9 +52,9 @@ internal class ConversationVerificationStatusHandlerImpl(
 
     override suspend fun invoke(conversation: Conversation, status: ConversationVerificationStatus): Unit = withContext(dispatcher) {
         if (shouldNotifyUser(conversation, status)) {
-            val verificationDegradedMessage = Message.System(
+            val conversationDegradedMessage = Message.System(
                 id = uuid4().toString(),
-                content = MessageContent.VerificationDegraded(protocolInfoMapper.fromInfoToProtocol(conversation.protocol)),
+                content = MessageContent.ConversationDegraded(protocolInfoMapper.fromInfoToProtocol(conversation.protocol)),
                 conversationId = conversation.id,
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
@@ -63,7 +63,7 @@ internal class ConversationVerificationStatusHandlerImpl(
                 expirationData = null
             )
 
-            persistMessage(verificationDegradedMessage)
+            persistMessage(conversationDegradedMessage)
                 .flatMap { conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversation.id, true) }
         } else {
             conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversation.id, false)
