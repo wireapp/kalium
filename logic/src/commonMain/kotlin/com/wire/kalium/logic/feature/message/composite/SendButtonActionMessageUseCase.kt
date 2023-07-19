@@ -31,6 +31,14 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.DateTimeUtil
 
+/**
+ * Use case for sending a button action message.
+ * @param conversationId The conversation id.
+ * @param messageId The id of the message that contains the button.
+ * @param buttonId The id of the button.
+ *
+ * the action message is sent only to the message original sender.
+ */
 class SendButtonActionMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageMetaDataRepository: MessageMetaDataRepository,
