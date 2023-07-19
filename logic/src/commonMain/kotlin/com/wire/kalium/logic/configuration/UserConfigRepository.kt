@@ -61,6 +61,8 @@ interface UserConfigRepository {
     fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
+    suspend fun setScreenshotCensoringConfig(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>>
 
     suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
     suspend fun setTeamSettingsSelfDeletionStatus(
@@ -247,4 +249,10 @@ class UserConfigDataSource(
                 )
             }
         }
+
+    override suspend fun setScreenshotCensoringConfig(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.persistScreenshotCensoring(enabled) }
+
+    override suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigStorage.isScreenshotCensoringEnabledFlow().wrapStorageRequest()
 }
