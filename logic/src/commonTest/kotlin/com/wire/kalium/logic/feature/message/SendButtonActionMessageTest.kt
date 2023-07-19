@@ -21,7 +21,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessage
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
@@ -54,7 +54,7 @@ class SendButtonActionMessageTest {
             buttonId = "button-id",
         )
 
-        assertIs<SendButtonActionMessage.Result.Failure>(result)
+        assertIs<SendButtonActionMessageUseCase.Result.Failure>(result)
 
         verify(arrangement.messageMetaDataRepository)
             .suspendFunction(arrangement.messageMetaDataRepository::originalSenderId)
@@ -93,7 +93,7 @@ class SendButtonActionMessageTest {
             buttonId = "button-id",
         )
 
-        assertIs<SendButtonActionMessage.Result.Success>(result)
+        assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
 
         verify(arrangement.messageMetaDataRepository)
             .suspendFunction(arrangement.messageMetaDataRepository::originalSenderId)
@@ -125,11 +125,11 @@ class SendButtonActionMessageTest {
         SyncManagerArrangement by SyncManagerArrangementImpl(),
         CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
 
-        private lateinit var useCase: SendButtonActionMessage
+        private lateinit var useCase: SendButtonActionMessageUseCase
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionMessage> {
+        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionMessageUseCase> {
             apply(block)
-            useCase = SendButtonActionMessage(
+            useCase = SendButtonActionMessageUseCase(
                 messageMetaDataRepository = messageMetaDataRepository,
                 messageSender = messageSender,
                 syncManager = syncManager,

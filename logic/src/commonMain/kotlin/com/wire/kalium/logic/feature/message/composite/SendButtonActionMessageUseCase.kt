@@ -31,7 +31,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.DateTimeUtil
 
-class SendButtonActionMessage internal constructor(
+class SendButtonActionMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageMetaDataRepository: MessageMetaDataRepository,
     private val syncManager: SyncManager,
