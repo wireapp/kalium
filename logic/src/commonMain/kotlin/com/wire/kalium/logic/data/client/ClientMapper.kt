@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.newclient.NewClientEntity
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
@@ -64,6 +65,7 @@ class ClientMapper(
         id = ClientId(client.clientId),
         type = fromClientTypeDTO(client.type),
         registrationTime = Instant.parse(client.registrationTime),
+        lastActive = client.lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) },
         deviceType = fromDeviceTypeDTO(client.deviceType),
         label = client.label,
         model = client.model,
@@ -76,6 +78,7 @@ class ClientMapper(
             id = ClientId(id),
             type = clientType?.let { fromClientTypeEntity(it) },
             registrationTime = registrationDate,
+            lastActive = lastActive,
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
             label = label,
             model = model,
@@ -89,6 +92,7 @@ class ClientMapper(
             id = ClientId(id),
             type = null,
             registrationTime = registrationDate,
+            lastActive = null,
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
             label = null,
             model = model,
@@ -107,7 +111,8 @@ class ClientMapper(
                     clientType = null,
                     label = null,
                     model = null,
-                    registrationDate = null
+                    registrationDate = null,
+                    lastActive = null
                 )
             }
         }
@@ -121,7 +126,8 @@ class ClientMapper(
                 clientType = toClientTypeEntity(type),
                 label = label,
                 model = model,
-                registrationDate = Instant.parse(registrationTime)
+                registrationDate = Instant.parse(registrationTime),
+                lastActive = lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) }
             )
         }
 
@@ -134,7 +140,8 @@ class ClientMapper(
                 clientType = null,
                 label = null,
                 model = null,
-                registrationDate = null
+                registrationDate = null,
+                lastActive = null
             )
         }
 
@@ -146,7 +153,8 @@ class ClientMapper(
             clientType = event.client.type?.let { toClientTypeEntity(it) },
             label = event.client.label,
             model = event.client.model,
-            registrationDate = event.client.registrationTime
+            registrationDate = event.client.registrationTime,
+            lastActive = event.client.lastActive
         )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
