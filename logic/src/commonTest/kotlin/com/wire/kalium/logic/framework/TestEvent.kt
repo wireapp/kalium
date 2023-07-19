@@ -152,7 +152,8 @@ object TestEvent {
         conversationId = TestConversation.ID,
         transient = false,
         messageTimer = 3000,
-        senderUserId = TestUser.USER_ID
+        senderUserId = TestUser.USER_ID,
+        timestampIso = "2022-03-30T15:36:00.000Z"
     )
 
     fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(

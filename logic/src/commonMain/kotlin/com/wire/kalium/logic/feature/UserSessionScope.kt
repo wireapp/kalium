@@ -533,6 +533,7 @@ class UserSessionScope internal constructor(
             joinExistingMLSConversationUseCase,
             memberJoinHandler,
             memberLeaveHandler,
+            conversationMessageTimerEventHandler,
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
