@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
@@ -102,16 +103,7 @@ class SelfClientsUseCaseTest {
     }
 
     private companion object {
-        val CLIENT = Client(
-            id = PlainId(value = "client_id_1"),
-            type = ClientType.Permanent,
-            registrationTime = Instant.parse("2022-01-01T10:52:02.671Z"),
-            deviceType = DeviceType.Desktop,
-            label = null,
-            model = "Mac ox",
-            isVerified = false,
-            isValid = true
-        )
+        val CLIENT = TestClient.CLIENT
         val CLIENTS_LIST = listOf(
             CLIENT.copy(id = PlainId(value = "client_id_1")),
             CLIENT.copy(id = PlainId(value = "client_id_2"))

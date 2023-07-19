@@ -90,6 +90,7 @@ actual class MLSClientImpl actual constructor(
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     private val defaultE2EIExpiry: UInt = 90U
+    private val defaultMLSCredentialType: MlsCredentialType = MlsCredentialType.BASIC
 
     init {
         coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), listOf(defaultCiphersuite))
@@ -105,11 +106,12 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(defaultCiphersuite, amount.toUInt()).map { it.toUByteArray().asByteArray() }
+        return coreCrypto.clientKeypackages(defaultCiphersuite, defaultMLSCredentialType, amount.toUInt())
+            .map { it.toUByteArray().asByteArray() }
     }
 
     override fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite)
+        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, defaultMLSCredentialType)
     }
 
     override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -176,12 +178,18 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
-        val applicationMessage = coreCrypto.encryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))
+        val applicationMessage =
+            coreCrypto.encryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))
         return toByteArray(applicationMessage)
     }
 
     override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
-        return toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)))
+        return toDecryptedMessageBundle(
+            coreCrypto.decryptMessage(
+                toUByteList(groupId.decodeBase64Bytes()),
+                toUByteList(message)
+            )
+        )
     }
 
     override fun commitAccepted(groupId: MLSGroupId) {
@@ -237,7 +245,7 @@ actual class MLSClientImpl actual constructor(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewEnrollment(
                 clientId.toString(),
@@ -246,6 +254,50 @@ actual class MLSClientImpl actual constructor(
                 defaultE2EIExpiry,
                 defaultCiphersuite
             )
+        )
+    }
+
+    override fun e2eiNewActivationEnrollment(
+        displayName: String,
+        handle: String
+    ): E2EIClient {
+        return E2EIClientImpl(
+            coreCrypto.e2eiNewActivationEnrollment(
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuite
+            )
+        )
+    }
+
+    override fun e2eiNewRotateEnrollment(
+        displayName: String?,
+        handle: String?
+    ): E2EIClient {
+        return E2EIClientImpl(
+            coreCrypto.e2eiNewRotateEnrollment(
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuite
+            )
+        )
+    }
+
+    override fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
+        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain)
+    }
+
+    override fun e2eiRotateAll(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ) {
+        coreCrypto.e2eiRotateAll(
+            (enrollment as E2EIClientImpl).wireE2eIdentity,
+            certificateChain,
+            newMLSKeyPackageCount
         )
     }
 
@@ -296,7 +348,10 @@ actual class MLSClientImpl actual constructor(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(toByteArray(it))) },
-            value.hasEpochChanged
+            value.hasEpochChanged,
+            value.identity?.let {
+                E2EIdentity(it.clientId, it.handle, it.displayName, it.domain)
+            }
         )
     }
 

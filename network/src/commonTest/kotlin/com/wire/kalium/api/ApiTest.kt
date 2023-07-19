@@ -29,20 +29,13 @@ import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.tools.KtxSerializer
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.ContentType
-import io.ktor.http.HeadersImpl
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.URLProtocol
+import io.ktor.http.*
 import io.ktor.http.content.TextContent
-import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.JsonElement
@@ -329,6 +322,9 @@ internal abstract class ApiTest {
     // path
     // assertContains is used here instead of equals because the path can contain other data like api version
     fun HttpRequestData.assertPathEqual(path: String) = assertContains(this.url.encodedPath, path)
+
+    // full url
+    fun HttpRequestData.assertUrlEqual(path: String) = assertContains(this.url.toString(), path)
 
     // path and query
     fun HttpRequestData.assertPathAndQueryEqual(pathAndQuery: String) = assertEquals(pathAndQuery, this.url.encodedPathAndQuery)

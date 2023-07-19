@@ -25,6 +25,7 @@ typealias HandshakeMessage = ByteArray
 typealias ApplicationMessage = ByteArray
 typealias PlainMessage = ByteArray
 typealias MLSKeyPackage = ByteArray
+typealias CertificateChain = String
 
 enum class GroupInfoEncryptionType {
     PLAINTEXT,
@@ -53,7 +54,8 @@ class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
-    val hasEpochChanged: Boolean
+    val hasEpochChanged: Boolean,
+    val identity: E2EIdentity?
 )
 
 @JvmInline
@@ -268,16 +270,51 @@ interface MLSClient {
     fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
     /**
-     * Enroll Wire E2EIdentity ACME Client for E2
+     * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
      *
      * @return wire end to end identity client
      */
     fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
+        clientId: E2EIQualifiedClientId,
         displayName: String,
         handle: String
     ): E2EIClient
 
+    /**
+     * Enroll Wire E2EIdentity Client for E2EI when MLSClient already initialized
+     *
+     * @return wire end to end identity client
+     */
+    fun e2eiNewActivationEnrollment(
+        displayName: String,
+        handle: String
+    ): E2EIClient
+
+    /**
+     * Enroll Wire E2EI Enrollment Client for renewing certificate
+     *
+     * @return wire end to end identity client
+     */
+    fun e2eiNewRotateEnrollment(
+        displayName: String?,
+        handle: String?
+    ): E2EIClient
+
+    /**
+     * Init MLSClient after enrollment
+     */
+    fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain)
+
+    /**
+     * Generate new keypackages after E2EI certificate issued
+     */
+    fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt)
+
+    /**
+     * Conversation E2EI Verification Status
+     *
+     * @return the conversation verification status
+     */
     fun isGroupVerified(groupId: MLSGroupId): Boolean
 }
 

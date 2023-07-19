@@ -122,7 +122,7 @@ internal class MemberDAOImpl internal constructor(
     }
 
     override suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>> {
-        return memberQueries.selectAllMembersByConversation(qualifiedID.value)
+        return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()

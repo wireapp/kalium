@@ -171,7 +171,8 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
-        val applicationMessage = coreCrypto.encryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))
+        val applicationMessage =
+            coreCrypto.encryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))
         return toByteArray(applicationMessage)
     }
 
@@ -227,7 +228,23 @@ actual class MLSClientImpl actual constructor(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiNewActivationEnrollment(displayName: String, handle: String): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiNewRotateEnrollment(displayName: String?, handle: String?): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt) {
         TODO("Not yet implemented")
     }
 
@@ -279,7 +296,8 @@ actual class MLSClientImpl actual constructor(
             value.message?.let { toByteArray(it) },
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
-            value.hasEpochChanged
+            value.hasEpochChanged,
+            identity = null
         )
     }
 

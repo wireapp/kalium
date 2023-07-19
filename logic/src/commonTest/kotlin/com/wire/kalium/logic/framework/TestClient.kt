@@ -32,6 +32,7 @@ object TestClient {
         CLIENT_ID,
         ClientType.Permanent,
         Instant.DISTANT_PAST,
+        Instant.DISTANT_PAST,
         deviceType = null,
         model = null,
         label = "label",

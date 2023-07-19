@@ -120,6 +120,11 @@ interface MLSFailure : CoreFailure {
     }
 }
 
+class E2EIFailure(internal val exception: Exception) : CoreFailure {
+
+    val rootCause: Throwable get() = exception
+}
+
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
 
     val rootCause: Throwable get() = proteusException
@@ -200,6 +205,15 @@ internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, 
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(MLSFailure.Generic(e))
+    }
+}
+
+internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailure, T> {
+    return try {
+        Either.Right(e2eiRequest())
+    } catch (e: Exception) {
+        kaliumLogger.e(e.stackTraceToString())
+        Either.Left(E2EIFailure(e))
     }
 }
 
