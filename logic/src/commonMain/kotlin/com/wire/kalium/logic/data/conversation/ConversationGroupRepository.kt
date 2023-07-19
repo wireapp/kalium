@@ -195,9 +195,9 @@ internal class ConversationGroupRepositoryImpl(
                         apiResult.value as NetworkFailure.FederatedBackendFailure,
                         previousUserIdsExcluded
                     )
-                    // retry adding filtered members to the conversation
+                    // retry adding, only with filtered available members to the conversation
                     tryAddMembersToCloudAndStorage(
-                        usersReqState.usersThatCanBeAdded.toList(), conversationId, usersReqState.usersThatCannotBeAdded.toSet()
+                        usersReqState.usersThatCanBeAdded.toList(), conversationId, usersReqState.usersThatCannotBeAdded
                     )
                 } else {
                     Either.Left(apiResult.value)
