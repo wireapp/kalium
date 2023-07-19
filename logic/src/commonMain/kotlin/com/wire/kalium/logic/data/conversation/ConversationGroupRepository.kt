@@ -36,7 +36,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.wrapApiRequest
@@ -211,8 +210,9 @@ internal class ConversationGroupRepositoryImpl(
                     )
                 }
                 if (previousUserIdsExcluded.isNotEmpty()) {
-                    // todo(ym): persist members failed system message.
-                    kaliumLogger.d("[${previousUserIdsExcluded.size}] members were not added to the conversation")
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationId, previousUserIdsExcluded
+                    )
                 }
                 Either.Right(Unit)
             }
