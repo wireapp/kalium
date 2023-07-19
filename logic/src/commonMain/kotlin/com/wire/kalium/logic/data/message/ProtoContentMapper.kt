@@ -487,15 +487,16 @@ class ProtoContentMapperImpl(
         quotedMessageDetails = null
     )
 
-    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<MessageContent.Composite.Button> = compositeItemList.mapNotNull {
-        it.button?.let { button ->
-            MessageContent.Composite.Button(
-                text = button.text,
-                id = button.id,
-                isSelected = false
-            )
+    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<MessageContent.Composite.Button> =
+        compositeItemList.mapNotNull {
+            it.button?.let { button ->
+                MessageContent.Composite.Button(
+                    text = button.text,
+                    id = button.id,
+                    isSelected = false
+                )
+            }
         }
-    }
 
     private fun packAsset(readableContent: MessageContent.Asset, expectsReadConfirmation: Boolean): GenericMessage.Content.Asset {
         return GenericMessage.Content.Asset(
