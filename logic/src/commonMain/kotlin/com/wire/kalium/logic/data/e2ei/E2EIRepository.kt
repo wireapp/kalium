@@ -194,7 +194,7 @@ class E2EIRepositoryImpl(
     override suspend fun initMLSClientWithCertificate(certificateChain: String) {
         e2EClientProvider.getE2EIClient().flatMap { e2eiClient ->
             mlsClientProvider.getMLSClient().map {
-                it.initMLSWithE2EI(e2eiClient, certificateChain)
+                it.e2eiMlsInitOnly(e2eiClient, certificateChain)
             }
         }
     }
