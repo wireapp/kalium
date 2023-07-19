@@ -50,6 +50,7 @@ object NotificationEventsResponseJson {
             |  "type": "user.client-add",
             |  "client": {
             |    "time": "${eventData.client.registrationTime}",
+            |    "last_active": "${eventData.client.lastActive}",
             |    "model": "${eventData.client.model}",
             |    "id": "71ff8872e468a970",
             |    "type": "${eventData.client.type}",
@@ -71,6 +72,7 @@ object NotificationEventsResponseJson {
                 clientId = "id",
                 location = LocationResponse("23.2", "43.2"),
                 registrationTime = "2022-02-15T12:54:30Z",
+                lastActive = "2022-02-15T12:54:30Z",
                 model = "Firefox (Temporary)",
                 type = ClientTypeDTO.Permanent,
                 deviceType = DeviceTypeDTO.Desktop,

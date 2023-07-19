@@ -73,6 +73,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
             isValid = true,
             isVerified = false,
             registrationDate = null,
+            lastActive = null,
             label = null,
             clientType = null,
             model = null
@@ -84,6 +85,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
             client.clientType,
             client.label,
             client.registrationDate,
+            client.lastActive,
             client.model
         )
     }

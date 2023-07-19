@@ -117,7 +117,27 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiNewActivationEnrollment(displayName: String, handle: String): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiNewRotateEnrollment(displayName: String?, handle: String?): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
+        TODO("Not yet implemented")
+    }
+
+    override fun e2eiRotateAll(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ) {
         TODO("Not yet implemented")
     }
 

@@ -336,7 +336,7 @@ class MessageMapperImpl(
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
         messageBody = textContent.value,
-        mentions = textContent.mentions.map { messageMentionMapper.fromModelToDao(it) },
+        mentions = textContent.mentions.map(messageMentionMapper::fromModelToDao),
         quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
         isQuoteVerified = textContent.quotedMessageReference?.isVerified,
     )
