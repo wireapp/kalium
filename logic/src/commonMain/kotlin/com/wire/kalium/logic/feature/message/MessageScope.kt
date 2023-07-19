@@ -301,7 +301,7 @@ class MessageScope internal constructor(
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
 
-    val sendButtonActionMessageUseCase: SendButtonActionMessageUseCase
+    val sendButtonActionMessage: SendButtonActionMessageUseCase
         get() = SendButtonActionMessageUseCase(
             syncManager = syncManager,
             messageSender = messageSender,
