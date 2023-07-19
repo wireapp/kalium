@@ -39,6 +39,7 @@ import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
@@ -51,6 +52,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.model.Cause
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -66,6 +68,7 @@ import io.mockative.anything
 import io.mockative.eq
 import io.mockative.fun1
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -646,6 +649,50 @@ class ConversationGroupRepositoryTest {
         assertEquals(LINK, result.first())
     }
 
+    @Test
+    fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
+        runTest {
+            val failedDomain = "bella.com"
+            // given
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(listOf(failedDomain))
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .arrange()
+
+            // when
+            val expectedInitialUsers = listOf(
+                TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID
+            )
+            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+
+            // then
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(matching {
+                    it.users.size == 2
+                }).wasInvoked(exactly = once)
+
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(matching {
+                    it.users.first().domain != failedDomain
+                }).wasInvoked(exactly = once)
+
+            verify(arrangement.memberJoinEventHandler)
+                .suspendFunction(arrangement.memberJoinEventHandler::handle)
+                .with(anything())
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), matching { it.size == 1 })
+                .wasInvoked(exactly = once)
+        }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -725,6 +772,13 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Unit)
         }
 
+        fun withInsertFailedToAddSystemMessageSuccess(): Arrangement = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withFetchLimitedConversationInfo(
             code: String,
             key: String,
@@ -781,6 +835,34 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationApi::addMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(
+                    NetworkResponse.Success(
+                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+        }
+
+        fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(failedDomain: List<String> = listOf("bella.com")) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::addMember)
+                .whenInvokedWith(any(), any())
+                .thenReturnSequentially(
+                    NetworkResponse.Error(
+                        KaliumException.FederationError(
+                            ErrorResponse(
+                                HttpStatusCode.InternalServerError.value,
+                                "remote backend unreachable",
+                                "federation-unreachable-domains-error",
+                                Cause(
+                                    "federation",
+                                    "bella.com",
+                                    failedDomain,
+                                    "/some/path"
+                                )
+                            )
+                        )
+                    ),
                     NetworkResponse.Success(
                         TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
                         mapOf(),
