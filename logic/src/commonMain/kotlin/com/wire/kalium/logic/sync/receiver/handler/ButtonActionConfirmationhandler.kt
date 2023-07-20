@@ -54,4 +54,3 @@ internal class ButtonActionConfirmationHandlerImpl internal constructor(
         }
     }
 }
-
