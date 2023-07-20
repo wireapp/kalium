@@ -22,6 +22,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.isActive
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
@@ -99,10 +100,10 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
     ): Boolean {
         val mlsIsSupported = mlsConfiguration.supportedProtocols.contains(SupportedProtocol.MLS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
-        val allSelfClientsAreMLSCapable = selfClients.all { it.isMLSCapable }
+        val allSelfClientsAreMLSCapable = selfClients.filter { it.isActive }.all { it.isMLSCapable }
         kaliumLogger.d(
             "mls is supported = $mlsIsSupported, " +
-                    "all self clients are mls capable = $allSelfClientsAreMLSCapable " +
+                    "all active self clients are mls capable = $allSelfClientsAreMLSCapable " +
                     "migration has ended = $mlsMigrationHasEnded"
         )
         return mlsIsSupported && (mlsMigrationHasEnded || allSelfClientsAreMLSCapable)
