@@ -53,7 +53,6 @@ internal sealed class LoggingSelfDeletionEvent(
 
     abstract fun toLogMap(): Map<String, Any?>
 
-
     data class SelfSelfDeletionAlreadyRequested(
         override val message: Message,
         override val expirationData: Message.ExpirationData
@@ -76,7 +75,7 @@ internal sealed class LoggingSelfDeletionEvent(
             return mapOf(
                 "deletion-info" to mapOf(
                     "info" to "marking-self_deletion_start_date",
-                    "start-date-mark" to  startDate.toIsoDateTimeString()
+                    "start-date-mark" to startDate.toIsoDateTimeString()
                 )
             )
         }

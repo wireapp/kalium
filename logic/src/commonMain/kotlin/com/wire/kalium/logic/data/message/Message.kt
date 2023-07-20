@@ -524,8 +524,8 @@ sealed class DeliveryStatus {
     fun toLogMap(): Map<String, String> = when (this) {
         is PartialDelivery -> mutableMapOf(
             "value" to "PARTIAL_DELIVERY",
-            "failed-with-no-clients" to recipientsFailedWithNoClients.joinToString(",") { it.value },
-            "failed-delivery" to recipientsFailedDelivery.joinToString(",") { it.value }
+            "failed-with-no-clients" to recipientsFailedWithNoClients.joinToString(",") { it.toLogString() },
+            "failed-delivery" to recipientsFailedDelivery.joinToString(",") { it.toLogString() }
         )
 
         is CompleteDelivery -> mutableMapOf(
