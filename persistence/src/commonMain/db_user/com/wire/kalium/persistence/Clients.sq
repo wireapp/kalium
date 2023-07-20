@@ -39,7 +39,7 @@ label = coalesce(excluded.label, label),
 model = coalesce(excluded.model, model),
 is_valid = is_valid,
 last_active = coalesce(excluded.last_active, last_active),
-is_mls_capable = is_mls_capable;
+is_mls_capable = excluded.is_mls_capable OR is_mls_capable;
 
 selectAllClients:
 SELECT * FROM Client;
