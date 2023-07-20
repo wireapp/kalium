@@ -33,6 +33,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
@@ -51,7 +52,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.Cause
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
@@ -650,6 +653,62 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenAConversationAndAPISucceeds_whenUpdatingMessageTimer_thenShouldTriggerHandler() = runTest {
+        // given
+        val messageTimer = 5000L
+        val messageTimerUpdateEvent = EventContentDTO.Conversation.MessageTimerUpdate(
+            TestConversation.NETWORK_ID,
+            ConversationMessageTimerDTO(messageTimer),
+            TestConversation.NETWORK_USER_ID1,
+            "2022-03-30T15:36:00.000Z"
+        )
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withUpdateMessageTimerAPISuccess(messageTimerUpdateEvent)
+            .withSuccessfulHandleMessageTimerUpdateEvent()
+            .arrange()
+
+        // when
+        val result = conversationGroupRepository.updateMessageTimer(
+            TestConversation.ID,
+            messageTimer
+        )
+
+        // then
+        result.shouldSucceed()
+
+        verify(arrangement.conversationMessageTimerEventHandler)
+            .suspendFunction(arrangement.conversationMessageTimerEventHandler::handle)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConversationAndAPIFailed_whenUpdatingMessageTimer_thenShouldNotTriggerHandler() = runTest {
+        // given
+        val messageTimer = 5000L
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withUpdateMessageTimerAPIFailed()
+            .withSuccessfulHandleMessageTimerUpdateEvent()
+            .arrange()
+
+        // when
+        val result = conversationGroupRepository.updateMessageTimer(
+            TestConversation.ID,
+            messageTimer
+        )
+
+        // then
+        result.shouldFail()
+
+        verify(arrangement.conversationMessageTimerEventHandler)
+            .suspendFunction(arrangement.conversationMessageTimerEventHandler::handle)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
         runTest {
             val failedDomain = "bella.com"
@@ -703,6 +762,9 @@ class ConversationGroupRepositoryTest {
         val memberLeaveEventHandler = mock(MemberLeaveEventHandler::class)
 
         @Mock
+        val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
+
+        @Mock
         val userRepository: UserRepository = mock(UserRepository::class)
 
         @Mock
@@ -735,6 +797,7 @@ class ConversationGroupRepositoryTest {
                 joinExistingMLSConversation,
                 memberJoinEventHandler,
                 memberLeaveEventHandler,
+                conversationMessageTimerEventHandler,
                 conversationDAO,
                 conversationApi,
                 newConversationMembersRepository,
@@ -770,13 +833,6 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationDAO::insertConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(Unit)
-        }
-
-        fun withInsertFailedToAddSystemMessageSuccess(): Arrangement = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
         }
 
         fun withFetchLimitedConversationInfo(
@@ -835,34 +891,6 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(conversationApi::addMember)
                 .whenInvokedWith(any(), any())
                 .thenReturn(
-                    NetworkResponse.Success(
-                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
-                )
-        }
-
-        fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(failedDomain: List<String> = listOf("bella.com")) = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::addMember)
-                .whenInvokedWith(any(), any())
-                .thenReturnSequentially(
-                    NetworkResponse.Error(
-                        KaliumException.FederationError(
-                            ErrorResponse(
-                                HttpStatusCode.InternalServerError.value,
-                                "remote backend unreachable",
-                                "federation-unreachable-domains-error",
-                                Cause(
-                                    "federation",
-                                    "bella.com",
-                                    failedDomain,
-                                    "/some/path"
-                                )
-                            )
-                        )
-                    ),
                     NetworkResponse.Success(
                         TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
                         mapOf(),
@@ -1061,6 +1089,72 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withUpdateMessageTimerAPISuccess(event: EventContentDTO.Conversation.MessageTimerUpdate): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateMessageTimer)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        event,
+                        emptyMap(),
+                        HttpStatusCode.NoContent.value
+                    )
+                )
+        }
+
+        fun withUpdateMessageTimerAPIFailed() = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateMessageTimer)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Error(
+                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    )
+                )
+        }
+
+        fun withSuccessfulHandleMessageTimerUpdateEvent() = apply {
+            given(conversationMessageTimerEventHandler)
+                .suspendFunction(conversationMessageTimerEventHandler::handle)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withInsertFailedToAddSystemMessageSuccess(): Arrangement = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(failedDomain: List<String> = listOf("bella.com")) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::addMember)
+                .whenInvokedWith(any(), any())
+                .thenReturnSequentially(
+                    NetworkResponse.Error(
+                        KaliumException.FederationError(
+                            ErrorResponse(
+                                HttpStatusCode.InternalServerError.value,
+                                "remote backend unreachable",
+                                "federation-unreachable-domains-error",
+                                Cause(
+                                    "federation",
+                                    "bella.com",
+                                    failedDomain,
+                                    "/some/path"
+                                )
+                            )
+                        )
+                    ),
+                    NetworkResponse.Success(
+                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
         }
 
         fun arrange() = this to conversationGroupRepository

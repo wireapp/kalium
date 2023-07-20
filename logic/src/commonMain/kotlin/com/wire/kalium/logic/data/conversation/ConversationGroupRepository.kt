@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.wrapApiRequest
@@ -67,7 +68,7 @@ interface ConversationGroupRepository {
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
-    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit>
+    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -76,6 +77,7 @@ internal class ConversationGroupRepositoryImpl(
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
+    private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
@@ -301,10 +303,16 @@ internal class ConversationGroupRepositoryImpl(
     override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
 
-    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit> =
-        wrapApiRequest {
-            conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer)
-        }
-            .onSuccess { conversationDAO.updateMessageTimer(conversationId.toDao(), messageTimer) }
+    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit> =
+        wrapApiRequest { conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer) }
+            .onSuccess {
+                conversationMessageTimerEventHandler.handle(
+                    eventMapper.conversationMessageTimerUpdate(
+                        LocalId.generate(),
+                        it,
+                        true
+                    )
+                )
+            }
             .map { }
 }
