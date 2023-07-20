@@ -17,17 +17,10 @@
  */
 package com.wire.kalium.logic.feature.conversation.messagetimer
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.util.DateTimeUtil
 
 /**
  * A use case used to update messages self deletion for conversation
@@ -43,26 +36,9 @@ interface UpdateMessageTimerUseCase {
 
 class UpdateMessageTimerUseCaseImpl internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
-    private val persistMessage: PersistMessageUseCase,
-    private val selfUserId: UserId,
 ) : UpdateMessageTimerUseCase {
     override suspend fun invoke(conversationId: ConversationId, messageTimer: Long?): UpdateMessageTimerUseCase.Result =
         conversationGroupRepository.updateMessageTimer(conversationId, messageTimer)
-            .onSuccess {
-                val message = Message.System(
-                    uuid4().toString(),
-                    MessageContent.ConversationMessageTimerChanged(
-                        messageTimer = messageTimer
-                    ),
-                    conversationId,
-                    DateTimeUtil.currentIsoDateTimeString(),
-                    selfUserId,
-                    Message.Status.SENT,
-                    Message.Visibility.VISIBLE,
-                    expirationData = null
-                )
-                persistMessage(message)
-            }
             .fold(
                 { UpdateMessageTimerUseCase.Result.Failure(it) },
                 { UpdateMessageTimerUseCase.Result.Success }

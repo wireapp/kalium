@@ -229,9 +229,7 @@ class ConversationScope internal constructor(
 
     val updateMessageTimer: UpdateMessageTimerUseCase
         get() = UpdateMessageTimerUseCaseImpl(
-            conversationGroupRepository,
-            persistMessage,
-            selfUserId
+            conversationGroupRepository
         )
 
     val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
