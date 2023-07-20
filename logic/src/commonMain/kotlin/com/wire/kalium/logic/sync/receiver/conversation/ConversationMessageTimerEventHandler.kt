@@ -75,7 +75,6 @@ internal class ConversationMessageTimerEventHandlerImpl(
                     )
             }
 
-
     private suspend fun updateMessageTimer(event: Event.Conversation.ConversationMessageTimer) = wrapStorageRequest {
         conversationDAO.updateMessageTimer(
             event.conversationId.toDao(),

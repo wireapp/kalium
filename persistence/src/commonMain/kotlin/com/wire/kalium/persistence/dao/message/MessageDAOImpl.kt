@@ -146,6 +146,7 @@ internal class MessageDAOImpl internal constructor(
     - [MessageEntityContent.ConversationRenamed]
     - [MessageEntityContent.ConversationMessageTimerChanged]
      */
+    @Suppress("ComplexMethod")
     private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
         when (message.content) {
             is MessageEntityContent.MemberChange, is MessageEntityContent.ConversationRenamed,
