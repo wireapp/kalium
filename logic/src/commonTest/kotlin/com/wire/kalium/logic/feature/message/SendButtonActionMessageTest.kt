@@ -32,6 +32,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderAr
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangementImpl
 import io.mockative.any
+import io.mockative.matching
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -114,6 +115,46 @@ class SendButtonActionMessageTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenMessageSendingSuccess_thenMessageIsSentOnlyToOriginalSender() = runTest {
+        val convId = ConversationId("conversation-id", "conversation-domain")
+        val originalSender = UserId("original-sender-id", "original-sender-domain")
+        val (arrangement, useCase) = Arrangement()
+            .arrange {
+                withWaitUntilLiveOrFailure(Either.Right(Unit))
+                withCurrentClientIdSuccess(ClientId("client-id"))
+                withMessageOriginalSender(Either.Right(originalSender))
+                withSendMessageSucceed()
+            }
+
+        val result = useCase(
+            conversationId = convId,
+            messageId = "message-id",
+            buttonId = "button-id",
+        )
+
+        assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
+
+        verify(arrangement.messageMetaDataRepository)
+            .suspendFunction(arrangement.messageMetaDataRepository::originalSenderId)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(any(), matching {
+                it is MessageTarget.Users && it.userId == listOf(originalSender)
+            })
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.syncManager)
+            .suspendFunction(arrangement.syncManager::waitUntilLiveOrFailure)
+            .wasInvoked(exactly = once)
+    }
 
     private companion object {
         val SELF_USER_ID: UserId = UserId("self-user-id", "self-user-domain")
