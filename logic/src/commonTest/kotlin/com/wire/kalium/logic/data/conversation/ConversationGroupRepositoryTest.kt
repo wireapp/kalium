@@ -711,13 +711,15 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
         runTest {
-            val failedDomain = "bella.com"
+            val failedDomain = "unstableDomain1.com"
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
                 .withConversationDetailsById(TestConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
-                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(listOf(failedDomain))
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                    arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, API_SUCCESS_MEMBER_ADDED)
+                )
                 .withSuccessfulHandleMemberJoinEvent()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
@@ -1129,33 +1131,13 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(failedDomain: List<String> = listOf("bella.com")) = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::addMember)
-                .whenInvokedWith(any(), any())
-                .thenReturnSequentially(
-                    NetworkResponse.Error(
-                        KaliumException.FederationError(
-                            ErrorResponse(
-                                HttpStatusCode.InternalServerError.value,
-                                "remote backend unreachable",
-                                "federation-unreachable-domains-error",
-                                Cause(
-                                    "federation",
-                                    "bella.com",
-                                    failedDomain,
-                                    "/some/path"
-                                )
-                            )
-                        )
-                    ),
-                    NetworkResponse.Success(
-                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
-                )
-        }
+        fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(networkResponses: Array<NetworkResponse<ConversationMemberAddedResponse>>) =
+            apply {
+                given(conversationApi)
+                    .suspendFunction(conversationApi::addMember)
+                    .whenInvokedWith(any(), any())
+                    .thenReturnSequentially(*networkResponses)
+            }
 
         fun arrange() = this to conversationGroupRepository
     }
@@ -1201,6 +1183,28 @@ class ConversationGroupRepositoryTest {
             ),
             mlsCipherSuiteTag = null,
             receiptMode = ReceiptMode.DISABLED
+        )
+
+        val FEDERATION_ERROR_UNREACHABLE_DOMAINS = NetworkResponse.Error(
+            KaliumException.FederationError(
+                ErrorResponse(
+                    HttpStatusCode.InternalServerError.value,
+                    "remote backend unreachable",
+                    "federation-unreachable-domains-error",
+                    Cause(
+                        "federation",
+                        "unstableDomain1.com",
+                        listOf("unstableDomain1.com", "unstableDomain2.com"),
+                        "/some/path"
+                    )
+                )
+            )
+        )
+
+        val API_SUCCESS_MEMBER_ADDED = NetworkResponse.Success(
+            TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+            mapOf(),
+            HttpStatusCode.OK.value
         )
     }
 }
