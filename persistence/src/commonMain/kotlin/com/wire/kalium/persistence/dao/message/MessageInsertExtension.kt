@@ -227,9 +227,11 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
-            is MessageEntityContent.ConversationDegraded -> {
-                /* no-op */
-            }
+            is MessageEntityContent.ConversationDegraded -> messagesQueries.insertConversationVerificationDegraded(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                protocol = content.protocol
+            )
         }
     }
 

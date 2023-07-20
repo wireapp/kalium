@@ -203,7 +203,7 @@ CREATE TABLE ConversationVerificationDegraded (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
-      protocol TEXT AS ConversationEntity.Protocol NOT NULL,
+      protocol TEXT AS ConversationEntity.Protocol DEFAULT(NULL),
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -669,3 +669,7 @@ WHERE  conversation_id = ? AND id = ?;
 insertMessageRecipientsFailure:
 INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
 VALUES(?, ?, ?, ?);
+
+insertConversationVerificationDegraded:
+INSERT OR IGNORE INTO ConversationVerificationDegraded(message_id, conversation_id, protocol)
+VALUES (?, ?,?);

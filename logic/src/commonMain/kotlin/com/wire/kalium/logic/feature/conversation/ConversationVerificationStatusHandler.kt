@@ -65,7 +65,7 @@ internal class ConversationVerificationStatusHandlerImpl(
 
             persistMessage(conversationDegradedMessage)
                 .flatMap { conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversation.id, true) }
-        } else {
+        } else if (status != ConversationVerificationStatus.DEGRADED) {
             conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversation.id, false)
         }
     }
