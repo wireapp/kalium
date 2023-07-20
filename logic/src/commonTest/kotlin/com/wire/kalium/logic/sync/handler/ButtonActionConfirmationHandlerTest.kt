@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.sync.handler
 
-import com.wire.crypto.withRustCallStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.functional.Either
