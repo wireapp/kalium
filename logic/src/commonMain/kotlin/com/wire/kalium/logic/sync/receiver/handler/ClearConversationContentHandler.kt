@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 
-interface ClearConversationContentHandler {
+internal interface ClearConversationContentHandler {
     suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.Cleared

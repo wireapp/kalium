@@ -201,8 +201,11 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
-            is MessageContent.ButtonAction -> TODO()
-            is MessageContent.ButtonActionConfirmation -> TODO()
+            is MessageContent.ButtonAction -> {
+                /* no-op */
+                // TODO(services): we need handle this event if kalium need to support services
+            }
+            is MessageContent.ButtonActionConfirmation ->
         }
     }
 
