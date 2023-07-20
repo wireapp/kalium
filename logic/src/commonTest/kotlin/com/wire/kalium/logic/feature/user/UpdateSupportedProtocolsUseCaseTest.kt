@@ -42,6 +42,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
@@ -129,7 +130,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     }
 
     @Test
-    fun givenMlsIsSupportedAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
+    fun givenMlsIsSupportedAndAllActiveClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
@@ -137,7 +138,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
             )
             .withGetSelfClientsSuccessful(clients = listOf(
-                TestClient.CLIENT.copy(isMLSCapable = true)
+                TestClient.CLIENT.copy(isMLSCapable = true, lastActive = Clock.System.now())
             ))
             .withUpdateSupportedProtocolsSuccessful()
             .arrange()
@@ -151,7 +152,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     }
 
     @Test
-    fun givenMlsIsSupportedAndAllClientsAreNotCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
+    fun givenMlsIsSupportedAndAnInactiveClientIsNotMlsCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
             .withGetFeatureConfigurationSuccessful(
@@ -159,8 +160,31 @@ class UpdateSupportedProtocolsUseCaseTest {
                 migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
             )
             .withGetSelfClientsSuccessful(clients = listOf(
-                TestClient.CLIENT.copy(isMLSCapable = true),
-                TestClient.CLIENT.copy(isMLSCapable = false)
+                TestClient.CLIENT.copy(isMLSCapable = true, lastActive = Clock.System.now()),
+                TestClient.CLIENT.copy(isMLSCapable = false, lastActive = Instant.DISTANT_PAST)
+            ))
+            .withUpdateSupportedProtocolsSuccessful()
+            .arrange()
+
+        useCase.invoke()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateSupportedProtocols)
+            .with(matching { it.contains(SupportedProtocol.MLS) })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMlsIsSupportedAndAllActiveClientsAreNotCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withGetSelfUserSuccessful()
+            .withGetFeatureConfigurationSuccessful(
+                supportedProtocols = setOf(SupportedProtocol.MLS),
+                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
+            )
+            .withGetSelfClientsSuccessful(clients = listOf(
+                TestClient.CLIENT.copy(isMLSCapable = true, lastActive = Clock.System.now()),
+                TestClient.CLIENT.copy(isMLSCapable = false, lastActive = Clock.System.now())
             ))
             .withUpdateSupportedProtocolsSuccessful()
             .arrange()
