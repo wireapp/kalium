@@ -36,10 +36,10 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
-interface UserEventReceiver : EventReceiver<Event.User>
+internal interface UserEventReceiver : EventReceiver<Event.User>
 
 @Suppress("LongParameterList")
-class UserEventReceiverImpl internal constructor(
+internal class UserEventReceiverImpl internal constructor(
     private val clientRepository: ClientRepository,
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,

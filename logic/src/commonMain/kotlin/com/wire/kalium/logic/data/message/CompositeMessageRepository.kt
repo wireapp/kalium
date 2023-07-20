@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
@@ -26,22 +27,22 @@ import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
 
 interface CompositeMessageRepository {
     suspend fun markSelected(
-        messageId: String,
+        messageId: MessageId,
         conversationId: ConversationId,
         buttonId: String
     ): Either<StorageFailure, Unit>
 
     suspend fun resetSelection(
-        messageId: String,
+        messageId: MessageId,
         conversationId: ConversationId
     ): Either<StorageFailure, Unit>
 }
 
-internal class CompositeMessageDatasource internal constructor(
+internal class CompositeMessageDataSource internal constructor(
     private val compositeMessageDAO: CompositeMessageDAO
 ) : CompositeMessageRepository {
     override suspend fun markSelected(
-        messageId: String,
+        messageId: MessageId,
         conversationId: ConversationId,
         buttonId: String
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
@@ -53,7 +54,7 @@ internal class CompositeMessageDatasource internal constructor(
     }
 
     override suspend fun resetSelection(
-        messageId: String,
+        messageId: MessageId,
         conversationId: ConversationId
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         compositeMessageDAO.resetSelection(

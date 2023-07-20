@@ -27,9 +27,9 @@ import com.wire.kalium.logic.sync.receiver.EventReceiver
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 
-interface CommitBundleEventReceiver : EventReceiver<Event.Conversation>
+internal interface CommitBundleEventReceiver : EventReceiver<Event.Conversation>
 
-class CommitBundleEventReceiverImpl(
+internal class CommitBundleEventReceiverImpl(
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler
 ) : CommitBundleEventReceiver {

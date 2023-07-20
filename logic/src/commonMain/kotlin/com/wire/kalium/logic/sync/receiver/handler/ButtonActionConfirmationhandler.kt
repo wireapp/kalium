@@ -17,28 +17,30 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.functional.Either
 
 internal interface ButtonActionConfirmationHandler {
     suspend fun handle(
         conversationId: ConversationId,
         messageContent: MessageContent.ButtonActionConfirmation
-    )
+    ): Either<StorageFailure, Unit>
 }
 
 internal class ButtonActionConfirmationHandlerImpl internal constructor(
     private val compositeMessageRepository: CompositeMessageRepository
-): ButtonActionConfirmationHandler {
+) : ButtonActionConfirmationHandler {
 
     override suspend fun handle(
         conversationId: ConversationId,
         messageContent: MessageContent.ButtonActionConfirmation
-    ) {
+    ): Either<StorageFailure, Unit> {
         val messageId = messageContent.referencedMessageId
 
-        if (messageContent.buttonId != null) {
+        return if (messageContent.buttonId != null) {
             compositeMessageRepository.markSelected(
                 messageId = messageId,
                 conversationId = conversationId,

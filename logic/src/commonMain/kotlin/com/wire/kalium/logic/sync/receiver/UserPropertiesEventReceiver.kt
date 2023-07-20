@@ -28,9 +28,9 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 
-interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>
+internal interface UserPropertiesEventReceiver : EventReceiver<Event.UserProperty>
 
-class UserPropertiesEventReceiverImpl internal constructor(
+internal class UserPropertiesEventReceiverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : UserPropertiesEventReceiver {
 

@@ -37,7 +37,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 
-interface TeamEventReceiver : EventReceiver<Event.Team>
+internal interface TeamEventReceiver : EventReceiver<Event.Team>
 
 internal class TeamEventReceiverImpl(
     private val teamRepository: TeamRepository,
