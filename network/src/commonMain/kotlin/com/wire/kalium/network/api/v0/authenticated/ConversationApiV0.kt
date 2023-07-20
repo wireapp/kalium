@@ -359,7 +359,10 @@ internal open class ConversationApiV0 internal constructor(
         httpClient.delete("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
     }
 
-    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): NetworkResponse<Unit> =
+    override suspend fun updateMessageTimer(
+        conversationId: ConversationId,
+        messageTimer: Long?
+    ): NetworkResponse<EventContentDTO.Conversation.MessageTimerUpdate> =
         wrapKaliumResponse {
             httpClient.put("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MESSAGE_TIMER") {
                 setBody(ConversationMessageTimerDTO(messageTimer))

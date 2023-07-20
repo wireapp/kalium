@@ -309,7 +309,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val conversationId: ConversationId,
             override val transient: Boolean,
             val messageTimer: Long?,
-            val senderUserId: UserId
+            val senderUserId: UserId,
+            val timestampIso: String
         ) : Conversation(id, transient, conversationId) {
 
             override fun toLogMap() = mapOf(
@@ -318,6 +319,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 conversationIdKey to conversationId.toLogString(),
                 "messageTime" to messageTimer,
                 senderUserIdKey to senderUserId.toLogString(),
+                timestampIsoKey to timestampIso
             )
         }
     }
