@@ -26,7 +26,7 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserver {
+internal actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserver {
     private val connectivityManager: ConnectivityManager = appContext.getSystemService(Activity.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val networkStateFlow: MutableStateFlow<NetworkState>
 
