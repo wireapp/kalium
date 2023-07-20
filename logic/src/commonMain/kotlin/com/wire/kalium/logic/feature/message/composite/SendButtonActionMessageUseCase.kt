@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.MessageMetaDataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
@@ -70,7 +71,7 @@ class SendButtonActionMessageUseCase internal constructor(
                     isSelfMessage = true,
                     expirationData = null
                 )
-                messageSender.sendMessage(regularMessage)
+                messageSender.sendMessage(regularMessage, messageTarget = MessageTarget.Users(originalSenderId))
             }
         }
     }.fold(Result::Failure, { Result.Success })
