@@ -32,6 +32,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import okio.IOException
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -41,7 +42,7 @@ class ConversationMessageTimerEventHandlerTest {
     fun givenAConversationMessageTimerEvent_whenItGetsUpdated_thenShouldPersistSystemMessage() = runTest {
         val event = TestEvent.timerChanged()
         val (arrangement, eventHandler) = Arrangement()
-            .withConversationUpdateMessageTimer(true)
+            .withConversationUpdateMessageTimer()
             .withPersistMessage(Either.Right(Unit))
             .arrange()
 
@@ -56,10 +57,10 @@ class ConversationMessageTimerEventHandlerTest {
     }
 
     @Test
-    fun givenAConversationMessageTimerEvent_whenIsNotUpdated_thenShouldNotPersistSystemMessage() = runTest {
+    fun givenAConversationMessageTimerEvent_whenItFailed_thenShouldNotPersistSystemMessage() = runTest {
         val event = TestEvent.timerChanged()
         val (arrangement, eventHandler) = Arrangement()
-            .withConversationUpdateMessageTimer(false)
+            .withConversationUpdateMessageTimerError()
             .withPersistMessage(Either.Right(Unit))
             .arrange()
 
@@ -86,11 +87,18 @@ class ConversationMessageTimerEventHandlerTest {
             persistMessageUseCase
         )
 
-        fun withConversationUpdateMessageTimer(updated: Boolean) = apply {
+        fun withConversationUpdateMessageTimer() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::updateMessageTimer)
                 .whenInvokedWith(any())
-                .thenReturn(updated)
+                .thenReturn(Unit)
+        }
+
+        fun withConversationUpdateMessageTimerError() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateMessageTimer)
+                .whenInvokedWith(any())
+                .thenThrow(IOException("Some error"))
         }
 
         fun withPersistMessage(result: Either<CoreFailure, Unit>) = apply {
