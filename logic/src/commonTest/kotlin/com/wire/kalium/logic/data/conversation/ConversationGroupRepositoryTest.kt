@@ -679,7 +679,7 @@ class ConversationGroupRepositoryTest {
             verify(arrangement.conversationApi)
                 .suspendFunction(arrangement.conversationApi::addMember)
                 .with(matching {
-                    it.users.first().domain != failedDomain
+                    it.users.size == 1 && it.users.first().domain != failedDomain
                 }).wasInvoked(exactly = once)
 
             verify(arrangement.memberJoinEventHandler)
