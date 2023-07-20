@@ -334,7 +334,8 @@ object MessageMapper {
             status = status,
             visibility = visibility,
             senderName = senderName,
-            isSelfMessage = isSelfMessage
+            isSelfMessage = isSelfMessage,
+            readCount = readCount
         )
     }
 

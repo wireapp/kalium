@@ -311,7 +311,7 @@ sealed interface Message {
 
         object Delivered : Status()
 
-        object Read : Status()
+        data class Read(val readCount: Long) : Status()
 
         object Failed : Status()
 

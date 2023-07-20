@@ -35,6 +35,7 @@ sealed class MessageEntity(
     open val date: Instant,
     open val senderUserId: QualifiedIDEntity,
     open val status: Status,
+    open val readCount: Long,
     open val visibility: Visibility,
     open val isSelfMessage: Boolean,
 ) {
@@ -47,6 +48,7 @@ sealed class MessageEntity(
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
         override val isSelfMessage: Boolean = false,
+        override val readCount: Long,
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
@@ -54,8 +56,7 @@ sealed class MessageEntity(
         val selfDeletionStartDate: Instant? = null,
         val reactions: ReactionsEntity = ReactionsEntity.EMPTY,
         val expectsReadConfirmation: Boolean = false,
-        val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
-        val readCount: Long = 0
+        val deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery
     ) : MessageEntity(
         id = id,
         content = content,
@@ -63,6 +64,7 @@ sealed class MessageEntity(
         date = date,
         senderUserId = senderUserId,
         status = status,
+        readCount = readCount,
         visibility = visibility,
         isSelfMessage = isSelfMessage
     )
@@ -74,6 +76,7 @@ sealed class MessageEntity(
         override val date: Instant,
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
+        override val readCount: Long,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
@@ -84,6 +87,7 @@ sealed class MessageEntity(
         date = date,
         senderUserId = senderUserId,
         status = status,
+        readCount = readCount,
         visibility = visibility,
         isSelfMessage = isSelfMessage
     )

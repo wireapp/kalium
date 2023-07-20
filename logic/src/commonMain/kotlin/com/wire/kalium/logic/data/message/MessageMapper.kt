@@ -59,14 +59,17 @@ class MessageMapperImpl(
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
-        val status = when (message.status) {
+        val messageStatus = message.status
+
+        val status = when (messageStatus) {
             Message.Status.Delivered -> MessageEntity.Status.DELIVERED
             Message.Status.Pending -> MessageEntity.Status.PENDING
-            Message.Status.Read -> MessageEntity.Status.READ
+            is Message.Status.Read -> MessageEntity.Status.READ
             Message.Status.Sent -> MessageEntity.Status.SENT
             Message.Status.Failed -> MessageEntity.Status.FAILED
             Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
         }
+
         return when (message) {
             is Message.Regular -> MessageEntity.Regular(
                 id = message.id,
@@ -76,7 +79,7 @@ class MessageMapperImpl(
                 senderUserId = message.senderUserId.toDao(),
                 senderClientId = message.senderClientId.value,
                 status = status,
-                readCount = if (message.status is Message.Status.Read) 5 else 0,
+                readCount = if (messageStatus is Message.Status.Read) messageStatus.readCount else 0,
                 editStatus = when (message.editStatus) {
                     is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                     is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
@@ -103,6 +106,7 @@ class MessageMapperImpl(
                 status = status,
                 visibility = message.visibility.toEntityVisibility(),
                 senderName = message.senderUserName,
+                readCount = if (messageStatus is Message.Status.Read) messageStatus.readCount else 0
             )
         }
     }
@@ -113,7 +117,7 @@ class MessageMapperImpl(
             MessageEntity.Status.PENDING -> Message.Status.Pending
             MessageEntity.Status.SENT -> Message.Status.Sent
             MessageEntity.Status.DELIVERED -> Message.Status.Delivered
-            MessageEntity.Status.READ -> Message.Status.Read
+            MessageEntity.Status.READ -> Message.Status.Read(message.readCount)
             MessageEntity.Status.FAILED -> Message.Status.Failed
             MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FailedRemotely
         }
