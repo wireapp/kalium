@@ -89,7 +89,7 @@ internal class MLSWrongEpochHandlerImpl(
             conversationId = conversationId,
             date = dateIso,
             senderUserId = selfUserId,
-            status = Message.Status.READ,
+            status = Message.Status.Read,
             visibility = Message.Visibility.VISIBLE,
             senderUserName = null
         )

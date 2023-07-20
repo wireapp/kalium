@@ -119,7 +119,7 @@ internal class ApplicationMessageHandlerImpl(
                     date = timestampIso,
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
-                    status = Message.Status.SENT,
+                    status = Message.Status.Sent,
                     editStatus = Message.EditStatus.NotEdited,
                     visibility = visibility,
                     expectsReadConfirmation = content.expectsReadConfirmation,
@@ -142,7 +142,7 @@ internal class ApplicationMessageHandlerImpl(
                     date = timestampIso,
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
-                    status = Message.Status.SENT,
+                    status = Message.Status.Sent,
                     isSelfMessage = senderUserId == selfUserId
                 )
                 processSignaling(signalingMessage)
@@ -268,7 +268,7 @@ internal class ApplicationMessageHandlerImpl(
             date = timestampIso,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             editStatus = Message.EditStatus.NotEdited,
             visibility = Message.Visibility.VISIBLE,
             isSelfMessage = senderUserId == selfUserId

@@ -54,7 +54,7 @@ internal class ConversationMessageTimerEventHandlerImpl(
                         event.conversationId,
                         DateTimeUtil.currentIsoDateTimeString(),
                         event.senderUserId,
-                        Message.Status.SENT,
+                        Message.Status.Sent,
                         Message.Visibility.VISIBLE
                     )
 
