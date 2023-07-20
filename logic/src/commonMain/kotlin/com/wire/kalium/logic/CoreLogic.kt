@@ -99,7 +99,7 @@ abstract class CoreLogicCommon internal constructor(
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
-    protected abstract val networkStateObserver: NetworkStateObserver
+    abstract val networkStateObserver: NetworkStateObserver
 }
 
 expect val clientPlatform: String
