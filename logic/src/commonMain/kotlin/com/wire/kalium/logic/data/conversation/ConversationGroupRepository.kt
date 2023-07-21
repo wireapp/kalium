@@ -87,6 +87,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
+    private val addingMembersFailureMapper: AddingMembersFailureMapper = MapperProvider.addingMembersFailureMapper(),
 ) : ConversationGroupRepository {
 
     override suspend fun createGroupConversation(
@@ -140,7 +141,7 @@ internal class ConversationGroupRepositoryImpl(
             .flatMap { protocol ->
                 when (protocol) {
                     is ConversationEntity.ProtocolInfo.Proteus ->
-                        addMembersToCloudAndStorage(userIdList, conversationId)
+                        tryAddMembersToCloudAndStorage(userIdList, conversationId)
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
                         mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
@@ -174,20 +175,51 @@ internal class ConversationGroupRepositoryImpl(
                 }
             }
 
-    private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit> =
-        wrapApiRequest {
+    private suspend fun tryAddMembersToCloudAndStorage(
+        userIdList: List<UserId>,
+        conversationId: ConversationId,
+        previousUserIdsExcluded: Set<UserId> = emptySet(),
+    ): Either<CoreFailure, Unit> {
+        val apiResult = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
             conversationApi.addMember(
                 addParticipantRequest, conversationId.toApi()
             )
-        }.onSuccess { response ->
-            if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
-            }
-        }.map {
-            Either.Right(Unit)
         }
+
+        return when (apiResult) {
+            is Either.Left -> {
+                if (apiResult.value.hasUnreachableDomainsError) {
+                    val usersReqState = addingMembersFailureMapper.mapToUsersRequestState(
+                        userIdList,
+                        apiResult.value as NetworkFailure.FederatedBackendFailure,
+                        previousUserIdsExcluded
+                    )
+                    // retry adding, only with filtered available members to the conversation
+                    tryAddMembersToCloudAndStorage(
+                        usersReqState.usersThatCanBeAdded.toList(), conversationId, usersReqState.usersThatCannotBeAdded
+                    )
+                } else {
+                    Either.Left(apiResult.value)
+                }
+            }
+
+            is Either.Right -> {
+                if (apiResult.value is ConversationMemberAddedResponse.Changed) {
+                    memberJoinEventHandler.handle(
+                        eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true)
+                    )
+                }
+                if (previousUserIdsExcluded.isNotEmpty()) {
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationId, previousUserIdsExcluded
+                    )
+                }
+                Either.Right(Unit)
+            }
+        }
+    }
 
     override suspend fun deleteMember(
         userId: UserId,

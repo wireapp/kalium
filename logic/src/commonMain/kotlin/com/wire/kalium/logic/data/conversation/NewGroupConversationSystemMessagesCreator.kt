@@ -48,6 +48,11 @@ internal interface NewGroupConversationSystemMessagesCreator {
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse
     ): Either<CoreFailure, Unit>
+
+    suspend fun conversationFailedToAddMembers(
+        conversationId: ConversationId,
+        userIdList: Set<UserId>
+    ): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -154,6 +159,23 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 )
             ).also { createFailedToAddSystemMessage(conversationResponse) }
         }
+    }
+
+    override suspend fun conversationFailedToAddMembers(
+        conversationId: ConversationId,
+        userIdList: Set<UserId>
+    ): Either<CoreFailure, Unit> {
+        val messageFailedToAddMembers = Message.System(
+            uuid4().toString(),
+            MessageContent.MemberChange.FailedToAdd(userIdList.toList()),
+            conversationId,
+            DateTimeUtil.currentIsoDateTimeString(),
+            selfUserId,
+            Message.Status.SENT,
+            Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+        return persistMessage(messageFailedToAddMembers)
     }
 
     private suspend fun createFailedToAddSystemMessage(conversationResponse: ConversationResponse) {
