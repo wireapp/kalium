@@ -316,6 +316,15 @@ sealed interface Message {
         object Failed : Status()
 
         object FailedRemotely : Status()
+
+        override fun toString() : String = when(this){
+            Pending -> "PENDING"
+            Sent -> "SENT"
+            Delivered -> "DELIVERED"
+             is Read -> "READ_COUNT$readCount"
+            Failed -> "FAILED"
+            FailedRemotely -> "FAILED_REMOTELY"
+        }
     }
 
     sealed class EditStatus {
