@@ -88,14 +88,16 @@ object MessageMapper {
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
         return when (contentType) {
+            MessageEntity.ContentType.COMPOSITE,
             MessageEntity.ContentType.TEXT -> when {
                 isSelfMessage -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
-                    messageBody = text.requireField("text")
+                    messageBody = text
                 )
 
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
                     senderName = senderName,
+                    // requireField here is sage since if a message have a quote, it must have a text
                     messageBody = text.requireField("text")
                 )
 
@@ -186,7 +188,6 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
         }
     }

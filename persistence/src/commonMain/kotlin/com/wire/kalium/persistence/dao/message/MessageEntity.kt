@@ -351,7 +351,7 @@ data class NotificationMessageEntity(
 
 sealed class MessagePreviewEntityContent {
 
-    data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
+    data class Text(val senderName: String?, val messageBody: String?) : MessagePreviewEntityContent()
 
     data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
 
