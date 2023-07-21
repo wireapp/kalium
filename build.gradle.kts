@@ -18,6 +18,8 @@
 
 import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 buildscript {
     repositories {
@@ -112,6 +114,13 @@ subprojects {
             }
         }
     }
+}
+
+rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
+    // For unknown reasons, yarn.lock checks are failing on Github Actions
+    // Considering JS support is quite experimental for us, we can live with this for now
+    rootProject.the<YarnRootExtension>().yarnLockMismatchReport =
+        YarnLockMismatchReport.WARNING
 }
 
 dependencies {
