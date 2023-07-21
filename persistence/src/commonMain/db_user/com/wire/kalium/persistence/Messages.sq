@@ -1,5 +1,4 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
@@ -199,16 +198,6 @@ CREATE TABLE MessageRecipientFailure (
       PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
 );
 
-CREATE TABLE ConversationVerificationDegraded (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-
-      protocol TEXT AS ConversationEntity.Protocol DEFAULT(NULL),
-
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -312,8 +301,7 @@ NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
 ConversationTimerChangedContent.message_timer AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
-FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
-VerificationDegraded.protocol AS conversationProtocol
+FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -336,7 +324,6 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.messag
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
-LEFT JOIN ConversationVerificationDegraded AS VerificationDegraded ON Message.id = VerificationDegraded.message_id AND Message.conversation_id = VerificationDegraded.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
@@ -669,7 +656,3 @@ WHERE  conversation_id = ? AND id = ?;
 insertMessageRecipientsFailure:
 INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
 VALUES(?, ?, ?, ?);
-
-insertConversationVerificationDegraded:
-INSERT OR IGNORE INTO ConversationVerificationDegraded(message_id, conversation_id, protocol)
-VALUES (?, ?,?);

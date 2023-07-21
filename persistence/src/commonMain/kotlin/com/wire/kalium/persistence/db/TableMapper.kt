@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
-import com.wire.kalium.persistence.ConversationVerificationDegraded
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -199,10 +198,5 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         recipient_failure_listAdapter = QualifiedIDListAdapter,
         recipient_failure_typeAdapter = EnumColumnAdapter()
-    )
-
-    val conversationVerificationDegradedAdapter = ConversationVerificationDegraded.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter,
-        protocolAdapter = EnumColumnAdapter()
     )
 }

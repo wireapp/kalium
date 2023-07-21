@@ -21,12 +21,10 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationVerificationStatus
-import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.util.DateTimeUtil
@@ -45,16 +43,19 @@ internal class ConversationVerificationStatusHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
-    private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ConversationVerificationStatusHandler {
     private val dispatcher = kaliumDispatcher.io
 
     override suspend fun invoke(conversation: Conversation, status: ConversationVerificationStatus): Unit = withContext(dispatcher) {
         if (shouldNotifyUser(conversation, status)) {
+            val content = when (conversation.protocol) {
+                is Conversation.ProtocolInfo.MLS -> MessageContent.ConversationDegradedMLS
+                Conversation.ProtocolInfo.Proteus -> MessageContent.ConversationDegradedProteus
+            }
             val conversationDegradedMessage = Message.System(
                 id = uuid4().toString(),
-                content = MessageContent.ConversationDegraded(protocolInfoMapper.fromInfoToProtocol(conversation.protocol)),
+                content = content,
                 conversationId = conversation.id,
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,

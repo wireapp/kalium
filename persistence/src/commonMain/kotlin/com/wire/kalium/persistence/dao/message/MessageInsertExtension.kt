@@ -227,11 +227,13 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
-            is MessageEntityContent.ConversationDegraded -> messagesQueries.insertConversationVerificationDegraded(
-                message_id = message.id,
-                conversation_id = message.conversationId,
-                protocol = content.protocol
-            )
+            is MessageEntityContent.ConversationDegradedMLS -> {
+                /* no-op */
+            }
+
+            is MessageEntityContent.ConversationDegradedProteus -> {
+                /* no-op */
+            }
         }
     }
 
@@ -328,6 +330,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
         is MessageEntityContent.MLSWrongEpochWarning -> MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING
-        is MessageEntityContent.ConversationDegraded -> MessageEntity.ContentType.CONVERSATION_DEGRADED
+        is MessageEntityContent.ConversationDegradedMLS -> MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS
+        is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS
     }
 }

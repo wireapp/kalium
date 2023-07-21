@@ -306,8 +306,12 @@ sealed interface Message {
                     typeKey to "mlsWrongEpochWarning"
                 )
 
-                is MessageContent.ConversationDegraded -> mutableMapOf(
-                    typeKey to "conversationDegraded"
+                is MessageContent.ConversationDegradedMLS -> mutableMapOf(
+                    typeKey to "conversationDegradedMLS"
+                )
+
+                is MessageContent.ConversationDegradedProteus -> mutableMapOf(
+                    typeKey to "conversationDegradedProteus"
                 )
             }
 
