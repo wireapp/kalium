@@ -36,7 +36,7 @@ CREATE TABLE Conversation (
     message_timer INTEGER DEFAULT(NULL),
     user_message_timer INTEGER DEFAULT(NULL),
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
-    is_mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0
+    mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -125,12 +125,12 @@ SET last_read_date = :last_read_date
 WHERE qualified_id = :qualified_id;
 
 isInformedAboutDegradedMLSVerification:
-SELECT is_mls_degraded_notified FROM Conversation
+SELECT mls_degraded_notified FROM Conversation
 WHERE qualified_id = :qualified_id;
 
 updateInformedAboutDegradedMLSVerification:
 UPDATE Conversation
-SET is_mls_degraded_notified = ?
+SET mls_degraded_notified = ?
 WHERE qualified_id = :qualified_id;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
