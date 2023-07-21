@@ -275,6 +275,24 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenConversation_whenPersistingAddingUsersFailure_ThenShouldCreateASystemMessageForThoseUsers() =
+        runTest {
+            val (arrangement, sysMessageCreator) = Arrangement()
+                .withPersistMessageSuccess()
+                .arrange()
+
+            val result = sysMessageCreator.conversationFailedToAddMembers(TestConversation.ID, setOf(TestUser.OTHER.id))
+
+            result.shouldSucceed()
+
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(matching {
+                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
+                })
+                .wasInvoked(once)
+        }
 
     private class Arrangement {
         @Mock
