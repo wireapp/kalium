@@ -27,7 +27,6 @@ buildscript {
     }
 
     dependencies {
-        // keeping this here to allow AS to automatically update
         classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
         classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
