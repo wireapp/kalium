@@ -731,16 +731,18 @@ class ConversationGroupRepositoryTest {
             conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
 
             // then
+            val expectedFullUserIdsForRequestCount = 2
+            val expectedValidUsersCount = 1
             verify(arrangement.conversationApi)
                 .suspendFunction(arrangement.conversationApi::addMember)
                 .with(matching {
-                    it.users.size == 2
+                    it.users.size == expectedFullUserIdsForRequestCount
                 }).wasInvoked(exactly = once)
 
             verify(arrangement.conversationApi)
                 .suspendFunction(arrangement.conversationApi::addMember)
                 .with(matching {
-                    it.users.size == 1 && it.users.first().domain != failedDomain
+                    it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
                 }).wasInvoked(exactly = once)
 
             verify(arrangement.memberJoinEventHandler)
@@ -750,7 +752,7 @@ class ConversationGroupRepositoryTest {
 
             verify(arrangement.newGroupConversationSystemMessagesCreator)
                 .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
-                .with(anything(), matching { it.size == 1 })
+                .with(anything(), matching { it.size == expectedValidUsersCount })
                 .wasInvoked(exactly = once)
         }
 
