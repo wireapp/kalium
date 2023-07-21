@@ -48,7 +48,7 @@ repositories {
 
 plugins {
     id("org.jetbrains.dokka")
-    id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
+    alias(libs.plugins.kover)
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.completeKotlin)
@@ -87,22 +87,42 @@ the<CommandExtension>().run {
     printModulesInfo = true
 }
 
+
+kover {
+    useJacoco()
+}
+koverReport {
+    filters {
+        includes {
+            packages("com.wire.kalium")
+        }
+    }
+}
+
 subprojects {
-    this.tasks.withType<Test> {
-        if (name != "jvmTest" && name != "jsTest") {
-            the<kotlinx.kover.api.KoverTaskExtension>().apply {
-                isDisabled = true
-            }
-        } else {
-            the<kotlinx.kover.api.KoverTaskExtension>().apply {
-                includes = listOf("com.wire.kalium.*")
+    pluginManager.apply("org.jetbrains.kotlinx.kover")
+
+    kover {
+        useJacoco()
+    }
+    koverReport {
+        filters {
+            includes {
+                packages("com.wire.kalium")
             }
         }
     }
 }
 
-kover {
-    coverageEngine.set(kotlinx.kover.api.CoverageEngine.JACOCO)
+dependencies {
+    kover(project(":logic"))
+    kover(project(":cryptography"))
+    kover(project(":util"))
+    kover(project(":network"))
+    kover(project(":persistence"))
+    kover(project(":logger"))
+    kover(project(":calling"))
+    kover(project(":protobuf"))
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {

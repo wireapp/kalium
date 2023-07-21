@@ -27,6 +27,7 @@ benasher-uuid = "0.6.0"
 ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
 ktx-atomicfu = "0.18.5"
+kover = "0.7.1"
 multiplatform-settings = "1.0.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the work around in the dev.mk file
@@ -60,6 +61,7 @@ completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeK
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+kover = {id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ksp = { id = "com.google.devtools.ksp", version = "1.9.0-1.0.12" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
