@@ -74,7 +74,7 @@ sealed class WebEventContent {
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
-            @SerialName("from_client_id") val fromClientId: String,
+            @SerialName("from_client_id") val fromClientId: String?,
             @SerialName("time") val time: String,
             @SerialName("id") val id: String,
             @SerialName("data") val data: WebTextData,
@@ -87,7 +87,7 @@ sealed class WebEventContent {
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
-            @SerialName("from_client_id") val fromClientId: String,
+            @SerialName("from_client_id") val fromClientId: String?,
             @SerialName("time") val time: String,
             @SerialName("id") val id: String,
             @SerialName("data") val data: WebAssetData,
@@ -124,7 +124,7 @@ data class WebTextData(
     @SerialName("content") val text: String,
 //     @SerialName("quote") val quote: WebTextQuote?,
 //     @SerialName("mentions") val mentions: List<String>?,
-    @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean,
+    @SerialName("expects_read_confirmation") val expectsReadConfirmation: Boolean?,
     @SerialName("legal_hold_status") val legalHoldStatus: Int?
 )
 
@@ -143,8 +143,8 @@ data class WebAssetData(
     @SerialName("info") val info: WebAssetInfo?,
     @SerialName("key") val key: String?,
     @SerialName("legal_hold_status") val legalHoldStatus: Int,
-    @SerialName("otr_key") val otrKey: JsonObject?,
-    @SerialName("sha256") val sha256: JsonObject?,
+    @SerialName("otr_key") val otrKey: Map<String, Int>?,
+    @SerialName("sha256") val sha256: Map<String, Int>?,
     @SerialName("status") val status: String?,
     @SerialName("token") val token: String?,
     @SerialName("meta") val meta: WebAssetMeta?
@@ -158,10 +158,10 @@ data class WebKnockData(
 
 @Serializable
 data class WebAssetInfo(
-    @SerialName("height") val height: Int?,
+    @SerialName("height") val height: String?,
     @SerialName("name") val name: String?,
     @SerialName("tag") val tag: String?,
-    @SerialName("width") val width: Int?
+    @SerialName("width") val width: String?
 )
 
 @Serializable

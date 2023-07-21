@@ -91,7 +91,8 @@ internal class MLSWrongEpochHandlerImpl(
             senderUserId = selfUserId,
             status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
-            senderUserName = null
+            senderUserName = null,
+            expirationData = null
         )
         return persistMessage(mlsEpochWarningMessage)
     }

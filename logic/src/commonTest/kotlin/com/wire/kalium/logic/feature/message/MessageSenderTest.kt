@@ -359,7 +359,8 @@ class MessageSenderTest {
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
-            isSelfMessage = false
+            isSelfMessage = false,
+            expirationData = null
         )
 
         val messageTarget = MessageTarget.Client(
@@ -411,7 +412,8 @@ class MessageSenderTest {
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.SENT,
-            isSelfMessage = false
+            isSelfMessage = true,
+            expirationData = null
         )
 
         val messageTarget = MessageTarget.Conversation()
@@ -725,7 +727,8 @@ class MessageSenderTest {
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.PENDING,
-            isSelfMessage = false
+            isSelfMessage = false,
+            expirationData = null
         )
 
         arrangement.testScope.runTest {
@@ -1109,7 +1112,7 @@ class MessageSenderTest {
                     )
                 )
             )
-            val FEDERATION_MESSAGE_FAILURE = NetworkFailure.FederatedBackendFailure
+            val FEDERATION_MESSAGE_FAILURE = NetworkFailure.FederatedBackendFailure("error")
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
             val TEST_CONTACT_CLIENT_3 = ClientId("clientId3")

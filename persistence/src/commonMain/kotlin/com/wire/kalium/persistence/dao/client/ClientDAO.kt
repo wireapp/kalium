@@ -31,6 +31,7 @@ data class Client(
     val isValid: Boolean,
     val isVerified: Boolean,
     val registrationDate: Instant?,
+    val lastActive: Instant?,
     val label: String?,
     val model: String?,
 )
@@ -42,7 +43,8 @@ data class InsertClientParam(
     val clientType: ClientTypeEntity?,
     val label: String?,
     val registrationDate: Instant?,
-    val model: String?
+    val lastActive: Instant?,
+    val model: String?,
 )
 
 enum class DeviceTypeEntity {

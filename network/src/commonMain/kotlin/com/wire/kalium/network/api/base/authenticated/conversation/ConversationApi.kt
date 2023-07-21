@@ -22,6 +22,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
@@ -139,5 +140,8 @@ interface ConversationApi {
 
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit>
 
-    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): NetworkResponse<Unit>
+    suspend fun updateMessageTimer(
+        conversationId: ConversationId,
+        messageTimer: Long?
+    ): NetworkResponse<EventContentDTO.Conversation.MessageTimerUpdate>
 }

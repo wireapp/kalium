@@ -127,4 +127,16 @@ class UserConfigStorageTest {
             assertTrue { it }
         }
     }
+
+    @Test
+    fun givenScreenshotCensoringConfigIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
+        userConfigStorage.persistScreenshotCensoring(enabled = false)
+        assertEquals(false, userConfigStorage.isScreenshotCensoringEnabledFlow().first())
+    }
+
+    @Test
+    fun givenScreenshotCensoringConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigStorage.persistScreenshotCensoring(enabled = true)
+        assertEquals(true, userConfigStorage.isScreenshotCensoringEnabledFlow().first())
+    }
 }

@@ -43,7 +43,17 @@ data class DeleteClientParam(
 data class Client(
     val id: ClientId,
     val type: ClientType?,
-    val registrationTime: Instant?, // yyyy-mm-ddThh:MM:ss.qqq
+    /**
+     * Time when client was registered / created.
+     */
+    val registrationTime: Instant?,
+    /**
+     * last time the client was active.
+     *
+     * Note that the timestamp has reduced precision, it's only safe
+     * to operate on the precision of weeks.
+     * */
+    val lastActive: Instant?,
     val isVerified: Boolean,
     val isValid: Boolean,
     val deviceType: DeviceType?,

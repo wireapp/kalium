@@ -102,7 +102,8 @@ internal class TeamEventReceiverImpl(
                                     date = event.timestampIso,
                                     senderUserId = userId,
                                     status = Message.Status.Sent,
-                                    visibility = Message.Visibility.VISIBLE
+                                    visibility = Message.Visibility.VISIBLE,
+                                    expirationData = null
                                 )
                                 persistMessage(message)
                             }

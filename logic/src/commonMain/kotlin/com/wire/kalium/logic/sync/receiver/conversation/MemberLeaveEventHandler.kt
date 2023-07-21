@@ -62,7 +62,8 @@ internal class MemberLeaveEventHandlerImpl(
                     date = event.timestampIso,
                     senderUserId = event.removedBy,
                     status = Message.Status.Sent,
-                    visibility = Message.Visibility.VISIBLE
+                    visibility = Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
                 persistMessage(message)
                 kaliumLogger

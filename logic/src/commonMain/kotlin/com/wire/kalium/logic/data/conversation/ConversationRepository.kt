@@ -51,7 +51,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -78,9 +77,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
@@ -95,7 +91,8 @@ interface ConversationRepository {
     suspend fun persistConversations(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
-        originatedFromEvent: Boolean = false
+        originatedFromEvent: Boolean = false,
+        invalidateMembers: Boolean = false
     ): Either<CoreFailure, Unit>
 
     /**
@@ -200,7 +197,6 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
-    suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer?>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
     suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
 }
@@ -255,7 +251,12 @@ internal class ConversationDataSource internal constructor(
                         kaliumLogger.withFeatureId(CONVERSATIONS)
                             .d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
-                    persistConversations(conversations.conversationsFound, selfTeamIdProvider().getOrNull()?.value)
+                    persistConversations(
+                        conversations = conversations.conversationsFound,
+                        selfUserTeamId = selfTeamIdProvider().getOrNull()?.value,
+                        invalidateMembers = true
+                    )
+
                 }.onFailure {
                     kaliumLogger.withFeatureId(CONVERSATIONS).e("Error fetching conversation details $it")
                 }
@@ -296,6 +297,7 @@ internal class ConversationDataSource internal constructor(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
         originatedFromEvent: Boolean,
+        invalidateMembers: Boolean
     ) = wrapStorageRequest {
         val conversationEntities = conversations
             .map { conversationResponse ->
@@ -312,9 +314,19 @@ internal class ConversationDataSource internal constructor(
             }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
-            memberDAO.insertMembersWithQualifiedId(
-                memberMapper.fromApiModelToDaoModel(conversationsResponse.members), idMapper.fromApiToDao(conversationsResponse.id)
-            )
+            // do the cleanup of members from conversation in case when self user rejoined conversation
+            // and may not received any member remove or leave events
+            if (invalidateMembers) {
+                memberDAO.updateFullMemberList(
+                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                    idMapper.fromApiToDao(conversationsResponse.id)
+                )
+            } else {
+                memberDAO.insertMembersWithQualifiedId(
+                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                    idMapper.fromApiToDao(conversationsResponse.id)
+                )
+            }
         }
     }
 
@@ -397,7 +409,7 @@ internal class ConversationDataSource internal constructor(
             conversationApi.fetchConversationDetails(conversationID.toApi())
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
-            persistConversations(listOf(it), selfUserTeamId?.value)
+            persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
         }
     }
 
@@ -619,7 +631,7 @@ internal class ConversationDataSource internal constructor(
             when (it) {
                 is Conversation.ProtocolInfo.MLS ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapProteusRequest {
+                        wrapMLSRequest {
                             mlsClient.wipeConversation(it.groupId.toCrypto())
                         }
                     }.flatMap {
@@ -708,22 +720,13 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
         wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
 
-    override suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer> =
-        wrapStorageRequest {
-            SelfDeletionTimer.Enabled(
-                conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.messageTimer?.toDuration(
-                    DurationUnit.MILLISECONDS
-                ) ?: ZERO
-            )
-        }
-
     override suspend fun updateUserSelfDeletionTimer(
         conversationId: ConversationId,
         selfDeletionTimer: SelfDeletionTimer
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         conversationDAO.updateUserMessageTimer(
             conversationId = conversationId.toDao(),
-            messageTimer = selfDeletionTimer.toDuration().inWholeMilliseconds
+            messageTimer = selfDeletionTimer.duration?.inWholeMilliseconds
         )
     }
 

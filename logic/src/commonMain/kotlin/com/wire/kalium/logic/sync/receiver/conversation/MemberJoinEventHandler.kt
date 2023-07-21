@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
@@ -42,13 +43,19 @@ interface MemberJoinEventHandler {
 internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
-    private val persistMessage: PersistMessageUseCase
+    private val persistMessage: PersistMessageUseCase,
+    private val selfUserId: UserId
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.MemberJoin) =
-        // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+        // we need to force fetching conversation when self user rejoined to conversation,
+        // because he may not received member change events
+        if (event.members.map { it.id }.contains(selfUserId)) {
+            conversationRepository.fetchConversation(event.conversationId)
+        } else {
+            conversationRepository.fetchConversationIfUnknown(event.conversationId)
+        }
             .run {
                 onSuccess {
                     val logMap = mapOf(
@@ -74,7 +81,8 @@ internal class MemberJoinEventHandlerImpl(
                     date = event.timestampIso,
                     senderUserId = event.addedBy,
                     status = Message.Status.Sent,
-                    visibility = Message.Visibility.VISIBLE
+                    visibility = Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
                 persistMessage(message)
                 kaliumLogger

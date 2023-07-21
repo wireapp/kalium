@@ -70,7 +70,8 @@ class SendConfirmationUseCase internal constructor(
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,
-                isSelfMessage = true
+                isSelfMessage = true,
+                expirationData = null
             )
             messageSender.sendMessage(message)
         }.onFailure {

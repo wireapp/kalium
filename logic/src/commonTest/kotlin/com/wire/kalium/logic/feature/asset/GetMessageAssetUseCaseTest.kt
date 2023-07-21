@@ -187,7 +187,7 @@ class GetMessageAssetUseCaseTest {
             // Given
             val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
             val someMessageId = "some-message-id"
-            val federatedBackendFailure = NetworkFailure.FederatedBackendFailure
+            val federatedBackendFailure = NetworkFailure.FederatedBackendFailure("error")
             val (arrangement, getMessageAsset) = Arrangement()
                 .withDownloadAssetErrorResponse(federatedBackendFailure)
                 .withSuccessfulDownloadStatusUpdate()

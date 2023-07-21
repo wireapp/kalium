@@ -78,7 +78,8 @@ internal class UpdateConversationReceiptModeUseCaseImpl(
             DateTimeUtil.currentIsoDateTimeString(),
             selfUserId,
             Message.Status.Sent,
-            Message.Visibility.VISIBLE
+            Message.Visibility.VISIBLE,
+            expirationData = null
         )
 
         persistMessage(message)

@@ -91,7 +91,8 @@ class UpdateConversationReadDateUseCase internal constructor(
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,
-                isSelfMessage = true
+                isSelfMessage = true,
+                expirationData = null
             )
             messageSender.sendMessage(regularMessage)
         }

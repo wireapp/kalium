@@ -50,6 +50,7 @@ class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
             status = Message.Status.Sent,
+            expirationData = null
         )
         messageRepository.persistSystemMessageToAllConversations(message)
     }

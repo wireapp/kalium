@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -26,15 +27,15 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.util.DateTimeUtil
 
 interface ConversationMessageTimerEventHandler {
-    suspend fun handle(event: Event.Conversation.ConversationMessageTimer)
+    suspend fun handle(event: Event.Conversation.ConversationMessageTimer): Either<CoreFailure, Unit>
 }
 
 internal class ConversationMessageTimerEventHandlerImpl(
@@ -42,24 +43,23 @@ internal class ConversationMessageTimerEventHandlerImpl(
     private val persistMessage: PersistMessageUseCase,
 ) : ConversationMessageTimerEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.ConversationMessageTimer) {
+    override suspend fun handle(event: Event.Conversation.ConversationMessageTimer): Either<CoreFailure, Unit> =
         updateMessageTimer(event)
-            .onSuccess { updated ->
-                if (updated) {
-                    val message = Message.System(
-                        uuid4().toString(),
-                        MessageContent.ConversationMessageTimerChanged(
-                            messageTimer = event.messageTimer
-                        ),
-                        event.conversationId,
-                        DateTimeUtil.currentIsoDateTimeString(),
-                        event.senderUserId,
-                        Message.Status.Sent,
-                        Message.Visibility.VISIBLE
-                    )
+            .onSuccess {
+                val message = Message.System(
+                    uuid4().toString(),
+                    MessageContent.ConversationMessageTimerChanged(
+                        messageTimer = event.messageTimer
+                    ),
+                    event.conversationId,
+                    event.timestampIso,
+                    event.senderUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
 
-                    persistMessage(message)
-                }
+                persistMessage(message)
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
@@ -74,7 +74,6 @@ internal class ConversationMessageTimerEventHandlerImpl(
                         Pair("errorInfo", "$coreFailure")
                     )
             }
-    }
 
     private suspend fun updateMessageTimer(event: Event.Conversation.ConversationMessageTimer) = wrapStorageRequest {
         conversationDAO.updateMessageTimer(

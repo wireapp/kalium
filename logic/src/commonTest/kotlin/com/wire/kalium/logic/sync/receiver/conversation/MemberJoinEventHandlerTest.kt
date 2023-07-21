@@ -47,8 +47,8 @@ import kotlin.test.Test
 class MemberJoinEventHandlerTest {
 
     @Test
-    fun givenMemberJoinEvent_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
-        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Member))
+    fun givenMemberJoinEventWithoutSelfUser_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
+        val newMembers = listOf(Member(TestUser.OTHER_FEDERATED_USER_ID, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = Arrangement()
@@ -62,6 +62,36 @@ class MemberJoinEventHandlerTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(eq(event.conversationId))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenMemberJoinEventWithSelfUser_whenHandlingIt_thenShouldFetchConversation() = runTest {
+        val newMembers = listOf(Member(TestUser.SELF.id, Member.Role.Member))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownSucceeding()
+            .withPersistMembersSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .arrange()
+
+        eventHandler.handle(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
+            .with(eq(event.conversationId))
+            .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
             .with(eq(event.conversationId))
             .wasInvoked(exactly = once)
     }
@@ -167,7 +197,8 @@ class MemberJoinEventHandlerTest {
         private val memberJoinEventHandler: MemberJoinEventHandler = MemberJoinEventHandlerImpl(
             conversationRepository,
             userRepository,
-            persistMessage
+            persistMessage,
+            TestUser.SELF.id
         )
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
@@ -182,11 +213,19 @@ class MemberJoinEventHandlerTest {
                 .suspendFunction(conversationRepository::fetchConversationIfUnknown)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchConversation)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Left(coreFailure))
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchConversation)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(coreFailure))
         }

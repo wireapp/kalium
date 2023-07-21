@@ -143,7 +143,13 @@ internal class ApplicationMessageHandlerImpl(
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.Sent,
-                    isSelfMessage = senderUserId == selfUserId
+                    isSelfMessage = senderUserId == selfUserId,
+                    expirationData = content.expiresAfterMillis?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                        )
+                    }
                 )
                 processSignaling(signalingMessage)
             }
@@ -171,7 +177,8 @@ internal class ApplicationMessageHandlerImpl(
                     date = signaling.date,
                     senderUserId = signaling.senderUserId,
                     status = signaling.status,
-                    senderUserName = signaling.senderUserName
+                    senderUserName = signaling.senderUserName,
+                    expirationData = null
                 )
 
                 logger.i(message = "Persisting crypto session reset system message..")
@@ -199,12 +206,13 @@ internal class ApplicationMessageHandlerImpl(
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
         when (val content = message.content) {
-            // Persist Messages - > lists
             is MessageContent.Text -> handleTextMessage(message, content)
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message)
-            is MessageContent.RestrictedAsset -> TODO()
+            is MessageContent.RestrictedAsset -> {
+                /* no-op */
+            }
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)

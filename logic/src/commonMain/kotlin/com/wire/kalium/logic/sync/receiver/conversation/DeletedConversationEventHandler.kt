@@ -18,14 +18,13 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
-import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
+import com.wire.kalium.logic.feature.message.DeleteConversationNotificationsManager
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -38,9 +37,8 @@ interface DeletedConversationEventHandler {
 internal class DeletedConversationEventHandlerImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val ephemeralNotificationsManager: EphemeralNotificationsMgr
+    private val deleteConversationNotificationsManager: DeleteConversationNotificationsManager
 ) : DeletedConversationEventHandler {
-    private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.DeletedConversation) {
         val conversation = conversationRepository.getConversationById(event.conversationId)
@@ -56,7 +54,7 @@ internal class DeletedConversationEventHandlerImpl(
                 }.onSuccess {
                     val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
                     val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
-                    ephemeralNotificationsManager.scheduleNotification(dataNotification)
+                    deleteConversationNotificationsManager.scheduleNotification(dataNotification)
                     kaliumLogger
                         .logEventProcessing(
                             EventLoggingStatus.SUCCESS,

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.message.EphemeralNotificationsMgr
+import com.wire.kalium.logic.feature.message.DeleteConversationNotificationsManager
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
@@ -37,12 +37,10 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DeletedConversationEventHandlerTest {
 
     @Test
@@ -94,7 +92,7 @@ class DeletedConversationEventHandlerTest {
         private val userRepository = mock(classOf<UserRepository>())
 
         @Mock
-        private val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
+        private val ephemeralNotifications = mock(classOf<DeleteConversationNotificationsManager>())
 
         private val deletedConversationEventHandler: DeletedConversationEventHandler = DeletedConversationEventHandlerImpl(
             userRepository,

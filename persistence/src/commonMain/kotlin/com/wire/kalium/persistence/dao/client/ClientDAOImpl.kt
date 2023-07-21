@@ -42,6 +42,7 @@ internal object ClientMapper {
         registration_date: Instant?,
         label: String?,
         model: String?,
+        lastActive: Instant?
     ): Client = Client(
         userId = user_id,
         id = id,
@@ -51,7 +52,8 @@ internal object ClientMapper {
         isVerified = is_verified,
         registrationDate = registration_date,
         label = label,
-        model = model
+        model = model,
+        lastActive = lastActive
     )
 }
 
@@ -79,6 +81,7 @@ internal class ClientDAOImpl internal constructor(
             client_type = clientType,
             is_valid = true,
             registration_date = registrationDate,
+            last_active = lastActive,
             model = model,
             label = label
         )

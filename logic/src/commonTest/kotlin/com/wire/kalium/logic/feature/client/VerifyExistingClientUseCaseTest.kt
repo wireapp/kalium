@@ -22,8 +22,8 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -33,7 +33,6 @@ import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -44,7 +43,7 @@ class VerifyExistingClientUseCaseTest {
     @Test
     fun givenRegisteredClientId_whenInvoking_thenReturnSuccess() = runTest {
         val clientId = ClientId("clientId")
-        val client = Client(clientId, ClientType.Permanent, Instant.DISTANT_PAST, isVerified = false, isValid = false, null, null, "label")
+        val client = TestClient.CLIENT.copy(id = clientId)
         val (_, useCase) = Arrangement()
             .withSelfClientsResult(Either.Right(listOf(client)))
             .arrange()
