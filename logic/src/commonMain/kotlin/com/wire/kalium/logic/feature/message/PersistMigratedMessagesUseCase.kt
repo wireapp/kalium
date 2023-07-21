@@ -137,7 +137,9 @@ internal class PersistMigratedMessagesUseCaseImpl(
         } ?: MessageEntity.EditStatus.NotEdited,
         visibility = protoContent.visibility(),
         senderName = null,
-        expectsReadConfirmation = false
+        expectsReadConfirmation = false,
+        //TODO
+        readCount = 0
     )
 
     private fun onSignalingMessage(messageId: String, migratedMessage: MigratedMessage, protoContent: MessageContent.FromProto) =
@@ -165,7 +167,8 @@ internal class PersistMigratedMessagesUseCaseImpl(
                 } ?: MessageEntity.EditStatus.NotEdited,
                 visibility = MessageEntity.Visibility.VISIBLE,
                 senderName = null,
-                expectsReadConfirmation = false // no need to send read confirmation for messages migrated from old clients
+                expectsReadConfirmation = false, // no need to send read confirmation for messages migrated from old clients
+                readCount = 0
             )
         } else {
             null
