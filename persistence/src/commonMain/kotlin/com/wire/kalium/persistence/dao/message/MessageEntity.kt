@@ -35,8 +35,8 @@ sealed interface MessageEntity {
     val date: Instant
     val senderUserId: QualifiedIDEntity
     val status: Status
-    val readCount: Long,
-    open val visibility: Visibility
+    val readCount: Long
+    val visibility: Visibility
     val isSelfMessage: Boolean
     val expireAfterMs: Long?
     val selfDeletionStartDate: Instant?

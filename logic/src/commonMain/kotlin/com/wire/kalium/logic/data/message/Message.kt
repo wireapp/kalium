@@ -324,6 +324,7 @@ sealed interface Message {
     }
 
     sealed class Status {
+
         object Pending : Status()
         object Sent : Status()
 

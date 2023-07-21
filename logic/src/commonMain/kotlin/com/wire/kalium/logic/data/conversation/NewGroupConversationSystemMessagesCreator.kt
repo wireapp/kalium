@@ -171,7 +171,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             conversationId,
             DateTimeUtil.currentIsoDateTimeString(),
             selfUserId,
-            Message.Status.SENT,
+            Message.Status.Sent,
             Message.Visibility.VISIBLE,
             expirationData = null
         )

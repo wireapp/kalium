@@ -58,26 +58,14 @@ class MessageMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper()
 ) : MessageMapper {
 
-    override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
-        val status = when (message.status) {
-            Message.Status.Delivered -> MessageEntity.Status.DELIVERED
-            Message.Status.Pending -> MessageEntity.Status.PENDING
-            is Message.Status.Read -> MessageEntity.Status.READ
-            Message.Status.Sent -> MessageEntity.Status.SENT
-            Message.Status.Failed -> MessageEntity.Status.FAILED
-            Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
+    override fun fromMessageToEntity(message: Message.Standalone): MessageEntity =
+        when (message) {
+            is Message.Regular -> mapFromRegularMessage(message)
+            is Message.System -> mapFromSystemMessage(message)
         }
-
-        return when (message) {
-            is Message.Regular -> mapFromRegularMessage(message, status, message.visibility.toEntityVisibility())
-            is Message.System -> mapFromSystemMessage(message, status, message.visibility.toEntityVisibility())
-        }
-    }
 
     private fun mapFromRegularMessage(
-        message: Message.Regular,
-        status: MessageEntity.Status,
-        visibility: MessageEntity.Visibility
+        message: Message.Regular
     ) =
         MessageEntity.Regular(
             id = message.id,
@@ -86,8 +74,8 @@ class MessageMapperImpl(
             date = message.date.toInstant(),
             senderUserId = message.senderUserId.toDao(),
             senderClientId = message.senderClientId.value,
-            status = status,
-            readCount = if (status is Message.Status.Read) status.readCount else 0,
+            status = message.status.toEntityStatus(),
+            readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
             editStatus = when (message.editStatus) {
                 is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
                 is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
@@ -99,26 +87,25 @@ class MessageMapperImpl(
                     is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
                 }
             },
-            visibility = visibility,
+            visibility = message.visibility.toEntityVisibility(),
             senderName = message.senderUserName,
             isSelfMessage = message.isSelfMessage,
             expectsReadConfirmation = message.expectsReadConfirmation
         )
 
     private fun mapFromSystemMessage(
-        message: Message.System,
-        status: MessageEntity.Status,
-        visibility: MessageEntity.Visibility
+        message: Message.System
     ) = MessageEntity.System(
         id = message.id,
         content = message.content.toMessageEntityContent(),
         conversationId = message.conversationId.toDao(),
         date = message.date.toInstant(),
         senderUserId = message.senderUserId.toDao(),
-        status = status,
-        visibility = visibility,
+        status = message.status.toEntityStatus(),
+        visibility = message.visibility.toEntityVisibility(),
         senderName = message.senderUserName,
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
+        readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
         selfDeletionStartDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
                 is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
@@ -128,28 +115,20 @@ class MessageMapperImpl(
     )
 
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
-        val status: Message.Status = when (message.status) {
-            MessageEntity.Status.PENDING -> Message.Status.Pending
-            MessageEntity.Status.SENT -> Message.Status.Sent
-            MessageEntity.Status.DELIVERED -> Message.Status.Delivered
-            MessageEntity.Status.READ -> Message.Status.Read(message.readCount)
-            MessageEntity.Status.FAILED -> Message.Status.Failed
-            MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FailedRemotely
-        }
         return when (message) {
-            is MessageEntity.Regular -> mapRegularMessage(message, status)
-            is MessageEntity.System -> mapSystemMessage(message, status)
+            is MessageEntity.Regular -> mapRegularMessage(message)
+            is MessageEntity.System -> mapSystemMessage(message)
         }
     }
 
-    private fun mapRegularMessage(message: MessageEntity.Regular, status: Message.Status) = Message.Regular(
+    private fun mapRegularMessage(message: MessageEntity.Regular) = Message.Regular(
         id = message.id,
         content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
         conversationId = message.conversationId.toModel(),
         date = message.date.toIsoDateTimeString(),
         senderUserId = message.senderUserId.toModel(),
         senderClientId = ClientId(message.senderClientId),
-        status = status,
+        status = message.status.toModel(message.readCount),
         editStatus = when (val editStatus = message.editStatus) {
             MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
             is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
@@ -175,13 +154,13 @@ class MessageMapperImpl(
         }
     )
 
-    private fun mapSystemMessage(message: MessageEntity.System, status: Message.Status) = Message.System(
+    private fun mapSystemMessage(message: MessageEntity.System) = Message.System(
         id = message.id,
         content = message.content.toMessageContent(),
         conversationId = message.conversationId.toModel(),
         date = message.date.toIsoDateTimeString(),
         senderUserId = message.senderUserId.toModel(),
-        status = status,
+        status = message.status.toModel(message.readCount),
         visibility = message.visibility.toModel(),
         senderUserName = message.senderName,
         expirationData = message.expireAfterMs?.let {
@@ -461,6 +440,27 @@ fun MessageEntity.Visibility.toModel(): Message.Visibility = when (this) {
     MessageEntity.Visibility.HIDDEN -> Message.Visibility.HIDDEN
     MessageEntity.Visibility.DELETED -> Message.Visibility.DELETED
 }
+
+fun Message.Status.toEntityStatus() =
+    when (this) {
+        Message.Status.Delivered -> MessageEntity.Status.DELIVERED
+        Message.Status.Pending -> MessageEntity.Status.PENDING
+        is Message.Status.Read -> MessageEntity.Status.READ
+        Message.Status.Sent -> MessageEntity.Status.SENT
+        Message.Status.Failed -> MessageEntity.Status.FAILED
+        Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
+    }
+
+
+fun MessageEntity.Status.toModel(readCount: Long) =
+    when (this) {
+        MessageEntity.Status.PENDING -> Message.Status.Pending
+        MessageEntity.Status.SENT -> Message.Status.Sent
+        MessageEntity.Status.DELIVERED -> Message.Status.Delivered
+        MessageEntity.Status.READ -> Message.Status.Read(readCount)
+        MessageEntity.Status.FAILED -> Message.Status.Failed
+        MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FailedRemotely
+    }
 
 @Suppress("ComplexMethod")
 private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewContent = when (this) {
