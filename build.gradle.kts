@@ -89,7 +89,6 @@ the<CommandExtension>().run {
     printModulesInfo = true
 }
 
-
 kover {
     useJacoco()
 }
