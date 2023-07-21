@@ -74,5 +74,13 @@ fun Project.configureDefaultMultiplatform(
         }
     }
 
+    kotlinExtension.sourceSets.all {
+        languageSettings {
+            // Most of the native code requires this opt-in
+            // We absolutely need it and are accepting the risk of the API being experimental
+            optIn("kotlinx.cinterop.ExperimentalForeignApi")
+        }
+    }
+
     commonDokkaConfig()
 }
