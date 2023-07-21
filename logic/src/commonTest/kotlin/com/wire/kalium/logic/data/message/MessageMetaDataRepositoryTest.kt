@@ -59,7 +59,7 @@ class MessageMetaDataRepositoryTest {
     }
 
     @Test
-    fun givenMessageNotExits_whenGetOriginalSender_thenDataNotFound() = runTest {
+    fun givenMessageNotExists_whenGetOriginalSender_thenDataNotFound() = runTest {
         val convId = ConversationId("conversation_id", "domain")
 
         val (arrangement, repo) = Arrangement().arrange {
