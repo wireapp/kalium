@@ -44,11 +44,11 @@ actual class ClientConfigImpl : ClientConfig {
     private fun hardwareModel(): String? =
         memScoped {
             val len = alloc<ULongVar>()
-            sysctlbyname("hw.model", null, len.ptr, null, 0)
+            sysctlbyname("hw.model", null, len.ptr, null, 0U)
             val buf = ByteArray(len.value.toInt())
 
             val result = buf.usePinned {
-                sysctlbyname("hw.model", it.addressOf(0), len.ptr, null, 0)
+                sysctlbyname("hw.model", it.addressOf(0), len.ptr, null, 0U)
             }
 
             if (result == 0 && len.value > 0UL) {
