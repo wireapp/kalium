@@ -97,7 +97,7 @@ object MessageMapper {
 
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
                     senderName = senderName,
-                    // requireField here is sage since if a message have a quote, it must have a text
+                    // requireField here is safe since if a message have a quote, it must have a text
                     messageBody = text.requireField("text")
                 )
 
