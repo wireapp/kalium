@@ -33,6 +33,8 @@ import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
+import com.wire.kalium.logic.data.conversation.AddingMembersFailureMapper
+import com.wire.kalium.logic.data.conversation.AddingMembersFailureMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
@@ -80,10 +82,10 @@ import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
+import com.wire.kalium.logic.data.service.ServiceMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.service.ServiceMapper
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.team.TeamMapperImpl
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -170,7 +172,7 @@ internal object MapperProvider {
     fun protocolInfoMapper(): ProtocolInfoMapper = ProtocolInfoMapperImpl()
     fun receiptModeMapper(): ReceiptModeMapper = ReceiptModeMapperImpl()
     fun sendMessagePartialFailureMapper(): SendMessagePartialFailureMapper = SendMessagePartialFailureMapperImpl()
-
     fun serviceMapper(): ServiceMapper = ServiceMapper()
+    fun addingMembersFailureMapper(): AddingMembersFailureMapper = AddingMembersFailureMapperImpl()
 
 }
