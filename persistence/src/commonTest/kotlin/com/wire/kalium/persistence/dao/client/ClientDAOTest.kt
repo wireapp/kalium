@@ -185,6 +185,32 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenIsMLSCapableIsFalse_whenUpdatingAClient_thenItShouldUpdatedToTrue() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = false
+        ))
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = true
+        ))
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isMLSCapable }
+    }
+
+    @Test
+    fun givenIsMLSCapableIsTrue_whenUpdatingAClient_thenItShouldRemainTrue() = runTest {
+        val user = user
+        userDAO.insertUser(user)
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = true
+        ))
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = false
+        ))
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isMLSCapable }
+    }
+
+    @Test
     fun whenInsertingANewClient_thenIsMustBeMarkedAsValid() = runTest {
         val user = user
         userDAO.insertUser(user)

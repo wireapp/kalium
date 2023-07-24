@@ -44,7 +44,7 @@ model = coalesce(excluded.model, model),
 is_valid = is_valid,
 last_active = coalesce(excluded.last_active, last_active),
 mls_public_keys = excluded.mls_public_keys,
-is_mls_capable = is_mls_capable;
+is_mls_capable = excluded.is_mls_capable OR is_mls_capable; -- it's not possible to remove mls capability once added
 
 selectAllClients:
 SELECT * FROM Client;
