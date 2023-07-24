@@ -10,11 +10,13 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -38,6 +40,11 @@ class GetConversationVerificationStatusUseCaseTest {
                 .suspendFunction(arrangement.mlsConversationRepository::getConversationVerificationStatus)
                 .with(eq(Arrangement.PROTEUS_CONVERSATION1))
                 .wasNotInvoked()
+
+            verify(arrangement.verificationStatusHandler)
+                .suspendFunction(arrangement.verificationStatusHandler::invoke)
+                .with(eq(Arrangement.PROTEUS_CONVERSATION1), eq(ConversationVerificationStatus.NOT_VERIFIED))
+                .wasInvoked(once)
         }
 
     @Test
@@ -51,6 +58,11 @@ class GetConversationVerificationStatusUseCaseTest {
             ConversationVerificationStatusResult.Success(ConversationProtocol.MLS, ConversationVerificationStatus.VERIFIED),
             getConversationVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
         )
+
+        verify(arrangement.verificationStatusHandler)
+            .suspendFunction(arrangement.verificationStatusHandler::invoke)
+            .with(eq(Arrangement.MLS_CONVERSATION1), eq(ConversationVerificationStatus.VERIFIED))
+            .wasInvoked(once)
     }
 
     @Test
@@ -65,6 +77,11 @@ class GetConversationVerificationStatusUseCaseTest {
                 ConversationVerificationStatusResult.Success(ConversationProtocol.MLS, ConversationVerificationStatus.NOT_VERIFIED),
                 getConversationVerificationStatus(Arrangement.MLS_CONVERSATION1.id)
             )
+
+            verify(arrangement.verificationStatusHandler)
+                .suspendFunction(arrangement.verificationStatusHandler::invoke)
+                .with(eq(Arrangement.MLS_CONVERSATION1), eq(ConversationVerificationStatus.NOT_VERIFIED))
+                .wasInvoked(once)
         }
 
     private class Arrangement {
@@ -75,10 +92,21 @@ class GetConversationVerificationStatusUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val verificationStatusHandler = mock(classOf<ConversationVerificationStatusHandler>())
+
         fun arrange() = this to GetConversationVerificationStatusUseCaseImpl(
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            verificationStatusHandler
         )
+
+        init {
+            given(verificationStatusHandler)
+                .suspendFunction(verificationStatusHandler::invoke)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
+        }
 
         @Suppress("MaxLineLength")
         fun withGetConversationsByIdSuccessful(conversation: Conversation = MLS_CONVERSATION1) =
