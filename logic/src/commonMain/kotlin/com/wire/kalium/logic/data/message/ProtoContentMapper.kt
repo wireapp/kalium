@@ -124,16 +124,21 @@ class ProtoContentMapperImpl(
                 )
 
             is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation)
-            is MessageContent.ButtonAction -> GenericMessage.Content.ButtonAction(
-                ButtonAction(
-                    buttonId = readableContent.buttonId,
-                    referenceMessageId = readableContent.referencedMessageId
-                )
-            )
+            is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
             is MessageContent.ButtonActionConfirmation -> TODO()
         }
     }
+
+    private fun packButtonAction(
+        readableContent: MessageContent.ButtonAction
+    ): GenericMessage.Content.ButtonAction =
+        GenericMessage.Content.ButtonAction(
+            ButtonAction(
+                buttonId = readableContent.buttonId,
+                referenceMessageId = readableContent.referencedMessageId
+            )
+        )
 
     private fun packComposite(
         readableContent: MessageContent.Composite,
