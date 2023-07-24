@@ -90,7 +90,7 @@ object QualifiedSendMessageRequestJson {
 
     val validDefaultParameters = ValidJsonProvider(
         MessageApi.Parameters.QualifiedDefaultParameters(
-            sender = "sender-client-it",
+            sender = USER_1_CLIENT_1,
             externalBlob = "blob-id".toByteArray(),
             nativePush = true,
             recipients = mapOf(),
