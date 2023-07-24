@@ -183,7 +183,8 @@ sealed interface MessageEntity {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
-        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, COMPOSITE
+        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS, CONVERSATION_DEGRADED_PREOTEUS,
+        COMPOSITE
     }
 
     enum class MemberChangeType {
@@ -314,6 +315,8 @@ sealed class MessageEntityContent {
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     object HistoryLost : System()
     object ConversationCreated : System()
+    object ConversationDegradedMLS : System()
+    object ConversationDegradedProteus : System()
 }
 
 /**

@@ -50,6 +50,8 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
@@ -247,6 +249,12 @@ class UserDatabaseBuilder internal constructor(
         )
 
     val serviceDAO: ServiceDAO get() = ServiceDAOImpl(database.serviceQueries, queriesContext)
+
+    val conversationMetaDataDAO: ConversationMetaDataDAO
+        get() = ConversationMetaDataDAOImpl(
+            database.conversationsQueries,
+            queriesContext
+        )
 
     /**
      * @return the absolute path of the DB file or null if the DB file does not exist

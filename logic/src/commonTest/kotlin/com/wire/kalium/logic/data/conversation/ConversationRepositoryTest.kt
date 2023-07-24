@@ -76,6 +76,7 @@ import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -1006,6 +1007,9 @@ class ConversationRepositoryTest {
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
         @Mock
+        val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
+
+        @Mock
         val renamedConversationEventHandler = configure(mock(RenamedConversationEventHandler::class)) { stubsUnitByDefault = true }
 
         val conversationRepository =
@@ -1018,7 +1022,8 @@ class ConversationRepositoryTest {
                 conversationApi,
                 messageDAO,
                 clientDao,
-                clientApi
+                clientApi,
+                conversationMetaDataDAO
             )
 
         init {
