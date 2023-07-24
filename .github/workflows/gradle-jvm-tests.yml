@@ -54,7 +54,7 @@ jobs:
 
       - name: Test with Gradle
         run: |
-          ./gradlew jvmTest koverMergedXmlReport -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
 
       - name: Archive Test Reports
