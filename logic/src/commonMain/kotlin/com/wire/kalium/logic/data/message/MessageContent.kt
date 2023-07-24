@@ -333,12 +333,10 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
     is MessageContent.ConversationDegradedMLS -> "ConversationVerification.Degraded.MLS"
     is MessageContent.ConversationDegradedProteus -> "ConversationVerification.Degraded.Proteus"
-    null -> "Unknown"
     is MessageContent.Composite -> "Composite"
     is MessageContent.ButtonAction -> "ButtonAction"
     is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
     is MessageContent.Unknown -> "Unknown"
-
     null -> "null"
 }
 
