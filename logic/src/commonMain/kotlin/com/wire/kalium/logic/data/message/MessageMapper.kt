@@ -259,6 +259,8 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
+            MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> null
+            MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> null
         }
     }
 
@@ -357,6 +359,8 @@ class MessageMapperImpl(
         is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
         is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
         is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
+        is MessageContent.ConversationDegradedMLS -> MessageEntityContent.ConversationDegradedMLS
+        is MessageContent.ConversationDegradedProteus -> MessageEntityContent.ConversationDegradedProteus
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -444,6 +448,8 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
+        is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
+        is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
     }
 }
 

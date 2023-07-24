@@ -1,0 +1,1 @@
+ALTER TABLE Conversation ADD COLUMN mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0;
