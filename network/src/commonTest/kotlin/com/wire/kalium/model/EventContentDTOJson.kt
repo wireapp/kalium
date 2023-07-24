@@ -232,7 +232,7 @@ object EventContentDTOJson {
         |{
         |  "code": 503,
         |  "label": "federation-unreachable-domains-error",
-        |  "message": "The conversation epoch in a message is too old",
+        |  "message": "Failed to add member, could not reach remote backend",
         |  "data" : {
         |    "type" : "federation",
         |    "path" : "some/path",
