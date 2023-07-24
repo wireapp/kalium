@@ -37,6 +37,10 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration
@@ -55,7 +59,8 @@ class SendTextMessageUseCase internal constructor(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val scope: CoroutineScope
 ) {
 
     suspend operator fun invoke(
@@ -63,7 +68,7 @@ class SendTextMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+    ): Deferred<Either<CoreFailure, Unit>> = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -98,7 +103,10 @@ class SendTextMessageUseCase internal constructor(
                 expirationData = messageTimer?.let { Message.ExpirationData(it) },
                 isSelfMessage = true
             )
-            persistMessage(message).flatMap { messageSender.sendMessage(message) }
+            persistMessage(message).flatMap {
+                delay(5000)
+                messageSender.sendMessage(message)
+            }
         }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
     }
 
