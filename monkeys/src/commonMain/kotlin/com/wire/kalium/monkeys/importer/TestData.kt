@@ -70,8 +70,10 @@ sealed class ActionType {
     data class Reconnect(@SerialName("durationOffline") val durationOffline: UInt) : ActionType()
 
     @Serializable
-    data class SendMessage(@SerialName("count") val count: UInt, @SerialName("targets") val targets: List<String> = listOf()) :
-        ActionType()
+    data class SendMessage(
+        @SerialName("count") val count: UInt,
+        @SerialName("targets") val targets: List<String> = listOf()
+    ) : ActionType()
 
     @Serializable
     data class CreateConversation(@SerialName("userCount") val userCount: UserCount) : ActionType()
