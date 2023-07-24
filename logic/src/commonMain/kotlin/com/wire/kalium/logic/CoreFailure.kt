@@ -106,7 +106,14 @@ sealed class NetworkFailure : CoreFailure {
     /**
      * Failure due to a federated backend context
      */
-    object FederatedBackendFailure : NetworkFailure()
+    sealed class FederatedBackendFailure : NetworkFailure() {
+
+        object General : FederatedBackendFailure()
+
+        data class ConflictingBackends(val domains: List<String>): FederatedBackendFailure()
+
+    }
+
 }
 
 interface MLSFailure : CoreFailure {
@@ -151,7 +158,10 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             val exception = result.kException
             when {
                 exception is KaliumException.FederationError -> {
-                    Either.Left(NetworkFailure.FederatedBackendFailure)
+                    Either.Left(NetworkFailure.FederatedBackendFailure.General)
+                }
+                exception is KaliumException.FederationConflictException -> {
+                    Either.Left(NetworkFailure.FederatedBackendFailure.ConflictingBackends(exception.errorResponse.nonFederatingBackends))
                 }
 
                 // todo SocketException is platform specific so need to wrap it in our own exceptions
