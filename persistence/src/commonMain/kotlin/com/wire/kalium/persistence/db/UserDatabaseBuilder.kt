@@ -211,6 +211,7 @@ class UserDatabaseBuilder internal constructor(
             database.notificationQueries,
             database.conversationsQueries,
             database.unreadEventsQueries,
+            database.messagePreviewQueries,
             userId,
             database.reactionsQueries,
             queriesContext,

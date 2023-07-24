@@ -44,3 +44,14 @@ LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND Self
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+
+getLastMessages:
+SELECT * FROM MessagePreview AS message
+WHERE id IN (
+	SELECT id FROM Message
+	WHERE
+		Message.visibility = 'VISIBLE' AND
+		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE')
+	GROUP BY Message.conversation_id
+	HAVING Message.creation_date = MAX(Message.creation_date)
+);

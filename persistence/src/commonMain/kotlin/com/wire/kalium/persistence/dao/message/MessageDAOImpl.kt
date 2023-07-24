@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
 import com.wire.kalium.persistence.ReactionsQueries
@@ -49,6 +50,7 @@ internal class MessageDAOImpl internal constructor(
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
+    private val messagePreviewQueries: MessagePreviewQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext,
@@ -291,7 +293,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
-        queries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
+        messagePreviewQueries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()
 
     override suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
         return unreadEventsQueries.getConversationsUnreadEvents(unreadEventMapper::toConversationUnreadEntity)
