@@ -48,6 +48,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 
 class CallManagerTest {
 
@@ -79,6 +80,9 @@ class CallManagerTest {
     private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
     @Mock
+    private val conversationClientsInCallUpdater = mock(classOf<ConversationClientsInCallUpdater>())
+
+    @Mock
     private val videoStateChecker = mock(classOf<VideoStateChecker>())
 
     private val dispatcher = TestKaliumDispatcher
@@ -104,6 +108,7 @@ class CallManagerTest {
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
+            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             kaliumConfigs = kaliumConfigs
         )
     }
