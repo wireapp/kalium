@@ -68,7 +68,7 @@ class SendTextMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Deferred<Either<CoreFailure, Unit>> = scope.async(dispatchers.io) {
+    ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -107,7 +107,7 @@ class SendTextMessageUseCase internal constructor(
                 messageSender.sendMessage(message)
             }
         }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
-    }
+    }.await()
 
     companion object {
         const val TYPE = "Text"
