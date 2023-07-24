@@ -152,7 +152,7 @@ class GetPublicAssetUseCaseTest {
         given(assetRepository)
             .suspendFunction(assetRepository::downloadPublicAsset)
             .whenInvokedWith(eq(assetKey.value), eq(assetKey.domain))
-            .thenReturn(Either.Left(NetworkFailure.FederatedBackendFailure("error")))
+            .thenReturn(Either.Left(NetworkFailure.FederatedBackendFailure.General("error")))
 
         given(userRepository)
             .suspendFunction(userRepository::removeUserBrokenAsset)
