@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 interface ProtocolInfoMapper {
     fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo): Conversation.ProtocolInfo
     fun toEntity(protocolInfo: Conversation.ProtocolInfo): ConversationEntity.ProtocolInfo
+    fun fromInfoToProtocol(protocolInfo: Conversation.ProtocolInfo): Conversation.Protocol
 }
 
 class ProtocolInfoMapperImpl(
@@ -52,5 +53,11 @@ class ProtocolInfoMapperImpl(
                 protocolInfo.keyingMaterialLastUpdate,
                 ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
             )
+        }
+
+    override fun fromInfoToProtocol(protocolInfo: Conversation.ProtocolInfo): Conversation.Protocol =
+        when (protocolInfo) {
+            is Conversation.ProtocolInfo.Proteus -> Conversation.Protocol.PROTEUS
+            is Conversation.ProtocolInfo.MLS -> Conversation.Protocol.MLS
         }
 }
