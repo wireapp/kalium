@@ -17,43 +17,96 @@
  */
 package com.wire.kalium.monkeys.importer
 
+import com.wire.kalium.logic.data.conversation.ConversationOptions
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+
 @Serializable
 data class TestDataJsonModel(
-    @SerialName("backends")
-    val backends: List<BackendDataJsonModel>
+    @SerialName("testCases") val testCases: List<TestCase>,
+    @SerialName("backends") val backends: List<BackendDataJsonModel>
 )
 
 @Serializable
+data class TestCase(
+    @SerialName("name") val name: String,
+    @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig>,
+    @SerialName("setup") val setup: List<Action> = listOf(),
+    @SerialName("actions") val actions: List<Action>
+)
+
+@Serializable
+sealed class UserCount {
+    @Serializable
+    @SerialName("PERCENTAGE")
+    data class PERCENTAGE(@SerialName("value") val value: UInt) : UserCount()
+
+    @Serializable
+    @SerialName("FIXED_COUNT")
+    data class FIXED_COUNT(@SerialName("value") val value: UInt) : UserCount()
+}
+
+@Serializable
+enum class ConversationProtocol(val protocol: ConversationOptions.Protocol) {
+    MLS(ConversationOptions.Protocol.MLS), PROTEUS(ConversationOptions.Protocol.PROTEUS)
+}
+
+@Serializable
+data class GroupConfig(
+    @SerialName("userCount") val userCount: UserCount,
+    @SerialName("protocol") val protocol: ConversationProtocol = ConversationProtocol.MLS,
+    @SerialName("groupCount") val groupCount: UInt = 1u
+)
+
+@Serializable
+data class Action(
+    @SerialName("description") val description: String,
+    @SerialName("type") val type: ActionType,
+    @SerialName("count") val count: UserCount,
+    @SerialName("repeatDuration") val repeatDuration: UInt
+)
+
+@Serializable
+sealed class ActionType {
+    @Serializable
+    data class LOGIN(@SerialName("duration") val duration: UInt = 0u) : ActionType()
+
+    @Serializable
+    data class RECONNECT(@SerialName("durationOffline") val durationOffline: UInt) : ActionType()
+
+    @Serializable
+    data class SEND_MESSAGE(@SerialName("count") val count: UInt, @SerialName("targets") val targets: List<String> = listOf()) :
+        ActionType()
+
+    @Serializable
+    data class CREATE_CONVERSATION(@SerialName("userCount") val userCount: UserCount) : ActionType()
+
+    @Serializable
+    data class LEAVE_CONVERSATION(@SerialName("userCount") val userCount: UserCount) : ActionType()
+
+    @Serializable
+    data class DESTROY_CONVERSATION(@SerialName("count") val count: UInt) : ActionType()
+
+    @Serializable
+    data class SEND_REQUEST(@SerialName("userCount") val userCount: UInt) : ActionType()
+}
+
+@Serializable
 data class BackendDataJsonModel(
-    @SerialName("api")
-    val api: String,
-    @SerialName("accounts")
-    val accounts: String,
-    @SerialName("webSocket")
-    val webSocket: String,
-    @SerialName("blackList")
-    val blackList: String,
-    @SerialName("teams")
-    val teams: String,
-    @SerialName("website")
-    val website: String,
-    @SerialName("title")
-    val title: String,
-    @SerialName("passwordForUsers")
-    val passwordForUsers: String,
-    @SerialName("domain")
-    val domain: String,
-    @SerialName("users")
-    val users: List<UserAccountDataJsonModel>
+    @SerialName("api") val api: String,
+    @SerialName("accounts") val accounts: String,
+    @SerialName("webSocket") val webSocket: String,
+    @SerialName("blackList") val blackList: String,
+    @SerialName("teams") val teams: String,
+    @SerialName("website") val website: String,
+    @SerialName("title") val title: String,
+    @SerialName("passwordForUsers") val passwordForUsers: String,
+    @SerialName("domain") val domain: String,
+    @SerialName("users") val users: List<UserAccountDataJsonModel>
 )
 
 @Serializable
 data class UserAccountDataJsonModel(
-    @SerialName("email")
-    val email: String,
-    @SerialName("id")
-    val unqualifiedId: String
+    @SerialName("email") val email: String, @SerialName("id") val unqualifiedId: String
 )
