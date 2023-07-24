@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
@@ -46,6 +47,7 @@ actual class GlobalCallManager {
         federatedIdMapper: FederatedIdMapper,
         qualifiedIdMapper: QualifiedIdMapper,
         videoStateChecker: VideoStateChecker,
+        conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         kaliumConfigs: KaliumConfigs
     ): CallManager {
         return CallManagerImpl()
