@@ -99,7 +99,8 @@ internal class ConversationApiV2Test : ApiTest() {
         val request = AddConversationMembersRequest(listOf(userId), "Member")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable, statusCode = HttpStatusCode.fromValue(503),
+            EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable,
+            statusCode = HttpStatusCode.ServiceUnavailable,
             assertion = {
                 assertPost()
                 assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS")
