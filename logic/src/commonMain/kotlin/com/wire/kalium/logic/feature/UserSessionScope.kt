@@ -567,7 +567,7 @@ class UserSessionScope internal constructor(
 
     private val compositeMessageRepository: CompositeMessageRepository
         get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
-    
+
     private val userRepository: UserRepository = UserDataSource(
         userStorage.database.userDAO,
         userStorage.database.metadataDAO,
