@@ -65,6 +65,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
@@ -217,6 +218,7 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
+    private val conversationMetaDataDAO: ConversationMetaDataDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -750,7 +752,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean> =
         wrapStorageRequest {
-            conversationDAO.isInformedAboutDegradedMLSVerification(conversationId.toDao())
+            conversationMetaDataDAO.isInformedAboutDegradedMLSVerification(conversationId.toDao())
         }
 
     override suspend fun setInformedAboutDegradedMLSVerificationFlag(
@@ -758,7 +760,7 @@ internal class ConversationDataSource internal constructor(
         isInformed: Boolean
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
+            conversationMetaDataDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
         }
 
     private suspend fun persistIncompleteConversations(

@@ -526,7 +526,8 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
-            authenticatedNetworkContainer.clientApi
+            authenticatedNetworkContainer.clientApi,
+            userStorage.database.conversationMetaDataDAO
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
