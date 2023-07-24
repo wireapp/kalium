@@ -138,7 +138,6 @@ internal class PersistMigratedMessagesUseCaseImpl(
         visibility = protoContent.visibility(),
         senderName = null,
         expectsReadConfirmation = false,
-        //TODO
         readCount = 0
     )
 

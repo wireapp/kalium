@@ -451,7 +451,6 @@ fun Message.Status.toEntityStatus() =
         Message.Status.FailedRemotely -> MessageEntity.Status.FAILED_REMOTELY
     }
 
-
 fun MessageEntity.Status.toModel(readCount: Long) =
     when (this) {
         MessageEntity.Status.PENDING -> Message.Status.Pending
