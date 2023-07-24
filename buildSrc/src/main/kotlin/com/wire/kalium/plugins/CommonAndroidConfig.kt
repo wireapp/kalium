@@ -50,9 +50,10 @@ fun LibraryExtension.commonAndroidLibConfig(
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     packagingOptions {
         resources.pickFirsts.add("google/protobuf/*.proto")
         jniLibs.pickFirsts.add("**/libsodium.so")
