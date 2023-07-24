@@ -88,11 +88,15 @@ object MessageMapper {
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
         return when (contentType) {
-            MessageEntity.ContentType.COMPOSITE,
+            MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Composite(
+                senderName = senderName,
+                messageBody = text
+            )
+
             MessageEntity.ContentType.TEXT -> when {
                 isSelfMessage -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
-                    messageBody = text
+                    messageBody = text.requireField("text")
                 )
 
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
