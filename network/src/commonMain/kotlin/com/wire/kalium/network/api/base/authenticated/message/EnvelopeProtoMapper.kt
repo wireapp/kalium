@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.message
 
+import com.wire.kalium.protobuf.otr.ClientId
 import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry
@@ -35,8 +36,8 @@ internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
 
     private val otrClientEntryMapper = OtrClientEntryMapper()
     private val otrUserIdMapper = provideOtrUserIdMapper()
-    private val otrClientIdMapper = OtrClientIdMapper()
 
+    @OptIn(ExperimentalStdlibApi::class)
     override fun encodeToProtobuf(envelopeParameters: MessageApi.Parameters.QualifiedDefaultParameters): ByteArray {
         val qualifiedEntries = envelopeParameters.recipients.entries.groupBy({ it.key.domain }) { userEntry ->
             val clientEntries = userEntry.value.entries.map(otrClientEntryMapper::toOtrClientEntry)
@@ -81,7 +82,7 @@ internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
 
         return QualifiedNewOtrMessage(
             recipients = qualifiedEntries,
-            sender = otrClientIdMapper.toOtrClientId(envelopeParameters.sender),
+            sender = ClientId(envelopeParameters.sender.hexToLong()),
             blob = envelopeParameters.externalBlob?.let { ByteArr(it) },
             clientMismatchStrategy = strategy,
             nativePush = envelopeParameters.nativePush,

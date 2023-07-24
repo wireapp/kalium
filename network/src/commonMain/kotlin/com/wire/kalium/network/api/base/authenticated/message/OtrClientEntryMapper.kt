@@ -19,13 +19,14 @@
 package com.wire.kalium.network.api.base.authenticated.message
 
 import com.wire.kalium.protobuf.otr.ClientEntry
+import com.wire.kalium.protobuf.otr.ClientId
 import pbandk.ByteArr
 
 internal class OtrClientEntryMapper {
 
-    private val clientIdMapper = OtrClientIdMapper()
+    @OptIn(ExperimentalStdlibApi::class)
     fun toOtrClientEntry(clientPayload: Map.Entry<String, ByteArray>): ClientEntry = ClientEntry(
-        client = clientIdMapper.toOtrClientId(clientPayload.key),
+        client = ClientId(clientPayload.key.hexToLong()),
         text = ByteArr(clientPayload.value),
     )
 }
