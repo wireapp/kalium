@@ -193,7 +193,7 @@ internal class ConversationGroupRepositoryImpl(
                 if (apiResult.value.hasUnreachableDomainsError) {
                     val usersReqState = addingMembersFailureMapper.mapToUsersRequestState(
                         userIdList,
-                        apiResult.value as NetworkFailure.FederatedBackendFailure,
+                        apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains,
                         previousUserIdsExcluded
                     )
                     // retry adding, only with filtered available members to the conversation

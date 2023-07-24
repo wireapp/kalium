@@ -39,8 +39,7 @@ sealed interface CoreFailure {
                 && this.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
 
     val hasUnreachableDomainsError: Boolean
-        get() = this is NetworkFailure.FederatedBackendFailure
-                && this.label == "federation-unreachable-domains-error" && this.domains.isNotEmpty()
+        get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
 
     /**
      * The attempted operation requires that this client is registered.
@@ -112,9 +111,11 @@ sealed class NetworkFailure : CoreFailure {
      */
     sealed class FederatedBackendFailure : NetworkFailure() {
 
-        data class General(val label: String, val domains: List<String> = emptyList()) : FederatedBackendFailure()
+        data class General(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
+
+        data class FailedDomains(val domains: List<String> = emptyList()): FederatedBackendFailure()
 
     }
 
@@ -163,7 +164,11 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             when {
                 exception is KaliumException.FederationError -> {
                     val cause = exception.errorResponse.cause
-                    Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label, cause?.domains.orEmpty()))
+                    if(exception.errorResponse.label == "federation-unreachable-domains-error") {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
+                    } else {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
+                    }
                 }
 
                 exception is KaliumException.FederationConflictException -> {
