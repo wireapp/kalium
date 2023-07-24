@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.kaliumLogger
 
-interface DeleteForMeHandler {
+internal interface DeleteForMeHandler {
     suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.DeleteForMe

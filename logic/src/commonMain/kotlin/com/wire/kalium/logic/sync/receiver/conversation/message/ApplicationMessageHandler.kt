@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
@@ -83,6 +84,7 @@ internal class ApplicationMessageHandlerImpl(
     private val deleteMessageHandler: DeleteMessageHandler,
     private val messageEncoder: MessageContentEncoder,
     private val receiptMessageHandler: ReceiptMessageHandler,
+    private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val selfUserId: UserId
 ) : ApplicationMessageHandler {
 
@@ -201,8 +203,11 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
-            is MessageContent.ButtonAction -> TODO()
-            is MessageContent.ButtonActionConfirmation -> TODO()
+            is MessageContent.ButtonAction -> {
+                /* no-op */
+                // TODO(services): we need handle this event if kalium need to support services
+            }
+            is MessageContent.ButtonActionConfirmation -> buttonActionConfirmationHandler.handle(signaling.conversationId, content)
         }
     }
 
