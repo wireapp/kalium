@@ -15,12 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.call.usecase
 
-package com.wire.kalium.logic.feature.call
-
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
+import com.wire.kalium.logic.feature.call.FlowManagerService
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -34,47 +32,35 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-class RejectCallUseCaseTest {
+class FlipToFrontCameraUseCaseTest {
 
     @Mock
-    private val callManager = mock(classOf<CallManager>())
+    private val flowManagerService = mock(classOf<FlowManagerService>())
 
-    @Mock
-    private val callRepository = mock(classOf<CallRepository>())
-
-    private lateinit var rejectCallUseCase: RejectCallUseCase
+    private lateinit var flipToFrontCamera: FlipToFrontCameraUseCase
 
     @BeforeTest
     fun setup() {
-        rejectCallUseCase = RejectCallUseCase(lazy{ callManager }, callRepository)
+        flipToFrontCamera = FlipToFrontCameraUseCase(flowManagerService)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenCallingParams_whenRunningUseCase_thenInvokeRejectCallOnce() = runTest {
-        val conversationId = ConversationId("someone", "wire.com")
-
-        given(callManager)
-            .suspendFunction(callManager::rejectCall)
+    fun givenFlowManagerService_whenUseCaseCaseIsInvoked_thenInvokeFlipToFrontCameraOnce() = runTest {
+        given(flowManagerService)
+            .suspendFunction(flowManagerService::flipToFrontCamera)
             .whenInvokedWith(eq(conversationId))
             .thenDoNothing()
 
-        given(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .whenInvokedWith(eq(conversationId), eq(CallStatus.REJECTED))
-            .thenDoNothing()
+        flipToFrontCamera(conversationId)
 
-        rejectCallUseCase.invoke(conversationId)
-
-        verify(callManager)
-            .suspendFunction(callManager::rejectCall)
+        verify(flowManagerService)
+            .function(flowManagerService::flipToFrontCamera)
             .with(eq(conversationId))
-            .wasInvoked(once)
-
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId), eq(CallStatus.REJECTED))
             .wasInvoked(once)
     }
 
+    companion object {
+        val conversationId = ConversationId("someone", "wire.com")
+    }
 }

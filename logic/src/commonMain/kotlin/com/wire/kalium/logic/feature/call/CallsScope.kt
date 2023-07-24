@@ -25,11 +25,14 @@ import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
 import com.wire.kalium.logic.data.call.ParticipantsFilterImpl
 import com.wire.kalium.logic.data.call.ParticipantsOrderByNameImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
@@ -77,6 +80,7 @@ class CallsScope internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,
+    private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val kaliumConfigs: KaliumConfigs
 ) {
 
@@ -122,7 +126,8 @@ class CallsScope internal constructor(
         get() = EndCallOnConversationChangeUseCaseImpl(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
-            endCallUseCase = endCall
+            endCallUseCase = endCall,
+            conversationClientsInCallUpdater = conversationClientsInCallUpdater
         )
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
