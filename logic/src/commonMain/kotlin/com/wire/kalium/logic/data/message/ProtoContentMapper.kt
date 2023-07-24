@@ -32,6 +32,7 @@ import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Button
+import com.wire.kalium.protobuf.messages.ButtonAction
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
@@ -123,11 +124,21 @@ class ProtoContentMapperImpl(
                 )
 
             is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation)
+            is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
             is MessageContent.ButtonActionConfirmation -> TODO()
-            is MessageContent.ButtonAction -> TODO()
         }
     }
+
+    private fun packButtonAction(
+        readableContent: MessageContent.ButtonAction
+    ): GenericMessage.Content.ButtonAction =
+        GenericMessage.Content.ButtonAction(
+            ButtonAction(
+                buttonId = readableContent.buttonId,
+                referenceMessageId = readableContent.referencedMessageId
+            )
+        )
 
     private fun packComposite(
         readableContent: MessageContent.Composite,

@@ -43,8 +43,8 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -74,7 +74,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
-import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -96,7 +95,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -110,6 +108,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
+import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("LargeClass")
 class ConversationRepositoryTest {
