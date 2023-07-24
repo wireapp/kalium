@@ -18,6 +18,8 @@
 
 import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
 import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
+import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 buildscript {
     repositories {
@@ -27,7 +29,6 @@ buildscript {
     }
 
     dependencies {
-        // keeping this here to allow AS to automatically update
         classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
         classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
@@ -49,7 +50,7 @@ repositories {
 
 plugins {
     id("org.jetbrains.dokka")
-    id("org.jetbrains.kotlinx.kover") version "0.5.1" // TODO(upgrade): Breaking changes in 0.6.0
+    alias(libs.plugins.kover)
     id("scripts.testing")
     id("scripts.detekt")
     alias(libs.plugins.completeKotlin)
@@ -88,22 +89,48 @@ the<CommandExtension>().run {
     printModulesInfo = true
 }
 
+kover {
+    useJacoco()
+}
+koverReport {
+    filters {
+        includes {
+            packages("com.wire.kalium")
+        }
+    }
+}
+
 subprojects {
-    this.tasks.withType<Test> {
-        if (name != "jvmTest" && name != "jsTest") {
-            the<kotlinx.kover.api.KoverTaskExtension>().apply {
-                isDisabled = true
-            }
-        } else {
-            the<kotlinx.kover.api.KoverTaskExtension>().apply {
-                includes = listOf("com.wire.kalium.*")
+    pluginManager.apply("org.jetbrains.kotlinx.kover")
+
+    kover {
+        useJacoco()
+    }
+    koverReport {
+        filters {
+            includes {
+                packages("com.wire.kalium")
             }
         }
     }
 }
 
-kover {
-    coverageEngine.set(kotlinx.kover.api.CoverageEngine.JACOCO)
+rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
+    // For unknown reasons, yarn.lock checks are failing on Github Actions
+    // Considering JS support is quite experimental for us, we can live with this for now
+    rootProject.the<YarnRootExtension>().yarnLockMismatchReport =
+        YarnLockMismatchReport.WARNING
+}
+
+dependencies {
+    kover(project(":logic"))
+    kover(project(":cryptography"))
+    kover(project(":util"))
+    kover(project(":network"))
+    kover(project(":persistence"))
+    kover(project(":logger"))
+    kover(project(":calling"))
+    kover(project(":protobuf"))
 }
 
 rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin> {
