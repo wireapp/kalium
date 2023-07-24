@@ -226,4 +226,20 @@ object EventContentDTOJson {
         |  }
         |}
         """.trimMargin()
+
+    val jsonProviderMemberJoinFailureUnreachable =
+        """
+        |{
+        |  "code": 533,
+        |  "label": "federation-unreachable-domains-error",
+        |  "message": "The conversation epoch in a message is too old",
+        |  "data" : {
+        |    "type" : "federation",
+        |    "path" : "some/path",
+        |    "domain": "foma.wire.link",
+        |    "domains": ["foma.wire.link"]
+        |  }
+        |}
+        """.trimMargin()
+
 }

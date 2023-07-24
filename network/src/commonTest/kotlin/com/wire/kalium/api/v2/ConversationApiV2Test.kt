@@ -27,11 +27,13 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 internal class ConversationApiV2Test : ApiTest() {
@@ -88,6 +90,32 @@ internal class ConversationApiV2Test : ApiTest() {
 
         assertTrue(response.isSuccessful())
         assertEquals(ReceiptMode.DISABLED, response.value.conversationsFound.first().receiptMode)
+    }
+
+    @Test
+    fun whenAddingMemberToGroup_AndRemoteFailure_thenTheMemberShouldBeAddedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val userId = UserId("userId", "userDomain")
+        val request = AddConversationMembersRequest(listOf(userId), "Member")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable, statusCode = HttpStatusCode.fromValue(533),
+            assertion = {
+                assertPost()
+                assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS")
+            }
+        )
+        val conversationApi = ConversationApiV2(networkClient)
+        val response = conversationApi.addMember(request, conversationId)
+
+        assertFalse(response.isSuccessful())
+        assertTrue {
+            (response.kException as KaliumException.FederationError).errorResponse.isFederationError()
+        }
+        assertTrue {
+            (response.kException as KaliumException.FederationError).errorResponse.label ==
+                    "federation-unreachable-domains-error"
+        }
     }
 
     private companion object {
