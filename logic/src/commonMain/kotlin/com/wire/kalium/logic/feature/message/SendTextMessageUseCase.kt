@@ -104,7 +104,6 @@ class SendTextMessageUseCase internal constructor(
                 isSelfMessage = true
             )
             persistMessage(message).flatMap {
-                delay(5000)
                 messageSender.sendMessage(message)
             }
         }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
