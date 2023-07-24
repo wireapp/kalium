@@ -230,7 +230,7 @@ object EventContentDTOJson {
     val jsonProviderMemberJoinFailureUnreachable =
         """
         |{
-        |  "code": 533,
+        |  "code": 503,
         |  "label": "federation-unreachable-domains-error",
         |  "message": "The conversation epoch in a message is too old",
         |  "data" : {
