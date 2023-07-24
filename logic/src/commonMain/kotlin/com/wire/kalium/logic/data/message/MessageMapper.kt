@@ -419,7 +419,7 @@ class MessageMapperImpl(
         )
 
         is MessageEntityContent.Composite -> MessageContent.Composite(
-            this.text?.toMessageContent(hidden) as MessageContent.Text,
+            this.text?.toMessageContent(hidden) as? MessageContent.Text,
             this.buttonList.map {
                 MessageContent.Composite.Button(
                     text = it.text,
@@ -522,6 +522,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
+    is MessagePreviewEntityContent.Composite -> MessagePreviewContent.WithUser.Composite(username = senderName, messageBody = messageBody)
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {
