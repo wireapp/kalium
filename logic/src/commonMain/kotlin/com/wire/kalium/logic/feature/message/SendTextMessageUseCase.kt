@@ -38,11 +38,8 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -106,7 +103,14 @@ class SendTextMessageUseCase internal constructor(
             persistMessage(message).flatMap {
                 messageSender.sendMessage(message)
             }
-        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
+        }.onFailure {
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure = it,
+                conversationId = conversationId,
+                messageId = generatedMessageUuid,
+                messageType = TYPE
+            )
+        }
     }.await()
 
     companion object {
