@@ -19,8 +19,8 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.util.arrangement.dao.MessageMetaDataDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.MessageMetaDataDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.dao.MessageMetadataDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MessageMetadataDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -32,7 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class MessageMetaDataRepositoryTest {
+class MessageMetadataRepositoryTest {
 
     @Test
     fun givenMessageOriginalSender_whenGetOriginalSender_thenReturnsOriginalSender() = runTest {
@@ -83,7 +83,7 @@ class MessageMetaDataRepositoryTest {
 
 
 
-    private class Arrangement : MessageMetaDataDAOArrangement by MessageMetaDataDAOArrangementImpl() {
+    private class Arrangement : MessageMetadataDAOArrangement by MessageMetadataDAOArrangementImpl() {
         private val repo: MessageMetadataRepository = MessageMetadataSource(messageMetaDataDAO)
 
         fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, MessageMetadataRepository> {

@@ -32,12 +32,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.days
 
-class MessageMetaDataDAOTest : BaseDatabaseTest() {
+class MessageMetadataDAOTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
-    private lateinit var messageMetaDataDAO: MessageMetaDataDAO
+    private lateinit var messageMetaDataDAO: MessageMetadataDAO
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val userEntity1 = newUserEntity("userEntity1")

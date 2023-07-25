@@ -58,8 +58,8 @@ import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
-import com.wire.kalium.persistence.dao.message.MessageMetaDataDAO
-import com.wire.kalium.persistence.dao.message.MessageMetaDataDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
+import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -163,8 +163,8 @@ class UserDatabaseBuilder internal constructor(
     val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries, userCache, databaseScope, queriesContext)
 
-    val messageMetaDataDAO: MessageMetaDataDAO
-        get() = MessageMetaDataDAOImpl(database.messageMetaDataQueries, queriesContext)
+    val messageMetaDataDAO: MessageMetadataDAO
+        get() = MessageMetadataDAOImpl(database.messageMetaDataQueries, queriesContext)
 
     val userConfigDAO: UserConfigDAO
         get() = UserConfigDAOImpl(metadataDAO)
