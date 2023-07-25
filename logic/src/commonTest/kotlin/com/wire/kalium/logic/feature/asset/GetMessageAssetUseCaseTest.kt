@@ -308,7 +308,7 @@ class GetMessageAssetUseCaseTest {
                 date = "22-03-2022",
                 senderUserId = userId,
                 senderClientId = clientId,
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 editStatus = Message.EditStatus.NotEdited,
                 isSelfMessage = false
             )
