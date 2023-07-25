@@ -121,7 +121,7 @@ class ButtonActionConfirmationHandlerTest {
 
         verify(arrangement.compositeMessageRepository)
             .suspendFunction(arrangement.compositeMessageRepository::resetSelection)
-            .with(eq("messageId"), eq(convId))
+            .with(any(), any())
             .wasNotInvoked()
     }
 
