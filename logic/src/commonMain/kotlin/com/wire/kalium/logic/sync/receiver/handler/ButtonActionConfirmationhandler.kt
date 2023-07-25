@@ -52,9 +52,9 @@ internal class ButtonActionConfirmationHandlerImpl internal constructor(
                 if (originalSender != senderId) {
                     Either.Left(CoreFailure.InvalidEventSenderID)
                 } else {
-                    Either.Right(originalSender)
+                    Either.Right(Unit)
                 }
-            }.flatMap { originalSender ->
+            }.flatMap {
                 if (messageContent.buttonId != null) {
                     compositeMessageRepository.markSelected(
                         messageId = messageId,
