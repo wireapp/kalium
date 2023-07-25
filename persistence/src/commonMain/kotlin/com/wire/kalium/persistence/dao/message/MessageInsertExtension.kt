@@ -285,6 +285,9 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.TeamMemberRemoved -> {
                     /* no-op */
                 }
+
+                MessageEntityContent.ConversationDegradedMLS -> TODO()
+                MessageEntityContent.ConversationDegradedProteus -> TODO()
             }
         }
     }
