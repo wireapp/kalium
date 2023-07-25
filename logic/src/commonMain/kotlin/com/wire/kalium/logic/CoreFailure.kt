@@ -115,7 +115,7 @@ sealed class NetworkFailure : CoreFailure {
 
         data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
 
-        data class FailedDomains(val domains: List<String> = emptyList()): FederatedBackendFailure()
+        data class FailedDomains(val domains: List<String> = emptyList()) : FederatedBackendFailure()
 
     }
 
@@ -164,7 +164,7 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             when {
                 exception is KaliumException.FederationError -> {
                     val cause = exception.errorResponse.cause
-                    if(exception.errorResponse.label == "federation-unreachable-domains-error") {
+                    if (exception.errorResponse.label == "federation-unreachable-domains-error") {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))

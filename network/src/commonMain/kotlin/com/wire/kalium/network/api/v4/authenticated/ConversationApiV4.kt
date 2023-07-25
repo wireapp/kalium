@@ -61,8 +61,7 @@ internal open class ConversationApiV4 internal constructor(
             } else {
                 handleUnsuccessfulResponse(response)
             }
-        })
-        {
+        }) {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
             }
@@ -127,4 +126,3 @@ internal open class ConversationApiV4 internal constructor(
         const val PATH_SUBCONVERSATIONS = "subconversations"
     }
 }
-
