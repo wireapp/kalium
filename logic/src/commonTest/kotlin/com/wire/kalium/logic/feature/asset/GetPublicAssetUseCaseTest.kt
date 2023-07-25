@@ -162,7 +162,7 @@ class GetPublicAssetUseCaseTest {
         val publicAsset = getPublicAsset(assetKey)
 
         assertEquals(PublicAssetResult.Failure::class, publicAsset::class)
-        assertEquals(NetworkFailure.FederatedBackendFailure::class, (publicAsset as PublicAssetResult.Failure).coreFailure::class)
+        assertEquals(NetworkFailure.FederatedBackendFailure.General::class, (publicAsset as PublicAssetResult.Failure).coreFailure::class)
         assertEquals(false, publicAsset.isRetryNeeded)
 
 
