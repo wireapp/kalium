@@ -57,8 +57,8 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Failure>(result)
 
-        verify(arrangement.messageMetaDataRepository)
-            .suspendFunction(arrangement.messageMetaDataRepository::originalSenderId)
+        verify(arrangement.messageMetadataRepository)
+            .suspendFunction(arrangement.messageMetadataRepository::originalSenderId)
             .with(any(), any())
             .wasNotInvoked()
 
@@ -96,8 +96,8 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
 
-        verify(arrangement.messageMetaDataRepository)
-            .suspendFunction(arrangement.messageMetaDataRepository::originalSenderId)
+        verify(arrangement.messageMetadataRepository)
+            .suspendFunction(arrangement.messageMetadataRepository::originalSenderId)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
@@ -135,8 +135,8 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
 
-        verify(arrangement.messageMetaDataRepository)
-            .suspendFunction(arrangement.messageMetaDataRepository::originalSenderId)
+        verify(arrangement.messageMetadataRepository)
+            .suspendFunction(arrangement.messageMetadataRepository::originalSenderId)
             .with(any(), any())
             .wasInvoked(exactly = once)
 
@@ -171,7 +171,7 @@ class SendButtonActionMessageTest {
         fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionMessageUseCase> {
             apply(block)
             useCase = SendButtonActionMessageUseCase(
-                messageMetaDataRepository = messageMetaDataRepository,
+                messageMetadataRepository = messageMetadataRepository,
                 messageSender = messageSender,
                 syncManager = syncManager,
                 currentClientIdProvider = currentClientIdProvider,

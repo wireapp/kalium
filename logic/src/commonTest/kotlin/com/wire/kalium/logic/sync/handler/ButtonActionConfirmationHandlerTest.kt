@@ -17,13 +17,18 @@
  */
 package com.wire.kalium.logic.sync.handler
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.once
@@ -36,15 +41,17 @@ class ButtonActionConfirmationHandlerTest {
     @Test
     fun givenContentWithButtonId_whenHandlingEvent_thenThatButtonIdAsSelected() = runTest {
         val convId = CONVERSATION_ID
+        val senderId = SENDER_USER_ID
         val content = MessageContent.ButtonActionConfirmation(
             referencedMessageId = "messageId",
             buttonId = "buttonId"
         )
         val (arrangement, handler) = Arrangement().arrange {
             withMarkSelected(result = Either.Right(Unit))
+            withMessageOriginalSender(result = Either.Right(senderId))
         }
 
-        handler.handle(convId, content)
+        handler.handle(convId, senderId, content)
 
         verify(arrangement.compositeMessageRepository)
             .suspendFunction(arrangement.compositeMessageRepository::markSelected)
@@ -60,16 +67,18 @@ class ButtonActionConfirmationHandlerTest {
     @Test
     fun givenContentWithNoButtonId_whenHandlingEvent_thenThanSelectionIsReset() = runTest {
         val convId = CONVERSATION_ID
+        val senderId = SENDER_USER_ID
         val content = MessageContent.ButtonActionConfirmation(
             referencedMessageId = "messageId",
             buttonId = null
         )
 
         val (arrangement, handler) = Arrangement().arrange {
-             withClearSelection(result = Either.Right(Unit))
+            withClearSelection(result = Either.Right(Unit))
+            withMessageOriginalSender(result = Either.Right(senderId))
         }
 
-        handler.handle(convId, content)
+        handler.handle(convId, senderId, content)
 
         verify(arrangement.compositeMessageRepository)
             .suspendFunction(arrangement.compositeMessageRepository::markSelected)
@@ -83,20 +92,56 @@ class ButtonActionConfirmationHandlerTest {
             .wasInvoked(exactly = once)
     }
 
-private companion object {
-    val CONVERSATION_ID = ConversationId("conversationId", "domain")
-}
 
-private class Arrangement : CompositeMessageRepositoryArrangement by CompositeMessageRepositoryArrangementImpl() {
+    @Test
+    fun givenSenderIdIsNotTheSameAsOriginalSender_whenHandlingEvent_thenIgnore() = runTest {
+        val convId = CONVERSATION_ID
+        val senderId = SENDER_USER_ID
 
-    private val handler: ButtonActionConfirmationHandler = ButtonActionConfirmationHandlerImpl(
-        compositeMessageRepository = compositeMessageRepository
-    )
+        val originalMessageSender = UserId("originalMessageSender", "domain")
+        val content = MessageContent.ButtonActionConfirmation(
+            referencedMessageId = "messageId",
+            buttonId = null
+        )
 
-    fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, ButtonActionConfirmationHandler> {
-        block()
-        return this to handler
+        val (arrangement, handler) = Arrangement().arrange {
+            withClearSelection(result = Either.Right(Unit))
+            withMessageOriginalSender(result = Either.Right(originalMessageSender))
+        }
+
+        handler.handle(convId, senderId, content).shouldFail {
+            it is CoreFailure.InvalidEventSenderID
+        }
+
+        verify(arrangement.compositeMessageRepository)
+            .suspendFunction(arrangement.compositeMessageRepository::markSelected)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+
+
+        verify(arrangement.compositeMessageRepository)
+            .suspendFunction(arrangement.compositeMessageRepository::resetSelection)
+            .with(eq("messageId"), eq(convId))
+            .wasNotInvoked()
     }
 
-}
+    private companion object {
+        val CONVERSATION_ID = ConversationId("conversationId", "domain")
+        val SENDER_USER_ID = UserId("senderUserId", "domain")
+    }
+
+    private class Arrangement :
+        CompositeMessageRepositoryArrangement by CompositeMessageRepositoryArrangementImpl(),
+        MessageMetaDataRepositoryArrangement by MessageMetaDataRepositoryArrangementImpl() {
+
+        private val handler: ButtonActionConfirmationHandler = ButtonActionConfirmationHandlerImpl(
+            compositeMessageRepository = compositeMessageRepository,
+            messageMetadataRepository = messageMetadataRepository
+        )
+
+        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, ButtonActionConfirmationHandler> {
+            block()
+            return this to handler
+        }
+    }
 }

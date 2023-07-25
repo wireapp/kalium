@@ -84,9 +84,9 @@ class MessageMetaDataRepositoryTest {
 
 
     private class Arrangement : MessageMetaDataDAOArrangement by MessageMetaDataDAOArrangementImpl() {
-        private val repo: MessageMetaDataRepository = MessageMetaDataDataSource(messageMetaDataDAO)
+        private val repo: MessageMetadataRepository = MessageMetadataSource(messageMetaDataDAO)
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, MessageMetaDataRepository> {
+        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, MessageMetadataRepository> {
             block()
             return this to repo
         }

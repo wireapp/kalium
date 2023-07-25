@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageMetaDataRepository
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -42,7 +42,7 @@ import com.wire.kalium.util.DateTimeUtil
  */
 class SendButtonActionMessageUseCase internal constructor(
     private val messageSender: MessageSender,
-    private val messageMetaDataRepository: MessageMetaDataRepository,
+    private val messageMetadataRepository: MessageMetadataRepository,
     private val syncManager: SyncManager,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfUserId: UserId
@@ -52,7 +52,7 @@ class SendButtonActionMessageUseCase internal constructor(
         messageId: String,
         buttonId: String
     ): Result = syncManager.waitUntilLiveOrFailure().flatMap {
-        messageMetaDataRepository.originalSenderId(
+        messageMetadataRepository.originalSenderId(
             conversationId,
             messageId
         ).flatMap { originalSenderId ->

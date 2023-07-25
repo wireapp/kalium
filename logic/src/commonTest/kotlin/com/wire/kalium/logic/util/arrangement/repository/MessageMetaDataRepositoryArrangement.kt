@@ -20,7 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
-import com.wire.kalium.logic.data.message.MessageMetaDataRepository
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -31,7 +31,7 @@ import io.mockative.mock
 
 interface MessageMetaDataRepositoryArrangement {
     @Mock
-    val messageMetaDataRepository: MessageMetaDataRepository
+    val messageMetadataRepository: MessageMetadataRepository
 
     fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,
@@ -42,15 +42,15 @@ interface MessageMetaDataRepositoryArrangement {
 
 class MessageMetaDataRepositoryArrangementImpl : MessageMetaDataRepositoryArrangement {
     @Mock
-    override val messageMetaDataRepository: MessageMetaDataRepository = mock(MessageMetaDataRepository::class)
+    override val messageMetadataRepository: MessageMetadataRepository = mock(MessageMetadataRepository::class)
 
     override fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,
         conversationId: Matcher<ConversationId>,
         messageId: Matcher<MessageId>
     ) {
-        given(messageMetaDataRepository)
-            .suspendFunction(messageMetaDataRepository::originalSenderId)
+        given(messageMetadataRepository)
+            .suspendFunction(messageMetadataRepository::originalSenderId)
             .whenInvokedWith(conversationId, messageId)
             .thenReturn(result)
     }

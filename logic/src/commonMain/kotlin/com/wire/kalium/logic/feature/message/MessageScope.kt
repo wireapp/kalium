@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.message.MessageMetaDataRepository
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -88,7 +88,7 @@ class MessageScope internal constructor(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val protoContentMapper: ProtoContentMapper,
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
-    private val messageMetaDataRepository: MessageMetaDataRepository,
+    private val messageMetadataRepository: MessageMetadataRepository,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -307,7 +307,7 @@ class MessageScope internal constructor(
             messageSender = messageSender,
             selfUserId = selfUserId,
             currentClientIdProvider = currentClientIdProvider,
-            messageMetaDataRepository = messageMetaDataRepository
+            messageMetadataRepository = messageMetadataRepository
         )
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
         get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(

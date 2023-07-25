@@ -29,16 +29,16 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageMetaDataDAO
 
-interface MessageMetaDataRepository {
+interface MessageMetadataRepository {
     suspend fun originalSenderId(
         conversationId: ConversationId,
         messageId: MessageId
     ): Either<StorageFailure, UserId>
 }
 
-internal class MessageMetaDataDataSource internal constructor(
+internal class MessageMetadataSource internal constructor(
     private val messageMetaDataDAO: MessageMetaDataDAO
-) : MessageMetaDataRepository {
+) : MessageMetadataRepository {
     override suspend fun originalSenderId(conversationId: ConversationId, messageId: MessageId): Either<StorageFailure, UserId> =
         wrapStorageRequest {
             messageMetaDataDAO.originalSenderId(conversationId.toDao(), messageId)

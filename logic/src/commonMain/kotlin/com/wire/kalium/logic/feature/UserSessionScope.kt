@@ -85,8 +85,8 @@ import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
-import com.wire.kalium.logic.data.message.MessageMetaDataDataSource
-import com.wire.kalium.logic.data.message.MessageMetaDataRepository
+import com.wire.kalium.logic.data.message.MessageMetadataSource
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -565,8 +565,8 @@ class UserSessionScope internal constructor(
             selfUserId = userId
         )
 
-    private val messageMetaDataRepository: MessageMetaDataRepository
-        get() = MessageMetaDataDataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
+    private val messageMetadataRepository: MessageMetadataRepository
+        get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
 
     private val compositeMessageRepository: CompositeMessageRepository
         get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
@@ -1009,7 +1009,7 @@ class UserSessionScope internal constructor(
         )
 
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler
-        get() = ButtonActionConfirmationHandlerImpl(compositeMessageRepository)
+        get() = ButtonActionConfirmationHandlerImpl(compositeMessageRepository, messageMetadataRepository)
 
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
@@ -1246,7 +1246,7 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             protoContentMapper,
             observeSelfDeletingMessages,
-            messageMetaDataRepository,
+            messageMetadataRepository,
             this
         )
     val users: UserScope

@@ -207,7 +207,12 @@ internal class ApplicationMessageHandlerImpl(
                 /* no-op */
                 // TODO(services): we need handle this event if kalium need to support services
             }
-            is MessageContent.ButtonActionConfirmation -> buttonActionConfirmationHandler.handle(signaling.conversationId, content)
+
+            is MessageContent.ButtonActionConfirmation -> buttonActionConfirmationHandler.handle(
+                signaling.conversationId,
+                signaling.senderUserId,
+                content
+            )
         }
     }
 

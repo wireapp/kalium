@@ -17,40 +17,56 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onSuccess
 
 internal interface ButtonActionConfirmationHandler {
     suspend fun handle(
         conversationId: ConversationId,
+        senderId: UserId,
         messageContent: MessageContent.ButtonActionConfirmation
-    ): Either<StorageFailure, Unit>
+    ): Either<CoreFailure, Unit>
 }
 
 internal class ButtonActionConfirmationHandlerImpl internal constructor(
-    private val compositeMessageRepository: CompositeMessageRepository
+    private val compositeMessageRepository: CompositeMessageRepository,
+    private val messageMetadataRepository: MessageMetadataRepository
 ) : ButtonActionConfirmationHandler {
 
     override suspend fun handle(
         conversationId: ConversationId,
+        senderId: UserId,
         messageContent: MessageContent.ButtonActionConfirmation
-    ): Either<StorageFailure, Unit> {
+    ): Either<CoreFailure, Unit> {
         val messageId = messageContent.referencedMessageId
-
-        return if (messageContent.buttonId != null) {
-            compositeMessageRepository.markSelected(
-                messageId = messageId,
-                conversationId = conversationId,
-                buttonId = messageContent.buttonId
-            )
-        } else {
-            compositeMessageRepository.resetSelection(
-                messageId = messageId,
-                conversationId = conversationId
-            )
-        }
+        return messageMetadataRepository.originalSenderId(conversationId, messageId)
+            .flatMap { originalSender ->
+                if (originalSender != senderId) {
+                    Either.Left(CoreFailure.InvalidEventSenderID)
+                } else {
+                    Either.Right(originalSender)
+                }
+            }.flatMap { originalSender ->
+                if (messageContent.buttonId != null) {
+                    compositeMessageRepository.markSelected(
+                        messageId = messageId,
+                        conversationId = conversationId,
+                        buttonId = messageContent.buttonId
+                    )
+                } else {
+                    compositeMessageRepository.resetSelection(
+                        messageId = messageId,
+                        conversationId = conversationId
+                    )
+                }
+            }
     }
 }
