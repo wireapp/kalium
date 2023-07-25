@@ -89,16 +89,17 @@ class EventMapper(
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
         }
 
-    private fun conversationMessageTimerUpdate(
+    fun conversationMessageTimerUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MessageTimerUpdate,
         transient: Boolean
-    ): Event = Event.Conversation.ConversationMessageTimer(
+    ) = Event.Conversation.ConversationMessageTimer(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         transient = transient,
         messageTimer = eventContentDTO.data.messageTimer,
-        senderUserId = eventContentDTO.qualifiedFrom.toModel()
+        senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+        timestampIso = eventContentDTO.time
     )
 
     private fun conversationReceiptModeUpdate(

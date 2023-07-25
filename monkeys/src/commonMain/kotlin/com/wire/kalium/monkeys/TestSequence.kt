@@ -48,7 +48,10 @@ fun interface MonkeyCommand {
  * Creates a conversation between a watch monkey and a list of monkeys.
  */
 fun interface ConversationCreation {
-    suspend operator fun invoke(monkeyGroups: List<List<Monkey>>): List<MonkeyConversation>
+    suspend operator fun invoke(
+        monkeyGroups: kotlin.collections.List<kotlin.collections.List<com.wire.kalium.monkeys.Monkey>>,
+        protocol: com.wire.kalium.logic.data.conversation.ConversationOptions.Protocol
+    ): List<MonkeyConversation>
 }
 
 /**

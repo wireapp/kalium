@@ -124,6 +124,8 @@ interface UserConfigStorage {
     fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
+    fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
+    fun persistScreenshotCensoring(enabled: Boolean)
 }
 
 @Serializable
@@ -192,6 +194,9 @@ class UserConfigStorageImpl(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val e2EIFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val isScreenshotCensoringEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun persistFileSharingStatus(
@@ -324,6 +329,17 @@ class UserConfigStorageImpl(
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
 
+    override fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> = isScreenshotCensoringEnabledFlow
+        .map { kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false) }
+        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false)) }
+        .distinctUntilChanged()
+
+    override fun persistScreenshotCensoring(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_SCREENSHOT_CENSORING, enabled).also {
+            isScreenshotCensoringEnabledFlow.tryEmit(Unit)
+        }
+    }
+
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
@@ -334,5 +350,6 @@ class UserConfigStorageImpl(
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
         const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE = "require_second_factor_password_challenge"
+        const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"
     }
 }

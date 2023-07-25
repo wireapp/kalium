@@ -23,6 +23,11 @@ import kotlin.contracts.contract
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 
+private const val DAYS_IN_WEEK = 7
+
+val Duration.inWholeWeeks: Long
+    get() = inWholeDays / DAYS_IN_WEEK
+
 @OptIn(ExperimentalContracts::class)
 fun Duration?.isPositiveNotNull(): Boolean {
     contract {

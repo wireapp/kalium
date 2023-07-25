@@ -7,7 +7,7 @@
       "blackList": "https://clientblacklist.wire.com/staging",
       "teams": "https://teams.anta.wire.link/",
       "website": "https://example.org",
-      "title": "Anta Backend",
+      "title": "anta.wire.link",
       "passwordForUsers": "Aqa123456!",
       "domain": "anta.wire.link",
       "users": [
@@ -18,6 +18,56 @@
         {
           "email": "smoketester+3cbe9db208@wire.com",
           "id": "33ec2e20-9bed-44b2-b891-a1dbaf3da158"
+        }
+      ]
+    },
+    {
+      "api": "https://nginz-https.bella.wire.link",
+      "webSocket": "https://nginz-ssl.bella.wire.link",
+      "blackList": "https://clientblacklist.wire.com/staging",
+      "teams": "https://teams.bella.wire.link",
+      "accounts": "https://account.bella.wire.link",
+      "website": "https://wire.com",
+      "title": "bella.wire.link",
+      "passwordForUsers": "Aqa123456!",
+      "domain": "bella.wire.link",
+      "users": [
+        {
+          "id": "37a27c29-398b-44c6-9334-79cf84024f74",
+          "email": "augusto.c.dias+test1@wire.com"
+        },
+        {
+          "id": "56f06ac1-69cb-43ab-96f1-816f6ddd6edb",
+          "email": "augusto.c.dias+test3@wire.com"
+        },
+        {
+          "id": "691e3c09-45e1-4845-89f4-121fef480ec8",
+          "email": "augusto.c.dias+test2@wire.com"
+        }
+      ]
+    },
+    {
+      "api": "https://nginz-https.chala.wire.link",
+      "webSocket": "https://nginz-ssl.chala.wire.link",
+      "blackList": "https://clientblacklist.wire.com/staging",
+      "teams": "https://teams.chala.wire.link",
+      "accounts": "https://account.chala.wire.link",
+      "website": "https://wire.com",
+      "passwordForUsers": "Aqa123456!",
+      "domain": "chala.wire.link",
+      "title": "chala.wire.link",
+      "users": [
+        {
+          "email": "vitor.schwaab+chala_team1@wire.com",
+          "id": "9f5a276d-f408-433e-81f6-812e69eb11bb"
+        },
+        {
+          "email": "vitor.schwaab+chala_team2@wire.com",
+          "id": "47fb193a-540f-4fec-969a-868377b02d8e"
+        },
+        {
+          "email": "vitor.schwaab+chala_team3@wire.com",
+          "id": "2342152d-3df8-4b50-81d8-950ca9105ab1"
         }
       ]
     }

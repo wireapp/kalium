@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -48,25 +49,11 @@ class ObserveClientsByUserIdUseCaseTest {
         // Given
         val userId = UserId("123", "wire.com")
         val clients = listOf(
-            Client(
-                id = ClientId("1111"),
-                type = ClientType.Permanent,
-                registrationTime = Instant.DISTANT_FUTURE,
-                deviceType = DeviceType.Desktop,
-                label = null,
-                model = "Mac ox",
-                isVerified = false,
-                isValid = true
+            TestClient.CLIENT.copy(
+                id = ClientId("1111")
             ),
-            Client(
-                id = ClientId("2222"),
-                type = ClientType.Temporary,
-                registrationTime = Instant.DISTANT_FUTURE,
-                deviceType = DeviceType.Phone,
-                label = null,
-                model = "Mac ox",
-                isVerified = false,
-                isValid = true
+            TestClient.CLIENT.copy(
+                id = ClientId("2222")
             )
         )
         val (arrangement, getOtherUsersClientsUseCase) = Arrangement()

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
@@ -26,6 +27,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -56,6 +58,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
         clientId: ClientId
     ): BreakSessionResult = withContext(dispatchers.io) {
         return@withContext proteusClientProvider.getOrError().fold({
+            kaliumLogger.e("Failed to get proteus client for break session $it")
             return@fold BreakSessionResult.Failure(it)
         }, { proteusClient ->
             val cryptoUserID = idMapper.toCryptoQualifiedIDId(userId)
@@ -65,6 +68,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
             )
             // create a new session with the same session id
             proteusClient.createSession(proteusClient.newLastPreKey(), cryptoSessionId)
+            kaliumLogger.e("Created new session for ${userId.toLogString()} with ${clientId.value.obfuscateId()}")
             return@fold BreakSessionResult.Success
         })
     }

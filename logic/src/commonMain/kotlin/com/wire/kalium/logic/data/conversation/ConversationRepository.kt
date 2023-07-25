@@ -65,6 +65,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
@@ -77,9 +78,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 interface ConversationRepository {
     @DelicateKaliumApi("This function does not get values from cache")
@@ -94,7 +92,8 @@ interface ConversationRepository {
     suspend fun persistConversations(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
-        originatedFromEvent: Boolean = false
+        originatedFromEvent: Boolean = false,
+        invalidateMembers: Boolean = false
     ): Either<CoreFailure, Unit>
 
     /**
@@ -140,6 +139,7 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
+    suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun updateMutedStatusLocally(
@@ -198,9 +198,13 @@ interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
-    suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer?>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
     suspend fun syncConversationsWithoutMetadata(): Either<CoreFailure, Unit>
+    suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean>
+    suspend fun setInformedAboutDegradedMLSVerificationFlag(
+        conversationId: ConversationId,
+        isInformed: Boolean
+    ): Either<StorageFailure, Unit>
     suspend fun getConversationIdsByDomain(domain: String): Either<CoreFailure, List<ConversationId>>
     suspend fun getMemberIdsByTheSameDomainInConversation(
         domain: String,
@@ -224,6 +228,7 @@ internal class ConversationDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
+    private val conversationMetaDataDAO: ConversationMetaDataDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -263,7 +268,12 @@ internal class ConversationDataSource internal constructor(
                         kaliumLogger.withFeatureId(CONVERSATIONS)
                             .d("Skipping ${conversations.conversationsNotFound.size} conversations not found")
                     }
-                    persistConversations(conversations.conversationsFound, selfTeamIdProvider().getOrNull()?.value)
+                    persistConversations(
+                        conversations = conversations.conversationsFound,
+                        selfUserTeamId = selfTeamIdProvider().getOrNull()?.value,
+                        invalidateMembers = true
+                    )
+
                 }.onFailure {
                     kaliumLogger.withFeatureId(CONVERSATIONS).e("Error fetching conversation details $it")
                 }
@@ -304,6 +314,7 @@ internal class ConversationDataSource internal constructor(
         conversations: List<ConversationResponse>,
         selfUserTeamId: String?,
         originatedFromEvent: Boolean,
+        invalidateMembers: Boolean
     ) = wrapStorageRequest {
         val conversationEntities = conversations
             .map { conversationResponse ->
@@ -320,9 +331,19 @@ internal class ConversationDataSource internal constructor(
             }
         conversationDAO.insertConversations(conversationEntities)
         conversations.forEach { conversationsResponse ->
-            memberDAO.insertMembersWithQualifiedId(
-                memberMapper.fromApiModelToDaoModel(conversationsResponse.members), idMapper.fromApiToDao(conversationsResponse.id)
-            )
+            // do the cleanup of members from conversation in case when self user rejoined conversation
+            // and may not received any member remove or leave events
+            if (invalidateMembers) {
+                memberDAO.updateFullMemberList(
+                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                    idMapper.fromApiToDao(conversationsResponse.id)
+                )
+            } else {
+                memberDAO.insertMembersWithQualifiedId(
+                    memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
+                    idMapper.fromApiToDao(conversationsResponse.id)
+                )
+            }
         }
     }
 
@@ -405,7 +426,7 @@ internal class ConversationDataSource internal constructor(
             conversationApi.fetchConversationDetails(conversationID.toApi())
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
-            persistConversations(listOf(it), selfUserTeamId?.value)
+            persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
         }
     }
 
@@ -473,6 +494,17 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateMemberFromEvent(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             memberDAO.updateMemberRole(member.id.toDao(), conversationID.toDao(), conversationRoleMapper.toDAO(member.role))
+        }
+
+    override suspend fun deleteMembersFromEvent(
+        userIDList: List<UserId>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            memberDAO.deleteMembersByQualifiedID(
+                userIDList.map { it.toDao() },
+                conversationID.toDao()
+            )
         }
 
     override suspend fun getConversationsByGroupState(
@@ -705,22 +737,13 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
         wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
 
-    override suspend fun getUserSelfDeletionTimer(conversationId: ConversationId): Either<StorageFailure, SelfDeletionTimer> =
-        wrapStorageRequest {
-            SelfDeletionTimer.Enabled(
-                conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.messageTimer?.toDuration(
-                    DurationUnit.MILLISECONDS
-                ) ?: ZERO
-            )
-        }
-
     override suspend fun updateUserSelfDeletionTimer(
         conversationId: ConversationId,
         selfDeletionTimer: SelfDeletionTimer
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         conversationDAO.updateUserMessageTimer(
             conversationId = conversationId.toDao(),
-            messageTimer = selfDeletionTimer.toDuration().inWholeMilliseconds
+            messageTimer = selfDeletionTimer.duration?.inWholeMilliseconds
         )
     }
 
@@ -736,6 +759,19 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
+    override suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean> =
+        wrapStorageRequest {
+            conversationMetaDataDAO.isInformedAboutDegradedMLSVerification(conversationId.toDao())
+        }
+
+    override suspend fun setInformedAboutDegradedMLSVerificationFlag(
+        conversationId: ConversationId,
+        isInformed: Boolean
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationMetaDataDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
+        }
 
     override suspend fun getConversationIdsByDomain(domain: String): Either<CoreFailure, List<ConversationId>> = wrapStorageRequest {
         conversationDAO.getConversationIdsByDomain(domain).map { it.toModel() }

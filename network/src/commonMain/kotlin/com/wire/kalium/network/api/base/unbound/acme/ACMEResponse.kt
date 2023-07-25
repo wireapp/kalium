@@ -17,9 +17,7 @@
  */
 package com.wire.kalium.network.api.base.unbound.acme
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonNames
 
 @Suppress("EnforceSerializableFields")
 @Serializable
@@ -33,25 +31,9 @@ data class AcmeDirectoriesResponse(
 
 @Suppress("EnforceSerializableFields")
 @Serializable
-data class AuthzDirectoriesResponse @OptIn(ExperimentalSerializationApi::class) constructor(
-    @JsonNames("issuer")
-    val issuerEndpoint: String,
-    @JsonNames("authorization_endpoint")
-    val authorizationEndpoint: String,
-    @JsonNames("token_endpoint")
-    val tokenEndpoint: String,
-    @JsonNames("jwks_uri")
-    val jwksEndpoint: String,
-    @JsonNames("userinfo_endpoint")
-    val userinfoEndpoint: String,
-    @JsonNames("device_authorization_endpoint")
-    val deviceAuthorizationEndpoint: String,
-)
-
-@Suppress("EnforceSerializableFields")
-@Serializable
 data class ACMEResponse(
     val nonce: String,
+    val location: String,
     val response: ByteArray
 )
 

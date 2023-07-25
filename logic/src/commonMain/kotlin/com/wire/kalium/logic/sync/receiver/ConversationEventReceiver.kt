@@ -100,7 +100,8 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.AccessUpdate -> {
-                TODO()
+                /* no-op */
+                Either.Right(Unit)
             }
 
             is Event.Conversation.ConversationMessageTimer -> {

@@ -23,6 +23,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -38,6 +39,7 @@ sealed interface Message {
     val date: String
     val senderUserId: UserId
     val status: Status
+    val expirationData: ExpirationData?
 
     /**
      * Messages that can be sent from one client to another.
@@ -49,6 +51,7 @@ sealed interface Message {
         val senderClientId: ClientId
 
         fun toLogString(): String
+        fun toLogMap(): Map<String, Any?>
     }
 
     /**
@@ -78,16 +81,19 @@ sealed interface Message {
         override val isSelfMessage: Boolean,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
-        val expirationData: ExpirationData? = null,
+        override val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
     ) : Sendable, Standalone {
 
-        @Suppress("LongMethod")
         override fun toLogString(): String {
+            return "${toLogMap().toJsonElement()}"
+        }
+        @Suppress("LongMethod")
+        override fun toLogMap(): Map<String, Any?> {
             val typeKey = "type"
-            val properties: MutableMap<String, Any> = when (content) {
+            val properties: MutableMap<String, Any?> = when (content) {
                 is MessageContent.Text -> mutableMapOf(
                     typeKey to "text"
                 )
@@ -135,12 +141,13 @@ sealed interface Message {
                 "senderClientId" to senderClientId.value.obfuscateId(),
                 "editStatus" to editStatus.toLogMap(),
                 "expectsReadConfirmation" to "$expectsReadConfirmation",
-                "deliveryStatus" to "$deliveryStatus"
+                "deliveryStatus" to deliveryStatus.toLogMap(),
+                "expirationData" to expirationData?.toLogMap()
             )
 
             properties.putAll(standardProperties)
 
-            return "${properties.toMap().toJsonElement()}"
+            return properties.toMap()
         }
     }
 
@@ -154,8 +161,14 @@ sealed interface Message {
         override val status: Status,
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean,
+        override val expirationData: ExpirationData?
     ) : Sendable {
         override fun toLogString(): String {
+            return "${toLogMap().toJsonElement()}"
+        }
+
+        @Suppress("LongMethod")
+        override fun toLogMap(): Map<String, Any?> {
             val typeKey = "type"
 
             val properties: MutableMap<String, Any> = when (content) {
@@ -221,7 +234,7 @@ sealed interface Message {
 
             properties.putAll(standardProperties)
 
-            return "${properties.toJsonElement()}"
+            return properties.toMap()
         }
 
     }
@@ -234,18 +247,23 @@ sealed interface Message {
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
+        override val expirationData: ExpirationData?,
         // TODO(refactor): move senderName to inside the specific `content`
         //                 instead of having it nullable in all system messages
-        val senderUserName: String? = null,
+        val senderUserName: String? = null
     ) : Message, Standalone {
         fun toLogString(): String {
+            return "${toLogMap().toJsonElement()}"
+        }
+
+        fun toLogMap(): Map<String, Any?> {
 
             val typeKey = "type"
             val properties: MutableMap<String, String> = when (content) {
                 is MessageContent.MemberChange -> mutableMapOf(
                     typeKey to "memberChange",
                     "members" to content.members.fold("") { acc, member ->
-                        return "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                         "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
                     }
                 )
 
@@ -287,11 +305,19 @@ sealed interface Message {
                 is MessageContent.MLSWrongEpochWarning -> mutableMapOf(
                     typeKey to "mlsWrongEpochWarning"
                 )
+
+                is MessageContent.ConversationDegradedMLS -> mutableMapOf(
+                    typeKey to "conversationDegradedMLS"
+                )
+
+                is MessageContent.ConversationDegradedProteus -> mutableMapOf(
+                    typeKey to "conversationDegradedProteus"
+                )
             }
 
             val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
-                "conversationId" to "${conversationId.toLogString()}",
+                "conversationId" to conversationId.toLogString(),
                 "date" to date,
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "status" to "$status",
@@ -300,7 +326,7 @@ sealed interface Message {
 
             properties.putAll(standardProperties)
 
-            return Json.encodeToString(properties.toMap())
+            return properties.toMap()
         }
     }
 
@@ -334,12 +360,30 @@ sealed interface Message {
         }
     }
 
-    data class ExpirationData(val expireAfter: Duration, val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted) {
+    data class ExpirationData(
+        val expireAfter: Duration,
+        val selfDeletionStatus: SelfDeletionStatus = SelfDeletionStatus.NotStarted
+    ) {
 
         sealed class SelfDeletionStatus {
             object NotStarted : SelfDeletionStatus()
 
             data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
+
+            fun toLogMap(): Map<String, String> = when (this) {
+                is NotStarted -> mutableMapOf(
+                    "value" to "NOT_STARTED"
+                )
+
+                is Started -> mutableMapOf(
+                    "value" to "STARTED",
+                    "time" to this.selfDeletionStartDate.toString()
+                )
+            }
+
+            fun toLogString(): String {
+                return Json.encodeToString(toLogMap())
+            }
         }
 
         fun timeLeftForDeletion(): Duration {
@@ -347,7 +391,7 @@ sealed interface Message {
                 val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
 
                 // time left for deletion it can be a negative value if the time difference between the self deletion start date and
-                // now is greater then expire after millis, we normalize it to 0 seconds
+                // now is greater than expire after millis, we normalize it to 0 seconds
                 val timeLeft = expireAfter - timeElapsedSinceSelfDeletionStartDate
 
                 if (timeLeft.isNegative()) {
@@ -357,6 +401,24 @@ sealed interface Message {
                 }
             } else {
                 expireAfter
+            }
+        }
+
+        fun toLogString(): String {
+            return Json.encodeToString(toLogMap())
+        }
+
+        fun toLogMap(): Map<String, Any?> = mapOf(
+            "expire-after" to expireAfter.inWholeSeconds.toString(),
+            "expire-start-time" to expireStartTimeElement().toString(),
+            "deletion-status" to selfDeletionStatus.toLogMap()
+        )
+
+        private fun expireStartTimeElement(): String? {
+            return when (val selfDeletionStatus = selfDeletionStatus) {
+                SelfDeletionStatus.NotStarted -> null
+                is SelfDeletionStatus.Started ->
+                    selfDeletionStatus.selfDeletionStartDate.toIsoDateTimeString()
             }
         }
     }
@@ -466,4 +528,20 @@ sealed class DeliveryStatus {
     ) : DeliveryStatus()
 
     object CompleteDelivery : DeliveryStatus()
+
+    fun toLogMap(): Map<String, String> = when (this) {
+        is PartialDelivery -> mutableMapOf(
+            "value" to "PARTIAL_DELIVERY",
+            "failed-with-no-clients" to recipientsFailedWithNoClients.joinToString(",") { it.toLogString() },
+            "failed-delivery" to recipientsFailedDelivery.joinToString(",") { it.toLogString() }
+        )
+
+        is CompleteDelivery -> mutableMapOf(
+            "value" to "COMPLETE_DELIVERY"
+        )
+    }
+
+    fun toLogString(): String {
+        return Json.encodeToString(toLogMap())
+    }
 }

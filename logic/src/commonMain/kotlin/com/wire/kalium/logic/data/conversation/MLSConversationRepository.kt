@@ -75,8 +75,11 @@ data class ApplicationMessage(
 data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
-    val commitDelay: Long?
+    val commitDelay: Long?,
+    val identity: E2EIdentity?
 )
+
+data class E2EIdentity(var clientId: String, var handle: String, var displayName: String, var domain: String)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
@@ -97,6 +100,7 @@ interface MLSConversationRepository {
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun observeEpochChanges(): Flow<GroupID>
+    suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, ConversationVerificationStatus>
 }
 
 private enum class CommitStrategy {
@@ -421,6 +425,14 @@ class MLSConversationDataSource(
                     )
                 }
             }
+        }
+
+    override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, ConversationVerificationStatus> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
+        }.map {
+            if (it) ConversationVerificationStatus.VERIFIED
+            else ConversationVerificationStatus.NOT_VERIFIED
         }
 
     private suspend fun retryOnCommitFailure(

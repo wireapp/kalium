@@ -296,12 +296,7 @@ internal class ConversationDAOImpl internal constructor(
         }.flowOn(coroutineContext)
 
     override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
-        val previousTimer = conversationQueries.getMessageTimer(conversationId).executeAsOneOrNull()?.message_timer
-        val updated = previousTimer != messageTimer
-        if (updated) {
-            conversationQueries.updateMessageTimer(messageTimer, conversationId)
-        }
-        updated
+        conversationQueries.updateMessageTimer(messageTimer, conversationId)
     }
 
     override suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
