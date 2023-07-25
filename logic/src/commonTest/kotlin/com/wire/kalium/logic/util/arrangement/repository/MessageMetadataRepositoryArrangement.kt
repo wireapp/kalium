@@ -29,7 +29,7 @@ import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
 
-interface MessageMetaDataRepositoryArrangement {
+interface MessageMetadataRepositoryArrangement {
     @Mock
     val messageMetadataRepository: MessageMetadataRepository
 
@@ -40,7 +40,7 @@ interface MessageMetaDataRepositoryArrangement {
     )
 }
 
-class MessageMetaDataRepositoryArrangementImpl : MessageMetaDataRepositoryArrangement {
+class MessageMetadataRepositoryArrangementImpl : MessageMetadataRepositoryArrangement {
     @Mock
     override val messageMetadataRepository: MessageMetadataRepository = mock(MessageMetadataRepository::class)
 

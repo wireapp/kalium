@@ -26,8 +26,8 @@ import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.any
 import io.mockative.eq
@@ -132,7 +132,7 @@ class ButtonActionConfirmationHandlerTest {
 
     private class Arrangement :
         CompositeMessageRepositoryArrangement by CompositeMessageRepositoryArrangementImpl(),
-        MessageMetaDataRepositoryArrangement by MessageMetaDataRepositoryArrangementImpl() {
+        MessageMetadataRepositoryArrangement by MessageMetadataRepositoryArrangementImpl() {
 
         private val handler: ButtonActionConfirmationHandler = ButtonActionConfirmationHandlerImpl(
             compositeMessageRepository = compositeMessageRepository,

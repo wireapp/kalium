@@ -29,8 +29,8 @@ import com.wire.kalium.logic.util.arrangement.SyncManagerArrangement
 import com.wire.kalium.logic.util.arrangement.SyncManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetaDataRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangementImpl
 import io.mockative.any
 import io.mockative.matching
 import io.mockative.once
@@ -161,7 +161,7 @@ class SendButtonActionMessageTest {
     }
 
     private class Arrangement :
-        MessageMetaDataRepositoryArrangement by MessageMetaDataRepositoryArrangementImpl(),
+        MessageMetadataRepositoryArrangement by MessageMetadataRepositoryArrangementImpl(),
         MessageSenderArrangement by MessageSenderArrangementImpl(),
         SyncManagerArrangement by SyncManagerArrangementImpl(),
         CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
