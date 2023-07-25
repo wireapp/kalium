@@ -39,6 +39,9 @@ import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -56,6 +59,19 @@ abstract class CoreLogicCommon internal constructor(
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
+
+    init {
+        (1..100).map {
+            GlobalScope.launch {
+                userSessionScopeProvider.value.getOrCreate(
+                    userId = UserId(
+                        "valueUser$it",
+                        "domainUser"
+                    )
+                )
+            }
+        }
+    }
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(

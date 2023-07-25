@@ -28,9 +28,9 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 internal actual class PlatformUserStorageProvider : UserStorageProvider() {
     override fun create(userId: UserId, shouldEncryptData: Boolean, platformProperties: PlatformUserStorageProperties): UserStorage {
         val userIdEntity = userId.toDao()
-        val pref = UserPrefBuilder(userIdEntity, platformProperties.applicationContext, shouldEncryptData)
+        val pref = UserPrefBuilder(userIdEntity, platformProperties.applicationContext, true) // shouldEncryptData)
 
-        val databasePassphrase = if (shouldEncryptData) {
+        val databasePassphrase = if (true) { // shouldEncryptData) {
             platformProperties.securityHelper.userDBSecret(userId)
         } else {
             null
