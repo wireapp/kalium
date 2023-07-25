@@ -46,7 +46,7 @@ fun Project.configureDefaultMultiplatform(
         targetHierarchy.default()
         jvm { commonJvmConfig(includeNativeInterop) }
 
-        android { commmonKotlinAndroidTargetConfig() }
+        androidTarget { commmonKotlinAndroidTargetConfig() }
 
         if (enableJs) {
             js { commonJsConfig(enableJsTests) }
@@ -62,12 +62,23 @@ fun Project.configureDefaultMultiplatform(
             commonAndroidLibConfig(includeNativeInterop, androidNamespaceSuffix)
         }
 
-    // Add common runner and rules to Android Instrumented Tests
-    kotlinExtension.sourceSets.getByName("androidAndroidTest") {
+    kotlinExtension.sourceSets.getByName("androidInstrumentedTest") {
+        // Add dependency to commonTest, as it isn't added by default anymore since Kotlin 1.9
+        dependsOn(kotlinExtension.sourceSets.getByName("commonTest"))
+
         dependencies {
+            // Add common runner and rules to Android Instrumented Tests
             implementation(library("androidtest.core"))
             implementation(library("androidtest.runner"))
             implementation(library("androidtest.rules"))
+        }
+    }
+
+    kotlinExtension.sourceSets.all {
+        languageSettings {
+            // Most of the native code requires this opt-in
+            // We absolutely need it and are accepting the risk of the API being experimental
+            optIn("kotlinx.cinterop.ExperimentalForeignApi")
         }
     }
 

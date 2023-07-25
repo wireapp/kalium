@@ -39,13 +39,13 @@ android {
 }
 
 kotlin {
-    android {
+    androidTarget {
         dependencies {
             coreLibraryDesugaring(libs.desugarJdkLibs)
         }
     }
 
-    ios() {
+    ios {
         binaries.all {
             linkerOpts("-framework", "Security")
         }

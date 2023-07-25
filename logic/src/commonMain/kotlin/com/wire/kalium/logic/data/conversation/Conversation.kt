@@ -214,6 +214,8 @@ data class Conversation(
         abstract fun name(): String
     }
 
+    enum class Protocol { PROTEUS, MLS }
+
     data class Member(val id: UserId, val role: Role) {
         sealed class Role {
             object Member : Role()

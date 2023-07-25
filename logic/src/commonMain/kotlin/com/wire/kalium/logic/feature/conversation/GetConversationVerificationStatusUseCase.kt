@@ -27,8 +27,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -43,9 +45,10 @@ interface GetConversationVerificationStatusUseCase {
     suspend operator fun invoke(conversationId: ConversationId): ConversationVerificationStatusResult
 }
 
-class GetConversationVerificationStatusUseCaseImpl(
+class GetConversationVerificationStatusUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val verificationStatusHandler: ConversationVerificationStatusHandler,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetConversationVerificationStatusUseCase {
     private val dispatcher = kaliumDispatcher.io
@@ -58,7 +61,12 @@ class GetConversationVerificationStatusUseCaseImpl(
                 } else {
                     getConversationProteusVerificationStatus(conversation.id)
                 }
-            }.getOrElse { ConversationVerificationStatusResult.Failure(it) }
+                    .onSuccess {
+                        if (it is ConversationVerificationStatusResult.Success)
+                            launch { verificationStatusHandler(conversation, it.status) }
+                    }
+            }
+            .getOrElse { ConversationVerificationStatusResult.Failure(it) }
     }
 
     private suspend fun getConversationMLSVerificationStatus(protocol: Conversation.ProtocolInfo.MLS) =
@@ -68,7 +76,7 @@ class GetConversationVerificationStatusUseCaseImpl(
     private suspend fun getConversationProteusVerificationStatus(
         conversationId: ConversationId
     ): Either<CoreFailure, ConversationVerificationStatusResult> {
-        // TODO  needs to be handled by for Proteus conversation that is not implemented yet
+        // TODO needs to be handled for Proteus conversation that is not implemented yet
         return Either.Right(
             ConversationVerificationStatusResult.Success(
                 ConversationProtocol.PROTEUS,
