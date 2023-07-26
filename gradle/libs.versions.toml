@@ -23,7 +23,7 @@ android-test-core = "1.4.0"
 androidx-arch = "2.1.0"
 androidx-test-orchestrator = "1.4.2"
 androidx-sqlite = "2.3.0"
-benasher-uuid = "0.6.0"
+benasher-uuid = "0.8.0"
 ktx-datetime = { strictly = "0.4.0" }
 ktx-serialization = "1.4.1"
 ktx-atomicfu = "0.18.5"
