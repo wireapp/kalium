@@ -111,17 +111,17 @@ jobs:
 
     steps:
         - name: Download tests results
-            uses: actions/download-artifact@v3
-            continue-on-error: true
-            with:
-                name: test-reports
+          uses: actions/download-artifact@v3
+          continue-on-error: true
+          with:
+              name: test-reports
         - uses: actions/setup-node@v3
-            with:
+          with:
             node-version: 18
         - name: Install datadog-ci
-            run: npm install -g @datadog/datadog-ci
+          run: npm install -g @datadog/datadog-ci
         - name: "Upload results"
-            env:
-                DD_API_KEY: ${{ secrets.DD_API_KEY }}
-            run: |
-                DATADOG_API_KEY="${DD_API_KEY}" DD_ENV=ci DATADOG_SITE=datadoghq.eu datadog-ci junit upload --service kalium-android ./*.xml
+          env:
+              DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          run: |
+              DATADOG_API_KEY="${DD_API_KEY}" DD_ENV=ci DATADOG_SITE=datadoghq.eu datadog-ci junit upload --service kalium-android ./*.xml
