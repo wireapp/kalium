@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("TooManyFunctions")
 
 package com.wire.kalium.network.utils
 
@@ -250,4 +251,3 @@ suspend fun <T : Any> wrapHandleFederationConflictOrDelegate(
     } else {
         delegatedHandler.invoke(response)
     }
-
