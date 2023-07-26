@@ -38,6 +38,9 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import io.mockative.Mock
+import io.mockative.classOf
+import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -48,8 +51,11 @@ class ReceiptMessageHandlerTest {
 
     private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY)
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
-    private val messageRepository = MessageDataSource(userDatabase.builder.messageDAO, userDatabase.builder.conversationDAO)
-    private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, mess)
+
+    @Mock
+    val messageRepository: MessageRepository = mock(classOf<MessageDataSource>())
+
+    private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, messageRepository)
 
     private suspend fun insertTestData() {
         userDatabase.builder.userDAO.insertUser(TestUser.ENTITY.copy(id = SELF_USER_ID_ENTITY))
