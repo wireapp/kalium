@@ -89,6 +89,15 @@ jobs:
                   name: test-reports
                   path: ./**/build/reports/tests/**
 
+            - name: Archive Test Results
+              if: always()
+              uses: actions/upload-artifact@v3
+              with:
+                  name: test-results
+                  path: |
+                    ./**/build/test-results/**/*.xml
+                    ./**/build/outputs/androidTest-results/**/*.xml
+
             - name: Publish Unit Test Results
               uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
               if: always()
@@ -114,7 +123,7 @@ jobs:
             uses: actions/download-artifact@v3
             continue-on-error: true
             with:
-                name: test-reports
+                name: test-results
             - uses: actions/setup-node@v3
             with:
                 node-version: 18
