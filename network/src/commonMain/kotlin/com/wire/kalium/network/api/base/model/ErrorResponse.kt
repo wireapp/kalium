@@ -39,3 +39,8 @@ data class Cause(
     @SerialName("domains") val domains: List<String> = emptyList(),
     @SerialName("path") val path: String,
 )
+
+@Serializable
+data class FederationConflictResponse(
+    @SerialName("non_federating_backends") val nonFederatingBackends: List<String>
+)

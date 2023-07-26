@@ -23,6 +23,7 @@ package com.wire.kalium.network.exceptions
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
@@ -79,6 +80,8 @@ sealed class KaliumException : Exception() {
      * Federation errors types
      */
     data class FederationError(val errorResponse: ErrorResponse) : KaliumException()
+
+    data class FederationConflictException(val errorResponse: FederationConflictResponse) : KaliumException()
 
     sealed class FeatureError : KaliumException()
 }
