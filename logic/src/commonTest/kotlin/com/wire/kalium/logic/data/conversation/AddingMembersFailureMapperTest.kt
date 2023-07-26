@@ -32,7 +32,7 @@ class AddingMembersFailureMapperTest {
         // When
         val mappedRequestState = addingMembersFailureMapper.mapToUsersRequestState(
             initialUsersIds = initialUserIdList,
-            federatedBackendFailure = NetworkFailure.FederatedBackendFailure("federated-label", unreachableDomains)
+            federatedBackendFailure = NetworkFailure.FederatedBackendFailure.FailedDomains(unreachableDomains)
         )
 
         // Then
@@ -45,7 +45,7 @@ class AddingMembersFailureMapperTest {
         // When
         val mappedRequestState = addingMembersFailureMapper.mapToUsersRequestState(
             initialUsersIds = initialUserIdList,
-            federatedBackendFailure = NetworkFailure.FederatedBackendFailure("federated-label", unreachableDomains),
+            federatedBackendFailure = NetworkFailure.FederatedBackendFailure.FailedDomains(unreachableDomains),
             previousUserIdsExcluded = previousFailedIds
         )
 
