@@ -164,7 +164,7 @@ class UserDatabaseBuilder internal constructor(
         get() = UserDAOImpl(database.usersQueries, userCache, databaseScope, queriesContext)
 
     val messageMetaDataDAO: MessageMetadataDAO
-        get() = MessageMetadataDAOImpl(database.messageMetaDataQueries, queriesContext)
+        get() = MessageMetadataDAOImpl(database.messageMetadataQueries, queriesContext)
 
     val userConfigDAO: UserConfigDAO
         get() = UserConfigDAOImpl(metadataDAO)

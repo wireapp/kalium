@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.MessageMetaDataQueries
+import com.wire.kalium.persistence.MessageMetadataQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.withContext
@@ -28,7 +28,7 @@ interface MessageMetadataDAO {
 }
 
 internal class MessageMetadataDAOImpl internal constructor(
-    private val metaDataQueries: MessageMetaDataQueries,
+    private val metaDataQueries: MessageMetadataQueries,
     private val coroutineContext: CoroutineContext
 ) : MessageMetadataDAO {
     override suspend fun originalSenderId(conversationId: ConversationIDEntity, messageId: String): UserIDEntity? =
