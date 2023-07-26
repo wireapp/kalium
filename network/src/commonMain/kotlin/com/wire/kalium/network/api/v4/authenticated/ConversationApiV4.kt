@@ -55,7 +55,7 @@ internal open class ConversationApiV4 internal constructor(
                     response.body()
                 } catch (_: NoTransformationFoundException) {
                     // When the backend returns something that is not a JSON for whatever reason.
-                    FederationConflictResponse(listOf()) // TODO return other error
+                    FederationConflictResponse(listOf())
                 }
                 NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
             } else {
