@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -46,7 +48,8 @@ class ReceiptMessageHandlerTest {
 
     private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY)
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
-    private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository)
+    private val messageRepository = MessageDataSource(userDatabase.builder.messageDAO, userDatabase.builder.conversationDAO)
+    private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, mess)
 
     private suspend fun insertTestData() {
         userDatabase.builder.userDAO.insertUser(TestUser.ENTITY.copy(id = SELF_USER_ID_ENTITY))
@@ -141,7 +144,7 @@ class ReceiptMessageHandlerTest {
                 date = date.toIsoDateTimeString(),
                 senderUserId = senderUserId,
                 senderClientId = ClientId("SomeClientId"),
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 isSelfMessage = false,
                 expirationData = null
             ),
