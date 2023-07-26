@@ -20,6 +20,7 @@ package com.wire.kalium.api.json.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.FederationConflictResponse
 
 object ErrorResponseJson {
     private val jsonProvider = { serializable: ErrorResponse ->
@@ -32,6 +33,14 @@ object ErrorResponseJson {
         """.trimMargin()
     }
 
+    private val federationConflictJsonProvider = { serializable: FederationConflictResponse ->
+        """
+        |{
+        |  "non_federating_backends": ${serializable.nonFederatingBackends}
+        |}
+        """.trimMargin()
+    }
+
     val valid = ValidJsonProvider(
         ErrorResponse(code = 499, label = "error_label", message = "error_message"),
         jsonProvider
@@ -40,5 +49,10 @@ object ErrorResponseJson {
     fun valid(error: ErrorResponse) = ValidJsonProvider(
         error,
         jsonProvider
+    )
+
+    fun validFederationConflictingBackends(error: FederationConflictResponse) = ValidJsonProvider(
+        error,
+        federationConflictJsonProvider
     )
 }
