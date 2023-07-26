@@ -60,4 +60,7 @@ WHERE user LIKE ('%@' || :domain) AND conversation = :conversation;
 getMembersFromOneOfTwoDomains:
 SELECT *
 FROM Member
-WHERE conversation LIKE ('%@' || :firstDomain) OR conversation LIKE ('%@' || :secondDomain);
+WHERE user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain);
+
+removeMembersFromConversationByDomain:
+DELETE FROM Member WHERE user LIKE ('%@' || :domain) AND conversation = :conversationId;

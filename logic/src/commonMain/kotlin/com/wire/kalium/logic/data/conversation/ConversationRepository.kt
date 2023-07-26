@@ -205,6 +205,7 @@ interface ConversationRepository {
         conversationId: ConversationId,
         isInformed: Boolean
     ): Either<StorageFailure, Unit>
+
     suspend fun getConversationIdsByDomain(domain: String): Either<CoreFailure, List<ConversationId>>
     suspend fun getMemberIdsByTheSameDomainInConversation(
         domain: String,
@@ -215,6 +216,12 @@ interface ConversationRepository {
         firstDomain: String,
         secondDomain: String
     ): Either<CoreFailure, Map<ConversationId, List<UserId>>>
+
+    suspend fun removeMembersFromConversationByDomain(
+        domain: String,
+        conversationID: QualifiedID
+    ): Either<CoreFailure, Unit>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -791,6 +798,13 @@ internal class ConversationDataSource internal constructor(
         memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
             .mapKeys { it.key.toModel() }
             .mapValues { it.value.map { idEntity -> idEntity.toModel() } }
+    }
+
+    override suspend fun removeMembersFromConversationByDomain(
+        domain: String,
+        conversationID: QualifiedID
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        memberDAO.removeMembersFromConversationByDomain(domain, conversationID.toDao())
     }
 
     private suspend fun persistIncompleteConversations(

@@ -61,6 +61,12 @@ interface MemberDAO {
         firstDomain: String,
         secondDomain: String
     ): Map<QualifiedIDEntity, List<UserIDEntity>>
+
+    suspend fun removeMembersFromConversationByDomain(
+        domain: String,
+        conversationID: QualifiedIDEntity
+    )
+
 }
 
 @Suppress("TooManyFunctions")
@@ -195,5 +201,12 @@ internal class MemberDAOImpl internal constructor(
                         members.any { it.conversation.domain == secondDomain }
             }
             .mapValues { it.value.map { member -> member.user } }
+    }
+
+    override suspend fun removeMembersFromConversationByDomain(
+        domain: String,
+        conversationID: QualifiedIDEntity
+    ) = withContext(coroutineContext) {
+        memberQueries.removeMembersFromConversationByDomain(domain, conversationID)
     }
 }

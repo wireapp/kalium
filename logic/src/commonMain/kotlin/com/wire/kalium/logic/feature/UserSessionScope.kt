@@ -1103,7 +1103,7 @@ class UserSessionScope internal constructor(
         get() = UserPropertiesEventReceiverImpl(userConfigRepository)
 
     private val federationEventReceiver: FederationEventReceiver
-        get() = FederationEventReceiverImpl(conversationRepository, userId)
+        get() = FederationEventReceiverImpl(conversationRepository, userStorage.database.memberDAO, persistMessage, userId)
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)

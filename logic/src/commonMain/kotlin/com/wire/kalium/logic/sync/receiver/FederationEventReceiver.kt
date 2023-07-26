@@ -18,26 +18,38 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 
 interface FederationEventReceiver : EventReceiver<Event.Federation>
 
 class FederationEventReceiverImpl internal constructor(
     private val conversationRepository: ConversationRepository,
+    private val memberDAO: MemberDAO,
+    private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : FederationEventReceiver {
@@ -51,9 +63,45 @@ class FederationEventReceiverImpl internal constructor(
     }
 
     private suspend fun handleDeleteEvent(event: Event.Federation.Delete) = withContext(dispatchers.io) {
+        conversationRepository.getConversationWithMembersWithBothDomains(event.domain, selfUserId.domain)
+            .onSuccess { conversationIdWithUserIdList ->
+                conversationIdWithUserIdList.forEach { (conversationId, userIds) ->
+                    when (conversationId.domain) {
+                        selfUserId.domain -> {
+                            removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == selfUserId.domain })
+                            // TODO check how 1on1 conversations behave
+                        }
+
+                        event.domain -> {
+                            removeMembersFromConversation(conversationId, userIds.filter { it.domain == selfUserId.domain })
+                            // TODO check how 1on1 conversations behave
+                        }
+
+                        else -> removeMembersFromConversation(conversationId, userIds)
+
+                    }
+                }
+            }
+            .onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }
+            .onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }
+        // TODO remove other domain from one1one conversations
+
+        // TODO remove connection requests with domain
 
     }
-
 
     // TODO KBX handle all cases
     private suspend fun handleConnectionRemovedEvent(event: Event.Federation.ConnectionRemoved) =
@@ -62,12 +110,20 @@ class FederationEventReceiverImpl internal constructor(
             val secondDomain = event.domains.last()
 
             conversationRepository.getConversationWithMembersWithBothDomains(firstDomain, secondDomain)
-                .onSuccess {
-                    it.forEach {
-                        // TODO
-//                         when(it.key.domain) {
-//                            firstDomain ->
-//                         }
+                .onSuccess { conversationIdWithUserIdList ->
+                    conversationIdWithUserIdList.forEach { (conversationId, userIds) ->
+                        when (conversationId.domain) {
+                            firstDomain -> {
+                                removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == firstDomain })
+                            }
+
+                            secondDomain -> {
+                                removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == secondDomain })
+                            }
+
+                            else -> removeMembersFromConversation(conversationId, userIds)
+
+                        }
                     }
                 }
 
@@ -99,9 +155,38 @@ class FederationEventReceiverImpl internal constructor(
                 }
         }
 
-    fun removeUsersFromConversation(conversationId: ConversationId) {
 
+    private suspend fun removeMembersFromConversation(conversationID: ConversationId, userIDList: List<UserId>) {
+        deleteMembers(userIDList, conversationID)
+            .onSuccess {
+                handleMemberRemovedEvent(conversationID, userIDList)
+            }
     }
 
+
+    private suspend fun deleteMembers(
+        userIDList: List<UserId>,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            memberDAO.deleteMembersByQualifiedID(
+                userIDList.map { it.toDao() },
+                conversationID.toDao()
+            )
+        }
+
+    private suspend fun handleMemberRemovedEvent(conversationID: ConversationId, userIDList: List<UserId>) {
+        val message = Message.System(
+            id = uuid4().toString(),
+            content = MessageContent.MemberChange.FederationRemoved(members = userIDList),
+            conversationId = conversationID,
+            date = DateTimeUtil.currentIsoDateTimeString(),
+            senderUserId = selfUserId,
+            status = Message.Status.SENT,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+        persistMessage(message)
+    }
 
 }
