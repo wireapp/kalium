@@ -19,6 +19,7 @@
 package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
@@ -26,8 +27,10 @@ import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -35,6 +38,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -60,6 +64,33 @@ internal class ConversationApiV4Test : ApiTest() {
             assertTrue(result.isSuccessful())
             assertTrue(result.value.failedToAdd.isNotEmpty())
             assertEquals(result.value.failedToAdd.first(), UserId("failedId", "failedDomain"))
+        }
+
+    @Test
+    fun givenACreateNewConversationRequest_whenReturnsFederationError_thenTheResponseShouldMapToFederationError() =
+        runTest {
+            val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
+            val response = ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
+
+            val networkClient = mockAuthenticatedNetworkClient(
+                response,
+                statusCode = HttpStatusCode.Conflict,
+                assertion = {
+                    assertJson()
+                    assertPost()
+                    assertPathEqual(PATH_CONVERSATIONS)
+                    assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
+                }
+            )
+            val conversationApi = ConversationApiV4(networkClient)
+            val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
+
+            assertFalse(result.isSuccessful())
+            assertTrue(result.kException is KaliumException.FederationConflictException)
+            assertEquals(
+                (result.kException as KaliumException.FederationConflictException).errorResponse.nonFederatingBackends,
+                conflictingBackends
+            )
         }
 
     @Test
