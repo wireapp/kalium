@@ -20,10 +20,12 @@ package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
 import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
+import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -34,7 +36,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,7 +43,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ConversationApiV4Test : ApiTest() {
 
     @Test
@@ -194,8 +194,65 @@ internal class ConversationApiV4Test : ApiTest() {
         )
     }
 
+    @Test
+    fun whenAddingMemberToGroup_AndRemoteFailureUnreachable_thenTheMemberShouldBeAddedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val userId = UserId("userId", "userDomain")
+        val request = AddConversationMembersRequest(listOf(userId), "Member")
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable,
+            statusCode = HttpStatusCode.ServiceUnavailable,
+            assertion = {
+                assertPost()
+                assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_MEMBERS}")
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        val response = conversationApi.addMember(request, conversationId)
+
+        assertFalse(response.isSuccessful())
+        assertTrue {
+            (response.kException as KaliumException.FederationError).errorResponse.isFederationError()
+        }
+        assertTrue {
+            (response.kException as KaliumException.FederationError).errorResponse.label ==
+                    "federation-unreachable-domains-error"
+        }
+    }
+
+    @Test
+    fun givenAddingMembersConversationRequest_whenReturnsFederationConflictError_thenTheResponseShouldMapToFederationError() =
+        runTest {
+            val conversationId = ConversationId("conversationId", "conversationDomain")
+            val userId = UserId("userId", "userDomain")
+            val request = AddConversationMembersRequest(listOf(userId), "Member")
+            val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
+            val expectedResponse =
+                ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
+
+            val networkClient = mockAuthenticatedNetworkClient(
+                expectedResponse,
+                statusCode = HttpStatusCode.Conflict,
+                assertion = {
+                    assertPost()
+                    assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_MEMBERS}")
+                }
+            )
+            val conversationApi = ConversationApiV4(networkClient)
+            val response = conversationApi.addMember(request, conversationId)
+
+            assertFalse(response.isSuccessful())
+            assertTrue(response.kException is KaliumException.FederationConflictException)
+            assertEquals(
+                (response.kException as KaliumException.FederationConflictException).errorResponse.nonFederatingBackends,
+                conflictingBackends
+            )
+        }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
+        const val PATH_MEMBERS = "members"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v4_withFailedToAdd.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
     }

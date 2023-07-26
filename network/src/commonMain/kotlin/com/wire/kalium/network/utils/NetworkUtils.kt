@@ -19,6 +19,7 @@
 package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import io.ktor.client.call.NoTransformationFoundException
@@ -231,3 +232,22 @@ private fun toStatusCodeBasedKaliumException(
     }
     return kException
 }
+
+/**
+ * Wrap and handles federation aware endpoints that can send a response with [HttpStatusCode.Conflict]
+ */
+suspend fun <T : Any> wrapHandleFederationConflictOrDelegate(
+    response: HttpResponse,
+    delegatedHandler: suspend (HttpResponse) -> NetworkResponse<T>
+) =
+    if (response.status == HttpStatusCode.Conflict) {
+        val errorResponse = try {
+            response.body()
+        } catch (_: NoTransformationFoundException) {
+            FederationConflictResponse(listOf())
+        }
+        NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
+    } else {
+        delegatedHandler.invoke(response)
+    }
+
