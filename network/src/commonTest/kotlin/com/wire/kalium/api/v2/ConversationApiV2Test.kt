@@ -92,7 +92,7 @@ internal class ConversationApiV2Test : ApiTest() {
         assertEquals(ReceiptMode.DISABLED, response.value.conversationsFound.first().receiptMode)
     }
 
-    @Test
+    @Test // todo move to v4 to handle 409
     fun whenAddingMemberToGroup_AndRemoteFailure_thenTheMemberShouldBeAddedCorrectly() = runTest {
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val userId = UserId("userId", "userDomain")
