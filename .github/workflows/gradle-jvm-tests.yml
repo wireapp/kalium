@@ -112,6 +112,9 @@ jobs:
         continue-on-error: true
         with:
             name: test-results
+            path: test-results
+      - name: Display structure of downloaded files
+        run: ls -R
       - uses: actions/setup-node@v3
         with:
           node-version: 18
