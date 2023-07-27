@@ -1,0 +1,381 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://wire.com/monkeys.schema.json",
+    "title": "Infinite Monkeys Configuration",
+    "description": "Configuration for the Infinite Monkeys configuration",
+    "type": "object",
+    "required": [
+        "testCases",
+        "backends"
+    ],
+    "properties": {
+        "testCases": {
+            "description": "List of test cases to run in parallel",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "description": "Test Case to be executed",
+                "type": "object",
+                "required": [
+                    "name",
+                    "actions"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Name of the test case",
+                        "type": "string"
+                    },
+                    "conversationDistribution": {
+                        "description": "List of predefined groups to run the tests. A random user will be selected to create and it will include only other users, it is connected to.",
+                        "type": "object",
+                        "patternProperties": {
+                            ".*": {
+                                "type": "object",
+                                "required": [
+                                    "userCount",
+                                    "groupCount"
+                                ],
+                                "properties": {
+                                    "userCount": {
+                                        "type": "object",
+                                        "properties": {
+                                            "$ref": "#/$defs/UserCount"
+                                        }
+                                    },
+                                    "protocol": {
+                                        "description": "The protocol of the group",
+                                        "type": "string",
+                                        "enum": [
+                                            "MLS",
+                                            "PROTEUS"
+                                        ]
+                                    },
+                                    "groupCount": {
+                                        "description": "The number of groups that should be created",
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "setup": {
+                        "description": "List of actions to be executed prior to the test's execution. For things like connecting users to each other.",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "$ref": "#/$defs/ActionConfig"
+                            }
+                        }
+                    },
+                    "actions": {
+                        "description": "List of actions to be executed in parallel. Mind that the parallelism is constrained by the machine executing it.",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "$ref": "#/$defs/ActionConfig"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "backends": {
+            "description": "Backends/Teams to run the test",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": [
+                    "api",
+                    "accounts",
+                    "webSocket",
+                    "blackList",
+                    "teams",
+                    "website",
+                    "title",
+                    "passwordForUsers",
+                    "domain",
+                    "users"
+                ],
+                "properties": {
+                    "api": {
+                        "description": "Link for the backend API of the team",
+                        "type": "string"
+                    },
+                    "accounts": {
+                        "description": "Link for the accounts API of the team",
+                        "type": "string"
+                    },
+                    "webSocket": {
+                        "description": "Link for the websocket of the team",
+                        "type": "string"
+                    },
+                    "blackList": {
+                        "description": "List of client blacklist of the team",
+                        "type": "string"
+                    },
+                    "teams": {
+                        "description": "Link of the team API",
+                        "type": "string"
+                    },
+                    "website": {
+                        "description": "Link of the website of the team",
+                        "type": "string"
+                    },
+                    "title": {
+                        "description": "Title of the team",
+                        "type": "string"
+                    },
+                    "passwordForUsers": {
+                        "description": "Password used to authenticate all users within the team",
+                        "type": "string"
+                    },
+                    "domain": {
+                        "description": "Domain identifier of the team",
+                        "type": "string"
+                    },
+                    "users": {
+                        "description": "All users that are going to be used in the test",
+                        "type": "object",
+                        "required": [
+                            "email",
+                            "id"
+                        ],
+                        "properties": {
+                            "email": {
+                                "description": "Email of the user",
+                                "type": "string"
+                            },
+                            "id": {
+                                "description": "UUID of the user",
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "UserCount": {
+            "required": [
+                "type",
+                "value"
+            ],
+            "properties": {
+                "type": {
+                    "description": "Set the config to either a percentage or a fixed number",
+                    "enum": [
+                        "PERCENTAGE",
+                        "FIXED_COUNT"
+                    ]
+                },
+                "value": {
+                    "description": "The value, which should be either the percentage (1 to 100) or an arbitrary unsigned number",
+                    "type": "integer"
+                }
+            }
+        },
+        "ActionConfig": {
+            "required": [
+                "description",
+                "config",
+                "count",
+                "repeatDuration"
+            ],
+            "properties": {
+                "description": {
+                    "description": "A text describing the action",
+                    "type": "string"
+                },
+                "count": {
+                    "description": "How many times the action should be executed each round",
+                    "type": "integer"
+                },
+                "repeatDuration": {
+                    "description": "How long in milliseconds, should the app wait until next execution",
+                    "type": "integer"
+                },
+                "config": {
+                    "description": "The configuration of the action, each type has its own parameters",
+                    "type": "object",
+                    "properties": {
+                        "type": {
+                            "enum": [
+                                "LOGIN",
+                                "RECONNECT",
+                                "SEND_MESSAGE",
+                                "CREATE_CONVERSATION",
+                                "ADD_USERS_TO_CONVERSATION",
+                                "LEAVE_CONVERSATION",
+                                "DESTROY_CONVERSATION",
+                                "SEND_REQUEST"
+                            ]
+                        }
+                    },
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/Login"
+                        },
+                        {
+                            "$ref": "#/$defs/Reconnect"
+                        },
+                        {
+                            "$ref": "#/$defs/SendMessage"
+                        },
+                        {
+                            "$ref": "#/$defs/CreateConversation"
+                        },
+                        {
+                            "$ref": "#/$defs/AddUsersToConversation"
+                        },
+                        {
+                            "$ref": "#/$defs/LeaveConversation"
+                        },
+                        {
+                            "$ref": "#/$defs/DestroyConversation"
+                        },
+                        {
+                            "$ref": "#/$defs/SendRequest"
+                        }
+                    ]
+                }
+            }
+        },
+        "Login": {
+            "properties": {
+                "duration": {
+                    "description": "How long in milliseconds should the user be logged in. 0 means until the end",
+                    "type": "integer"
+                }
+            }
+        },
+        "Reconnect": {
+            "required": [
+                "durationOffline"
+            ],
+            "properties": {
+                "durationOffline": {
+                    "description": "How long in milliseconds should the user be logged out, until a re-login",
+                    "type": "integer"
+                }
+            }
+        },
+        "SendMessage": {
+            "required": [
+                "count"
+            ],
+            "properties": {
+                "count": {
+                    "description": "How many messages should be sent at once. Each message will be sent by a random user",
+                    "type": "integer"
+                },
+                "countGroups": {
+                    "description": "To how many groups the message should be sent by each user. This will be used only if targets is empty or not informed. Random conversations will be picked to send the message to",
+                    "type": "integer"
+                },
+                "targets": {
+                    "description": "Group targets to send the message to. Valid values can be either 'One21' (pick a random Monkey and send a direct message) or predefined groups",
+                    "type": "string"
+                }
+            }
+        },
+        "CreateConversation": {
+            "required": [
+                "userCount"
+            ],
+            "properties": {
+                "userCount": {
+                    "description": "How many users should be added to the group",
+                    "type": "object",
+                    "properties": {
+                        "$ref": "#/$defs/UserCount"
+                    }
+                },
+                "protocol": {
+                    "description": "Which protocol should the conversation have",
+                    "enum": [
+                        "MLS",
+                        "PROTEUS"
+                    ]
+                },
+                "domainOwner": {
+                    "description": "Which domain should the picked user belong to. For better performance, inform this field",
+                    "type": "string"
+                }
+            }
+        },
+        "AddUsersToConversation": {
+            "required": [
+                "userCount"
+            ],
+            "properties": {
+                "userCount": {
+                    "description": "How many users should be added to the group",
+                    "type": "object",
+                    "properties": {
+                        "$ref": "#/$defs/UserCount"
+                    }
+                },
+                "domain": {
+                    "description": "Which domain should the picked users belong to. For better performance, inform this field",
+                    "type": "string"
+                }
+            }
+        },
+        "LeaveConversation": {
+            "required": [
+                "userCount"
+            ],
+            "properties": {
+                "userCount": {
+                    "description": "How many users should leave to the group. The creator will never leave the group",
+                    "type": "object",
+                    "properties": {
+                        "$ref": "#/$defs/UserCount"
+                    }
+                }
+            }
+        },
+        "DestroyConversation": {
+            "required": [
+                "count"
+            ],
+            "properties": {
+                "count": {
+                    "description": "How many conversations should be destroyed. Only works for multi-teams conversations and pre-defined groups won't be part of it",
+                    "type": "integer"
+                }
+            }
+        },
+        "SendRequest": {
+            "required": [
+                "userCount",
+                "targetDomain"
+            ],
+            "properties": {
+                "userCount": {
+                    "description": "How many users should send requests",
+                    "type": "object",
+                    "properties": {
+                        "$ref": "#/$defs/UserCount"
+                    }
+                },
+                "targetDomain": {
+                    "description": "Users from which domain should be targeted",
+                    "type": "string"
+                },
+                "delayResponse": {
+                    "description": "How long until the request is answered. 0 means immediately",
+                    "type": "integer"
+                },
+                "shouldAccept": {
+                    "description": "Should the request be accepted? Defaults to true",
+                    "type": "boolean"
+                }
+            }
+        }
+    }
+}

@@ -30,7 +30,7 @@ data class TestData(
 @Serializable
 data class TestCase(
     @SerialName("name") val name: String,
-    @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig>,
+    @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig> = mapOf(),
     @SerialName("setup") val setup: List<ActionConfig> = listOf(),
     @SerialName("actions") val actions: List<ActionConfig>
 )
@@ -56,7 +56,7 @@ data class GroupConfig(
 @Serializable
 data class ActionConfig(
     @SerialName("description") val description: String,
-    @SerialName("type") val type: ActionType,
+    @SerialName("config") val type: ActionType,
     @SerialName("count") val count: UserCount,
     @SerialName("repeatDuration") val repeatDuration: ULong
 )
@@ -64,18 +64,23 @@ data class ActionConfig(
 @Serializable
 sealed class ActionType {
     @Serializable
+    @SerialName("LOGIN")
     data class Login(@SerialName("duration") val duration: UInt = 0u) : ActionType()
 
     @Serializable
+    @SerialName("RECONNECT")
     data class Reconnect(@SerialName("durationOffline") val durationOffline: UInt) : ActionType()
 
     @Serializable
+    @SerialName("SEND_MESSAGE")
     data class SendMessage(
         @SerialName("count") val count: UInt,
+        @SerialName("countGroups") val countGroups: UInt = 1u,
         @SerialName("targets") val targets: List<String> = listOf()
     ) : ActionType()
 
     @Serializable
+    @SerialName("CREATE_CONVERSATION")
     data class CreateConversation(
         @SerialName("userCount") val userCount: UserCount,
         @SerialName("protocol") val protocol: ConversationOptions.Protocol = ConversationOptions.Protocol.MLS,
@@ -83,19 +88,28 @@ sealed class ActionType {
     ) : ActionType()
 
     @Serializable
+    @SerialName("ADD_USERS_TO_CONVERSATION")
     data class AddUsersToConversation(
         @SerialName("userCount") val userCount: UserCount,
-        @SerialName("domainOwner") val domain: String?
+        @SerialName("domain") val domain: String?
     ) : ActionType()
 
     @Serializable
+    @SerialName("LEAVE_CONVERSATION")
     data class LeaveConversation(@SerialName("userCount") val userCount: UserCount) : ActionType()
 
     @Serializable
+    @SerialName("DESTROY_CONVERSATION")
     data class DestroyConversation(@SerialName("count") val count: UInt) : ActionType()
 
     @Serializable
-    data class SendRequest(@SerialName("userCount") val userCount: UInt) : ActionType()
+    @SerialName("SEND_REQUEST")
+    data class SendRequest(
+        @SerialName("userCount") val userCount: UserCount,
+        @SerialName("targetDomain") val targetDomain: String,
+        @SerialName("delayResponse") val delayResponse: ULong = 0u,
+        @SerialName("shouldAccept") val shouldAccept: Boolean = true
+    ) : ActionType()
 }
 
 @Serializable
