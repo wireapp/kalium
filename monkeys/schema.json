@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://wire.com/monkeys.schema.json",
     "title": "Infinite Monkeys Configuration",
-    "description": "Configuration for the Infinite Monkeys configuration",
+    "description": "Configuration for the Infinite Monkeys application",
     "type": "object",
     "required": [
         "testCases",

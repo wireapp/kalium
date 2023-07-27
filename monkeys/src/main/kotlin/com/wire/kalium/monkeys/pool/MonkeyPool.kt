@@ -29,9 +29,14 @@ object MonkeyPool {
     // a map of logged in monkeys per domain
     private val poolLoggedIn: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
+    // a map of logged in monkeys per domain
+    private val poolLoggedOut: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
+
     fun init(users: List<UserData>) {
         users.forEach {
-            this.pool.getOrPut(it.backend.domain) { mutableListOf() }.add(Monkey(it))
+            val monkey = Monkey(it)
+            this.pool.getOrPut(it.backend.domain) { mutableListOf() }.add(monkey)
+            this.poolLoggedOut.getOrPut(it.backend.domain) { ConcurrentHashMap() }[it.userId] = monkey
         }
     }
 
@@ -62,14 +67,32 @@ object MonkeyPool {
     // TODO: ensure there's no duplicated results
     fun randomLoggedInMonkeys(count: UInt): List<Monkey> {
         val allUsers = this.poolLoggedIn.values.flatMap { it.values }
-        return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool of logged users is empty") }
+        return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool of logged in users is empty") }
     }
+
+    // TODO: ensure there's no duplicated results
+    fun randomLoggedOutMonkeysFromDomain(domain: String, count: UInt): List<Monkey> {
+        val backendUsers = this.poolLoggedOut[domain]?.values ?: error("Domain $domain doesn't exist")
+        return (1u..count).map { backendUsers.randomOrNull() ?: error("There are no logged out monkeys for the $domain backend") }
+    }
+
+    /**
+     * This is costly depending on the size. Use with caution
+     */
+    // TODO: ensure there's no duplicated results
+    fun randomLoggedOutMonkeys(count: UInt): List<Monkey> {
+        val allUsers = this.poolLoggedOut.values.flatMap { it.values }
+        return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool of logged out users is empty") }
+    }
+
 
     fun loggedIn(monkey: Monkey) {
         this.poolLoggedIn.getOrPut(monkey.user.backend.domain) { ConcurrentHashMap() }[monkey.user.userId] = monkey
+        this.poolLoggedOut[monkey.user.backend.domain]?.remove(monkey.user.userId)
     }
 
     fun loggedOut(monkey: Monkey) {
         this.poolLoggedIn[monkey.user.backend.domain]?.remove(monkey.user.userId)
+        this.poolLoggedOut.getOrPut(monkey.user.backend.domain) { ConcurrentHashMap() }[monkey.user.userId] = monkey
     }
 }
