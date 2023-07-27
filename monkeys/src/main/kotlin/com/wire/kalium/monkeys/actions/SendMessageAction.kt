@@ -17,10 +17,11 @@
  */
 package com.wire.kalium.monkeys.actions
 
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
 
 class SendMessageAction(val config: ActionType.SendMessage) : Action() {
-    override suspend fun execute() {
+    override suspend fun execute(coreLogic: CoreLogic) {
         TODO("Not yet implemented")
     }
 }

@@ -15,13 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions
+package com.wire.kalium.monkeys
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
+import co.touchlab.kermit.LogWriter
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 
-class DestroyConversationAction(val config: ActionType.DestroyConversation) : Action() {
-    override suspend fun execute(coreLogic: CoreLogic) {
-        TODO("Not yet implemented")
+internal var logger = KaliumLogger.disabled()
+
+object MonkeyLogger {
+    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
+        logger = KaliumLogger(
+            config = KaliumLogger.Config(
+                severity = level,
+                tag = "InfiniteMonkeys"
+            ),
+            logWriters = logWriters
+        )
     }
 }

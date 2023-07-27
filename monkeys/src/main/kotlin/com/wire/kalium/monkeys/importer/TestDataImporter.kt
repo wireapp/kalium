@@ -18,6 +18,7 @@
 package com.wire.kalium.monkeys.importer
 
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.monkeys.logger
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -52,7 +53,7 @@ object TestDataImporter {
     @OptIn(ExperimentalSerializationApi::class)
     fun importFromFile(path: String): TestData {
         val file = File(path)
-        println("#### Importing test data from ${file.absolutePath}")
+        logger.d("Importing test data from ${file.absolutePath}")
         return Json.decodeFromStream<TestData>(
             file.inputStream()
         )

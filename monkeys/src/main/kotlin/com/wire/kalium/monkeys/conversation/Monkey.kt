@@ -56,7 +56,7 @@ class Monkey(
     /**
      * Logs user in and register client (if not registered)
      */
-    suspend fun login(coreLogic: CoreLogic) {
+    suspend fun login(coreLogic: CoreLogic, callback: (Monkey) -> Unit) {
         val authScope = getAuthScope(coreLogic, this.user.backend)
         val email = this.user.email
         val password = this.user.password
@@ -88,10 +88,12 @@ class Monkey(
             this.monkeyState = MonkeyState.NotReady
             error("Failed registering client of monkey ${this.user.email}: $registerResult")
         }
+        callback(this)
     }
 
-    suspend fun logout() {
+    suspend fun logout(callback: (Monkey) -> Unit) {
         this.monkeyState.readyThen { logout(LogoutReason.SELF_SOFT_LOGOUT) }
+        callback(this)
     }
 
     fun randomPeer() {

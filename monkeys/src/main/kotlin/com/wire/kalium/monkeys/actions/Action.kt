@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.monkeys.actions
 
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
 
 abstract class Action {
@@ -35,5 +36,5 @@ abstract class Action {
         }
     }
 
-    abstract suspend fun execute()
+    abstract suspend fun execute(coreLogic: CoreLogic)
 }

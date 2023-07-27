@@ -33,7 +33,9 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.monkeys.importer.TestData
 import com.wire.kalium.monkeys.importer.TestDataImporter
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.runBlocking
+import sun.misc.Signal
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
@@ -43,6 +45,11 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
     override fun run() = runBlocking {
+        // stop on ctrl + c
+        Signal.handle(Signal(("INT"))) {
+            logger.i("Stopping Infinite Monkeys")
+            this.coroutineContext.cancelChildren()
+        }
         val coreLogic = coreLogic(
             rootPath = "$HOME_DIRECTORY/.kalium/accounts",
             kaliumConfigs = KaliumConfigs(
@@ -54,24 +61,28 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         if (logOutputFile != null) {
             CoreLogger.setLoggingLevel(logLevel, fileLogger)
+            MonkeyLogger.setLoggingLevel(logLevel, fileLogger)
         } else {
             CoreLogger.setLoggingLevel(logLevel)
+            MonkeyLogger.setLoggingLevel(logLevel)
         }
+        logger.i("Initializing Infinite Monkeys")
 
         coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
         val testData = TestDataImporter.importFromFile(dataFilePath)
         val users = TestDataImporter.getUserData(testData)
-        val monkeyPool = MonkeyPool(users)
-        runMonkeys(coreLogic, monkeyPool, testData)
+        MonkeyPool.init(users)
+        runMonkeys(coreLogic, testData)
     }
 
     private suspend fun runMonkeys(
         coreLogic: CoreLogic,
-        monkeyPool: MonkeyPool,
         testData: TestData
     ) = with(testData) {
-        // TODO: execute the setup actions
-        // TODO: schedule all actions based on the testData
+        logger.i("Running setup")
+        ActionScheduler.runSetup(testCases.flatMap { it.setup }, coreLogic)
+        logger.i("Starting stress tests")
+        ActionScheduler.start(testCases, coreLogic)
     }
 
     companion object {

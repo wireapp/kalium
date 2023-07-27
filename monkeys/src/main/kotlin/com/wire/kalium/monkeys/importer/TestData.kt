@@ -31,8 +31,8 @@ data class TestData(
 data class TestCase(
     @SerialName("name") val name: String,
     @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig>,
-    @SerialName("setup") val setup: List<Action> = listOf(),
-    @SerialName("actions") val actions: List<Action>
+    @SerialName("setup") val setup: List<ActionConfig> = listOf(),
+    @SerialName("actions") val actions: List<ActionConfig>
 )
 
 @Serializable
@@ -54,11 +54,11 @@ data class GroupConfig(
 )
 
 @Serializable
-data class Action(
+data class ActionConfig(
     @SerialName("description") val description: String,
     @SerialName("type") val type: ActionType,
     @SerialName("count") val count: UserCount,
-    @SerialName("repeatDuration") val repeatDuration: UInt
+    @SerialName("repeatDuration") val repeatDuration: ULong
 )
 
 @Serializable

@@ -17,16 +17,19 @@
  */
 package com.wire.kalium.monkeys.pool
 
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.importer.UserData
 import java.util.concurrent.ConcurrentHashMap
 
-class MonkeyPool(users: List<UserData>) {
+object MonkeyPool {
     // a map of monkeys per domain
-    private val pool: ConcurrentHashMap<String, MutableList<Monkey>>
+    private val pool: ConcurrentHashMap<String, MutableList<Monkey>> = ConcurrentHashMap()
 
-    init {
-        this.pool = ConcurrentHashMap(users.count())
+    // a map of logged in monkeys per domain
+    private val poolLoggedIn: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
+
+    fun init(users: List<UserData>) {
         users.forEach {
             this.pool.getOrPut(it.backend.domain) { mutableListOf() }.add(Monkey(it))
         }
@@ -45,5 +48,28 @@ class MonkeyPool(users: List<UserData>) {
     fun randomMonkeys(count: UInt): List<Monkey> {
         val allUsers = this.pool.values.flatten()
         return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool is empty") }
+    }
+
+    // TODO: ensure there's no duplicated results
+    fun randomLoggedInMonkeysFromDomain(domain: String, count: UInt): List<Monkey> {
+        val backendUsers = this.poolLoggedIn[domain]?.values ?: error("Domain $domain doesn't exist")
+        return (1u..count).map { backendUsers.randomOrNull() ?: error("There are no logged in monkeys for the $domain backend") }
+    }
+
+    /**
+     * This is costly depending on the size. Use with caution
+     */
+    // TODO: ensure there's no duplicated results
+    fun randomLoggedInMonkeys(count: UInt): List<Monkey> {
+        val allUsers = this.poolLoggedIn.values.flatMap { it.values }
+        return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool of logged users is empty") }
+    }
+
+    fun loggedIn(monkey: Monkey) {
+        this.poolLoggedIn.getOrPut(monkey.user.backend.domain) { ConcurrentHashMap() }[monkey.user.userId] = monkey
+    }
+
+    fun loggedOut(monkey: Monkey) {
+        this.poolLoggedIn[monkey.user.backend.domain]?.remove(monkey.user.userId)
     }
 }
