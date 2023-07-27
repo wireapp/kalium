@@ -54,9 +54,6 @@ kotlin {
 
                 // Okio
                 implementation(libs.okio.core)
-
-                // CoreCrypto
-                implementation(libs.coreCrypto)
             }
         }
         val commonTest by getting {
@@ -78,10 +75,17 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coreCrypto)
+            }
+        }
+
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting
@@ -90,6 +94,7 @@ kotlin {
             dependencies {
                 implementation(libs.paging3)
                 implementation(libs.work)
+                implementation(libs.coreCryptoAndroid)
             }
         }
     }
