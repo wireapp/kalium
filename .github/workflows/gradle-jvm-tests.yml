@@ -110,9 +110,6 @@ jobs:
       - name: Download tests results
         uses: actions/download-artifact@v3
         continue-on-error: true
-        with:
-            name: test-results
-            path: test-results
       - name: Display structure of downloaded files
         run: ls -R
       - uses: actions/setup-node@v3
@@ -124,5 +121,4 @@ jobs:
         env:
             DD_API_KEY: ${{ secrets.DD_API_KEY }}
         run: |
-            datadog-ci version
-            DATADOG_API_KEY="${DD_API_KEY}" DD_ENV=ci DATADOG_SITE=datadoghq.eu datadog-ci junit upload --verbose --service kalium-jvm **/*.xml
+            DATADOG_API_KEY="${DD_API_KEY}" DD_ENV=ci DATADOG_SITE=datadoghq.eu find . -name "*.xml" -type f | tr '\n' ' ' | xargs -L 1 datadog-ci junit upload --service kalium-jvm .
