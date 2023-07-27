@@ -49,7 +49,7 @@
                         "type": "PERCENTAGE",
                         "value": 100
                     },
-                    "repeatDuration": 500,
+                    "repeatInterval": 500,
                     "config": {
                         "type": "SEND_MESSAGE",
                         "count": 3,
@@ -64,7 +64,7 @@
                         "type": "FIXED_COUNT",
                         "value": 3
                     },
-                    "repeatDuration": 10000,
+                    "repeatInterval": 10000,
                     "config": {
                         "type": "CREATE_CONVERSATION",
                         "userCount": {
@@ -81,7 +81,7 @@
                         "type": "FIXED_COUNT",
                         "value": 3
                     },
-                    "repeatDuration": 10000,
+                    "repeatInterval": 10000,
                     "config": {
                         "type": "CREATE_CONVERSATION",
                         "userCount": {

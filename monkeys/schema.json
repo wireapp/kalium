@@ -191,7 +191,7 @@
                     "description": "How many times the action should be executed each round",
                     "type": "integer"
                 },
-                "repeatDuration": {
+                "repeatInterval": {
                     "description": "How long in milliseconds, should the app wait until next execution. This property is ignored in the setup. Defaults to 0. Please set this up as this can overload the computer running the application",
                     "type": "integer"
                 },

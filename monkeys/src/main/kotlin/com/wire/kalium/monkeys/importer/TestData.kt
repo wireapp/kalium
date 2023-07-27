@@ -58,7 +58,7 @@ data class ActionConfig(
     @SerialName("description") val description: String,
     @SerialName("config") val type: ActionType,
     @SerialName("count") val count: UserCount,
-    @SerialName("repeatDuration") val repeatDuration: ULong = 0u
+    @SerialName("repeatInterval") val repeatInterval: ULong = 0u
 )
 
 @Serializable

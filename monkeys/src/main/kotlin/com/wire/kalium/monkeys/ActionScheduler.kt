@@ -38,7 +38,7 @@ object ActionScheduler {
                     } catch (e: Exception) {
                         logger.e("Error in action ${it.description}", e)
                     }
-                    delay(it.repeatDuration.toLong())
+                    delay(it.repeatInterval.toLong())
                 }
             }
         }
