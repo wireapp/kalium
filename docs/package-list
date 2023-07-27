@@ -373,6 +373,7 @@ com.wire.kalium.logic.feature.e2ei
 com.wire.kalium.logic.feature.featureConfig
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.message
+com.wire.kalium.logic.feature.message.composite
 com.wire.kalium.logic.feature.message.ephemeral
 com.wire.kalium.logic.feature.migration
 com.wire.kalium.logic.feature.notificationToken
