@@ -18,105 +18,27 @@
 
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CryptoException
-import com.wire.crypto.client.CoreCryptoCentral.Companion.lower
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
-import java.io.FileNotFoundException
 
 @Suppress("TooManyFunctions")
-class ProteusClientCoreCryptoImpl internal constructor(
-    private val rootDir: String,
-    private val databaseKey: ProteusDBSecret
+class ProteusClientCoreCryptoImpl private constructor(
+    private val coreCrypto: CoreCrypto,
 ) : ProteusClient {
 
-    private val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
-    private val path: String = "$rootDir/$KEYSTORE_NAME"
-    private lateinit var coreCrypto: CoreCrypto
-
-    override fun clearLocalFiles(): Boolean {
-        if (::coreCrypto.isInitialized) {
-            coreCrypto.close()
-        }
-        return File(path).deleteRecursively()
-    }
-
-    override fun needsMigration(): Boolean {
-        return cryptoBoxFilesExists()
-    }
-
-    override suspend fun openOrCreate() {
-        wrapException {
-            File(rootDir).mkdirs()
-            coreCrypto = CoreCrypto.deferredInit(
-                path,
-                databaseKey.value,
-                listOf(defaultCiphersuite)
-            )
-            migrateFromCryptoBoxIfNecessary(coreCrypto)
-            coreCrypto.proteusInit()
-            coreCrypto
-        }
-    }
-
-    override suspend fun openOrError() {
-        val directory = File(rootDir)
-        if (directory.exists()) {
-            wrapException {
-                coreCrypto = CoreCrypto.deferredInit(
-                    path,
-                    databaseKey.value,
-                    listOf(defaultCiphersuite)
-                )
-                migrateFromCryptoBoxIfNecessary(coreCrypto)
-                coreCrypto.proteusInit()
-            }
-        } else {
-            throw ProteusException(
-                "Local files were not found",
-                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
-                FileNotFoundException()
-            )
-        }
-    }
-
-    private fun cryptoBoxFilesExists(): Boolean =
-        CRYPTO_BOX_FILES.any {
-            File(rootDir).resolve(it).exists()
-        }
-
-    private fun deleteCryptoBoxFiles(): Boolean =
-        CRYPTO_BOX_FILES.fold(true) { acc, file ->
-            acc && File(rootDir).resolve(file).deleteRecursively()
-        }
-
-    private fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto) {
-        if (cryptoBoxFilesExists()) {
-            migrateFromCryptoBox(coreCrypto)
-        }
-    }
-
-    private fun migrateFromCryptoBox(coreCrypto: CoreCrypto) {
-        kaliumLogger.i("migrating from crypto box at: $rootDir")
-        coreCrypto.proteusCryptoboxMigrate(rootDir)
-        kaliumLogger.i("migration successful")
-
-        if (deleteCryptoBoxFiles()) {
-            kaliumLogger.i("successfully deleted old crypto box files")
-        } else {
-            kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
-        }
+    override suspend fun close() {
+        coreCrypto.close()
     }
 
     override fun getIdentity(): ByteArray {
         return ByteArray(0)
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
     }
 
@@ -200,22 +122,18 @@ class ProteusClientCoreCryptoImpl internal constructor(
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowsCount")
-    private fun <T> wrapException(b: () -> T): T {
+    private inline fun <T> wrapException(b: () -> T): T {
         try {
             return b()
         } catch (e: CryptoException) {
-            if (this::coreCrypto.isInitialized) {
-                throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e)
-            } else {
-                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
-            }
+            throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e)
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e)
         }
     }
 
     @OptIn(ExperimentalUnsignedTypes::class)
-    private companion object {
+    companion object {
 
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
@@ -224,6 +142,42 @@ class ProteusClientCoreCryptoImpl internal constructor(
             PreKeyCrypto(id, data.encodeBase64())
 
         val CRYPTO_BOX_FILES = listOf("identities", "prekeys", "sessions", "version")
-        const val KEYSTORE_NAME = "keystore"
+
+        private fun cryptoBoxFilesExists(rootDir: File): Boolean =
+            CRYPTO_BOX_FILES.any {
+                rootDir.resolve(it).exists()
+            }
+
+        private fun deleteCryptoBoxFiles(rootDir: String): Boolean =
+            CRYPTO_BOX_FILES.fold(true) { acc, file ->
+                acc && File(rootDir).resolve(file).deleteRecursively()
+            }
+
+        private suspend fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto, rootDir: String) {
+            if (cryptoBoxFilesExists(File(rootDir))) {
+                kaliumLogger.i("migrating from crypto box at: $rootDir")
+                coreCrypto.proteusCryptoboxMigrate(rootDir)
+                kaliumLogger.i("migration successful")
+
+                if (deleteCryptoBoxFiles(rootDir)) {
+                    kaliumLogger.i("successfully deleted old crypto box files")
+                } else {
+                    kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
+                }
+            }
+        }
+
+        @Suppress("TooGenericExceptionCaught")
+        suspend operator fun invoke(coreCrypto: CoreCrypto, rootDir: String): ProteusClientCoreCryptoImpl {
+            try {
+                migrateFromCryptoBoxIfNecessary(coreCrypto, rootDir)
+                coreCrypto.proteusInit()
+                return ProteusClientCoreCryptoImpl(coreCrypto)
+            } catch (e: CryptoException) {
+                throw ProteusException(e.message, ProteusException.fromProteusCode(coreCrypto.proteusLastErrorCode().toInt()), e.cause)
+            } catch (e: Exception) {
+                throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+            }
+        }
     }
 }

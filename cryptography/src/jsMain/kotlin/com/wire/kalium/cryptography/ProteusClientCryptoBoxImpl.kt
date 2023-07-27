@@ -37,9 +37,8 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
 
     private lateinit var box: Cryptobox
 
-    override suspend fun close() {
-        TODO("Not yet implemented")
-    }
+    @Suppress("EmptyFunctionBlock")
+    override suspend fun close() {}
 
     suspend fun openOrCreate() {
         val engine = MemoryEngine()
@@ -79,6 +78,7 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = try {
         box.session_load(sessionId.value).await()
         true

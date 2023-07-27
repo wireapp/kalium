@@ -18,6 +18,7 @@
 package com.wire.kalium.cryptography
 
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -33,14 +34,14 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     }
 
-    private fun createE2EIClient(user: SampleUser): E2EIClient {
+    private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
         return createMLSClient(user.qualifiedClientId).newAcmeEnrollment(
             user.e2eiCryptoId, user.name, user.handle
         )
     }
 
     @Test
-    fun givenClient_whenPassingAcmeDirectoryResponse_ReturnNonEmptyResult() {
+    fun givenClient_whenPassingAcmeDirectoryResponse_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         val expectedDirectory = AcmeDirectory(
             "https://balderdash.hogwash.work:9000/acme/wire/new-nonce",
@@ -52,14 +53,14 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingGetNewAccountRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingGetNewAccountRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         assertTrue(e2eiClient.getNewAccountRequest(NONCE).isNotEmpty())
     }
 
     @Test
-    fun givenClient_whenCallingGetNewOrderRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingGetNewOrderRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -67,7 +68,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingGetNewAuthzRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingGetNewAuthzRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -76,7 +77,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingCreateDpopToken_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingCreateDpopToken_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -86,7 +87,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingGetNewDpopChallengeRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingGetNewDpopChallengeRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -97,7 +98,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingGetNewOidcChallengeRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingGetNewOidcChallengeRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -108,7 +109,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -121,7 +122,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -135,7 +136,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)

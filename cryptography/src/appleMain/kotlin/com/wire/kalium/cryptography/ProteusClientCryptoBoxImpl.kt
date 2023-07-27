@@ -25,5 +25,3 @@ actual suspend fun cryptoboxProteusClient(
     defaultContext: CoroutineContext,
     ioContext: CoroutineContext
 ): ProteusClient = TODO("Proteus cryptobox support not available")
-
-
