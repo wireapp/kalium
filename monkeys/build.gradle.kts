@@ -27,7 +27,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
-val targetJavaVersion = 17
 
 application {
     mainClass.set(mainFunctionClassName)
@@ -35,7 +34,7 @@ application {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(targetJavaVersion))
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
     }
 }
 

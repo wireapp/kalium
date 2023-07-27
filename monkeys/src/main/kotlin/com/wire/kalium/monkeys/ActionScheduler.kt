@@ -28,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 object ActionScheduler {
+    @Suppress("TooGenericExceptionCaught")
     suspend fun start(testCases: List<TestCase>, coreLogic: CoreLogic) {
         testCases.flatMap { it.actions }.forEach {
             CoroutineScope(Dispatchers.Default).launch {

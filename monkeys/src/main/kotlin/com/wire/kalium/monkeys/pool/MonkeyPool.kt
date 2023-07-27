@@ -85,7 +85,6 @@ object MonkeyPool {
         return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool of logged out users is empty") }
     }
 
-
     fun loggedIn(monkey: Monkey) {
         this.poolLoggedIn.getOrPut(monkey.user.backend.domain) { ConcurrentHashMap() }[monkey.user.userId] = monkey
         this.poolLoggedOut[monkey.user.backend.domain]?.remove(monkey.user.userId)
