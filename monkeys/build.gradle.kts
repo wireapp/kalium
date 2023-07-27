@@ -32,6 +32,12 @@ application {
     mainClass.set(mainFunctionClassName)
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
 tasks.jar {
     manifest.attributes["Main-Class"] = mainFunctionClassName
     val dependencies = configurations
