@@ -35,13 +35,7 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-//         return databaseKey?.let {
             return coreCryptoCentral(proteusStore.value, "secret").proteusClient()
-//         } ?: cryptoboxProteusClient(
-//             rootDir = proteusStore.value,
-//             defaultContext = testCoroutineScheduler,
-//             ioContext = testCoroutineScheduler
-//         )
     }
 
 }
