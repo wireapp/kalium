@@ -182,7 +182,7 @@ class LeaveSubconversationUseCaseTest {
 
         fun withWipeMlsConversationSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::wipeConversation)
+                .suspendFunction(mlsClient::wipeConversation)
                 .whenInvokedWith(anything())
                 .thenReturn(Unit)
         }

@@ -558,7 +558,7 @@ class RegisterClientUseCaseTest {
 
         fun withGetMLSPublicKey(result: ByteArray) = apply {
             given(MLS_CLIENT)
-                .function(MLS_CLIENT::getPublicKey)
+                .suspendFunction(MLS_CLIENT::getPublicKey)
                 .whenInvoked()
                 .thenReturn(result)
         }
