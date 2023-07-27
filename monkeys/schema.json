@@ -37,10 +37,7 @@
                                 ],
                                 "properties": {
                                     "userCount": {
-                                        "type": "object",
-                                        "properties": {
-                                            "$ref": "#/$defs/UserCount"
-                                        }
+                                        "$ref": "#/$defs/UserCount"
                                     },
                                     "protocol": {
                                         "description": "The protocol of the group",
@@ -62,20 +59,14 @@
                         "description": "List of actions to be executed prior to the test's execution. For things like connecting users to each other.",
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "properties": {
-                                "$ref": "#/$defs/ActionConfig"
-                            }
+                            "$ref": "#/$defs/ActionConfig"
                         }
                     },
                     "actions": {
                         "description": "List of actions to be executed in parallel. Mind that the parallelism is constrained by the machine executing it.",
                         "type": "array",
                         "items": {
-                            "type": "object",
-                            "properties": {
-                                "$ref": "#/$defs/ActionConfig"
-                            }
+                            "$ref": "#/$defs/ActionConfig"
                         }
                     }
                 }
@@ -138,19 +129,22 @@
                     },
                     "users": {
                         "description": "All users that are going to be used in the test",
-                        "type": "object",
-                        "required": [
-                            "email",
-                            "id"
-                        ],
-                        "properties": {
-                            "email": {
-                                "description": "Email of the user",
-                                "type": "string"
-                            },
-                            "id": {
-                                "description": "UUID of the user",
-                                "type": "string"
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "email",
+                                "id"
+                            ],
+                            "properties": {
+                                "email": {
+                                    "description": "Email of the user",
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "description": "UUID of the user",
+                                    "type": "string"
+                                }
                             }
                         }
                     }
@@ -160,6 +154,8 @@
     },
     "$defs": {
         "UserCount": {
+            "description": "Defines the amount of users that will be executing an action",
+            "type": "object",
             "required": [
                 "type",
                 "value"
@@ -179,11 +175,12 @@
             }
         },
         "ActionConfig": {
+            "description": "Configuration of each action to be executed",
+            "type": "object",
             "required": [
                 "description",
                 "config",
-                "count",
-                "repeatDuration"
+                "count"
             ],
             "properties": {
                 "description": {
@@ -195,7 +192,7 @@
                     "type": "integer"
                 },
                 "repeatDuration": {
-                    "description": "How long in milliseconds, should the app wait until next execution",
+                    "description": "How long in milliseconds, should the app wait until next execution. This property is ignored in the setup. Defaults to 0. Please set this up as this can overload the computer running the application",
                     "type": "integer"
                 },
                 "config": {
@@ -215,36 +212,40 @@
                             ]
                         }
                     },
-                    "oneOf": [
-                        {
-                            "$ref": "#/$defs/Login"
-                        },
-                        {
-                            "$ref": "#/$defs/Reconnect"
-                        },
-                        {
-                            "$ref": "#/$defs/SendMessage"
-                        },
-                        {
-                            "$ref": "#/$defs/CreateConversation"
-                        },
-                        {
-                            "$ref": "#/$defs/AddUsersToConversation"
-                        },
-                        {
-                            "$ref": "#/$defs/LeaveConversation"
-                        },
-                        {
-                            "$ref": "#/$defs/DestroyConversation"
-                        },
-                        {
-                            "$ref": "#/$defs/SendRequest"
-                        }
-                    ]
+                    "additionalProperties": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/$defs/Login"
+                            },
+                            {
+                                "$ref": "#/$defs/Reconnect"
+                            },
+                            {
+                                "$ref": "#/$defs/SendMessage"
+                            },
+                            {
+                                "$ref": "#/$defs/CreateConversation"
+                            },
+                            {
+                                "$ref": "#/$defs/AddUsersToConversation"
+                            },
+                            {
+                                "$ref": "#/$defs/LeaveConversation"
+                            },
+                            {
+                                "$ref": "#/$defs/DestroyConversation"
+                            },
+                            {
+                                "$ref": "#/$defs/SendRequest"
+                            }
+                        ]
+                    }
                 }
             }
         },
         "Login": {
+            "description": "Log users in and be available to execute actions",
+            "type": "object",
             "properties": {
                 "duration": {
                     "description": "How long in milliseconds should the user be logged in. 0 means until the end",
@@ -253,6 +254,8 @@
             }
         },
         "Reconnect": {
+            "description": "Log users out and in after a configured delay",
+            "type": "object",
             "required": [
                 "durationOffline"
             ],
@@ -264,6 +267,8 @@
             }
         },
         "SendMessage": {
+            "description": "Send random messages to conversations",
+            "type": "object",
             "required": [
                 "count"
             ],
@@ -283,16 +288,15 @@
             }
         },
         "CreateConversation": {
+            "description": "Create a conversation with random users",
+            "type": "object",
             "required": [
                 "userCount"
             ],
             "properties": {
                 "userCount": {
                     "description": "How many users should be added to the group",
-                    "type": "object",
-                    "properties": {
-                        "$ref": "#/$defs/UserCount"
-                    }
+                    "$ref": "#/$defs/UserCount"
                 },
                 "protocol": {
                     "description": "Which protocol should the conversation have",
@@ -308,16 +312,15 @@
             }
         },
         "AddUsersToConversation": {
+            "description": "Add a number of users to a random conversation. Predefined groups won't be targeted by this action",
+            "type": "object",
             "required": [
                 "userCount"
             ],
             "properties": {
                 "userCount": {
                     "description": "How many users should be added to the group",
-                    "type": "object",
-                    "properties": {
-                        "$ref": "#/$defs/UserCount"
-                    }
+                    "$ref": "#/$defs/UserCount"
                 },
                 "domain": {
                     "description": "Which domain should the picked users belong to. For better performance, inform this field",
@@ -326,20 +329,21 @@
             }
         },
         "LeaveConversation": {
+            "description": "A random user will leave the group. The creator of the group will never leave",
+            "type": "object",
             "required": [
                 "userCount"
             ],
             "properties": {
                 "userCount": {
                     "description": "How many users should leave to the group. The creator will never leave the group",
-                    "type": "object",
-                    "properties": {
-                        "$ref": "#/$defs/UserCount"
-                    }
+                    "$ref": "#/$defs/UserCount"
                 }
             }
         },
         "DestroyConversation": {
+            "description": "Destroy a team conversation. If it is not a team conversation, it won't work",
+            "type": "object",
             "required": [
                 "count"
             ],
@@ -351,6 +355,8 @@
             }
         },
         "SendRequest": {
+            "description": "Picks a random user and send a connection request, which will be accepted or rejected after a preconfigured delay",
+            "type": "object",
             "required": [
                 "userCount",
                 "targetDomain"
@@ -358,10 +364,11 @@
             "properties": {
                 "userCount": {
                     "description": "How many users should send requests",
-                    "type": "object",
-                    "properties": {
-                        "$ref": "#/$defs/UserCount"
-                    }
+                    "$ref": "#/$defs/UserCount"
+                },
+                "originDomain": {
+                    "description": "Users from which domain should the requests originate",
+                    "type": "string"
                 },
                 "targetDomain": {
                     "description": "Users from which domain should be targeted",

@@ -58,7 +58,7 @@ data class ActionConfig(
     @SerialName("description") val description: String,
     @SerialName("config") val type: ActionType,
     @SerialName("count") val count: UserCount,
-    @SerialName("repeatDuration") val repeatDuration: ULong
+    @SerialName("repeatDuration") val repeatDuration: ULong = 0u
 )
 
 @Serializable
@@ -106,6 +106,7 @@ sealed class ActionType {
     @SerialName("SEND_REQUEST")
     data class SendRequest(
         @SerialName("userCount") val userCount: UserCount,
+        @SerialName("originDomain") val originDomain: String,
         @SerialName("targetDomain") val targetDomain: String,
         @SerialName("delayResponse") val delayResponse: ULong = 0u,
         @SerialName("shouldAccept") val shouldAccept: Boolean = true

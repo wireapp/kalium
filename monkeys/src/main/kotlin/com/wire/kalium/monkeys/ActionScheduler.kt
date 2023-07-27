@@ -20,7 +20,6 @@ package com.wire.kalium.monkeys
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.importer.ActionConfig
-import com.wire.kalium.monkeys.importer.ActionType
 import com.wire.kalium.monkeys.importer.TestCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,21 +32,21 @@ object ActionScheduler {
         testCases.flatMap { it.actions }.forEach {
             CoroutineScope(Dispatchers.Default).launch {
                 while (this.isActive) {
-                    Action.fromConfig(it.type).execute(coreLogic)
+                    Action.fromConfig(it).execute(coreLogic)
                     delay(it.repeatDuration.toLong())
                 }
             }
         }
     }
 
-    suspend fun schedule(config: ActionType, waitTime: ULong, coreLogic: CoreLogic) {
+    suspend fun schedule(config: ActionConfig, waitTime: ULong, coreLogic: CoreLogic) {
         delay(waitTime.toLong())
         Action.fromConfig(config).execute(coreLogic)
     }
 
     suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic) {
         actions.forEach {
-            Action.fromConfig(it.type).execute(coreLogic)
+            Action.fromConfig(it).execute(coreLogic)
         }
     }
 }

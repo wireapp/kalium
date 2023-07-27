@@ -12,7 +12,36 @@
                     "groupCount": 1
                 }
             },
-            "setup": [],
+            "setup": [
+                {
+                    "description": "Log everyone in",
+                    "count": {
+                        "type": "PERCENTAGE",
+                        "value": 100
+                    },
+                    "config": {
+                        "type": "LOGIN"
+                    }
+                },
+                {
+                    "description": "Connect teams",
+                    "count": {
+                        "type": "PERCENTAGE",
+                        "value": 100
+                    },
+                    "config": {
+                        "type": "SEND_REQUEST",
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
+                        "originDomain": "anta.wire.link",
+                        "targetDomain": "bella.wire.link",
+                        "delayResponse": 1000,
+                        "shouldAccept": true
+                    }
+                }
+            ],
             "actions": [
                 {
                     "description": "Send messages",
@@ -27,6 +56,40 @@
                         "targets": [
                             "group1"
                         ]
+                    }
+                },
+                {
+                    "description": "Create groups",
+                    "count": {
+                        "type": "FIXED_COUNT",
+                        "value": 3
+                    },
+                    "repeatDuration": 10000,
+                    "config": {
+                        "type": "CREATE_CONVERSATION",
+                        "userCount": {
+                            "type": "FIXED_COUNT",
+                            "value": 10
+                        },
+                        "protocol": "PROTEUS",
+                        "domainOwner": "anta.wire.link"
+                    }
+                },
+                {
+                    "description": "Create groups",
+                    "count": {
+                        "type": "FIXED_COUNT",
+                        "value": 3
+                    },
+                    "repeatDuration": 10000,
+                    "config": {
+                        "type": "CREATE_CONVERSATION",
+                        "userCount": {
+                            "type": "FIXED_COUNT",
+                            "value": 10
+                        },
+                        "protocol": "MLS",
+                        "domainOwner": "anta.wire.link"
                     }
                 }
             ]

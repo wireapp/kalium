@@ -19,8 +19,9 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.importer.UserCount
 
-class SendMessageAction(val config: ActionType.SendMessage) : Action() {
+class SendMessageAction(val userCount: UserCount, val config: ActionType.SendMessage) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
         TODO("Not yet implemented")
     }

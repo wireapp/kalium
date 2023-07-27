@@ -18,20 +18,21 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.monkeys.importer.ActionConfig
 import com.wire.kalium.monkeys.importer.ActionType
 
 abstract class Action {
     companion object {
-        fun fromConfig(config: ActionType): Action {
-            return when (config) {
-                is ActionType.Login -> LoginAction(config)
-                is ActionType.CreateConversation -> CreateConversationAction(config)
-                is ActionType.AddUsersToConversation -> AddUserToConversationAction(config)
-                is ActionType.DestroyConversation -> DestroyConversationAction(config)
-                is ActionType.LeaveConversation -> LeaveConversationAction(config)
-                is ActionType.Reconnect -> ReconnectAction(config)
-                is ActionType.SendMessage -> SendMessageAction(config)
-                is ActionType.SendRequest -> SendRequestAction(config)
+        fun fromConfig(config: ActionConfig): Action {
+            return when (config.type) {
+                is ActionType.Login -> LoginAction(config.count, config.type)
+                is ActionType.CreateConversation -> CreateConversationAction(config.count, config.type)
+                is ActionType.AddUsersToConversation -> AddUserToConversationAction(config.count, config.type)
+                is ActionType.DestroyConversation -> DestroyConversationAction(config.count, config.type)
+                is ActionType.LeaveConversation -> LeaveConversationAction(config.count, config.type)
+                is ActionType.Reconnect -> ReconnectAction(config.count, config.type)
+                is ActionType.SendMessage -> SendMessageAction(config.count, config.type)
+                is ActionType.SendRequest -> SendRequestAction(config.count, config.type)
             }
         }
     }
