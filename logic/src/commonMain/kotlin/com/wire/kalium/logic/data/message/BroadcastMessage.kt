@@ -65,17 +65,14 @@ data class BroadcastMessage(
 
             is MessageContent.Availability -> mutableMapOf(
                 typeKey to "availability",
-                "content" to "$content",
             )
 
             is MessageContent.Cleared -> mutableMapOf(
                 typeKey to "cleared",
-                "content" to "$content",
             )
 
             is MessageContent.Reaction -> mutableMapOf(
                 typeKey to "reaction",
-                "content" to "$content",
             )
 
             is MessageContent.Receipt -> mutableMapOf(
@@ -84,8 +81,14 @@ data class BroadcastMessage(
             )
 
             MessageContent.Ignored -> mutableMapOf(
-                typeKey to "ignored",
-                "content" to "$content",
+                typeKey to "ignored"
+            )
+
+            is MessageContent.ButtonAction -> mutableMapOf(
+                typeKey to "buttonAction",
+            )
+            is MessageContent.ButtonActionConfirmation -> mutableMapOf(
+                typeKey to "buttonActionConfirmation",
             )
         }
 

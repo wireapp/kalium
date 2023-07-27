@@ -98,3 +98,6 @@ INSERT OR IGNORE INTO Reaction SELECT * FROM backup_db.Reaction;
 
 importReceiptTable:
 INSERT OR IGNORE INTO Receipt SELECT * FROM backup_db.Receipt;
+
+importCompositeButtons:
+INSERT OR IGNORE INTO ButtonContent SELECT * FROM backup_db.ButtonContent;

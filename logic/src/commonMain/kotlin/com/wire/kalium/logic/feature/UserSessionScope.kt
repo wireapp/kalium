@@ -80,9 +80,13 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.message.CompositeMessageDataSource
+import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
+import com.wire.kalium.logic.data.message.MessageMetadataSource
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -306,6 +310,8 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHan
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
@@ -558,6 +564,12 @@ class UserSessionScope internal constructor(
             messageDAO = userStorage.database.messageDAO,
             selfUserId = userId
         )
+
+    private val messageMetadataRepository: MessageMetadataRepository
+        get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
+
+    private val compositeMessageRepository: CompositeMessageRepository
+        get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
 
     private val userRepository: UserRepository = UserDataSource(
         userStorage.database.userDAO,
@@ -996,6 +1008,9 @@ class UserSessionScope internal constructor(
             validateAssetMimeType
         )
 
+    private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler
+        get() = ButtonActionConfirmationHandlerImpl(compositeMessageRepository, messageMetadataRepository)
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -1015,6 +1030,7 @@ class UserSessionScope internal constructor(
             DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
             messageEncoder,
             receiptMessageHandler,
+            buttonActionConfirmationHandler,
             userId
         )
 
@@ -1230,6 +1246,7 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             protoContentMapper,
             observeSelfDeletingMessages,
+            messageMetadataRepository,
             this
         )
     val users: UserScope
