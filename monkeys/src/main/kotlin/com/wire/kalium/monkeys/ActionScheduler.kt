@@ -32,7 +32,11 @@ object ActionScheduler {
         testCases.flatMap { it.actions }.forEach {
             CoroutineScope(Dispatchers.Default).launch {
                 while (this.isActive) {
-                    Action.fromConfig(it).execute(coreLogic)
+                    try {
+                        Action.fromConfig(it).execute(coreLogic)
+                    } catch (e: Exception) {
+                        logger.e("Error in action ${it.description}", e)
+                    }
                     delay(it.repeatDuration.toLong())
                 }
             }
