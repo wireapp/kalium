@@ -63,7 +63,7 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
 
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
-        cc.mlsInit(MLSClientImpl.toUByteList(clientId.value), listOf(defaultCiphersuite))
+        cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()), listOf(defaultCiphersuite))
         return MLSClientImpl(cc)
     }
 

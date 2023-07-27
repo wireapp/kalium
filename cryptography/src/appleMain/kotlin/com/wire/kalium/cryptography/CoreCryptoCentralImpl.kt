@@ -56,16 +56,11 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
 
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
-//         val coreCrypto = CoreCrypto(rootDir, "databaseKey", MLSClientImpl.toUByteList(clientId.value),  null)
-//         coreCrypto.setCallbacks(Callbacks())
-        cc.mlsInit(MLSClientImpl.toUByteList(clientId.value))
+        cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
         return MLSClientImpl(cc)
     }
 
     override suspend fun proteusClient(): ProteusClient {
-//         NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
-//         val coreCrypto = CoreCrypto(rootDir, "databaseKey", MLSClientImpl.toUByteList("clientId.value"),  null)
-//         coreCrypto.setCallbacks(Callbacks())
         return ProteusClientCoreCryptoImpl(cc, rootDir)
     }
 
