@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.util
 
+import com.wire.kalium.util.string.IgnoreJS
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -27,6 +28,7 @@ expect object FileTestHelper {
     fun directoryExists(path: String): Boolean
 }
 
+@IgnoreJS
 class FileUtilTest {
 
     @Test
