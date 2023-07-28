@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
@@ -83,12 +84,13 @@ internal class ApplicationMessageHandlerImpl(
     private val deleteMessageHandler: DeleteMessageHandler,
     private val messageEncoder: MessageContentEncoder,
     private val receiptMessageHandler: ReceiptMessageHandler,
+    private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val selfUserId: UserId
 ) : ApplicationMessageHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     override suspend fun handleContent(
         conversationId: ConversationId,
         timestampIso: String,
@@ -111,6 +113,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                     is MessageContent.LastRead -> Message.Visibility.HIDDEN
                     is MessageContent.Cleared -> Message.Visibility.HIDDEN
+                    is MessageContent.Composite -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -200,6 +203,16 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
+            is MessageContent.ButtonAction -> {
+                /* no-op */
+                // TODO(services): we need handle this event if kalium need to support services
+            }
+
+            is MessageContent.ButtonActionConfirmation -> buttonActionConfirmationHandler.handle(
+                signaling.conversationId,
+                signaling.senderUserId,
+                content
+            )
         }
     }
 
@@ -213,10 +226,13 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.RestrictedAsset -> {
                 /* no-op */
             }
+
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
+
+            is MessageContent.Composite -> persistMessage(message)
         }
     }
 

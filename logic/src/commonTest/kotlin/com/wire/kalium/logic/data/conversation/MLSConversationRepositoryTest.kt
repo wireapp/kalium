@@ -957,8 +957,7 @@ class MLSConversationRepositoryTest {
             .wasNotInvoked()
     }
 
-    class Arrangement {
-        val idMapper: IdMapper = IdMapperImpl()
+    private class Arrangement {
 
         @Mock
         val commitBundleEventReceiver = mock(classOf<CommitBundleEventReceiver>())
@@ -980,9 +979,6 @@ class MLSConversationRepositoryTest {
 
         @Mock
         val mlsMessageApi = mock(classOf<MLSMessageApi>())
-
-        @Mock
-        val conversationApi = mock(classOf<ConversationApi>())
 
         @Mock
         val mlsClient = mock(classOf<MLSClient>())

@@ -32,7 +32,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHa
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 
-interface ConversationEventReceiver : EventReceiver<Event.Conversation>
+internal interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
 // Suppressed as it's an old issue
 // TODO(refactor): Create a `MessageEventReceiver` to offload some logic from here

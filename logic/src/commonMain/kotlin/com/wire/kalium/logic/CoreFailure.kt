@@ -68,6 +68,12 @@ sealed interface CoreFailure {
     object OnlySystemMessageAllowed : FeatureFailure()
 
     /**
+     * The sender ID of the event is invalid.
+     * usually happens with events that alter a message state [ButtonActionConfirmation]
+     * when the sender ID is not the same are the original message sender id
+     */
+    object InvalidEventSenderID : FeatureFailure()
+    /**
      * This operation is not supported by proteus conversations
      */
     object NotSupportedByProteus : FeatureFailure()
