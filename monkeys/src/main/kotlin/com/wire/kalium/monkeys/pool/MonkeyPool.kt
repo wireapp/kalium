@@ -29,7 +29,7 @@ object MonkeyPool {
     // a map of logged in monkeys per domain
     private val poolLoggedIn: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
-    // a map of logged in monkeys per domain
+    // a map of logged out monkeys per domain
     private val poolLoggedOut: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
     fun init(users: List<UserData>) {
