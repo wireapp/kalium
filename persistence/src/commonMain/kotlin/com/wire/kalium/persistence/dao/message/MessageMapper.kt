@@ -367,12 +367,9 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-<<<<<<< HEAD
         selfDeletionDate: Instant?,
         readCount: Long,
-=======
         selfDeletionStartDate: Instant?,
->>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
