@@ -90,7 +90,7 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateMessageStatus(
+    suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
         messageUuids: List<String>
@@ -325,15 +325,15 @@ class MessageDataSource(
             )
         }
 
-    override suspend fun updateMessageStatus(
+    override suspend fun updateMessagesStatus(
         messageStatus: MessageEntity.Status,
         conversationId: ConversationId,
-        messageUuid: List<String>
+        messageUuids: List<String>
     ) =
         wrapStorageRequest {
-            messageDAO.updateMessageStatus(
+            messageDAO.updateMessagesStatus(
                 status = messageStatus,
-                id = messageUuid,
+                id = messageUuids,
                 conversationId = conversationId.toDao()
             )
         }

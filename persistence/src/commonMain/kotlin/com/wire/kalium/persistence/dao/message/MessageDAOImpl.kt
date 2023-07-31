@@ -206,7 +206,7 @@ internal class MessageDAOImpl internal constructor(
             queries.updateMessageStatus(status, id, conversationId)
         }
 
-    override suspend fun updateMessageStatus(
+    override suspend fun updateMessagesStatus(
         status: MessageEntity.Status,
         id: List<String>,
         conversationId: QualifiedIDEntity
