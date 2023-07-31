@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
@@ -129,6 +130,7 @@ internal class UserMapperImpl(
     }
 
     override fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity = with(userDTO) {
+        kaliumLogger.d("fromSelfUserDtoToUserEntity: $userDTO")
         return UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,

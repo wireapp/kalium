@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
@@ -128,22 +129,25 @@ class UserDAOImpl internal constructor(
     val mapper = UserMapper()
 
     override suspend fun insertUser(user: UserEntity) = withContext(queriesContext) {
+        if (user.id == UserIDEntity("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com")) {
+            kaliumLogger.d("Inserting self user from insertUser $user")
+        }
         userQueries.insertUser(
-            user.id,
-            user.name,
-            user.handle,
-            user.email,
-            user.phone,
-            user.accentId,
-            user.team,
-            user.connectionStatus,
-            user.previewAssetId,
-            user.completeAssetId,
-            user.userType,
-            user.botService,
-            user.deleted,
-            user.hasIncompleteMetadata,
-            user.expiresAt
+            qualified_id = user.id,
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = user.phone,
+            accent_id = user.accentId,
+            team = user.team,
+            connection_status = user.connectionStatus,
+            preview_asset_id = user.previewAssetId,
+            complete_asset_id = user.completeAssetId,
+            user_type = user.userType,
+            bot_service = user.botService,
+            deleted = user.deleted,
+            incomplete_metadata = user.hasIncompleteMetadata,
+            expires_at = user.expiresAt
         )
     }
 
@@ -174,36 +178,39 @@ class UserDAOImpl internal constructor(
     override suspend fun upsertTeamMembers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             for (user: UserEntity in users) {
+                if (user.id == UserIDEntity("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com")) {
+                    kaliumLogger.d("Inserting self user from upsertTeamMembers $user")
+                }
                 userQueries.updateTeamMemberUser(
-                    user.name,
-                    user.handle,
-                    user.email,
-                    user.phone,
-                    user.accentId,
-                    user.team,
-                    user.previewAssetId,
-                    user.completeAssetId,
-                    user.botService,
-                    user.id,
+                    qualified_id = user.id,
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    phone = user.phone,
+                    accent_id = user.accentId,
+                    team = user.team,
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    bot_service = user.botService,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     userQueries.insertUser(
-                        user.id,
-                        user.name,
-                        user.handle,
-                        user.email,
-                        user.phone,
-                        user.accentId,
-                        user.team,
-                        user.connectionStatus,
-                        user.previewAssetId,
-                        user.completeAssetId,
-                        user.userType,
-                        user.botService,
-                        user.deleted,
-                        user.hasIncompleteMetadata,
-                        user.expiresAt
+                        qualified_id = user.id,
+                        name = user.name,
+                        handle = user.handle,
+                        email = user.email,
+                        phone = user.phone,
+                        accent_id = user.accentId,
+                        team = user.team,
+                        connection_status = user.connectionStatus,
+                        preview_asset_id = user.previewAssetId,
+                        complete_asset_id = user.completeAssetId,
+                        user_type = user.userType,
+                        bot_service = user.botService,
+                        deleted = user.deleted,
+                        incomplete_metadata = user.hasIncompleteMetadata,
+                        expires_at = user.expiresAt
                     )
                 }
             }
@@ -211,42 +218,47 @@ class UserDAOImpl internal constructor(
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
-        userQueries.transaction {
-            for (user: UserEntity in users) {
-                userQueries.updateUser(
-                    user.name,
-                    user.handle,
-                    user.email,
-                    user.phone,
-                    user.accentId,
-                    user.team,
-                    user.previewAssetId,
-                    user.completeAssetId,
-                    user.userType,
-                    user.botService,
-                    false,
-                    user.expiresAt,
-                    user.id,
-                )
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        user.id,
-                        user.name,
-                        user.handle,
-                        user.email,
-                        user.phone,
-                        user.accentId,
-                        user.team,
-                        user.connectionStatus,
-                        user.previewAssetId,
-                        user.completeAssetId,
-                        user.userType,
-                        user.botService,
-                        user.deleted,
-                        user.hasIncompleteMetadata,
-                        user.expiresAt
+        for (user: UserEntity in users) {
+            if (user.id == UserIDEntity("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com")) {
+                kaliumLogger.d("Inserting self user from upsertUsers $user")
+            }
+            userQueries.transaction {
+                for (user: UserEntity in users) {
+                    userQueries.updateUser(
+                        qualified_id = user.id,
+                        name = user.name,
+                        handle = user.handle,
+                        email = user.email,
+                        phone = user.phone,
+                        accent_id = user.accentId,
+                        team = user.team,
+                        preview_asset_id = user.previewAssetId,
+                        complete_asset_id = user.completeAssetId,
+                        user_type = user.userType,
+                        bot_service = user.botService,
+                        incomplete_metadata = false,
+                        expires_at = user.expiresAt
                     )
+                    val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+                    if (recordDidNotExist) {
+                        userQueries.insertUser(
+                            qualified_id = user.id,
+                            name = user.name,
+                            handle = user.handle,
+                            email = user.email,
+                            phone = user.phone,
+                            accent_id = user.accentId,
+                            team = user.team,
+                            connection_status = user.connectionStatus,
+                            preview_asset_id = user.previewAssetId,
+                            complete_asset_id = user.completeAssetId,
+                            user_type = user.userType,
+                            bot_service = user.botService,
+                            deleted = user.deleted,
+                            incomplete_metadata = user.hasIncompleteMetadata,
+                            expires_at = user.expiresAt
+                        )
+                    }
                 }
             }
         }
@@ -311,11 +323,12 @@ class UserDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrNull()
 
-    override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? = withContext(queriesContext) {
-        userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
-            mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
-        }.executeAsOneOrNull()
-    }
+    override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
+        withContext(queriesContext) {
+            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            }.executeAsOneOrNull()
+        }
 
     override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> =
         withContext(queriesContext) {

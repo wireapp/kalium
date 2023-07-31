@@ -573,6 +573,7 @@ class UserSessionScope internal constructor(
 
     private val userRepository: UserRepository = UserDataSource(
         userStorage.database.userDAO,
+        userStorage.database.syncDAO,
         userStorage.database.metadataDAO,
         userStorage.database.clientDAO,
         authenticatedNetworkContainer.selfApi,

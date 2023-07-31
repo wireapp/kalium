@@ -15,28 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.dao
 
-package com.wire.kalium.logic.feature.user
+import app.cash.sqldelight.ExecutableQuery
+import com.wire.kalium.persistence.SyncQueries
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.CoroutineContext
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.Either
+interface SyncDAO {
 
-/**
- * Syncs the current user's contacts.
- */
-internal interface SyncContactsUseCase {
     /**
-     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     * @return [List] of [UserIDEntity] of all other users.
+     * the list does not contain self user ID
      */
-    suspend operator fun invoke(): Either<CoreFailure, Unit>
+    suspend fun allOtherUsersId(): List<UserIDEntity>
 }
 
-class SyncContactsUseCaseImpl internal constructor(
-    private val userDataSource: UserRepository
-) : SyncContactsUseCase {
-
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return userDataSource.syncAllOtherUsers()
+internal class SyncDAOImpl internal constructor(
+    private val syncQueries: SyncQueries,
+    private val coroutineContext: CoroutineContext
+) : SyncDAO {
+    override suspend fun allOtherUsersId(): List<UserIDEntity> = withContext(coroutineContext) {
+        syncQueries.userIdsWithOutSelf().executeAsList()
     }
 }

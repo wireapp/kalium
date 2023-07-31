@@ -34,6 +34,8 @@ import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
+import com.wire.kalium.logic.util.arrangement.dao.SyncDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.SyncDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
@@ -45,6 +47,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SyncDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -236,21 +239,22 @@ class UserRepositoryTest {
     fun whenFetchingKnownUsers_thenShouldFetchFromDatabaseAndApiAndSucceed() = runTest {
         // Given
         val knownUserEntities = listOf(
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
+            UserIDEntity(value = "id1", domain = "domain1"),
+            UserIDEntity(value = "id2", domain = "domain2")
         )
-        val knownUserIds = knownUserEntities.map { UserId(it.id.value, it.id.domain) }.toSet()
+        val knownUserIds = knownUserEntities.map { UserId(it.value, it.domain) }.toSet()
         val (arrangement, userRepository) = Arrangement()
-            .withSuccessfulGetAllUsers(knownUserEntities)
             .withSuccessfulGetMultipleUsers()
-            .arrange()
+            .arrange{
+                withAllOtherUsersIdSuccess(knownUserEntities)
+            }
 
         // When
-        userRepository.fetchKnownUsers().shouldSucceed()
+        userRepository.syncAllOtherUsers().shouldSucceed()
 
         // Then
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getAllUsers)
+        verify(arrangement.syncDAO)
+            .suspendFunction(arrangement.syncDAO::allOtherUsersId)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userDetailsApi)
@@ -494,7 +498,7 @@ class UserRepositoryTest {
             .wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement: SyncDAOArrangement by SyncDAOArrangementImpl() {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
 
@@ -524,6 +528,7 @@ class UserRepositoryTest {
         val userRepository: UserRepository by lazy {
             UserDataSource(
                 userDAO,
+                syncDAO,
                 metadataDAO,
                 clientDAO,
                 selfApi,
@@ -664,7 +669,10 @@ class UserRepositoryTest {
                 .then { NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) }
         }
 
-        fun arrange() = this to userRepository
+        fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
+            apply(block)
+            return this to userRepository
+        }
     }
 
     private companion object {

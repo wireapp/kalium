@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.onSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -42,7 +43,16 @@ internal open class UserDetailsApiV0 internal constructor(
             httpClient.post(PATH_LIST_USERS) {
                 setBody(users)
             }
-        }.mapSuccess {
+        }.onSuccess {
+            it.value.find { it.id == UserId("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com") }.also {
+                println("Found private user user: $it")
+            }
+
+            it.value.find { it.id == UserId("aa5b6728-64e0-44b7-ad74-ebcef04ab32e", "wire.com") }.also {
+                println("Found team user user: $it")
+            }
+        }
+            .mapSuccess {
             ListUsersDTO(usersFailed = emptyList(), usersFound = it)
         }
     }

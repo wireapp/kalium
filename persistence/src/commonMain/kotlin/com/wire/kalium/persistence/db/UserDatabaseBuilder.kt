@@ -36,6 +36,8 @@ import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.PrekeyDAOImpl
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.ServiceDAOImpl
+import com.wire.kalium.persistence.dao.SyncDAO
+import com.wire.kalium.persistence.dao.SyncDAOImpl
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
@@ -192,6 +194,8 @@ class UserDatabaseBuilder internal constructor(
     val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(database.metadataQueries, metadataCache, databaseScope, queriesContext)
 
+    val syncDAO: SyncDAO
+        get() = SyncDAOImpl(database.syncQueries, queriesContext)
     val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
 
