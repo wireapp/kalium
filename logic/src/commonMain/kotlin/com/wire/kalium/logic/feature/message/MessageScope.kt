@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -47,6 +48,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
@@ -86,6 +88,7 @@ class MessageScope internal constructor(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val protoContentMapper: ProtoContentMapper,
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
+    private val messageMetadataRepository: MessageMetadataRepository,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -151,14 +154,15 @@ class MessageScope internal constructor(
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
-            persistMessage,
-            selfUserId,
-            currentClientIdProvider,
-            slowSyncRepository,
-            messageSender,
-            messageSendFailureHandler,
-            userPropertyRepository,
-            observeSelfDeletingMessages
+            persistMessage = persistMessage,
+            selfUserId = selfUserId,
+            provideClientId = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            userPropertyRepository = userPropertyRepository,
+            selfDeleteTimer = observeSelfDeletingMessages,
+            scope = scope
         )
 
     val sendEditTextMessage: SendEditTextMessageUseCase
@@ -298,6 +302,14 @@ class MessageScope internal constructor(
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
 
+    val sendButtonActionMessage: SendButtonActionMessageUseCase
+        get() = SendButtonActionMessageUseCase(
+            syncManager = syncManager,
+            messageSender = messageSender,
+            selfUserId = selfUserId,
+            currentClientIdProvider = currentClientIdProvider,
+            messageMetadataRepository = messageMetadataRepository
+        )
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
         get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             messageRepository = messageRepository,

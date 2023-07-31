@@ -24,8 +24,15 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Serializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Suppress("LongParameterList")
 sealed interface MessageEntity {
@@ -183,7 +190,8 @@ sealed interface MessageEntity {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
-        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS, CONVERSATION_DEGRADED_PREOTEUS
+        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS, CONVERSATION_DEGRADED_PREOTEUS,
+        COMPOSITE
     }
 
     enum class MemberChangeType {
@@ -300,6 +308,11 @@ sealed class MessageEntityContent {
         val assetName: String,
     ) : Regular()
 
+    data class Composite(
+        val text: Text?,
+        val buttonList: List<ButtonEntity>
+    ) : Regular()
+
     object MissedCall : System()
     object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
@@ -349,6 +362,8 @@ data class NotificationMessageEntity(
 sealed class MessagePreviewEntityContent {
 
     data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
+
+    data class Composite(val senderName: String?, val messageBody: String?) : MessagePreviewEntityContent()
 
     data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
 
@@ -430,4 +445,23 @@ sealed class DeliveryStatusEntity {
     ) : DeliveryStatusEntity()
 
     object CompleteDelivery : DeliveryStatusEntity()
+}
+
+@Serializable
+class ButtonEntity(
+    @SerialName("text") val text: String,
+    @SerialName("id") val id: String,
+    @Serializable(with = BooleanIntSerializer::class)
+    @SerialName("is_selected") val isSelected: Boolean
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@Serializer(Boolean::class)
+class BooleanIntSerializer : KSerializer<Boolean> {
+    override val descriptor = PrimitiveSerialDescriptor("common_api_version", PrimitiveKind.INT)
+    override fun serialize(encoder: Encoder, value: Boolean) {
+        encoder.encodeInt(if (value) 1 else 0)
+    }
+
+    override fun deserialize(decoder: Decoder): Boolean = decoder.decodeInt() == 1
 }

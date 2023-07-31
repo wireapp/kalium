@@ -1,6 +1,35 @@
+<<<<<<< HEAD
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
+=======
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntityContent;
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
+import kotlin.Int;
+import kotlin.Boolean;
+import kotlin.collections.List;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE ButtonContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      id TEXT NOT NULL,
+      text TEXT NOT NULL,
+      is_selected INTEGER AS Boolean NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (conversation_id, message_id) REFERENCES Message(conversation_id, id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id, id)
+);
+
+DROP VIEW IF EXISTS MessageDetailsView;
+
+CREATE VIEW MessageDetailsView
+>>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
 AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
@@ -14,7 +43,10 @@ Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 Message.expire_after_millis AS expireAfterMillis,
 Message.self_deletion_start_date AS selfDeletionStartDate,
+<<<<<<< HEAD
 IFNULL ((SELECT COUNT (*) FROM Receipt WHERE message_id = Message.id), 0) AS readCount,
+=======
+>>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -100,11 +132,33 @@ QuotedMessage.content_type AS quotedMessageContentType,
 QuotedTextContent.text_body AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
+<<<<<<< HEAD
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
 ConversationTimerChangedContent.message_timer AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
 FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList
+=======
+
+NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
+
+ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
+ConversationTimerChangedContent.message_timer AS messageTimerChanged,
+FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
+FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
+
+IFNULL(
+    (SELECT '[' ||
+            GROUP_CONCAT('{"text":"' || text || '", "id":"' || id || '""is_selected":' || is_selected || '}')
+        || ']'
+    FROM ButtonContent
+    WHERE ButtonContent.message_id = Message.id
+        AND ButtonContent.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS buttonsJson
+
+>>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -128,3 +182,7 @@ LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
 LEFT JOIN SelfUser;
+<<<<<<< HEAD
+=======
+-- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+>>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e

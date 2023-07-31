@@ -29,7 +29,7 @@ internal interface AddingMembersFailureMapper {
      */
     fun mapToUsersRequestState(
         initialUsersIds: List<UserId>,
-        federatedBackendFailure: NetworkFailure.FederatedBackendFailure,
+        federatedBackendFailure: NetworkFailure.FederatedBackendFailure.FailedDomains,
         previousUserIdsExcluded: Set<UserId> = emptySet(),
     ): AddingMembersRequestState
 }
@@ -37,7 +37,7 @@ internal interface AddingMembersFailureMapper {
 internal class AddingMembersFailureMapperImpl : AddingMembersFailureMapper {
     override fun mapToUsersRequestState(
         initialUsersIds: List<UserId>,
-        federatedBackendFailure: NetworkFailure.FederatedBackendFailure,
+        federatedBackendFailure: NetworkFailure.FederatedBackendFailure.FailedDomains,
         previousUserIdsExcluded: Set<UserId>
     ): AddingMembersRequestState {
         val domainsToExclude = federatedBackendFailure.domains

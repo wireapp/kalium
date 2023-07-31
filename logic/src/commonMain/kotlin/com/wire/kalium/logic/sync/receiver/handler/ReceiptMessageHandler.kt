@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.datetime.Instant
 
-interface ReceiptMessageHandler {
+internal interface ReceiptMessageHandler {
     suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.Receipt

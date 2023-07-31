@@ -1112,7 +1112,7 @@ class MessageSenderTest {
                     )
                 )
             )
-            val FEDERATION_MESSAGE_FAILURE = NetworkFailure.FederatedBackendFailure("error")
+            val FEDERATION_MESSAGE_FAILURE = NetworkFailure.FederatedBackendFailure.General("error")
             val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
             val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
             val TEST_CONTACT_CLIENT_3 = ClientId("clientId3")

@@ -88,6 +88,11 @@ object MessageMapper {
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
         return when (contentType) {
+            MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Composite(
+                senderName = senderName,
+                messageBody = text
+            )
+
             MessageEntity.ContentType.TEXT -> when {
                 isSelfMessage -> MessagePreviewEntityContent.Text(
                     senderName = senderName,
@@ -96,6 +101,7 @@ object MessageMapper {
 
                 (isQuotingSelfUser ?: false) -> MessagePreviewEntityContent.QuotedSelf(
                     senderName = senderName,
+                    // requireField here is safe since if a message have a quote, it must have a text
                     messageBody = text.requireField("text")
                 )
 
@@ -176,10 +182,8 @@ object MessageMapper {
                 adminName = senderName
             )
 
-            MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
-            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
+
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
@@ -188,6 +192,9 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
         }
     }
 
@@ -360,8 +367,12 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
+<<<<<<< HEAD
         selfDeletionDate: Instant?,
         readCount: Long,
+=======
+        selfDeletionStartDate: Instant?,
+>>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -420,9 +431,10 @@ object MessageMapper {
         quotedAssetName: String?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
-        conversationMessageTimerChanged: Long?,
+        messageTimerChanged: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
-        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        buttonsJson: String,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -493,6 +505,37 @@ object MessageMapper {
                 restrictedAssetName.requireField("assetName")
             )
 
+            MessageEntity.ContentType.COMPOSITE -> {
+                // if the text body is null then the composite message had no text body
+                val compositeText: MessageEntityContent.Text? = text?.let {
+                    MessageEntityContent.Text(
+                        messageBody = text,
+                        mentions = messageMentionsFromJsonString(mentions),
+                        quotedMessageId = quotedMessageId,
+                        quotedMessage = quotedMessageContentType?.let {
+                            MessageEntityContent.Text.QuotedMessage(
+                                id = quotedMessageId.requireField("quotedMessageId"),
+                                senderId = quotedSenderId.requireField("quotedSenderId"),
+                                isQuotingSelfUser = isQuotingSelfUser.requireField("isQuotingSelfUser"),
+                                isVerified = isQuoteVerified ?: false,
+                                senderName = quotedSenderName,
+                                dateTime = quotedMessageDateTime.requireField("quotedMessageDateTime").toIsoDateTimeString(),
+                                editTimestamp = quotedMessageEditTimestamp?.toIsoDateTimeString(),
+                                visibility = quotedMessageVisibility.requireField("quotedMessageVisibility"),
+                                contentType = quotedMessageContentType.requireField("quotedMessageContentType"),
+                                textBody = quotedTextBody,
+                                assetMimeType = quotedAssetMimeType,
+                                assetName = quotedAssetName,
+                            )
+                        },
+                    )
+                }
+                MessageEntityContent.Composite(
+                    compositeText,
+                    JsonSerializer().decodeFromString(buttonsJson)
+                )
+            }
+
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessageEntityContent.CryptoSessionReset
@@ -506,13 +549,14 @@ object MessageMapper {
 
             MessageEntity.ContentType.HISTORY_LOST -> MessageEntityContent.HistoryLost
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessageEntityContent.ConversationMessageTimerChanged(
-                messageTimer = conversationMessageTimerChanged
+                messageTimer = messageTimerChanged
             )
 
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessageEntityContent.ConversationCreated
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessageEntityContent.ConversationDegradedMLS
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessageEntityContent.ConversationDegradedProteus
+
         }
 
         return createMessageEntity(
@@ -531,8 +575,12 @@ object MessageMapper {
             isSelfMessage,
             expectsReadConfirmation,
             expireAfterMillis,
+<<<<<<< HEAD
             selfDeletionDate,
             readCount,
+=======
+            selfDeletionStartDate,
+>>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList
         )

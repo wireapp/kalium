@@ -194,5 +194,8 @@ internal class PersistMigratedMessagesUseCaseImpl(
         MessageContent.Ignored -> MessageEntity.Visibility.HIDDEN
         is MessageContent.Reaction -> MessageEntity.Visibility.HIDDEN
         is MessageContent.Receipt -> MessageEntity.Visibility.HIDDEN
+        is MessageContent.Composite -> MessageEntity.Visibility.VISIBLE
+        is MessageContent.ButtonAction -> MessageEntity.Visibility.HIDDEN
+        is MessageContent.ButtonActionConfirmation -> MessageEntity.Visibility.HIDDEN
     }
 }

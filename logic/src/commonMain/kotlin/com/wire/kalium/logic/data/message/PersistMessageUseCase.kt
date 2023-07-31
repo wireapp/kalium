@@ -99,5 +99,8 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MLSWrongEpochWarning -> false
             MessageContent.ConversationDegradedMLS -> false
             MessageContent.ConversationDegradedProteus -> false
+            is MessageContent.Composite -> true
+            is MessageContent.ButtonAction -> false
+            is MessageContent.ButtonActionConfirmation -> false
         }
 }
