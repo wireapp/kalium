@@ -127,7 +127,7 @@ private fun CoreFailure.getStrategy(retryOnClientMismatch: Boolean = true): Comm
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
-class MLSConversationDataSource(
+internal class MLSConversationDataSource(
     private val keyPackageRepository: KeyPackageRepository,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsMessageApi: MLSMessageApi,

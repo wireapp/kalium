@@ -413,22 +413,6 @@ SELECT (
     ELSE (SELECT isSelfMessage == 0 FROM targetMessage) END)
      AS needsToBeNotified FROM targetMessage;
 
-getLastMessages:
-SELECT * FROM MessagePreview AS message
-WHERE id IN (
-	SELECT id FROM Message
-	WHERE
-		Message.visibility = 'VISIBLE' AND
-		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE')
-	GROUP BY Message.conversation_id
-	HAVING Message.creation_date = MAX(Message.creation_date)
-);
-
-getUnreadMessages:
-SELECT * FROM MessagePreview AS message
-WHERE isUnread AND isSelfMessage = 0
-AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
-
 getUnreadMessagesCount:
 SELECT
     conversation_id,

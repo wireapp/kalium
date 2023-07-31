@@ -21,8 +21,8 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO

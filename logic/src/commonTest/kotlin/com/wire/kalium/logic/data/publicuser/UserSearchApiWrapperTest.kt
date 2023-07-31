@@ -25,8 +25,8 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangment.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi

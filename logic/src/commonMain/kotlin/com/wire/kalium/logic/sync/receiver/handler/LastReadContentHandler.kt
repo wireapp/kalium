@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 
-interface LastReadContentHandler {
+internal interface LastReadContentHandler {
     suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.LastRead

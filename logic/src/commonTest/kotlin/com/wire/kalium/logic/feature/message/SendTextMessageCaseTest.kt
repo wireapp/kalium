@@ -39,6 +39,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,7 +54,7 @@ class SendTextMessageCaseTest {
     @Test
     fun givenAValidMessage_whenSendingSomeText_thenShouldReturnASuccessResult() = runTest {
         // Given
-        val (arrangement, sendTextMessage) = Arrangement()
+        val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
@@ -88,7 +89,7 @@ class SendTextMessageCaseTest {
     @Test
     fun givenNoNetwork_whenSendingSomeText_thenShouldReturnAFailure() = runTest {
         // Given
-        val (arrangement, sendTextMessage) = Arrangement()
+        val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
@@ -120,7 +121,7 @@ class SendTextMessageCaseTest {
             .wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(private val coroutineScope: CoroutineScope) {
 
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -196,7 +197,8 @@ class SendTextMessageCaseTest {
             messageSender,
             messageSendFailureHandler,
             userPropertyRepository,
-            observeSelfDeletionTimerSettingsForConversation
+            observeSelfDeletionTimerSettingsForConversation,
+            scope = coroutineScope
         )
     }
 

@@ -209,4 +209,5 @@ INSERT INTO Receipt
          WHERE selfdelete_message_id.id IS NULL
             OR selfdelete_message_id.conversation_id IS NULL;
 
+INSERT INTO ButtonContent SELECT * FROM local_db.ButtonContent;
 }

@@ -63,10 +63,18 @@ class CreateGroupConversationUseCase internal constructor(
             conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentInstant())
                 .map { conversation }
         }.fold({
-            if (it is NetworkFailure.NoNetworkConnection) {
-                Result.SyncFailure
-            } else {
-                Result.UnknownFailure(it)
+            when (it) {
+                is NetworkFailure.NoNetworkConnection -> {
+                    Result.SyncFailure
+                }
+
+                is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
+                    Result.BackendConflictFailure(it.domains)
+                }
+
+                else -> {
+                    Result.UnknownFailure(it)
+                }
             }
         }, {
             newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(it)
@@ -97,6 +105,10 @@ class CreateGroupConversationUseCase internal constructor(
              * The root cause of the failure
              */
             val cause: CoreFailure
+        ) : Result
+
+        class BackendConflictFailure(
+            val domains: List<String>
         ) : Result
     }
 }

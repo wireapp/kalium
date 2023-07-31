@@ -99,6 +99,9 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MLSWrongEpochWarning -> false
             MessageContent.ConversationDegradedMLS -> false
             MessageContent.ConversationDegradedProteus -> false
+            is MessageContent.Composite -> true
+            is MessageContent.ButtonAction -> false
+            is MessageContent.ButtonActionConfirmation -> false
             is MessageContent.MemberChange.FederationRemoved -> false
             is MessageContent.Federation.ConnectionRemoved -> false
             is MessageContent.Federation.Removed -> false
