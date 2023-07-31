@@ -325,7 +325,11 @@ class MessageDataSource(
             )
         }
 
-    override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: List<String>) =
+    override suspend fun updateMessageStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: List<String>
+    ) =
         wrapStorageRequest {
             messageDAO.updateMessageStatus(
                 status = messageStatus,
@@ -333,7 +337,6 @@ class MessageDataSource(
                 conversationId = conversationId.toDao()
             )
         }
-
 
     override suspend fun updateAssetMessageUploadStatus(
         uploadStatus: Message.UploadStatus,
