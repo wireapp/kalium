@@ -66,7 +66,7 @@ class ReceiptMessageHandlerTest {
     @BeforeTest
     fun setUp() {
         given(messageRepository)
-            .suspendFunction(messageRepository::updateMessageStatus)
+            .suspendFunction(messageRepository::updateMessagesStatus)
             .whenInvokedWith(any(), any())
             .thenReturn(Either.Right(Unit))
     }
