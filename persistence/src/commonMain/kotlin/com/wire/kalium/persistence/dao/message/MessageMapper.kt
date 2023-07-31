@@ -572,12 +572,8 @@ object MessageMapper {
             isSelfMessage,
             expectsReadConfirmation,
             expireAfterMillis,
-<<<<<<< HEAD
-            selfDeletionDate,
-            readCount,
-=======
             selfDeletionStartDate,
->>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
+            readCount,
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList
         )
