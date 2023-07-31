@@ -115,7 +115,6 @@ ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
 ConversationTimerChangedContent.message_timer AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
 FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
-
 IFNULL(
     (SELECT '[' ||
             GROUP_CONCAT('{"text":"' || text || '", "id":"' || id || '""is_selected":' || is_selected || '}')
@@ -125,7 +124,9 @@ IFNULL(
         AND ButtonContent.conversation_id = Message.conversation_id
     ),
     '[]'
-) AS buttonsJson
+) AS buttonsJson,
+FederationContent.domain_list AS federationDomainList,
+FederationContent.federation_type AS federationType
 
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
@@ -149,5 +150,6 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.messag
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
+LEFT JOIN MessageFederationContent AS FederationContent ON Message.id = FederationContent.message_id AND Message.conversation_id = FederationContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull

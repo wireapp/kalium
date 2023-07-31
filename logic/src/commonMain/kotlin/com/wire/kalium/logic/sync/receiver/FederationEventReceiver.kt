@@ -46,7 +46,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
-interface FederationEventReceiver : EventReceiver<Event.Federation>
+internal interface FederationEventReceiver : EventReceiver<Event.Federation>
 
 @Suppress("LongParameterList")
 class FederationEventReceiverImpl internal constructor(

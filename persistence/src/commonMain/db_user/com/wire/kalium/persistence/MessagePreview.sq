@@ -34,7 +34,8 @@ AS SELECT
     (Message.creation_date > Conversation.last_read_date) AS isUnread,
     IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
     Conversation.muted_status AS mutedStatus,
-    Conversation.type AS conversationType
+    Conversation.type AS conversationType,
+    FederationContent.domain_list AS federationDomainList
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
@@ -43,7 +44,8 @@ LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = Memb
 LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageFederationContent AS FederationContent ON Message.id = FederationContent.message_id AND Message.conversation_id = FederationContent.conversation_id;
 
 getLastMessages:
 SELECT * FROM MessagePreview AS message
