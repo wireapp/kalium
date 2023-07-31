@@ -64,7 +64,7 @@ internal class ReceiptMessageHandlerImpl(
         messageContent: MessageContent.Receipt,
         message: Message.Signaling
     ) {
-        messageRepository.updateMessageStatus(
+        messageRepository.updateMessagesStatus(
             messageUuids = messageContent.messageIds,
             conversationId = message.conversationId,
             messageStatus = when (messageContent.type) {
