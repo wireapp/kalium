@@ -22,6 +22,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
+import com.wire.kalium.network.api.base.model.DeleteAccountRequest
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UpdateEmailRequest
@@ -30,6 +31,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.put
@@ -76,6 +78,12 @@ internal open class SelfApiV0 internal constructor(
                 }
             }
         } ?: NetworkResponse.Error(KaliumException.GenericError(IllegalStateException("No session found")))
+
+    override suspend fun deleteAccount(password: String?): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.delete(PATH_SELF) {
+            setBody(DeleteAccountRequest(password))
+        }
+    }
 
     private companion object {
         const val PATH_SELF = "self"

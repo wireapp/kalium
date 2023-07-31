@@ -25,8 +25,10 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeleti
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
@@ -34,6 +36,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
@@ -45,6 +48,10 @@ interface UserConfigRepository {
     fun getClassifiedDomainsStatus(): Flow<Either<StorageFailure, ClassifiedDomainsStatus>>
     fun isMLSEnabled(): Either<StorageFailure, Boolean>
     fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    fun getE2EISettings(): Either<StorageFailure, E2EISettings>
+    fun observeE2EISettings(): Flow<Either<StorageFailure, E2EISettings>>
+    fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit>
+    fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
@@ -54,6 +61,8 @@ interface UserConfigRepository {
     fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
+    suspend fun setScreenshotCensoringConfig(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>>
 
     suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
     suspend fun setTeamSettingsSelfDeletionStatus(
@@ -138,6 +147,28 @@ class UserConfigDataSource(
     override fun setMLSEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.enableMLS(enabled) }
 
+    override fun getE2EISettings(): Either<StorageFailure, E2EISettings> =
+        wrapStorageRequest { userConfigStorage.getE2EISettings() }
+            .map { E2EISettings.fromEntity(it) }
+
+    override fun observeE2EISettings(): Flow<Either<StorageFailure, E2EISettings>> =
+        userConfigStorage.e2EISettingsFlow()
+            .wrapStorageRequest()
+            .mapRight { E2EISettings.fromEntity(it) }
+
+    override fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.setE2EISettings(setting.toEntity()) }
+
+    override fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            getE2EISettingEntityOrNull()?.let { current ->
+                val notifyUserAfterMs = current.notifyUserAfterMs?.plus(duration.inWholeMilliseconds)
+                userConfigStorage.setE2EISettings(current.copy(notifyUserAfterMs = notifyUserAfterMs))
+            }
+        }
+
+    private fun getE2EISettingEntityOrNull() = wrapStorageRequest { userConfigStorage.getE2EISettings() }.getOrNull()
+
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistConferenceCalling(enabled)
@@ -218,4 +249,10 @@ class UserConfigDataSource(
                 )
             }
         }
+
+    override suspend fun setScreenshotCensoringConfig(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.persistScreenshotCensoring(enabled) }
+
+    override suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigStorage.isScreenshotCensoringEnabledFlow().wrapStorageRequest()
 }

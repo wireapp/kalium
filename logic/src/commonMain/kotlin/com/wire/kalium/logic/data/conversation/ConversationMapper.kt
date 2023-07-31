@@ -40,12 +40,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.CreateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.persistence.dao.ConversationEntity
-import com.wire.kalium.persistence.dao.ConversationEntity.GroupState
-import com.wire.kalium.persistence.dao.ConversationEntity.Protocol
-import com.wire.kalium.persistence.dao.ConversationEntity.ProtocolInfo
-import com.wire.kalium.persistence.dao.ConversationViewEntity
-import com.wire.kalium.persistence.dao.ProposalTimerEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -59,6 +59,8 @@ import kotlin.time.toDuration
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
+    fun fromDaoModel(daoProtocol: Protocol?): Conversation.Protocol?
+    fun toDaoModel(protocol: Conversation.Protocol?): Protocol?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
@@ -121,6 +123,18 @@ internal class ConversationMapperImpl(
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
         ConvProtocol.PROTEUS -> Protocol.PROTEUS
         ConvProtocol.MLS -> Protocol.MLS
+    }
+
+    override fun fromDaoModel(daoProtocol: Protocol?): Conversation.Protocol? = when (daoProtocol) {
+        Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
+        Protocol.MLS -> Conversation.Protocol.MLS
+        null -> null
+    }
+
+    override fun toDaoModel(protocol: Conversation.Protocol?): Protocol? = when (protocol) {
+        Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
+        Conversation.Protocol.MLS -> Protocol.MLS
+        null -> null
     }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
@@ -197,7 +211,8 @@ internal class ConversationMapperImpl(
                             completePicture = previewAssetId?.toModel(),
                             previewPicture = previewAssetId?.toModel(),
                             teamId = teamId?.let { TeamId(it) },
-                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus)
+                            connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
+                            expiresAt = null
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -231,7 +246,8 @@ internal class ConversationMapperImpl(
                         handle = null,
                         completePicture = previewAssetId?.toModel(),
                         previewPicture = previewAssetId?.toModel(),
-                        teamId = teamId?.let { TeamId(it) }
+                        teamId = teamId?.let { TeamId(it) },
+                        expiresAt = null
                     )
 
                     ConversationDetails.Connection(

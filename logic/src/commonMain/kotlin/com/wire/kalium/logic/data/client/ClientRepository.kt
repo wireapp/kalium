@@ -79,7 +79,7 @@ interface ClientRepository {
         verified: Boolean
     ): Either<StorageFailure, Unit>
 
-    suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient)
+    suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient): Either<CoreFailure, Unit>
     suspend fun clearNewClients()
     suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>>
 }
@@ -221,7 +221,9 @@ class ClientDataSource(
         clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
     }
 
-    override suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient) {
+    override suspend fun saveNewClientEvent(
+        newClientEvent: Event.User.NewClient
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
         newClientDAO.insertNewClient(clientMapper.toInsertClientParam(selfUserID, newClientEvent))
     }
 

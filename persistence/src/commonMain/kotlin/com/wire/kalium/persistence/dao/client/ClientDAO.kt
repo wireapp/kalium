@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.client
 
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
@@ -30,6 +31,7 @@ data class Client(
     val isValid: Boolean,
     val isVerified: Boolean,
     val registrationDate: Instant?,
+    val lastActive: Instant?,
     val label: String?,
     val model: String?,
 )
@@ -41,7 +43,8 @@ data class InsertClientParam(
     val clientType: ClientTypeEntity?,
     val label: String?,
     val registrationDate: Instant?,
-    val model: String?
+    val lastActive: Instant?,
+    val model: String?,
 )
 
 enum class DeviceTypeEntity {
@@ -74,5 +77,18 @@ interface ClientDAO {
     suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
     suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
     suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?>
+
+    /**
+     * Returns a map of users and their clients.
+     * the result include only users that are in the conversation
+     * @param conversationId the conversation id
+     * @param userIds the set of users
+     * @return a map of users and their clients
+     */
+    suspend fun recipientsIfTheyArePartOfConversation(
+        conversationId: ConversationIDEntity,
+        userIds: Set<QualifiedIDEntity>
+    ): Map<QualifiedIDEntity, List<Client>>
+
     suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>>
 }

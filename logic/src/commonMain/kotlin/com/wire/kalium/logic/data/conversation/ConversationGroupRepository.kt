@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.wrapApiRequest
@@ -47,8 +48,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.coroutines.flow.Flow
 
@@ -67,7 +68,7 @@ interface ConversationGroupRepository {
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
-    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit>
+    suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -76,6 +77,7 @@ internal class ConversationGroupRepositoryImpl(
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler,
+    private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
@@ -85,6 +87,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
+    private val addingMembersFailureMapper: AddingMembersFailureMapper = MapperProvider.addingMembersFailureMapper(),
 ) : ConversationGroupRepository {
 
     override suspend fun createGroupConversation(
@@ -138,7 +141,7 @@ internal class ConversationGroupRepositoryImpl(
             .flatMap { protocol ->
                 when (protocol) {
                     is ConversationEntity.ProtocolInfo.Proteus ->
-                        addMembersToCloudAndStorage(userIdList, conversationId)
+                        tryAddMembersToCloudAndStorage(userIdList, conversationId)
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
                         mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
@@ -172,20 +175,51 @@ internal class ConversationGroupRepositoryImpl(
                 }
             }
 
-    private suspend fun addMembersToCloudAndStorage(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit> =
-        wrapApiRequest {
+    private suspend fun tryAddMembersToCloudAndStorage(
+        userIdList: List<UserId>,
+        conversationId: ConversationId,
+        previousUserIdsExcluded: Set<UserId> = emptySet(),
+    ): Either<CoreFailure, Unit> {
+        val apiResult = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
             conversationApi.addMember(
                 addParticipantRequest, conversationId.toApi()
             )
-        }.onSuccess { response ->
-            if (response is ConversationMemberAddedResponse.Changed) {
-                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
-            }
-        }.map {
-            Either.Right(Unit)
         }
+
+        return when (apiResult) {
+            is Either.Left -> {
+                if (apiResult.value.hasUnreachableDomainsError) {
+                    val usersReqState = addingMembersFailureMapper.mapToUsersRequestState(
+                        userIdList,
+                        apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains,
+                        previousUserIdsExcluded
+                    )
+                    // retry adding, only with filtered available members to the conversation
+                    tryAddMembersToCloudAndStorage(
+                        usersReqState.usersThatCanBeAdded.toList(), conversationId, usersReqState.usersThatCannotBeAdded
+                    )
+                } else {
+                    Either.Left(apiResult.value)
+                }
+            }
+
+            is Either.Right -> {
+                if (apiResult.value is ConversationMemberAddedResponse.Changed) {
+                    memberJoinEventHandler.handle(
+                        eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true)
+                    )
+                }
+                if (previousUserIdsExcluded.isNotEmpty()) {
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationId, previousUserIdsExcluded
+                    )
+                }
+                Either.Right(Unit)
+            }
+        }
+    }
 
     override suspend fun deleteMember(
         userId: UserId,
@@ -269,10 +303,16 @@ internal class ConversationGroupRepositoryImpl(
     override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
 
-    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<NetworkFailure, Unit> =
-        wrapApiRequest {
-            conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer)
-        }
-            .onSuccess { conversationDAO.updateMessageTimer(conversationId.toDao(), messageTimer) }
+    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit> =
+        wrapApiRequest { conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer) }
+            .onSuccess {
+                conversationMessageTimerEventHandler.handle(
+                    eventMapper.conversationMessageTimerUpdate(
+                        LocalId.generate(),
+                        it,
+                        true
+                    )
+                )
+            }
             .map { }
 }

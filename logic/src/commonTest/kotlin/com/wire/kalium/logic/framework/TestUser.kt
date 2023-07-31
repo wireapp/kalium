@@ -46,6 +46,8 @@ object TestUser {
     val USER_ID = UserId(value, domain)
     val OTHER_USER_ID = USER_ID.copy(value = "otherValue")
     val OTHER_USER_ID_2 = USER_ID.copy(value = "otherValue2")
+    val OTHER_FEDERATED_USER_ID = USER_ID.copy(value = "otherValue", "otherDomain")
+    val OTHER_FEDERATED_USER_ID_2 = USER_ID.copy(value = "otherValue2", "otherDomain2")
     val ENTITY_ID = QualifiedIDEntity(value, domain)
     val NETWORK_ID = com.wire.kalium.network.api.base.model.UserId(
         value = value,
@@ -98,7 +100,8 @@ object TestUser {
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
         userType = UserTypeEntity.EXTERNAL,
         botService = null,
-        deleted = false
+        deleted = false,
+        expiresAt = null
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

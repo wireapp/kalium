@@ -50,7 +50,7 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
-        val androidTest by getting {
+        val androidUnitTest by getting {
             dependencies {
                 implementation(libs.androidtest.runner)
                 implementation(libs.androidtest.rules)

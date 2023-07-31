@@ -34,7 +34,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.util.DateTimeUtil
 
 interface ReceiptModeUpdateEventHandler {
@@ -61,7 +61,8 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                     DateTimeUtil.currentIsoDateTimeString(),
                     event.senderUserId,
                     Message.Status.SENT,
-                    Message.Visibility.VISIBLE
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
 
                 persistMessage(message)

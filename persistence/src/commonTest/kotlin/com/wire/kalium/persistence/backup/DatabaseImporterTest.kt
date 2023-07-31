@@ -19,13 +19,13 @@
 package com.wire.kalium.persistence.backup
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.dao.ConversationViewEntity
-import com.wire.kalium.persistence.dao.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
-import com.wire.kalium.persistence.dao.Member
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -263,7 +263,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
             // then
             backupConversations.forEach { conversationEntity ->
-                val restoredMembers = userDatabaseBuilder.conversationDAO.getAllMembers(conversationEntity.id).first()
+                val restoredMembers = userDatabaseBuilder.memberDAO.observeConversationMembers(conversationEntity.id).first()
                 assertEquals(emptyList(), restoredMembers) // We don't restore members from backups. They are synchronized from the backend
             }
 
@@ -301,10 +301,10 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
             val expectedMemberAmount = overlappingBackupMembers.size + uniqueUserMembers.size
 
-            val restoredMembers = mutableListOf<Member>()
+            val restoredMembers = mutableListOf<MemberEntity>()
 
             restoredConversations.forEach { conversationEntity ->
-                val members = userDatabaseBuilder.conversationDAO.getAllMembers(conversationEntity.id).first()
+                val members = userDatabaseBuilder.memberDAO.observeConversationMembers(conversationEntity.id).first()
 
                 members.forEach { member ->
                     if (!restoredMembers.contains(member)) {

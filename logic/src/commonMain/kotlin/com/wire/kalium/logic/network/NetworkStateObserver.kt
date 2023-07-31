@@ -47,7 +47,7 @@ interface NetworkStateObserver {
     }
 }
 
-expect class NetworkStateObserverImpl : NetworkStateObserver
+internal expect class NetworkStateObserverImpl : NetworkStateObserver
 
 sealed class NetworkState {
     object ConnectedWithInternet : NetworkState()

@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.dao.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf

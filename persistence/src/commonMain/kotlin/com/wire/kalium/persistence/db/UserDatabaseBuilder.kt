@@ -28,8 +28,6 @@ import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.MigrationDAO
@@ -50,8 +48,18 @@ import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import com.wire.kalium.persistence.dao.member.MemberDAOImpl
+import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
+import com.wire.kalium.persistence.dao.message.CompositeMessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
+import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
+import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -141,7 +149,8 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationTimerChangedContentAdapter = TableMapper.messageConversationTimerChangedContentAdapter,
         ServiceAdapter = TableMapper.serviceAdapter,
         NewClientAdapter = TableMapper.newClientAdapter,
-        MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter
+        MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
+        ButtonContentAdapter = TableMapper.buttonContentAdapter
     )
 
     init {
@@ -154,6 +163,9 @@ class UserDatabaseBuilder internal constructor(
     val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries, userCache, databaseScope, queriesContext)
 
+    val messageMetaDataDAO: MessageMetadataDAO
+        get() = MessageMetadataDAOImpl(database.messageMetadataQueries, queriesContext)
+
     val userConfigDAO: UserConfigDAO
         get() = UserConfigDAOImpl(metadataDAO)
 
@@ -163,9 +175,16 @@ class UserDatabaseBuilder internal constructor(
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
             database.conversationsQueries,
-            database.usersQueries,
             database.membersQueries,
             database.unreadEventsQueries,
+            queriesContext
+        )
+
+    val memberDAO: MemberDAO
+        get() = MemberDAOImpl(
+            database.membersQueries,
+            database.usersQueries,
+            database.conversationsQueries,
             queriesContext
         )
 
@@ -194,9 +213,11 @@ class UserDatabaseBuilder internal constructor(
             database.notificationQueries,
             database.conversationsQueries,
             database.unreadEventsQueries,
+            database.messagePreviewQueries,
             userId,
             database.reactionsQueries,
-            queriesContext
+            queriesContext,
+            database.buttonContentQueries
         )
 
     val assetDAO: AssetDAO
@@ -214,12 +235,26 @@ class UserDatabaseBuilder internal constructor(
     val prekeyDAO: PrekeyDAO
         get() = PrekeyDAOImpl(database.metadataQueries, queriesContext)
 
+    val compositeMessageDAO: CompositeMessageDAO
+        get() = CompositeMessageDAOImpl(database.buttonContentQueries, queriesContext)
+
     val migrationDAO: MigrationDAO
         get() = MigrationDAOImpl(
-            database.migrationQueries, database.messagesQueries, database.unreadEventsQueries, database.conversationsQueries, userId
+            database.migrationQueries,
+            database.messagesQueries,
+            database.unreadEventsQueries,
+            database.conversationsQueries,
+            database.buttonContentQueries,
+            userId
         )
 
     val serviceDAO: ServiceDAO get() = ServiceDAOImpl(database.serviceQueries, queriesContext)
+
+    val conversationMetaDataDAO: ConversationMetaDataDAO
+        get() = ConversationMetaDataDAOImpl(
+            database.conversationsQueries,
+            queriesContext
+        )
 
     /**
      * @return the absolute path of the DB file or null if the DB file does not exist

@@ -30,6 +30,8 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCase
+import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.FlipToBackCameraUseCase
@@ -105,15 +107,23 @@ class CallsScope internal constructor(
 
     val startCall: StartCallUseCase get() = StartCallUseCase(callManager, syncManager, kaliumConfigs)
 
-    val answerCall: AnswerCallUseCase get() = AnswerCallUseCaseImpl(
-        allCallsWithSortedParticipants,
-        callManager,
-        muteCall,
-        unMuteCall,
-        kaliumConfigs
-    )
+    val answerCall: AnswerCallUseCase
+        get() = AnswerCallUseCaseImpl(
+            allCallsWithSortedParticipants,
+            callManager,
+            muteCall,
+            unMuteCall,
+            kaliumConfigs
+        )
 
     val endCall: EndCallUseCase get() = EndCallUseCaseImpl(callManager, callRepository, KaliumDispatcherImpl)
+
+    val endCallOnConversationChange: EndCallOnConversationChangeUseCase
+        get() = EndCallOnConversationChangeUseCaseImpl(
+            callRepository = callRepository,
+            conversationRepository = conversationRepository,
+            endCallUseCase = endCall
+        )
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
 

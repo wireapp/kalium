@@ -126,7 +126,8 @@ class RetryFailedMessageUseCase internal constructor(
                     senderUserId = message.senderUserId,
                     senderClientId = message.senderClientId,
                     status = Message.Status.PENDING,
-                    isSelfMessage = true
+                    isSelfMessage = true,
+                    expirationData = null
                 )
                 retrySendingMessage(editMessage)
             }

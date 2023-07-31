@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
 fun KotlinJvmTarget.commonJvmConfig(includeNativeInterop: Boolean) {
     compilations.all {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "17"
         kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
     }
     testRuns.getByName("test").executionTask.configure {

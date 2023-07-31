@@ -31,17 +31,15 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
-import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer.Companion.SELF_DELETION_LOG_TAG
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withContext
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -58,7 +56,8 @@ class SendTextMessageUseCase internal constructor(
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val scope: CoroutineScope
 ) {
 
     suspend operator fun invoke(
@@ -66,25 +65,16 @@ class SendTextMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
+    ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
 
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true).first().let {
-            val logMap = it.toLogString(eventDescription = "Sending text message with self-deletion timer")
-            if (it != SelfDeletionTimer.Disabled) kaliumLogger.d("$SELF_DELETION_LOG_TAG: $logMap")
-            when (it) {
-                SelfDeletionTimer.Disabled -> null
-                is SelfDeletionTimer.Enabled -> it.userDuration
-                is SelfDeletionTimer.Enforced.ByGroup -> it.duration
-                is SelfDeletionTimer.Enforced.ByTeam -> it.duration
-            }
-        }.let {
-            if (it == Duration.ZERO) null else it
-        }
+        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
+            .first()
+            .duration
 
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
@@ -110,9 +100,18 @@ class SendTextMessageUseCase internal constructor(
                 expirationData = messageTimer?.let { Message.ExpirationData(it) },
                 isSelfMessage = true
             )
-            persistMessage(message).flatMap { messageSender.sendMessage(message) }
-        }.onFailure { messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE) }
-    }
+            persistMessage(message).flatMap {
+                messageSender.sendMessage(message)
+            }
+        }.onFailure {
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure = it,
+                conversationId = conversationId,
+                messageId = generatedMessageUuid,
+                messageType = TYPE
+            )
+        }
+    }.await()
 
     companion object {
         const val TYPE = "Text"

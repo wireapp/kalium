@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.client
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ClientsQueries
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneNotNull
@@ -41,6 +42,7 @@ internal object ClientMapper {
         registration_date: Instant?,
         label: String?,
         model: String?,
+        lastActive: Instant?
     ): Client = Client(
         userId = user_id,
         id = id,
@@ -50,7 +52,8 @@ internal object ClientMapper {
         isVerified = is_verified,
         registrationDate = registration_date,
         label = label,
-        model = model
+        model = model,
+        lastActive = lastActive
     )
 }
 
@@ -78,6 +81,7 @@ internal class ClientDAOImpl internal constructor(
             client_type = clientType,
             is_valid = true,
             registration_date = registrationDate,
+            last_active = lastActive,
             model = model,
             label = label
         )
@@ -116,6 +120,15 @@ internal class ClientDAOImpl internal constructor(
             .asFlow()
             .mapToOneNotNull()
             .flowOn(queriesContext)
+
+    override suspend fun recipientsIfTheyArePartOfConversation(
+        conversationId: ConversationIDEntity,
+        userIds: Set<QualifiedIDEntity>
+    ): Map<QualifiedIDEntity, List<Client>> = withContext(queriesContext) {
+        clientsQueries.selectRecipientsByConversationAndUserId(conversationId, userIds, mapper::fromClient)
+            .executeAsList()
+            .groupBy { it.userId }
+    }
 
     override suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>> =
         clientsQueries.selectAllClients(mapper::fromClient)
@@ -171,5 +184,4 @@ internal class ClientDAOImpl internal constructor(
             .executeAsList()
             .groupBy { it.userId }
     }
-
 }

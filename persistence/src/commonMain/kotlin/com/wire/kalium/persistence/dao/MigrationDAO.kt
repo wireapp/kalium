@@ -22,6 +22,11 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.MigrationQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.content.ButtonContentQueries
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_CIPHER_SUITE
+import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_EPOCH
+import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageInsertExtension
 import com.wire.kalium.persistence.dao.message.MessageInsertExtensionImpl
@@ -38,11 +43,13 @@ internal class MigrationDAOImpl(
     messagesQueries: MessagesQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
+    buttonContentQueries: ButtonContentQueries,
     selfUserIDEntity: UserIDEntity,
 ) : MigrationDAO, MessageInsertExtension by MessageInsertExtensionImpl(
     messagesQueries,
     unreadEventsQueries,
     conversationsQueries,
+    buttonContentQueries,
     selfUserIDEntity
 ) {
     override suspend fun insertConversation(conversationList: List<ConversationEntity>) {

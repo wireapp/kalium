@@ -31,8 +31,8 @@ import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 
 /**
@@ -47,6 +47,11 @@ internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationResolvedMembersAddedAndFailed(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse
+    ): Either<CoreFailure, Unit>
+
+    suspend fun conversationFailedToAddMembers(
+        conversationId: ConversationId,
+        userIdList: Set<UserId>
     ): Either<CoreFailure, Unit>
 }
 
@@ -86,7 +91,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
             status = Message.Status.SENT,
-            visibility = Message.Visibility.VISIBLE
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
         )
     )
 
@@ -126,7 +132,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
             status = Message.Status.SENT,
-            visibility = Message.Visibility.VISIBLE
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
         )
     )
 
@@ -147,10 +154,28 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = selfUserId,
                     status = Message.Status.SENT,
-                    visibility = Message.Visibility.VISIBLE
+                    visibility = Message.Visibility.VISIBLE,
+                    expirationData = null
                 )
             ).also { createFailedToAddSystemMessage(conversationResponse) }
         }
+    }
+
+    override suspend fun conversationFailedToAddMembers(
+        conversationId: ConversationId,
+        userIdList: Set<UserId>
+    ): Either<CoreFailure, Unit> {
+        val messageFailedToAddMembers = Message.System(
+            uuid4().toString(),
+            MessageContent.MemberChange.FailedToAdd(userIdList.toList()),
+            conversationId,
+            DateTimeUtil.currentIsoDateTimeString(),
+            selfUserId,
+            Message.Status.SENT,
+            Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+        return persistMessage(messageFailedToAddMembers)
     }
 
     private suspend fun createFailedToAddSystemMessage(conversationResponse: ConversationResponse) {
@@ -162,7 +187,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
                 Message.Status.SENT,
-                Message.Visibility.VISIBLE
+                Message.Visibility.VISIBLE,
+                expirationData = null
             )
             persistMessage(messageStartedWithFailedMembers)
         }

@@ -22,6 +22,7 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
@@ -40,7 +41,7 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.util.computeIfAbsent
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 
-class AuthenticationScopeProvider(
+class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
 ) {
 
@@ -49,25 +50,27 @@ class AuthenticationScopeProvider(
         ConcurrentMutableMap()
     }
 
-    fun provide(
+    internal fun provide(
         serverConfig: ServerConfig,
-        proxyCredentials: ProxyCredentials?
+        proxyCredentials: ProxyCredentials?,
+        serverConfigRepository: ServerConfigRepository
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,
-                proxyCredentials
+                proxyCredentials,
+                serverConfigRepository
             )
         }
 }
 
-class AuthenticationScope(
+class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
-    private val proxyCredentials: ProxyCredentials?
+    private val proxyCredentials: ProxyCredentials?,
+    private val serverConfigRepository: ServerConfigRepository
 ) {
-
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
@@ -82,8 +85,8 @@ class AuthenticationScope(
         get() = RegisterAccountDataSource(
             unauthenticatedNetworkContainer.registerApi
         )
-    private val ssoLoginRepository: SSOLoginRepository
-        get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso)
+    internal val ssoLoginRepository: SSOLoginRepository
+        get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
 
     internal val secondFactorVerificationRepository: SecondFactorVerificationRepository =
         SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
@@ -111,4 +114,10 @@ class AuthenticationScope(
         get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
     val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
         get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
+
+    val domainLookup: DomainLookupUseCase
+        get() = DomainLookupUseCase(
+            serverConfigRepository = serverConfigRepository,
+            ssoLoginRepository = ssoLoginRepository
+        )
 }

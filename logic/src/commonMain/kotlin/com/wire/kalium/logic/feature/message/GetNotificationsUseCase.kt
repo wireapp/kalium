@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -56,11 +57,12 @@ interface GetNotificationsUseCase {
 internal class GetNotificationsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
-    private val ephemeralNotificationsManager: EphemeralNotificationsMgr,
+    private val deleteConversationNotificationsManager: DeleteConversationNotificationsManager,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Suppress("LongMethod")
     override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
         return incrementalSyncRepository.incrementalSyncState
@@ -82,7 +84,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     }
 
     private suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>> =
-        ephemeralNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
+        deleteConversationNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
 
     private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
         return connectionRepository.observeConnectionRequestsForNotification()

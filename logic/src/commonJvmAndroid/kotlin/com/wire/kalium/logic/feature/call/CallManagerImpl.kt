@@ -71,6 +71,8 @@ import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.util.encodeBase64
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
@@ -387,8 +389,7 @@ class CallManagerImpl internal constructor(
                 federatedIdMapper.parseToFederatedId(conversationId),
                 Uint32_t(epochInfo.epoch.toLong()),
                 epochInfo.members.toJsonString(),
-                epochInfo.sharedSecret,
-                Uint32_t(epochInfo.sharedSecret.size.toLong())
+                epochInfo.sharedSecret.encodeBase64()
             )
         }
     }

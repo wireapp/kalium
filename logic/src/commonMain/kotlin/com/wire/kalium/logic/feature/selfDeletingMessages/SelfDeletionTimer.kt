@@ -22,30 +22,28 @@ import com.wire.kalium.util.serialization.toJsonElement
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.ZERO
 
-sealed class SelfDeletionTimer {
+sealed interface SelfDeletionTimer {
+    val duration: Duration?
+
     /**
      * Represents a self deletion timer that is currently disabled
      */
-    object Disabled : SelfDeletionTimer()
+    object Disabled : SelfDeletionTimer {
+        override val duration: Duration? = null
+    }
 
     /**
      * Represents a self deletion timer that is enabled and can be changed/updated by the user
      */
-    data class Enabled(val userDuration: Duration) : SelfDeletionTimer()
+    data class Enabled(override val duration: Duration?) : SelfDeletionTimer
 
     /**
      * Represents a self deletion timer that is imposed by the team or conversation settings that can't be changed by the user
      * @param enforcedDuration the team or conversation imposed timer
      */
-    sealed class Enforced(val enforcedDuration: Duration) : SelfDeletionTimer() {
-        data class ByTeam(val duration: Duration) : Enforced(duration)
-        data class ByGroup(val duration: Duration) : Enforced(duration)
-    }
-
-    fun toDuration(): Duration = when (this) {
-        is Enabled -> userDuration
-        is Enforced -> enforcedDuration
-        is Disabled -> ZERO
+    sealed interface Enforced : SelfDeletionTimer {
+        data class ByTeam(override val duration: Duration) : Enforced
+        data class ByGroup(override val duration: Duration) : Enforced
     }
 
     fun toLogString(eventDescription: String): String = toLogMap(eventDescription).toJsonElement().toString()
@@ -65,7 +63,7 @@ sealed class SelfDeletionTimer {
     private fun toLogMap(eventDescription: String): Map<String, Any?> = mapOf(
         eventKey to eventDescription,
         typeKey to this::class.simpleName,
-        durationKey to toDuration().inWholeSeconds,
+        durationKey to duration?.inWholeSeconds,
         isEnforcedKey to isEnforced,
         isDisabledKey to isDisabled
     )

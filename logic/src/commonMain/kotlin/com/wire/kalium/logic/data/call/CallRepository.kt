@@ -62,9 +62,9 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.CallApi
-import com.wire.kalium.persistence.dao.ConversationEntity
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -347,7 +347,8 @@ internal class CallDataSource(
                 DateTimeUtil.currentIsoDateTimeString(),
                 qualifiedUserId,
                 Message.Status.SENT,
-                Message.Visibility.VISIBLE
+                Message.Visibility.VISIBLE,
+                expirationData = null,
             )
             persistMessage(message)
         } ?: callingLogger.i("[CallRepository] -> Unable to persist Missed Call due to missing Caller ID")

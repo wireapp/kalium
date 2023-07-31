@@ -21,13 +21,27 @@ package com.wire.kalium.network.api.v4.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV4
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
+import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.FederationConflictResponse
+import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.call.NoTransformationFoundException
+import io.ktor.client.call.body
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode.Companion.Conflict
 
 internal open class ConversationApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -35,7 +49,19 @@ internal open class ConversationApiV4 internal constructor(
 ) : ConversationApiV3(authenticatedNetworkClient) {
 
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest) =
-        wrapKaliumResponse<ConversationResponseV4> {
+        wrapKaliumResponse<ConversationResponseV4>(unsuccessfulResponseOverride = { response ->
+            if (response.status == Conflict) {
+                val errorResponse = try {
+                    response.body()
+                } catch (_: NoTransformationFoundException) {
+                    // When the backend returns something that is not a JSON for whatever reason.
+                    FederationConflictResponse(listOf())
+                }
+                NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
+            } else {
+                handleUnsuccessfulResponse(response)
+            }
+        }) {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
             }
@@ -43,4 +69,60 @@ internal open class ConversationApiV4 internal constructor(
             apiModelMapper.fromApiV4(conversationResponseV4)
         }
 
+    override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
+        wrapKaliumResponse {
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_GROUP_INFO"
+            )
+        }
+
+    override suspend fun fetchSubconversationDetails(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<SubconversationResponse> =
+        wrapKaliumResponse {
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
+                        "/$PATH_SUBCONVERSATIONS/$subconversationId"
+            )
+        }
+
+    override suspend fun fetchSubconversationGroupInfo(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<ByteArray> =
+        wrapKaliumResponse {
+            httpClient.get(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/" +
+                        "$PATH_SUBCONVERSATIONS/$subconversationId/$PATH_GROUP_INFO"
+            )
+        }
+
+    override suspend fun deleteSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId,
+        deleteRequest: SubconversationDeleteRequest
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.delete(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SUBCONVERSATIONS/$subconversationId"
+            ) {
+                setBody(deleteRequest)
+            }
+        }
+
+    override suspend fun leaveSubconversation(
+        conversationId: ConversationId,
+        subconversationId: SubconversationId
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.delete(
+                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SUBCONVERSATIONS/$subconversationId/self"
+            )
+        }
+
+    companion object {
+        const val PATH_GROUP_INFO = "groupinfo"
+        const val PATH_SUBCONVERSATIONS = "subconversations"
+    }
 }

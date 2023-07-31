@@ -72,8 +72,7 @@ abstract class CoreLogicCommon internal constructor(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials? = null
     ): AuthenticationScope =
-        // TODO(logic): make it lazier
-        authenticationScopeProvider.provide(serverConfig, proxyCredentials)
+        authenticationScopeProvider.provide(serverConfig, proxyCredentials, getGlobalScope().serverConfigRepository)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
@@ -100,7 +99,7 @@ abstract class CoreLogicCommon internal constructor(
     fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
-    protected abstract val networkStateObserver: NetworkStateObserver
+    abstract val networkStateObserver: NetworkStateObserver
 }
 
 expect val clientPlatform: String

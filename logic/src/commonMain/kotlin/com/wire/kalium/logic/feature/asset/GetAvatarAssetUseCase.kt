@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -43,11 +44,14 @@ internal class GetAvatarAssetUseCaseImpl(
     override suspend fun invoke(assetKey: UserAssetId): PublicAssetResult =
         // TODO(important!!): do local lookup for the profile pic before downloading a new one
         assetDataSource.downloadPublicAsset(assetKey.value, assetKey.domain).fold({
-            if (it.isNotFoundFailure) {
-                userRepository.removeUserBrokenAsset(assetKey)
-                PublicAssetResult.Failure(it, false)
-            } else {
-                PublicAssetResult.Failure(it, true)
+            when {
+                it.isNotFoundFailure -> {
+                    userRepository.removeUserBrokenAsset(assetKey)
+                    PublicAssetResult.Failure(it, false)
+                }
+
+                it is NetworkFailure.FederatedBackendFailure -> PublicAssetResult.Failure(it, false)
+                else -> PublicAssetResult.Failure(it, true)
             }
         }) {
             PublicAssetResult.Success(it)

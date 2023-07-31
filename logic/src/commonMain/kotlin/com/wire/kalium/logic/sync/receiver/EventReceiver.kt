@@ -18,8 +18,10 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.functional.Either
 
-fun interface EventReceiver<T : Event> {
-    suspend fun onEvent(event: T)
+internal fun interface EventReceiver<T : Event> {
+    suspend fun onEvent(event: T): Either<CoreFailure, Unit>
 }

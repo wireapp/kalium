@@ -93,7 +93,7 @@ class GlobalKaliumScope internal constructor(
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
-    private val unboundNetworkContainer: UnboundNetworkContainer by lazy {
+    val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
             kaliumConfigs.developmentApiEnabled,
             userAgent,
@@ -113,7 +113,8 @@ class GlobalKaliumScope internal constructor(
         get() = SessionDataSource(
             globalDatabase.value.accountsDAO,
             globalPreferences.value.authTokenStorage,
-            serverConfigRepository
+            serverConfigRepository,
+            kaliumConfigs
         )
 
     val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase

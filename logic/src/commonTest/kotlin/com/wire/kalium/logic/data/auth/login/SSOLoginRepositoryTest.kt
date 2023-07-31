@@ -22,10 +22,13 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.DomainLookupResponse
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
@@ -43,11 +46,15 @@ class SSOLoginRepositoryTest {
 
     @Mock
     val ssoLogin = mock(classOf<SSOLoginApi>())
+
+    @Mock
+    val domainLookup = mock(classOf<DomainLookupApi>())
+
     private lateinit var ssoLoginRepository: SSOLoginRepository
 
     @BeforeTest
     fun setup() {
-        ssoLoginRepository = SSOLoginRepositoryImpl(ssoLogin)
+        ssoLoginRepository = SSOLoginRepositoryImpl(ssoLogin, domainLookup)
     }
 
     @Test
@@ -121,6 +128,33 @@ class SSOLoginRepositoryTest {
             expected = TestNetworkException.generic,
             repositoryCoroutineBlock = { settings() }
         )
+
+    @Test
+    fun givenDomainLookupSuccess_thenSuccesIsPropagated() = runTest {
+        val domain = "test.com"
+        val networkResponse = DomainLookupResponse(
+            configJsonUrl = "https://test.com/config.json",
+            webappWelcomeUrl = "https://test.com/welcome"
+        )
+
+        given(domainLookup)
+            .coroutine { lookup(domain) }
+            .then { NetworkResponse.Success(networkResponse, mapOf(), 200) }
+        val actual = ssoLoginRepository.domainLookup(domain)
+
+        assertIs<Either.Right<DomainLookupResult>>(actual)
+        assertEquals(
+            DomainLookupResult(
+                networkResponse.configJsonUrl,
+                networkResponse.webappWelcomeUrl
+            ), actual.value
+        )
+
+        verify(domainLookup)
+            .suspendFunction(domainLookup::lookup)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
 
     private fun <T : Any> givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
         apiCoroutineBlock: suspend SSOLoginApi.() -> NetworkResponse<T>,

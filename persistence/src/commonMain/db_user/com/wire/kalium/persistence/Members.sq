@@ -1,4 +1,4 @@
-import com.wire.kalium.persistence.dao.Member.Role;
+import com.wire.kalium.persistence.dao.member.MemberEntity.Role;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
 CREATE TABLE Member (
@@ -10,6 +10,8 @@ CREATE TABLE Member (
     FOREIGN KEY (user) REFERENCES User(qualified_id) ON DELETE CASCADE
 );
 
+CREATE INDEX member_conversation_index ON Member(conversation);
+
 insertMember:
 INSERT OR IGNORE INTO Member(user, conversation, role)
 VALUES (?, ?, ?);
@@ -17,8 +19,11 @@ VALUES (?, ?, ?);
 deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;
 
+deleteMembersFromConversation:
+DELETE FROM Member WHERE conversation = ?;
+
 selectAllMembersByConversation:
-SELECT * FROM Member WHERE conversation LIKE ('%' || :searchQuery || '%');
+SELECT * FROM Member WHERE conversation = :conversation;
 
 selectConversationByMember:
 SELECT * FROM Member
@@ -43,3 +48,6 @@ WHERE conversation IN (
     JOIN Conversation ON Conversation.qualified_id = Member.conversation
     WHERE Member.user = ? AND Conversation.type = 'GROUP'
 ) AND Member.user = ?;
+
+isUserMember:
+SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;

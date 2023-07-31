@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -30,12 +31,13 @@ import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
 
-interface TeamEventReceiver : EventReceiver<Event.Team>
+internal interface TeamEventReceiver : EventReceiver<Event.Team>
 
 internal class TeamEventReceiverImpl(
     private val teamRepository: TeamRepository,
@@ -45,13 +47,18 @@ internal class TeamEventReceiverImpl(
     private val selfUserId: UserId,
 ) : TeamEventReceiver {
 
-    override suspend fun onEvent(event: Event.Team) {
+    override suspend fun onEvent(event: Event.Team): Either<CoreFailure, Unit> {
         when (event) {
             is Event.Team.MemberJoin -> handleMemberJoin(event)
             is Event.Team.MemberLeave -> handleMemberLeave(event)
             is Event.Team.MemberUpdate -> handleMemberUpdate(event)
             is Event.Team.Update -> handleUpdate(event)
         }
+        // TODO: Make sure errors are accounted for by each handler.
+        //       onEvent now requires Either, so we can propagate errors,
+        //       but not all handlers are using it yet.
+        //       Returning Either.Right is the equivalent of how it was originally working.
+        return Either.Right(Unit)
     }
 
     private suspend fun handleMemberJoin(event: Event.Team.MemberJoin) =
@@ -95,7 +102,8 @@ internal class TeamEventReceiverImpl(
                                     date = event.timestampIso,
                                     senderUserId = userId,
                                     status = Message.Status.SENT,
-                                    visibility = Message.Visibility.VISIBLE
+                                    visibility = Message.Visibility.VISIBLE,
+                                    expirationData = null
                                 )
                                 persistMessage(message)
                             }

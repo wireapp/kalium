@@ -55,6 +55,7 @@ import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
+import com.wire.kalium.persistence.content.ButtonContent
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -67,7 +68,8 @@ internal object TableMapper {
         user_idAdapter = QualifiedIDAdapter,
         device_typeAdapter = EnumColumnAdapter(),
         client_typeAdapter = EnumColumnAdapter(),
-        registration_dateAdapter = InstantTypeAdapter
+        registration_dateAdapter = InstantTypeAdapter,
+        last_activeAdapter = InstantTypeAdapter
     )
     val connectionAdapter = Connection.Adapter(
         qualified_conversationAdapter = QualifiedIDAdapter,
@@ -162,7 +164,8 @@ internal object TableMapper {
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter,
         user_typeAdapter = EnumColumnAdapter(),
-        bot_serviceAdapter = BotServiceAdapter()
+        bot_serviceAdapter = BotServiceAdapter(),
+        expires_atAdapter = InstantTypeAdapter
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
@@ -196,5 +199,9 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         recipient_failure_listAdapter = QualifiedIDListAdapter,
         recipient_failure_typeAdapter = EnumColumnAdapter()
+    )
+
+    val buttonContentAdapter = ButtonContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
     )
 }

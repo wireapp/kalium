@@ -99,7 +99,7 @@ interface MessageSender {
      */
     suspend fun sendMessage(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation
+        messageTarget: MessageTarget = MessageTarget.Conversation()
     ): Either<CoreFailure, Unit>
 
     /**
@@ -136,7 +136,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
-    private val enqueueSelfDeletion: (Message.Regular, Message.ExpirationData) -> Unit,
+    private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
 
@@ -215,7 +215,7 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSend(
         message: Message.Sendable,
-        messageTarget: MessageTarget = MessageTarget.Conversation
+        messageTarget: MessageTarget = MessageTarget.Conversation()
     ): Either<CoreFailure, String> {
         return conversationRepository
             .getConversationProtocolInfo(message.conversationId)
@@ -234,8 +234,8 @@ internal class MessageSenderImpl internal constructor(
     }
 
     private fun startSelfDeletionIfNeeded(message: Message.Sendable) {
-        if (message is Message.Regular && message.expirationData != null) {
-            enqueueSelfDeletion(message, message.expirationData)
+        message.expirationData?.let { expirationData ->
+            enqueueSelfDeletion(message, expirationData)
         }
     }
 
@@ -247,6 +247,7 @@ internal class MessageSenderImpl internal constructor(
         val target = when (messageTarget) {
             is MessageTarget.Client -> Either.Right(messageTarget.recipients)
             is MessageTarget.Conversation -> conversationRepository.getConversationRecipients(conversationId)
+            is MessageTarget.Users -> conversationRepository.getRecipientById(conversationId, messageTarget.userId)
         }
 
         return target
@@ -259,7 +260,14 @@ internal class MessageSenderImpl internal constructor(
                 messageEnvelopeCreator
                     .createOutgoingEnvelope(recipients, message)
                     .flatMap { envelope: MessageEnvelope ->
-                        trySendingProteusEnvelope(envelope, message, messageTarget, usersWithoutSessions.users)
+                        val updatedMessageTarget = when (messageTarget) {
+                            is MessageTarget.Client,
+                            is MessageTarget.Users -> messageTarget
+
+                            is MessageTarget.Conversation ->
+                                MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
+                        }
+                        trySendingProteusEnvelope(envelope, message, updatedMessageTarget)
                     }
             }
     }
@@ -331,11 +339,10 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun trySendingProteusEnvelope(
         envelope: MessageEnvelope,
         message: Message.Sendable,
-        messageTarget: MessageTarget,
-        ignoredUsers: List<UserId> = emptyList()
+        messageTarget: MessageTarget
     ): Either<CoreFailure, String> =
         messageRepository
-            .sendEnvelope(message.conversationId, envelope, messageTarget, ignoredUsers)
+            .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
                 handleProteusError(it, "Send", message.toLogString()) {
                     attemptToSendWithProteus(message, messageTarget)

@@ -188,7 +188,7 @@ class ConversationScope internal constructor(
 
     val clearConversationContent: ClearConversationContentUseCase
         get() = ClearConversationContentUseCaseImpl(
-            clearConversationContent = ClearConversationContentImpl(conversationRepository, assetRepository),
+            conversationRepository,
             messageSender,
             selfUserId,
             currentClientIdProvider,
@@ -229,9 +229,7 @@ class ConversationScope internal constructor(
 
     val updateMessageTimer: UpdateMessageTimerUseCase
         get() = UpdateMessageTimerUseCaseImpl(
-            conversationGroupRepository,
-            persistMessage,
-            selfUserId
+            conversationGroupRepository
         )
 
     val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase

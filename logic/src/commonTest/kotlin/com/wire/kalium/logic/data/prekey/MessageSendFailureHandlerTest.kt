@@ -120,7 +120,7 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenFailedDueToFederationContextAvailability_whenHandlingMessageSendFailure_thenUpdateMessageStatusToFailedRemotely() = runTest {
-        val failure = NetworkFailure.FederatedBackendFailure
+        val failure = NetworkFailure.FederatedBackendFailure.General("error")
         val (arrangement, messageSendFailureHandler) = Arrangement()
             .withUpdateMessageStatusSuccess()
             .arrange()

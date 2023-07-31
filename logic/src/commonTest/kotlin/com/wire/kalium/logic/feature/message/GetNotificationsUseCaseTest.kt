@@ -40,7 +40,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
@@ -53,7 +52,6 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -64,7 +62,6 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetNotificationsUseCaseTest {
 
     @Test
@@ -221,7 +218,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -238,7 +235,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -251,7 +248,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -264,7 +261,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -299,7 +296,7 @@ class GetNotificationsUseCaseTest {
             .arrange()
 
         getNotifications().test {
-            expectNoEvents()
+            awaitComplete()
         }
     }
 
@@ -314,7 +311,7 @@ class GetNotificationsUseCaseTest {
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
-        val ephemeralNotifications = mock(classOf<EphemeralNotificationsMgr>())
+        val ephemeralNotifications = mock(classOf<DeleteConversationNotificationsManager>())
 
         @Mock
         private val incrementalSyncRepository = mock(classOf<IncrementalSyncRepository>())
@@ -322,7 +319,7 @@ class GetNotificationsUseCaseTest {
         val getNotificationsUseCase: GetNotificationsUseCase = GetNotificationsUseCaseImpl(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
-            ephemeralNotificationsManager = ephemeralNotifications,
+            deleteConversationNotificationsManager = ephemeralNotifications,
             incrementalSyncRepository = incrementalSyncRepository
         )
 
@@ -463,7 +460,8 @@ class GetNotificationsUseCaseTest {
                 conversationId = conversationId,
                 date = "some_time",
                 senderUserId = senderId,
-                status = Message.Status.SENT
+                status = Message.Status.SENT,
+                expirationData = null
             )
 
         private fun notificationMessageText(
@@ -497,17 +495,6 @@ class GetNotificationsUseCaseTest {
                 time,
                 otherUserId()
             )
-
-        private fun notificationConversationDeleted(
-            authorName: String = "Author Name",
-            time: Instant = TIME_INSTANCE
-        ) = LocalNotificationMessage.ConversationDeleted(
-            LocalNotificationMessageAuthor(authorName, null),
-            time
-        )
-
-        private fun selfUserWithStatus(status: UserAvailabilityStatus = UserAvailabilityStatus.NONE) =
-            TestUser.SELF.copy(availabilityStatus = status)
 
         private fun otherUser(id: QualifiedID) = TestUser.OTHER.copy(id = id, name = otherUserName(id))
 

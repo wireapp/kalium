@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -29,20 +28,21 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
-import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
-import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
-import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
+import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
 import kotlin.time.DurationUnit
@@ -72,7 +72,6 @@ internal interface ApplicationMessageHandler {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ApplicationMessageHandlerImpl(
     private val userRepository: UserRepository,
-    private val assetRepository: AssetRepository,
     private val messageRepository: MessageRepository,
     private val assetMessageHandler: AssetMessageHandler,
     private val callManagerImpl: Lazy<CallManager>,
@@ -82,14 +81,16 @@ internal class ApplicationMessageHandlerImpl(
     private val lastReadContentHandler: LastReadContentHandler,
     private val clearConversationContentHandler: ClearConversationContentHandler,
     private val deleteForMeHandler: DeleteForMeHandler,
+    private val deleteMessageHandler: DeleteMessageHandler,
     private val messageEncoder: MessageContentEncoder,
     private val receiptMessageHandler: ReceiptMessageHandler,
+    private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler,
     private val selfUserId: UserId
 ) : ApplicationMessageHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(ApplicationFlow.EVENT_RECEIVER) }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     override suspend fun handleContent(
         conversationId: ConversationId,
         timestampIso: String,
@@ -112,6 +113,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                     is MessageContent.LastRead -> Message.Visibility.HIDDEN
                     is MessageContent.Cleared -> Message.Visibility.HIDDEN
+                    is MessageContent.Composite -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -144,27 +146,23 @@ internal class ApplicationMessageHandlerImpl(
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.SENT,
-                    isSelfMessage = senderUserId == selfUserId
+                    isSelfMessage = senderUserId == selfUserId,
+                    expirationData = content.expiresAfterMillis?.let {
+                        Message.ExpirationData(
+                            expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                            selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted
+                        )
+                    }
                 )
                 processSignaling(signalingMessage)
             }
         }
     }
 
-    private suspend fun isSenderVerified(messageId: String, conversationId: ConversationId, senderUserId: UserId): Boolean {
-        var verified = false
-        messageRepository.getMessageById(
-            messageUuid = messageId, conversationId = conversationId
-        ).onSuccess {
-            verified = senderUserId == it.senderUserId
-        }
-        return verified
-    }
-
     private suspend fun processSignaling(signaling: Message.Signaling) {
         when (val content = signaling.content) {
             MessageContent.Ignored -> {
-                logger.i(message = "Ignored Signaling Message received: $signaling")
+                logger.i(message = "Ignored Signaling Message received: ${signaling.content.getType()}")
             }
 
             is MessageContent.Availability -> {
@@ -182,7 +180,8 @@ internal class ApplicationMessageHandlerImpl(
                     date = signaling.date,
                     senderUserId = signaling.senderUserId,
                     status = signaling.status,
-                    senderUserName = signaling.senderUserName
+                    senderUserName = signaling.senderUserName,
+                    expirationData = null
                 )
 
                 logger.i(message = "Persisting crypto session reset system message..")
@@ -190,7 +189,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Reaction -> persistReaction(content, signaling.conversationId, signaling.senderUserId, signaling.date)
-            is MessageContent.DeleteMessage -> handleDeleteMessage(content, signaling.conversationId, signaling.senderUserId)
+            is MessageContent.DeleteMessage -> deleteMessageHandler(content, signaling.conversationId, signaling.senderUserId)
             is MessageContent.DeleteForMe -> deleteForMeHandler.handle(signaling, content)
             is MessageContent.Calling -> {
                 logger.d("MessageContent.Calling")
@@ -204,22 +203,36 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(signaling, content)
             is MessageContent.Receipt -> receiptMessageHandler.handle(signaling, content)
+            is MessageContent.ButtonAction -> {
+                /* no-op */
+                // TODO(services): we need handle this event if kalium need to support services
+            }
+
+            is MessageContent.ButtonActionConfirmation -> buttonActionConfirmationHandler.handle(
+                signaling.conversationId,
+                signaling.senderUserId,
+                content
+            )
         }
     }
 
     private suspend fun processMessage(message: Message.Regular) {
         logger.i(message = "Message received: { \"message\" : ${message.toLogString()} }")
         when (val content = message.content) {
-            // Persist Messages - > lists
             is MessageContent.Text -> handleTextMessage(message, content)
             is MessageContent.FailedDecryption -> persistMessage(message)
             is MessageContent.Knock -> persistMessage(message)
             is MessageContent.Asset -> assetMessageHandler.handle(message)
-            is MessageContent.RestrictedAsset -> TODO()
+            is MessageContent.RestrictedAsset -> {
+                /* no-op */
+            }
+
             is MessageContent.Unknown -> {
                 logger.i(message = "Unknown Message received: { \"message\" : ${message.toLogString()} }")
                 persistMessage(message)
             }
+
+            is MessageContent.Composite -> persistMessage(message)
         }
     }
 
@@ -260,74 +273,6 @@ internal class ApplicationMessageHandlerImpl(
             logger.d("Received hash = ${quotedMessageSha256.toHexString()}")
             logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
             quotedReference.copy(isVerified = false)
-        }
-    }
-
-    private suspend fun handleDeleteMessage(
-        content: MessageContent.DeleteMessage,
-        conversationId: ConversationId,
-        senderUserId: UserId
-    ) {
-        messageRepository.getMessageById(conversationId, content.messageId).onSuccess { messageToRemove ->
-            (messageToRemove as? Message.Regular)?.expirationData?.let {
-                handleEphemeralMessageDeletion(
-                    messageToRemove = messageToRemove
-                )
-            } ?: handleRegularMessageDeletion(
-                messageToRemove = messageToRemove,
-                senderUserId = senderUserId
-            )
-
-            removeAssetIfExists(messageToRemove)
-        }
-    }
-
-    private suspend fun removeAssetIfExists(messageToRemove: Message) {
-        (messageToRemove.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
-            assetRepository.deleteAssetLocally(assetId = assetToRemove.assetId)
-                .onFailure {
-                    logger.withFeatureId(ApplicationFlow.ASSETS).w("delete messageToRemove asset locally failure: $it")
-                }
-        }
-    }
-
-    private suspend fun handleRegularMessageDeletion(
-        messageToRemove: Message,
-        senderUserId: UserId
-    ) {
-        if (isSenderVerified(messageToRemove.id, messageToRemove.conversationId, senderUserId)) {
-            messageRepository.markMessageAsDeleted(
-                messageUuid = messageToRemove.id,
-                conversationId = messageToRemove.conversationId
-            )
-        } else {
-            logger.i(message = "Delete message sender is not verified: ${messageToRemove.content}")
-        }
-    }
-
-    /**
-     * in case of ephemeral messages, we could either receive delete signal because the message expired and we want to delete it from
-     * all the clients, or when the sender is waiting for the receiver timer to run out, after that happens
-     * the receiver sends the signal to delete the message permanently
-     * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl]
-     */
-    private suspend fun handleEphemeralMessageDeletion(
-        messageToRemove: Message.Regular
-    ) {
-        if (messageToRemove.isSelfMessage) {
-            messageRepository.deleteMessage(
-                messageUuid = messageToRemove.id,
-                conversationId = messageToRemove.conversationId
-            )
-        } else {
-            val isSelfUserSender = messageToRemove.senderUserId == selfUserId
-
-            if (isSelfUserSender) {
-                messageRepository.deleteMessage(
-                    messageUuid = messageToRemove.id,
-                    conversationId = messageToRemove.conversationId
-                )
-            }
         }
     }
 

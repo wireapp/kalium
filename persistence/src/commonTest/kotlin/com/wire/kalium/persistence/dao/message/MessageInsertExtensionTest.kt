@@ -18,9 +18,9 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.BaseDatabaseTest
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -55,6 +55,7 @@ class MessageInsertExtensionTest : BaseDatabaseTest() {
             db.database.messagesQueries,
             db.database.unreadEventsQueries,
             db.database.conversationsQueries,
+            db.database.buttonContentQueries,
             selfUserId
         )
     }

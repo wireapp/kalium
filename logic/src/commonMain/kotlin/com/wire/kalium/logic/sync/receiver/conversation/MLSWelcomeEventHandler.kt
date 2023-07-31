@@ -20,17 +20,20 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.persistence.dao.ConversationDAO
-import com.wire.kalium.persistence.dao.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.decodeBase64Bytes
-import kotlinx.coroutines.flow.first
 
 interface MLSWelcomeEventHandler {
     suspend fun handle(event: Event.Conversation.MLSWelcome)
@@ -38,33 +41,39 @@ interface MLSWelcomeEventHandler {
 
 internal class MLSWelcomeEventHandlerImpl(
     val mlsClientProvider: MLSClientProvider,
-    val conversationDAO: ConversationDAO
+    val conversationDAO: ConversationDAO,
+    val conversationRepository: ConversationRepository
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(event: Event.Conversation.MLSWelcome) {
         mlsClientProvider
             .getMLSClient()
             .flatMap { client ->
-                wrapMLSRequest { client.processWelcomeMessage(event.message.decodeBase64Bytes()) }
-                    .flatMap { groupID ->
+                wrapMLSRequest {
+                    client.processWelcomeMessage(event.message.decodeBase64Bytes())
+                }
+            }.flatMap { groupID ->
+                val groupIdLogPair = Pair("groupId", groupID.obfuscateId())
 
-                        var infoLogPair = Pair("info", "Created MLS group from welcome message")
-                        val groupIdLogPair = Pair("groupId", groupID.obfuscateId())
-
-                        wrapStorageRequest {
-                            if (conversationDAO.getConversationByGroupID(groupID).first() != null) {
-                                // Welcome arrived after the conversation create event, updating existing conversation.
-                                conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
-                                infoLogPair = Pair("info", "Updated conversation from welcome message")
-                            }
-                            kaliumLogger
-                                .logEventProcessing(
-                                    EventLoggingStatus.SUCCESS,
-                                    event,
-                                    infoLogPair,
-                                    groupIdLogPair
-                                )
-                        }
+                wrapStorageRequest {
+                    conversationRepository.fetchConversationIfUnknown(event.conversationId).map {
+                        conversationDAO.updateConversationGroupState(ConversationEntity.GroupState.ESTABLISHED, groupID)
                     }
+                }.onSuccess {
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.SUCCESS,
+                            event,
+                            Pair("info", "Established mls conversation from welcome message"),
+                            groupIdLogPair
+                        )
+                }.onFailure {
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.FAILURE,
+                            event,
+                            groupIdLogPair
+                        )
+                }
             }
     }
 }

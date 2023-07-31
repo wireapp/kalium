@@ -22,7 +22,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -36,11 +35,13 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
-import com.wire.kalium.logic.sync.receiver.message.ClearConversationContentHandler
-import com.wire.kalium.logic.sync.receiver.message.DeleteForMeHandler
-import com.wire.kalium.logic.sync.receiver.message.LastReadContentHandler
-import com.wire.kalium.logic.sync.receiver.message.MessageTextEditHandler
-import com.wire.kalium.logic.sync.receiver.message.ReceiptMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
+import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
+import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.util.MessageContentEncoder
 import io.mockative.Mock
@@ -99,15 +100,41 @@ class ApplicationMessageHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenButtonActionConfirmationMessage_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        val messageId = "messageId"
+        val validImageContent = MessageContent.ButtonActionConfirmation(
+            referencedMessageId = messageId,
+            buttonId = "buttonId"
+        )
+        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withButtonActionConfirmation(Either.Right(Unit))
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        messageHandler.handleContent(
+            messageEvent.conversationId,
+            messageEvent.timestampIso,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        verify(arrangement.buttonActionConfirmationHandler)
+            .suspendFunction(arrangement.buttonActionConfirmationHandler::handle)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
 
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
-
-        @Mock
-        val assetRepository = mock(classOf<AssetRepository>())
 
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
@@ -134,14 +161,19 @@ class ApplicationMessageHandlerTest {
         val deleteForMeHandler = mock(classOf<DeleteForMeHandler>())
 
         @Mock
+        val deleteMessageHandler = mock(classOf<DeleteMessageHandler>())
+
+        @Mock
         val receiptMessageHandler = mock(classOf<ReceiptMessageHandler>())
 
         @Mock
         val assetMessageHandler = mock(classOf<AssetMessageHandler>())
 
+        @Mock
+        val buttonActionConfirmationHandler = mock(classOf<ButtonActionConfirmationHandler>())
+
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
-            assetRepository,
             messageRepository,
             assetMessageHandler,
             lazyOf(callManager),
@@ -151,8 +183,10 @@ class ApplicationMessageHandlerTest {
             lastReadContentHandler,
             clearConversationContentHandler,
             deleteForMeHandler,
+            deleteMessageHandler,
             MessageContentEncoder(),
             receiptMessageHandler,
+            buttonActionConfirmationHandler,
             TestUser.SELF.id
         )
 
@@ -177,11 +211,18 @@ class ApplicationMessageHandlerTest {
                 )
         }
 
-        fun withErrorGetMessageById(coreFailure: CoreFailure) = apply {
+        fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(coreFailure))
+                .thenReturn(Either.Left(storageFailure))
+        }
+
+        fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
+            given(buttonActionConfirmationHandler)
+                .suspendFunction(buttonActionConfirmationHandler::handle)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
         }
 
         fun arrange() = this to applicationMessageHandler
