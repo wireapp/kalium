@@ -349,7 +349,7 @@ sealed interface Message {
             Pending -> "PENDING"
             Sent -> "SENT"
             Delivered -> "DELIVERED"
-            is Read -> "READ_COUNT$readCount"
+            is Read -> "READ_COUNT@$readCount"
             Failed -> "FAILED"
             FailedRemotely -> "FAILED_REMOTELY"
         }
