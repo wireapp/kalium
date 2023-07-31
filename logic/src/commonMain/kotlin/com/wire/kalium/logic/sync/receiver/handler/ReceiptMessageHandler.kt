@@ -64,16 +64,14 @@ internal class ReceiptMessageHandlerImpl(
         messageContent: MessageContent.Receipt,
         message: Message.Signaling
     ) {
-        messageContent.messageIds.forEach {
-            messageRepository.updateMessageStatus(
-                messageStatus = when (messageContent.type) {
-                    ReceiptType.DELIVERED -> MessageEntity.Status.DELIVERED
-                    ReceiptType.READ -> MessageEntity.Status.READ
-                },
-                conversationId = message.conversationId,
-                messageUuid = it
-            )
-        }
+        messageRepository.updateMessageStatus(
+            messageUuids = messageContent.messageIds,
+            conversationId = message.conversationId,
+            messageStatus = when (messageContent.type) {
+                ReceiptType.DELIVERED -> MessageEntity.Status.DELIVERED
+                ReceiptType.READ -> MessageEntity.Status.READ
+            },
+        )
     }
 
 }

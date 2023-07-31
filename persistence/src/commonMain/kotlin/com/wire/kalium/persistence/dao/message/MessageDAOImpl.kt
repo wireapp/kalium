@@ -206,6 +206,16 @@ internal class MessageDAOImpl internal constructor(
             queries.updateMessageStatus(status, id, conversationId)
         }
 
+    override suspend fun updateMessageStatus(
+        status: MessageEntity.Status,
+        id: List<String>,
+        conversationId: QualifiedIDEntity
+    ) = withContext(coroutineContext) {
+        queries.transaction {
+            id.forEach { queries.updateMessageStatus(status, it, conversationId) }
+        }
+    }
+
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
