@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.member.ConversationsWithMembers
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
@@ -212,10 +213,10 @@ interface ConversationRepository {
         conversationId: ConversationId
     ): Either<CoreFailure, List<UserId>>
 
-    suspend fun getConversationWithMembersWithBothDomains(
+    suspend fun getConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Either<CoreFailure, Map<ConversationId, List<UserId>>>
+    ): Either<CoreFailure, ConversationsWithMembers>
 
     suspend fun removeMembersFromConversationByDomain(
         domain: String,
@@ -791,13 +792,15 @@ internal class ConversationDataSource internal constructor(
         memberDAO.getMemberIdsByTheSameDomainInConversation(domain, conversationId.toDao()).map { it.toModel() }
     }
 
-    override suspend fun getConversationWithMembersWithBothDomains(
+    override suspend fun getConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Either<CoreFailure, Map<ConversationId, List<UserId>>> = wrapStorageRequest {
-        memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
-            .mapKeys { it.key.toModel() }
-            .mapValues { it.value.map { idEntity -> idEntity.toModel() } }
+    ): Either<CoreFailure, ConversationsWithMembers> = wrapStorageRequest {
+        val entity= memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
+        ConversationsWithMembers(
+            oneOnOne = entity.oneOnOne.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } },
+            group = entity.group.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } }
+        )
     }
 
     override suspend fun removeMembersFromConversationByDomain(

@@ -261,6 +261,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> null
+            MessageEntity.ContentType.FEDERATION -> null
         }
     }
 
@@ -367,6 +368,14 @@ class MessageMapperImpl(
         is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
         is MessageContent.ConversationDegradedMLS -> MessageEntityContent.ConversationDegradedMLS
         is MessageContent.ConversationDegradedProteus -> MessageEntityContent.ConversationDegradedProteus
+        is MessageContent.Federation.ConnectionRemoved -> MessageEntityContent.Federation(
+            domainList,
+            MessageEntity.FederationType.CONNECTION_REMOVED
+        )
+        is MessageContent.Federation.Removed -> MessageEntityContent.Federation(
+            listOf(domain),
+            MessageEntity.FederationType.DELETE
+        )
     }
 
     private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
@@ -457,6 +466,10 @@ class MessageMapperImpl(
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
         is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
         is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
+        is MessageEntityContent.Federation -> when(type) {
+            MessageEntity.FederationType.DELETE -> MessageContent.Federation.Removed(domainList.first())
+            MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.Federation.ConnectionRemoved(domainList)
+        }
     }
 }
 
@@ -517,6 +530,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
+    is MessagePreviewEntityContent.Federation -> MessagePreviewContent.Unknown
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {

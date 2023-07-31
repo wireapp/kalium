@@ -51,7 +51,8 @@ object MessageMapper {
         text: String?,
         assetMimeType: String?,
         selfUserId: QualifiedIDEntity?,
-        senderUserId: QualifiedIDEntity?
+        senderUserId: QualifiedIDEntity?,
+        federationDomainList: List<String>?
     ): MessagePreviewEntityContent {
         return if (isEphemeral) {
             MessagePreviewEntityContent.Ephemeral(isGroupConversation)
@@ -67,7 +68,8 @@ object MessageMapper {
                 text,
                 assetMimeType,
                 selfUserId,
-                senderUserId
+                senderUserId,
+                federationDomainList
             )
         }
     }
@@ -85,7 +87,8 @@ object MessageMapper {
         text: String?,
         assetMimeType: String?,
         selfUserId: QualifiedIDEntity?,
-        senderUserId: QualifiedIDEntity?
+        senderUserId: QualifiedIDEntity?,
+        federationDomainList: List<String>?
     ): MessagePreviewEntityContent {
         return when (contentType) {
             MessageEntity.ContentType.TEXT -> when {
@@ -194,6 +197,9 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Federation(
+                domainList = federationDomainList.requireField("federationDomainList")
+            )
         }
     }
 
@@ -222,7 +228,8 @@ object MessageMapper {
         isUnread: Boolean,
         isNotified: Long,
         mutedStatus: ConversationEntity.MutedStatus?,
-        conversationType: ConversationEntity.Type?
+        conversationType: ConversationEntity.Type?,
+        federationDomainList: List<String>?
     ): MessagePreviewEntity {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
@@ -237,7 +244,8 @@ object MessageMapper {
             text = text,
             assetMimeType = assetMimeType,
             selfUserId = selfUserId,
-            senderUserId = senderUserId
+            senderUserId = senderUserId,
+            federationDomainList = federationDomainList
         )
 
         return MessagePreviewEntity(
@@ -424,7 +432,9 @@ object MessageMapper {
         conversationReceiptModeChanged: Boolean?,
         conversationMessageTimerChanged: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
-        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        federationDomainList: List<String>?,
+        federationType: MessageEntity.FederationType?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -515,6 +525,10 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessageEntityContent.ConversationDegradedMLS
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessageEntityContent.ConversationDegradedProteus
+            MessageEntity.ContentType.FEDERATION -> MessageEntityContent.Federation(
+                domainList = federationDomainList.requireField("federationDomainList"),
+                type = federationType.requireField("federationType")
+            )
         }
 
         return createMessageEntity(

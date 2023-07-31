@@ -243,6 +243,10 @@ sealed class MessageContent {
     object ConversationCreated : System()
     object ConversationDegradedMLS : System()
     object ConversationDegradedProteus : System()
+    sealed class Federation : System() {
+        data class Removed(val domain: String) : Federation()
+        data class ConnectionRemoved(val domainList: List<String>) : Federation()
+    }
 }
 
 /**
@@ -286,6 +290,8 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationDegradedProteus -> "ConversationVerification.Degraded.Proteus"
     is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
     null -> "Unknown"
+    is MessageContent.Federation.ConnectionRemoved -> "Federation.ConnectionRemoved"
+    is MessageContent.Federation.Removed -> "Federation.Removed"
 }
 
 sealed class MessagePreviewContent {
@@ -340,7 +346,7 @@ sealed class MessagePreviewContent {
 
     data class FederatedMembersRemoved(
         val isSelfUserRemoved: Boolean,
-        val otherUserIdList: List<UserId> // TODO add usernames
+        val otherUserIdList: List<UserId>
     ) : MessagePreviewContent()
 
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent()

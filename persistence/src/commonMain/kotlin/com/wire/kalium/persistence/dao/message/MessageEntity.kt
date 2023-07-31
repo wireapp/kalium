@@ -176,11 +176,15 @@ sealed interface MessageEntity {
         TEXT, ASSET, KNOCK, MEMBER_CHANGE, MISSED_CALL, RESTRICTED_ASSET,
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
-        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS, CONVERSATION_DEGRADED_PREOTEUS
+        CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS, CONVERSATION_DEGRADED_PREOTEUS, FEDERATION
     }
 
     enum class MemberChangeType {
         ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED
+    }
+
+    enum class FederationType {
+        DELETE, CONNECTION_REMOVED
     }
 
     enum class Visibility {
@@ -304,6 +308,7 @@ sealed class MessageEntityContent {
     object ConversationCreated : System()
     object ConversationDegradedMLS : System()
     object ConversationDegradedProteus : System()
+    data class Federation(val domainList: List<String>, val type: MessageEntity.FederationType) : System()
 }
 
 /**
@@ -387,6 +392,7 @@ sealed class MessagePreviewEntityContent {
     data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
+    data class Federation(val domainList: List<String>) : MessagePreviewEntityContent()
 
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()

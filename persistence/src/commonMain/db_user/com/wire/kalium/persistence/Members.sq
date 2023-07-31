@@ -58,8 +58,8 @@ FROM Member
 WHERE user LIKE ('%@' || :domain) AND conversation = :conversation;
 
 getMembersFromOneOfTwoDomains:
-SELECT *
-FROM Member
+SELECT mem.*, con.type FROM Member AS mem
+JOIN Conversation AS con ON con.qualified_id = mem.conversation
 WHERE user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain);
 
 removeMembersFromConversationByDomain:

@@ -103,6 +103,12 @@ internal interface UserRepository {
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
+
+    /**
+     * Marks federated user as defederated in order to hold conversation history
+     * when backends stops federating.
+     */
+    suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
 
@@ -419,6 +425,12 @@ internal class UserDataSource internal constructor(
     override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             userDAO.markUserAsDeleted(userId.toDao())
+        }
+    }
+
+    override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            userDAO.markUserAsDefederated(userId.toDao())
         }
     }
 

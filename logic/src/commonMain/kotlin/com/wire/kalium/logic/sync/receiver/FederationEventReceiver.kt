@@ -20,6 +20,8 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -30,7 +32,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -41,13 +43,16 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Instant
 
 interface FederationEventReceiver : EventReceiver<Event.Federation>
 
+@Suppress("LongParameterList")
 class FederationEventReceiverImpl internal constructor(
     private val conversationRepository: ConversationRepository,
+    private val connectionRepository: ConnectionRepository,
+    private val userRepository: UserRepository,
     private val memberDAO: MemberDAO,
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: UserId,
@@ -63,22 +68,43 @@ class FederationEventReceiverImpl internal constructor(
     }
 
     private suspend fun handleDeleteEvent(event: Event.Federation.Delete) = withContext(dispatchers.io) {
-        conversationRepository.getConversationWithMembersWithBothDomains(event.domain, selfUserId.domain)
-            .onSuccess { conversationIdWithUserIdList ->
-                conversationIdWithUserIdList.forEach { (conversationId, userIds) ->
+        // remove pending and sent connections from federated users
+        connectionRepository.getConnections()
+            .map { it.firstOrNull() }
+            .onSuccess {
+                it?.forEach { conversationDetails ->
+                    if (conversationDetails is ConversationDetails.Connection
+                        && conversationDetails.otherUser?.id?.domain == event.domain
+                    ) {
+                        connectionRepository.deleteConnection(conversationDetails.conversationId)
+                    }
+                }
+            }
+
+        conversationRepository.getConversationsWithMembersWithBothDomains(event.domain, selfUserId.domain)
+            .onSuccess { conversationsWithMembers ->
+                // mark users as defederated to hold conversation history in oneOnOne conversations
+                conversationsWithMembers.oneOnOne.forEach { (conversationId, userIds) ->
+                    handleFederationDeleteEvent(conversationId, event.domain)
+                    userIds.filter { it.domain == event.domain }.forEach { userId ->
+                        userRepository.defederateUser(userId)
+                    }
+                }
+
+                // remove
+                conversationsWithMembers.group.forEach { (conversationId, userIds) ->
+                    handleFederationDeleteEvent(conversationId, event.domain)
                     when (conversationId.domain) {
-                        selfUserId.domain -> {
+                        // remove defederated users from self domain conversations
+                        selfUserId.domain ->
                             removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == selfUserId.domain })
-                            // TODO check how 1on1 conversations behave
-                        }
 
-                        event.domain -> {
+                        // remove self domain users from defederated domain conversations
+                        event.domain ->
                             removeMembersFromConversation(conversationId, userIds.filter { it.domain == selfUserId.domain })
-                            // TODO check how 1on1 conversations behave
-                        }
 
+                        // remove self domain and defederated domain users from not defederated and self domain conversations
                         else -> removeMembersFromConversation(conversationId, userIds)
-
                     }
                 }
             }
@@ -97,47 +123,31 @@ class FederationEventReceiverImpl internal constructor(
                         Pair("errorInfo", "$it")
                     )
             }
-        // TODO remove other domain from one1one conversations
-
-        // TODO remove connection requests with domain
-
     }
 
-    // TODO KBX handle all cases
     private suspend fun handleConnectionRemovedEvent(event: Event.Federation.ConnectionRemoved) =
         withContext(dispatchers.io) {
             val firstDomain = event.domains.first()
             val secondDomain = event.domains.last()
 
-            conversationRepository.getConversationWithMembersWithBothDomains(firstDomain, secondDomain)
-                .onSuccess { conversationIdWithUserIdList ->
-                    conversationIdWithUserIdList.forEach { (conversationId, userIds) ->
+            conversationRepository.getConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
+                .onSuccess { conversationsWithMembers ->
+                    conversationsWithMembers.group.forEach { (conversationId, userIds) ->
+                        handleFederationConnectionRemovedEvent(conversationId, event.domains)
                         when (conversationId.domain) {
-                            firstDomain -> {
+                            // remove secondDomain users from firstDomain conversation
+                            firstDomain ->
                                 removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == firstDomain })
-                            }
 
-                            secondDomain -> {
+                            // remove firstDomain users from secondDomain conversation
+                            secondDomain ->
                                 removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == secondDomain })
-                            }
 
+                            // remove firstDomain and secondDomain users from rest conversations
                             else -> removeMembersFromConversation(conversationId, userIds)
-
                         }
                     }
                 }
-
-            conversationRepository.getConversationIdsByDomain(selfUserId.domain).map { conversationIds ->
-                conversationIds.map { conversationId ->
-                    event.domains.map {
-                        conversationRepository.getMemberIdsByTheSameDomainInConversation(it, conversationId)
-                            .onSuccess { userIds ->
-                                // TODO
-                            }
-                    }
-                }
-
-            }
                 .onSuccess {
                     kaliumLogger
                         .logEventProcessing(
@@ -182,7 +192,35 @@ class FederationEventReceiverImpl internal constructor(
             conversationId = conversationID,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
-            status = Message.Status.SENT,
+            status = Message.Status.READ,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+        persistMessage(message)
+    }
+
+    private suspend fun handleFederationDeleteEvent(conversationID: ConversationId, domain: String) {
+        val message = Message.System(
+            id = uuid4().toString(),
+            content = MessageContent.Federation.Removed(domain),
+            conversationId = conversationID,
+            date = DateTimeUtil.currentIsoDateTimeString(),
+            senderUserId = selfUserId,
+            status = Message.Status.READ,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+        persistMessage(message)
+    }
+
+    private suspend fun handleFederationConnectionRemovedEvent(conversationID: ConversationId, domainList: List<String>) {
+        val message = Message.System(
+            id = uuid4().toString(),
+            content = MessageContent.Federation.ConnectionRemoved(domainList),
+            conversationId = conversationID,
+            date = DateTimeUtil.currentIsoDateTimeString(),
+            senderUserId = selfUserId,
+            status = Message.Status.READ,
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )

@@ -324,6 +324,23 @@ sealed class EventContentDTO {
     }
 
     @Serializable
+    sealed class Federation: EventContentDTO() {
+
+        @Serializable
+        @SerialName("federation.delete")
+        data class FederationDeleteDTO(
+            @SerialName("domain") val domain: String
+        ) : Federation()
+
+        @Serializable
+        @SerialName("federation.connectionRemoved")
+        data class FederationConnectionRemovedDTO(
+            @SerialName("domains") val domains: List<String>
+        ) : Federation()
+
+    }
+
+    @Serializable
     sealed class FeatureConfig : EventContentDTO() {
         @Serializable(with = JsonCorrectingSerializer::class)
         @SerialName("feature-config.update")

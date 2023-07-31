@@ -100,5 +100,7 @@ internal class PersistMessageUseCaseImpl(
             MessageContent.ConversationDegradedMLS -> false
             MessageContent.ConversationDegradedProteus -> false
             is MessageContent.MemberChange.FederationRemoved -> false
+            is MessageContent.Federation.ConnectionRemoved -> false
+            is MessageContent.Federation.Removed -> false
         }
 }

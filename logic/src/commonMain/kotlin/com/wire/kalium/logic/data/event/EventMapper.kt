@@ -87,6 +87,22 @@ class EventMapper(
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Federation -> federation(id, eventContentDTO)
+        }
+
+    private fun federation(id: String, eventContentDTO: EventContentDTO.Federation): Event =
+        when (eventContentDTO) {
+            is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
+                id,
+                false,
+                eventContentDTO.domains
+            )
+
+            is EventContentDTO.Federation.FederationDeleteDTO -> Event.Federation.Delete(
+                id,
+                false,
+                eventContentDTO.domain
+            )
         }
 
     fun conversationMessageTimerUpdate(

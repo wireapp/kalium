@@ -52,7 +52,8 @@ class UserMapper {
             botService = user.bot_service,
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
-            expiresAt = user.expires_at
+            expiresAt = user.expires_at,
+            defederated = user.defederated
         )
     }
 
@@ -74,6 +75,7 @@ class UserMapper {
         deleted: Boolean,
         hasIncompleteMetadata: Boolean,
         expiresAt: Instant?,
+        defederated: Boolean,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -94,7 +96,8 @@ class UserMapper {
             botService = botService,
             deleted = deleted,
             hasIncompleteMetadata = hasIncompleteMetadata,
-            expiresAt = expiresAt
+            expiresAt = expiresAt,
+            defederated = defederated
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -348,6 +351,10 @@ class UserDAOImpl internal constructor(
 
     override suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
         userQueries.markUserAsDeleted(user_type = UserTypeEntity.NONE, qualified_id = qualifiedID)
+    }
+
+    override suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity) {
+        userQueries.markUserAsDefederated(qualifiedID)
     }
 
     override suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String) = withContext(queriesContext) {

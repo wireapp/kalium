@@ -55,7 +55,8 @@ data class UserEntity(
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
-    val expiresAt: Instant?
+    val expiresAt: Instant?,
+    val defederated: Boolean
 )
 
 data class UserEntityMinimized(
@@ -183,6 +184,7 @@ interface UserDAO {
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
+    suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>>

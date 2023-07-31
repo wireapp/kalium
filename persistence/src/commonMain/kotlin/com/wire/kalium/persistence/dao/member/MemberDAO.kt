@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -60,7 +61,7 @@ interface MemberDAO {
     suspend fun getConversationWithUserIdsWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Map<QualifiedIDEntity, List<UserIDEntity>>
+    ): ConversationsWithMembersEntity
 
     suspend fun removeMembersFromConversationByDomain(
         domain: String,
@@ -193,14 +194,24 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun getConversationWithUserIdsWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Map<QualifiedIDEntity, List<UserIDEntity>> = withContext(coroutineContext) {
-        memberQueries.getMembersFromOneOfTwoDomains(firstDomain, secondDomain).executeAsList()
-            .groupBy { it.conversation }
-            .filter { (_, members) ->
-                members.any { it.conversation.domain == firstDomain } &&
-                        members.any { it.conversation.domain == secondDomain }
+    ): ConversationsWithMembersEntity = withContext(coroutineContext) {
+        val membersByConversationType = memberQueries.getMembersFromOneOfTwoDomains(firstDomain, secondDomain).executeAsList()
+            .groupBy { it.type }
+
+        ConversationsWithMembersEntity(
+            oneOnOne = membersByConversationType[ConversationEntity.Type.ONE_ON_ONE]
+                ?.groupBy { it.conversation }
+                ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
+                ?: mapOf(),
+            group = membersByConversationType[ConversationEntity.Type.GROUP]
+                ?.groupBy { it.conversation }
+            ?.filter { (_, members) ->
+            members.any { it.user.domain == firstDomain } &&
+                    members.any { it.user.domain == secondDomain }
             }
-            .mapValues { it.value.map { member -> member.user } }
+            ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
+            ?: mapOf()
+        )
     }
 
     override suspend fun removeMembersFromConversationByDomain(

@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
@@ -109,6 +110,17 @@ CREATE TABLE MessageMemberChangeContent (
 
       member_change_list TEXT AS List<QualifiedIDEntity> NOT NULL,
       member_change_type TEXT AS MemberChangeType NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageFederationContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      domain_list TEXT AS List<String> NOT NULL,
+      federation_type TEXT AS FederationType NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -301,7 +313,9 @@ NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
 ConversationTimerChangedContent.message_timer AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
-FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList
+FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
+FederationContent.domain_list AS federationDomainList,
+FederationContent.federation_type AS federationType
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
@@ -324,6 +338,7 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.messag
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
 LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
+LEFT JOIN MessageFederationContent AS FederationContent ON Message.id = FederationContent.message_id AND Message.conversation_id = FederationContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 
@@ -352,7 +367,8 @@ AS SELECT
     (Message.creation_date > Conversation.last_read_date) AS isUnread,
     IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
     Conversation.muted_status AS mutedStatus,
-    Conversation.type AS conversationType
+    Conversation.type AS conversationType,
+    FederationContent.domain_list AS federationDomainList
 FROM Message
 LEFT JOIN SelfUser
 LEFT JOIN User ON Message.sender_user_id = User.qualified_id
@@ -361,7 +377,8 @@ LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = Memb
 LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
 LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageFederationContent AS FederationContent ON Message.id = FederationContent.message_id AND Message.conversation_id = FederationContent.conversation_id;
 
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
@@ -503,6 +520,10 @@ VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMemberChangeMessage:
 INSERT OR IGNORE INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
+VALUES(?, ?, ?, ?);
+
+insertFederationMessage:
+INSERT OR IGNORE INTO MessageFederationContent(message_id, conversation_id, domain_list, federation_type)
 VALUES(?, ?, ?, ?);
 
 insertMessageUnknownContent:

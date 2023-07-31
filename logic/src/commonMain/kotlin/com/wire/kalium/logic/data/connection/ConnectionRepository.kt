@@ -79,6 +79,7 @@ interface ConnectionRepository {
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
+    suspend fun deleteConnection(conversationId: ConversationId): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -227,6 +228,7 @@ internal class ConnectionDataSource(
                         )
                     )
                     insertConversationFromConnection(connection)
+                    // should we insert first user before creating conversation ?
                     userDAO.insertUser(userEntity)
                     connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
                 }
@@ -274,7 +276,7 @@ internal class ConnectionDataSource(
         }
     }
 
-    private suspend fun deleteCancelledConnection(conversationId: ConversationId) = wrapStorageRequest {
+    override suspend fun deleteConnection(conversationId: ConversationId) = wrapStorageRequest {
         connectionDAO.deleteConnectionDataAndConversation(conversationId.toDao())
     }
 
@@ -297,7 +299,7 @@ internal class ConnectionDataSource(
     private suspend fun handleUserConnectionStatusPersistence(connection: Connection): Either<CoreFailure, Unit> =
         when (connection.status) {
             MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(connection)
-            CANCELLED -> deleteCancelledConnection(connection.qualifiedConversationId)
+            CANCELLED -> deleteConnection(connection.qualifiedConversationId)
             ACCEPTED -> updateConversationMemberFromConnection(connection)
         }
 }
