@@ -363,8 +363,6 @@ LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
 
-=======
->>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
