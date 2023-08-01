@@ -61,7 +61,7 @@ object TestMessage {
         date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
-        status = Message.Status.PENDING,
+        status = Message.Status.Pending,
         editStatus = Message.EditStatus.NotEdited,
         isSelfMessage = false
     )
@@ -72,7 +72,7 @@ object TestMessage {
         conversationId = ConversationId("conv", "id"),
         date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
-        status = Message.Status.PENDING,
+        status = Message.Status.Pending,
         expirationData = null
     )
 
@@ -83,7 +83,7 @@ object TestMessage {
         date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
-        status = Message.Status.PENDING,
+        status = Message.Status.Pending,
         editStatus = Message.EditStatus.NotEdited,
         isSelfMessage = false
     )
@@ -98,7 +98,8 @@ object TestMessage {
         content = MessageEntityContent.Text("Ciao!"),
         senderClientId = "clientId",
         editStatus = MessageEntity.EditStatus.NotEdited,
-        senderName = "senderName"
+        senderName = "senderName",
+        readCount = 0
     )
 
     val BROADCAST_MESSAGE = BroadcastMessage(
@@ -107,7 +108,7 @@ object TestMessage {
         date = TEST_DATE_STRING,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
-        status = Message.Status.PENDING,
+        status = Message.Status.Pending,
         isSelfMessage = false
     )
 
@@ -120,7 +121,7 @@ object TestMessage {
         date = "currentDate",
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
-        status = Message.Status.SENT,
+        status = Message.Status.Sent,
         isSelfMessage = false,
         expirationData = null
     )

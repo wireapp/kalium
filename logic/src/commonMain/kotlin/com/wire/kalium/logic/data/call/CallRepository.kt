@@ -346,7 +346,7 @@ internal class CallDataSource(
                 conversationId,
                 DateTimeUtil.currentIsoDateTimeString(),
                 qualifiedUserId,
-                Message.Status.SENT,
+                Message.Status.Sent,
                 Message.Visibility.VISIBLE,
                 expirationData = null,
             )

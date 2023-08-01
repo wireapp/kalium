@@ -90,6 +90,7 @@ sealed interface Message {
         override fun toLogString(): String {
             return "${toLogMap().toJsonElement()}"
         }
+
         @Suppress("LongMethod")
         override fun toLogMap(): Map<String, Any?> {
             val typeKey = "type"
@@ -273,7 +274,7 @@ sealed interface Message {
                 is MessageContent.MemberChange -> mutableMapOf(
                     typeKey to "memberChange",
                     "members" to content.members.fold("") { acc, member ->
-                         "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
                     }
                 )
 
@@ -341,8 +342,27 @@ sealed interface Message {
         }
     }
 
-    enum class Status {
-        PENDING, SENT, READ, FAILED, FAILED_REMOTELY
+    sealed class Status {
+
+        object Pending : Status()
+        object Sent : Status()
+
+        object Delivered : Status()
+
+        data class Read(val readCount: Long) : Status()
+
+        object Failed : Status()
+
+        object FailedRemotely : Status()
+
+        override fun toString(): String = when (this) {
+            Pending -> "PENDING"
+            Sent -> "SENT"
+            Delivered -> "DELIVERED"
+            is Read -> "READ_COUNT@$readCount"
+            Failed -> "FAILED"
+            FailedRemotely -> "FAILED_REMOTELY"
+        }
     }
 
     sealed class EditStatus {

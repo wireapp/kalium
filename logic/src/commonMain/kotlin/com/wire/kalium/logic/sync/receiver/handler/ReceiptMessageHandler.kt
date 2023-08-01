@@ -20,8 +20,11 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.datetime.Instant
 
 internal interface ReceiptMessageHandler {
@@ -33,7 +36,8 @@ internal interface ReceiptMessageHandler {
 
 internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
-    private val receiptRepository: ReceiptRepository
+    private val receiptRepository: ReceiptRepository,
+    private val messageRepository: MessageRepository
 ) : ReceiptMessageHandler {
 
     override suspend fun handle(
@@ -45,6 +49,8 @@ internal class ReceiptMessageHandlerImpl(
         // and we can squish some performance by skipping it completely
         if (message.senderUserId == selfUserId) return
 
+        updateMessageStatus(messageContent, message)
+
         receiptRepository.persistReceipts(
             userId = message.senderUserId,
             conversationId = message.conversationId,
@@ -53,4 +59,19 @@ internal class ReceiptMessageHandlerImpl(
             messageIds = messageContent.messageIds
         )
     }
+
+    private suspend fun updateMessageStatus(
+        messageContent: MessageContent.Receipt,
+        message: Message.Signaling
+    ) {
+        messageRepository.updateMessagesStatus(
+            messageUuids = messageContent.messageIds,
+            conversationId = message.conversationId,
+            messageStatus = when (messageContent.type) {
+                ReceiptType.DELIVERED -> MessageEntity.Status.DELIVERED
+                ReceiptType.READ -> MessageEntity.Status.READ
+            },
+        )
+    }
+
 }

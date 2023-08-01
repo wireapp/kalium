@@ -23,12 +23,14 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.persistence.TestUserDatabase
@@ -36,8 +38,14 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.classOf
+import io.mockative.given
+import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -46,7 +54,19 @@ class ReceiptMessageHandlerTest {
 
     private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY)
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
-    private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository)
+
+    @Mock
+    val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
+
+    private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, messageRepository)
+
+    @BeforeTest
+    fun setUp() {
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessagesStatus)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+    }
 
     private suspend fun insertTestData() {
         userDatabase.builder.userDAO.insertUser(TestUser.ENTITY.copy(id = SELF_USER_ID_ENTITY))
@@ -141,7 +161,7 @@ class ReceiptMessageHandlerTest {
                 date = date.toIsoDateTimeString(),
                 senderUserId = senderUserId,
                 senderClientId = ClientId("SomeClientId"),
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 isSelfMessage = false,
                 expirationData = null
             ),

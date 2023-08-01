@@ -223,7 +223,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         date = DateTimeUtil.currentIsoDateTimeString(),
                         senderUserId = userId,
                         senderClientId = currentClientId,
-                        status = Message.Status.PENDING,
+                        status = Message.Status.Pending,
                         editStatus = Message.EditStatus.NotEdited,
                         expectsReadConfirmation = expectsReadConfirmation,
                         expirationData = expireAfter?.let { Message.ExpirationData(it) },
