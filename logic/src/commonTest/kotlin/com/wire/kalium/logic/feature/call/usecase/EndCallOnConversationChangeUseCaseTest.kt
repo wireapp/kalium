@@ -42,6 +42,9 @@ class EndCallOnConversationChangeUseCaseTest {
     @Mock
     private val endCall = mock(classOf<EndCallUseCase>())
 
+    @Mock
+    private val conversationClientsInCallUpdater = mock(classOf<ConversationClientsInCallUpdater>())
+
     private lateinit var endCallOnConversationChange: EndCallOnConversationChangeUseCase
 
     @BeforeTest
@@ -49,7 +52,8 @@ class EndCallOnConversationChangeUseCaseTest {
         endCallOnConversationChange = EndCallOnConversationChangeUseCaseImpl(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
-            endCallUseCase = endCall
+            endCallUseCase = endCall,
+            conversationClientsInCallUpdater = conversationClientsInCallUpdater
         )
 
         given(callRepository)
@@ -92,6 +96,11 @@ class EndCallOnConversationChangeUseCaseTest {
             }
 
         endCallOnConversationChange()
+
+        verify(conversationClientsInCallUpdater)
+            .suspendFunction(conversationClientsInCallUpdater::invoke)
+            .with(eq(conversationId))
+            .wasInvoked(once)
 
         verify(endCall)
             .suspendFunction(endCall::invoke)
