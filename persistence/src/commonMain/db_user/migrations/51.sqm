@@ -29,7 +29,6 @@ CREATE TABLE ButtonContent (
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW MessageDetailsView
->>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
 AS SELECT
 Message.id AS id,
 Message.conversation_id AS conversationId,
@@ -43,10 +42,7 @@ Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 Message.expire_after_millis AS expireAfterMillis,
 Message.self_deletion_start_date AS selfDeletionStartDate,
-<<<<<<< HEAD
 IFNULL ((SELECT COUNT (*) FROM Receipt WHERE message_id = Message.id), 0) AS readCount,
-=======
->>>>>>> 8530252467bef492ed7fdc7eec7171bca4d4bd9e
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
