@@ -917,6 +917,7 @@ class ConversationRepositoryTest {
                 null,
                 null,
                 null,
+                null,
                 null
             )
         )
