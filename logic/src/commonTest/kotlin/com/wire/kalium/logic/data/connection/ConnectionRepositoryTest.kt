@@ -123,7 +123,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withSuccessfulCreateConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
-            .withFetchConversationSucceed()
+            .withFetchSentConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -190,7 +190,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
-            .withFetchConversationSucceed()
+            .withFetchSentConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -411,6 +411,15 @@ class ConnectionRepositoryTest {
         fun withFetchConversationSucceed(): Arrangement {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::fetchConversation)
+                .whenInvokedWith(any())
+                .then { Either.Right(Unit) }
+            return this
+        }
+
+
+        fun withFetchSentConversationSucceed(): Arrangement {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchSentConnectionConversation)
                 .whenInvokedWith(any())
                 .then { Either.Right(Unit) }
             return this
