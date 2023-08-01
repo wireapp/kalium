@@ -165,14 +165,12 @@ class FederationEventReceiverImpl internal constructor(
                 }
         }
 
-
     private suspend fun removeMembersFromConversation(conversationID: ConversationId, userIDList: List<UserId>) {
         deleteMembers(userIDList, conversationID)
             .onSuccess {
                 handleMemberRemovedEvent(conversationID, userIDList)
             }
     }
-
 
     private suspend fun deleteMembers(
         userIDList: List<UserId>,

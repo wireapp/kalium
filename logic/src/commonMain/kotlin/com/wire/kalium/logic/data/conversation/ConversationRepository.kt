@@ -796,7 +796,7 @@ internal class ConversationDataSource internal constructor(
         firstDomain: String,
         secondDomain: String
     ): Either<CoreFailure, ConversationsWithMembers> = wrapStorageRequest {
-        val entity= memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
+        val entity = memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
         ConversationsWithMembers(
             oneOnOne = entity.oneOnOne.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } },
             group = entity.group.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } }

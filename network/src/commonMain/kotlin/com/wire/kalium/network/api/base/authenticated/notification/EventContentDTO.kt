@@ -324,7 +324,7 @@ sealed class EventContentDTO {
     }
 
     @Serializable
-    sealed class Federation: EventContentDTO() {
+    sealed class Federation : EventContentDTO() {
 
         @Serializable
         @SerialName("federation.delete")

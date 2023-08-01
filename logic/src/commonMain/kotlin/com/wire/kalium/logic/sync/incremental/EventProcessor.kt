@@ -51,6 +51,7 @@ internal interface EventProcessor {
     suspend fun processEvent(event: Event): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class EventProcessorImpl(
     private val eventRepository: EventRepository,
     private val conversationEventReceiver: ConversationEventReceiver,

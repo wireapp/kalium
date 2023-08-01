@@ -329,11 +329,13 @@ class MessageMapperImpl(
         is MessageContent.Knock -> MessageEntityContent.Knock(hotKnock = regularMessage.hotKnock)
         is MessageContent.Composite -> MessageEntityContent.Composite(
             text = regularMessage.textContent?.let(this::toTextEntity),
-            buttonList = regularMessage.buttonList.map { ButtonEntity(
-                id = it.id,
-                text = it.text,
-                isSelected = it.isSelected
-            ) },
+            buttonList = regularMessage.buttonList.map {
+                ButtonEntity(
+                    id = it.id,
+                    text = it.text,
+                    isSelected = it.isSelected
+                )
+            },
         )
     }
 
@@ -385,6 +387,7 @@ class MessageMapperImpl(
             domainList,
             MessageEntity.FederationType.CONNECTION_REMOVED
         )
+
         is MessageContent.Federation.Removed -> MessageEntityContent.Federation(
             listOf(domain),
             MessageEntity.FederationType.DELETE
@@ -490,7 +493,7 @@ class MessageMapperImpl(
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
         is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
         is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
-        is MessageEntityContent.Federation -> when(type) {
+        is MessageEntityContent.Federation -> when (type) {
             MessageEntity.FederationType.DELETE -> MessageContent.Federation.Removed(domainList.first())
             MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.Federation.ConnectionRemoved(domainList)
         }
