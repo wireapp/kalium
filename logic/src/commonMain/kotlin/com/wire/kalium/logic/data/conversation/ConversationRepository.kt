@@ -421,6 +421,7 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+    // TODO: this function should/might be need to be removed when BE implements https://wearezeta.atlassian.net/browse/WPB-3560
     override suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
         return wrapApiRequest {
             conversationApi.fetchConversationDetails(conversationID.toApi())
