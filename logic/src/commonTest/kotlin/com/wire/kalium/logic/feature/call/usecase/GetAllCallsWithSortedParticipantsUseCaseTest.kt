@@ -16,15 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.logic.feature.call.usecase
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCase
-import com.wire.kalium.logic.feature.call.usecase.GetAllCallsWithSortedParticipantsUseCaseImpl
+import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.logic.feature.call.CallStatus
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given

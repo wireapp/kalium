@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.usecase.FlipToBackCameraUseCase
+import com.wire.kalium.logic.feature.call.FlowManagerService
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
