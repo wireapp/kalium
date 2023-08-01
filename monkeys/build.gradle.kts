@@ -17,13 +17,12 @@
  */
 
 import com.wire.kalium.plugins.commonDokkaConfig
-import com.wire.kalium.plugins.commonJvmConfig
 
 @Suppress("DSL_SCOPE_VIOLATION")
 
 plugins {
     application
-    kotlin("multiplatform")
+    kotlin("jvm")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
@@ -31,6 +30,12 @@ val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
 
 application {
     mainClass.set(mainFunctionClassName)
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+    }
 }
 
 tasks.jar {
@@ -43,75 +48,28 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-kotlin {
-    val jvmTarget = jvm {
-        commonJvmConfig(includeNativeInterop = false)
-        tasks.named("run", JavaExec::class) {
-            isIgnoreExitValue = true
-            standardInput = System.`in`
-            standardOutput = System.out
+sourceSets {
+    val main by getting {
+
+        dependencies {
+            implementation(project(":network"))
+            implementation(project(":cryptography"))
+            implementation(project(":logic"))
+            implementation(project(":util"))
+
+            implementation(libs.cliKt)
+            implementation(libs.ktor.utils)
+            implementation(libs.coroutines.core)
+            implementation(libs.ktxDateTime)
+
+            implementation(libs.ktxSerialization)
+            implementation(libs.ktor.okHttp)
+            implementation(libs.okhttp.loggingInterceptor)
         }
     }
-    macosX64 {
-        binaries {
-            executable()
-        }
-    }
-    macosArm64 {
-        binaries {
-            executable()
-        }
-    }
 
-    sourceSets {
-        val commonMain by sourceSets.getting {
-            dependencies {
-                implementation(project(":network"))
-                implementation(project(":cryptography"))
-                implementation(project(":logic"))
-                implementation(project(":util"))
-
-                implementation(libs.cliKt)
-                implementation(libs.ktor.utils)
-                implementation(libs.coroutines.core)
-                implementation(libs.ktxDateTime)
-
-                implementation(libs.ktxSerialization)
-            }
-        }
-        val jvmMain by getting {
-            dependsOn(commonMain)
-
-             dependencies {
-                 implementation(libs.ktor.okHttp)
-                 implementation(libs.okhttp.loggingInterceptor)
-             }
-        }
-        val darwinMain by creating {
-            dependsOn(commonMain)
-
-            dependencies {
-                implementation(libs.ktor.iosHttp)
-            }
-        }
-        val macosX64Main by getting {
-            dependsOn(darwinMain)
-        }
-        val macosArm64Main by getting {
-            dependsOn(darwinMain)
-        }
-
-        tasks.withType<JavaExec> {
-            // code to make run task in kotlin multiplatform work
-            val compilation = jvmTarget.compilations.getByName<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation>("main")
-
-            val classes = files(
-                compilation.runtimeDependencyFiles,
-                compilation.output.allOutputs
-            )
-            classpath(classes)
-            setJvmArgs(listOf("-Djava.library.path=/usr/local/lib/:./native/libs"))
-        }
+    tasks.withType<JavaExec> {
+        jvmArgs = listOf("-Djava.library.path=/usr/local/lib/:./native/libs")
     }
 }
 

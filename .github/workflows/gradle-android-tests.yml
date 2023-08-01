@@ -13,37 +13,37 @@ jobs:
     detekt:
         uses: ./.github/workflows/codestyle.yml
     gradle-run-tests:
-        needs: [detekt]
+        needs: [ detekt ]
         runs-on: buildjet-4vcpu-ubuntu-2204
         strategy:
             matrix:
-                api-level: [30]
+                api-level: [ 30 ]
 
         steps:
-            - name: Checkout
-              uses: actions/checkout@v3
-              with:
-                  fetch-depth: 0
+            -   name: Checkout
+                uses: actions/checkout@v3
+                with:
+                    fetch-depth: 0
 
-            - name: Set up JDK
-              uses: actions/setup-java@v3
-              with:
-                  java-version: '17'
-                  distribution: 'temurin'
-                  cache: gradle
+            -   name: Set up JDK
+                uses: actions/setup-java@v3
+                with:
+                    java-version: '17'
+                    distribution: 'temurin'
+                    cache: gradle
 
-            - name: Gradle Setup
-              uses: gradle/gradle-build-action@v2
+            -   name: Gradle Setup
+                uses: gradle/gradle-build-action@v2
 
-            - name: Validate Gradle wrapper
-              uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+            -   name: Validate Gradle wrapper
+                uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
 
-            - name: Build the samples
-              env:
-                  GITHUB_USER: ${{ github.actor }}
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              run: |
-                  ./gradlew :samples:compileDebugSources
+            -   name: Build the samples
+                env:
+                    GITHUB_USER: ${{ github.actor }}
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                run: |
+                    ./gradlew :samples:compileDebugSources
 
             # - name: AVD cache
             #   uses: actions/cache@v3
@@ -68,50 +68,50 @@ jobs:
             #       disable-animations: false
             #       script: echo "Generated AVD snapshot for caching."
 
-            - name: Android Instrumentation Tests
-              uses: reactivecircus/android-emulator-runner@v2.27.0
-              with:
-                  api-level: ${{ matrix.api-level }}
-                  target: google_apis
-                  emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-                  cores: 4
-                  ram-size: 4096M
-                  heap-size: 2048M
-                  script: ./gradlew connectedAndroidOnlyAffectedTest
-              env:
-                  GITHUB_USER: ${{ github.actor }}
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            -   name: Android Instrumentation Tests
+                uses: reactivecircus/android-emulator-runner@v2.27.0
+                with:
+                    api-level: ${{ matrix.api-level }}
+                    target: google_apis
+                    emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+                    cores: 4
+                    ram-size: 4096M
+                    heap-size: 2048M
+                    script: ./gradlew connectedAndroidOnlyAffectedTest
+                env:
+                    GITHUB_USER: ${{ github.actor }}
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Archive Test Reports
-              if: always()
-              uses: actions/upload-artifact@v3
-              with:
-                  name: test-reports
-                  path: ./**/build/reports/tests/**
+            -   name: Archive Test Reports
+                if: always()
+                uses: actions/upload-artifact@v3
+                with:
+                    name: test-reports
+                    path: ./**/build/reports/tests/**
 
-            - name: Archive Test Results
-              if: always()
-              uses: actions/upload-artifact@v3
-              with:
-                  name: test-results
-                  path: |
-                    ./**/build/test-results/**/*.xml
-                    ./**/build/outputs/androidTest-results/**/*.xml
+            -   name: Archive Test Results
+                if: always()
+                uses: actions/upload-artifact@v3
+                with:
+                    name: test-results
+                    path: |
+                        ./**/build/test-results/**/*.xml
+                        ./**/build/outputs/androidTest-results/**/*.xml
 
-            - name: Publish Unit Test Results
-              uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
-              if: always()
-              with:
-                  files: |
-                      **/build/test-results/**/*.xml
-                      **/build/outputs/androidTest-results/**/*.xml
+            -   name: Publish Unit Test Results
+                uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
+                if: always()
+                with:
+                    files: |
+                        **/build/test-results/**/*.xml
+                        **/build/outputs/androidTest-results/**/*.xml
 
-            - name: Cleanup Gradle Cache
-                # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+            -   name: Cleanup Gradle Cache
+                  # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
                 # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-              run: |
-                  rm -f ~/.gradle/caches/modules-2/modules-2.lock
-                  rm -f ~/.gradle/caches/modules-2/gc.properties
+                run: |
+                    rm -f ~/.gradle/caches/modules-2/modules-2.lock
+                    rm -f ~/.gradle/caches/modules-2/gc.properties
 
     upload-test-results-datadadog:
         runs-on: ubuntu-latest
@@ -119,18 +119,21 @@ jobs:
         if: always()
 
         steps:
-            - name: Download tests results
-            uses: actions/download-artifact@v3
-            continue-on-error: true
-            with:
-                name: test-results
-            - uses: actions/setup-node@v3
-            with:
-                node-version: 18
-            - name: Install datadog-ci
-            run: npm install -g @datadog/datadog-ci
-            - name: "Upload results"
-            env:
-                DD_API_KEY: ${{ secrets.DD_API_KEY }}
-            run: |
-                DATADOG_API_KEY="${DD_API_KEY}" DD_ENV=ci DATADOG_SITE=datadoghq.eu datadog-ci junit upload --service kalium-android ./**/*.xml
+            -   name: Download tests results
+                uses: actions/download-artifact@v3
+                continue-on-error: true
+                with:
+                    name: test-results
+                    uses: actions/setup-node@v3
+                    with:
+                    node-version: 18
+            -   name: Install datadog-ci
+                run: |
+                    npm install -g @datadog/datadog-ci
+            -   name: "Upload results"
+                env:
+                    DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+                    DD_ENV: ci
+                    DATADOG_SITE: datadoghq.eu
+                run: |
+                    find . -name "*.xml" -type f | tr '\n' ' ' | xargs -L 1 datadog-ci junit upload --service kalium-android .
