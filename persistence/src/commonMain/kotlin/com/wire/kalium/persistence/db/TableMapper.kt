@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.ColumnAdapter
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import com.wire.kalium.persistence.Call
