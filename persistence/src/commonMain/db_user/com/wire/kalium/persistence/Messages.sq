@@ -197,7 +197,6 @@ CREATE TABLE MessageRecipientFailure (
       PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
 );
 
-<<<<<<< HEAD
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
