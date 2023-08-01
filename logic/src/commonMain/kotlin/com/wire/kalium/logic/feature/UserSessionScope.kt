@@ -132,6 +132,8 @@ import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
@@ -890,6 +892,7 @@ class UserSessionScope internal constructor(
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
+            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             kaliumConfigs = kaliumConfigs
         )
     }
@@ -1261,6 +1264,13 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
+    val conversationClientsInCallUpdater: ConversationClientsInCallUpdater
+        get() = ConversationClientsInCallUpdaterImpl(
+            callManager = callManager,
+            conversationRepository = conversationRepository,
+            federatedIdMapper = federatedIdMapper
+        )
+
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val service: ServiceScope
@@ -1282,6 +1292,7 @@ class UserSessionScope internal constructor(
             qualifiedIdMapper,
             clientIdProvider,
             userConfigRepository,
+            conversationClientsInCallUpdater,
             kaliumConfigs
         )
 
