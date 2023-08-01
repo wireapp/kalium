@@ -33,10 +33,9 @@ import kotlinx.coroutines.flow.map
 
 sealed interface CoreFailure {
 
-    val isNotFoundFailure: Boolean
+    val isInvalidRequestError: Boolean
         get() = this is NetworkFailure.ServerMiscommunication
                 && this.kaliumException is KaliumException.InvalidRequestError
-                && this.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
 
     val hasUnreachableDomainsError: Boolean
         get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
