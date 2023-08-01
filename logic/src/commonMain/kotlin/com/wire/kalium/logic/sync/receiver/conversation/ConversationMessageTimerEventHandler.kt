@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -47,7 +46,7 @@ internal class ConversationMessageTimerEventHandlerImpl(
         updateMessageTimer(event)
             .onSuccess {
                 val message = Message.System(
-                    uuid4().toString(),
+                    event.id,
                     MessageContent.ConversationMessageTimerChanged(
                         messageTimer = event.messageTimer
                     ),
