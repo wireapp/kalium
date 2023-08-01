@@ -158,7 +158,7 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withErrorOnCreateConnectionResponse(userId)
-            .withFetchConversationSucceed()
+            .withFetchSentConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -407,15 +407,6 @@ class ConnectionRepositoryTest {
                 .then { either }
             return this
         }
-
-        fun withFetchConversationSucceed(): Arrangement {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversation)
-                .whenInvokedWith(any())
-                .then { Either.Right(Unit) }
-            return this
-        }
-
 
         fun withFetchSentConversationSucceed(): Arrangement {
             given(conversationRepository)
