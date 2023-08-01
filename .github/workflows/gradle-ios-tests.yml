@@ -103,4 +103,4 @@ jobs:
           DD_ENV: ci
           DATADOG_SITE: datadoghq.eu
         run: |
-          find . -name "*.xml" -type f | tr '\n' ' ' | xargs -L 1 datadog-ci junit upload --service kalium-ios .
+          find . -name "*.xml" -type f | sed 's/ /\\ /g' | tr '\n' ' ' | xargs -L 1 datadog-ci junit upload --service kalium-ios .

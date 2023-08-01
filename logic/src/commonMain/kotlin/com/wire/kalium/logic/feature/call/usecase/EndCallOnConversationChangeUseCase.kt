@@ -20,7 +20,8 @@ interface EndCallOnConversationChangeUseCase {
 class EndCallOnConversationChangeUseCaseImpl(
     private val callRepository: CallRepository,
     private val conversationRepository: ConversationRepository,
-    private val endCallUseCase: EndCallUseCase
+    private val endCallUseCase: EndCallUseCase,
+    private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
 ) : EndCallOnConversationChangeUseCase {
     override suspend operator fun invoke() {
         val callsFlow = callRepository.establishedCallsFlow().map { calls ->
@@ -37,6 +38,7 @@ class EndCallOnConversationChangeUseCaseImpl(
                         if (it is ConversationDetails.Group) {
                             // Not a member anymore
                             if (!it.isSelfUserMember) {
+                                conversationClientsInCallUpdater(calls.first())
                                 endCallUseCase(calls.first())
                             }
                         } else if (it is ConversationDetails.OneOne) {
