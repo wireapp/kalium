@@ -41,8 +41,10 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
@@ -60,14 +62,6 @@ class ReceiptMessageHandlerTest {
 
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, messageRepository)
 
-    @BeforeTest
-    fun setUp() {
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateMessagesStatus)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
-    }
-
     private suspend fun insertTestData() {
         userDatabase.builder.userDAO.insertUser(TestUser.ENTITY.copy(id = SELF_USER_ID_ENTITY))
         userDatabase.builder.userDAO.insertUser(TestUser.ENTITY.copy(id = OTHER_USER_ID_ENTITY))
@@ -77,14 +71,22 @@ class ReceiptMessageHandlerTest {
 
     @Test
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainTheNewReceipt() = runTest {
+        // given
         insertTestData()
 
         val date = DateTimeUtil.currentInstant()
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessagesStatus)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        // when
         handleNewReceipt(type, date, senderUserId)
 
+        // then
         receiptRepository.observeMessageReceipts(CONVERSATION_ID, MESSAGE_ID, ReceiptType.READ).test {
             assertEquals(1, awaitItem().size)
         }
@@ -93,14 +95,22 @@ class ReceiptMessageHandlerTest {
     @IgnoreIOS // TODO investigate why test is failing, timestamp precision?
     @Test
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldMatchTheDateAndUser() = runTest {
+        // given
         insertTestData()
 
         val date = DateTimeUtil.currentInstant()
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessagesStatus)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        // when
         handleNewReceipt(type, date, senderUserId)
 
+        // then
         receiptRepository.observeMessageReceipts(CONVERSATION_ID, MESSAGE_ID, ReceiptType.READ).test {
             val batch = awaitItem()
             assertEquals(1, batch.size)
@@ -113,6 +123,7 @@ class ReceiptMessageHandlerTest {
     @IgnoreIOS // TODO investigate why test is failing, timestamp precision?
     @Test
     fun givenAReceiptOfSelfUserIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainNoReceipts() = runTest {
+        // given
         insertTestData()
 
         val date = DateTimeUtil.currentInstant()
@@ -120,8 +131,15 @@ class ReceiptMessageHandlerTest {
         val senderUserId = SELF_USER_ID
         val type = ReceiptType.READ
 
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessagesStatus)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        // when
         handleNewReceipt(type, date, senderUserId)
 
+        // then
         receiptRepository.observeMessageReceipts(CONVERSATION_ID, MESSAGE_ID, ReceiptType.READ).test {
             assertTrue { awaitItem().isEmpty() }
         }
@@ -130,6 +148,7 @@ class ReceiptMessageHandlerTest {
     @IgnoreIOS // TODO investigate why test is failing, timestamp precision?
     @Test
     fun givenAReceiptIsHandled_whenFetchingReceiptsOfAnotherType_thenTheResultShouldContainNoReceipts() = runTest {
+        // given
         insertTestData()
 
         val date = DateTimeUtil.currentInstant()
@@ -137,21 +156,52 @@ class ReceiptMessageHandlerTest {
         // Delivery != Read
         val type = ReceiptType.DELIVERED
 
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessagesStatus)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Either.Right(Unit))
+        // when
         handleNewReceipt(type, date, senderUserId)
 
+        // then
         receiptRepository.observeMessageReceipts(CONVERSATION_ID, MESSAGE_ID, ReceiptType.READ).test {
             assertTrue { awaitItem().isEmpty() }
         }
     }
 
+    @Test
+    fun givenAReceipt_whenHandlingAReceipt_theMessageStatusIsUpdated() = runTest {
+        // given
+        val date = DateTimeUtil.currentInstant()
+        val senderUserId = OTHER_USER_ID
+        val type = ReceiptType.DELIVERED
+        val messageUuids = listOf("1", "2", "3")
+
+        given(messageRepository)
+            .suspendFunction(messageRepository::updateMessagesStatus)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(Either.Right(Unit))
+
+        // when
+        handleNewReceipt(type, date, senderUserId, messageUuids)
+
+        // then
+        verify(messageRepository)
+            .suspendFunction(messageRepository::updateMessagesStatus)
+            .with(any(), any(), eq(messageUuids))
+            .wasInvoked()
+
+    }
+
     private suspend fun handleNewReceipt(
         type: ReceiptType,
         date: Instant,
-        senderUserId: QualifiedID
+        senderUserId: QualifiedID,
+        messageIds: List<String> = listOf(MESSAGE_ID)
     ) {
         val content = MessageContent.Receipt(
             type = type,
-            messageIds = listOf(MESSAGE_ID)
+            messageIds = messageIds
         )
         receiptMessageHandler.handle(
             message = Message.Signaling(
