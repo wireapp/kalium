@@ -16,12 +16,12 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.feature.call.usecase.StartCallUseCase
+import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
