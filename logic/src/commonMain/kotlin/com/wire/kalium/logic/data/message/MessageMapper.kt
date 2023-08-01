@@ -268,7 +268,7 @@ class MessageMapperImpl(
         }
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     override fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular = when (regularMessage) {
         is MessageContent.Text -> toTextEntity(regularMessage)
 
