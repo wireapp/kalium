@@ -35,6 +35,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
@@ -99,6 +100,35 @@ class ApplicationMessageHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenButtonActionConfirmationMessage_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        val messageId = "messageId"
+        val validImageContent = MessageContent.ButtonActionConfirmation(
+            referencedMessageId = messageId,
+            buttonId = "buttonId"
+        )
+        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withButtonActionConfirmation(Either.Right(Unit))
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+        messageHandler.handleContent(
+            messageEvent.conversationId,
+            messageEvent.timestampIso,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        verify(arrangement.buttonActionConfirmationHandler)
+            .suspendFunction(arrangement.buttonActionConfirmationHandler::handle)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -139,6 +169,9 @@ class ApplicationMessageHandlerTest {
         @Mock
         val assetMessageHandler = mock(classOf<AssetMessageHandler>())
 
+        @Mock
+        val buttonActionConfirmationHandler = mock(classOf<ButtonActionConfirmationHandler>())
+
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
             messageRepository,
@@ -153,6 +186,7 @@ class ApplicationMessageHandlerTest {
             deleteMessageHandler,
             MessageContentEncoder(),
             receiptMessageHandler,
+            buttonActionConfirmationHandler,
             TestUser.SELF.id
         )
 
@@ -182,6 +216,13 @@ class ApplicationMessageHandlerTest {
                 .suspendFunction(messageRepository::getMessageById)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Left(storageFailure))
+        }
+
+        fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
+            given(buttonActionConfirmationHandler)
+                .suspendFunction(buttonActionConfirmationHandler::handle)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
         }
 
         fun arrange() = this to applicationMessageHandler

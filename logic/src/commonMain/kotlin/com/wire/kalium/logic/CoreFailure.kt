@@ -39,8 +39,7 @@ sealed interface CoreFailure {
                 && this.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
 
     val hasUnreachableDomainsError: Boolean
-        get() = this is NetworkFailure.FederatedBackendFailure
-                && this.label == "federation-unreachable-domains-error" && this.domains.isNotEmpty()
+        get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
 
     /**
      * The attempted operation requires that this client is registered.
@@ -68,6 +67,12 @@ sealed interface CoreFailure {
      */
     object OnlySystemMessageAllowed : FeatureFailure()
 
+    /**
+     * The sender ID of the event is invalid.
+     * usually happens with events that alter a message state [ButtonActionConfirmation]
+     * when the sender ID is not the same are the original message sender id
+     */
+    object InvalidEventSenderID : FeatureFailure()
     /**
      * This operation is not supported by proteus conversations
      */
@@ -110,7 +115,16 @@ sealed class NetworkFailure : CoreFailure {
     /**
      * Failure due to a federated backend context
      */
-    class FederatedBackendFailure(val label: String, val domains: List<String> = emptyList()) : NetworkFailure()
+    sealed class FederatedBackendFailure : NetworkFailure() {
+
+        data class General(val label: String) : FederatedBackendFailure()
+
+        data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
+
+        data class FailedDomains(val domains: List<String> = emptyList()) : FederatedBackendFailure()
+
+    }
+
 }
 
 interface MLSFailure : CoreFailure {
@@ -156,7 +170,15 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             when {
                 exception is KaliumException.FederationError -> {
                     val cause = exception.errorResponse.cause
-                    Either.Left(NetworkFailure.FederatedBackendFailure(exception.errorResponse.label, cause?.domains.orEmpty()))
+                    if (exception.errorResponse.label == "federation-unreachable-domains-error") {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
+                    } else {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
+                    }
+                }
+
+                exception is KaliumException.FederationConflictException -> {
+                    Either.Left(NetworkFailure.FederatedBackendFailure.ConflictingBackends(exception.errorResponse.nonFederatingBackends))
                 }
 
                 // todo SocketException is platform specific so need to wrap it in our own exceptions

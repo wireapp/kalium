@@ -129,6 +129,10 @@ sealed interface Message {
                 is MessageContent.Unknown -> mutableMapOf(
                     typeKey to "unknown"
                 )
+
+                is MessageContent.Composite -> mutableMapOf(
+                    typeKey to "composite"
+                )
             }
 
             val standardProperties = mapOf(
@@ -163,6 +167,7 @@ sealed interface Message {
         override val isSelfMessage: Boolean,
         override val expirationData: ExpirationData?
     ) : Sendable {
+        @Suppress("LongMethod")
         override fun toLogString(): String {
             return "${toLogMap().toJsonElement()}"
         }
@@ -200,17 +205,14 @@ sealed interface Message {
 
                 is MessageContent.Availability -> mutableMapOf(
                     typeKey to "availability",
-                    "content" to "$content",
                 )
 
                 is MessageContent.Cleared -> mutableMapOf(
                     typeKey to "cleared",
-                    "content" to "$content",
                 )
 
                 is MessageContent.Reaction -> mutableMapOf(
                     typeKey to "reaction",
-                    "content" to "$content",
                 )
 
                 is MessageContent.Receipt -> mutableMapOf(
@@ -220,7 +222,15 @@ sealed interface Message {
 
                 MessageContent.Ignored -> mutableMapOf(
                     typeKey to "ignored",
-                    "content" to "$content",
+                    "content" to content.getType(),
+                )
+
+                is MessageContent.ButtonAction -> mutableMapOf(
+                    typeKey to "buttonAction"
+                )
+
+                is MessageContent.ButtonActionConfirmation -> mutableMapOf(
+                    typeKey to "buttonActionConfirmation"
                 )
             }
 
@@ -294,6 +304,7 @@ sealed interface Message {
                 MessageContent.HistoryLost -> mutableMapOf(
                     typeKey to "conversationMightLostHistory"
                 )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )
