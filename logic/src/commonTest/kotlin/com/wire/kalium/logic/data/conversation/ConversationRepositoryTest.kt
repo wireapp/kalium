@@ -272,6 +272,37 @@ class ConversationRepositoryTest {
         }
 
     @Test
+    fun givenFetchingAConversation_whenFetchingAConnectionSentConversation_thenTheTypeShouldBePersistedAsPendingAlways() =
+        runTest {
+            // given
+            val (arrangement, conversationRepository) = Arrangement()
+                .withFetchConversationDetailsResult(
+                    NetworkResponse.Success(
+                        TestConversation.CONVERSATION_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+                .withSelfUserFlow(flowOf(TestUser.SELF))
+                .arrange()
+
+            // when
+            conversationRepository.fetchSentConnectionConversation(TestConversation.ID)
+
+            // then
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::insertConversations)
+                .with(
+                    matching { list ->
+                        list.any {
+                            it.type == ConversationEntity.Type.CONNECTION_PENDING
+                        }
+                    }
+                )
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
     fun givenConversationDaoReturnsAGroupConversation_whenGettingConversationDetailsById_thenReturnAGroupConversationDetails() = runTest {
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
 

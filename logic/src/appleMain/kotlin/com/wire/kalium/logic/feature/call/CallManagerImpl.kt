@@ -67,4 +67,8 @@ class CallManagerImpl : CallManager {
     override suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo) {
         TODO("Not yet implemented")
     }
+
+    override suspend fun updateConversationClients(conversationId: ConversationId, clients: String) {
+        TODO("Not yet implemented")
+    }
 }
