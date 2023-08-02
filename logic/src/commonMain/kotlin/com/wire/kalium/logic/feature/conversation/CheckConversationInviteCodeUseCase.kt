@@ -71,7 +71,7 @@ class CheckConversationInviteCodeUseCase internal constructor(
             conversationId,
             selfUserId
         ).first().fold({ false }, { it })
-        return Result.Success(response.name, conversationId, isSelfMember)
+        return Result.Success(response.name, conversationId, isSelfMember, response.hasPassword)
     }
 
     private fun handleServerMissCommunicationError(error: NetworkFailure.ServerMiscommunication): Result.Failure =
@@ -99,7 +99,8 @@ class CheckConversationInviteCodeUseCase internal constructor(
         data class Success(
             val name: String?,
             val conversationId: ConversationId,
-            val isSelfMember: Boolean
+            val isSelfMember: Boolean,
+            val isPasswordProtected: Boolean
         ) : Result
 
         sealed interface Failure : Result {

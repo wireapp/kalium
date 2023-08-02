@@ -208,7 +208,8 @@ fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
 }
 
 fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
-    return errorResponse.label == WRONG_CONVERSATION_PASSWORD
+    return (errorResponse.label == WRONG_CONVERSATION_PASSWORD) ||
+        (errorResponse.label == BAD_REQUEST && errorResponse.message.contains("password"))
 }
 
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
