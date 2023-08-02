@@ -619,7 +619,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 typeKey to "Federation.Delete",
                 idKey to id.obfuscateId(),
                 "transient" to "$transient",
-                "domains" to domain
+                "domain" to domain
             )
         }
 
