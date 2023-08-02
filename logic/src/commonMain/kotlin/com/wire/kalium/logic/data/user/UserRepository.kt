@@ -85,7 +85,7 @@ internal interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
 
     /**
-     * fetches user information for all of users id stored in the DB
+     * Fetches user information for all of users id stored in the DB
      */
     suspend fun syncAllOtherUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
