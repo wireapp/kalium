@@ -92,13 +92,13 @@ internal class TeamEventReceiverImpl(
             .onSuccess {
                 val knownUser = userRepository.getKnownUser(userId).first()
                 if (knownUser?.name != null) {
-                    conversationRepository.getConversationIdsByUserId(userId)
+                    conversationRepository.getConversationsByUserId(userId)
                         .onSuccess {
-                            it.forEach { conversationId ->
+                            it.forEach { conversation ->
                                 val message = Message.System(
                                     id = uuid4().toString(), // We generate a random uuid for this new system message
                                     content = MessageContent.TeamMemberRemoved(knownUser.name),
-                                    conversationId = conversationId,
+                                    conversationId = conversation.id,
                                     date = event.timestampIso,
                                     senderUserId = userId,
                                     status = Message.Status.Sent,
