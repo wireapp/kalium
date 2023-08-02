@@ -32,13 +32,16 @@ jobs:
             - uses: fregante/setup-git-user@v2
 
             - name: Cherry-pick commits
+              id: cherry
               run: |
                   git fetch origin develop:develop
                   git checkout -b ${{ steps.extract.outputs.newBranchName }} develop
                   # Cherry-picking the last commit on the base branch
-                  git cherry-pick ${{ github.event.pull_request.merge_commit_sha }} --strategy-option theirs || true
+                  OUTPUT=$(git cherry-pick ${{ github.event.pull_request.merge_commit_sha }} --strategy-option theirs || true)
+                  CONFLICTS=$(echo "$OUTPUT" | grep 'CONFLICT')
+                  echo "::set-output name=conflicts::$CONFLICTS"
                   git add .
-                  git cherry-pick --continue || true
+                  git cherry-pick --continue || echo "No cherry-pick in progress"
                   git push origin ${{ steps.extract.outputs.newBranchName }}
 
             - name: Create PR
@@ -46,5 +49,5 @@ jobs:
                   PR_TITLE: ${{ github.event.pull_request.title }}
                   PR_BRANCH: ${{ steps.extract.outputs.newBranchName }}
                   PR_ASSIGNEE: ${{ github.event.pull_request.user.login }}
-                  PR_BODY: "${{ format('Cherry pick from the original PR: \n- #{0}\n\n ---- \n{1}', github.event.pull_request.number, github.event.pull_request.body) }}"
+                  PR_BODY: "${{ format('Cherry pick from the original PR: \n- #{0}\n\n ---- \n\n ⚠️ Conflicts during cherry-pick:\n {2} \n\n{1}', github.event.pull_request.number, github.event.pull_request.body, steps.cherry.outputs.conflicts) }}"
               run: gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base develop --head $PR_BRANCH --label "cherry-pick" --assignee "$PR_ASSIGNEE"
