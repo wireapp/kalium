@@ -775,10 +775,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member2, conversationEntity2.id)
 
         // when
-        val conversationIds = conversationDAO.getConversationIdsByUserId(member1.user)
+        val conversationIds = conversationDAO.getConversationsByUserId(member1.user)
 
         // then
-        assertContentEquals(listOf(conversationEntity1.id), conversationIds)
+        assertContentEquals(listOf(conversationEntity1), conversationIds)
     }
 
     @Test

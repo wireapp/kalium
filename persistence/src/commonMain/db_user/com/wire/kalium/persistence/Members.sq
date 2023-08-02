@@ -32,7 +32,30 @@ WHERE ConversationDetails.type = 'ONE_ON_ONE' AND Member.user = ?
 LIMIT  1;
 
 selectConversationsByMember:
-SELECT * FROM Member
+SELECT
+    qualified_id,
+    name,
+    type,
+    team_id,
+    mls_group_id,
+    mls_group_state,
+    mls_epoch,
+    mls_proposal_timer,
+    protocol,
+    muted_status,
+    muted_time,
+    creator_id,
+    last_modified_date,
+    last_notified_date,
+    last_read_date,
+    access_list,
+    access_role_list,
+    mls_last_keying_material_update_date,
+    mls_cipher_suite,
+    receipt_mode,
+    message_timer,
+    user_message_timer
+FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;
 
