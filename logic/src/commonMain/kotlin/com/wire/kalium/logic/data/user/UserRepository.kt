@@ -59,7 +59,6 @@ import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.SyncDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -87,7 +86,7 @@ internal interface UserRepository {
     /**
      * Fetches user information for all of users id stored in the DB
      */
-    suspend fun syncAllOtherUsers(): Either<CoreFailure, Unit>
+    suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
@@ -127,7 +126,6 @@ internal interface UserRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class UserDataSource internal constructor(
     private val userDAO: UserDAO,
-    private val syncDAO: SyncDAO,
     private val metadataDAO: MetadataDAO,
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
@@ -195,8 +193,8 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun syncAllOtherUsers(): Either<CoreFailure, Unit> {
-        val ids = syncDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
+    override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
+        val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
 
         return fetchUsersByIds(ids)
     }

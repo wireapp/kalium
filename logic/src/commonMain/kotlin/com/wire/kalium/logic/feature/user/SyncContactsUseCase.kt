@@ -37,6 +37,6 @@ class SyncContactsUseCaseImpl internal constructor(
 ) : SyncContactsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return userDataSource.syncAllOtherUsers()
+        return userDataSource.fetchAllOtherUsers()
     }
 }

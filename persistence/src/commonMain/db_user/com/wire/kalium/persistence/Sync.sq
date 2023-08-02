@@ -1,2 +1,0 @@
-userIdsWithOutSelf:
-SELECT qualified_id FROM User WHERE qualified_id != (SELECT id FROM SelfUser);

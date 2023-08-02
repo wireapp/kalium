@@ -199,4 +199,10 @@ interface UserDAO {
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 
     suspend fun getUsersWithoutMetadata(): List<UserEntity>
+
+    /**
+     * @return [List] of [UserIDEntity] of all other users.
+     * the list does not contain self user ID
+     */
+    suspend fun allOtherUsersId(): List<UserIDEntity>
 }

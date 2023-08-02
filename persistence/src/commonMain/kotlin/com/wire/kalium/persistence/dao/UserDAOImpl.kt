@@ -417,4 +417,8 @@ class UserDAOImpl internal constructor(
             .executeAsList()
             .map(mapper::toModel)
     }
+
+    override suspend fun allOtherUsersId(): List<UserIDEntity> = withContext(queriesContext) {
+        userQueries.userIdsWithoutSelf().executeAsList()
+    }
 }

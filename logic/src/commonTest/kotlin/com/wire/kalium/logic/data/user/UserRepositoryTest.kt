@@ -34,8 +34,6 @@ import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
-import com.wire.kalium.logic.util.arrangement.dao.SyncDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.SyncDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
@@ -47,7 +45,6 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.SyncDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -250,11 +247,11 @@ class UserRepositoryTest {
             }
 
         // When
-        userRepository.syncAllOtherUsers().shouldSucceed()
+        userRepository.fetchAllOtherUsers().shouldSucceed()
 
         // Then
-        verify(arrangement.syncDAO)
-            .suspendFunction(arrangement.syncDAO::allOtherUsersId)
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::allOtherUsersId)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userDetailsApi)
@@ -498,7 +495,7 @@ class UserRepositoryTest {
             .wasInvoked(once)
     }
 
-    private class Arrangement: SyncDAOArrangement by SyncDAOArrangementImpl() {
+    private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
 
@@ -528,7 +525,6 @@ class UserRepositoryTest {
         val userRepository: UserRepository by lazy {
             UserDataSource(
                 userDAO,
-                syncDAO,
                 metadataDAO,
                 clientDAO,
                 selfApi,
@@ -667,6 +663,14 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) }
+        }
+        fun withAllOtherUsersIdSuccess(
+            result: List<UserIDEntity>,
+        ) {
+            given(userDAO)
+                .suspendFunction(userDAO::allOtherUsersId)
+                .whenInvoked()
+                .then { result }
         }
 
         fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
