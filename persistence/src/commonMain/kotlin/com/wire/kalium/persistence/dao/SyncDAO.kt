@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.dao
 
-import app.cash.sqldelight.ExecutableQuery
 import com.wire.kalium.persistence.SyncQueries
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
