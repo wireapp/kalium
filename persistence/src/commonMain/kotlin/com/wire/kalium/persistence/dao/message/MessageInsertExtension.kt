@@ -236,7 +236,7 @@ internal class MessageInsertExtensionImpl(
             }
 
             is MessageEntityContent.Federation -> {
-                messagesQueries.insertFederationMessage(
+                messagesQueries.insertFederationTerminatedMessage(
                     message_id = message.id,
                     conversation_id = message.conversationId,
                     domain_list = content.domainList,

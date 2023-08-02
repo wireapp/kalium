@@ -407,8 +407,6 @@ sealed class MessagePreviewEntityContent {
     data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
-    data class Federation(val domainList: List<String>) : MessagePreviewEntityContent()
-
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     object CryptoSessionReset : MessagePreviewEntityContent()

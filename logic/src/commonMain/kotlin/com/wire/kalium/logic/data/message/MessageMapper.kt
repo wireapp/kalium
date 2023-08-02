@@ -557,7 +557,6 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
     is MessagePreviewEntityContent.Composite -> MessagePreviewContent.WithUser.Composite(username = senderName, messageBody = messageBody)
-    is MessagePreviewEntityContent.Federation -> MessagePreviewContent.Unknown
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {

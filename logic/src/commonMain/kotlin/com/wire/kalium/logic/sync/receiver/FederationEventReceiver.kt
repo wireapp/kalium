@@ -127,6 +127,15 @@ class FederationEventReceiverImpl internal constructor(
 
     private suspend fun handleConnectionRemovedEvent(event: Event.Federation.ConnectionRemoved) =
         withContext(dispatchers.io) {
+            if (event.domains.size != EXPECTED_DOMAIN_LIST_SIZE) {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "Expected $EXPECTED_DOMAIN_LIST_SIZE domains, got ${event.domains.size}")
+                    )
+                return@withContext
+            }
             val firstDomain = event.domains.first()
             val secondDomain = event.domains.last()
 
@@ -223,6 +232,10 @@ class FederationEventReceiverImpl internal constructor(
             expirationData = null
         )
         persistMessage(message)
+    }
+
+    companion object {
+        val EXPECTED_DOMAIN_LIST_SIZE = 2
     }
 
 }

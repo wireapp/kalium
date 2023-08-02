@@ -115,7 +115,7 @@ CREATE TABLE MessageMemberChangeContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
-CREATE TABLE MessageFederationContent (
+CREATE TABLE MessageFederationTerminatedContent (
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
 
@@ -336,8 +336,8 @@ insertMemberChangeMessage:
 INSERT OR IGNORE INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
 VALUES(?, ?, ?, ?);
 
-insertFederationMessage:
-INSERT OR IGNORE INTO MessageFederationContent(message_id, conversation_id, domain_list, federation_type)
+insertFederationTerminatedMessage:
+INSERT OR IGNORE INTO MessageFederationTerminatedContent(message_id, conversation_id, domain_list, federation_type)
 VALUES(?, ?, ?, ?);
 
 insertMessageUnknownContent:

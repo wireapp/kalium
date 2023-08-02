@@ -51,8 +51,7 @@ object MessageMapper {
         text: String?,
         assetMimeType: String?,
         selfUserId: QualifiedIDEntity?,
-        senderUserId: QualifiedIDEntity?,
-        federationDomainList: List<String>?
+        senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
         return if (isEphemeral) {
             MessagePreviewEntityContent.Ephemeral(isGroupConversation)
@@ -68,8 +67,7 @@ object MessageMapper {
                 text,
                 assetMimeType,
                 selfUserId,
-                senderUserId,
-                federationDomainList
+                senderUserId
             )
         }
     }
@@ -87,8 +85,7 @@ object MessageMapper {
         text: String?,
         assetMimeType: String?,
         selfUserId: QualifiedIDEntity?,
-        senderUserId: QualifiedIDEntity?,
-        federationDomainList: List<String>?
+        senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
         return when (contentType) {
             MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Composite(
@@ -193,10 +190,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
 
-            MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Federation(
-                domainList = federationDomainList.requireField("federationDomainList")
-            )
-
+            MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
@@ -236,8 +230,7 @@ object MessageMapper {
         isUnread: Boolean,
         isNotified: Long,
         mutedStatus: ConversationEntity.MutedStatus?,
-        conversationType: ConversationEntity.Type?,
-        federationDomainList: List<String>?
+        conversationType: ConversationEntity.Type?
     ): MessagePreviewEntity {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
@@ -252,8 +245,7 @@ object MessageMapper {
             text = text,
             assetMimeType = assetMimeType,
             selfUserId = selfUserId,
-            senderUserId = senderUserId,
-            federationDomainList = federationDomainList
+            senderUserId = senderUserId
         )
 
         return MessagePreviewEntity(
