@@ -64,6 +64,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnParticipantsVideoStateChang
 import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
@@ -96,6 +97,7 @@ class CallManagerImpl internal constructor(
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
+    private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val kaliumConfigs: KaliumConfigs,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
@@ -394,6 +396,16 @@ class CallManagerImpl internal constructor(
         }
     }
 
+    override suspend fun updateConversationClients(conversationId: ConversationId, clients: String) {
+        withCalling {
+            wcall_set_clients_for_conv(
+                it,
+                federatedIdMapper.parseToFederatedId(conversationId),
+                clients
+            )
+        }
+    }
+
     /**
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
@@ -448,9 +460,7 @@ class CallManagerImpl internal constructor(
         scope.launch {
             withCalling {
                 val onClientsRequest = OnClientsRequest(
-                    calling = calling,
-                    conversationRepository = conversationRepository,
-                    federatedIdMapper = federatedIdMapper,
+                    conversationClientsInCallUpdater = conversationClientsInCallUpdater,
                     qualifiedIdMapper = qualifiedIdMapper,
                     callingScope = scope
                 ).keepingStrongReference()

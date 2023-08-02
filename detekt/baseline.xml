@@ -165,7 +165,7 @@
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseTest.kt:4</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.MediaManagerServiceImpl.kt:6</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.MediaManagerServiceImpl.kt:7</ID>
-    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.RejectCallUseCaseTest.kt:5</ID>
+    <ID>NoUnusedImports:com.wire.kalium.logic.feature.call.usecase.RejectCallUseCaseTest.kt:5</ID>
     <ID>NoUnusedImports:com.wire.kalium.logic.feature.user.UploadUserAvatarUseCaseTest.kt:5</ID>
     <ID>NoWildcardImports:com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseTest.kt:8</ID>
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
@@ -178,7 +178,7 @@
     <ID>SpacingAroundColon:com.wire.kalium.cryptography.exceptions.ProteusException.kt:3</ID>
     <ID>SpacingAroundColon:com.wire.kalium.logic.feature.session.SessionResult.kt:7</ID>
     <ID>SpacingAroundColon:com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage.kt:19</ID>
-    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.RejectCallUseCaseTest.kt:27</ID>
+    <ID>SpacingAroundCurly:com.wire.kalium.logic.feature.call.usecase.RejectCallUseCaseTest.kt:27</ID>
     <ID>StringTemplate:com.wire.kalium.cryptography.IDs.kt:26</ID>
     <ID>StringTemplate:com.wire.kalium.logic.data.sso.SSOUtil.kt:5</ID>
     <ID>TooGenericExceptionCaught:CoreFailure.kt$e: Exception</ID>
