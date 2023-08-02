@@ -50,6 +50,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.UNKNOWN_CLIENT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.WRONG_CONVERSATION_PASSWORD
 import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException : Exception() {
@@ -204,6 +205,10 @@ fun KaliumException.InvalidRequestError.isGuestLinkDisabled(): Boolean {
 
 fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
     return errorResponse.label == ACCESS_DENIED
+}
+
+fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
+    return errorResponse.label == WRONG_CONVERSATION_PASSWORD
 }
 
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?

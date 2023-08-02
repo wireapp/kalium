@@ -19,14 +19,17 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV4
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.FederationConflictResponse
+import com.wire.kalium.network.api.base.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
@@ -39,7 +42,9 @@ import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.http.HttpStatusCode.Companion.Conflict
 
@@ -119,6 +124,26 @@ internal open class ConversationApiV4 internal constructor(
             httpClient.delete(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SUBCONVERSATIONS/$subconversationId/self"
             )
+        }
+
+    override suspend fun joinConversation(
+        code: String,
+        key: String,
+        uri: String?,
+        password: String?
+    ): NetworkResponse<ConversationMemberAddedResponse> =
+
+        httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
+            setBody(JoinConversationRequestV4(code, key, uri, password))
+        }.execute { httpResponse ->
+            handleConversationMemberAddedResponse(httpResponse)
+        }
+    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
+                parameter(QUERY_KEY_CODE, code)
+                parameter(QUERY_KEY_KEY, key)
+            }
         }
 
     companion object {

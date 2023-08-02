@@ -22,8 +22,16 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class JoinConversationRequest(
+internal data class JoinConversationRequestV0(
     @SerialName("code") val code: String,
     @SerialName("key") val key: String,
     @SerialName("uri") val uri: String?
+)
+
+@Serializable
+internal data class JoinConversationRequestV4(
+    @SerialName("code") val code: String,
+    @SerialName("key") val key: String,
+    @SerialName("uri") val uri: String?,
+    @SerialName("password") val password: String?
 )

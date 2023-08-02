@@ -23,7 +23,6 @@ import kotlinx.coroutines.test.TestCoroutineScheduler
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
 
-@OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest actual constructor() {
 
     private val testCoroutineScheduler = TestCoroutineScheduler()

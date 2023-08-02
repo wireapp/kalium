@@ -19,12 +19,17 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.Result
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isInvalidCode
+import com.wire.kalium.network.exceptions.isWrongConversationPassword
 
 /**
  * Use case for joining a conversation via a code invite code.
@@ -37,18 +42,42 @@ class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId
 ) {
-    suspend operator fun invoke(code: String, key: String, domain: String?): Result =
-        // the swagger docs say that the URI is optional, without explaining what uri need to be used
+    suspend operator fun invoke(
+        code: String,
+        key: String,
+        domain: String?,
+        password: String?
+    ): Result =
+    // the swagger docs say that the URI is optional, without explaining what uri need to be used
         // nevertheless the request works fine without the uri, so we are not going to use it
-        conversionsGroupRepository.joinViaInviteCode(code, key, null)
-            .fold({ failure ->
-                Result.Failure(failure)
+        conversionsGroupRepository.joinViaInviteCode(
+            code,
+            key,
+            null,
+            password
+        )
+            .fold({
+                onError(it)
             }, { response ->
                 when (response) {
                     is ConversationMemberAddedResponse.Changed -> onConversationChanged(response)
                     ConversationMemberAddedResponse.Unchanged -> onConversationUnChanged(code, key, domain)
                 }
             })
+
+    private fun onError(networkFailure: NetworkFailure): Result.Failure = when (networkFailure) {
+        is NetworkFailure.ServerMiscommunication -> {
+            if (networkFailure.kaliumException is KaliumException.InvalidRequestError &&
+                networkFailure.kaliumException.isWrongConversationPassword()
+            ) {
+                Result.Failure.IncorrectPassword
+            } else {
+                Result.Failure.Generic(networkFailure)
+            }
+        }
+
+        else -> Result.Failure.Generic(networkFailure)
+    }
 
     private fun onConversationChanged(response: ConversationMemberAddedResponse.Changed): Result =
         Result.Success.Changed(response.event.qualifiedConversation.toModel())
@@ -62,26 +91,30 @@ class JoinConversationViaCodeUseCase internal constructor(
             .fold({
                 Result.Success.Unchanged(null)
             }, {
-                ConversationId(it.nonQualifiedConversationId, domain ?: selfUserId.domain).let { conversationId ->
+                ConversationId(it.nonQualifiedId, domain ?: selfUserId.domain).let { conversationId ->
                     Result.Success.Unchanged(conversationId)
                 }
             })
 
     sealed interface Result {
-        sealed class Success(
-            open val conversationId: ConversationId?
-        ) : Result {
+        sealed interface Success : Result {
+            val conversationId: ConversationId?
+
             data class Changed(
                 override val conversationId: ConversationId,
-            ) : Success(conversationId)
+            ) : Success
 
             data class Unchanged(
                 override val conversationId: ConversationId?,
-            ) : Success(conversationId)
+            ) : Success
         }
 
-        data class Failure(
-            val failure: CoreFailure
-        ) : Result
+        sealed interface Failure : Result {
+
+            data object IncorrectPassword : Failure
+            data class Generic(
+                val failure: NetworkFailure
+            ) : Failure
+        }
     }
 }
