@@ -115,6 +115,7 @@ interface ConversationRepository {
     suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
@@ -435,6 +436,19 @@ internal class ConversationDataSource internal constructor(
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
             persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
+        }
+    }
+
+    // TODO: this function should/might be need to be removed when BE implements https://wearezeta.atlassian.net/browse/WPB-3560
+    override suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            conversationApi.fetchConversationDetails(conversationID.toApi())
+        }.flatMap {
+            val selfUserTeamId = selfTeamIdProvider().getOrNull()
+            val conversation = it.copy(
+                type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
+            )
+            persistConversations(listOf(conversation), selfUserTeamId?.value, invalidateMembers = true)
         }
     }
 

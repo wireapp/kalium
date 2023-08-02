@@ -237,7 +237,7 @@ internal class ConnectionDataSource(
 
     private suspend fun insertConversationFromConnection(connection: Connection) {
         when (connection.status) {
-            SENT -> conversationRepository.fetchConversation(connection.qualifiedConversationId)
+            SENT -> conversationRepository.fetchSentConnectionConversation(connection.qualifiedConversationId)
             PENDING -> {
                 /* TODO: we had to do it manually, the server won't give us for received connections
                      as the final solution we need to ignore the conversation part, but now? we can't! */
