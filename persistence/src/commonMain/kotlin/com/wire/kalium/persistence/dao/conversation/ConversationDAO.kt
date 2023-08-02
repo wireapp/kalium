@@ -86,7 +86,7 @@ interface ConversationDAO {
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
     suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
-    suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
+    suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(
         conversationId: QualifiedIDEntity,
