@@ -40,7 +40,7 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 handle = excluded.handle,
-email = coalesce(excluded.email, email),
+email = excluded.email,
 phone = excluded.phone,
 accent_id = excluded.accent_id,
 team = excluded.team,
