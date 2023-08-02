@@ -159,10 +159,7 @@ class ClientDataSource(
         return wrapApiRequest { clientApi.fetchSelfUserClient() }
             .onSuccess { clientList ->
                 val selfUserIdDTO = selfUserID.toApi()
-                val list = clientList.map {
-                    println("cyka ${it.model} ${it.mlsPublicKeys}")
-                    clientMapper.toInsertClientParam(it, selfUserIdDTO)
-                }
+                val list = clientList.map { clientMapper.toInsertClientParam(it, selfUserIdDTO) }
                 // when calling this function the first time after tooManyClients error
                 // this will fail because self user is not in the database
                 // that is why in  clientDAO.insertClientsAndRemoveRedundant user id is inserted first

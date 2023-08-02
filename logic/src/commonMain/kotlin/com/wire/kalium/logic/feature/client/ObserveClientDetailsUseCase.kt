@@ -45,7 +45,6 @@ class ObserveClientDetailsUseCaseImpl(
     private val provideClientId: CurrentClientIdProvider
 ) : ObserveClientDetailsUseCase {
     override suspend operator fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult> =
-        // TODO cyka here
         clientRepository.observeClientsByUserIdAndClientId(userId, clientId)
             .map {
                 it.fold(
