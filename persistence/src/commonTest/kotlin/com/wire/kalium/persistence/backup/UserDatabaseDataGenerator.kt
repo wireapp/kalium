@@ -190,7 +190,8 @@ class UserDatabaseDataGenerator(
             completeAssetId = null,
             botService = null,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
     }
 

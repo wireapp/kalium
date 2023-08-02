@@ -96,7 +96,8 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -125,7 +126,8 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
 
         db.userDAO.getUserByQualifiedID(user1.id).take(2).collect {
@@ -254,7 +256,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     botService = null,
                     false,
                     hasIncompleteMetadata = false,
-                    expiresAt = null
+                    expiresAt = null,
+                    defederated = false
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -272,7 +275,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     botService = null,
                     deleted = false,
                     hasIncompleteMetadata = false,
-                    expiresAt = null
+                    expiresAt = null,
+                    defederated = false
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers

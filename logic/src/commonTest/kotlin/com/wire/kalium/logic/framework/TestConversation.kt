@@ -150,7 +150,8 @@ object TestConversation {
         selfRole = MemberEntity.Role.Member,
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        userDefederated = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -293,7 +294,8 @@ object TestConversation {
         selfRole = MemberEntity.Role.Member,
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        userDefederated = null
     )
 
     val CONVERSATION = Conversation(
