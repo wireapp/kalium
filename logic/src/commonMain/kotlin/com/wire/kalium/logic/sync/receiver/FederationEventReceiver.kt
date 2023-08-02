@@ -235,7 +235,7 @@ class FederationEventReceiverImpl internal constructor(
     }
 
     companion object {
-        val EXPECTED_DOMAIN_LIST_SIZE = 2
+        const val EXPECTED_DOMAIN_LIST_SIZE = 2
     }
 
 }
