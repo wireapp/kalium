@@ -104,6 +104,7 @@ CREATE TABLE MessageFederationTerminatedContent (
 
 DROP VIEW IF EXISTS MessageDetailsView;
 
+
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -203,13 +204,26 @@ QuotedMessage.content_type AS quotedMessageContentType,
 QuotedTextContent.text_body AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
+
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
+
 ConversationReceiptModeChanged.receipt_mode AS conversationReceiptModeChanged,
 ConversationTimerChangedContent.message_timer AS messageTimerChanged,
 FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
 FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
+IFNULL(
+    (SELECT '[' ||
+            GROUP_CONCAT('{"text":"' || text || '", "id":"' || id || '""is_selected":' || is_selected || '}')
+        || ']'
+    FROM ButtonContent
+    WHERE ButtonContent.message_id = Message.id
+        AND ButtonContent.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS buttonsJson,
 FederationTerminatedContent.domain_list AS federationDomainList,
 FederationTerminatedContent.federation_type AS federationType
+
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
