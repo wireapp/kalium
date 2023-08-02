@@ -325,8 +325,8 @@ internal class ConversationDAOImpl internal constructor(
         memberQueries.deleteUserFromGroupConversations(userId, userId)
     }
 
-    override suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity> = withContext(coroutineContext) {
-        memberQueries.selectConversationsByMember(userId).executeAsList().map { it.conversation }
+    override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(coroutineContext) {
+        memberQueries.selectConversationsByMember(userId, conversationMapper::toModel).executeAsList()
     }
 
     override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) =

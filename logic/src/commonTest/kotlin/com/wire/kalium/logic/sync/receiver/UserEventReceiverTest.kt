@@ -23,8 +23,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -99,7 +99,7 @@ class UserEventReceiverTest {
         val event = TestEvent.userDelete(userId = OTHER_USER_ID)
         val (arrangement, eventReceiver) = Arrangement()
             .withUserDeleteSuccess()
-            .withConversationIdsByUserId(listOf(TestConversation.ID))
+            .withConversationsByUserId(listOf(TestConversation.CONVERSATION))
             .arrange()
 
         eventReceiver.onEvent(event)
@@ -221,7 +221,8 @@ class UserEventReceiverTest {
         }
 
         fun withUpdateUserSuccess() = apply {
-            given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+            given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withUpdateUserFailure(coreFailure: CoreFailure) = apply {
@@ -236,8 +237,8 @@ class UserEventReceiverTest {
                 .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
-        fun withConversationIdsByUserId(conversationIds: List<ConversationId>) = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::getConversationIdsByUserId)
+        fun withConversationsByUserId(conversationIds: List<Conversation>) = apply {
+            given(conversationRepository).suspendFunction(conversationRepository::getConversationsByUserId)
                 .whenInvokedWith(any()).thenReturn(Either.Right(conversationIds))
         }
 

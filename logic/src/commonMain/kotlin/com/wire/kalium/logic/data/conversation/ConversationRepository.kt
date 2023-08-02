@@ -208,7 +208,7 @@ interface ConversationRepository {
 
     suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
 
-    suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>>
+    suspend fun getConversationsByUserId(userId: UserId): Either<CoreFailure, List<Conversation>>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun changeConversationName(
         conversationId: ConversationId,
@@ -785,9 +785,9 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.revokeOneOnOneConversationsWithDeletedUser(userId.toDao())
     }
 
-    override suspend fun getConversationIdsByUserId(userId: UserId): Either<CoreFailure, List<ConversationId>> {
-        return wrapStorageRequest { conversationDAO.getConversationIdsByUserId(userId.toDao()) }
-            .map { it.map { conversationIdEntity -> conversationIdEntity.toModel() } }
+    override suspend fun getConversationsByUserId(userId: UserId): Either<CoreFailure, List<Conversation>> {
+        return wrapStorageRequest { conversationDAO.getConversationsByUserId(userId.toDao()) }
+            .map { it.map { entity -> conversationMapper.fromDaoModel(entity) } }
     }
 
     override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> {
