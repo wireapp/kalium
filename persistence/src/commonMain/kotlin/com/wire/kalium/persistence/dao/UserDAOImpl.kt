@@ -21,7 +21,6 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.cache.Cache
-import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
@@ -129,9 +128,6 @@ class UserDAOImpl internal constructor(
     val mapper = UserMapper()
 
     override suspend fun insertUser(user: UserEntity) = withContext(queriesContext) {
-        if (user.id == UserIDEntity("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com")) {
-            kaliumLogger.d("Inserting self user from insertUser $user")
-        }
         userQueries.insertUser(
             qualified_id = user.id,
             name = user.name,
@@ -178,9 +174,6 @@ class UserDAOImpl internal constructor(
     override suspend fun upsertTeamMembers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                if (user.id == UserIDEntity("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com")) {
-                    kaliumLogger.d("Inserting self user from upsertTeamMembers $user")
-                }
                 userQueries.updateTeamMemberUser(
                     qualified_id = user.id,
                     name = user.name,
@@ -219,9 +212,6 @@ class UserDAOImpl internal constructor(
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         for (user: UserEntity in users) {
-            if (user.id == UserIDEntity("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com")) {
-                kaliumLogger.d("Inserting self user from upsertUsers $user")
-            }
             userQueries.transaction {
                 for (user: UserEntity in users) {
                     userQueries.updateUser(
