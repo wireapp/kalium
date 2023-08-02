@@ -43,16 +43,7 @@ internal open class UserDetailsApiV0 internal constructor(
             httpClient.post(PATH_LIST_USERS) {
                 setBody(users)
             }
-        }.onSuccess {
-            it.value.find { it.id == UserId("cbef0190-7a26-4a25-89cd-7524e4f8402f", "wire.com") }.also {
-                println("Found private user user: $it")
-            }
-
-            it.value.find { it.id == UserId("aa5b6728-64e0-44b7-ad74-ebcef04ab32e", "wire.com") }.also {
-                println("Found team user user: $it")
-            }
-        }
-            .mapSuccess {
+        }.mapSuccess {
             ListUsersDTO(usersFailed = emptyList(), usersFound = it)
         }
     }
