@@ -32,6 +32,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.monkeys.importer.TestData
 import com.wire.kalium.monkeys.importer.TestDataImporter
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.runBlocking
@@ -79,6 +80,18 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         coreLogic: CoreLogic,
         testData: TestData
     ) = with(testData) {
+        logger.i("Creating prefixed groups")
+        testData.testCases.forEach {
+            it.conversationDistribution.forEach { (prefix, config) ->
+                ConversationPool.createPrefixedConversations(
+                    coreLogic,
+                    prefix,
+                    config.groupCount,
+                    config.userCount,
+                    config.protocol
+                )
+            }
+        }
         logger.i("Running setup")
         ActionScheduler.runSetup(testCases.flatMap { it.setup }, coreLogic)
         logger.i("Starting stress tests")

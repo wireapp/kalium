@@ -20,9 +20,20 @@ package com.wire.kalium.monkeys.actions
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
 import com.wire.kalium.monkeys.importer.UserCount
+import com.wire.kalium.monkeys.pool.MonkeyPool
+import kotlinx.coroutines.delay
 
 class SendRequestAction(val userCount: UserCount, val config: ActionType.SendRequest) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        TODO("Not yet implemented")
+        val monkeys = MonkeyPool.randomLoggedInMonkeysFromDomain(config.originDomain, this.userCount)
+        monkeys.forEach { origin ->
+            val target = MonkeyPool.randomLoggedInMonkeysFromDomain(config.targetDomain, UserCount.single())[0]
+            delay(this.config.delayResponse.toLong())
+            if (this.config.shouldAccept) {
+                target.acceptRequest(origin)
+            } else {
+                target.rejectRequest(origin)
+            }
+        }
     }
 }

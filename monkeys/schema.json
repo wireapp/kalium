@@ -26,7 +26,7 @@
                         "type": "string"
                     },
                     "conversationDistribution": {
-                        "description": "List of predefined groups to run the tests. A random user will be selected to create and it will include only other users, it is connected to.",
+                        "description": "List of predefined groups to run the tests. A random user will be selected to create (if not logged in, it will automatically) and it will include only other users it is connected to.",
                         "type": "object",
                         "patternProperties": {
                             ".*": {
@@ -321,10 +321,6 @@
                 "userCount": {
                     "description": "How many users should be added to the group",
                     "$ref": "#/$defs/UserCount"
-                },
-                "domain": {
-                    "description": "Which domain should the picked users belong to. For better performance, inform this field",
-                    "type": "string"
                 }
             }
         },

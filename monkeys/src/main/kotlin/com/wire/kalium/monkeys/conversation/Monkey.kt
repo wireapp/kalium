@@ -33,10 +33,15 @@ import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.conversation.GetOneToOneConversationUseCase
+import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.monkeys.importer.Backend
+import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.importer.UserData
 import com.wire.kalium.monkeys.pool.ConversationPool
-import java.util.concurrent.ConcurrentHashMap
+import com.wire.kalium.monkeys.pool.MonkeyPool
+import com.wire.kalium.monkeys.pool.resolveUserCount
+import kotlinx.coroutines.flow.first
+import java.util.Collections.synchronizedList
 
 /**
  * A monkey is a user puppeteered by the test framework.
@@ -47,10 +52,21 @@ class Monkey(
     val user: UserData,
 ) {
     private var monkeyState: MonkeyState = MonkeyState.NotReady
-    private var connectedMonkeys: ConcurrentHashMap<UserId, Monkey> = ConcurrentHashMap()
+    private var connectedMonkeys: MutableList<UserId> = synchronizedList(listOf())
 
     fun isSessionActive(): Boolean {
         return monkeyState is MonkeyState.Ready
+    }
+
+    override fun equals(other: Any?): Boolean {
+        return other != null && when (other) {
+            is Monkey -> other.user.userId == this.user.userId
+            else -> false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return this.user.userId.hashCode()
     }
 
     /**
@@ -88,6 +104,16 @@ class Monkey(
             this.monkeyState = MonkeyState.NotReady
             error("Failed registering client of monkey ${this.user.email}: $registerResult")
         }
+        val self = this
+        this.monkeyState.readyThen {
+            val connectedUsers = users.getAllKnownUsers().first()
+            if (connectedUsers is GetAllContactsResult.Success) {
+                self.connectTo(connectedUsers.allContacts.map { it.id })
+            } else {
+                self.monkeyState = MonkeyState.NotReady
+                error("Failed getting connected users of monkey ${self.user.email}: $registerResult")
+            }
+        }
         callback(this)
     }
 
@@ -96,19 +122,57 @@ class Monkey(
         callback(this)
     }
 
-    fun randomPeer() {
-        this.connectedMonkeys.values.randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone")
+    fun randomPeer(): Monkey {
+        return MonkeyPool.get(this.connectedMonkeys.randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
     }
 
-    fun connectTo(anotherMonkey: Monkey) {
-        this.connectedMonkeys[anotherMonkey.user.userId] = anotherMonkey
+    fun randomPeers(userCount: UserCount): List<Monkey> {
+        val count = resolveUserCount(userCount, this.connectedMonkeys.count().toUInt())
+        return (1u..count).map { this.randomPeer() }
     }
 
-    fun disconnectFrom(anotherMonkey: Monkey) {
-        this.connectedMonkeys.remove(anotherMonkey.user.userId)
+    suspend fun sendRequest(anotherMonkey: Monkey) {
+        this.monkeyState.readyThen {
+            connection.sendConnectionRequest(anotherMonkey.user.userId)
+        }
     }
 
-    suspend fun createConversation(name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol): MonkeyConversation {
+    suspend fun acceptRequest(anotherMonkey: Monkey) {
+        val self = this
+        this.monkeyState.readyThen {
+            connection.acceptConnectionRequest(anotherMonkey.user.userId)
+            self.connectTo(anotherMonkey)
+        }
+    }
+
+    suspend fun rejectRequest(anotherMonkey: Monkey) {
+        this.monkeyState.readyThen {
+            connection.ignoreConnectionRequest(anotherMonkey.user.userId)
+        }
+    }
+
+    private fun connectTo(anotherMonkey: Monkey) {
+        this.connectedMonkeys.add(anotherMonkey.user.userId)
+        anotherMonkey.connectedMonkeys.add(this.user.userId)
+    }
+
+    private fun connectTo(monkeys: List<UserId>) {
+        this.connectedMonkeys.addAll(monkeys)
+    }
+
+    suspend fun <T> makeReadyThen(coreLogic: CoreLogic, func: suspend Monkey.() -> T): T {
+        if (this.monkeyState is MonkeyState.NotReady) {
+            this.login(coreLogic, MonkeyPool::loggedIn)
+        }
+        return this.func()
+    }
+
+    suspend fun createConversation(
+        name: String,
+        monkeyList: List<Monkey>,
+        protocol: ConversationOptions.Protocol,
+        isDestroyable: Boolean = true
+    ): MonkeyConversation {
         val self = this
         return this.monkeyState.readyThen {
             val result = conversations.createGroupConversation(
@@ -116,7 +180,7 @@ class Monkey(
                 ConversationOptions(protocol = protocol)
             )
             if (result is CreateGroupConversationUseCase.Result.Success) {
-                MonkeyConversation(self, result.conversation)
+                MonkeyConversation(self, result.conversation, isDestroyable)
             } else {
                 error("${self.user.email} could not create group $name")
             }
@@ -150,6 +214,15 @@ class Monkey(
         }
     }
 
+    suspend fun removeMonkeyFromConversation(id: ConversationId, monkey: Monkey) {
+        this.monkeyState.readyThen {
+            conversations.removeMemberFromConversation(
+                id,
+                monkey.user.userId
+            )
+        }
+    }
+
     suspend fun sendDirectMessageTo(anotherMonkey: Monkey, message: String) {
         val self = this.user.email
         this.monkeyState.readyThen {
@@ -170,6 +243,7 @@ class Monkey(
             messages.sendTextMessage(conversationId, message)
         }
     }
+
 }
 
 private sealed class MonkeyState {

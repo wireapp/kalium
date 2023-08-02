@@ -26,15 +26,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.serializer
 
 object ActionScheduler {
     @Suppress("TooGenericExceptionCaught")
+    @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     suspend fun start(testCases: List<TestCase>, coreLogic: CoreLogic) {
         testCases.flatMap { it.actions }.forEach {
             CoroutineScope(Dispatchers.Default).launch {
                 while (this.isActive) {
                     try {
+                        val actionName = it.type::class.serializer().descriptor.serialName
+                        logger.i("Running action $actionName: ${it.description}")
+                        val startTime = System.currentTimeMillis()
                         Action.fromConfig(it).execute(coreLogic)
+                        logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
                     } catch (e: Exception) {
                         logger.e("Error in action ${it.description}", e)
                     }
@@ -42,11 +50,6 @@ object ActionScheduler {
                 }
             }
         }
-    }
-
-    suspend fun schedule(config: ActionConfig, waitTime: ULong, coreLogic: CoreLogic) {
-        delay(waitTime.toLong())
-        Action.fromConfig(config).execute(coreLogic)
     }
 
     suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic) {

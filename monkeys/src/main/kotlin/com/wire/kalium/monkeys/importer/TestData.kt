@@ -44,6 +44,11 @@ sealed class UserCount {
     @Serializable
     @SerialName("FIXED_COUNT")
     data class FixedCount(@SerialName("value") val value: UInt) : UserCount()
+
+    companion object {
+        fun single() = FixedCount(1u)
+        fun fixed(value: UInt) = FixedCount(value)
+    }
 }
 
 @Serializable
@@ -91,7 +96,6 @@ sealed class ActionType {
     @SerialName("ADD_USERS_TO_CONVERSATION")
     data class AddUsersToConversation(
         @SerialName("userCount") val userCount: UserCount,
-        @SerialName("domain") val domain: String?
     ) : ActionType()
 
     @Serializable
