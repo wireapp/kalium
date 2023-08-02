@@ -130,12 +130,14 @@ internal class ConversationMapperImpl(
     override fun fromDaoModel(daoProtocol: Protocol?): Conversation.Protocol? = when (daoProtocol) {
         Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
         Protocol.MLS -> Conversation.Protocol.MLS
+        Protocol.MIXED -> Conversation.Protocol.MIXED
         null -> null
     }
 
     override fun toDaoModel(protocol: Conversation.Protocol?): Protocol? = when (protocol) {
         Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
         Conversation.Protocol.MLS -> Protocol.MLS
+        Conversation.Protocol.MIXED -> Protocol.MIXED
         null -> null
     }
 

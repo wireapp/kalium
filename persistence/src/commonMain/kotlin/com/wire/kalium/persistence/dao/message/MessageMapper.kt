@@ -427,8 +427,8 @@ object MessageMapper {
         conversationReceiptModeChanged: Boolean?,
         messageTimerChanged: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
-        conversationProtocolChanged: ConversationEntity.Protocol?
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        conversationProtocolChanged: ConversationEntity.Protocol?,
         buttonsJson: String,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways

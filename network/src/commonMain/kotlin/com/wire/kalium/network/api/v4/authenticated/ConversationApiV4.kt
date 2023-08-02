@@ -45,8 +45,6 @@ import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.client.request.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.client.request.put
 import io.ktor.client.request.post

@@ -144,7 +144,7 @@ internal class ConversationGroupRepositoryImpl(
                         tryAddMembersToCloudAndStorage(userIdList, conversationId)
 
                     is ConversationEntity.ProtocolInfo.Mixed ->
-                        addMembersToCloudAndStorage(userIdList, conversationId)
+                        tryAddMembersToCloudAndStorage(userIdList, conversationId)
                             .flatMap {
                                 mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
                             }

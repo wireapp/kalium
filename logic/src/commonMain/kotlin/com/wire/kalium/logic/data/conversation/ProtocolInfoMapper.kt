@@ -73,5 +73,6 @@ class ProtocolInfoMapperImpl(
         when (protocolInfo) {
             is Conversation.ProtocolInfo.Proteus -> Conversation.Protocol.PROTEUS
             is Conversation.ProtocolInfo.MLS -> Conversation.Protocol.MLS
+            is Conversation.ProtocolInfo.Mixed -> Conversation.Protocol.MIXED
         }
 }

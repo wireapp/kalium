@@ -1,0 +1,5 @@
+ALTER TABLE User ADD COLUMN supported_protocols TEXT;
+
+ALTER TABLE Client ADD COLUMN is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0;
+
+DROP VIEW IF EXISTS ConversationDetails;

@@ -298,6 +298,8 @@ internal class MessageInsertExtensionImpl(
 
                 MessageEntityContent.ConversationDegradedMLS -> TODO()
                 MessageEntityContent.ConversationDegradedProteus -> TODO()
+                is MessageEntityContent.ConversationProtocolChanged -> TODO()
+                MessageEntityContent.HistoryLostProtocolChanged -> TODO()
             }
         }
     }
