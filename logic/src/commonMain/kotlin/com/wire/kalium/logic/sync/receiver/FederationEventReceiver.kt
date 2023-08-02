@@ -209,7 +209,7 @@ class FederationEventReceiverImpl internal constructor(
     private suspend fun handleFederationDeleteEvent(conversationID: ConversationId, domain: String) {
         val message = Message.System(
             id = uuid4().toString(),
-            content = MessageContent.Federation.Removed(domain),
+            content = MessageContent.FederationStopped.Removed(domain),
             conversationId = conversationID,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
@@ -223,7 +223,7 @@ class FederationEventReceiverImpl internal constructor(
     private suspend fun handleFederationConnectionRemovedEvent(conversationID: ConversationId, domainList: List<String>) {
         val message = Message.System(
             id = uuid4().toString(),
-            content = MessageContent.Federation.ConnectionRemoved(domainList),
+            content = MessageContent.FederationStopped.ConnectionRemoved(domainList),
             conversationId = conversationID,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,

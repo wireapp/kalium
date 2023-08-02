@@ -383,12 +383,12 @@ class MessageMapperImpl(
         is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
         is MessageContent.ConversationDegradedMLS -> MessageEntityContent.ConversationDegradedMLS
         is MessageContent.ConversationDegradedProteus -> MessageEntityContent.ConversationDegradedProteus
-        is MessageContent.Federation.ConnectionRemoved -> MessageEntityContent.Federation(
+        is MessageContent.FederationStopped.ConnectionRemoved -> MessageEntityContent.Federation(
             domainList,
             MessageEntity.FederationType.CONNECTION_REMOVED
         )
 
-        is MessageContent.Federation.Removed -> MessageEntityContent.Federation(
+        is MessageContent.FederationStopped.Removed -> MessageEntityContent.Federation(
             listOf(domain),
             MessageEntity.FederationType.DELETE
         )
@@ -494,8 +494,8 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
         is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
         is MessageEntityContent.Federation -> when (type) {
-            MessageEntity.FederationType.DELETE -> MessageContent.Federation.Removed(domainList.first())
-            MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.Federation.ConnectionRemoved(domainList)
+            MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
+            MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
         }
     }
 }

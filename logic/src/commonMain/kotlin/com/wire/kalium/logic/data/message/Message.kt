@@ -326,10 +326,10 @@ sealed interface Message {
                     typeKey to "conversationDegradedProteus"
                 )
 
-                is MessageContent.Federation.ConnectionRemoved -> mutableMapOf(
+                is MessageContent.FederationStopped.ConnectionRemoved -> mutableMapOf(
                     typeKey to "federationConnectionRemoved"
                 )
-                is MessageContent.Federation.Removed -> mutableMapOf(
+                is MessageContent.FederationStopped.Removed -> mutableMapOf(
                     typeKey to "federationRemoved"
                 )
             }

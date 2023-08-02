@@ -103,7 +103,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ButtonAction -> false
             is MessageContent.ButtonActionConfirmation -> false
             is MessageContent.MemberChange.FederationRemoved -> false
-            is MessageContent.Federation.ConnectionRemoved -> false
-            is MessageContent.Federation.Removed -> false
+            is MessageContent.FederationStopped.ConnectionRemoved -> false
+            is MessageContent.FederationStopped.Removed -> false
         }
 }

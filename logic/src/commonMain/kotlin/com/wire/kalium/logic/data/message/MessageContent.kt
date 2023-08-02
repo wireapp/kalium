@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.protobuf.messages.Button
 import kotlinx.datetime.Instant
 
 sealed class MessageContent {
@@ -294,9 +293,9 @@ sealed class MessageContent {
     object ConversationCreated : System()
     object ConversationDegradedMLS : System()
     object ConversationDegradedProteus : System()
-    sealed class Federation : System() {
-        data class Removed(val domain: String) : Federation()
-        data class ConnectionRemoved(val domainList: List<String>) : Federation()
+    sealed class FederationStopped : System() {
+        data class Removed(val domain: String) : FederationStopped()
+        data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
     }
 }
 
@@ -342,8 +341,8 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ButtonAction -> "ButtonAction"
     is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
     is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
-    is MessageContent.Federation.ConnectionRemoved -> "Federation.ConnectionRemoved"
-    is MessageContent.Federation.Removed -> "Federation.Removed"
+    is MessageContent.FederationStopped.ConnectionRemoved -> "Federation.ConnectionRemoved"
+    is MessageContent.FederationStopped.Removed -> "Federation.Removed"
     is MessageContent.Unknown -> "Unknown"
     null -> "null"
 }
