@@ -25,14 +25,14 @@ abstract class Action {
     companion object {
         fun fromConfig(config: ActionConfig): Action {
             return when (config.type) {
-                is ActionType.Login -> LoginAction(config.count.toInt(), config.type)
-                is ActionType.CreateConversation -> CreateConversationAction(config.count.toInt(), config.type)
-                is ActionType.AddUsersToConversation -> AddUserToConversationAction(config.count.toInt(), config.type)
-                is ActionType.DestroyConversation -> DestroyConversationAction(config.count.toInt(), config.type)
-                is ActionType.LeaveConversation -> LeaveConversationAction(config.count.toInt(), config.type)
-                is ActionType.Reconnect -> ReconnectAction(config.count.toInt(), config.type)
-                is ActionType.SendMessage -> SendMessageAction(config.count.toInt(), config.type)
-                is ActionType.SendRequest -> SendRequestAction(config.count.toInt(), config.type)
+                is ActionType.Login -> LoginAction(config.type)
+                is ActionType.CreateConversation -> CreateConversationAction(config.type)
+                is ActionType.AddUsersToConversation -> AddUserToConversationAction(config.type)
+                is ActionType.DestroyConversation -> DestroyConversationAction(config.type)
+                is ActionType.LeaveConversation -> LeaveConversationAction(config.type)
+                is ActionType.Reconnect -> ReconnectAction(config.type)
+                is ActionType.SendMessage -> SendMessageAction(config.type)
+                is ActionType.SendRequest -> SendRequestAction(config.type)
             }
         }
     }

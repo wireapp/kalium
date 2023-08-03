@@ -8,7 +8,7 @@ To use, simply create a configuration and execute:
 ./gradlew :monkeys:run --args="config.json"
 ```
 
-An [example](example.json) config is in this repo and the schema can be seen [here](schema.json)
+An [example](example.json) config is in this repo and the schema can be seen [here](schema.json).
 
 ## Current Limitations (to be fixed in the future)
 
@@ -19,3 +19,4 @@ An [example](example.json) config is in this repo and the schema can be seen [he
 * Collecting metrics about the test execution
 * Tracing and replaying a test run. For this the order is the important factor, so when replayed it
   won't be executed in parallel.
+* Multi-clients. Right now each user can have just one client within the application

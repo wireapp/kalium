@@ -23,16 +23,14 @@ import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.delay
 
-class LoginAction(val count: Int, val config: ActionType.Login) : Action() {
+class LoginAction(val config: ActionType.Login) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        repeat(this.count) {
-            val monkeys = MonkeyPool.randomLoggedOutMonkeys(this.config.userCount)
-            logger.i("Logging ${monkeys.count()} monkeys in")
-            monkeys.forEach { it.login(coreLogic, MonkeyPool::loggedIn) }
-            if (config.duration > 0u) {
-                delay(config.duration.toLong())
-                monkeys.forEach { it.logout(MonkeyPool::loggedOut) }
-            }
+        val monkeys = MonkeyPool.randomLoggedOutMonkeys(this.config.userCount)
+        logger.i("Logging ${monkeys.count()} monkeys in")
+        monkeys.forEach { it.login(coreLogic, MonkeyPool::loggedIn) }
+        if (config.duration > 0u) {
+            delay(config.duration.toLong())
+            monkeys.forEach { it.logout(MonkeyPool::loggedOut) }
         }
     }
 }

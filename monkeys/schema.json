@@ -187,11 +187,11 @@
                     "type": "string"
                 },
                 "count": {
-                    "description": "How many times the action should be executed each round. Defaults to 1",
+                    "description": "How many times the action should be executed each round. Defaults to 1 and in the setup it will be ignored",
                     "type": "integer"
                 },
                 "repeatInterval": {
-                    "description": "How long in milliseconds, should the app wait until next execution. This property is ignored in the setup. Defaults to 0. Please set this up as this can overload the computer running the application",
+                    "description": "How long in milliseconds, should the app wait until next execution. This property is ignored in the setup. Defaults to 0. Please set this up as this can overload the computer running the application. Ignored in the setup",
                     "type": "integer"
                 },
                 "config": {
@@ -263,7 +263,8 @@
             "description": "Log users out and in after a configured delay",
             "type": "object",
             "required": [
-                "userCount", "durationOffline"
+                "userCount",
+                "durationOffline"
             ],
             "properties": {
                 "userCount": {
@@ -332,6 +333,10 @@
                 "userCount"
             ],
             "properties": {
+                "countGroups": {
+                    "description": "To how many groups should have users being added",
+                    "type": "integer"
+                },
                 "userCount": {
                     "description": "How many users should be added to the group",
                     "$ref": "#/$defs/UserCount"
@@ -345,6 +350,10 @@
                 "userCount"
             ],
             "properties": {
+                "countGroups": {
+                    "description": "To how many groups should have users leaving",
+                    "type": "integer"
+                },
                 "userCount": {
                     "description": "How many users should leave to the group. The creator will never leave the group",
                     "$ref": "#/$defs/UserCount"

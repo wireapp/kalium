@@ -102,12 +102,16 @@ sealed class ActionType {
     @Serializable
     @SerialName("ADD_USERS_TO_CONVERSATION")
     data class AddUsersToConversation(
+        @SerialName("countGroups") val countGroups: UInt = 1u,
         @SerialName("userCount") val userCount: UserCount,
     ) : ActionType()
 
     @Serializable
     @SerialName("LEAVE_CONVERSATION")
-    data class LeaveConversation(@SerialName("userCount") val userCount: UserCount) : ActionType()
+    data class LeaveConversation(
+        @SerialName("countGroups") val countGroups: UInt = 1u,
+        @SerialName("userCount") val userCount: UserCount
+    ) : ActionType()
 
     @Serializable
     @SerialName("DESTROY_CONVERSATION")

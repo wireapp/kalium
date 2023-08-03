@@ -21,11 +21,9 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
 import com.wire.kalium.monkeys.pool.ConversationPool
 
-class DestroyConversationAction(val count: Int, val config: ActionType.DestroyConversation) : Action() {
+class DestroyConversationAction(val config: ActionType.DestroyConversation) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        repeat(this.count) {
-            val targets = ConversationPool.randomDynamicConversations(this.config.count.toInt())
-            targets.forEach { it.destroy() }
-        }
+        val targets = ConversationPool.randomDynamicConversations(this.config.count.toInt())
+        targets.forEach { it.destroy() }
     }
 }
