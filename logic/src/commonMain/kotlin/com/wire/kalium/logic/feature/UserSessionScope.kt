@@ -1190,7 +1190,6 @@ class UserSessionScope internal constructor(
             syncManager,
             mlsConversationRepository,
             clientIdProvider,
-            assetRepository,
             messages.messageSender,
             teamRepository,
             userId,
@@ -1202,6 +1201,7 @@ class UserSessionScope internal constructor(
             renamedConversationHandler,
             qualifiedIdMapper,
             team.isSelfATeamMember,
+            globalScope.serverConfigRepository,
             this
         )
 
