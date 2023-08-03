@@ -242,7 +242,7 @@ class ConversationScope internal constructor(
         )
 
     val canCreatePasswordProtectedLinks: CanCreatePasswordProtectedLinksUseCase
-        get() =  CanCreatePasswordProtectedLinksUseCase(
+        get() = CanCreatePasswordProtectedLinksUseCase(
             serverConfigRepository,
             selfUserId
         )
