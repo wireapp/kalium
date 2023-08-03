@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message.receipt
 
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper

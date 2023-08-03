@@ -36,6 +36,7 @@ import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
@@ -44,11 +45,13 @@ import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+
 import kotlin.test.assertTrue
 
 class ReceiptMessageHandlerTest {
@@ -184,9 +187,8 @@ class ReceiptMessageHandlerTest {
         // then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessagesStatus)
-            .with(any(), any(), eq(messageUuids))
-            .wasInvoked()
-
+            .with(any(), eq(MessageEntity.Status.DELIVERED), eq(messageUuids))
+            .wasInvoked(exactly = once)
     }
 
     private suspend fun handleNewReceipt(
