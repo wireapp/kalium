@@ -179,8 +179,7 @@
             "type": "object",
             "required": [
                 "description",
-                "config",
-                "count"
+                "config"
             ],
             "properties": {
                 "description": {
@@ -188,7 +187,7 @@
                     "type": "string"
                 },
                 "count": {
-                    "description": "How many times the action should be executed each round",
+                    "description": "How many times the action should be executed each round. Defaults to 1",
                     "type": "integer"
                 },
                 "repeatInterval": {
@@ -246,7 +245,14 @@
         "Login": {
             "description": "Log users in and be available to execute actions",
             "type": "object",
+            "required": [
+                "userCount"
+            ],
             "properties": {
+                "userCount": {
+                    "description": "How many users should login",
+                    "$ref": "#/$defs/UserCount"
+                },
                 "duration": {
                     "description": "How long in milliseconds should the user be logged in. 0 means until the end",
                     "type": "integer"
@@ -257,9 +263,13 @@
             "description": "Log users out and in after a configured delay",
             "type": "object",
             "required": [
-                "durationOffline"
+                "userCount", "durationOffline"
             ],
             "properties": {
+                "userCount": {
+                    "description": "How many users should login",
+                    "$ref": "#/$defs/UserCount"
+                },
                 "durationOffline": {
                     "description": "How long in milliseconds should the user be logged out, until a re-login",
                     "type": "integer"
@@ -273,6 +283,10 @@
                 "count"
             ],
             "properties": {
+                "userCount": {
+                    "description": "How many users should be send messages. Defaults to a fixed number of 1",
+                    "$ref": "#/$defs/UserCount"
+                },
                 "count": {
                     "description": "How many messages should be sent at once. Each message will be sent by a random user",
                     "type": "integer"
@@ -355,11 +369,17 @@
             "type": "object",
             "required": [
                 "userCount",
+                "targetUserCount",
+                "originDomain",
                 "targetDomain"
             ],
             "properties": {
                 "userCount": {
                     "description": "How many users should send requests",
+                    "$ref": "#/$defs/UserCount"
+                },
+                "targetUserCount": {
+                    "description": "How many users of the target domain should receive requests",
                     "$ref": "#/$defs/UserCount"
                 },
                 "originDomain": {

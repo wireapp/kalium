@@ -19,12 +19,11 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 
-class LeaveConversationAction(val userCount: UserCount, val config: ActionType.LeaveConversation) : Action() {
+class LeaveConversationAction(val count: Int, val config: ActionType.LeaveConversation) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        val targets = ConversationPool.randomDynamicConversations(this.userCount)
+        val targets = ConversationPool.randomDynamicConversations(this.count)
         targets.forEach { conv ->
             val leavers = conv.randomMonkeys(this.config.userCount)
             // conversation admin should never leave the group

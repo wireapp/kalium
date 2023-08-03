@@ -23,23 +23,23 @@
             "setup": [
                 {
                     "description": "Log everyone in",
-                    "count": {
-                        "type": "PERCENTAGE",
-                        "value": 100
-                    },
                     "config": {
-                        "type": "LOGIN"
+                        "type": "LOGIN",
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        }
                     }
                 },
                 {
                     "description": "Connect teams",
-                    "count": {
-                        "type": "PERCENTAGE",
-                        "value": 100
-                    },
                     "config": {
                         "type": "SEND_REQUEST",
                         "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
+                        "targetUserCount": {
                             "type": "PERCENTAGE",
                             "value": 100
                         },
@@ -53,26 +53,28 @@
             "actions": [
                 {
                     "description": "Send messages",
-                    "count": {
-                        "type": "PERCENTAGE",
-                        "value": 100
-                    },
                     "repeatInterval": 100,
                     "config": {
                         "type": "SEND_MESSAGE",
-                        "count": 3
+                        "count": 3,
+                        "countGroups": 3,
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        }
                     }
                 },
                 {
                     "description": "Send messages",
-                    "count": {
-                        "type": "PERCENTAGE",
-                        "value": 100
-                    },
+                    "count": 1,
                     "repeatInterval": 500,
                     "config": {
                         "type": "SEND_MESSAGE",
                         "count": 3,
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
                         "targets": [
                             "groupMLS",
                             "groupPROTEUS",
@@ -82,10 +84,7 @@
                 },
                 {
                     "description": "Create groups",
-                    "count": {
-                        "type": "FIXED_COUNT",
-                        "value": 3
-                    },
+                    "count": 3,
                     "repeatInterval": 10000,
                     "config": {
                         "type": "CREATE_CONVERSATION",
@@ -99,10 +98,7 @@
                 },
                 {
                     "description": "Create groups",
-                    "count": {
-                        "type": "FIXED_COUNT",
-                        "value": 3
-                    },
+                    "count": 3,
                     "repeatInterval": 10000,
                     "config": {
                         "type": "CREATE_CONVERSATION",
@@ -116,10 +112,7 @@
                 },
                 {
                     "description": "Create groups",
-                    "count": {
-                        "type": "FIXED_COUNT",
-                        "value": 3
-                    },
+                    "count": 3,
                     "repeatInterval": 10000,
                     "config": {
                         "type": "CREATE_CONVERSATION",

@@ -19,14 +19,11 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
-import com.wire.kalium.monkeys.pool.resolveUserCount
 
-class CreateConversationAction(val userCount: UserCount, val config: ActionType.CreateConversation) : Action() {
+class CreateConversationAction(val count: Int, val config: ActionType.CreateConversation) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        val count = resolveUserCount(this.userCount, ConversationPool.size())
-        repeat(count.toInt()) {
+        repeat(this.count) {
             if (this.config.domain != null) {
                 ConversationPool.createDynamicConversation(this.config.domain, this.config.userCount, this.config.protocol)
             } else {

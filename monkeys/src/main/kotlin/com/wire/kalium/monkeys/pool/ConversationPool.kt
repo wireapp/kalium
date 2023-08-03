@@ -53,10 +53,9 @@ object ConversationPool {
         return (1u..count).map { pool.values.random() }
     }
 
-    fun randomDynamicConversations(userCount: UserCount): List<MonkeyConversation> {
+    fun randomDynamicConversations(count: Int): List<MonkeyConversation> {
         val conversations = this.pool.values.filter { it.isDestroyable }.shuffled()
-        val count = resolveUserCount(userCount, conversations.count().toUInt())
-        return conversations.take(count.toInt())
+        return conversations.take(count)
     }
 
     suspend fun destroyRandomConversation() {

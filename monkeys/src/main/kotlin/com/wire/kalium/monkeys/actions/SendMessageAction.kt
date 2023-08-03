@@ -33,28 +33,30 @@ private val EMOJI: List<String> = listOf(
     "🐒", "🙉", "🦍", "🐵"
 )
 
-class SendMessageAction(val userCount: UserCount, val config: ActionType.SendMessage) : Action() {
+class SendMessageAction(val count: Int, val config: ActionType.SendMessage) : Action() {
 
     override suspend fun execute(coreLogic: CoreLogic) {
-        repeat(this.config.count.toInt()) { i ->
-            if (this.config.targets.isNotEmpty()) {
-                this.config.targets.forEach { target ->
-                    if (target == ONE_2_1) {
-                        val monkeys = MonkeyPool.randomLoggedInMonkeys(this.userCount)
-                        monkeys.forEach { monkey ->
-                            val targetMonkey = monkey.randomPeer()
-                            monkey.sendDirectMessageTo(targetMonkey, randomMessage(targetMonkey.user.email, i))
-                        }
-                    } else {
-                        ConversationPool.getFromPrefixed(target).forEach { conv ->
-                            conv.sendMessage(this.userCount, i)
+        repeat(this.count) {
+            repeat(this.config.count.toInt()) { i ->
+                if (this.config.targets.isNotEmpty()) {
+                    this.config.targets.forEach { target ->
+                        if (target == ONE_2_1) {
+                            val monkeys = MonkeyPool.randomLoggedInMonkeys(this.config.userCount)
+                            monkeys.forEach { monkey ->
+                                val targetMonkey = monkey.randomPeer()
+                                monkey.sendDirectMessageTo(targetMonkey, randomMessage(targetMonkey.user.email, i))
+                            }
+                        } else {
+                            ConversationPool.getFromPrefixed(target).forEach { conv ->
+                                conv.sendMessage(this.config.userCount, i)
+                            }
                         }
                     }
-                }
-            } else {
-                val conversations = ConversationPool.randomConversations(this.config.countGroups)
-                conversations.forEach {
-                    it.sendMessage(this.userCount, i)
+                } else {
+                    val conversations = ConversationPool.randomConversations(this.config.countGroups)
+                    conversations.forEach {
+                        it.sendMessage(this.config.userCount, i)
+                    }
                 }
             }
         }

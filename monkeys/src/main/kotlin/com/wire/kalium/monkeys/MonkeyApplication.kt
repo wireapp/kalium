@@ -73,6 +73,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
         val testData = TestDataImporter.importFromFile(dataFilePath)
         // TODO: when getAllKnownContacts is fixed to return contacts for the caller's team, remove this
+        // https://wearezeta.atlassian.net/browse/WPB-3261
         val userIdsPerBackend =
             testData.backends.associate { backend -> backend.domain to backend.users.map { UserId(it.unqualifiedId, backend.domain) } }
         val users = TestDataImporter.getUserData(testData)
