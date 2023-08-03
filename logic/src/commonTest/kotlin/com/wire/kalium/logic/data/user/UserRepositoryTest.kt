@@ -236,21 +236,22 @@ class UserRepositoryTest {
     fun whenFetchingKnownUsers_thenShouldFetchFromDatabaseAndApiAndSucceed() = runTest {
         // Given
         val knownUserEntities = listOf(
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
+            UserIDEntity(value = "id1", domain = "domain1"),
+            UserIDEntity(value = "id2", domain = "domain2")
         )
-        val knownUserIds = knownUserEntities.map { UserId(it.id.value, it.id.domain) }.toSet()
+        val knownUserIds = knownUserEntities.map { UserId(it.value, it.domain) }.toSet()
         val (arrangement, userRepository) = Arrangement()
-            .withSuccessfulGetAllUsers(knownUserEntities)
             .withSuccessfulGetMultipleUsers()
-            .arrange()
+            .arrange{
+                withAllOtherUsersIdSuccess(knownUserEntities)
+            }
 
         // When
-        userRepository.fetchKnownUsers().shouldSucceed()
+        userRepository.fetchAllOtherUsers().shouldSucceed()
 
         // Then
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getAllUsers)
+            .suspendFunction(arrangement.userDAO::allOtherUsersId)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userDetailsApi)
@@ -663,8 +664,19 @@ class UserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) }
         }
+        fun withAllOtherUsersIdSuccess(
+            result: List<UserIDEntity>,
+        ) {
+            given(userDAO)
+                .suspendFunction(userDAO::allOtherUsersId)
+                .whenInvoked()
+                .then { result }
+        }
 
-        fun arrange() = this to userRepository
+        fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
+            apply(block)
+            return this to userRepository
+        }
     }
 
     private companion object {

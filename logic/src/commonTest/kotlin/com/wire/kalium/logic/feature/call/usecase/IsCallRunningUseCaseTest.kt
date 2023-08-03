@@ -27,14 +27,12 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class IsCallRunningUseCaseTest {
 
     @Mock
