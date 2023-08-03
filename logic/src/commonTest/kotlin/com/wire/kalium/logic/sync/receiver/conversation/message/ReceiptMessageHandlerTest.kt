@@ -47,7 +47,6 @@ import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -167,7 +166,7 @@ class ReceiptMessageHandlerTest {
     }
 
     @Test
-    fun givenAReceipt_whenHandlingAReceipt_theMessageStatusIsUpdated() = runTest {
+    fun givenAReceipt_whenHandlingAReceipt_theMessageStatusIsUpdatedAsExpected() = runTest {
         // given
         val date = DateTimeUtil.currentInstant()
         val senderUserId = OTHER_USER_ID

@@ -159,9 +159,6 @@ class ReceiptsMapperTest {
     private class Arrangement {
 
         @Mock
-        val idMapper = mock(IdMapper::class)
-
-        @Mock
         val availabilityStatusMapper = mock(AvailabilityStatusMapper::class)
 
         @Mock
@@ -192,7 +189,7 @@ class ReceiptsMapperTest {
         }
 
         fun arrange() = this to ReceiptsMapperImpl(
-            idMapper, availabilityStatusMapper, connectionStateMapper, domainUserTypeMapper
+            availabilityStatusMapper, connectionStateMapper, domainUserTypeMapper
         )
     }
 
