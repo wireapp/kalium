@@ -21,6 +21,7 @@ import java.io.File
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.createTempFile
 
 actual object FileTestHelper {
     actual fun createRandomDirectory(): String {
@@ -28,7 +29,7 @@ actual object FileTestHelper {
     }
 
     actual fun createRandomFileAt(path: String) {
-        kotlin.io.path.createTempFile(directory = Path(path), prefix = "testFile")
+        createTempFile(directory = Path(path), prefix = "testFile")
     }
 
     actual fun directoryExists(path: String): Boolean {
