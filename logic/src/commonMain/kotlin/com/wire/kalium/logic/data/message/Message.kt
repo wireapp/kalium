@@ -266,8 +266,8 @@ sealed interface Message {
             return "${toLogMap().toJsonElement()}"
         }
 
+        @Suppress("LongMethod", "ComplexMethod")
         fun toLogMap(): Map<String, Any?> {
-
             val typeKey = "type"
             val properties: MutableMap<String, String> = when (content) {
                 is MessageContent.MemberChange -> mutableMapOf(
