@@ -60,14 +60,15 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.collections.ConcurrentMap
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
@@ -81,7 +82,11 @@ import kotlin.time.Duration.Companion.minutes
 @Suppress("TooManyFunctions")
 internal interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
-    suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
+
+    /**
+     * Fetches user information for all of users id stored in the DB
+     */
+    suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
@@ -109,6 +114,7 @@ internal interface UserRepository {
      * when backends stops federating.
      */
     suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
+    // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
 
@@ -193,11 +199,10 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
-        val ids = userDAO.getAllUsers().first().map { userEntry ->
-            userEntry.id.toModel()
-        }
-        return fetchUsersByIds(ids.toSet())
+    override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
+        val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
+
+        return fetchUsersByIds(ids)
     }
 
     override suspend fun fetchUserInfo(userId: UserId) =
@@ -281,6 +286,7 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet())
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
             // If the self user is not in the database, proactively fetch it.

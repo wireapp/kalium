@@ -74,7 +74,8 @@ class NewClientDAOTest: BaseDatabaseTest() {
             label = null,
             model = null,
             registrationDate = null,
-            lastActive = null
+            lastActive = null,
+            mlsPublicKeys = null
         )
         val insertedClient1 = insertedClient.copy(user.id, "id1", deviceType = null)
 

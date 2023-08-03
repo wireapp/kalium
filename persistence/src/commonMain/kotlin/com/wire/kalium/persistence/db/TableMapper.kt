@@ -52,6 +52,7 @@ import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
 import com.wire.kalium.persistence.adapter.InstantTypeAdapter
+import com.wire.kalium.persistence.adapter.MLSPublicKeysAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
@@ -71,7 +72,8 @@ internal object TableMapper {
         device_typeAdapter = EnumColumnAdapter(),
         client_typeAdapter = EnumColumnAdapter(),
         registration_dateAdapter = InstantTypeAdapter,
-        last_activeAdapter = InstantTypeAdapter
+        last_activeAdapter = InstantTypeAdapter,
+        mls_public_keysAdapter = MLSPublicKeysAdapter
     )
     val connectionAdapter = Connection.Adapter(
         qualified_conversationAdapter = QualifiedIDAdapter,
