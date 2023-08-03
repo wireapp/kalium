@@ -28,6 +28,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CanCreatePasswordProtectedLinksUseCaseTest {
@@ -80,7 +81,7 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
         }
 
         useCase().also {
-            assertTrue(it)
+            assertFalse(it)
         }
 
         verify(arrangement.serverConfigRepository)
