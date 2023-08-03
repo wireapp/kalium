@@ -80,7 +80,7 @@ object QualifiedSendMessageResponseJson {
             |{
             |   "time": "$TIME"
             |   "missing" : {},
-            |   "failed_to_send": {
+            |   "failed_to_confirm_clients": {
             |       "$DOMAIN_1": {
             |           "$USER_1": [
             |               "$USER_1_client_1",
@@ -169,7 +169,7 @@ object QualifiedSendMessageResponseJson {
     )
 
     val failedSentUsersResponse = ValidJsonProvider(
-        QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), mapOf(), mapOf(), failed = USER_MAP),
+        QualifiedSendMessageResponse.MissingDevicesResponse(TIME, mapOf(), mapOf(), mapOf(), USER_MAP),
         v3_failedToSend
     )
 }
