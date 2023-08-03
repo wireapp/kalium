@@ -124,8 +124,7 @@ internal class UserMapperImpl(
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
-            expiresAt = expiresAt,
-            hasIncompleteMetadata = false
+            expiresAt = expiresAt
         )
     }
 
@@ -144,8 +143,7 @@ internal class UserMapperImpl(
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = userDTO.deleted ?: false,
-            expiresAt = expiresAt?.toInstant(),
-            hasIncompleteMetadata = false
+            expiresAt = expiresAt?.toInstant()
         )
     }
 
@@ -205,8 +203,7 @@ internal class UserMapperImpl(
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
             deleted = false,
-            expiresAt = null,
-            hasIncompleteMetadata = false
+            expiresAt = null
         )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -230,8 +227,7 @@ internal class UserMapperImpl(
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
-        expiresAt = userProfile.expiresAt?.toInstant(),
-        hasIncompleteMetadata = false
+        expiresAt = userProfile.expiresAt?.toInstant()
     )
 
     override fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity {
