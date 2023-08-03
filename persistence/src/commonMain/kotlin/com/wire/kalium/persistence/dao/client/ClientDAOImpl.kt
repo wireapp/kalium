@@ -42,7 +42,8 @@ internal object ClientMapper {
         registration_date: Instant?,
         label: String?,
         model: String?,
-        lastActive: Instant?
+        lastActive: Instant?,
+        mls_public_keys: Map<String, String>?
     ): Client = Client(
         userId = user_id,
         id = id,
@@ -53,7 +54,8 @@ internal object ClientMapper {
         registrationDate = registration_date,
         label = label,
         model = model,
-        lastActive = lastActive
+        lastActive = lastActive,
+        mlsPublicKeys = mls_public_keys
     )
 }
 
@@ -83,7 +85,8 @@ internal class ClientDAOImpl internal constructor(
             registration_date = registrationDate,
             last_active = lastActive,
             model = model,
-            label = label
+            label = label,
+            mls_public_keys = mlsPublicKeys
         )
     }
 

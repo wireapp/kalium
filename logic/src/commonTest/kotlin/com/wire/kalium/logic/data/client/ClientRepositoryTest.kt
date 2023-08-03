@@ -286,7 +286,8 @@ class ClientRepositoryTest {
                 label = null,
                 model = "Mac ox",
                 isVerified = false,
-                isValid = true
+                isValid = true,
+                mlsPublicKeys = null
             ),
             Client(
                 id = PlainId(value = "client_id_2"),
@@ -297,7 +298,8 @@ class ClientRepositoryTest {
                 label = null,
                 model = "iphone 15",
                 isVerified = false,
-                isValid = true
+                isValid = true,
+                mlsPublicKeys = null
             ),
         )
 
@@ -360,6 +362,7 @@ class ClientRepositoryTest {
                 isVerified = false,
                 isValid = true,
                 userId = userId,
+                mlsPublicKeys = null
             )
         )
 
@@ -373,7 +376,8 @@ class ClientRepositoryTest {
                 label = null,
                 model = null,
                 isVerified = false,
-                isValid = true
+                isValid = true,
+                mlsPublicKeys = null
             )
         )
 
