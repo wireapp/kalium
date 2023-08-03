@@ -24,11 +24,9 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.test.TestResult
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -39,7 +37,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserDAOTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -582,18 +579,25 @@ class UserDAOTest : BaseDatabaseTest() {
         db.conversationDAO.insertConversation(conversation)
         db.memberDAO.insertMember(MemberEntity(teamMember.id, MemberEntity.Role.Member), conversation.id)
 
-        db.userDAO.getUserByQualifiedID(teamMember.id).first().also {
+        // then
+        db.userDAO.getAllUsers().first().also {
             assertNotNull(it)
-            assertTrue { it.hasIncompleteMetadata }
+            it.firstOrNull { it.id == teamMember.id }.also {
+                assertNotNull(it)
+                assertTrue { it.hasIncompleteMetadata }
+            }
         }
 
         // when
         db.userDAO.upsertTeamMembers(listOf(teamMember))
 
         // then
-        db.userDAO.getUserByQualifiedID(teamMember.id).first().also {
+        db.userDAO.getAllUsers().first().also {
             assertNotNull(it)
-            assertFalse { it.hasIncompleteMetadata }
+            it.firstOrNull { it.id == teamMember.id }.also {
+                assertNotNull(it)
+                assertFalse { it.hasIncompleteMetadata }
+            }
         }
     }
 

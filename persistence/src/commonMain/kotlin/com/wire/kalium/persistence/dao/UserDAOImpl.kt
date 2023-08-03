@@ -140,7 +140,7 @@ class UserDAOImpl internal constructor(
             complete_asset_id = user.completeAssetId,
             user_type = user.userType,
             bot_service = user.botService,
-            incomplete_metadata = false,
+            incomplete_metadata = user.hasIncompleteMetadata,
             expires_at = user.expiresAt,
             connection_status = user.connectionStatus,
             deleted = user.deleted
