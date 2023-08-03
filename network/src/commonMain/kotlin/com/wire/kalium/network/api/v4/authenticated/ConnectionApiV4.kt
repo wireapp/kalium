@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v3.authenticated.ConnectionApiV3
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapFederationRequest
+import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post
 import io.ktor.utils.io.errors.IOException
@@ -35,7 +35,7 @@ internal open class ConnectionApiV4 internal constructor(
 
     override suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO> = try {
         httpClient.post("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}").let { response ->
-            wrapFederationRequest(response) { wrapKaliumResponse { response } }
+            wrapFederationResponse(response) { wrapKaliumResponse { response } }
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
