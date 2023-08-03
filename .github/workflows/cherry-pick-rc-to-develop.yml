@@ -52,5 +52,4 @@ jobs:
                   PR_BRANCH: ${{ env.newBranchName }}
                   PR_ASSIGNEE: ${{ github.event.pull_request.user.login }}
                   PR_BODY: "${{ format('Cherry pick from the original PR: \n- #{0}\n\n---- \n\n ⚠️ Conflicts during cherry-pick:\n{1}\n\n{2}', github.event.pull_request.number, env.conflicts, github.event.pull_request.body) }}"
-              run: |
-                  gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base develop --head "$PR_BRANCH" --label "cherry-pick" --assignee "$PR_ASSIGNEE"
+              run: gh pr create --title "$PR_TITLE" --body "$PR_BODY" --base develop --head "$PR_BRANCH" --label "cherry-pick" --assignee "$PR_ASSIGNEE"
