@@ -75,6 +75,5 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
 data class MessageSent(
     val time: String,
     val failedToConfirmClients: List<UserId> = listOf(),
-    val failedToSend: List<UserId> = listOf(),
     val missing: List<UserId> = listOf()
 )
