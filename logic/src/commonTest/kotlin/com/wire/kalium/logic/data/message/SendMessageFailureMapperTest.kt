@@ -45,7 +45,7 @@ class SendMessageFailureMapperTest {
                     "deleted_domain_0" to mapOf(userId(2) to listOf(clientId(2, 0), clientId(2, 1))),
                     "deleted_domain_1" to mapOf(userId(3) to listOf(clientId(3, 0), clientId(3, 1)))
                 ),
-                failed = mapOf(
+                failedToConfirmClients = mapOf(
                     "failed_domain_0" to mapOf(userId(2) to listOf(clientId(2, 0), clientId(2, 1))),
                     "failed_domain_1" to mapOf(userId(3) to listOf(clientId(3, 0), clientId(3, 1)))
                 )
