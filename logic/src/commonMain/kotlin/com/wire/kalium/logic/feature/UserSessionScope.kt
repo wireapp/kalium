@@ -1340,7 +1340,6 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
-
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
 
     val service: ServiceScope
