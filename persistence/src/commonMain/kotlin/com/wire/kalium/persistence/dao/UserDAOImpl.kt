@@ -129,21 +129,21 @@ class UserDAOImpl internal constructor(
 
     override suspend fun insertUser(user: UserEntity) = withContext(queriesContext) {
         userQueries.insertUser(
-            user.id,
-            user.name,
-            user.handle,
-            user.email,
-            user.phone,
-            user.accentId,
-            user.team,
-            user.connectionStatus,
-            user.previewAssetId,
-            user.completeAssetId,
-            user.userType,
-            user.botService,
-            user.deleted,
-            user.hasIncompleteMetadata,
-            user.expiresAt
+            qualified_id = user.id,
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = user.phone,
+            accent_id = user.accentId,
+            team = user.team,
+            connection_status = user.connectionStatus,
+            preview_asset_id = user.previewAssetId,
+            complete_asset_id = user.completeAssetId,
+            user_type = user.userType,
+            bot_service = user.botService,
+            deleted = user.deleted,
+            incomplete_metadata = user.hasIncompleteMetadata,
+            expires_at = user.expiresAt
         )
     }
 
@@ -175,35 +175,35 @@ class UserDAOImpl internal constructor(
         userQueries.transaction {
             for (user: UserEntity in users) {
                 userQueries.updateTeamMemberUser(
-                    user.name,
-                    user.handle,
-                    user.email,
-                    user.phone,
-                    user.accentId,
-                    user.team,
-                    user.previewAssetId,
-                    user.completeAssetId,
-                    user.botService,
-                    user.id,
+                    qualified_id = user.id,
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    phone = user.phone,
+                    accent_id = user.accentId,
+                    team = user.team,
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    bot_service = user.botService,
                 )
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     userQueries.insertUser(
-                        user.id,
-                        user.name,
-                        user.handle,
-                        user.email,
-                        user.phone,
-                        user.accentId,
-                        user.team,
-                        user.connectionStatus,
-                        user.previewAssetId,
-                        user.completeAssetId,
-                        user.userType,
-                        user.botService,
-                        user.deleted,
-                        user.hasIncompleteMetadata,
-                        user.expiresAt
+                        qualified_id = user.id,
+                        name = user.name,
+                        handle = user.handle,
+                        email = user.email,
+                        phone = user.phone,
+                        accent_id = user.accentId,
+                        team = user.team,
+                        connection_status = user.connectionStatus,
+                        preview_asset_id = user.previewAssetId,
+                        complete_asset_id = user.completeAssetId,
+                        user_type = user.userType,
+                        bot_service = user.botService,
+                        deleted = user.deleted,
+                        incomplete_metadata = user.hasIncompleteMetadata,
+                        expires_at = user.expiresAt
                     )
                 }
             }
@@ -211,42 +211,44 @@ class UserDAOImpl internal constructor(
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
-        userQueries.transaction {
-            for (user: UserEntity in users) {
-                userQueries.updateUser(
-                    user.name,
-                    user.handle,
-                    user.email,
-                    user.phone,
-                    user.accentId,
-                    user.team,
-                    user.previewAssetId,
-                    user.completeAssetId,
-                    user.userType,
-                    user.botService,
-                    false,
-                    user.expiresAt,
-                    user.id,
-                )
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        user.id,
-                        user.name,
-                        user.handle,
-                        user.email,
-                        user.phone,
-                        user.accentId,
-                        user.team,
-                        user.connectionStatus,
-                        user.previewAssetId,
-                        user.completeAssetId,
-                        user.userType,
-                        user.botService,
-                        user.deleted,
-                        user.hasIncompleteMetadata,
-                        user.expiresAt
+        for (user: UserEntity in users) {
+            userQueries.transaction {
+                for (user: UserEntity in users) {
+                    userQueries.updateUser(
+                        qualified_id = user.id,
+                        name = user.name,
+                        handle = user.handle,
+                        email = user.email,
+                        phone = user.phone,
+                        accent_id = user.accentId,
+                        team = user.team,
+                        preview_asset_id = user.previewAssetId,
+                        complete_asset_id = user.completeAssetId,
+                        user_type = user.userType,
+                        bot_service = user.botService,
+                        incomplete_metadata = false,
+                        expires_at = user.expiresAt
                     )
+                    val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+                    if (recordDidNotExist) {
+                        userQueries.insertUser(
+                            qualified_id = user.id,
+                            name = user.name,
+                            handle = user.handle,
+                            email = user.email,
+                            phone = user.phone,
+                            accent_id = user.accentId,
+                            team = user.team,
+                            connection_status = user.connectionStatus,
+                            preview_asset_id = user.previewAssetId,
+                            complete_asset_id = user.completeAssetId,
+                            user_type = user.userType,
+                            bot_service = user.botService,
+                            deleted = user.deleted,
+                            incomplete_metadata = user.hasIncompleteMetadata,
+                            expires_at = user.expiresAt
+                        )
+                    }
                 }
             }
         }
@@ -311,11 +313,12 @@ class UserDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrNull()
 
-    override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? = withContext(queriesContext) {
-        userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
-            mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
-        }.executeAsOneOrNull()
-    }
+    override suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized? =
+        withContext(queriesContext) {
+            userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            }.executeAsOneOrNull()
+        }
 
     override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> =
         withContext(queriesContext) {
@@ -413,5 +416,9 @@ class UserDAOImpl internal constructor(
         userQueries.selectUsersWithoutMetadata()
             .executeAsList()
             .map(mapper::toModel)
+    }
+
+    override suspend fun allOtherUsersId(): List<UserIDEntity> = withContext(queriesContext) {
+        userQueries.userIdsWithoutSelf().executeAsList()
     }
 }
