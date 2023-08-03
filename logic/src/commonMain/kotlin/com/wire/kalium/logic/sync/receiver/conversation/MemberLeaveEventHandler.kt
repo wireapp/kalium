@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -30,6 +29,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -46,8 +46,8 @@ internal class MemberLeaveEventHandlerImpl(
     private val conversationDAO: ConversationDAO,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
+    private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
 ) : MemberLeaveEventHandler {
-    private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.MemberLeave) =
         deleteMembers(event.removedList, event.conversationId)
@@ -57,6 +57,7 @@ internal class MemberLeaveEventHandlerImpl(
                 userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
             }
             .onSuccess {
+                updateConversationClientsForCurrentCall.value(event.conversationId)
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.MemberChange.Removed(members = event.removedList),
