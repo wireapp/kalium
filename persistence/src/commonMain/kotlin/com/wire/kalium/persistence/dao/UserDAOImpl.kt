@@ -136,14 +136,14 @@ class UserDAOImpl internal constructor(
             phone = user.phone,
             accent_id = user.accentId,
             team = user.team,
-            connection_status = user.connectionStatus,
             preview_asset_id = user.previewAssetId,
             complete_asset_id = user.completeAssetId,
             user_type = user.userType,
             bot_service = user.botService,
-            deleted = user.deleted,
             incomplete_metadata = user.hasIncompleteMetadata,
-            expires_at = user.expiresAt
+            expires_at = user.expiresAt,
+            connection_status = user.connectionStatus,
+            deleted = user.deleted
         )
     }
 
@@ -151,21 +151,21 @@ class UserDAOImpl internal constructor(
         userQueries.transaction {
             for (user: UserEntity in users) {
                 userQueries.insertOrIgnoreUser(
-                    user.id,
-                    user.name,
-                    user.handle,
-                    user.email,
-                    user.phone,
-                    user.accentId,
-                    user.team,
-                    user.connectionStatus,
-                    user.previewAssetId,
-                    user.completeAssetId,
-                    user.userType,
-                    user.botService,
-                    user.deleted,
-                    user.hasIncompleteMetadata,
-                    user.expiresAt
+                    qualified_id = user.id,
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    phone = user.phone,
+                    accent_id = user.accentId,
+                    team = user.team,
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    user_type = user.userType,
+                    bot_service = user.botService,
+                    incomplete_metadata = false,
+                    expires_at = user.expiresAt,
+                    connection_status = user.connectionStatus,
+                    deleted = user.deleted
                 )
             }
         }
@@ -196,14 +196,14 @@ class UserDAOImpl internal constructor(
                         phone = user.phone,
                         accent_id = user.accentId,
                         team = user.team,
-                        connection_status = user.connectionStatus,
                         preview_asset_id = user.previewAssetId,
                         complete_asset_id = user.completeAssetId,
                         user_type = user.userType,
                         bot_service = user.botService,
-                        deleted = user.deleted,
                         incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt
+                        expires_at = user.expiresAt,
+                        connection_status = user.connectionStatus,
+                        deleted = user.deleted
                     )
                 }
             }
@@ -211,10 +211,26 @@ class UserDAOImpl internal constructor(
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
-        for (user: UserEntity in users) {
-            userQueries.transaction {
-                for (user: UserEntity in users) {
-                    userQueries.updateUser(
+        userQueries.transaction {
+            for (user: UserEntity in users) {
+                userQueries.updateUser(
+                    qualified_id = user.id,
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    phone = user.phone,
+                    accent_id = user.accentId,
+                    team = user.team,
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    user_type = user.userType,
+                    bot_service = user.botService,
+                    incomplete_metadata = false,
+                    expires_at = user.expiresAt
+                )
+                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+                if (recordDidNotExist) {
+                    userQueries.insertUser(
                         qualified_id = user.id,
                         name = user.name,
                         handle = user.handle,
@@ -222,11 +238,13 @@ class UserDAOImpl internal constructor(
                         phone = user.phone,
                         accent_id = user.accentId,
                         team = user.team,
+                        connection_status = user.connectionStatus,
                         preview_asset_id = user.previewAssetId,
                         complete_asset_id = user.completeAssetId,
                         user_type = user.userType,
                         bot_service = user.botService,
-                        incomplete_metadata = false,
+                        deleted = user.deleted,
+                        incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt
                     )
                     val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
@@ -261,21 +279,21 @@ class UserDAOImpl internal constructor(
                 val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
                 if (recordDidNotExist) {
                     userQueries.insertUser(
-                        user.id,
-                        user.name,
-                        user.handle,
-                        user.email,
-                        user.phone,
-                        user.accentId,
-                        user.team,
-                        user.connectionStatus,
-                        user.previewAssetId,
-                        user.completeAssetId,
-                        user.userType,
-                        user.botService,
-                        user.deleted,
-                        user.hasIncompleteMetadata,
-                        user.expiresAt
+                        qualified_id = user.id,
+                        name = user.name,
+                        handle = user.handle,
+                        email = user.email,
+                        phone = user.phone,
+                        accent_id = user.accentId,
+                        team = user.team,
+                        connection_status = user.connectionStatus,
+                        preview_asset_id = user.previewAssetId,
+                        complete_asset_id = user.completeAssetId,
+                        user_type = user.userType,
+                        bot_service = user.botService,
+                        deleted = user.deleted,
+                        incomplete_metadata = user.hasIncompleteMetadata,
+                        expires_at = user.expiresAt
                     )
                 }
             }
@@ -284,13 +302,13 @@ class UserDAOImpl internal constructor(
 
     override suspend fun updateUser(user: UserEntity) = withContext(queriesContext) {
         userQueries.updateSelfUser(
-            user.name,
-            user.handle,
-            user.email,
-            user.accentId,
-            user.previewAssetId,
-            user.completeAssetId,
-            user.id
+            qualified_id = user.id,
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            accent_id = user.accentId,
+            preview_asset_id = user.previewAssetId,
+            complete_asset_id = user.completeAssetId,
         )
     }
 
@@ -391,12 +409,14 @@ class UserDAOImpl internal constructor(
             userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
         }
 
-    override fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>> =
-        userQueries.selectAllUsersWithConnectionStatus(connectionState)
-            .asFlow()
-            .flowOn(queriesContext)
-            .mapToList()
-            .map { it.map(mapper::toModel) }
+    override suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>> =
+        withContext(queriesContext) {
+            userQueries.selectAllUsersWithConnectionStatus(connectionState)
+                .asFlow()
+                .flowOn(queriesContext)
+                .mapToList()
+                .map { it.map(mapper::toModel) }
+        }
 
     override suspend fun getAllUsersByTeam(teamId: String): List<UserEntity> = withContext(queriesContext) {
         userQueries.selectUsersByTeam(teamId)
