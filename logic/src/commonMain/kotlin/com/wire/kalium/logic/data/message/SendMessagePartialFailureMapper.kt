@@ -39,7 +39,7 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
         return when (sendMessageResponse) {
             is QualifiedSendMessageResponse.MessageSent -> MessageSent(
                 time = sendMessageResponse.time,
-                failed = mapNestedUsersIntoUserIds(sendMessageResponse.failed)
+                failedToConfirmClients = mapNestedUsersIntoUserIds(sendMessageResponse.failedToConfirmClients)
             )
             // This case is not expected when sending a msg succeeds, this is a shared response when receiving 412: [MissingDevicesResponse]
             is QualifiedSendMessageResponse.MissingDevicesResponse -> MessageSent(
@@ -53,7 +53,7 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
         return when {
             sendMLSMessageResponse.failedToSend.isNotEmpty() -> MessageSent(
                 time = sendMLSMessageResponse.time,
-                failed = sendMLSMessageResponse.failedToSend.map { it.toModel() }
+                failedToConfirmClients = sendMLSMessageResponse.failedToSend.map { it.toModel() }
             )
 
             else -> {
@@ -74,6 +74,6 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
 
 data class MessageSent(
     val time: String,
-    val failed: List<UserId> = listOf(),
+    val failedToConfirmClients: List<UserId> = listOf(),
     val missing: List<UserId> = listOf()
 )

@@ -31,11 +31,11 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserDAOTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -685,6 +685,26 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertNull(result)
+    }
+
+    @Test
+    fun givenUsersId_whenCallingAllOtherUsers_thenSelfIdIsNotIncluded() = runTest {
+        val selfUser = newUserEntity().copy(id = selfUserId)
+        val user1 = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
+        val user2 = newUserEntity().copy(id = UserIDEntity("user-2", "domain-2"))
+        val user3 = newUserEntity().copy(id = UserIDEntity("user-3", "domain-1"))
+
+        db.userDAO.insertUser(selfUser)
+        db.userDAO.insertUser(user1)
+        db.userDAO.insertUser(user2)
+        db.userDAO.insertUser(user3)
+
+        db.userDAO.allOtherUsersId().also { result ->
+            assertFalse {
+                result.contains(selfUser.id)
+            }
+            assertEquals(result, listOf(user1.id, user2.id, user3.id))
+        }
     }
 
     private companion object {

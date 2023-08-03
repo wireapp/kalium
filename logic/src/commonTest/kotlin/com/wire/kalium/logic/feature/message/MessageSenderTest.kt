@@ -496,7 +496,7 @@ class MessageSenderTest {
                 sendEnvelopeWithResult = Either.Right(
                     MessageSent(
                         time = MESSAGE_SENT_TIME,
-                        failed = listOf(Arrangement.TEST_MEMBER_1)
+                        failedToConfirmClients = listOf(Arrangement.TEST_MEMBER_1)
                     )
                 )
             )
@@ -527,7 +527,7 @@ class MessageSenderTest {
                 sendEnvelopeWithResult = Either.Right(
                     MessageSent(
                         time = MESSAGE_SENT_TIME,
-                        failed = failedRecipient.users
+                        failedToConfirmClients = failedRecipient.users
                     )
                 )
             )

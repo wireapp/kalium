@@ -35,7 +35,7 @@ class SendMessageFailureMapperImpl : SendMessageFailureMapper {
             missing.fromNestedMapToSimpleMap(),
             redundant.fromNestedMapToSimpleMap(),
             deleted.fromNestedMapToSimpleMap(),
-            failed?.fromNestedMapToSimpleMap()
+            failedToConfirmClients?.fromNestedMapToSimpleMap()
         )
     }
 
