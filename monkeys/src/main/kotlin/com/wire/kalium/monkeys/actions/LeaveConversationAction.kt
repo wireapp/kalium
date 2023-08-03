@@ -27,7 +27,8 @@ class LeaveConversationAction(val userCount: UserCount, val config: ActionType.L
         val targets = ConversationPool.randomDynamicConversations(this.userCount)
         targets.forEach { conv ->
             val leavers = conv.randomMonkeys(this.config.userCount)
-            leavers.forEach {
+            // conversation admin should never leave the group
+            leavers.filter { it.user != conv.creator.user }.forEach {
                 it.leaveConversation(conv.conversation.id)
             }
         }

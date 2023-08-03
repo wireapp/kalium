@@ -65,7 +65,7 @@ object ConversationPool {
         this.pool.remove(conversation.conversation.id)
     }
 
-    private suspend fun createRandomConversation(
+    private suspend fun createDynamicConversation(
         creator: Monkey,
         userCount: UserCount,
         protocol: ConversationOptions.Protocol
@@ -76,21 +76,21 @@ object ConversationPool {
         this.addToPool(conversation)
     }
 
-    suspend fun createRandomConversation(
+    suspend fun createDynamicConversation(
         userCount: UserCount,
         protocol: ConversationOptions.Protocol
     ) {
         val creator = MonkeyPool.randomMonkeys(UserCount.single())[0]
-        this.createRandomConversation(creator, userCount, protocol)
+        this.createDynamicConversation(creator, userCount, protocol)
     }
 
-    suspend fun createRandomConversation(
+    suspend fun createDynamicConversation(
         domain: String,
         userCount: UserCount,
         protocol: ConversationOptions.Protocol
     ) {
         val creator = MonkeyPool.randomMonkeysFromDomain(domain, UserCount.single())[0]
-        this.createRandomConversation(creator, userCount, protocol)
+        this.createDynamicConversation(creator, userCount, protocol)
     }
 
     // Should be called on the setup free from concurrent access as it is not thread safe
@@ -103,9 +103,9 @@ object ConversationPool {
     ) {
         repeat(count.toInt()) { groupIndex ->
             val creator = MonkeyPool.randomMonkeys(UserCount.single())[0]
-            val participants = creator.randomPeers(userCount)
             val name = "Prefixed $prefix by monkey ${creator.user.email} - $protocol - $groupIndex"
             val conversation = creator.makeReadyThen(coreLogic) {
+                val participants = creator.randomPeers(userCount)
                 createConversation(name, participants, protocol, false)
             }
             this.addToPool(conversation)

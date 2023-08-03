@@ -41,18 +41,20 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
 import kotlinx.coroutines.flow.first
-import java.util.Collections.synchronizedList
+import java.util.Collections.synchronizedSet
 
 /**
  * A monkey is a user puppeteered by the test framework.
  * It contains the basic [user] data and provides
  * the [monkeyState] which we can use to perform actions.
  */
+@Suppress("TooManyFunctions")
 class Monkey(
     val user: UserData,
+    val team: List<UserId>
 ) {
     private var monkeyState: MonkeyState = MonkeyState.NotReady
-    private var connectedMonkeys: MutableList<UserId> = synchronizedList(listOf())
+    private var connectedMonkeys: MutableSet<UserId> = synchronizedSet(mutableSetOf())
 
     fun isSessionActive(): Boolean {
         return monkeyState is MonkeyState.Ready
@@ -128,7 +130,7 @@ class Monkey(
 
     fun randomPeers(userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount, this.connectedMonkeys.count().toUInt())
-        return (1u..count).map { this.randomPeer() }
+        return this.connectedMonkeys.shuffled().map(MonkeyPool::get).take(count.toInt())
     }
 
     suspend fun sendRequest(anotherMonkey: Monkey) {
@@ -157,7 +159,7 @@ class Monkey(
     }
 
     private fun connectTo(monkeys: List<UserId>) {
-        this.connectedMonkeys.addAll(monkeys)
+        this.connectedMonkeys.addAll(monkeys.filter { it != this.user.userId })
     }
 
     suspend fun <T> makeReadyThen(coreLogic: CoreLogic, func: suspend Monkey.() -> T): T {
@@ -182,7 +184,7 @@ class Monkey(
             if (result is CreateGroupConversationUseCase.Result.Success) {
                 MonkeyConversation(self, result.conversation, isDestroyable)
             } else {
-                error("${self.user.email} could not create group $name")
+                error("${self.user.email} could not create group $name: $result")
             }
         }
     }

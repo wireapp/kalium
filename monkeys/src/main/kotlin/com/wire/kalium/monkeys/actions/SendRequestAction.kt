@@ -27,12 +27,13 @@ class SendRequestAction(val userCount: UserCount, val config: ActionType.SendReq
     override suspend fun execute(coreLogic: CoreLogic) {
         val monkeys = MonkeyPool.randomLoggedInMonkeysFromDomain(config.originDomain, this.userCount)
         monkeys.forEach { origin ->
-            val target = MonkeyPool.randomLoggedInMonkeysFromDomain(config.targetDomain, UserCount.single())[0]
+            val targets = MonkeyPool.randomLoggedInMonkeysFromDomain(config.targetDomain, config.userCount)
+            targets.forEach { origin.sendRequest(it) }
             delay(this.config.delayResponse.toLong())
             if (this.config.shouldAccept) {
-                target.acceptRequest(origin)
+                targets.forEach { it.acceptRequest(origin) }
             } else {
-                target.rejectRequest(origin)
+                targets.forEach { it.rejectRequest(origin) }
             }
         }
     }

@@ -28,9 +28,9 @@ class CreateConversationAction(val userCount: UserCount, val config: ActionType.
         val count = resolveUserCount(this.userCount, ConversationPool.size())
         repeat(count.toInt()) {
             if (this.config.domain != null) {
-                ConversationPool.createRandomConversation(this.config.domain, this.config.userCount, this.config.protocol)
+                ConversationPool.createDynamicConversation(this.config.domain, this.config.userCount, this.config.protocol)
             } else {
-                ConversationPool.createRandomConversation(this.config.userCount, this.config.protocol)
+                ConversationPool.createDynamicConversation(this.config.userCount, this.config.protocol)
             }
         }
     }

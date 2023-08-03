@@ -37,64 +37,53 @@ object MonkeyPool {
     // a map of logged out monkeys per domain
     private val poolLoggedOut: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
-    fun init(users: List<UserData>) {
+    fun init(users: List<UserData>, userIdsPerBackend: Map<String, List<UserId>>) {
         users.forEach {
-            val monkey = Monkey(it)
+            val monkey = Monkey(it, userIdsPerBackend[it.backend.domain] ?: error("Missing user ids for the domain ${it.userId.value}"))
             this.pool.getOrPut(it.backend.domain) { mutableListOf() }.add(monkey)
             this.poolLoggedOut.getOrPut(it.backend.domain) { ConcurrentHashMap() }[it.userId] = monkey
             this.poolById[it.userId] = monkey
         }
     }
 
-    // TODO: ensure there's no duplicated results
     fun randomMonkeysFromDomain(domain: String, userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount)
-        val backendUsers = this.pool[domain] ?: error("Domain $domain doesn't exist")
-        return (1u..count).map { backendUsers.randomOrNull() ?: error("There are no monkeys for the $domain backend") }
+        val backendUsers = this.pool[domain]?.shuffled() ?: error("Domain $domain doesn't exist or there are no monkeys in the domain")
+        return backendUsers.take(count.toInt())
     }
 
     /**
      * This is costly depending on the size. Use with caution
      */
-    // TODO: ensure there's no duplicated results
     fun randomMonkeys(userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount)
-        val allUsers = this.pool.values.flatten()
-        return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool is empty") }
+        val allUsers = this.pool.values.flatten().shuffled()
+        return allUsers.take(count.toInt())
     }
 
-    // TODO: ensure there's no duplicated results
     fun randomLoggedInMonkeysFromDomain(domain: String, userCount: UserCount): List<Monkey> {
-        val count = resolveUserCount(userCount)
-        val backendUsers = this.poolLoggedIn[domain]?.values ?: error("Domain $domain doesn't exist")
-        return (1u..count).map { backendUsers.randomOrNull() ?: error("There are no logged in monkeys for the $domain backend") }
+        val count = resolveUserCount(userCount, domain)
+        val backendUsers =
+            this.poolLoggedIn[domain]?.values?.shuffled() ?: error("Domain $domain doesn't exist or there are not monkeys logged in")
+        return backendUsers.take(count.toInt())
     }
 
     /**
      * This is costly depending on the size. Use with caution
      */
-    // TODO: ensure there's no duplicated results
     fun randomLoggedInMonkeys(userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount)
-        val allUsers = this.poolLoggedIn.values.flatMap { it.values }
-        return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool of logged in users is empty") }
-    }
-
-    // TODO: ensure there's no duplicated results
-    fun randomLoggedOutMonkeysFromDomain(domain: String, userCount: UserCount): List<Monkey> {
-        val count = resolveUserCount(userCount)
-        val backendUsers = this.poolLoggedOut[domain]?.values ?: error("Domain $domain doesn't exist")
-        return (1u..count).map { backendUsers.randomOrNull() ?: error("There are no logged out monkeys for the $domain backend") }
+        val allUsers = this.poolLoggedIn.values.flatMap { it.values }.shuffled()
+        return allUsers.take(count.toInt())
     }
 
     /**
      * This is costly depending on the size. Use with caution
      */
-    // TODO: ensure there's no duplicated results
     fun randomLoggedOutMonkeys(userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount)
-        val allUsers = this.poolLoggedOut.values.flatMap { it.values }
-        return (1u..count).map { allUsers.randomOrNull() ?: error("The Monkey pool of logged out users is empty") }
+        val allUsers = this.poolLoggedOut.values.flatMap { it.values }.shuffled()
+        return allUsers.take(count.toInt())
     }
 
     fun loggedIn(monkey: Monkey) {
@@ -112,14 +101,21 @@ object MonkeyPool {
         return resolveUserCount(userCount, totalUsers)
     }
 
+    private fun resolveUserCount(userCount: UserCount, domain: String): UInt {
+        val totalUsers: UInt = this.pool[domain]?.count()?.toUInt() ?: error("Domain $domain not found")
+        return resolveUserCount(userCount, totalUsers)
+    }
+
     fun get(userId: UserId): Monkey {
         return this.poolById[userId] ?: error("Monkey with id $userId not found.")
     }
 }
 
+const val HUNDRED_PERCENT: Float = 100f
+
 fun resolveUserCount(userCount: UserCount, totalUsers: UInt): UInt {
     return when (userCount) {
-        is UserCount.Percentage -> ((userCount.value.toFloat() / 100f) * totalUsers.toFloat()).roundToInt().toUInt()
+        is UserCount.Percentage -> ((userCount.value.toFloat() / HUNDRED_PERCENT) * totalUsers.toFloat()).roundToInt().toUInt()
         is UserCount.FixedCount -> userCount.value
     }
 }

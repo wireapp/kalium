@@ -34,13 +34,6 @@ class MonkeyConversation(
     private var participants: MutableList<Monkey> = mutableListOf(creator)
 
     /**
-     * Return a random [Monkey] from the group. The group will always have at least its creator in it.
-     */
-    fun randomMonkey(): Monkey {
-        return this.participants.random()
-    }
-
-    /**
      * Return a [count] number of random [Monkey] from the conversation.
      * It returns only logged-in users, if there are none an empty list will be returned
      */

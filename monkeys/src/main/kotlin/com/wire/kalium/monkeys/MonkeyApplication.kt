@@ -29,6 +29,7 @@ import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.monkeys.importer.TestData
 import com.wire.kalium.monkeys.importer.TestDataImporter
@@ -71,8 +72,11 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
         val testData = TestDataImporter.importFromFile(dataFilePath)
+        // TODO: when getAllKnownContacts is fixed to return contacts for the caller's team, remove this
+        val userIdsPerBackend =
+            testData.backends.associate { backend -> backend.domain to backend.users.map { UserId(it.unqualifiedId, backend.domain) } }
         val users = TestDataImporter.getUserData(testData)
-        MonkeyPool.init(users)
+        MonkeyPool.init(users, userIdsPerBackend)
         runMonkeys(coreLogic, testData)
     }
 
@@ -80,6 +84,8 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         coreLogic: CoreLogic,
         testData: TestData
     ) = with(testData) {
+        logger.i("Running setup")
+        ActionScheduler.runSetup(testCases.flatMap { it.setup }, coreLogic)
         logger.i("Creating prefixed groups")
         testData.testCases.forEach {
             it.conversationDistribution.forEach { (prefix, config) ->
@@ -92,8 +98,6 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 )
             }
         }
-        logger.i("Running setup")
-        ActionScheduler.runSetup(testCases.flatMap { it.setup }, coreLogic)
         logger.i("Starting stress tests")
         ActionScheduler.start(testCases, coreLogic)
     }
