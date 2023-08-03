@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -54,6 +55,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
+    private lateinit var receiptDao: ReceiptDAO
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val conversationEntity2 = newConversationEntity("Test2")
@@ -68,6 +70,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
+        receiptDao = db.receiptDAO
     }
 
     @Test
@@ -1540,6 +1543,21 @@ class MessageDAOTest : BaseDatabaseTest() {
             ((result as MessageEntity.Regular).deliveryStatus as DeliveryStatusEntity.PartialDelivery)
                 .recipientsFailedDelivery.size == 2
         }
+    }
+
+    @Test
+    fun givenADeliveredReceiptForAMessage_whenQueringTheMessage_thenTheMessageHasExpectedStatus() = runTest {
+
+    }
+
+    @Test
+    fun givenASingleReadReceiptForAMessage_whenQueringTheMessage_thenTheMessageHasExpectedStatus() = runTest {
+
+    }
+
+    @Test
+    fun givenAMultipleReadReceiptForAMessage_whenQueringTheMessage_thenTheMessageHasExpectedStatus() = runTest {
+
     }
 
     private suspend fun insertInitialData() {
