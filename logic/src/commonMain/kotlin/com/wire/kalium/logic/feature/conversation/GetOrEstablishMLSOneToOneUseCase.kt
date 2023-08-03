@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -27,26 +26,45 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 
-internal interface JoinOrEstablishMLSOneToOneUseCase {
+/**
+ * Use case that will return an existing MLS-capable
+ * one-on-one conversation or establish a new one.
+ * In case the conversation already exists, but it's not initialized yet
+ * (epoch == 0), it will attempt to join it, returning failure if it fails.
+ */
+internal interface GetOrEstablishMLSOneToOneUseCase {
+    /**
+     * Attempts to find an existing MLS-capable one-on-one conversation,
+     * or creates a new one if none is found.
+     * In case the conversation already exists, but it's not initialized yet
+     * (epoch == 0), it will attempt to join it, returning failure if it fails.
+     * @param userId The user ID of the other participant.
+     */
     suspend operator fun invoke(userId: UserId): Either<CoreFailure, ConversationId>
 }
 
-internal class JoinOrEstablishMLSOneToOneUseCaseImpl(
+internal class GetOrEstablishMLSOneToOneUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val connectionRepository: ConnectionRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
-) : JoinOrEstablishMLSOneToOneUseCase {
+) : GetOrEstablishMLSOneToOneUseCase {
 
     override suspend fun invoke(userId: UserId): Either<CoreFailure, ConversationId> =
-        // TODO Get current conversation with other user
-        conversationRepository.getConversationIds(Conversation.Type.ONE_ON_ONE, Conversation.Protocol.MLS)
-            .flatMap { conversationIds ->
-                if (conversationIds.isNotEmpty()) {
-                    return@flatMap Either.Right(conversationIds.first())
-                }
+        conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
+            // Look for an existing MLS-capable conversation one-on-one
+            val initializedMLSOneOnOne = conversations.firstOrNull {
+                val isOneOnOne = it.type == Conversation.Type.ONE_ON_ONE
+                val protocol = it.protocol
+                val isMLSInitialized = protocol is Conversation.ProtocolInfo.MLSCapable &&
+                        protocol.epoch != 0UL
+                isOneOnOne && isMLSInitialized
+            }
+
+            if (initializedMLSOneOnOne != null) {
+                Either.Right(initializedMLSOneOnOne.id)
+            } else {
                 conversationRepository.fetchMlsOneToOneConversation(userId).flatMap { conversation ->
                     joinExistingMLSConversationUseCase(conversation.id).map { conversation.id }
                 }
             }
-
+        }
 }

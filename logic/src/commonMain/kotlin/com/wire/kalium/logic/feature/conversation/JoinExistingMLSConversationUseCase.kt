@@ -44,7 +44,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 /**
- * Send an external commit to join all MLS conversations for which the user is a member,
+ * Send an external commit to join an MLS conversation for which the user is a member,
  * but has not yet joined the corresponding MLS group.
  */
 internal interface JoinExistingMLSConversationUseCase {
@@ -66,7 +66,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
+            kaliumLogger.d("Skip re-join existing MLS conversation, since MLS is not supported.")
             Either.Right(Unit)
         } else {
             conversationRepository.baseInfoById(conversationId).fold({
