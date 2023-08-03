@@ -19,6 +19,7 @@
 package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import io.ktor.client.call.NoTransformationFoundException
@@ -231,3 +232,36 @@ private fun toStatusCodeBasedKaliumException(
     }
     return kException
 }
+
+/**
+ * Wrap and handles federation aware endpoints that can send errors responses
+ * And raise proper federated exceptions
+ */
+suspend fun <T : Any> wrapFederationRequest(
+    response: HttpResponse,
+    delegatedHandler: suspend (HttpResponse) -> NetworkResponse<T>
+) =
+    when (response.status) {
+        HttpStatusCode.Conflict -> {
+            val errorResponse = try {
+                response.body()
+            } catch (_: NoTransformationFoundException) {
+                FederationConflictResponse(listOf())
+            }
+            NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
+        }
+
+        HttpStatusCode.UnprocessableEntity -> {
+            val errorResponse = try {
+                response.body()
+            } catch (_: NoTransformationFoundException) {
+                // When the backend returns something that is not a JSON for whatever reason.
+                ErrorResponse(response.status.value, response.status.description, "invalid-domain")
+            }
+            NetworkResponse.Error(KaliumException.FederationError(errorResponse))
+        }
+
+        else -> {
+            delegatedHandler.invoke(response)
+        }
+    }

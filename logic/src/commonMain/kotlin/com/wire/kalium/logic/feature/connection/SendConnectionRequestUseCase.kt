@@ -27,7 +27,7 @@ import com.wire.kalium.logic.kaliumLogger
 /**
  * Use Case that allows a user send a connection request to connect with another User
  */
-fun interface SendConnectionRequestUseCase {
+interface SendConnectionRequestUseCase {
     /**
      * Use case [SendConnectionRequestUseCase] operation
      *
@@ -53,6 +53,6 @@ internal class SendConnectionRequestUseCaseImpl(
 }
 
 sealed class SendConnectionRequestResult {
-    object Success : SendConnectionRequestResult()
+    data object Success : SendConnectionRequestResult()
     class Failure(val coreFailure: CoreFailure) : SendConnectionRequestResult()
 }
