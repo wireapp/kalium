@@ -21,6 +21,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Use case to check if the current user can create password protected invite links.
+ * This is only possible if the server api version is grater or equal to 4.
+ */
 class CanCreatePasswordProtectedLinksUseCase internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val selfUserId: UserId

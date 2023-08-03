@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
