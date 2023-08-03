@@ -340,5 +340,5 @@ object TestConversation {
         userMessageTimer = null
     )
 
-    val LIMITED_CONVERSATION_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")
+    val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")
 }

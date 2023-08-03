@@ -540,7 +540,7 @@ class ConversationGroupRepositoryTest {
             .withFetchLimitedConversationInfo(
                 code,
                 key,
-                NetworkResponse.Success(TestConversation.LIMITED_CONVERSATION_INFO, emptyMap(), 200)
+                NetworkResponse.Success(TestConversation.CONVERSATION_CODE_INFO, emptyMap(), 200)
             )
             .arrange()
 
