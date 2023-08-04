@@ -55,6 +55,7 @@ import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
@@ -118,6 +119,8 @@ interface ConversationRepository {
         protocol: Conversation.Protocol,
         teamId: TeamId? = null
     ): Either<StorageFailure, List<QualifiedID>>
+
+    suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, Conversation>
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: TeamId): Either<StorageFailure, List<QualifiedID>>
     suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
@@ -403,6 +406,46 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getConversationIds(type.toDAO(), protocol.toDao(), teamId?.value)
                 .map { it.toModel() }
         }
+
+    override suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, Conversation> =
+        wrapApiRequest {
+            conversationApi.fetchMlsOneToOneConversation(userId.toApi())
+        }.map { conversationResponse ->
+            addOtherMemberIfMissing(conversationResponse, userId)
+        }.flatMap { conversationResponse ->
+            val selfUserTeamId = selfTeamIdProvider().getOrNull()
+            persistConversations(
+                conversations = listOf(conversationResponse),
+                selfUserTeamId = selfUserTeamId?.value
+            ).map { conversationResponse }
+        }.flatMap { response ->
+            baseInfoById(response.id.toModel())
+        }
+
+    private fun addOtherMemberIfMissing(
+        conversationResponse: ConversationResponse,
+        otherMemberId: UserId
+    ): ConversationResponse {
+        val currentOtherMembers = conversationResponse.members.otherMembers
+        val hasOtherUser = currentOtherMembers.any { it.id == otherMemberId.toApi() }
+        val otherMembers = if (hasOtherUser) {
+            currentOtherMembers
+        } else {
+            listOf(
+                ConversationMemberDTO.Other(
+                    id = otherMemberId.toApi(),
+                    conversationRole = "",
+                    service = null
+                )
+            )
+        }
+        return conversationResponse.copy(
+            members = conversationResponse.members.copy(
+                otherMembers = otherMembers
+            )
+        )
+    }
+
     override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
         wrapStorageRequest {
             conversationDAO.getTeamConversationIdsReadyToCompleteMigration(teamId.value)
