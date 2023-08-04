@@ -22,7 +22,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LimitedConversationInfo(
-    @SerialName("id") val nonQualifiedConversationId: String,
-    @SerialName("name") val name: String?
+data class ConversationCodeInfo(
+    @SerialName("id") val nonQualifiedId: String,
+    @SerialName("name") val name: String?,
+    @SerialName("has_password") val hasPassword: Boolean = false
 )
