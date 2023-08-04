@@ -256,7 +256,7 @@ suspend fun <T : Any> wrapFederationResponse(
                 response.body()
             } catch (_: NoTransformationFoundException) {
                 // When the backend returns something that is not a JSON for whatever reason.
-                ErrorResponse(response.status.value, response.status.description, "invalid-domain")
+                ErrorResponse(response.status.value, response.status.description, "federation-denied")
             }
             NetworkResponse.Error(KaliumException.FederationError(errorResponse))
         }

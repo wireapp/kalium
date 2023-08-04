@@ -71,6 +71,7 @@ sealed interface CoreFailure {
      * when the sender ID is not the same are the original message sender id
      */
     object InvalidEventSenderID : FeatureFailure()
+
     /**
      * This operation is not supported by proteus conversations
      */
@@ -116,6 +117,7 @@ sealed class NetworkFailure : CoreFailure {
     sealed class FederatedBackendFailure : NetworkFailure() {
 
         data class General(val label: String) : FederatedBackendFailure()
+        data class FederationDenied(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
 
@@ -168,6 +170,9 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             when {
                 exception is KaliumException.FederationError -> {
                     val cause = exception.errorResponse.cause
+                    if (exception.errorResponse.label == "federation-denied") {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
+                    }
                     if (exception.errorResponse.label == "federation-unreachable-domains-error") {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
                     } else {
