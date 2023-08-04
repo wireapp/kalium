@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -30,15 +31,15 @@ import com.wire.kalium.logic.functional.map
 /**
  * Use case that will return an existing MLS-capable
  * one-on-one conversation or establish a new one.
- * In case the conversation already exists, but it's not initialized yet
- * (epoch == 0), it will attempt to join it, returning failure if it fails.
+ * In case the conversation already exists, but it's not established yet
+ * (see [GroupState.ESTABLISHED]), it will attempt to join it, returning failure if it fails.
  */
 internal interface GetOrEstablishMLSOneToOneUseCase {
     /**
      * Attempts to find an existing MLS-capable one-on-one conversation,
      * or creates a new one if none is found.
-     * In case the conversation already exists, but it's not initialized yet
-     * (epoch == 0), it will attempt to join it, returning failure if it fails.
+     * In case the conversation already exists, but it's not established yet
+     * (see [GroupState.ESTABLISHED]), it will attempt to join it, returning failure if it fails.
      * @param userId The user ID of the other participant.
      */
     suspend operator fun invoke(userId: UserId): Either<CoreFailure, ConversationId>
@@ -56,7 +57,7 @@ internal class GetOrEstablishMLSOneToOneUseCaseImpl(
                 val isOneOnOne = it.type == Conversation.Type.ONE_ON_ONE
                 val protocol = it.protocol
                 val isMLSInitialized = protocol is Conversation.ProtocolInfo.MLSCapable &&
-                        protocol.epoch != 0UL
+                        protocol.groupState == GroupState.ESTABLISHED
                 isOneOnOne && isMLSInitialized
             }
 

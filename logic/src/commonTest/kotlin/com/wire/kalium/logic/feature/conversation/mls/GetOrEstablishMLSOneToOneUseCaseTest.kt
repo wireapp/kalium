@@ -87,7 +87,7 @@ class GetOrEstablishMLSOneToOneUseCaseTest {
         val result = getOrEstablishMlsOneToOneUseCase(userId)
 
         result.shouldSucceed {
-            assertEquals(CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED.id, it)
+            assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
         }
     }
 
@@ -97,7 +97,7 @@ class GetOrEstablishMLSOneToOneUseCaseTest {
         val (_, getOrEstablishMlsOneToOneUseCase) = arrange {
             withConversationsForUserIdReturning(
                 Either.Right(
-                    ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED
+                    ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED
                 )
             )
             withFetchMlsOneToOneConversation(Either.Left(cause))
@@ -115,17 +115,17 @@ class GetOrEstablishMLSOneToOneUseCaseTest {
         val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
             withConversationsForUserIdReturning(
                 Either.Right(
-                    ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED
+                    ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED
                 )
             )
-            withFetchMlsOneToOneConversation(Either.Right(CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED))
+            withFetchMlsOneToOneConversation(Either.Right(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
         }
 
         val result = getOrEstablishMlsOneToOneUseCase(userId)
 
         result.shouldSucceed {
-            assertEquals(CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED.id, it)
+            assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
         }
 
         verify(arrangement.joinExistingMLSConversationUseCase)
@@ -157,7 +157,7 @@ class GetOrEstablishMLSOneToOneUseCaseTest {
             protocol = Conversation.ProtocolInfo.Proteus,
         )
 
-        private val CONVERSATION_ONE_ON_ONE_MLS_NOT_INITIALIZED = CONVERSATION_ONE_ON_ONE_PROTEUS.copy(
+        private val CONVERSATION_ONE_ON_ONE_MLS_NOT_ESTABLISHED = CONVERSATION_ONE_ON_ONE_PROTEUS.copy(
             id = ConversationId("one-on-one-mls-NOT-initialized", "test"),
             protocol = TestConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION,
@@ -165,23 +165,23 @@ class GetOrEstablishMLSOneToOneUseCaseTest {
             ),
         )
 
-        private val CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED = CONVERSATION_ONE_ON_ONE_MLS_NOT_INITIALIZED.copy(
+        private val CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED = CONVERSATION_ONE_ON_ONE_MLS_NOT_ESTABLISHED.copy(
             id = ConversationId("one-on-one-mls-initialized", "test"),
             protocol = TestConversation.MLS_PROTOCOL_INFO.copy(
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
-                epoch = 10U
+                epoch = 0U
             ),
         )
 
-        private val CONVERSATION_GROUP_MLS_INITIALIZED = CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED.copy(
+        private val CONVERSATION_GROUP_MLS_INITIALIZED = CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.copy(
             id = ConversationId("group-mls-initialized", "test"),
             type = Conversation.Type.GROUP
         )
 
         private val ALL_CONVERSATIONS = listOf(
             CONVERSATION_ONE_ON_ONE_PROTEUS,
-            CONVERSATION_ONE_ON_ONE_MLS_NOT_INITIALIZED,
-            CONVERSATION_ONE_ON_ONE_MLS_INITIALIZED,
+            CONVERSATION_ONE_ON_ONE_MLS_NOT_ESTABLISHED,
+            CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED,
             CONVERSATION_GROUP_MLS_INITIALIZED,
         )
     }
