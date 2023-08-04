@@ -76,7 +76,8 @@ class EventMapper(
             is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient)
             is EventContentDTO.Unknown -> Event.Unknown(id, transient)
             is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id, transient) // TODO: update it after logic code is merged
-            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.DeletedConversationDTO ->
+                Event.Unknown(id, transient) // TODO: uncomment before merge conversationDeleted(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient)
