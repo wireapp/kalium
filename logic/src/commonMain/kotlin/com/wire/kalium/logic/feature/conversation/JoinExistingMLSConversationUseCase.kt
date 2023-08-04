@@ -26,9 +26,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -46,21 +44,20 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 /**
- * Send an external commit to join all MLS conversations for which the user is a member,
+ * Send an external commit to join an MLS conversation for which the user is a member,
  * but has not yet joined the corresponding MLS group.
  */
-interface JoinExistingMLSConversationUseCase {
+internal interface JoinExistingMLSConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
-class JoinExistingMLSConversationUseCaseImpl(
+internal class JoinExistingMLSConversationUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val conversationApi: ConversationApi,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : JoinExistingMLSConversationUseCase {
     private val dispatcher = kaliumDispatcher.io
@@ -69,7 +66,7 @@ class JoinExistingMLSConversationUseCaseImpl(
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
-            kaliumLogger.d("Skip re-join existing MLS conversation(s), since MLS is not supported.")
+            kaliumLogger.d("Skip re-join existing MLS conversation, since MLS is not supported.")
             Either.Right(Unit)
         } else {
             conversationRepository.baseInfoById(conversationId).fold({
@@ -107,29 +104,42 @@ class JoinExistingMLSConversationUseCaseImpl(
             }
 
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLSCapable) {
-            if (conversation.protocol.epoch == 0UL) {
-                if (conversation.type == Conversation.Type.SELF) {
-                    kaliumLogger.i("Establish group for ${conversation.type}")
-                    mlsConversationRepository.establishMLSGroup(
-                        conversation.protocol.groupId,
-                        emptyList()
-                    )
-                } else {
-                    Either.Right(Unit)
-                }
-            } else {
+        val protocol = conversation.protocol
+        val type = conversation.type
+        return when {
+            protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
+
+            protocol.epoch != 0UL -> {
+                // TODO(refactor): don't use conversationAPI directly
+                //                 we could use mlsConversationRepository to solve this
                 wrapApiRequest {
                     conversationApi.fetchGroupInfo(conversation.id.toApi())
                 }.flatMap { groupInfo ->
                     mlsConversationRepository.joinGroupByExternalCommit(
-                        conversation.protocol.groupId,
+                        protocol.groupId,
                         groupInfo
                     )
                 }
             }
-        } else {
-            Either.Right(Unit)
+
+            type == Conversation.Type.SELF -> {
+                kaliumLogger.i("Establish group for ${conversation.type}")
+                mlsConversationRepository.establishMLSGroup(
+                    protocol.groupId,
+                    emptyList()
+                )
+            }
+
+            type == Conversation.Type.ONE_ON_ONE -> {
+                conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                    mlsConversationRepository.establishMLSGroup(
+                        protocol.groupId,
+                        listOf(members.first())
+                    )
+                }
+            }
+
+            else -> Either.Right(Unit)
         }
     }
 }

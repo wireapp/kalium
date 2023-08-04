@@ -21,6 +21,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -40,9 +41,14 @@ internal interface ConversationRepositoryArrangement {
         result: Either<CoreFailure, Map<ConversationId, UserId>>,
         domain: Matcher<String> = any()
     )
+
+    fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
+
+    fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
+
     @Mock
     override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
@@ -64,6 +70,20 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         given(conversationRepository)
             .suspendFunction(conversationRepository::getOneOnOneConversationsWithFederatedMembers)
             .whenInvokedWith(domain)
+            .thenReturn(result)
+    }
+
+    override fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationsByUserId)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchMlsOneToOneConversation)
+            .whenInvokedWith(any())
             .thenReturn(result)
     }
 }
