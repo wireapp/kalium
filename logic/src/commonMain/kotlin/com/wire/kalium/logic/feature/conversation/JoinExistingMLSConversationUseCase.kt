@@ -105,43 +105,41 @@ internal class JoinExistingMLSConversationUseCaseImpl(
 
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
-        if (protocol !is Conversation.ProtocolInfo.MLSCapable) {
-            return Either.Right(Unit)
-        }
-        return if (protocol.epoch == 0UL) {
-            when (conversation.type) {
-                Conversation.Type.SELF -> {
-                    kaliumLogger.i("Establish group for ${conversation.type}")
-                    mlsConversationRepository.establishMLSGroup(
+        val type = conversation.type
+        return when {
+            protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
+
+            protocol.epoch != 0UL -> {
+                // TODO(refactor): don't use conversationAPI directly
+                //                 we could use mlsConversationRepository to solve this
+                wrapApiRequest {
+                    conversationApi.fetchGroupInfo(conversation.id.toApi())
+                }.flatMap { groupInfo ->
+                    mlsConversationRepository.joinGroupByExternalCommit(
                         protocol.groupId,
-                        emptyList()
+                        groupInfo
                     )
                 }
-
-                Conversation.Type.ONE_ON_ONE -> {
-                    conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
-                        mlsConversationRepository.establishMLSGroup(
-                            protocol.groupId,
-                            listOf(members.first())
-                        )
-                    }
-                }
-
-                else -> {
-                    Either.Right(Unit)
-                }
             }
-        } else {
-            // TODO(refactor): don't use conversationAPI directly
-            //                 we could use mlsConversationRepository to solve this
-            wrapApiRequest {
-                conversationApi.fetchGroupInfo(conversation.id.toApi())
-            }.flatMap { groupInfo ->
-                mlsConversationRepository.joinGroupByExternalCommit(
+
+            type == Conversation.Type.SELF -> {
+                kaliumLogger.i("Establish group for ${conversation.type}")
+                mlsConversationRepository.establishMLSGroup(
                     protocol.groupId,
-                    groupInfo
+                    emptyList()
                 )
             }
+
+            type == Conversation.Type.ONE_ON_ONE -> {
+                conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                    mlsConversationRepository.establishMLSGroup(
+                        protocol.groupId,
+                        listOf(members.first())
+                    )
+                }
+            }
+
+            else -> Either.Right(Unit)
         }
     }
 }
