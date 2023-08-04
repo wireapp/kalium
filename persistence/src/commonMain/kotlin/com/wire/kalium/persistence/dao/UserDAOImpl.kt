@@ -247,26 +247,6 @@ class UserDAOImpl internal constructor(
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt
                     )
-                    val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                    if (recordDidNotExist) {
-                        userQueries.insertUser(
-                            qualified_id = user.id,
-                            name = user.name,
-                            handle = user.handle,
-                            email = user.email,
-                            phone = user.phone,
-                            accent_id = user.accentId,
-                            team = user.team,
-                            connection_status = user.connectionStatus,
-                            preview_asset_id = user.previewAssetId,
-                            complete_asset_id = user.completeAssetId,
-                            user_type = user.userType,
-                            bot_service = user.botService,
-                            deleted = user.deleted,
-                            incomplete_metadata = user.hasIncompleteMetadata,
-                            expires_at = user.expiresAt
-                        )
-                    }
                 }
             }
         }
