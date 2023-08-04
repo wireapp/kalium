@@ -26,7 +26,6 @@ import io.mockative.given
 import io.mockative.mock
 
 internal interface PersistMessageUseCaseArrangement {
-    @Mock
     val persistMessageUseCase: PersistMessageUseCase
     fun withPersistingMessage(result: Either<CoreFailure, Unit>): PersistMessageUseCaseArrangementImpl
 }
