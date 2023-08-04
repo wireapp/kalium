@@ -71,8 +71,8 @@ class FederationEventReceiverImpl internal constructor(
         // remove pending and sent connections from federated users
         connectionRepository.getConnections()
             .map { it.firstOrNull() }
-            .onSuccess {
-                it?.forEach { conversationDetails ->
+            .onSuccess { conversationDetailsList ->
+                conversationDetailsList?.forEach { conversationDetails ->
                     if (conversationDetails is ConversationDetails.Connection
                         && conversationDetails.otherUser?.id?.domain == event.domain
                     ) {
@@ -91,7 +91,6 @@ class FederationEventReceiverImpl internal constructor(
                     }
                 }
 
-                // remove
                 conversationsWithMembers.group.forEach { (conversationId, userIds) ->
                     handleFederationDeleteEvent(conversationId, event.domain)
                     when (conversationId.domain) {
