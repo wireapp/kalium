@@ -17,11 +17,16 @@
  */
 package com.wire.kalium.persistence.dao.message
 
+import com.wire.kalium.persistence.dao.BotIdEntity
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -29,8 +34,10 @@ class MessageMapperTest {
 
     @Test
     fun givenEphemeralOneOnOneConversation_whenMappingToMessagePreviewEntity_thenMessagePreviewEntityContentIsEphemeral() {
+        // given / when
         val messagePreviewEntity = Arrangement().toPreviewEntity(ConversationEntity.Type.GROUP, true)
 
+        // then
         val content = messagePreviewEntity.content
         assertIs<MessagePreviewEntityContent.Ephemeral>(content)
         assertTrue(content.isGroupConversation)
@@ -38,14 +45,200 @@ class MessageMapperTest {
 
     @Test
     fun givenEphemeralGroupConversation_whenMappingToMessagePreviewEntity_thenMessagePreviewEntityContentIsEphemeral() {
+        // given / when
         val messagePreviewEntity = Arrangement().toPreviewEntity(ConversationEntity.Type.ONE_ON_ONE, true)
 
+        // then
         val content = messagePreviewEntity.content
         assertIs<MessagePreviewEntityContent.Ephemeral>(content)
         assertTrue(!content.isGroupConversation)
     }
 
+    @Test
+    fun givenMessageDetailsViewWithDeliveredStatusAndText_whenMappingToEntityMessage_thenMessageEntityHasExpectedData() {
+        // given / when
+        val messageEntity = Arrangement().toEntityFromView(
+            text = "Test  text",
+            status = MessageEntity.Status.DELIVERED,
+        )
+
+        // then
+        assertEquals(messageEntity.status, MessageEntity.Status.DELIVERED)
+    }
+
+    @Test
+    fun givenMessageDetailsViewWithReadStatusAndText_whenMappingToEntityMessage_thenMessageEntityHasExpectedData() {
+        // given / when
+        val messageEntity = Arrangement().toEntityFromView(
+            text = "Test  text",
+            status = MessageEntity.Status.READ,
+            readCount = 10
+        )
+
+        // then
+        assertEquals(messageEntity.status, MessageEntity.Status.READ)
+        assertEquals(messageEntity.readCount, 10)
+    }
+
     private class Arrangement {
+        @Suppress("LongParameterList")
+        fun toEntityFromView(
+            id: String = "",
+            conversationId: QualifiedIDEntity = QualifiedIDEntity("someValue", "someDomain"),
+            contentType: MessageEntity.ContentType = MessageEntity.ContentType.TEXT,
+            date: Instant = Instant.DISTANT_FUTURE,
+            senderUserId: QualifiedIDEntity = QualifiedIDEntity("someValue", "someDomain"),
+            senderClientId: String? = null,
+            status: MessageEntity.Status = MessageEntity.Status.READ,
+            lastEditTimestamp: Instant? = null,
+            visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
+            expectsReadConfirmation: Boolean = false,
+            expireAfterMillis: Long? = null,
+            selfDeletionStartDate: Instant? = null,
+            readCount: Long = 0,
+            senderName: String? = null,
+            senderHandle: String? = null,
+            senderEmail: String? = null,
+            senderPhone: String? = null,
+            senderAccentId: Int = 0,
+            senderTeamId: String? = null,
+            senderConnectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED,
+            senderPreviewAssetId: QualifiedIDEntity? = null,
+            senderCompleteAssetId: QualifiedIDEntity? = null,
+            senderAvailabilityStatus: UserAvailabilityStatusEntity = UserAvailabilityStatusEntity.AVAILABLE,
+            senderUserType: UserTypeEntity = UserTypeEntity.STANDARD,
+            senderBotService: BotIdEntity? = null,
+            senderIsDeleted: Boolean = false,
+            isSelfMessage: Boolean = false,
+            text: String? = null,
+            isQuotingSelfUser: Boolean? = null,
+            assetSize: Long? = null,
+            assetName: String? = null,
+            assetMimeType: String? = null,
+            assetUploadStatus: MessageEntity.UploadStatus? = MessageEntity.UploadStatus.UPLOADED,
+            assetDownloadStatus: MessageEntity.DownloadStatus? = MessageEntity.DownloadStatus.IN_PROGRESS,
+            assetOtrKey: ByteArray? = null,
+            assetSha256: ByteArray? = null,
+            assetId: String? = null,
+            assetToken: String? = null,
+            assetDomain: String? = null,
+            assetEncryptionAlgorithm: String? = null,
+            assetWidth: Int? = null,
+            assetHeight: Int? = null,
+            assetDuration: Long? = null,
+            assetNormalizedLoudness: ByteArray? = null,
+            callerId: QualifiedIDEntity? = null,
+            memberChangeList: List<QualifiedIDEntity>? = null,
+            memberChangeType: MessageEntity.MemberChangeType? = null,
+            unknownContentTypeName: String? = null,
+            unknownContentData: ByteArray? = null,
+            restrictedAssetMimeType: String? = null,
+            restrictedAssetSize: Long? = null,
+            restrictedAssetName: String? = null,
+            failedToDecryptData: ByteArray? = null,
+            isDecryptionResolved: Boolean? = null,
+            conversationName: String? = null,
+            allReactionsJson: String = "",
+            selfReactionsJson: String = "",
+            mentions: String = "",
+            quotedMessageId: String? = null,
+            quotedSenderId: QualifiedIDEntity? = null,
+            isQuoteVerified: Boolean? = null,
+            quotedSenderName: String? = null,
+            quotedMessageDateTime: Instant? = null,
+            quotedMessageEditTimestamp: Instant? = null,
+            quotedMessageVisibility: MessageEntity.Visibility? = null,
+            quotedMessageContentType: MessageEntity.ContentType? = null,
+            quotedTextBody: String? = null,
+            quotedAssetMimeType: String? = null,
+            quotedAssetName: String? = null,
+            newConversationReceiptMode: Boolean? = null,
+            conversationReceiptModeChanged: Boolean? = null,
+            messageTimerChanged: Long? = null,
+            recipientsFailedWithNoClientsList: List<QualifiedIDEntity>? = null,
+            recipientsFailedDeliveryList: List<QualifiedIDEntity>? = null,
+            buttonsJson: String = ""
+        ): MessageEntity {
+            return MessageMapper.toEntityMessageFromView(
+                id,
+                conversationId,
+                contentType,
+                date,
+                senderUserId,
+                senderClientId,
+                status,
+                lastEditTimestamp,
+                visibility,
+                expectsReadConfirmation,
+                expireAfterMillis,
+                selfDeletionStartDate,
+                readCount,
+                senderName,
+                senderHandle,
+                senderEmail,
+                senderPhone,
+                senderAccentId,
+                senderTeamId,
+                senderConnectionStatus,
+                senderPreviewAssetId,
+                senderCompleteAssetId,
+                senderAvailabilityStatus,
+                senderUserType,
+                senderBotService,
+                senderIsDeleted,
+                isSelfMessage,
+                text,
+                isQuotingSelfUser,
+                assetSize,
+                assetName,
+                assetMimeType,
+                assetUploadStatus,
+                assetDownloadStatus,
+                assetOtrKey,
+                assetSha256,
+                assetId,
+                assetToken,
+                assetDomain,
+                assetEncryptionAlgorithm,
+                assetWidth,
+                assetHeight,
+                assetDuration,
+                assetNormalizedLoudness,
+                callerId,
+                memberChangeList,
+                memberChangeType,
+                unknownContentTypeName,
+                unknownContentData,
+                restrictedAssetMimeType,
+                restrictedAssetSize,
+                restrictedAssetName,
+                failedToDecryptData,
+                isDecryptionResolved,
+                conversationName,
+                allReactionsJson,
+                selfReactionsJson,
+                mentions,
+                quotedMessageId,
+                quotedSenderId,
+                isQuoteVerified,
+                quotedSenderName,
+                quotedMessageDateTime,
+                quotedMessageEditTimestamp,
+                quotedMessageVisibility,
+                quotedMessageContentType,
+                quotedTextBody,
+                quotedAssetMimeType,
+                quotedAssetName,
+                newConversationReceiptMode,
+                conversationReceiptModeChanged,
+                messageTimerChanged,
+                recipientsFailedWithNoClientsList,
+                recipientsFailedDeliveryList,
+                buttonsJson
+            )
+
+        }
+
         fun toPreviewEntity(conversationType: ConversationEntity.Type, isEphemeral: Boolean): MessagePreviewEntity {
             return MessageMapper.toPreviewEntity(
                 id = "someId",
