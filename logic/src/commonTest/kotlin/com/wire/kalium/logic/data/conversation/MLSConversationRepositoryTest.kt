@@ -28,8 +28,6 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
@@ -47,7 +45,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
@@ -406,6 +403,7 @@ class MLSConversationRepositoryTest {
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
+            .withMergePendingGroupFromExternalCommitSuccessful()
             .arrange()
 
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
@@ -890,6 +888,7 @@ class MLSConversationRepositoryTest {
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
+            .withMergePendingGroupFromExternalCommitSuccessful()
             .arrange()
 
         val epochChange = async(TestKaliumDispatcher.default) {
@@ -900,6 +899,22 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, ByteArray(0))
 
         assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
+    @Test
+    fun givenBufferedMessages_whenSendingExternalCommitBundle_thenReturnMessages() = runTest(TestKaliumDispatcher.default) {
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinConversationSuccessful()
+            .withSendMLSMessageSuccessful()
+            .withSendCommitBundleSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .withMergePendingGroupFromExternalCommitSuccessful(listOf(Arrangement.DECRYPTED_MESSAGE_BUNDLE))
+            .arrange()
+
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, ByteArray(0)).shouldSucceed { bundles ->
+            assertEquals(Arrangement.DECRYPTED_MESSAGE_BUNDLE.toModel(Arrangement.GROUP_ID), bundles?.first())
+        }
     }
 
     @Test
@@ -1078,6 +1093,13 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT_BUNDLE)
         }
 
+        fun withMergePendingGroupFromExternalCommitSuccessful(result: List<com.wire.kalium.cryptography.DecryptedMessageBundle>? = null) = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::mergePendingGroupFromExternalCommit)
+                .whenInvokedWith(anything())
+                .thenReturn(result)
+        }
+
         fun withProcessWelcomeMessageSuccessful() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::processWelcomeMessage)
@@ -1184,7 +1206,6 @@ class MLSConversationRepositoryTest {
             const val RAW_GROUP_ID = "groupId"
             val TIME = DateTimeUtil.currentIsoDateTimeString()
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val CONVERSATION_ID = ConversationId("ConvId", "Domain")
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
@@ -1209,6 +1230,13 @@ class MLSConversationRepositoryTest {
                 PUBLIC_GROUP_STATE
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
+            val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
+                message = null,
+                commitDelay = null,
+                senderClientId = null,
+                hasEpochChanged = true,
+                identity = null
+            )
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,

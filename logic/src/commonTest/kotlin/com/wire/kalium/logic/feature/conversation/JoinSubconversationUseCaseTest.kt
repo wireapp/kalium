@@ -9,6 +9,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -163,10 +164,14 @@ class JoinSubconversationUseCaseTest {
         @Mock
         val subconversationRepository = mock(classOf<SubconversationRepository>())
 
+        @Mock
+        val mlsMessageUnpacker = mock(classOf<MLSMessageUnpacker>())
+
         fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
             mlsConversationRepository,
-            subconversationRepository
+            subconversationRepository,
+            mlsMessageUnpacker
         )
 
         fun withEstablishMLSGroupSuccessful() = apply {
@@ -180,7 +185,7 @@ class JoinSubconversationUseCaseTest {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(null))
         }
 
         fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {

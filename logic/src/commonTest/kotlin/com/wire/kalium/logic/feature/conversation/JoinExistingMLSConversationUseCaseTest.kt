@@ -23,12 +23,15 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
+import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -46,11 +49,9 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class JoinExistingMLSConversationUseCaseTest {
 
     @Test
@@ -87,6 +88,25 @@ class JoinExistingMLSConversationUseCaseTest {
                 .with(eq(Arrangement.MLS_CONVERSATION1), anything())
                 .wasNotInvoked()
         }
+
+    @Test
+    fun givenGroupConversationWithNonZeroEpoch_whenInvokingUseCase_ThenJoinViaExternalCommit() = runTest {
+        val conversation = Arrangement.MLS_CONVERSATION1
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(conversation)
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase(conversation.id).shouldSucceed()
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
+            .with(eq((conversation.protocol as Conversation.ProtocolInfo.MLS).groupId))
+            .wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishGroup() =
@@ -151,8 +171,28 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
-    fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
+    fun givenBufferedMessages_whenInvokingUseCase_ThenUnpackMessages() = runTest {
+        val conversation = Arrangement.MLS_CONVERSATION1
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByIdSuccessful(conversation)
+            .withFetchingGroupInfoSuccessful()
+            .withJoinByExternalCommitSuccessful(listOf(Arrangement.DECRYPTED_MESSAGE_BUNDLE))
+            .withUnpackMlsBundleSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase(conversation.id).shouldSucceed()
+
+        verify(arrangement.mlsMessageUnpacker)
+            .suspendFunction(arrangement.mlsMessageUnpacker::unpackMlsBundle)
+            .with(eq(Arrangement.DECRYPTED_MESSAGE_BUNDLE))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
+        val (_, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful()
@@ -180,12 +220,16 @@ class JoinExistingMLSConversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
+        @Mock
+        val mlsMessageUnpacker = mock(classOf<MLSMessageUnpacker>())
+
         fun arrange() = this to JoinExistingMLSConversationUseCaseImpl(
             featureSupport,
             conversationApi,
             clientRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            mlsMessageUnpacker
         )
 
         @Suppress("MaxLineLength")
@@ -211,11 +255,11 @@ class JoinExistingMLSConversationUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withJoinByExternalCommitSuccessful() = apply {
+        fun withJoinByExternalCommitSuccessful(result: List<DecryptedMessageBundle>? = null) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(result))
         }
 
         fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
@@ -246,6 +290,13 @@ class JoinExistingMLSConversationUseCaseTest {
                 .thenReturn(Either.Right(result))
         }
 
+        fun withUnpackMlsBundleSuccessful() = apply {
+            given(mlsMessageUnpacker)
+                .suspendFunction(mlsMessageUnpacker::unpackMlsBundle)
+                .whenInvokedWith(anything())
+                .thenReturn(MessageUnpackResult.HandshakeMessage)
+        }
+
         companion object {
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
 
@@ -273,7 +324,13 @@ class JoinExistingMLSConversationUseCaseTest {
             val GROUP_ID2 = GroupID("group2")
             val GROUP_ID3 = GroupID("group3")
             val GROUP_ID_SELF = GroupID("group-self")
-            val GROUP_ID_TEAM = GroupID("group-team")
+
+            val DECRYPTED_MESSAGE_BUNDLE = DecryptedMessageBundle(
+                groupID = GROUP_ID1,
+                applicationMessage = null,
+                commitDelay = 1L,
+                identity = null
+            )
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
