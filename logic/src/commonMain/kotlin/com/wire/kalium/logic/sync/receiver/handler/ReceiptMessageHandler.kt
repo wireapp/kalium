@@ -22,12 +22,9 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
-import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
-import com.wire.kalium.logic.data.message.receipt.ReceiptsMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.datetime.Instant
 
 internal interface ReceiptMessageHandler {
