@@ -22,14 +22,13 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.conversation.ApplicationMessage
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
-import com.wire.kalium.logic.data.conversation.E2EIdentity
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.PlainMessageBlob
@@ -44,6 +43,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.datetime.Instant
@@ -52,6 +52,7 @@ import kotlin.time.Duration.Companion.seconds
 
 internal interface MLSMessageUnpacker {
     suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, MessageUnpackResult>
+    suspend fun unpackMlsBundle(bundle: DecryptedMessageBundle, conversationId: ConversationId, timestamp: Instant): MessageUnpackResult
 }
 
 @Suppress("LongParameterList")
@@ -72,28 +73,36 @@ internal class MLSMessageUnpackerImpl(
         messageFromMLSMessage(event).map { bundle ->
             if (bundle == null) return@map MessageUnpackResult.HandshakeMessage
 
-            bundle.commitDelay?.let {
-                handlePendingProposal(
-                    timestamp = event.timestampIso.toInstant(),
-                    groupId = bundle.groupID,
-                    commitDelay = it
-                )
-            }
-
-            bundle.applicationMessage?.let {
-                val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it.message))
-                if (protoContent !is ProtoContent.Readable) {
-                    throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
-                }
-                MessageUnpackResult.ApplicationMessage(
-                    conversationId = event.conversationId,
-                    timestampIso = event.timestampIso,
-                    senderUserId = event.senderUserId,
-                    senderClientId = it.senderClientID,
-                    content = protoContent
-                )
-            } ?: MessageUnpackResult.HandshakeMessage
+            unpackMlsBundle(bundle, event.conversationId, event.timestampIso.toInstant())
         }
+
+    override suspend fun unpackMlsBundle(
+        bundle: DecryptedMessageBundle,
+        conversationId: ConversationId,
+        timestamp: Instant
+    ): MessageUnpackResult {
+        bundle.commitDelay?.let {
+            handlePendingProposal(
+                timestamp = timestamp,
+                groupId = bundle.groupID,
+                commitDelay = it
+            )
+        }
+
+        return bundle.applicationMessage?.let {
+            val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it.message))
+            if (protoContent !is ProtoContent.Readable) {
+                throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
+            }
+            MessageUnpackResult.ApplicationMessage(
+                conversationId = conversationId,
+                timestampIso = timestamp.toIsoDateTimeString(),
+                senderUserId = it.senderID,
+                senderClientId = it.senderClientID,
+                content = protoContent
+            )
+        } ?: MessageUnpackResult.HandshakeMessage
+    }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
         logger.d("Received MLS proposal, scheduling commit in $commitDelay seconds")
@@ -140,30 +149,7 @@ internal class MLSMessageUnpackerImpl(
                         logger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                         epochsFlow.emit(groupID)
                     }
-                    DecryptedMessageBundle(
-                        groupID,
-                        it.message?.let { message ->
-                            // We will always have senderClientId together with an application message
-                            // but CoreCrypto API doesn't express this
-                            val senderClientId = it.senderClientId?.let { senderClientId ->
-                                idMapper.fromCryptoQualifiedClientId(senderClientId)
-                            } ?: ClientId("")
-
-                            ApplicationMessage(
-                                message,
-                                senderClientId
-                            )
-                        },
-                        it.commitDelay,
-                        identity = it.identity?.let { identity ->
-                            E2EIdentity(
-                                identity.clientId,
-                                identity.handle,
-                                identity.displayName,
-                                identity.domain
-                            )
-                        }
-                    )
+                    it.toModel(groupID)
                 }
             }
         }

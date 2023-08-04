@@ -132,7 +132,7 @@ interface MLSClient {
      *
      * @param groupId MLS group ID provided by BE
      */
-    suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
+    suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessageBundle>?
 
     /**
      * Clear pending external commits

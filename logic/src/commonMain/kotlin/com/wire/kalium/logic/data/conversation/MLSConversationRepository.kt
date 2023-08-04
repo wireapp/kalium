@@ -41,8 +41,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.flatten
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
@@ -69,6 +69,7 @@ import kotlin.time.Duration
 
 data class ApplicationMessage(
     val message: ByteArray,
+    val senderID: UserId,
     val senderClientID: ClientId
 )
 
@@ -91,7 +92,7 @@ interface MLSConversationRepository {
     suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<QualifiedClientID>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
-    suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
+    suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, List<DecryptedMessageBundle>?>
     suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean>
     suspend fun clearJoinViaExternalCommit(groupID: GroupID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
@@ -191,7 +192,10 @@ internal class MLSConversationDataSource(
         }
     }
 
-    override suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit> {
+    override suspend fun joinGroupByExternalCommit(
+        groupID: GroupID,
+        groupInfo: ByteArray
+    ): Either<CoreFailure, List<DecryptedMessageBundle>?> {
         kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
@@ -261,23 +265,25 @@ internal class MLSConversationDataSource(
         }
     }
 
-    private suspend fun sendCommitBundleForExternalCommit(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
-        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+    private suspend fun sendCommitBundleForExternalCommit(
+        groupID: GroupID,
+        bundle: CommitBundle
+    ): Either<CoreFailure, List<DecryptedMessageBundle>?> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
-            }.fold({
+            }.onFailure {
                 wrapMLSRequest {
                     mlsClient.clearPendingGroupExternalCommit(idMapper.toCryptoModel(groupID))
                 }
-            }, {
+            }.flatMap {
                 wrapMLSRequest {
-                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
+                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))?.map { it.toModel(groupID) }
                 }
-            }).onSuccess {
-                epochsFlow.emit(groupID)
             }
+        }.onSuccess {
+            epochsFlow.emit(groupID)
         }
-    }
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->

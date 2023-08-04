@@ -96,9 +96,11 @@ class MLSClientImpl(
         )
     }
 
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
+    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessageBundle>? {
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
-        coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes)
+        return coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes)?.let { messages ->
+            messages.map { toDecryptedMessageBundle(it) }
+        }
     }
 
     override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
