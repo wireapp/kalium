@@ -94,7 +94,8 @@ class PublicUserMapperImpl(
             userType = userEntityTypeMapper.fromUserType(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
-            expiresAt = expiresAt
+            expiresAt = expiresAt,
+            hasIncompleteMetadata = false
         )
     }
 
