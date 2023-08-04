@@ -48,7 +48,7 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
+    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessageBundle>? {
         TODO("Not yet implemented")
     }
 

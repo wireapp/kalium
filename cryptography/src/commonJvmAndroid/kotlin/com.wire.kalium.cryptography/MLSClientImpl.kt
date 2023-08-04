@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.BufferedDecryptedMessage
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CustomConfiguration
@@ -93,9 +94,10 @@ class MLSClientImpl(
         )
     }
 
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
-        coreCrypto.mergePendingGroupFromExternalCommit(groupId.decodeBase64Bytes())
-    }
+    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessageBundle>?  =
+        coreCrypto.mergePendingGroupFromExternalCommit(groupId.decodeBase64Bytes())?.let { messages ->
+            messages.map { toDecryptedMessageBundle(it) }
+        }
 
     override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
         coreCrypto.clearPendingGroupFromExternalCommit(groupId.decodeBase64Bytes())
@@ -296,6 +298,16 @@ class MLSClientImpl(
         }
 
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
+            value.message,
+            value.commitDelay?.toLong(),
+            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
+            value.hasEpochChanged,
+            value.identity?.let {
+                E2EIdentity(it.clientId, it.handle, it.displayName, it.domain)
+            }
+        )
+
+        fun toDecryptedMessageBundle(value: BufferedDecryptedMessage) = DecryptedMessageBundle(
             value.message,
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },

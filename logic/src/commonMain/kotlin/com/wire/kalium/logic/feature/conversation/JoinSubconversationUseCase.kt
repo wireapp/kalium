@@ -8,11 +8,16 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
@@ -31,10 +36,11 @@ interface JoinSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 
-class JoinSubconversationUseCaseImpl(
-    val conversationApi: ConversationApi,
-    val mlsConversationRepository: MLSConversationRepository,
-    val subconversationRepository: SubconversationRepository
+internal class JoinSubconversationUseCaseImpl(
+    private val conversationApi: ConversationApi,
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val subconversationRepository: SubconversationRepository,
+    private val mlsMessageUnpacker: MLSMessageUnpacker,
 ) : JoinSubconversationUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,
@@ -87,7 +93,20 @@ class JoinSubconversationUseCaseImpl(
                     mlsConversationRepository.joinGroupByExternalCommit(
                         GroupID(subconversationDetails.groupId),
                         groupInfo
-                    )
+
+                    ).flatMapLeft {
+                        if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
+                            Either.Right(null)
+                        } else {
+                            Either.Left(it)
+                        }
+                    }.map { messageBundles ->
+                        // Process any buffered message which arrived before the pending group was merged. We only
+                        // expect to receive proposals which the backend re-creates upon external commits.
+                        messageBundles?.forEach { bundle ->
+                            mlsMessageUnpacker.unpackMlsBundle(bundle, subconversationDetails.parentId.toModel(), Clock.System.now())
+                        } ?: Unit
+                    }
                 }
             }
         } else {
