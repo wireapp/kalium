@@ -58,6 +58,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 developmentApiEnabled = true,
                 encryptProteusStorage = true,
                 isMLSSupportEnabled = true,
+                wipeOnDeviceRemoval = true,
             )
         )
 

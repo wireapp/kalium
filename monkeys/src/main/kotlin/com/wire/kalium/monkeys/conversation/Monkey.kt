@@ -245,7 +245,6 @@ class Monkey(
             messages.sendTextMessage(conversationId, message)
         }
     }
-
 }
 
 private sealed class MonkeyState {
