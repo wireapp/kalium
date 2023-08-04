@@ -33,12 +33,12 @@ import com.wire.kalium.logic.kaliumLogger
  * Send an external commit to join all MLS conversations for which the user is a member,
  * but has not yet joined the corresponding MLS group.
  */
-interface JoinExistingMLSConversationsUseCase {
+internal interface JoinExistingMLSConversationsUseCase {
     suspend operator fun invoke(keepRetryingOnFailure: Boolean = true): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
-class JoinExistingMLSConversationsUseCaseImpl(
+internal class JoinExistingMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
