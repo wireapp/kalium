@@ -27,7 +27,6 @@ import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface ConnectionRepositoryArrangement {
-    @Mock
     val connectionRepository: ConnectionRepository
 
     fun withGetConnections(result: Either<StorageFailure, Flow<List<ConversationDetails>>>)
