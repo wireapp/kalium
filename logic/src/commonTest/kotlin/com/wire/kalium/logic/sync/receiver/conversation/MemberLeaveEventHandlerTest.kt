@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.dao.ConversationDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
@@ -42,7 +42,7 @@ import kotlin.test.Test
 class MemberLeaveEventHandlerTest {
 
     @Mock
-    private val conversationDAO = mock(classOf<ConversationDAO>())
+    private val memberDAO = mock(classOf<MemberDAO>())
 
     @Mock
     private val userRepository = mock(classOf<UserRepository>())
@@ -58,7 +58,7 @@ class MemberLeaveEventHandlerTest {
     @BeforeTest
     fun setup() {
         memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
-            conversationDAO = conversationDAO,
+            memberDAO = memberDAO,
             userRepository = userRepository,
             persistMessage = persistMessage,
             updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall }
@@ -67,7 +67,7 @@ class MemberLeaveEventHandlerTest {
 
     @Test
     fun givenDaoReturnsSuccess_whenDeletingMember_thenPersistSystemMessage() = runTest {
-        given(conversationDAO).coroutine {
+        given(memberDAO).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.then { Either.Right(Unit) }
 
@@ -81,7 +81,7 @@ class MemberLeaveEventHandlerTest {
 
         memberLeaveEventHandler.handle(memberLeaveEvent)
 
-        verify(conversationDAO).coroutine {
+        verify(memberDAO).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
@@ -97,7 +97,7 @@ class MemberLeaveEventHandlerTest {
 
     @Test
     fun givenDaoReturnsFailure_whenDeletingMember_thenNothingToDo() = runTest {
-        given(conversationDAO).coroutine {
+        given(memberDAO).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.then { Either.Left(failure) }
 
@@ -107,7 +107,7 @@ class MemberLeaveEventHandlerTest {
 
         memberLeaveEventHandler.handle(memberLeaveEvent)
 
-        verify(conversationDAO).coroutine {
+        verify(memberDAO).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
