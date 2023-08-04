@@ -22,7 +22,6 @@ import io.mockative.Mock
 import io.mockative.mock
 
 internal interface UserRepositoryArrangement {
-    @Mock
     val userRepository: UserRepository
 }
 
