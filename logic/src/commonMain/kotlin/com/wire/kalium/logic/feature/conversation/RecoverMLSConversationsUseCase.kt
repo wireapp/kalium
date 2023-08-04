@@ -39,15 +39,15 @@ sealed class RecoverMLSConversationsResult {
 }
 
 /**
- *Iterate over all MLS Established conversations after 404 sync error and
+ * Iterate over all MLS Established conversations after 404 sync error and
  * check for out of sync epochs, if out of sync then it tries to re-join.
  */
-interface RecoverMLSConversationsUseCase {
+internal interface RecoverMLSConversationsUseCase {
     suspend operator fun invoke(): RecoverMLSConversationsResult
 }
 
 @Suppress("LongParameterList")
-class RecoverMLSConversationsUseCaseImpl(
+internal class RecoverMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
