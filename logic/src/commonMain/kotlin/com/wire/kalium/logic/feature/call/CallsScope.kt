@@ -61,6 +61,8 @@ import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOffUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOnUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
@@ -124,8 +126,13 @@ class CallsScope internal constructor(
         get() = EndCallOnConversationChangeUseCaseImpl(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
-            endCallUseCase = endCall,
-            conversationClientsInCallUpdater = conversationClientsInCallUpdater
+            endCallUseCase = endCall
+        )
+
+    val updateConversationClientsForCurrentCallUseCase: UpdateConversationClientsForCurrentCallUseCase
+        get() = UpdateConversationClientsForCurrentCallUseCaseImpl(
+            callRepository,
+            conversationClientsInCallUpdater
         )
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)
