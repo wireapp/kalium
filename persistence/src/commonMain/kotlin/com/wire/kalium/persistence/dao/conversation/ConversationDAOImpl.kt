@@ -286,8 +286,12 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
         }
 
-    override suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?) = withContext(coroutineContext) {
-        conversationQueries.updateGuestRoomLink(link, conversationId)
+    override suspend fun updateGuestRoomLink(
+        conversationId: QualifiedIDEntity,
+        link: String?,
+        isPasswordProtected: Boolean
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(link, isPasswordProtected, conversationId)
     }
 
     override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =

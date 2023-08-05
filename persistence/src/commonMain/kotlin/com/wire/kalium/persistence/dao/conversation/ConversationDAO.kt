@@ -75,7 +75,12 @@ interface ConversationDAO {
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
     suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
-    suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?)
+    suspend fun updateGuestRoomLink(
+        conversationId: QualifiedIDEntity,
+        link: String?,
+        isPasswordProtected: Boolean
+    )
+
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
