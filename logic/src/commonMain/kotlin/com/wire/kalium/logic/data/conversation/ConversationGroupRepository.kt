@@ -296,15 +296,16 @@ internal class ConversationGroupRepositoryImpl(
         wrapApiRequest {
             conversationApi.generateGuestRoomLink(conversationId.toApi())
         }.onSuccess {
-            it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri) }
-            it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link) }
+            // TODO: set the correct value for is passwordProtected
+            it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri, false) }
         }.map { Either.Right(Unit) }
 
     override suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
         wrapApiRequest {
             conversationApi.revokeGuestRoomLink(conversationId.toApi())
         }.onSuccess {
-            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null)
+            // TODO: set the correct value for is passwordProtected
+            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
         }.map { }
 
     override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
