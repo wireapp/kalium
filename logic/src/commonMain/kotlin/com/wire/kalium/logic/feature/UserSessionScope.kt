@@ -314,13 +314,13 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.handler.*
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
@@ -1108,6 +1108,16 @@ class UserSessionScope internal constructor(
             persistMessage = persistMessage
         )
 
+    private val conversationCodeUpdateHandler: CodeUpdatedHandler
+        get() = CodeUpdateHandlerImpl(
+            conversationDAO = userStorage.database.conversationDAO
+        )
+
+    private val conversationCodeDeletedHandler: CodeDeletedHandler
+        get() = CodeDeletedHandlerImpl(
+            conversationDAO = userStorage.database.conversationDAO
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1119,7 +1129,9 @@ class UserSessionScope internal constructor(
             mlsWelcomeHandler,
             renamedConversationHandler,
             receiptModeUpdateEventHandler,
-            conversationMessageTimerEventHandler
+            conversationMessageTimerEventHandler,
+            conversationCodeUpdateHandler,
+            conversationCodeDeletedHandler
         )
     }
 

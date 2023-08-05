@@ -43,7 +43,6 @@ class CodeDeletedHandlerTest {
             id = "event-id",
             transient = false
         )
-        val expectedUri: String? = null
 
         handler.handle(event)
 
@@ -54,7 +53,7 @@ class CodeDeletedHandlerTest {
                     event.conversationId.value,
                     event.conversationId.domain
                 )),
-                eq(expectedUri),
+                eq(null as String?),
                 eq(false)
             ).wasInvoked(exactly = once)
     }
