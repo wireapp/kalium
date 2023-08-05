@@ -19,8 +19,8 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangementImpl
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -30,7 +30,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class CodeUpdateHandlerTest {
+class CodeDeletedHandlerTest {
 
     @Test
     fun givenCodeUpdateEvent_whenhandlerIsInvoked_thenCodeIsUpdated() = runTest {
@@ -38,15 +38,12 @@ class CodeUpdateHandlerTest {
             withUpdatedGuestRoomLink()
         }
 
-        val event = Event.Conversation.CodeUpdated(
+        val event = Event.Conversation.CodeDeleted(
             conversationId = ConversationId("conversationId", "domain"),
-            uri = "uri",
-            isPasswordProtected = true,
-            code = "code",
-            key = "key",
             id = "event-id",
             transient = false
         )
+        val expectedUri: String? = null
 
         handler.handle(event)
 
@@ -57,14 +54,14 @@ class CodeUpdateHandlerTest {
                     event.conversationId.value,
                     event.conversationId.domain
                 )),
-                eq(event.uri),
-                eq(event.isPasswordProtected)
+                eq(expectedUri),
+                eq(false)
             ).wasInvoked(exactly = once)
     }
 
     private class Arrangement : ConversionDAOArrangement by ConversionDAOArrangementImpl() {
 
-        private val handler: CodeUpdatedHandler = CodeUpdateHandlerImpl(conversionDAO)
+        private val handler: CodeDeletedHandler = CodeDeletedHandlerImpl(conversionDAO)
 
         fun arrange(block: Arrangement.() -> Unit) = apply(block).run {
             this to handler

@@ -31,6 +31,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation>
@@ -49,7 +50,8 @@ internal class ConversationEventReceiverImpl(
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler,
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
-    private val codeUpdatedHandler: CodeUpdatedHandler
+    private val codeUpdatedHandler: CodeUpdatedHandler,
+    private val codeDeletedHandler: CodeDeletedHandler
 ) : ConversationEventReceiver {
     override suspend fun onEvent(event: Event.Conversation): Either<CoreFailure, Unit> {
         // TODO: Make sure errors are accounted for by each handler.
@@ -111,8 +113,8 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.CodeDeleted -> TODO()
-            is Event.Conversation.CodeUpdated -> TODO()
+            is Event.Conversation.CodeDeleted -> codeDeletedHandler.handle(event)
+            is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
         }
     }
 }
