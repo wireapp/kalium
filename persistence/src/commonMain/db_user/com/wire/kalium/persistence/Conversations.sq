@@ -33,11 +33,11 @@ CREATE TABLE Conversation (
     mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
     receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
     guest_room_link TEXT,
-    is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
     message_timer INTEGER DEFAULT(NULL),
     user_message_timer INTEGER DEFAULT(NULL),
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
-    mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0
+    mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0,
+    is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL
 );
 
 -- Optimise comparisons and sorting by dates:
