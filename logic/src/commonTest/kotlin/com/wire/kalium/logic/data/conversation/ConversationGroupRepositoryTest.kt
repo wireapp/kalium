@@ -573,7 +573,7 @@ class ConversationGroupRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(any(), any())
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
     }
 
