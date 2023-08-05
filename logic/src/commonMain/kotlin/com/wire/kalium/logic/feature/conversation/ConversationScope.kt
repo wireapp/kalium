@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -38,6 +38,7 @@ import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedU
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.ObserveGuestRoomLinkUseCase
@@ -68,7 +69,6 @@ class ConversationScope internal constructor(
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val assetRepository: AssetRepository,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
     private val selfUserId: UserId,
@@ -80,6 +80,7 @@ class ConversationScope internal constructor(
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
+    private val serverConfigRepository: ServerConfigRepository,
     private val scope: CoroutineScope
 ) {
 
@@ -238,5 +239,11 @@ class ConversationScope internal constructor(
     val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
         get() = RefreshConversationsWithoutMetadataUseCaseImpl(
             conversationRepository = conversationRepository
+        )
+
+    val canCreatePasswordProtectedLinks: CanCreatePasswordProtectedLinksUseCase
+        get() = CanCreatePasswordProtectedLinksUseCase(
+            serverConfigRepository,
+            selfUserId
         )
 }
