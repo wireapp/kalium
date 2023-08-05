@@ -25,5 +25,8 @@ import kotlinx.serialization.Serializable
 data class GetGuestRoomResponse(
     @SerialName("uri") val uri: String,
     @SerialName("key") val key: String,
-    @SerialName("code") val code: String
+    @SerialName("code") val code: String,
+    // the initial value for has password because password protected invite links
+    // are supported on api v4+
+    @SerialName("has_password") val hasPassword: Boolean = false
 )
