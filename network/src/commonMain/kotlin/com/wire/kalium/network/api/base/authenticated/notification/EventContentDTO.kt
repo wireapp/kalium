@@ -209,7 +209,7 @@ sealed class EventContentDTO {
         ) : Conversation()
 
         @Serializable
-        @SerialName("conversation.access-update")
+        @SerialName("conversation.code-update")
         data class CodeUpdated(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("data") val data: GetGuestRoomResponse,

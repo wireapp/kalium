@@ -296,9 +296,10 @@ internal class ConversationGroupRepositoryImpl(
         wrapApiRequest {
             conversationApi.generateGuestRoomLink(conversationId.toApi())
         }.onSuccess {
+            it.data
             // TODO: set the correct value for is passwordProtected
             it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri, false) }
-        }.map { Either.Right(Unit) }
+            it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link, false) }        }.map { Either.Right(Unit) }
 
     override suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
         wrapApiRequest {
