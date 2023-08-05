@@ -36,5 +36,4 @@ internal class CodeUpdateHandlerImpl internal constructor(
             event.conversationId.toDao(), event.uri, event.isPasswordProtected
         )
     }
-
 }
