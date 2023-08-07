@@ -39,6 +39,9 @@ sealed interface CoreFailure {
     val hasUnreachableDomainsError: Boolean
         get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
 
+    val isFederationDenied: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure.FederationDenied
+
     /**
      * The attempted operation requires that this client is registered.
      */
