@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.network.exceptions.isConversationNotFound
@@ -62,16 +62,16 @@ class CheckConversationInviteCodeUseCase internal constructor(
             }
         )
 
-    private suspend fun handleSuccess(response: LimitedConversationInfo, domain: String?): Result.Success {
+    private suspend fun handleSuccess(response: ConversationCodeInfo, domain: String?): Result.Success {
         val conversationId = ConversationId(
-            response.nonQualifiedConversationId,
+            response.nonQualifiedId,
             domain ?: selfUserId.domain
         )
         val isSelfMember = conversationRepository.observeIsUserMember(
             conversationId,
             selfUserId
         ).first().fold({ false }, { it })
-        return Result.Success(response.name, conversationId, isSelfMember)
+        return Result.Success(response.name, conversationId, isSelfMember, response.hasPassword)
     }
 
     private fun handleServerMissCommunicationError(error: NetworkFailure.ServerMiscommunication): Result.Failure =
@@ -99,15 +99,16 @@ class CheckConversationInviteCodeUseCase internal constructor(
         data class Success(
             val name: String?,
             val conversationId: ConversationId,
-            val isSelfMember: Boolean
+            val isSelfMember: Boolean,
+            val isPasswordProtected: Boolean
         ) : Result
 
         sealed interface Failure : Result {
-            object InvalidCodeOrKey : Failure
-            object RequestingUserIsNotATeamMember : Failure
-            object AccessDenied : Failure
-            object ConversationNotFound : Failure
-            object GuestLinksDisabled : Failure
+            data object InvalidCodeOrKey : Failure
+            data object RequestingUserIsNotATeamMember : Failure
+            data object AccessDenied : Failure
+            data object ConversationNotFound : Failure
+            data object GuestLinksDisabled : Failure
             data class Generic(val failure: CoreFailure) : Failure
         }
     }

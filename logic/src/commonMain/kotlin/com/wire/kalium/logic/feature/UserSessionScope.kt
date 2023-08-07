@@ -142,6 +142,8 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
@@ -970,6 +972,17 @@ class UserSessionScope internal constructor(
         globalCallManager.getMediaManager()
     }
 
+    private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater
+        get() = ConversationClientsInCallUpdaterImpl(
+            callManager = callManager,
+            conversationRepository = conversationRepository,
+            federatedIdMapper = federatedIdMapper
+        )
+
+    private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase> = lazy {
+        UpdateConversationClientsForCurrentCallUseCaseImpl(callRepository, conversationClientsInCallUpdater)
+    }
+
     private val reactionRepository = ReactionRepositoryImpl(userId, userStorage.database.reactionDAO)
     private val receiptRepository = ReceiptRepositoryImpl(userStorage.database.receiptDAO)
     private val persistReaction: PersistReactionUseCase
@@ -1072,7 +1085,7 @@ class UserSessionScope internal constructor(
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
-            userStorage.database.memberDAO, userRepository, persistMessage
+            userStorage.database.memberDAO, userRepository, persistMessage, updateConversationClientsForCurrentCall
         )
     private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
@@ -1343,13 +1356,6 @@ class UserSessionScope internal constructor(
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
             userConfigRepository, featureConfigRepository, getGuestRoomLinkFeature, kaliumConfigs, userId
-        )
-
-    val conversationClientsInCallUpdater: ConversationClientsInCallUpdater
-        get() = ConversationClientsInCallUpdaterImpl(
-            callManager = callManager,
-            conversationRepository = conversationRepository,
-            federatedIdMapper = federatedIdMapper
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)

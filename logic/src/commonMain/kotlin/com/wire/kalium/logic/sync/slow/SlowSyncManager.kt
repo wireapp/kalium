@@ -158,4 +158,4 @@ internal class SlowSyncManager(
     }
 }
 
-const val CURRENT_VERSION = 3 // bump this version to perform slow sync when some new feature flag was added
+const val CURRENT_VERSION = 4 // bump this version to perform slow sync when some new feature flag was added

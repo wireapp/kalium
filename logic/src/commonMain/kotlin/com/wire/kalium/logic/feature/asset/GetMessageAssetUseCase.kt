@@ -118,7 +118,7 @@ internal class GetMessageAssetUseCaseImpl(
                             // This should be called if there is an issue while downloading the asset
                             updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
                             when {
-                                it.isNotFoundFailure -> {
+                                it.isInvalidRequestError -> {
                                     assetMetadata.assetKeyDomain?.let { domain ->
                                         userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
                                     }
