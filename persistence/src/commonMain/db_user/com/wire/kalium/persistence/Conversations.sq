@@ -36,7 +36,8 @@ CREATE TABLE Conversation (
     message_timer INTEGER DEFAULT(NULL),
     user_message_timer INTEGER DEFAULT(NULL),
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
-    mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0
+    mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0,
+    is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -300,8 +301,8 @@ WHERE qualified_id = ?;
 
 updateGuestRoomLink:
 UPDATE Conversation
-SET guest_room_link = ?
-WHERE qualified_id = ?;
+SET guest_room_link = :link, is_guest_password_protected = :isPasswordProtected
+WHERE qualified_id = :conversationId;
 
 getGuestRoomLinkByConversationId:
 SELECT guest_room_link FROM Conversation WHERE qualified_id = ?;

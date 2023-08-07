@@ -167,7 +167,13 @@ internal class ConversationGroupRepositoryImpl(
                             )
                         }.onSuccess { response ->
                             if (response is ServiceAddedResponse.Changed) {
-                                memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
+                                memberJoinEventHandler.handle(
+                                    eventMapper.conversationMemberJoin(
+                                        LocalId.generate(),
+                                        response.event,
+                                        true
+                                    )
+                                )
                             }
                         }.map { Unit }
                     }
@@ -244,7 +250,10 @@ internal class ConversationGroupRepositoryImpl(
                             }
                         } else {
                             // when removing a member from an MLS group, don't need to call the api
-                            mlsConversationRepository.removeMembersFromMLSGroup(GroupID(protocol.groupId), listOf(userId))
+                            mlsConversationRepository.removeMembersFromMLSGroup(
+                                GroupID(protocol.groupId),
+                                listOf(userId)
+                            )
                         }
                     }
                 }
@@ -280,7 +289,10 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    override suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, ConversationCodeInfo> =
+    override suspend fun fetchLimitedInfoViaInviteCode(
+        code: String,
+        key: String
+    ): Either<NetworkFailure, ConversationCodeInfo> =
         wrapApiRequest { conversationApi.fetchLimitedInformationViaCode(code, key) }
 
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
@@ -288,7 +300,13 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.removeMember(userId.toApi(), conversationId.toApi())
         }.onSuccess { response ->
             if (response is ConversationMemberRemovedResponse.Changed) {
-                memberLeaveEventHandler.handle(eventMapper.conversationMemberLeave(LocalId.generate(), response.event, false))
+                memberLeaveEventHandler.handle(
+                    eventMapper.conversationMemberLeave(
+                        LocalId.generate(),
+                        response.event,
+                        false
+                    )
+                )
             }
         }.map { }
 
@@ -296,21 +314,27 @@ internal class ConversationGroupRepositoryImpl(
         wrapApiRequest {
             conversationApi.generateGuestRoomLink(conversationId.toApi())
         }.onSuccess {
-            it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri) }
-            it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link) }
+            it.data
+            // TODO: set the correct value for is passwordProtected
+            it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri, false) }
+            it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link, false) }
         }.map { Either.Right(Unit) }
 
     override suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
         wrapApiRequest {
             conversationApi.revokeGuestRoomLink(conversationId.toApi())
         }.onSuccess {
-            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null)
+            // TODO: set the correct value for is passwordProtected
+            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
         }.map { }
 
     override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
 
-    override suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit> =
+    override suspend fun updateMessageTimer(
+        conversationId: ConversationId,
+        messageTimer: Long?
+    ): Either<CoreFailure, Unit> =
         wrapApiRequest { conversationApi.updateMessageTimer(conversationId.toApi(), messageTimer) }
             .onSuccess {
                 conversationMessageTimerEventHandler.handle(
