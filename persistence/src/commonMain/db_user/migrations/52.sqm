@@ -157,4 +157,3 @@ LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
 =======
 ALTER TABLE Client ADD COLUMN mls_public_keys TEXT AS Map<String, String> DEFAULT NULL;
->>>>>>> f8823dfde9697db44783fbe2a46ca5f3b19ec0df
