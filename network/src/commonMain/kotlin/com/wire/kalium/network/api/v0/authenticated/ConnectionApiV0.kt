@@ -35,7 +35,7 @@ import io.ktor.client.request.setBody
 internal open class ConnectionApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
     ConnectionApi {
 
-    private val httpClient get() = authenticatedNetworkClient.httpClient
+    protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse> =
         wrapKaliumResponse {
@@ -56,7 +56,7 @@ internal open class ConnectionApiV0 internal constructor(private val authenticat
             }
         }
 
-    private companion object {
+    protected companion object {
         const val PATH_CONNECTIONS = "list-connections"
         const val PATH_CONNECTIONS_ENDPOINTS = "connections"
         const val MAX_CONNECTIONS_COUNT = 500
