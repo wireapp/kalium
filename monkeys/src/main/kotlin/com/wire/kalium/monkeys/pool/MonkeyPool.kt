@@ -37,9 +37,9 @@ object MonkeyPool {
     // a map of logged out monkeys per domain
     private val poolLoggedOut: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
-    fun init(users: List<UserData>, userIdsPerBackend: Map<String, List<UserId>>) {
+    fun init(users: List<UserData>) {
         users.forEach {
-            val monkey = Monkey(it, userIdsPerBackend[it.backend.domain] ?: error("Missing user ids for the domain ${it.userId.value}"))
+            val monkey = Monkey(it)
             this.pool.getOrPut(it.backend.domain) { mutableListOf() }.add(monkey)
             this.poolLoggedOut.getOrPut(it.backend.domain) { ConcurrentHashMap() }[it.userId] = monkey
             this.poolById[it.userId] = monkey

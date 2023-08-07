@@ -41,7 +41,6 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
 import kotlinx.coroutines.flow.first
-import java.util.Collections.synchronizedSet
 
 /**
  * A monkey is a user puppeteered by the test framework.
@@ -49,12 +48,8 @@ import java.util.Collections.synchronizedSet
  * the [monkeyState] which we can use to perform actions.
  */
 @Suppress("TooManyFunctions")
-class Monkey(
-    val user: UserData,
-    val team: List<UserId>
-) {
+class Monkey(val user: UserData) {
     private var monkeyState: MonkeyState = MonkeyState.NotReady
-    private var connectedMonkeys: MutableSet<UserId> = synchronizedSet(mutableSetOf())
 
     fun isSessionActive(): Boolean {
         return monkeyState is MonkeyState.Ready
@@ -106,17 +101,19 @@ class Monkey(
             this.monkeyState = MonkeyState.NotReady
             error("Failed registering client of monkey ${this.user.email}: $registerResult")
         }
+        callback(this)
+    }
+
+    private suspend fun connectedMonkeys(): List<UserId> {
         val self = this
-        this.monkeyState.readyThen {
-            val connectedUsers = users.getAllKnownUsers().first()
-            if (connectedUsers is GetAllContactsResult.Success) {
-                self.connectTo(connectedUsers.allContacts.map { it.id })
+        return this.monkeyState.readyThen {
+            val connectedUsersResult = users.getAllKnownUsers().first()
+            if (connectedUsersResult is GetAllContactsResult.Success) {
+                connectedUsersResult.allContacts.map { it.id }
             } else {
-                self.monkeyState = MonkeyState.NotReady
-                error("Failed getting connected users of monkey ${self.user.email}: $registerResult")
+                error("Failed getting connected users of monkey ${self.user.email}: $connectedUsersResult")
             }
         }
-        callback(this)
     }
 
     suspend fun logout(callback: (Monkey) -> Unit) {
@@ -124,13 +121,13 @@ class Monkey(
         callback(this)
     }
 
-    fun randomPeer(): Monkey {
-        return MonkeyPool.get(this.connectedMonkeys.randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
+    suspend fun randomPeer(): Monkey {
+        return MonkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
     }
 
-    fun randomPeers(userCount: UserCount): List<Monkey> {
-        val count = resolveUserCount(userCount, this.connectedMonkeys.count().toUInt())
-        return this.connectedMonkeys.shuffled().map(MonkeyPool::get).take(count.toInt())
+    suspend fun randomPeers(userCount: UserCount): List<Monkey> {
+        val count = resolveUserCount(userCount, this.connectedMonkeys().count().toUInt())
+        return this.connectedMonkeys().shuffled().map(MonkeyPool::get).take(count.toInt())
     }
 
     suspend fun sendRequest(anotherMonkey: Monkey) {
@@ -140,10 +137,8 @@ class Monkey(
     }
 
     suspend fun acceptRequest(anotherMonkey: Monkey) {
-        val self = this
         this.monkeyState.readyThen {
             connection.acceptConnectionRequest(anotherMonkey.user.userId)
-            self.connectTo(anotherMonkey)
         }
     }
 
@@ -151,15 +146,6 @@ class Monkey(
         this.monkeyState.readyThen {
             connection.ignoreConnectionRequest(anotherMonkey.user.userId)
         }
-    }
-
-    private fun connectTo(anotherMonkey: Monkey) {
-        this.connectedMonkeys.add(anotherMonkey.user.userId)
-        anotherMonkey.connectedMonkeys.add(this.user.userId)
-    }
-
-    private fun connectTo(monkeys: List<UserId>) {
-        this.connectedMonkeys.addAll(monkeys.filter { it != this.user.userId })
     }
 
     suspend fun <T> makeReadyThen(coreLogic: CoreLogic, func: suspend Monkey.() -> T): T {

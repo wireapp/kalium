@@ -80,8 +80,7 @@ sourceSets {
             implementation(libs.mockative.runtime)
             implementation(libs.okio.test)
             implementation(libs.settings.kmpTest)
-
-            implementation("io.mockk:mockk:1.13.5")
+            implementation(libs.mockk)
         }
     }
 
