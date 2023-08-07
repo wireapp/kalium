@@ -23,7 +23,7 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 
 class AddUserToConversationAction(val config: ActionType.AddUsersToConversation) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        val target = ConversationPool.randomDynamicConversations(1)
+        val target = ConversationPool.randomDynamicConversations(this.config.countGroups.toInt())
         target.forEach {
             val participants = it.creator.randomPeers(this.config.userCount)
             it.addMonkeys(participants)
