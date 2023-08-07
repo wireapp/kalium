@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
@@ -45,7 +46,12 @@ internal class SendConnectionRequestUseCaseImpl(
         return connectionRepository.sendUserConnection(userId)
             .fold({ coreFailure ->
                 kaliumLogger.e("An error occurred when sending a connection request to $userId")
-                SendConnectionRequestResult.Failure(coreFailure)
+                when (coreFailure) {
+                    is NetworkFailure.FederatedBackendFailure.FederationDenied ->
+                        SendConnectionRequestResult.Failure.FederationDenied
+
+                    else -> SendConnectionRequestResult.Failure.GenericFailure(coreFailure)
+                }
             }, {
                 SendConnectionRequestResult.Success
             })
@@ -54,5 +60,10 @@ internal class SendConnectionRequestUseCaseImpl(
 
 sealed class SendConnectionRequestResult {
     data object Success : SendConnectionRequestResult()
-    class Failure(val coreFailure: CoreFailure) : SendConnectionRequestResult()
+
+    sealed class Failure : SendConnectionRequestResult() {
+        class GenericFailure(val coreFailure: CoreFailure) : SendConnectionRequestResult()
+        data object FederationDenied : SendConnectionRequestResult()
+    }
+
 }
