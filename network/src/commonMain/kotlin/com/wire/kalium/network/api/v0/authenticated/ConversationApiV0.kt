@@ -39,13 +39,13 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.AddServiceResponse
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.JoinConversationRequest
+import com.wire.kalium.network.api.base.model.JoinConversationRequestV0
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
@@ -242,15 +242,22 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun joinConversation(
         code: String,
         key: String,
-        uri: String?
-    ): NetworkResponse<ConversationMemberAddedResponse> =
-        httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
-            setBody(JoinConversationRequest(code, key, uri))
+        uri: String?,
+        password: String?
+    ): NetworkResponse<ConversationMemberAddedResponse> {
+        if (password != null) {
+            return NetworkResponse.Error(
+                APINotSupported("V0->3: joinConversation with password api is only available on API V4")
+            )
+        }
+        return httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
+            setBody(JoinConversationRequestV0(code, key, uri))
         }.execute { httpResponse ->
             handleConversationMemberAddedResponse(httpResponse)
         }
+    }
 
-    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo> =
+    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
