@@ -41,7 +41,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.JoinConversationRequest
+import com.wire.kalium.network.api.base.model.JoinConversationRequestV0
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
@@ -309,7 +309,7 @@ internal class ConversationApiV0Test : ApiTest() {
 
     @Test
     fun whenJoiningConversationViaCode_whenResponseWith200_thenEventIsParsedCorrectly() = runTest {
-        val request = JoinConversationRequest("code", "key", null)
+        val request = JoinConversationRequestV0("code", "key", null)
 
         val networkClient = mockAuthenticatedNetworkClient(
             EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK,
@@ -319,7 +319,7 @@ internal class ConversationApiV0Test : ApiTest() {
             }
         )
         val conversationApi = ConversationApiV0(networkClient)
-        val response = conversationApi.joinConversation(request.code, request.key, request.uri)
+        val response = conversationApi.joinConversation(request.code, request.key, request.uri, null)
 
         assertIs<NetworkResponse.Success<ConversationMemberAddedResponse>>(response)
         assertIs<ConversationMemberAddedResponse.Changed>(response.value)
@@ -331,7 +331,7 @@ internal class ConversationApiV0Test : ApiTest() {
 
     @Test
     fun whenJoiningConversationViaCode_whenResponseWith204_thenEventIsParsedCorrectly() = runTest {
-        val request = JoinConversationRequest("code", "key", null)
+        val request = JoinConversationRequestV0("code", "key", null)
 
         val networkClient = mockAuthenticatedNetworkClient(
             "", statusCode = HttpStatusCode.NoContent,
@@ -341,7 +341,7 @@ internal class ConversationApiV0Test : ApiTest() {
             }
         )
         val conversationApi = ConversationApiV0(networkClient)
-        val response = conversationApi.joinConversation(request.code, request.key, request.uri)
+        val response = conversationApi.joinConversation(request.code, request.key, request.uri, null)
 
         assertIs<NetworkResponse.Success<ConversationMemberAddedResponse>>(response)
         assertIs<ConversationMemberAddedResponse.Unchanged>(response.value)

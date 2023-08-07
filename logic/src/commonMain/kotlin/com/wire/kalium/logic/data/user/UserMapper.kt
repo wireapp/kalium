@@ -129,7 +129,7 @@ internal class UserMapperImpl(
     }
 
     override fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity = with(userDTO) {
-        return UserEntity(
+        UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
             handle = handle,

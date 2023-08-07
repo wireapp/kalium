@@ -190,7 +190,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                   }
                ],
                "notBefore":"2023-05-07T12:00:50.1666Z",
-               "notAfter":"2023-08-05T12:00:50.1666Z",
+               "notAfter":"3000-08-05T12:00:50.1666Z",
                "authorizations":[
                   "$AUTHZ_URL"
                ],

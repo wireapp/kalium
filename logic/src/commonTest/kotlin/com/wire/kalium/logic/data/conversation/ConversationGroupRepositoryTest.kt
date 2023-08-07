@@ -53,7 +53,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.Cause
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
@@ -423,7 +423,10 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenProteusConversation_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
-        val (code, key, uri) = Triple("code", "key", null)
+        val code = "code"
+        val key = "key"
+        val uri = null
+        val password = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
@@ -437,7 +440,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulHandleMemberJoinEvent()
             .arrange()
 
-        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
         verify(arrangement.conversationApi)
@@ -453,7 +456,10 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenMlsConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
-        val (code, key, uri) = Triple("code", "key", null)
+        val code = "code"
+        val key = "key"
+        val uri = null
+        val password = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
@@ -469,7 +475,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
-        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
         verify(arrangement.conversationApi)
@@ -495,7 +501,10 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenProteusConversation_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
-        val (code, key, uri) = Triple("code", "key", null)
+        val code = "code"
+        val key = "key"
+        val uri = null
+        val password = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
@@ -509,7 +518,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulHandleMemberJoinEvent()
             .arrange()
 
-        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
         verify(arrangement.conversationApi)
@@ -531,7 +540,7 @@ class ConversationGroupRepositoryTest {
             .withFetchLimitedConversationInfo(
                 code,
                 key,
-                NetworkResponse.Success(TestConversation.LIMITED_CONVERSATION_INFO, emptyMap(), 200)
+                NetworkResponse.Success(TestConversation.CONVERSATION_CODE_INFO, emptyMap(), 200)
             )
             .arrange()
 
@@ -842,7 +851,7 @@ class ConversationGroupRepositoryTest {
         fun withFetchLimitedConversationInfo(
             code: String,
             key: String,
-            result: NetworkResponse<LimitedConversationInfo>
+            result: NetworkResponse<ConversationCodeInfo>
         ): Arrangement = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::fetchLimitedInformationViaCode)
