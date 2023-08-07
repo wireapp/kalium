@@ -7,6 +7,7 @@ import com.wire.kalium.monkeys.importer.ActionType
 import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -65,10 +66,10 @@ class SendMessageActionTest {
         val targetMonkey = mockk<Monkey>(relaxed = true)
         val coreLogic = mockk<CoreLogic>()
         every { MonkeyPool.randomLoggedInMonkeys(config.userCount) } returns listOf(monkey)
-        every { monkey.randomPeer() } returns targetMonkey
+        coEvery { monkey.randomPeer() } returns targetMonkey
         SendMessageAction(config).execute(coreLogic)
         coVerify(exactly = 1) { monkey.sendDirectMessageTo(targetMonkey, any()) }
-        verify(exactly = 1) { monkey.randomPeer() }
+        coVerify(exactly = 1) { monkey.randomPeer() }
         confirmVerified(monkey)
     }
 
@@ -85,11 +86,11 @@ class SendMessageActionTest {
         every { conversation.randomMonkeys(config.userCount) } returns listOf(monkey)
 
         every { MonkeyPool.randomLoggedInMonkeys(config.userCount) } returns listOf(monkey)
-        every { monkey.randomPeer() } returns targetMonkey
+        coEvery { monkey.randomPeer() } returns targetMonkey
         SendMessageAction(config).execute(coreLogic)
         coVerify(exactly = 1) { monkey.sendDirectMessageTo(targetMonkey, any()) }
         coVerify(exactly = 1) { monkey.sendMessageTo(any(), any()) }
-        verify(exactly = 1) { monkey.randomPeer() }
+        coVerify(exactly = 1) { monkey.randomPeer() }
         verify { conversation.randomMonkeys(config.userCount) }
         verify { conversation.conversation }
         verify { conversation.conversation.name }
