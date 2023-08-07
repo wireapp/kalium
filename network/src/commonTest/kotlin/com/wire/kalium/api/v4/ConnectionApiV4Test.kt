@@ -61,14 +61,15 @@ internal class ConnectionApiV4Test : ApiTest() {
     fun givenACreationRequest_whenRequestingAConnectionWithAnNonFederatedUser_thenShouldReturnsAnErrorResponse() =
         runTest {
             // given
+            val domain = "bella.com"
             val errorResponse = ErrorResponseJson.valid(
                 ErrorResponse(
                     code = HttpStatusCode.UnprocessableEntity.value,
-                    message = "Backend does not federate with the backend of bella.com",
+                    message = "Backend does not federate with the backend of $domain",
                     label = "federation-denied"
                 )
             )
-            val userId = UserId("user_id", "domain_id")
+            val userId = UserId("user_id", domain)
             val httpClient = mockAuthenticatedNetworkClient(
                 errorResponse.rawJson,
                 statusCode = HttpStatusCode.UnprocessableEntity,
