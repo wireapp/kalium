@@ -187,7 +187,7 @@ class ReceiptMessageHandlerTest {
         // then
         verify(messageRepository)
             .suspendFunction(messageRepository::updateMessagesStatus)
-            .with(any(), eq(MessageEntity.Status.DELIVERED), eq(messageUuids))
+            .with(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
             .wasInvoked(exactly = once)
     }
 
