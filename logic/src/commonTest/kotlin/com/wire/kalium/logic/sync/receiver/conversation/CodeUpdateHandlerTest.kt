@@ -33,7 +33,7 @@ import kotlin.test.Test
 class CodeUpdateHandlerTest {
 
     @Test
-    fun givenCodeUpdateEvent_whenhandlerIsInvoked_thenCodeIsUpdated() = runTest {
+    fun givenCodeUpdateEvent_whenHandlerIsInvoked_thenCodeIsUpdated() = runTest {
         val (arrangement, handler) = Arrangement().arrange {
             withUpdatedGuestRoomLink()
         }
