@@ -154,5 +154,3 @@ LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptMod
 LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
-=======
-ALTER TABLE Client ADD COLUMN mls_public_keys TEXT AS Map<String, String> DEFAULT NULL;
