@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.api.base.authenticated.conversation
 
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
@@ -137,7 +136,7 @@ interface ConversationApi {
         receiptMode: ConversationReceiptModeDTO
     ): NetworkResponse<UpdateConversationReceiptModeResponse>
 
-    suspend fun generateGuestRoomLink(conversationId: ConversationId): NetworkResponse<GenerateGuestRoomLinkResponse>
+    suspend fun generateGuestRoomLink(conversationId: ConversationId, password: String?): NetworkResponse<EventContentDTO.Conversation.CodeUpdated>
 
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit>
 

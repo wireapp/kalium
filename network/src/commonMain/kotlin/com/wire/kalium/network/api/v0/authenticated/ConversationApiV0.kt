@@ -37,7 +37,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.Subconversati
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -357,9 +356,18 @@ internal open class ConversationApiV0 internal constructor(
         NetworkResponse.Error(KaliumException.GenericError(e))
     }
 
-    override suspend fun generateGuestRoomLink(conversationId: ConversationId): NetworkResponse<GenerateGuestRoomLinkResponse> =
-        wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+    override suspend fun generateGuestRoomLink(
+        conversationId: ConversationId,
+        password: String?
+    ): NetworkResponse<EventContentDTO.Conversation.CodeUpdated> =
+        if (password != null) {
+            NetworkResponse.Error(
+                APINotSupported("V0->3: generateGuestRoomLink with password api is only available on API V4")
+            )
+        } else {
+            wrapKaliumResponse {
+                httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+            }
         }
 
     override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> = wrapKaliumResponse {

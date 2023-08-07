@@ -375,11 +375,12 @@ class UserSessionScope internal constructor(
     private var _clientId: ClientId? = null
 
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
-    private suspend fun clientId(): Either<CoreFailure, ClientId> = if (_clientId != null) Either.Right(_clientId!!) else {
-        clientRepository.currentClientId().onSuccess {
-            _clientId = it
+    private suspend fun clientId(): Either<CoreFailure, ClientId> =
+        if (_clientId != null) Either.Right(_clientId!!) else {
+            clientRepository.currentClientId().onSuccess {
+                _clientId = it
+            }
         }
-    }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
@@ -455,7 +456,11 @@ class UserSessionScope internal constructor(
     )
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, userStorage.database.userConfigDAO, kaliumConfigs)
+        get() = UserConfigDataSource(
+            userStorage.preferences.userConfigStorage,
+            userStorage.database.userConfigDAO,
+            kaliumConfigs
+        )
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
@@ -904,7 +909,9 @@ class UserSessionScope internal constructor(
 
     private val apiMigrationManager
         get() = ApiMigrationManager(
-            sessionManager.serverConfig().metaData.commonApiVersion.version, userStorage.database.metadataDAO, apiMigrations
+            sessionManager.serverConfig().metaData.commonApiVersion.version,
+            userStorage.database.metadataDAO,
+            apiMigrations
         )
 
     private val eventRepository: EventRepository
@@ -1090,7 +1097,10 @@ class UserSessionScope internal constructor(
         get() = MemberLeaveEventHandlerImpl(
             userStorage.database.memberDAO, userRepository, persistMessage, updateConversationClientsForCurrentCall
         )
-    private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
+    private val memberChangeHandler: MemberChangeEventHandler
+        get() = MemberChangeEventHandlerImpl(
+            conversationRepository
+        )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
             mlsClientProvider, userStorage.database.conversationDAO, conversationRepository
@@ -1141,7 +1151,13 @@ class UserSessionScope internal constructor(
 
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
-            clientRepository, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
+            clientRepository,
+            connectionRepository,
+            conversationRepository,
+            userRepository,
+            logout,
+            userId,
+            clientIdProvider
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1231,6 +1247,7 @@ class UserSessionScope internal constructor(
             qualifiedIdMapper,
             team.isSelfATeamMember,
             globalScope.serverConfigRepository,
+            userStorage,
             this
         )
 
@@ -1335,7 +1352,10 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(userConfigRepository)
+    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase
+        get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(
+            userConfigRepository
+        )
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)

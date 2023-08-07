@@ -51,7 +51,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
@@ -562,7 +561,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulUpdateOfGuestRoomLinkInDB(link)
             .arrange()
 
-        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, TODO())
 
         result.shouldSucceed()
 
@@ -584,7 +583,7 @@ class ConversationGroupRepositoryTest {
             .withFailedCallToGenerateGuestRoomLinkApi()
             .arrange()
 
-        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, TODO())
 
         result.shouldFail()
 
@@ -1034,7 +1033,8 @@ class ConversationGroupRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(
                     NetworkResponse.Success(
-                        GenerateGuestRoomLinkResponse(uri = "mock-guest-room-link"),
+                        TODO(),
+                        //GenerateGuestRoomLinkResponse(uri = "mock-guest-room-link"),
                         mapOf(),
                         HttpStatusCode.OK.value
                     )
