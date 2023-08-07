@@ -19,14 +19,10 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.pool.ConversationPool
+import com.wire.kalium.monkeys.importer.UserCount
 
-class CreateConversationAction(val config: ActionType.CreateConversation) : Action() {
+class CreateConversationAction(val userCount: UserCount, val config: ActionType.CreateConversation) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        if (this.config.domain != null) {
-            ConversationPool.createDynamicConversation(this.config.domain, this.config.userCount, this.config.protocol)
-        } else {
-            ConversationPool.createDynamicConversation(this.config.userCount, this.config.protocol)
-        }
+        TODO("Not yet implemented")
     }
 }

@@ -18,9 +18,6 @@
 package com.wire.kalium.monkeys.conversation
 
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.monkeys.importer.UserCount
-import com.wire.kalium.monkeys.pool.ConversationPool
-import com.wire.kalium.monkeys.pool.resolveUserCount
 
 /**
  * This is a shallow wrapper over the conversation (it contains only details), since the operations need to be done on the
@@ -31,31 +28,25 @@ class MonkeyConversation(
     val conversation: Conversation,
     val isDestroyable: Boolean = true
 ) {
-    private var participants: MutableList<Monkey> = mutableListOf(creator)
+    var participants: MutableList<Monkey> = mutableListOf(creator)
+
+    /**
+     * Return a random [Monkey] from the group. The group will always have at least its creator in it.
+     */
+    fun randomMonkey(): Monkey {
+        return this.participants.random()
+    }
 
     /**
      * Return a [count] number of random [Monkey] from the conversation.
-     * It returns only logged-in users, if there are none an empty list will be returned
+     * Does not check for duplication, so if the group has few participants, it is likely to return duplicate Monkeys
      */
-    fun randomMonkeys(userCount: UserCount): List<Monkey> {
-        val count = resolveUserCount(userCount, this.participants.count().toUInt())
-        val tempList = participants.toMutableList()
-        tempList.shuffle()
-        return tempList.filter { it.isSessionActive() }.take(count.toInt())
+    fun randomMonkeys(count: UInt): List<Monkey> {
+        return (1u..count).map { this.randomMonkey() }
     }
 
     suspend fun addMonkeys(monkeys: List<Monkey>) {
         this.participants.addAll(monkeys)
         this.creator.addMonkeysToConversation(conversation.id, monkeys)
-    }
-
-    suspend fun removeMonkey(monkey: Monkey) {
-        this.participants.remove(monkey)
-        this.creator.removeMonkeyFromConversation(conversation.id, monkey)
-    }
-
-    suspend fun destroy() {
-        this.creator.destroyConversation(this.conversation.id)
-        ConversationPool.conversationDestroyed(this.conversation.id)
     }
 }

@@ -3,48 +3,40 @@
         {
             "name": "Example Test Case",
             "conversationDistribution": {
-                "groupPROTEUS": {
+                "group1": {
                     "userCount": {
                         "type": "PERCENTAGE",
-                        "value": 50
-                    },
-                    "protocol": "PROTEUS",
-                    "groupCount": 2
-                },
-                "groupMLS": {
-                    "userCount": {
-                        "type": "PERCENTAGE",
-                        "value": 50
+                        "value": 100
                     },
                     "protocol": "MLS",
-                    "groupCount": 2
+                    "groupCount": 1
                 }
             },
             "setup": [
                 {
                     "description": "Log everyone in",
+                    "count": {
+                        "type": "PERCENTAGE",
+                        "value": 100
+                    },
                     "config": {
-                        "type": "LOGIN",
-                        "userCount": {
-                            "type": "PERCENTAGE",
-                            "value": 100
-                        }
+                        "type": "LOGIN"
                     }
                 },
                 {
                     "description": "Connect teams",
+                    "count": {
+                        "type": "PERCENTAGE",
+                        "value": 100
+                    },
                     "config": {
                         "type": "SEND_REQUEST",
                         "userCount": {
                             "type": "PERCENTAGE",
                             "value": 100
                         },
-                        "targetUserCount": {
-                            "type": "PERCENTAGE",
-                            "value": 100
-                        },
-                        "originDomain": "pirates.dogfood.wire.link",
-                        "targetDomain": "ninjas.dogfood.wire.link",
+                        "originDomain": "anta.wire.link",
+                        "targetDomain": "bella.wire.link",
                         "delayResponse": 1000,
                         "shouldAccept": true
                     }
@@ -53,66 +45,25 @@
             "actions": [
                 {
                     "description": "Send messages",
-                    "repeatInterval": 100,
-                    "config": {
-                        "type": "SEND_MESSAGE",
-                        "count": 3,
-                        "countGroups": 3,
-                        "userCount": {
-                            "type": "PERCENTAGE",
-                            "value": 100
-                        }
-                    }
-                },
-                {
-                    "description": "Send messages",
-                    "count": 1,
+                    "count": {
+                        "type": "PERCENTAGE",
+                        "value": 100
+                    },
                     "repeatInterval": 500,
                     "config": {
                         "type": "SEND_MESSAGE",
                         "count": 3,
-                        "userCount": {
-                            "type": "PERCENTAGE",
-                            "value": 100
-                        },
                         "targets": [
-                            "groupMLS",
-                            "groupPROTEUS",
-                            "One21"
+                            "group1"
                         ]
                     }
                 },
                 {
                     "description": "Create groups",
-                    "count": 3,
-                    "repeatInterval": 10000,
-                    "config": {
-                        "type": "CREATE_CONVERSATION",
-                        "userCount": {
-                            "type": "FIXED_COUNT",
-                            "value": 4
-                        },
-                        "protocol": "PROTEUS",
-                        "domainOwner": "ninjas.dogfood.wire.link"
-                    }
-                },
-                {
-                    "description": "Create groups",
-                    "count": 3,
-                    "repeatInterval": 10000,
-                    "config": {
-                        "type": "CREATE_CONVERSATION",
-                        "userCount": {
-                            "type": "FIXED_COUNT",
-                            "value": 4
-                        },
-                        "protocol": "MLS",
-                        "domainOwner": "ninjas.dogfood.wire.link"
-                    }
-                },
-                {
-                    "description": "Create groups",
-                    "count": 3,
+                    "count": {
+                        "type": "FIXED_COUNT",
+                        "value": 3
+                    },
                     "repeatInterval": 10000,
                     "config": {
                         "type": "CREATE_CONVERSATION",
@@ -121,7 +72,24 @@
                             "value": 10
                         },
                         "protocol": "PROTEUS",
-                        "domainOwner": "pirates.dogfood.wire.link"
+                        "domainOwner": "anta.wire.link"
+                    }
+                },
+                {
+                    "description": "Create groups",
+                    "count": {
+                        "type": "FIXED_COUNT",
+                        "value": 3
+                    },
+                    "repeatInterval": 10000,
+                    "config": {
+                        "type": "CREATE_CONVERSATION",
+                        "userCount": {
+                            "type": "FIXED_COUNT",
+                            "value": 10
+                        },
+                        "protocol": "MLS",
+                        "domainOwner": "anta.wire.link"
                     }
                 }
             ]
@@ -129,60 +97,73 @@
     ],
     "backends": [
         {
-            "api": "https://nginz-https.pirates.dogfood.wire.link",
-            "webSocket": "https://nginz-ssl.pirates.dogfood.wire.link",
+            "api": "https://nginz-https.anta.wire.link",
+            "accounts": "https://account.anta.wire.link/",
+            "webSocket": "https://nginz-ssl.anta.wire.link/",
             "blackList": "https://clientblacklist.wire.com/staging",
-            "teams": "https://teams.pirates.dogfood.wire.link",
-            "accounts": "https://account.pirates.dogfood.wire.link",
-            "website": "https://wire.com",
-            "title": "pirates.dogfood.wire.link",
+            "teams": "https://teams.anta.wire.link/",
+            "website": "https://example.org",
+            "title": "anta.wire.link",
             "passwordForUsers": "Aqa123456!",
-            "domain": "pirates.dogfood.wire.link",
+            "domain": "anta.wire.link",
             "users": [
                 {
-                    "email": "augusto.c.dias+pirate@wire.com",
-                    "id": "f979e74b-e43b-40f8-91ef-395f8eea026e"
+                    "email": "smoketester+65e02b3d42@wire.com",
+                    "id": "a2baeed1-53f3-4a22-a161-7d61abf4456f"
                 },
                 {
-                    "email": "augusto.c.dias+pirate1@wire.com",
-                    "id": "95900f96-56f1-4125-96ed-50ad0c45294e"
-                },
-                {
-                    "email": "augusto.c.dias+pirate2@wire.com",
-                    "id": "a6cb561d-82f4-4ede-a224-d2de0e7adbcf"
-                },
-                {
-                    "email": "augusto.c.dias+pirate3@wire.com",
-                    "id": "ad287c49-a1f1-47a1-9bb1-0eac11e240db"
+                    "email": "smoketester+3cbe9db208@wire.com",
+                    "id": "33ec2e20-9bed-44b2-b891-a1dbaf3da158"
                 }
             ]
         },
         {
-            "api": "https://nginz-https.ninjas.dogfood.wire.link",
-            "webSocket": "https://nginz-ssl.ninjas.dogfood.wire.link",
+            "api": "https://nginz-https.bella.wire.link",
+            "webSocket": "https://nginz-ssl.bella.wire.link",
             "blackList": "https://clientblacklist.wire.com/staging",
-            "teams": "https://teams.ninjas.dogfood.wire.link",
-            "accounts": "https://account.ninjas.dogfood.wire.link",
+            "teams": "https://teams.bella.wire.link",
+            "accounts": "https://account.bella.wire.link",
             "website": "https://wire.com",
+            "title": "bella.wire.link",
             "passwordForUsers": "Aqa123456!",
-            "domain": "ninjas.dogfood.wire.link",
-            "title": "ninjas.dogfood.wire.link",
+            "domain": "bella.wire.link",
             "users": [
                 {
-                    "email": "augusto.c.dias+ninja@wire.com",
-                    "id": "73b45628-1816-4777-95e7-8f449a559229"
+                    "id": "37a27c29-398b-44c6-9334-79cf84024f74",
+                    "email": "augusto.c.dias+test1@wire.com"
                 },
                 {
-                    "email": "augusto.c.dias+ninja1@wire.com",
-                    "id": "4c5fda2a-a5fe-43fb-8b46-bcdb205ede10"
+                    "id": "56f06ac1-69cb-43ab-96f1-816f6ddd6edb",
+                    "email": "augusto.c.dias+test3@wire.com"
                 },
                 {
-                    "email": "augusto.c.dias+ninja2@wire.com",
-                    "id": "ea417610-3623-4d85-affc-dba6607182be"
+                    "id": "691e3c09-45e1-4845-89f4-121fef480ec8",
+                    "email": "augusto.c.dias+test2@wire.com"
+                }
+            ]
+        },
+        {
+            "api": "https://nginz-https.chala.wire.link",
+            "webSocket": "https://nginz-ssl.chala.wire.link",
+            "blackList": "https://clientblacklist.wire.com/staging",
+            "teams": "https://teams.chala.wire.link",
+            "accounts": "https://account.chala.wire.link",
+            "website": "https://wire.com",
+            "passwordForUsers": "Aqa123456!",
+            "domain": "chala.wire.link",
+            "title": "chala.wire.link",
+            "users": [
+                {
+                    "email": "vitor.schwaab+chala_team1@wire.com",
+                    "id": "9f5a276d-f408-433e-81f6-812e69eb11bb"
                 },
                 {
-                    "email": "augusto.c.dias+ninja3@wire.com",
-                    "id": "151abef6-0a6f-4661-9f96-815a16b9342b"
+                    "email": "vitor.schwaab+chala_team2@wire.com",
+                    "id": "47fb193a-540f-4fec-969a-868377b02d8e"
+                },
+                {
+                    "email": "vitor.schwaab+chala_team3@wire.com",
+                    "id": "2342152d-3df8-4b50-81d8-950ca9105ab1"
                 }
             ]
         }

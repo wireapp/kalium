@@ -19,18 +19,11 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.logger
-import com.wire.kalium.monkeys.pool.MonkeyPool
-import kotlinx.coroutines.delay
+import com.wire.kalium.monkeys.importer.UserCount
 
-class LoginAction(val config: ActionType.Login) : Action() {
+class LoginAction(val userCount: UserCount, val config: ActionType.Login) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        val monkeys = MonkeyPool.randomLoggedOutMonkeys(this.config.userCount)
-        logger.i("Logging ${monkeys.count()} monkeys in")
-        monkeys.forEach { it.login(coreLogic, MonkeyPool::loggedIn) }
-        if (config.duration > 0u) {
-            delay(config.duration.toLong())
-            monkeys.forEach { it.logout(MonkeyPool::loggedOut) }
-        }
+        TODO("Not yet implemented")
     }
+
 }

@@ -51,18 +51,17 @@ protobufCodegen = "0.9.1"
 annotation = "1.2.0"
 mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
-mockk = "1.13.5"
 
 [plugins]
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
-completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin" }
+completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin"}
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+kover = {id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 ksp = { id = "com.google.devtools.ksp", version = "1.9.0-1.0.12" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
@@ -80,7 +79,7 @@ kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin",
 kotlin-nativeUtils = { module = "org.jetbrains.kotlin:kotlin-native-utils", version.ref = "kotlin" }
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
-ktx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "ktx-atomicfu" }
+ktx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "ktx-atomicfu"}
 
 # android dependencies
 appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
@@ -122,7 +121,7 @@ libsodiumBindingsMP = { module = "com.ionspin.kotlin:multiplatform-crypto-libsod
 # cli
 cliKt = { module = "com.github.ajalt.clikt:clikt", version.ref = "cli-kt" }
 okhttp-loggingInterceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "ok-http" }
-mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant" }
+mordant = { module = "com.github.ajalt.mordant:mordant", version.ref = "mordant"}
 
 # ktor
 ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -159,7 +158,6 @@ sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-33-dialect", versi
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
 mockative-processor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 
 # detekt
 detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
