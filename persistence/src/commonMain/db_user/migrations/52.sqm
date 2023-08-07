@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
@@ -154,3 +155,6 @@ LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptMod
 LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedContent ON Message.id = ConversationTimerChangedContent.message_id AND Message.conversation_id = ConversationTimerChangedContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+=======
+ALTER TABLE Client ADD COLUMN mls_public_keys TEXT AS Map<String, String> DEFAULT NULL;
+>>>>>>> f8823dfde9697db44783fbe2a46ca5f3b19ec0df

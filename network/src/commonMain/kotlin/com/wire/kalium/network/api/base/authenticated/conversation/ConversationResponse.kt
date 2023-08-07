@@ -86,15 +86,14 @@ data class ConversationResponse(
     val failedToAdd: Set<QualifiedID> = emptySet()
 ) {
 
-    val isOneOnOneConversation: Boolean
-        get() = type in setOf(
-            Type.ONE_TO_ONE,
-            Type.WAIT_FOR_CONNECTION
-        )
-
     @Suppress("MagicNumber")
     enum class Type(val id: Int) {
-        GROUP(0), SELF(1), ONE_TO_ONE(2), WAIT_FOR_CONNECTION(3);
+        GROUP(0),
+        SELF(1),
+        ONE_TO_ONE(2),
+
+        @Deprecated("It's planned to be removed after v4", replaceWith = ReplaceWith("ONE_TO_ONE"))
+        WAIT_FOR_CONNECTION(3);
 
         companion object {
             fun fromId(id: Int): Type = values().first { type -> type.id == id }

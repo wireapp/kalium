@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -27,21 +26,21 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class JoinConversationViaCodeUseCaseTest {
 
     @Test
@@ -49,12 +48,19 @@ class JoinConversationViaCodeUseCaseTest {
         val code = "code"
         val key = "key"
         val domain = "domain"
+        val password: String? = null
 
         val (useCae, arrangement) = Arrangement()
-            .withJoinViaInviteCodeReturns(code, key, null, Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE))
+            .withJoinViaInviteCodeReturns(
+                code,
+                key,
+                null,
+                password,
+                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+            )
             .arrange()
 
-        useCae(code, key, domain).also {
+        useCae(code, key, domain, password).also {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Changed>(it)
             assertEquals(
                 TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel(),
@@ -78,16 +84,23 @@ class JoinConversationViaCodeUseCaseTest {
         val code = "code"
         val key = "key"
         val domain = "domain"
+        val password: String? = null
 
-        val limitedConversationInfo = LimitedConversationInfo("id", null)
+        val limitedConversationInfo = ConversationCodeInfo("id", null)
         val (useCae, arrangement) = Arrangement()
-            .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
+            .withJoinViaInviteCodeReturns(
+                code,
+                key,
+                null,
+                password,
+                Either.Right(ConversationMemberAddedResponse.Unchanged)
+            )
             .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversationInfo))
             .arrange()
 
-        useCae(code, key, domain).also {
+        useCae(code, key, domain, password).also {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Unchanged>(it)
-            assertEquals(ConversationId(limitedConversationInfo.nonQualifiedConversationId, domain), it.conversationId)
+            assertEquals(ConversationId(limitedConversationInfo.nonQualifiedId, domain), it.conversationId)
         }
 
         verify(arrangement.conversationGroupRepository)
@@ -106,16 +119,23 @@ class JoinConversationViaCodeUseCaseTest {
         val code = "code"
         val key = "key"
         val domain = null
+        val password: String? = null
 
-        val limitedConversationInfo = LimitedConversationInfo("id", null)
+        val limitedConversationInfo = ConversationCodeInfo("id", null)
         val (useCae, arrangement) = Arrangement()
-            .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
+            .withJoinViaInviteCodeReturns(
+                code,
+                key,
+                null,
+                password,
+                Either.Right(ConversationMemberAddedResponse.Unchanged)
+            )
             .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Right(limitedConversationInfo))
             .arrange()
 
-        useCae(code, key, domain).also {
+        useCae(code, key, domain, password).also {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Unchanged>(it)
-            assertEquals(ConversationId(limitedConversationInfo.nonQualifiedConversationId, selfUserId.domain), it.conversationId)
+            assertEquals(ConversationId(limitedConversationInfo.nonQualifiedId, selfUserId.domain), it.conversationId)
         }
 
         verify(arrangement.conversationGroupRepository)
@@ -130,17 +150,28 @@ class JoinConversationViaCodeUseCaseTest {
     }
 
     @Test
-    fun givenFetchLimitedConversationInfoFail_whenJoiningViaCode_thenReturnUnchangedWithNullConversationId() = runTest {
+    fun givenFetchConversationCodeInfoFail_whenJoiningViaCode_thenReturnUnchangedWithNullConversationId() = runTest {
         val code = "code"
         val key = "key"
         val domain = null
+        val password: String? = null
 
         val (useCae, arrangement) = Arrangement()
-            .withJoinViaInviteCodeReturns(code, key, null, Either.Right(ConversationMemberAddedResponse.Unchanged))
-            .withFetchLimitedInfoViaInviteCodeReturns(code, key, Either.Left(NetworkFailure.NoNetworkConnection(CancellationException())))
+            .withJoinViaInviteCodeReturns(
+                code,
+                key,
+                null,
+                password,
+                Either.Right(ConversationMemberAddedResponse.Unchanged)
+            )
+            .withFetchLimitedInfoViaInviteCodeReturns(
+                code,
+                key,
+                Either.Left(NetworkFailure.NoNetworkConnection(CancellationException()))
+            )
             .arrange()
 
-        useCae(code, key, domain).also {
+        useCae(code, key, domain, password).also {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Unchanged>(it)
             assertEquals(null, it.conversationId)
         }
@@ -156,29 +187,65 @@ class JoinConversationViaCodeUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenWrongPasswordError_whenJoiningViaCode_thenWrongPasswordIsReturned() = runTest {
+        val code = "code"
+        val key = "key"
+        val domain = null
+        val password: String? = null
+
+        val (useCae, arrangement) = Arrangement()
+            .withJoinViaInviteCodeReturns(
+                code, key, null, password, Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(
+                            ErrorResponse(403, "wrong password", "invalid-conversation-password")
+                        )
+                    )
+                )
+            )
+            .arrange()
+
+        useCae(code, key, domain, password).also {
+            assertIs<JoinConversationViaCodeUseCase.Result.Failure.IncorrectPassword>(it)
+        }
+
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::joinViaInviteCode)
+            .with(any(), any(), eq(null))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::fetchLimitedInfoViaInviteCode)
+            .with(any(), any())
+            .wasNotInvoked()
+    }
+
     private companion object {
         val selfUserId = UserId("selfUserId", "selfUserIdDomain")
     }
 
     private class Arrangement {
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
-        private val useCase: JoinConversationViaCodeUseCase = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
+        private val useCase: JoinConversationViaCodeUseCase =
+            JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
 
         suspend fun withJoinViaInviteCodeReturns(
             code: String,
             key: String,
             uri: String?,
-            result: Either<CoreFailure, ConversationMemberAddedResponse>
+            password: String?,
+            result: Either<NetworkFailure, ConversationMemberAddedResponse>
         ): Arrangement = apply {
             given(conversationGroupRepository)
-                .coroutine { conversationGroupRepository.joinViaInviteCode(code, key, uri) }
+                .coroutine { conversationGroupRepository.joinViaInviteCode(code, key, uri, password) }
                 .thenReturn(result)
         }
 
         suspend fun withFetchLimitedInfoViaInviteCodeReturns(
             code: String,
             key: String,
-            result: Either<NetworkFailure, LimitedConversationInfo>
+            result: Either<NetworkFailure, ConversationCodeInfo>
         ): Arrangement = apply {
             given(conversationGroupRepository)
                 .coroutine { conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key) }

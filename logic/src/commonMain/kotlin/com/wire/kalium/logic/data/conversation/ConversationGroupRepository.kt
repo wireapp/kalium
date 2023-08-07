@@ -46,7 +46,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceReq
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -63,8 +63,14 @@ interface ConversationGroupRepository {
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun deleteMember(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun joinViaInviteCode(code: String, key: String, uri: String?): Either<CoreFailure, ConversationMemberAddedResponse>
-    suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo>
+    suspend fun joinViaInviteCode(
+        code: String,
+        key: String,
+        uri: String?,
+        password: String?
+    ): Either<NetworkFailure, ConversationMemberAddedResponse>
+
+    suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, ConversationCodeInfo>
     suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
@@ -247,9 +253,10 @@ internal class ConversationGroupRepositoryImpl(
     override suspend fun joinViaInviteCode(
         code: String,
         key: String,
-        uri: String?
-    ): Either<CoreFailure, ConversationMemberAddedResponse> = wrapApiRequest {
-        conversationApi.joinConversation(code, key, uri)
+        uri: String?,
+        password: String?
+    ): Either<NetworkFailure, ConversationMemberAddedResponse> = wrapApiRequest {
+        conversationApi.joinConversation(code, key, uri, password)
     }.onSuccess { response ->
         if (response is ConversationMemberAddedResponse.Changed) {
             val conversationId = response.event.qualifiedConversation.toModel()
@@ -273,7 +280,7 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    override suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, LimitedConversationInfo> =
+    override suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, ConversationCodeInfo> =
         wrapApiRequest { conversationApi.fetchLimitedInformationViaCode(code, key) }
 
     private suspend fun deleteMemberFromCloudAndStorage(userId: UserId, conversationId: ConversationId) =
