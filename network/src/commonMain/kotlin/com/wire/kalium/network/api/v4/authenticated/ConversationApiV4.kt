@@ -28,25 +28,21 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.call.NoTransformationFoundException
-import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpStatusCode.Companion.Conflict
 
 internal open class ConversationApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -55,17 +51,7 @@ internal open class ConversationApiV4 internal constructor(
 
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest) =
         wrapKaliumResponse<ConversationResponseV4>(unsuccessfulResponseOverride = { response ->
-            if (response.status == Conflict) {
-                val errorResponse = try {
-                    response.body()
-                } catch (_: NoTransformationFoundException) {
-                    // When the backend returns something that is not a JSON for whatever reason.
-                    FederationConflictResponse(listOf())
-                }
-                NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
-            } else {
-                handleUnsuccessfulResponse(response)
-            }
+            wrapFederationResponse(response) { handleUnsuccessfulResponse(response) }
         }) {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
@@ -138,6 +124,7 @@ internal open class ConversationApiV4 internal constructor(
         }.execute { httpResponse ->
             handleConversationMemberAddedResponse(httpResponse)
         }
+
     override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
