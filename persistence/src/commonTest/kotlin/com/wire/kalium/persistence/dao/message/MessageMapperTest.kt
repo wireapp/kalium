@@ -59,7 +59,7 @@ class MessageMapperTest {
         // given / when
         val messageEntity = Arrangement().toEntityFromView(
             text = "Test  text",
-            status = MessageEntity.Status.DELIVERED,
+            status = MessageEntity.Status.DELIVERED
         )
 
         // then
@@ -88,7 +88,7 @@ class MessageMapperTest {
             contentType: MessageEntity.ContentType = MessageEntity.ContentType.TEXT,
             date: Instant = Instant.DISTANT_FUTURE,
             senderUserId: QualifiedIDEntity = QualifiedIDEntity("someValue", "someDomain"),
-            senderClientId: String? = null,
+            senderClientId: String? = "someId",
             status: MessageEntity.Status = MessageEntity.Status.READ,
             lastEditTimestamp: Instant? = null,
             visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
@@ -138,9 +138,9 @@ class MessageMapperTest {
             failedToDecryptData: ByteArray? = null,
             isDecryptionResolved: Boolean? = null,
             conversationName: String? = null,
-            allReactionsJson: String = "",
-            selfReactionsJson: String = "",
-            mentions: String = "",
+            allReactionsJson: String = "{}",
+            selfReactionsJson: String = "[]",
+            mentions: String = "[]",
             quotedMessageId: String? = null,
             quotedSenderId: QualifiedIDEntity? = null,
             isQuoteVerified: Boolean? = null,
@@ -157,7 +157,7 @@ class MessageMapperTest {
             messageTimerChanged: Long? = null,
             recipientsFailedWithNoClientsList: List<QualifiedIDEntity>? = null,
             recipientsFailedDeliveryList: List<QualifiedIDEntity>? = null,
-            buttonsJson: String = ""
+            buttonsJson: String = "[]"
         ): MessageEntity {
             return MessageMapper.toEntityMessageFromView(
                 id,
@@ -236,7 +236,6 @@ class MessageMapperTest {
                 recipientsFailedDeliveryList,
                 buttonsJson
             )
-
         }
 
         fun toPreviewEntity(conversationType: ConversationEntity.Type, isEphemeral: Boolean): MessagePreviewEntity {
