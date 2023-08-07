@@ -62,8 +62,8 @@ sealed class SendConnectionRequestResult {
     data object Success : SendConnectionRequestResult()
 
     sealed class Failure : SendConnectionRequestResult() {
-        class GenericFailure(val coreFailure: CoreFailure) : SendConnectionRequestResult()
-        data object FederationDenied : SendConnectionRequestResult()
+        class GenericFailure(val coreFailure: CoreFailure) : Failure()
+        data object FederationDenied : Failure()
     }
 
 }
