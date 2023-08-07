@@ -1592,6 +1592,48 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertTrue(result.readCount == 3L)
     }
 
+    @Test
+    fun givenADeliveryReceiptForAMessage_whenQueryingTheMessage_thenTheMessageHasExpectedStatus() = runTest {
+        // given
+        userDAO.upsertUsers(listOf(userEntity1))
+        conversationDAO.insertConversation(
+            conversationEntity1.copy(
+                lastReadDate = "2022-03-30T15:40:00.000Z".toInstant()
+            )
+        )
+
+        val message =
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ,
+                // date before
+                date = "2022-03-30T15:38:00.000Z".toInstant(),
+                senderName = userEntity1.name!!,
+                expectsReadConfirmation = false
+            )
+        messageDAO.insertOrIgnoreMessage(message)
+
+            receiptDao.insertReceipts(
+                userId = userEntity1.id,
+                conversationId = conversationEntity1.id,
+                date = Instant.DISTANT_FUTURE,
+                type = ReceiptTypeEntity.READ,
+                messageIds = listOf(
+                    "1"
+                )
+            )
+
+        // when
+        val result = messageDAO.getMessageById(message.id, conversationEntity1.id)
+
+        // then
+        assertNotNull(result)
+        assertEquals(result.status, MessageEntity.Status.DELIVERED)
+        assertTrue(result.readCount == 0L)
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(
