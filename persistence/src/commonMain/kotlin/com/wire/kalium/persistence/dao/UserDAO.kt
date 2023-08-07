@@ -166,7 +166,7 @@ interface UserDAO {
      */
     suspend fun updateUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
-    fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
+    suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
     suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
@@ -199,4 +199,10 @@ interface UserDAO {
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 
     suspend fun getUsersWithoutMetadata(): List<UserEntity>
+
+    /**
+     * @return [List] of [UserIDEntity] of all other users.
+     * the list does not contain self user ID
+     */
+    suspend fun allOtherUsersId(): List<UserIDEntity>
 }

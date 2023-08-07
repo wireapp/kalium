@@ -64,7 +64,7 @@ WHERE qualified_id = ?;
 
 updateTeamMemberUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?, incomplete_metadata = 0
 WHERE qualified_id = ?;
 
 updateTeamMemberType:
@@ -160,3 +160,6 @@ UPDATE User SET name = ? WHERE qualified_id = ?;
 selectUsersWithoutMetadata:
 SELECT * FROM User AS user
 WHERE deleted = 0 AND incomplete_metadata = 1;
+
+userIdsWithoutSelf:
+SELECT qualified_id FROM User WHERE qualified_id != (SELECT id FROM SelfUser);

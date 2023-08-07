@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -33,10 +32,9 @@ import kotlinx.coroutines.flow.map
 
 sealed interface CoreFailure {
 
-    val isNotFoundFailure: Boolean
+    val isInvalidRequestError: Boolean
         get() = this is NetworkFailure.ServerMiscommunication
                 && this.kaliumException is KaliumException.InvalidRequestError
-                && this.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
 
     val hasUnreachableDomainsError: Boolean
         get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()

@@ -45,7 +45,7 @@ internal class GetAvatarAssetUseCaseImpl(
         // TODO(important!!): do local lookup for the profile pic before downloading a new one
         assetDataSource.downloadPublicAsset(assetKey.value, assetKey.domain).fold({
             when {
-                it.isNotFoundFailure -> {
+                it.isInvalidRequestError -> {
                     userRepository.removeUserBrokenAsset(assetKey)
                     PublicAssetResult.Failure(it, false)
                 }

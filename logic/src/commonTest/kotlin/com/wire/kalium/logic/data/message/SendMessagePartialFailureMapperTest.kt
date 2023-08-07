@@ -58,7 +58,7 @@ class SendMessagePartialFailureMapperTest {
             missing = mapOf(),
             redundant = mapOf(),
             deleted = mapOf(),
-            failed = mapOf(
+            failedToConfirmClients = mapOf(
                 TEST_USER_ID.domain to mapOf(
                     TEST_USER_ID.value to listOf(TestClient.CLIENT_ID.value, ClientId("clientId12").value),
                     OTHER_USER_ID_2.value to listOf(

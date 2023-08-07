@@ -410,7 +410,7 @@ class MessageRepositoryTest {
         result.shouldSucceed()
 
         assertTrue {
-            (result as Either.Right).value.failed.isNotEmpty()
+            (result as Either.Right).value.failedToConfirmClients.isNotEmpty()
         }
 
         verify(arrangement.mlsMessageApi)

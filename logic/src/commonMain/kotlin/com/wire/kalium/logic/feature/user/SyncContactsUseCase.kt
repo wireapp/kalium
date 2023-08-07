@@ -25,7 +25,7 @@ import com.wire.kalium.logic.functional.Either
 /**
  * Syncs the current user's contacts.
  */
-interface SyncContactsUseCase {
+internal interface SyncContactsUseCase {
     /**
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
@@ -37,7 +37,6 @@ class SyncContactsUseCaseImpl internal constructor(
 ) : SyncContactsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Unit> {
-        return userDataSource.fetchKnownUsers()
+        return userDataSource.fetchAllOtherUsers()
     }
-
 }

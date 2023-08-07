@@ -60,14 +60,15 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.collections.ConcurrentMap
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
@@ -81,14 +82,18 @@ import kotlin.time.Duration.Companion.minutes
 @Suppress("TooManyFunctions")
 internal interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
-    suspend fun fetchKnownUsers(): Either<CoreFailure, Unit>
+
+    /**
+     * Fetches user information for all of users id stored in the DB
+     */
+    suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit>
     suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
-    fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
+    suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
     suspend fun observeUser(userId: UserId): Flow<User?>
@@ -103,6 +108,7 @@ internal interface UserRepository {
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
+    // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
 
@@ -187,11 +193,10 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun fetchKnownUsers(): Either<CoreFailure, Unit> {
-        val ids = userDAO.getAllUsers().first().map { userEntry ->
-            userEntry.id.toModel()
-        }
-        return fetchUsersByIds(ids.toSet())
+    override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
+        val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
+
+        return fetchUsersByIds(ids)
     }
 
     override suspend fun fetchUserInfo(userId: UserId) =
@@ -275,6 +280,7 @@ internal class UserDataSource internal constructor(
         else fetchUsersByIds(missingIds.map { it.toModel() }.toSet())
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUser(): Flow<SelfUser> {
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).onEach {
             // If the self user is not in the database, proactively fetch it.
@@ -328,7 +334,7 @@ internal class UserDataSource internal constructor(
     override suspend fun getSelfUser(): SelfUser? =
         observeSelfUser().firstOrNull()
 
-    override fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
+    override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
         return userDAO.observeAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .wrapStorageRequest()

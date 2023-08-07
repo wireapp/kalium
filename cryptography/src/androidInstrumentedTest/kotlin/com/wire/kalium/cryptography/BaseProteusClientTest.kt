@@ -22,7 +22,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import java.nio.file.Files
 
-@OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseProteusClientTest {
 
     private val testCoroutineScheduler = TestCoroutineScheduler()
