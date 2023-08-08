@@ -45,7 +45,7 @@ import kotlin.test.assertTrue
 internal class ConversationApiV4Test : ApiTest() {
 
     @Test
-    fun givenACreateNewConversationRequest_whenReturnsFederationError_thenTheResponseShouldMapToFederationError() =
+    fun givenACreateNewConversation_whenReturnsNFCGFederationError_thenTheResponseShouldMapToFederationConflictError() =
         runTest {
             val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
             val response =
