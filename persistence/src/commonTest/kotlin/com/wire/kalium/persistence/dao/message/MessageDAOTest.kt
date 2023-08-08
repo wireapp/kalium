@@ -1614,16 +1614,15 @@ class MessageDAOTest : BaseDatabaseTest() {
                 expectsReadConfirmation = false
             )
         messageDAO.insertOrIgnoreMessage(message)
-
-            receiptDao.insertReceipts(
-                userId = userEntity1.id,
-                conversationId = conversationEntity1.id,
-                date = Instant.DISTANT_FUTURE,
-                type = ReceiptTypeEntity.READ,
-                messageIds = listOf(
-                    "1"
-                )
+        receiptDao.insertReceipts(
+            userId = userEntity1.id,
+            conversationId = conversationEntity1.id,
+            date = Instant.DISTANT_FUTURE,
+            type = ReceiptTypeEntity.DELIVERY,
+            messageIds = listOf(
+                "1"
             )
+        )
 
         // when
         val result = messageDAO.getMessageById(message.id, conversationEntity1.id)
