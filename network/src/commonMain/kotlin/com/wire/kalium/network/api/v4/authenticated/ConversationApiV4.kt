@@ -21,7 +21,7 @@ package com.wire.kalium.network.api.v4.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV4
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
@@ -53,14 +53,14 @@ internal open class ConversationApiV4 internal constructor(
 ) : ConversationApiV3(authenticatedNetworkClient) {
 
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest) =
-        wrapKaliumResponse<ConversationResponseV4>(unsuccessfulResponseOverride = { response ->
+        wrapKaliumResponse<ConversationResponseV3>(unsuccessfulResponseOverride = { response ->
             wrapFederationResponse(response) { handleUnsuccessfulResponse(response) }
         }) {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
             }
         }.mapSuccess { conversationResponseV4 ->
-            apiModelMapper.fromApiV4(conversationResponseV4)
+            apiModelMapper.fromApiV3(conversationResponseV4)
         }
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
@@ -128,7 +128,10 @@ internal open class ConversationApiV4 internal constructor(
             handleConversationMemberAddedResponse(httpResponse)
         }
 
-    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
+    override suspend fun fetchLimitedInformationViaCode(
+        code: String,
+        key: String
+    ): NetworkResponse<ConversationCodeInfo> =
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)

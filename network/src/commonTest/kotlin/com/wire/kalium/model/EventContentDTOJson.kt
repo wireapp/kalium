@@ -52,8 +52,9 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
-    private val jsonProviderAccessUpdateWithDeprecatedAccessRoleField = { serializable: EventContentDTO.Conversation.AccessUpdate ->
-        """
+    private val jsonProviderAccessUpdateWithDeprecatedAccessRoleField =
+        { serializable: EventContentDTO.Conversation.AccessUpdate ->
+            """
         |{
         |  "qualified_conversation" : {
         |    "id" : "${serializable.qualifiedConversation.value}",
@@ -70,7 +71,7 @@ object EventContentDTOJson {
         |  }
         |}
         """.trimMargin()
-    }
+        }
 
     private val jsonProviderMemberJoin = { serializable: EventContentDTO.Conversation.MemberJoinDTO ->
         """
@@ -114,8 +115,9 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
-    private val jsonProviderUpdateConversationReceiptMode = { serializable: EventContentDTO.Conversation.ReceiptModeUpdate ->
-        """
+    private val jsonProviderUpdateConversationReceiptMode =
+        { serializable: EventContentDTO.Conversation.ReceiptModeUpdate ->
+            """
         |{
         |  "conversation":"${serializable.qualifiedConversation.value}",
         |  "data":{
@@ -134,7 +136,7 @@ object EventContentDTOJson {
         |  "type":"conversation.receipt-mode-update"
         |}
         """.trimMargin()
-    }
+        }
 
     val validAccessUpdate = ValidJsonProvider(
         EventContentDTO.Conversation.AccessUpdate(
@@ -230,16 +232,7 @@ object EventContentDTOJson {
     val jsonProviderMemberJoinFailureUnreachable =
         """
         |{
-        |  "code": 503,
-        |  "label": "federation-unreachable-domains-error",
-        |  "message": "Failed to add member, could not reach remote backend",
-        |  "data" : {
-        |    "type" : "federation",
-        |    "path" : "some/path",
-        |    "domain": "foma.wire.link",
-        |    "domains": ["foma.wire.link"]
-        |  }
+        |   "unreachable_backends": ["foma.wire.link"]
         |}
         """.trimMargin()
-
 }

@@ -21,7 +21,6 @@ package com.wire.kalium.api.v4
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
 import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
@@ -46,31 +45,11 @@ import kotlin.test.assertTrue
 internal class ConversationApiV4Test : ApiTest() {
 
     @Test
-    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheResponseShouldMapFailedToAddCorrectly() =
-        runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                CREATE_CONVERSATION_RESPONSE,
-                statusCode = HttpStatusCode.Created,
-                assertion = {
-                    assertJson()
-                    assertPost()
-                    assertPathEqual(PATH_CONVERSATIONS)
-                    assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
-                }
-            )
-            val conversationApi = ConversationApiV4(networkClient)
-            val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
-
-            assertTrue(result.isSuccessful())
-            assertTrue(result.value.failedToAdd.isNotEmpty())
-            assertEquals(result.value.failedToAdd.first(), UserId("failedId", "failedDomain"))
-        }
-
-    @Test
     fun givenACreateNewConversationRequest_whenReturnsFederationError_thenTheResponseShouldMapToFederationError() =
         runTest {
             val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
-            val response = ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
+            val response =
+                ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
 
             val networkClient = mockAuthenticatedNetworkClient(
                 response,
@@ -114,20 +93,21 @@ internal class ConversationApiV4Test : ApiTest() {
     }
 
     @Test
-    fun givenSuccessSubconversationDetails_whenFetchingSubconversationDetails_thenResponseIsParsedCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v4.rawJson,
-            statusCode = HttpStatusCode.OK
-        )
+    fun givenSuccessSubconversationDetails_whenFetchingSubconversationDetails_thenResponseIsParsedCorrectly() =
+        runTest {
+            val networkClient = mockAuthenticatedNetworkClient(
+                SubconversationDetailsResponseJson.v4.rawJson,
+                statusCode = HttpStatusCode.OK
+            )
 
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.fetchSubconversationDetails(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub"
-        ).also {
-            assertIs<NetworkResponse.Success<SubconversationResponse>>(it)
+            val conversationApi = ConversationApiV4(networkClient)
+            conversationApi.fetchSubconversationDetails(
+                ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
+                "sub"
+            ).also {
+                assertIs<NetworkResponse.Success<SubconversationResponse>>(it)
+            }
         }
-    }
 
     @Test
     fun givenRequest_whenFetchingSubconversationGroupInfo_thenRequestIsConfiguredCorrectly() = runTest {
@@ -212,12 +192,11 @@ internal class ConversationApiV4Test : ApiTest() {
         val response = conversationApi.addMember(request, conversationId)
 
         assertFalse(response.isSuccessful())
+        assertTrue(response.kException is KaliumException.FederationUnreachableException)
         assertTrue {
-            (response.kException as KaliumException.FederationError).errorResponse.isFederationError()
-        }
-        assertTrue {
-            (response.kException as KaliumException.FederationError).errorResponse.label ==
-                    "federation-unreachable-domains-error"
+            (response.kException as KaliumException.FederationUnreachableException).errorResponse.unreachableBackends.contains(
+                "foma.wire.link"
+            )
         }
     }
 
@@ -253,7 +232,6 @@ internal class ConversationApiV4Test : ApiTest() {
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_MEMBERS = "members"
-        val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v4_withFailedToAdd.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
     }
 }
