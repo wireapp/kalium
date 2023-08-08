@@ -1630,7 +1630,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         // then
         assertNotNull(result)
-        assertEquals(result.status, MessageEntity.Status.DELIVERED)
+        assertEquals(MessageEntity.Status.DELIVERED, result.status)
         assertTrue(result.readCount == 0L)
     }
 
