@@ -20,9 +20,10 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.test.TestResult
@@ -571,6 +572,37 @@ class UserDAOTest : BaseDatabaseTest() {
         // then
         val updated1 = db.userDAO.getUserByQualifiedID(user1.id)
         assertEquals(UserTypeEntity.EXTERNAL, updated1.first()?.userType)
+    }
+
+    @Test
+    fun givenIncompleteTeamMemberInserted_whenUpsert_thenMarkAsComplete() = runTest(dispatcher) {
+        // given
+        val teamMember = user1.copy(team = "team")
+        val conversation = newConversationEntity(id = ConversationIDEntity("conversationId", "domain"))
+
+        db.conversationDAO.insertConversation(conversation)
+        db.memberDAO.insertMember(MemberEntity(teamMember.id, MemberEntity.Role.Member), conversation.id)
+
+        // then
+        db.userDAO.getAllUsers().first().also {
+            assertNotNull(it)
+            it.firstOrNull { it.id == teamMember.id }.also {
+                assertNotNull(it)
+                assertTrue { it.hasIncompleteMetadata }
+            }
+        }
+
+        // when
+        db.userDAO.upsertTeamMembers(listOf(teamMember))
+
+        // then
+        db.userDAO.getAllUsers().first().also {
+            assertNotNull(it)
+            it.firstOrNull { it.id == teamMember.id }.also {
+                assertNotNull(it)
+                assertFalse { it.hasIncompleteMetadata }
+            }
+        }
     }
 
     @Test

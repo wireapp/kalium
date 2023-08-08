@@ -96,6 +96,7 @@ class PublicUserMapperImpl(
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
             expiresAt = expiresAt,
+            hasIncompleteMetadata = false,
             defederated = defederated
         )
     }
