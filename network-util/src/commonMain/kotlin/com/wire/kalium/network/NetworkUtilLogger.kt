@@ -24,7 +24,7 @@ import com.wire.kalium.logger.KaliumLogger
 
 internal var kaliumLogger = KaliumLogger.disabled()
 
-object NetworkLogger {
+object NetworkUtilLogger {
     fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
         kaliumLogger = KaliumLogger(
             config = KaliumLogger.Config(

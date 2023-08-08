@@ -137,7 +137,7 @@ internal fun provideBaseHttpClient(
         agent = KaliumUserAgentProvider.userAgent
     }
 
-    if (NetworkLogger.isRequestLoggingEnabled) {
+    if (NetworkUtilLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
             level = LogLevel.ALL
         }
