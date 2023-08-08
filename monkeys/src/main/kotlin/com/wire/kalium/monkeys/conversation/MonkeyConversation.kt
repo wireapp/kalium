@@ -18,6 +18,7 @@
 package com.wire.kalium.monkeys.conversation
 
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
@@ -31,7 +32,7 @@ class MonkeyConversation(
     val conversation: Conversation,
     val isDestroyable: Boolean = true
 ) {
-    private var participants: MutableList<Monkey> = mutableListOf(creator)
+    private var participants: MutableSet<Monkey> = mutableSetOf(creator)
 
     /**
      * Return a [count] number of random [Monkey] from the conversation.
@@ -57,5 +58,9 @@ class MonkeyConversation(
     suspend fun destroy() {
         this.creator.destroyConversation(this.conversation.id)
         ConversationPool.conversationDestroyed(this.conversation.id)
+    }
+
+    fun membersIds(): List<UserId> {
+        return this.participants.map { it.user.userId }
     }
 }
