@@ -21,6 +21,7 @@ package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.FederationConflictResponse
+import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import io.ktor.client.call.NoTransformationFoundException
@@ -247,7 +248,7 @@ suspend fun <T : Any> wrapFederationResponse(
             val errorResponse = try {
                 response.body()
             } catch (_: NoTransformationFoundException) {
-                FederationConflictResponse(listOf())
+                FederationConflictResponse(emptyList())
             }
             NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
         }
@@ -256,10 +257,18 @@ suspend fun <T : Any> wrapFederationResponse(
             val errorResponse = try {
                 response.body()
             } catch (_: NoTransformationFoundException) {
-                // When the backend returns something that is not a JSON for whatever reason.
                 ErrorResponse(response.status.value, response.status.description, "federation-denied")
             }
             NetworkResponse.Error(KaliumException.FederationError(errorResponse))
+        }
+
+        HttpStatusCode.ServiceUnavailable -> {
+            val errorResponse = try {
+                response.body()
+            } catch (_: NoTransformationFoundException) {
+                FederationUnreachableResponse(emptyList())
+            }
+            NetworkResponse.Error(KaliumException.FederationUnreachableException(errorResponse))
         }
 
         else -> {
