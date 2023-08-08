@@ -33,7 +33,7 @@ class KaliumKtorNoNetworkHandler private constructor(
     }
 
     private fun setupHandlingNoNetwork(client: HttpClient) {
-        client.sendPipeline.intercept(HttpRequestPipeline.Before) {
+        client.requestPipeline.intercept(HttpRequestPipeline.Before) {
             networkStateObserver.observeNetworkState().value.let { networkState ->
                 if (networkState is NetworkState.ConnectedWithInternet) {
                     proceedWith(subject)
