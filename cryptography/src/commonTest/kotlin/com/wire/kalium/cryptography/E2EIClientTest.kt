@@ -24,8 +24,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 // While E2EI is not fully working
-@IgnoreJS
-@IgnoreIOS
+//@IgnoreJS
+//@IgnoreIOS
 @Ignore
 class E2EIClientTest : BaseMLSClientTest() {
     data class SampleUser(
