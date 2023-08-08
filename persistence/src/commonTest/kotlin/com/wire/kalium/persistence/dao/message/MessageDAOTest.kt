@@ -1607,7 +1607,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 "1",
                 conversationId = conversationEntity1.id,
                 senderUserId = userEntity1.id,
-                status = MessageEntity.Status.READ,
+                status = MessageEntity.Status.DELIVERED,
                 // date before
                 date = "2022-03-30T15:38:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
