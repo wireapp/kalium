@@ -64,7 +64,7 @@ fun isDisplayableImageMimeType(mimeType: String): Boolean = mimeType in setOf(
 )
 
 fun isAudioMimeType(mimeType: String): Boolean = mimeType in setOf(
-    "audio/mp3", "audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/x-pn-wav"
+    "audio/mp3", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/x-pn-wav"
 )
 
 fun isVideoMimeType(mimeType: String): Boolean = mimeType in setOf(
