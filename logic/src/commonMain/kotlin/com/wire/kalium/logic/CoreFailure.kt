@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
-import com.wire.kalium.network.exceptions.isUnreachableDomains
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -171,14 +170,15 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             val exception = result.kException
             when {
                 exception is KaliumException.FederationError -> {
-                    val cause = exception.errorResponse.cause
                     if (exception.isFederationDenied()) {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
-                    } else if (exception.isUnreachableDomains()) {
-                        Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
                     }
+                }
+
+                exception is KaliumException.FederationUnreachableException -> {
+                    Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(exception.errorResponse.unreachableBackends))
                 }
 
                 exception is KaliumException.FederationConflictException -> {

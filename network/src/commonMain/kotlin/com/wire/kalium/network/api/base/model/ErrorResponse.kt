@@ -44,3 +44,8 @@ data class Cause(
 data class FederationConflictResponse(
     @SerialName("non_federating_backends") val nonFederatingBackends: List<String>
 )
+
+@Serializable
+data class FederationUnreachableResponse(
+    @SerialName("unreachable_backends") val unreachableBackends: List<String>
+)
