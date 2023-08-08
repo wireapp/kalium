@@ -30,8 +30,6 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 /**
  * Handles the addition of members to a new conversation and the related system messages when a conversation is started.
  * Either all users are added or some of them could fail to be added.
- *
- * TODO(offline backend branch): And add failed members handling in api v4
  */
 internal interface NewConversationMembersRepository {
     suspend fun persistMembersAdditionToTheConversation(

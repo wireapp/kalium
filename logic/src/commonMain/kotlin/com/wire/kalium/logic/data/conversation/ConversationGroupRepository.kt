@@ -102,12 +102,24 @@ internal class ConversationGroupRepositoryImpl(
         options: ConversationOptions
     ): Either<CoreFailure, Conversation> =
         teamIdProvider().flatMap { selfTeamId ->
-            wrapApiRequest {
+            val apiResult = wrapApiRequest {
                 conversationApi.createNewConversation(
                     conversationMapper.toApiModel(name, usersList, selfTeamId?.value, options)
                 )
             }
-                .flatMap { conversationResponse ->
+
+            when (apiResult) {
+                is Either.Left -> {
+                    if (apiResult.value.hasUnreachableDomainsError) {
+                        val error = apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
+                        TODO("retry")
+                    } else {
+                        Either.Left(apiResult.value)
+                    }
+                }
+
+                is Either.Right -> {
+                    val conversationResponse = apiResult.value
                     val conversationEntity = conversationMapper.fromApiModelToDaoModel(
                         conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
                     )
@@ -137,6 +149,7 @@ internal class ConversationGroupRepositoryImpl(
                         }
                     }
                 }
+            }
         }
 
     override suspend fun addMembers(
