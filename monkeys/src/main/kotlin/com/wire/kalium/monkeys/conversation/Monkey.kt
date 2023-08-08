@@ -125,9 +125,9 @@ class Monkey(val user: UserData) {
         return MonkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
     }
 
-    suspend fun randomPeers(userCount: UserCount): List<Monkey> {
+    suspend fun randomPeers(userCount: UserCount, filterOut: List<UserId> = listOf()): List<Monkey> {
         val count = resolveUserCount(userCount, this.connectedMonkeys().count().toUInt())
-        return this.connectedMonkeys().shuffled().map(MonkeyPool::get).take(count.toInt())
+        return this.connectedMonkeys().filterNot { filterOut.contains(it) }.shuffled().map(MonkeyPool::get).take(count.toInt())
     }
 
     suspend fun sendRequest(anotherMonkey: Monkey) {
