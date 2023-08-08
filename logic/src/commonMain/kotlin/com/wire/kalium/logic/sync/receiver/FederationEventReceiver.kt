@@ -145,11 +145,11 @@ class FederationEventReceiverImpl internal constructor(
                         when (conversationId.domain) {
                             // remove secondDomain users from firstDomain conversation
                             firstDomain ->
-                                removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == firstDomain })
+                                removeMembersFromConversation(conversationId, userIds.filter { it.domain == secondDomain })
 
                             // remove firstDomain users from secondDomain conversation
                             secondDomain ->
-                                removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == secondDomain })
+                                removeMembersFromConversation(conversationId, userIds.filter { it.domain == firstDomain })
 
                             // remove firstDomain and secondDomain users from rest conversations
                             else -> removeMembersFromConversation(conversationId, userIds)

@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
+import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
@@ -61,13 +62,7 @@ class MessageMapperImpl(
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity {
-        val status = when (message.status) {
-            Message.Status.PENDING -> MessageEntity.Status.PENDING
-            Message.Status.SENT -> MessageEntity.Status.SENT
-            Message.Status.READ -> MessageEntity.Status.READ
-            Message.Status.FAILED -> MessageEntity.Status.FAILED
-            Message.Status.FAILED_REMOTELY -> MessageEntity.Status.FAILED_REMOTELY
-        }
+        val status = message.status.toEntity()
         val visibility = message.visibility.toEntityVisibility()
         return when (message) {
             is Message.Regular -> mapFromRegularMessage(message, status, visibility)
@@ -128,13 +123,7 @@ class MessageMapperImpl(
     )
 
     override fun fromEntityToMessage(message: MessageEntity): Message.Standalone {
-        val status: Message.Status = when (message.status) {
-            MessageEntity.Status.PENDING -> Message.Status.PENDING
-            MessageEntity.Status.SENT -> Message.Status.SENT
-            MessageEntity.Status.READ -> Message.Status.READ
-            MessageEntity.Status.FAILED -> Message.Status.FAILED
-            MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
-        }
+        val status: Message.Status = message.status.toModel()
         return when (message) {
             is MessageEntity.Regular -> mapRegularMessage(message, status)
             is MessageEntity.System -> mapSystemMessage(message, status)
@@ -143,7 +132,7 @@ class MessageMapperImpl(
 
     private fun mapRegularMessage(message: MessageEntity.Regular, status: Message.Status) = Message.Regular(
         id = message.id,
-        content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN),
+        content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN, selfUserId),
         conversationId = message.conversationId.toModel(),
         date = message.date.toIsoDateTimeString(),
         senderUserId = message.senderUserId.toModel(),
@@ -347,128 +336,6 @@ class MessageMapperImpl(
     )
 
     @Suppress("ComplexMethod")
-    private fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
-        is MessageContent.MemberChange -> {
-            val memberUserIdList = this.members.map { it.toDao() }
-            when (this) {
-                is MessageContent.MemberChange.Added ->
-                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.ADDED)
-
-                is MessageContent.MemberChange.Removed ->
-                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
-
-                is MessageContent.MemberChange.CreationAdded ->
-                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
-
-                is MessageContent.MemberChange.FailedToAdd ->
-                    MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
-
-                is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(
-                    memberUserIdList,
-                    MessageEntity.MemberChangeType.FEDERATION_REMOVED
-                )
-
-            }
-        }
-
-        is MessageContent.CryptoSessionReset -> MessageEntityContent.CryptoSessionReset
-        is MessageContent.MissedCall -> MessageEntityContent.MissedCall
-        is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
-        is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
-        is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
-        is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
-        is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
-        is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
-        is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
-        is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
-        is MessageContent.ConversationDegradedMLS -> MessageEntityContent.ConversationDegradedMLS
-        is MessageContent.ConversationDegradedProteus -> MessageEntityContent.ConversationDegradedProteus
-        is MessageContent.FederationStopped.ConnectionRemoved -> MessageEntityContent.Federation(
-            domainList,
-            MessageEntity.FederationType.CONNECTION_REMOVED
-        )
-
-        is MessageContent.FederationStopped.Removed -> MessageEntityContent.Federation(
-            listOf(domain),
-            MessageEntity.FederationType.DELETE
-        )
-    }
-
-    private fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean): MessageContent.Regular = when (this) {
-        is MessageEntityContent.Text -> {
-            val quotedMessageDetails = this.quotedMessage?.let {
-                MessageContent.QuotedMessageDetails(
-                    senderId = it.senderId.toModel(),
-                    senderName = it.senderName,
-                    isQuotingSelfUser = it.isQuotingSelfUser,
-                    isVerified = it.isVerified,
-                    messageId = it.id,
-                    timeInstant = Instant.parse(it.dateTime),
-                    editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
-                    quotedContent = quotedContentFromEntity(it)
-                )
-            }
-            MessageContent.Text(
-                value = this.messageBody,
-                mentions = this.mentions.map { messageMentionMapper.fromDaoToModel(it) },
-                quotedMessageReference = quotedMessageId?.let {
-                    MessageContent.QuoteReference(
-                        quotedMessageId = it,
-                        quotedMessageSha256 = null,
-                        isVerified = quotedMessageDetails?.isVerified ?: false
-                    )
-                },
-                quotedMessageDetails = quotedMessageDetails
-            )
-        }
-
-        is MessageEntityContent.Asset -> MessageContent.Asset(
-            value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
-        )
-
-        is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
-
-        is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
-            this.mimeType, this.assetSizeInBytes, this.assetName
-        )
-
-        is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
-        is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
-            this.encodedData,
-            this.isDecryptionResolved,
-            this.senderUserId.toModel(),
-            ClientId(this.senderClientId.orEmpty())
-        )
-
-        is MessageEntityContent.Composite -> MessageContent.Composite(
-            this.text?.toMessageContent(hidden) as? MessageContent.Text,
-            this.buttonList.map {
-                MessageContent.Composite.Button(
-                    text = it.text,
-                    id = it.id,
-                    isSelected = it.isSelected
-                )
-            }
-        )
-    }
-
-    private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
-        // Prioritise Invalid and Deleted over content types
-        !it.isVerified -> MessageContent.QuotedMessageDetails.Invalid
-        !it.visibility.isVisible -> MessageContent.QuotedMessageDetails.Deleted
-        it.contentType == MessageEntity.ContentType.TEXT -> MessageContent.QuotedMessageDetails.Text(it.textBody!!)
-        it.contentType == MessageEntity.ContentType.ASSET -> {
-            MessageContent.QuotedMessageDetails.Asset(
-                assetName = it.assetName,
-                assetMimeType = requireNotNull(it.assetMimeType)
-            )
-        }
-
-        // If a new content type can be replied to (Pings, for example), fallback to Invalid
-        else -> MessageContent.QuotedMessageDetails.Invalid
-    }
-
-    @Suppress("ComplexMethod")
     private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
         is MessageEntityContent.MemberChange -> {
             val memberList = this.memberUserIdList.map { it.toModel() }
@@ -564,4 +431,146 @@ fun AssetTypeEntity.toModel(): AssetType = when (this) {
     AssetTypeEntity.VIDEO -> AssetType.VIDEO
     AssetTypeEntity.AUDIO -> AssetType.AUDIO
     AssetTypeEntity.GENERIC_ASSET -> AssetType.GENERIC_ASSET
+}
+
+fun Message.Status.toEntity(): MessageEntity.Status {
+    return when (this) {
+        Message.Status.PENDING -> MessageEntity.Status.PENDING
+        Message.Status.SENT -> MessageEntity.Status.SENT
+        Message.Status.READ -> MessageEntity.Status.READ
+        Message.Status.FAILED -> MessageEntity.Status.FAILED
+        Message.Status.FAILED_REMOTELY -> MessageEntity.Status.FAILED_REMOTELY
+    }
+}
+
+fun MessageEntity.Status.toModel(): Message.Status {
+    return when (this) {
+        MessageEntity.Status.PENDING -> Message.Status.PENDING
+        MessageEntity.Status.SENT -> Message.Status.SENT
+        MessageEntity.Status.READ -> Message.Status.READ
+        MessageEntity.Status.FAILED -> Message.Status.FAILED
+        MessageEntity.Status.FAILED_REMOTELY -> Message.Status.FAILED_REMOTELY
+    }
+}
+
+fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: UserId): MessageContent.Regular = when (this) {
+    is MessageEntityContent.Text -> {
+        val quotedMessageDetails = this.quotedMessage?.let {
+            MessageContent.QuotedMessageDetails(
+                senderId = it.senderId.toModel(),
+                senderName = it.senderName,
+                isQuotingSelfUser = it.isQuotingSelfUser,
+                isVerified = it.isVerified,
+                messageId = it.id,
+                timeInstant = Instant.parse(it.dateTime),
+                editInstant = it.editTimestamp?.let { editTime -> Instant.parse(editTime) },
+                quotedContent = quotedContentFromEntity(it)
+            )
+        }
+        MessageContent.Text(
+            value = this.messageBody,
+            mentions = this.mentions.map { it.toModel(selfUserId = selfUserId) },
+            quotedMessageReference = quotedMessageId?.let {
+                MessageContent.QuoteReference(
+                    quotedMessageId = it,
+                    quotedMessageSha256 = null,
+                    isVerified = quotedMessageDetails?.isVerified ?: false
+                )
+            },
+            quotedMessageDetails = quotedMessageDetails
+        )
+    }
+
+    is MessageEntityContent.Asset -> MessageContent.Asset(
+        value = MapperProvider.assetMapper().fromAssetEntityToAssetContent(this)
+    )
+
+    is MessageEntityContent.Knock -> MessageContent.Knock(this.hotKnock)
+
+    is MessageEntityContent.RestrictedAsset -> MessageContent.RestrictedAsset(
+        this.mimeType, this.assetSizeInBytes, this.assetName
+    )
+
+    is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
+    is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
+        this.encodedData,
+        this.isDecryptionResolved,
+        this.senderUserId.toModel(),
+        ClientId(this.senderClientId.orEmpty())
+    )
+
+    is MessageEntityContent.Composite -> MessageContent.Composite(
+        this.text?.toMessageContent(hidden, selfUserId) as? MessageContent.Text,
+        this.buttonList.map {
+            MessageContent.Composite.Button(
+                text = it.text,
+                id = it.id,
+                isSelected = it.isSelected
+            )
+        }
+    )
+}
+
+private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
+    // Prioritise Invalid and Deleted over content types
+    !it.isVerified -> MessageContent.QuotedMessageDetails.Invalid
+    !it.visibility.isVisible -> MessageContent.QuotedMessageDetails.Deleted
+    it.contentType == MessageEntity.ContentType.TEXT -> MessageContent.QuotedMessageDetails.Text(it.textBody!!)
+    it.contentType == MessageEntity.ContentType.ASSET -> {
+        MessageContent.QuotedMessageDetails.Asset(
+            assetName = it.assetName,
+            assetMimeType = requireNotNull(it.assetMimeType)
+        )
+    }
+
+    // If a new content type can be replied to (Pings, for example), fallback to Invalid
+    else -> MessageContent.QuotedMessageDetails.Invalid
+}
+
+@Suppress("ComplexMethod")
+fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
+    is MessageContent.MemberChange -> {
+        val memberUserIdList = this.members.map { it.toDao() }
+        when (this) {
+            is MessageContent.MemberChange.Added ->
+                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.ADDED)
+
+            is MessageContent.MemberChange.Removed ->
+                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.REMOVED)
+
+            is MessageContent.MemberChange.CreationAdded ->
+                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
+
+            is MessageContent.MemberChange.FailedToAdd ->
+                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
+
+            is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(
+                memberUserIdList,
+                MessageEntity.MemberChangeType.FEDERATION_REMOVED
+            )
+
+        }
+    }
+
+    is MessageContent.CryptoSessionReset -> MessageEntityContent.CryptoSessionReset
+    is MessageContent.MissedCall -> MessageEntityContent.MissedCall
+    is MessageContent.ConversationRenamed -> MessageEntityContent.ConversationRenamed(conversationName)
+    is MessageContent.TeamMemberRemoved -> MessageEntityContent.TeamMemberRemoved(userName)
+    is MessageContent.NewConversationReceiptMode -> MessageEntityContent.NewConversationReceiptMode(receiptMode)
+    is MessageContent.ConversationReceiptModeChanged -> MessageEntityContent.ConversationReceiptModeChanged(receiptMode)
+    is MessageContent.HistoryLost -> MessageEntityContent.HistoryLost
+    is MessageContent.ConversationMessageTimerChanged -> MessageEntityContent.ConversationMessageTimerChanged(messageTimer)
+    is MessageContent.ConversationCreated -> MessageEntityContent.ConversationCreated
+    is MessageContent.MLSWrongEpochWarning -> MessageEntityContent.MLSWrongEpochWarning
+    is MessageContent.ConversationDegradedMLS -> MessageEntityContent.ConversationDegradedMLS
+    is MessageContent.ConversationDegradedProteus -> MessageEntityContent.ConversationDegradedProteus
+    is MessageContent.FederationStopped.ConnectionRemoved -> MessageEntityContent.Federation(
+        domainList,
+        MessageEntity.FederationType.CONNECTION_REMOVED
+    )
+
+    is MessageContent.FederationStopped.Removed -> MessageEntityContent.Federation(
+        listOf(domain),
+        MessageEntity.FederationType.DELETE
+    )
 }

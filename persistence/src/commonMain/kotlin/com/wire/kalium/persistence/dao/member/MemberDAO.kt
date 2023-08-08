@@ -51,21 +51,11 @@ interface MemberDAO {
 
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
-    suspend fun getMemberIdsByTheSameDomainInConversation(
-        domain: String,
-        conversationID: QualifiedIDEntity
-    ): List<QualifiedIDEntity>
 
     suspend fun getConversationWithUserIdsWithBothDomains(
         firstDomain: String,
         secondDomain: String
     ): ConversationsWithMembersEntity
-
-    suspend fun removeMembersFromConversationByDomain(
-        domain: String,
-        conversationID: QualifiedIDEntity
-    )
-
 }
 
 @Suppress("TooManyFunctions")
@@ -174,13 +164,6 @@ internal class MemberDAOImpl internal constructor(
             }
         }
 
-    override suspend fun getMemberIdsByTheSameDomainInConversation(
-        domain: String,
-        conversationID: QualifiedIDEntity
-    ): List<QualifiedIDEntity> = withContext(coroutineContext) {
-        memberQueries.getMembersWithSameDomainFromConversation(domain, conversationID).executeAsList()
-    }
-
     override suspend fun getConversationWithUserIdsWithBothDomains(
         firstDomain: String,
         secondDomain: String
@@ -195,19 +178,12 @@ internal class MemberDAOImpl internal constructor(
                 ?: mapOf(),
             group = membersByConversationType[ConversationEntity.Type.GROUP]
                 ?.groupBy { it.conversation }
-            ?.filter { (_, members) ->
-            members.any { it.user.domain == firstDomain } &&
-                    members.any { it.user.domain == secondDomain }
-            }
-            ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
-            ?: mapOf()
+                ?.filter { (_, members) ->
+                    members.any { it.user.domain == firstDomain } &&
+                            members.any { it.user.domain == secondDomain }
+                }
+                ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
+                ?: mapOf()
         )
-    }
-
-    override suspend fun removeMembersFromConversationByDomain(
-        domain: String,
-        conversationID: QualifiedIDEntity
-    ) = withContext(coroutineContext) {
-        memberQueries.removeMembersFromConversationByDomain(domain, conversationID)
     }
 }

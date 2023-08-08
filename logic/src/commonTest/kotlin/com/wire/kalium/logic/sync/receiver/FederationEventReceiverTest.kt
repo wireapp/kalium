@@ -20,10 +20,9 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.member.ConversationsWithMembers
-import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -39,8 +38,10 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.eq
 import io.mockative.matching
 import io.mockative.once
+import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -49,16 +50,41 @@ import kotlin.test.Test
 class FederationEventReceiverTest {
 
     @Test
-    fun givenMessage_whenDeleting_then2DeleteMessagesAreSentForSelfAndOriginalSender() = runTest {
-        val defederatedConversation = ConversationId("1on1", defederatedDomain)
-
-        val connectionConversationList = listOf(
+    fun givenConversationsWithFederatedUsers_whenReceivingFederationDeleteEvent_thenAllConversationsWithThemShouldBeCleared() = runTest {
+        // Given
+        val defederatedConnections = List(defederatedUsersCount) {
             TestConversationDetails.CONNECTION.copy(
-                conversationId = defederatedConversation,
-                otherUser = TestUser.OTHER.copy(id = QualifiedID("otherUserId", defederatedDomain))
-// TODO Add other self domain and other domain public users
+                conversationId = ConversationId("def_connection$it", defederatedDomain),
+                otherUser = TestUser.OTHER.copy(id = QualifiedID("connectionDefId$it", defederatedDomain))
             )
+        }
+
+        val otherConnections = List(defederatedUsersCount) {
+            TestConversationDetails.CONNECTION.copy(
+                conversationId = ConversationId("other_connection$it", otherDomain),
+                otherUser = TestUser.OTHER.copy(id = QualifiedID("connectionOtherId$it", otherDomain))
+            )
+        }
+
+        val connectionConversationList = defederatedConnections + otherConnections
+
+        val defederatedUserIdList = List(defederatedUsersCount) { UserId(value = "defId$it", domain = defederatedDomain) }
+        val selfUserIdList = List(selfUsersCount) { UserId(value = "selfId$it", domain = selfDomain) }
+
+        val userIdWithBothDomainsList = defederatedUserIdList + selfUserIdList
+        val defederatedOneOnOneConversations = mapOf(
+            selfConversation.copy("1on1") to listOf(UserId("someDef", defederatedDomain))
         )
+
+        val defederatedGroupConversations = mapOf(
+            selfConversation to userIdWithBothDomainsList,
+            defederatedConversation to userIdWithBothDomainsList,
+            otherConversation to userIdWithBothDomainsList
+        )
+
+        // in oneOnOne conversation there will be only one system message about stopping federate
+        // in group conversations there will be always 2 system messages: stopping to federate and users removed
+        val systemMessageCount = defederatedOneOnOneConversations.size + (defederatedGroupConversations.size * 2)
 
         val (arrangement, useCase) = arrange {
             withGetConnections(Either.Right(flowOf(connectionConversationList)))
@@ -66,8 +92,8 @@ class FederationEventReceiverTest {
             withGetConversationsWithMembersWithBothDomains(
                 Either.Right(
                     ConversationsWithMembers(
-                        oneOnOne = mapOf(),
-                        group = mapOf()
+                        oneOnOne = defederatedOneOnOneConversations,
+                        group = defederatedGroupConversations
                     )
                 )
             )
@@ -76,57 +102,127 @@ class FederationEventReceiverTest {
             withPersistingMessage(Either.Right(Unit))
         }
 
+        // When
         val event = Event.Federation.Delete(
             "id",
             true,
             defederatedDomain
         )
 
+        // Then
         useCase.onEvent(event).shouldSucceed()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(any(), any())
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::deleteConnection)
+            .with(matching<ConversationId> { it.domain == defederatedDomain })
+            .wasInvoked(exactly = defederatedConnections.size.time)
+
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::deleteConnection)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::defederateUser)
+            .with(any())
             .wasInvoked(exactly = once)
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching {
-                    it.conversationId == SELF_CONVERSION_ID.first() &&
-                            it.content == MessageContent.DeleteForMe(messageId, conversationId)
-                }, matching {
-                    it == MessageTarget.Conversation()
-                })
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
+            .with(eq(defederatedUserIdList.map { it.toDao() }), eq(selfConversation.toDao()))
             .wasInvoked(exactly = once)
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching {
-                    it.conversationId == conversationId &&
-                            it.content == MessageContent.DeleteMessage(messageId)
-                }, matching {
-                    it == MessageTarget.Users(listOf(senderUserID))
-                })
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
+            .with(eq(selfUserIdList.map { it.toDao() }), eq(defederatedConversation.toDao()))
             .wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(any(), any())
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
+            .with(eq(userIdWithBothDomainsList.map { it.toDao() }), eq(otherConversation.toDao()))
             .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessageUseCase)
+            .suspendFunction(arrangement.persistMessageUseCase::invoke)
+            .with(any())
+            .wasInvoked(exactly = systemMessageCount.time)
     }
 
+    @Test
+    fun givenConversationsWithFederatedUsers_whenFederationConnectionRemovedEvent_thenAllConversationsWithThemShouldBeCleared() =
+        runTest {
+            // Given
+            val defederatedUserIdList = List(defederatedUsersCount) { UserId(value = "defId$it", domain = defederatedDomain) }
+            val defederatedUserIdListTwo = List(defederatedUsersCountTwo) { UserId(value = "defIdTwo$it", domain = defederatedDomainTwo) }
+
+            val userIdWithBothDomainsList = defederatedUserIdList + defederatedUserIdListTwo
+
+            val defederatedGroupConversations = mapOf(
+                defederatedConversation to userIdWithBothDomainsList,
+                defederatedConversationTwo to userIdWithBothDomainsList,
+                selfConversation to userIdWithBothDomainsList,
+            )
+
+            // in group conversations there will be always 2 system messages: stopping to federate and users removed
+            val systemMessageCount = defederatedGroupConversations.size * 2
+
+            val (arrangement, useCase) = arrange {
+                withGetConversationsWithMembersWithBothDomains(
+                    Either.Right(
+                        ConversationsWithMembers(
+                            oneOnOne = mapOf(),
+                            group = defederatedGroupConversations
+                        )
+                    )
+                )
+                withDeleteMembersByQualifiedID()
+                withPersistingMessage(Either.Right(Unit))
+            }
+
+            // When
+            val event = Event.Federation.ConnectionRemoved(
+                "id",
+                true,
+                listOf(defederatedDomain, defederatedDomainTwo)
+            )
+
+            // Then
+            useCase.onEvent(event).shouldSucceed()
+
+            verify(arrangement.memberDAO)
+                .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
+                .with(eq(defederatedUserIdListTwo.map { it.toDao() }), eq(defederatedConversation.toDao()))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.memberDAO)
+                .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
+                .with(eq(defederatedUserIdList.map { it.toDao() }), eq(defederatedConversationTwo.toDao()))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.memberDAO)
+                .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
+                .with(eq(userIdWithBothDomainsList.map { it.toDao() }), eq(selfConversation.toDao()))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.persistMessageUseCase)
+                .suspendFunction(arrangement.persistMessageUseCase::invoke)
+                .with(any())
+                .wasInvoked(exactly = systemMessageCount.time)
+        }
+
     private companion object {
-        val selfDomain = "selfdomain.com"
-        val otherDomain = "otherdomain.com"
-        val defederatedDomain = "defederateddomain.com"
+        const val selfDomain = "selfdomain.com"
+        const val otherDomain = "otherdomain.com"
+        const val defederatedDomain = "defederateddomain.com"
+        const val defederatedDomainTwo = "defederateddomaintwo.com"
+        const val defederatedUsersCount = 2
+        const val defederatedUsersCountTwo = 3
+        const val selfUsersCount = 4
         val selfConversation = ConversationId("self_conv", selfDomain)
         val otherConversation = ConversationId("other_conv", otherDomain)
         val defederatedConversation = ConversationId("def_conv", defederatedDomain)
-
-        val selfUserId = UserId("selfUserId", "selfUserDomain.sy")
-        val SELF_CONVERSION_ID = listOf(ConversationId("selfConversationId", "selfConversationDomain.com"))
+        val defederatedConversationTwo = ConversationId("def_conv_two", defederatedDomainTwo)
+        val selfUserId = UserId("selfUserId", selfDomain)
     }
 
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
@@ -140,7 +236,7 @@ class FederationEventReceiverTest {
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl() {
 
         fun arrange() = block().run {
-            this to FederationEventReceiverImpl(
+            this@Arrangement to FederationEventReceiverImpl(
                 conversationRepository = conversationRepository,
                 connectionRepository = connectionRepository,
                 userRepository = userRepository,
