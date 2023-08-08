@@ -23,6 +23,8 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isFederationDenied
+import com.wire.kalium.network.exceptions.isUnreachableDomains
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -71,6 +73,7 @@ sealed interface CoreFailure {
      * when the sender ID is not the same are the original message sender id
      */
     object InvalidEventSenderID : FeatureFailure()
+
     /**
      * This operation is not supported by proteus conversations
      */
@@ -116,6 +119,7 @@ sealed class NetworkFailure : CoreFailure {
     sealed class FederatedBackendFailure : NetworkFailure() {
 
         data class General(val label: String) : FederatedBackendFailure()
+        data class FederationDenied(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
 
@@ -168,7 +172,9 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             when {
                 exception is KaliumException.FederationError -> {
                     val cause = exception.errorResponse.cause
-                    if (exception.errorResponse.label == "federation-unreachable-domains-error") {
+                    if (exception.isFederationDenied()) {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
+                    } else if (exception.isUnreachableDomains()) {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))

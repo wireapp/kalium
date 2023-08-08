@@ -15,19 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions
+package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.pool.ConversationPool
+import com.wire.kalium.logic.data.user.UserRepository
+import io.mockative.Mock
+import io.mockative.mock
 
-class AddUserToConversationAction(val config: ActionType.AddUsersToConversation) : Action() {
-    override suspend fun execute(coreLogic: CoreLogic) {
-        val target = ConversationPool.randomDynamicConversations(this.config.countGroups.toInt())
-        target.forEach {
-            val filterOut = it.membersIds()
-            val participants = it.creator.randomPeers(this.config.userCount, filterOut)
-            it.addMonkeys(participants)
-        }
-    }
+internal interface UserRepositoryArrangement {
+    val userRepository: UserRepository
+}
+
+internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
+    @Mock
+    override val userRepository: UserRepository = mock(UserRepository::class)
 }

@@ -29,7 +29,9 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_UNREACHABLE_DOMAINS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.GUEST_LINKS_DISABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.HANDLE_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CODE
@@ -212,10 +214,13 @@ fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
 
 fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
     return (errorResponse.label == WRONG_CONVERSATION_PASSWORD) ||
-        (errorResponse.label == BAD_REQUEST && errorResponse.message.contains("password"))
+            (errorResponse.label == BAD_REQUEST && errorResponse.message.contains("password"))
 }
 
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
     get() = AuthenticationCodeFailure.values().firstOrNull {
         errorResponse.label == it.responseLabel
     }
+
+fun KaliumException.FederationError.isFederationDenied() = errorResponse.label == FEDERATION_DENIED
+fun KaliumException.FederationError.isUnreachableDomains() = errorResponse.label == FEDERATION_UNREACHABLE_DOMAINS
