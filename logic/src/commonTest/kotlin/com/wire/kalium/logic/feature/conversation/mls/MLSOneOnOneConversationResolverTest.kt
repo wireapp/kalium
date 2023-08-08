@@ -37,7 +37,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class GetOrEstablishMLSOneToOneUseCaseTest {
+class MLSOneOnOneConversationResolverTest {
 
     @Test
     fun givenAUserId_whenInvokingUseCase_shouldPassCorrectUserIdWhenGettingConversationsForUser() = runTest {
@@ -142,7 +142,7 @@ class GetOrEstablishMLSOneToOneUseCaseTest {
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
 
         fun arrange() = block().let {
-            this to GetOrEstablishMLSOneToOneUseCaseImpl(
+            this to MLSOneOnOneConversationResolverImpl(
                 conversationRepository = conversationRepository,
                 joinExistingMLSConversationUseCase = joinExistingMLSConversationUseCase,
             )

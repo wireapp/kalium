@@ -79,6 +79,7 @@ interface ConnectionRepository {
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
+    suspend fun updateConversationForConnection(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -300,4 +301,14 @@ internal class ConnectionDataSource(
             CANCELLED -> deleteCancelledConnection(connection.qualifiedConversationId)
             ACCEPTED -> updateConversationMemberFromConnection(connection)
         }
+
+    override suspend fun updateConversationForConnection(
+        userId: UserId,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        connectionDAO.updateConnectionConversation(
+            conversationId = conversationId.toDao(),
+            userId = userId.toDao()
+        )
+    }
 }
