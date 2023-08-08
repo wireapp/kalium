@@ -22,9 +22,9 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
-import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.datetime.Instant
 
 internal interface ReceiptMessageHandler {
@@ -37,7 +37,8 @@ internal interface ReceiptMessageHandler {
 internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
     private val receiptRepository: ReceiptRepository,
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val receiptsMapper: ReceiptsMapper = MapperProvider.receiptsMapper()
 ) : ReceiptMessageHandler {
 
     override suspend fun handle(
@@ -67,10 +68,7 @@ internal class ReceiptMessageHandlerImpl(
         messageRepository.updateMessagesStatus(
             messageUuids = messageContent.messageIds,
             conversationId = message.conversationId,
-            messageStatus = when (messageContent.type) {
-                ReceiptType.DELIVERED -> MessageEntity.Status.DELIVERED
-                ReceiptType.READ -> MessageEntity.Status.READ
-            },
+            messageStatus = receiptsMapper.fromTypeToMessageStatus(messageContent.type),
         )
     }
 
