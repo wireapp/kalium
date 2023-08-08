@@ -235,19 +235,34 @@ private fun toStatusCodeBasedKaliumException(
 }
 
 /**
- * Wrap and handles federation aware endpoints that can send a response with [HttpStatusCode.Conflict]
+ * Wrap and handles federation aware endpoints that can send errors responses
+ * And raise proper federated exceptions
  */
-suspend fun <T : Any> wrapHandleFederationConflictOrDelegate(
+suspend fun <T : Any> wrapFederationResponse(
     response: HttpResponse,
     delegatedHandler: suspend (HttpResponse) -> NetworkResponse<T>
 ) =
-    if (response.status == HttpStatusCode.Conflict) {
-        val errorResponse = try {
-            response.body()
-        } catch (_: NoTransformationFoundException) {
-            FederationConflictResponse(listOf())
+    when (response.status) {
+        HttpStatusCode.Conflict -> {
+            val errorResponse = try {
+                response.body()
+            } catch (_: NoTransformationFoundException) {
+                FederationConflictResponse(listOf())
+            }
+            NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
         }
-        NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
-    } else {
-        delegatedHandler.invoke(response)
+
+        HttpStatusCode.UnprocessableEntity -> {
+            val errorResponse = try {
+                response.body()
+            } catch (_: NoTransformationFoundException) {
+                // When the backend returns something that is not a JSON for whatever reason.
+                ErrorResponse(response.status.value, response.status.description, "federation-denied")
+            }
+            NetworkResponse.Error(KaliumException.FederationError(errorResponse))
+        }
+
+        else -> {
+            delegatedHandler.invoke(response)
+        }
     }

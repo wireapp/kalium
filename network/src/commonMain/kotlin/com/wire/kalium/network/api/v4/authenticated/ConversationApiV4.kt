@@ -37,7 +37,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapHandleFederationConflictOrDelegate
+import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -45,7 +45,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
-import okio.IOException
+import io.ktor.utils.io.errors.IOException
 
 internal open class ConversationApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -54,7 +54,7 @@ internal open class ConversationApiV4 internal constructor(
 
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest) =
         wrapKaliumResponse<ConversationResponseV4>(unsuccessfulResponseOverride = { response ->
-            wrapHandleFederationConflictOrDelegate(response) { handleUnsuccessfulResponse(response) }
+            wrapFederationResponse(response) { handleUnsuccessfulResponse(response) }
         }) {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
@@ -128,10 +128,7 @@ internal open class ConversationApiV4 internal constructor(
             handleConversationMemberAddedResponse(httpResponse)
         }
 
-    override suspend fun fetchLimitedInformationViaCode(
-        code: String,
-        key: String
-    ): NetworkResponse<ConversationCodeInfo> =
+    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
@@ -146,7 +143,7 @@ internal open class ConversationApiV4 internal constructor(
         httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
             setBody(addParticipantRequest)
         }.let { response ->
-            wrapHandleFederationConflictOrDelegate(response) { handleConversationMemberAddedResponse(response) }
+            wrapFederationResponse(response) { handleConversationMemberAddedResponse(response) }
         }
     } catch (e: IOException) {
         NetworkResponse.Error(KaliumException.GenericError(e))
