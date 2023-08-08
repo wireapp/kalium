@@ -15,15 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
 
-import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.NetworkStateObserver
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+package com.wire.kalium.network
 
-internal actual class NetworkStateObserverImpl : NetworkStateObserver {
+import co.touchlab.kermit.LogWriter
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 
-    override fun observeNetworkState(): StateFlow<NetworkState> =
-        MutableStateFlow(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
+internal var kaliumLogger = KaliumLogger.disabled()
+
+object NetworkLogger {
+    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
+        kaliumLogger = KaliumLogger(
+            config = KaliumLogger.Config(
+                severity = level,
+                tag = "Network"
+            ),
+            logWriters = logWriters
+        )
+    }
+
+    val isRequestLoggingEnabled: Boolean get() = kaliumLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
 }

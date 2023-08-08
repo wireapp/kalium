@@ -15,15 +15,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
 
-import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.NetworkStateObserver
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+@Suppress("DSL_SCOPE_VIOLATION")
+plugins {
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
+    alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.kalium.library.get().pluginId)
+}
 
-internal actual class NetworkStateObserverImpl : NetworkStateObserver {
+kaliumLibrary {
+    multiplatform {
+        enableJs.set(false)
+    }
+}
 
-    override fun observeNetworkState(): StateFlow<NetworkState> =
-        MutableStateFlow(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
+kotlin {
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                api(project(":logger"))
+
+                implementation(libs.coroutines.core)
+            }
+        }
+    }
 }

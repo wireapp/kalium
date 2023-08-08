@@ -15,9 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
+package com.wire.kalium.network
 
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -46,8 +45,6 @@ interface NetworkStateObserver {
         const val TAG = "NetworkStateObserver"
     }
 }
-
-internal expect class NetworkStateObserverImpl : NetworkStateObserver
 
 sealed class NetworkState {
     object ConnectedWithInternet : NetworkState()

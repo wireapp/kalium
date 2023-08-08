@@ -20,6 +20,7 @@
 
 package com.wire.kalium.network.exceptions
 
+import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.api.base.model.ErrorResponse
@@ -54,6 +55,8 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.WRONG_CONVERSATION_P
 import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException : Exception() {
+
+    data class NoNetwork(val networkState: NetworkState = NetworkState.NotConnected) : KaliumException()
 
     data class Unauthorized(val errorCode: Int) : KaliumException()
 

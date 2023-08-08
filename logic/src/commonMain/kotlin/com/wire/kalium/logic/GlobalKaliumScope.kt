@@ -64,6 +64,7 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
@@ -88,13 +89,15 @@ class GlobalKaliumScope internal constructor(
     private val globalPreferences: Lazy<GlobalPrefProvider>,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
-    private val authenticationScopeProvider: AuthenticationScopeProvider
+    private val authenticationScopeProvider: AuthenticationScopeProvider,
+    private  val networkStateObserver: NetworkStateObserver
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
+            networkStateObserver,
             kaliumConfigs.developmentApiEnabled,
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls
@@ -161,7 +164,8 @@ class GlobalKaliumScope internal constructor(
         get() = ObserveIfAppUpdateRequiredUseCaseImpl(
             serverConfigRepository,
             authenticationScopeProvider,
-            userSessionScopeProvider.value
+            userSessionScopeProvider.value,
+            networkStateObserver
         )
 
     val checkSystemIntegrity: CheckSystemIntegrityUseCase

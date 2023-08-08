@@ -34,7 +34,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
@@ -64,7 +64,8 @@ abstract class CoreLogicCommon internal constructor(
             globalPreferences,
             kaliumConfigs,
             userSessionScopeProvider,
-            authenticationScopeProvider
+            authenticationScopeProvider,
+            networkStateObserver
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
@@ -72,7 +73,7 @@ abstract class CoreLogicCommon internal constructor(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials? = null
     ): AuthenticationScope =
-        authenticationScopeProvider.provide(serverConfig, proxyCredentials, getGlobalScope().serverConfigRepository)
+        authenticationScopeProvider.provide(serverConfig, proxyCredentials, getGlobalScope().serverConfigRepository, networkStateObserver)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
