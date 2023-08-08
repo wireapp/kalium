@@ -598,10 +598,14 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     data class Unknown(
         override val id: String,
         override val transient: Boolean,
+        val unknownType: String,
+        val cause: String? = null
     ) : Event(id, transient) {
         override fun toLogMap(): Map<String, Any?> = mapOf(
             typeKey to "User.UnknownEvent",
             idKey to id.obfuscateId(),
+            "unknownType" to unknownType,
+            "cause" to cause
         )
     }
 

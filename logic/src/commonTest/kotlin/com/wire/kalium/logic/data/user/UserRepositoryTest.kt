@@ -461,7 +461,7 @@ class UserRepositoryTest {
         }
 
         verify(arrangement.userDAO)
-            .function(arrangement.userDAO::observeAllUsersByConnectionStatus)
+            .suspendFunction(arrangement.userDAO::observeAllUsersByConnectionStatus)
             .with(any())
             .wasInvoked(once)
     }
@@ -575,7 +575,7 @@ class UserRepositoryTest {
 
         fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserEntity>) = apply {
             given(userDAO)
-                .function(userDAO::observeAllUsersByConnectionStatus)
+                .suspendFunction(userDAO::observeAllUsersByConnectionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(userEntities))
         }

@@ -28,7 +28,6 @@ import io.mockative.matchers.Matcher
 import io.mockative.mock
 
 internal interface ConversationRepositoryArrangement {
-    @Mock
     val conversationRepository: ConversationRepository
     fun withGetConversationsWithMembersWithBothDomains(
         result: Either<CoreFailure, ConversationsWithMembers>,

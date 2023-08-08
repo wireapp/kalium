@@ -28,7 +28,6 @@ import io.mockative.matchers.Matcher
 import io.mockative.mock
 
 internal interface UserRepositoryArrangement {
-    @Mock
     val userRepository: UserRepository
     fun withDefederateUser(result: Either<CoreFailure, Unit>, userId: Matcher<UserId> = any())
 }

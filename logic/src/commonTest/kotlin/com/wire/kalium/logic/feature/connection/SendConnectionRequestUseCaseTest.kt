@@ -19,47 +19,37 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SendConnectionRequestUseCaseTest {
 
-    @Mock
-    private val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
-
-    lateinit var sendConnectionRequestUseCase: SendConnectionRequestUseCase
-
-    @BeforeTest
-    fun setUp() {
-        sendConnectionRequestUseCase = SendConnectionRequestUseCaseImpl(connectionRepository)
-    }
-
     @Test
     fun givenAConnectionRequest_whenInvokingASendAConnectionRequest_thenShouldReturnsASuccessResult() = runTest {
         // given
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::sendUserConnection)
-            .whenInvokedWith(eq(userId))
-            .thenReturn(Either.Right(Unit))
+        val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withCreateConnectionResult(Either.Right(Unit))
+            .arrange()
 
         // when
         val resultOk = sendConnectionRequestUseCase(userId)
 
         // then
         assertEquals(SendConnectionRequestResult.Success, resultOk)
-        verify(connectionRepository)
-            .suspendFunction(connectionRepository::sendUserConnection)
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
             .with(eq(userId))
             .wasInvoked(once)
     }
@@ -67,20 +57,52 @@ class SendConnectionRequestUseCaseTest {
     @Test
     fun givenAConnectionRequest_whenInvokingASendAConnectionRequestFails_thenShouldReturnsAFailureResult() = runTest {
         // given
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::sendUserConnection)
-            .whenInvokedWith(eq(userId))
-            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+        val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withCreateConnectionResult(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+            .arrange()
 
         // when
         val resultFailure = sendConnectionRequestUseCase(userId)
 
         // then
-        assertEquals(SendConnectionRequestResult.Failure::class, resultFailure::class)
-        verify(connectionRepository)
-            .suspendFunction(connectionRepository::sendUserConnection)
+        assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
             .with(eq(userId))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConnectionRequest_whenInvokingAndFailsByFederationDenied_thenShouldReturnsAFederationDenied() = runTest {
+        // given
+        val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withCreateConnectionResult(
+                Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied("federation-denied"))
+            )
+            .arrange()
+        // when
+        val resultFailure = sendConnectionRequestUseCase(userId)
+
+        // then
+        assertEquals(SendConnectionRequestResult.Failure.FederationDenied::class, resultFailure::class)
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
+            .with(eq(userId))
+            .wasInvoked(once)
+    }
+
+    private class Arrangement {
+        @Mock
+        val connectionRepository = mock(classOf<ConnectionRepository>())
+
+        fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
+            given(connectionRepository)
+                .suspendFunction(connectionRepository::sendUserConnection)
+                .whenInvokedWith(eq(userId))
+                .thenReturn(result)
+        }
+
+        fun arrange() = this to SendConnectionRequestUseCaseImpl(connectionRepository)
     }
 
     private companion object {
