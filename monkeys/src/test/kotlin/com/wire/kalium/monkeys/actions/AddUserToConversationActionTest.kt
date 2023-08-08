@@ -31,6 +31,7 @@ class AddUserToConversationActionTest {
         AddUserToConversationAction(config).execute(coreLogic)
         coVerify(exactly = 1) { conversation.addMonkeys(listOf(monkey)) }
         verify(exactly = 1) { conversation.creator }
+        verify(exactly = 1) { conversation.membersIds() }
         confirmVerified(conversation)
     }
 }
