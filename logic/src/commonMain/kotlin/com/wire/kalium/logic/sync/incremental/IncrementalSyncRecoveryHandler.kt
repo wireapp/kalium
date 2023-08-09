@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.HttpErrorCodes
 
@@ -28,7 +29,7 @@ internal interface IncrementalSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback)
 }
 
-internal fun interface OnIncrementalSyncRetryCallback {
+internal interface OnIncrementalSyncRetryCallback {
     suspend fun retry()
 }
 

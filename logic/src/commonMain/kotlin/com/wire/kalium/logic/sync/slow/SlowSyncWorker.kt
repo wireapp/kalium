@@ -48,7 +48,6 @@ internal interface SlowSyncWorker {
     suspend fun performSlowSyncSteps(): Flow<SlowSyncStep>
 }
 
-// TODO(test): Make testable by converting internal usecases into interfaces
 @Suppress("LongParameterList")
 internal class SlowSyncWorkerImpl(
     private val syncSelfUser: SyncSelfUserUseCase,
@@ -87,10 +86,13 @@ internal class SlowSyncWorkerImpl(
         slowSyncStep: SlowSyncStep,
         step: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Unit> {
+        println("test performStep $slowSyncStep")
         // Check for cancellation
         currentCoroutineContext().ensureActive()
+        println("after test performStep")
 
         emit(slowSyncStep)
+        println("after emit test performStep")
         return step()
     }
 }

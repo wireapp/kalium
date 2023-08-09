@@ -15,15 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.sync.handler
+package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
-import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement
