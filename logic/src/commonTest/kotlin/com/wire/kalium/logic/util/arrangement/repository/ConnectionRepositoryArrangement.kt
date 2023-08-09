@@ -21,6 +21,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -34,6 +35,7 @@ internal interface ConnectionRepositoryArrangement {
 
     fun withGetConnections(result: Either<StorageFailure, Flow<List<ConversationDetails>>>)
     fun withDeleteConnection(result: Either<StorageFailure, Unit>, conversationId: Matcher<ConversationId> = any())
+    fun withUpdateConversationForConnectionReturning(result: Either<CoreFailure, Unit>)
 }
 
 internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryArrangement {
@@ -58,4 +60,12 @@ internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryAr
             .whenInvokedWith(conversationId)
             .thenReturn(result)
     }
+
+    override fun withUpdateConversationForConnectionReturning(result: Either<CoreFailure, Unit>) {
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::updateConversationForConnection)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
 }
