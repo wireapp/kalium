@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -137,12 +138,17 @@ internal class MemberDAOImpl internal constructor(
     ) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.updateUserConnectionStatus(status, member.user)
-            val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-            if (recordDidNotExist) {
+            val userRecordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+            if (userRecordDidNotExist) {
                 userQueries.insertOrIgnoreUserIdWithConnectionStatus(member.user, status)
             }
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
-            memberQueries.insertMember(member.user, conversationID, member.role)
+            val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
+            if(conversationRecordExist) {
+                memberQueries.insertMember(member.user, conversationID, member.role)
+            } else {
+                kaliumLogger.e("conversation $conversationID doest not exist for user ${member.user}")
+            }
         }
     }
 

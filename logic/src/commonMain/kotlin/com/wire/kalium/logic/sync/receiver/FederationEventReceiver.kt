@@ -85,9 +85,16 @@ class FederationEventReceiverImpl internal constructor(
             .onSuccess { conversationsWithMembers ->
                 // mark users as defederated to hold conversation history in oneOnOne conversations
                 conversationsWithMembers.oneOnOne.forEach { (conversationId, userIds) ->
-                    handleFederationDeleteEvent(conversationId, event.domain)
-                    userIds.filter { it.domain == event.domain }.forEach { userId ->
-                        userRepository.defederateUser(userId)
+                    if (conversationId.domain == event.domain) {
+                        handleFederationDeleteEvent(conversationId, event.domain)
+                        userIds.filter { it.domain == event.domain }.forEach { userId ->
+                            userRepository.defederateUser(userId)
+                        }
+                    } else {
+                        userIds.filter { it.domain == event.domain }.forEach { userId ->
+                            handleFederationDeleteEvent(conversationId, event.domain)
+                            userRepository.defederateUser(userId)
+                        }
                     }
                 }
 

@@ -140,6 +140,22 @@ class MemberDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNonExistingConversation_ThenInsertedOrUpdatedMembersShouldNotBeTriggered() = runTest {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val member1 = TestStubs.member1
+
+        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            member = member1,
+            status = ConnectionEntity.State.ACCEPTED,
+            conversationID = conversationEntity1.id
+        )
+
+        assertEquals(
+            listOf(), memberDAO.observeConversationMembers(conversationEntity1.id).first()
+        )
+    }
+
+    @Test
     fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest(dispatcher) {
         val conversationEntity1 = TestStubs.conversationEntity1
         val user1 = TestStubs.user1
@@ -158,7 +174,6 @@ class MemberDAOTest : BaseDatabaseTest() {
         assertEquals(ConnectionEntity.State.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
         assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
     }
-
 
     @Test
     fun givenConversation_whenInsertingMembers_thenMembersShouldNotBeDuplicated() = runTest {

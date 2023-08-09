@@ -73,7 +73,12 @@ class FederationEventReceiverTest {
 
         val userIdWithBothDomainsList = defederatedUserIdList + selfUserIdList
         val defederatedOneOnOneConversations = mapOf(
-            selfConversation.copy("1on1") to listOf(UserId("someDef", defederatedDomain))
+            selfConversation.copy("1on1") to listOf(UserId("someDef", defederatedDomain), selfUserId),
+            defederatedConversation.copy("def1on1") to listOf(selfUserId, UserId("someDefTwo", defederatedDomain)),
+        )
+        val otherOneOnOneConversations = mapOf(
+            otherConversation.copy("other1on1") to listOf(selfUserId, UserId("someOther", otherDomain)),
+            selfConversation.copy("1on1self") to listOf(selfUserId, UserId("someOtherTwo", otherDomain)),
         )
 
         val defederatedGroupConversations = mapOf(
@@ -92,7 +97,7 @@ class FederationEventReceiverTest {
             withGetConversationsWithMembersWithBothDomains(
                 Either.Right(
                     ConversationsWithMembers(
-                        oneOnOne = defederatedOneOnOneConversations,
+                        oneOnOne = defederatedOneOnOneConversations + otherOneOnOneConversations,
                         group = defederatedGroupConversations
                     )
                 )
@@ -125,7 +130,7 @@ class FederationEventReceiverTest {
         verify(arrangement.userRepository)
             .suspendFunction(arrangement.userRepository::defederateUser)
             .with(any())
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = defederatedOneOnOneConversations.size.time)
 
         verify(arrangement.memberDAO)
             .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
