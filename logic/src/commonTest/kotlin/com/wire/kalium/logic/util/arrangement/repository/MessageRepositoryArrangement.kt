@@ -50,6 +50,12 @@ internal interface MessageRepositoryArrangement {
         messageID: Matcher<String> = any(),
         conversationId: Matcher<ConversationId> = any()
     )
+
+    fun withMoveMessagesToAnotherConversation(
+        result: Either<StorageFailure, Unit>,
+        originalConversation: Matcher<ConversationId> = any(),
+        targetConversation: Matcher<ConversationId> = any()
+    )
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
@@ -82,10 +88,21 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
         result: Either<StorageFailure, Unit>,
         messageID: Matcher<String>,
         conversationId: Matcher<ConversationId>
-    )  {
+    ) {
         given(messageRepository)
             .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(messageID, conversationId)
+            .thenReturn(result)
+    }
+
+    override fun withMoveMessagesToAnotherConversation(
+        result: Either<StorageFailure, Unit>,
+        originalConversation: Matcher<ConversationId>,
+        targetConversation: Matcher<ConversationId>
+    ) {
+        given(messageRepository)
+            .suspendFunction(messageRepository::moveMessagesToAnotherConversation)
+            .whenInvokedWith(originalConversation, targetConversation)
             .thenReturn(result)
     }
 }
