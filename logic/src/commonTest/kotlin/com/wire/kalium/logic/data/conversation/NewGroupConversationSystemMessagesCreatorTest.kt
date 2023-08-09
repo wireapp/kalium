@@ -242,6 +242,13 @@ class NewGroupConversationSystemMessagesCreatorTest {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
                 })
                 .wasInvoked(once)
+
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(matching {
+                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
+                })
+                .wasNotInvoked()
         }
 
     @Test
