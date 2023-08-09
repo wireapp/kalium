@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.notification.LocalNotification
-import com.wire.kalium.logic.feature.message.GetNotificationsUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -31,7 +30,6 @@ import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 
 internal interface MessageRepositoryArrangement {
     @Mock
@@ -56,6 +54,12 @@ internal interface MessageRepositoryArrangement {
     )
 
     fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>)
+
+    fun withMoveMessagesToAnotherConversation(
+        result: Either<StorageFailure, Unit>,
+        originalConversation: Matcher<ConversationId> = any(),
+        targetConversation: Matcher<ConversationId> = any()
+    )
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
@@ -88,7 +92,7 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
         result: Either<StorageFailure, Unit>,
         messageID: Matcher<String>,
         conversationId: Matcher<ConversationId>
-    )  {
+    ) {
         given(messageRepository)
             .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(messageID, conversationId)
@@ -100,5 +104,16 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
             .suspendFunction(messageRepository::getNotificationMessage)
             .whenInvokedWith(any())
             .thenReturn(list)
+    }
+
+    override fun withMoveMessagesToAnotherConversation(
+        result: Either<StorageFailure, Unit>,
+        originalConversation: Matcher<ConversationId>,
+        targetConversation: Matcher<ConversationId>
+    ) {
+        given(messageRepository)
+            .suspendFunction(messageRepository::moveMessagesToAnotherConversation)
+            .whenInvokedWith(originalConversation, targetConversation)
+            .thenReturn(result)
     }
 }
