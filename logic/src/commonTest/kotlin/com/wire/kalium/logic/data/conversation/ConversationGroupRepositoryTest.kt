@@ -87,70 +87,68 @@ import kotlin.test.assertIs
 class ConversationGroupRepositoryTest {
 
     @Test
-    fun givenSelfUserBelongsToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() =
-        runTest {
-            val (arrangement, conversationGroupRepository) = Arrangement()
-                .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
-                .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
-                .withInsertConversationSuccess()
-                .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
-                .withSuccessfulNewConversationGroupStartedHandled()
-                .withSuccessfulNewConversationMemberHandled()
-                .arrange()
+    fun givenSelfUserBelongsToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .arrange()
 
-            val result = conversationGroupRepository.createGroupConversation(
-                GROUP_NAME,
-                listOf(TestUser.USER_ID),
-                ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
-            )
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
 
-            result.shouldSucceed()
+        result.shouldSucceed()
 
-            with(arrangement) {
-                verify(conversationDAO)
-                    .suspendFunction(conversationDAO::insertConversation)
-                    .with(anything())
-                    .wasInvoked(once)
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(anything())
+                .wasInvoked(once)
 
-                verify(newConversationMembersRepository)
-                    .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
-                    .with(anything(), anything())
-                    .wasInvoked(once)
-            }
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .with(anything(), anything())
+                .wasInvoked(once)
         }
+    }
 
     @Test
-    fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() =
-        runTest {
-            val (arrangement, conversationGroupRepository) = Arrangement()
-                .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
-                .withSelfTeamId(Either.Right(null))
-                .withInsertConversationSuccess()
-                .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
-                .withSuccessfulNewConversationGroupStartedHandled()
-                .withSuccessfulNewConversationMemberHandled()
-                .arrange()
+    fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .arrange()
 
-            val result = conversationGroupRepository.createGroupConversation(
-                GROUP_NAME,
-                listOf(TestUser.USER_ID),
-                ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
-            )
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
 
-            result.shouldSucceed()
+        result.shouldSucceed()
 
-            with(arrangement) {
-                verify(conversationDAO)
-                    .suspendFunction(conversationDAO::insertConversation)
-                    .with(anything())
-                    .wasInvoked(once)
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(anything())
+                .wasInvoked(once)
 
-                verify(newConversationMembersRepository)
-                    .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
-                    .with(anything(), anything())
-                    .wasInvoked(once)
-            }
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .with(anything(), anything())
+                .wasInvoked(once)
         }
+    }
 
     @Test
     fun givenMLSProtocolIsUsed_whenCallingCreateGroupConversation_thenMLSGroupIsEstablished() = runTest {
@@ -502,38 +500,37 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenProteusConversation_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() =
-        runTest {
-            val code = "code"
-            val key = "key"
-            val uri = null
-            val password = null
+    fun givenProteusConversation_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
+        val code = "code"
+        val key = "key"
+        val uri = null
+        val password = null
 
-            val (arrangement, conversationGroupRepository) = Arrangement()
-                .withConversationDetailsById(TestConversation.CONVERSATION)
-                .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
-                .withJoinConversationAPIResponse(
-                    code,
-                    key,
-                    uri,
-                    NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204)
-                )
-                .withSuccessfulHandleMemberJoinEvent()
-                .arrange()
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withJoinConversationAPIResponse(
+                code,
+                key,
+                uri,
+                NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204)
+            )
+            .withSuccessfulHandleMemberJoinEvent()
+            .arrange()
 
-            conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
-                .shouldSucceed()
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
+            .shouldSucceed()
 
-            verify(arrangement.conversationApi)
-                .suspendFunction(arrangement.conversationApi::joinConversation)
-                .with(eq(code), eq(key), eq(uri))
-                .wasInvoked(exactly = once)
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::joinConversation)
+            .with(eq(code), eq(key), eq(uri))
+            .wasInvoked(exactly = once)
 
-            verify(arrangement.memberJoinEventHandler)
-                .suspendFunction(arrangement.memberJoinEventHandler::handle)
-                .with(any())
-                .wasNotInvoked()
-        }
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(any())
+            .wasNotInvoked()
+    }
 
     @Test
     fun givenCodeAndKey_whenFetchingLimitedConversationInfo_thenApiIsCalled() = runTest {
@@ -721,52 +718,51 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
-        runTest {
-            val failedDomain = "unstableDomain1.com"
-            // given
-            val (arrangement, conversationGroupRepository) = Arrangement()
-                .withConversationDetailsById(TestConversation.CONVERSATION)
-                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
-                .withFetchUsersIfUnknownByIdsSuccessful()
-                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
-                    arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, API_SUCCESS_MEMBER_ADDED)
-                )
-                .withSuccessfulHandleMemberJoinEvent()
-                .withInsertFailedToAddSystemMessageSuccess()
-                .arrange()
-
-            // when
-            val expectedInitialUsers = listOf(
-                TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID
+    fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() = runTest {
+        val failedDomain = "unstableDomain1.com"
+        // given
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withFetchUsersIfUnknownByIdsSuccessful()
+            .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, API_SUCCESS_MEMBER_ADDED)
             )
-            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+            .withSuccessfulHandleMemberJoinEvent()
+            .withInsertFailedToAddSystemMessageSuccess()
+            .arrange()
 
-            // then
-            val expectedFullUserIdsForRequestCount = 2
-            val expectedValidUsersCount = 1
-            verify(arrangement.conversationApi)
-                .suspendFunction(arrangement.conversationApi::addMember)
-                .with(matching {
-                    it.users.size == expectedFullUserIdsForRequestCount
-                }).wasInvoked(exactly = once)
+        // when
+        val expectedInitialUsers = listOf(
+            TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID
+        )
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
 
-            verify(arrangement.conversationApi)
-                .suspendFunction(arrangement.conversationApi::addMember)
-                .with(matching {
-                    it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
-                }).wasInvoked(exactly = once)
+        // then
+        val expectedFullUserIdsForRequestCount = 2
+        val expectedValidUsersCount = 1
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::addMember)
+            .with(matching {
+                it.users.size == expectedFullUserIdsForRequestCount
+            }).wasInvoked(exactly = once)
 
-            verify(arrangement.memberJoinEventHandler)
-                .suspendFunction(arrangement.memberJoinEventHandler::handle)
-                .with(anything())
-                .wasInvoked(exactly = once)
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::addMember)
+            .with(matching {
+                it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
+            }).wasInvoked(exactly = once)
 
-            verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
-                .with(anything(), matching { it.size == expectedValidUsersCount })
-                .wasInvoked(exactly = once)
-        }
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(anything())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            .with(anything(), matching { it.size == expectedValidUsersCount })
+            .wasInvoked(exactly = once)
+    }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
