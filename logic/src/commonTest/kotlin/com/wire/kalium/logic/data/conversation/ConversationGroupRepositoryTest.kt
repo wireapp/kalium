@@ -718,51 +718,52 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() = runTest {
-        val failedDomain = "unstableDomain1.com"
-        // given
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
-            .withFetchUsersIfUnknownByIdsSuccessful()
-            .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
-                arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, API_SUCCESS_MEMBER_ADDED)
+    fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
+        runTest {
+            val failedDomain = "unstableDomain1.com"
+            // given
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                    arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, API_SUCCESS_MEMBER_ADDED)
+                )
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .arrange()
+
+            // when
+            val expectedInitialUsers = listOf(
+                TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID
             )
-            .withSuccessfulHandleMemberJoinEvent()
-            .withInsertFailedToAddSystemMessageSuccess()
-            .arrange()
+            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
 
-        // when
-        val expectedInitialUsers = listOf(
-            TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID
-        )
-        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+            // then
+            val expectedFullUserIdsForRequestCount = 2
+            val expectedValidUsersCount = 1
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(matching {
+                    it.users.size == expectedFullUserIdsForRequestCount
+                }).wasInvoked(exactly = once)
 
-        // then
-        val expectedFullUserIdsForRequestCount = 2
-        val expectedValidUsersCount = 1
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::addMember)
-            .with(matching {
-                it.users.size == expectedFullUserIdsForRequestCount
-            }).wasInvoked(exactly = once)
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(matching {
+                    it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
+                }).wasInvoked(exactly = once)
 
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::addMember)
-            .with(matching {
-                it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
-            }).wasInvoked(exactly = once)
+            verify(arrangement.memberJoinEventHandler)
+                .suspendFunction(arrangement.memberJoinEventHandler::handle)
+                .with(anything())
+                .wasInvoked(exactly = once)
 
-        verify(arrangement.memberJoinEventHandler)
-            .suspendFunction(arrangement.memberJoinEventHandler::handle)
-            .with(anything())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
-            .with(anything(), matching { it.size == expectedValidUsersCount })
-            .wasInvoked(exactly = once)
-    }
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), matching { it.size == expectedValidUsersCount })
+                .wasInvoked(exactly = once)
+        }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
