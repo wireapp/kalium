@@ -116,6 +116,8 @@ internal class ConversationGroupRepositoryImpl(
                     if (apiResult.value.hasUnreachableDomainsError && canRetryOnce) {
                         val error = apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
                         val (validUsers, failedUsers) = usersList.partition { !error.domains.contains(it.domain) }
+                        if (failedUsers.isEmpty()) Either.Left(apiResult.value) // in case backend goes 🍌 and returns non-matching domains
+
                         createGroupConversation(name, validUsers, options, failedUsers)
                     } else {
                         Either.Left(apiResult.value)
