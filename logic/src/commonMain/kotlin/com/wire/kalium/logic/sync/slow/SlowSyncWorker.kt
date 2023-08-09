@@ -86,13 +86,10 @@ internal class SlowSyncWorkerImpl(
         slowSyncStep: SlowSyncStep,
         step: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Unit> {
-        println("test performStep $slowSyncStep")
         // Check for cancellation
         currentCoroutineContext().ensureActive()
-        println("after test performStep")
 
         emit(slowSyncStep)
-        println("after emit test performStep")
         return step()
     }
 }

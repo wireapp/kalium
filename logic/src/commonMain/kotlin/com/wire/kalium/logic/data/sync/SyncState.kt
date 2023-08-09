@@ -25,7 +25,7 @@ sealed class SyncState {
     /**
      * Sync hasn't started yet.
      */
-    data object Waiting : SyncState()
+    object Waiting : SyncState()
 
     /**
      * Fetching all initial data:
@@ -37,19 +37,19 @@ sealed class SyncState {
      * - All team members (if user belongs to a team)
      * - Details of all other users discovered in past steps
      */
-    data object SlowSync : SyncState()
+    object SlowSync : SyncState()
 
     /**
      * Is fetching events lost while this client was offline.
      * Implies that [SlowSync] is done.
      */
-    data object GatheringPendingEvents : SyncState()
+    object GatheringPendingEvents : SyncState()
 
     /**
      * Is processing events, connected to the server and receiving real-time events.
      * This implies that [GatheringPendingEvents] is done.
      */
-    data object Live : SyncState()
+    object Live : SyncState()
 
     /**
      * Sync was not completed due to a failure.
