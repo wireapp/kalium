@@ -23,19 +23,17 @@ import kotlinx.datetime.Instant
 data class E2EISettings(
     val isRequired: Boolean,
     val discoverUrl: String,
-    val notifyUserAfter: Instant?,
     val gracePeriodEnd: Instant?
 ) {
 
     fun toEntity() = E2EISettingsEntity(
-        isRequired, discoverUrl, notifyUserAfter?.toEpochMilliseconds(), gracePeriodEnd?.toEpochMilliseconds()
+        isRequired, discoverUrl, gracePeriodEnd?.toEpochMilliseconds()
     )
 
     companion object {
         fun fromEntity(entity: E2EISettingsEntity) = E2EISettings(
             entity.status,
             entity.discoverUrl,
-            entity.notifyUserAfterMs?.let { Instant.fromEpochMilliseconds(it) },
             entity.gracePeriodEndMs?.let { Instant.fromEpochMilliseconds(it) },
         )
     }
