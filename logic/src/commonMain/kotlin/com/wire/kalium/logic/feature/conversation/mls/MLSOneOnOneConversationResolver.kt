@@ -29,12 +29,12 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 
 /**
- * Use case that will return an existing MLS-capable
- * one-on-one conversation or establish a new one.
+ * Attempts to find an existing MLS-capable one-on-one conversation,
+ * or creates a new one if none is found.
  * In case the conversation already exists, but it's not established yet
  * (see [GroupState.ESTABLISHED]), it will attempt to join it, returning failure if it fails.
  */
-internal interface GetOrEstablishMLSOneToOneUseCase {
+internal interface MLSOneOnOneConversationResolver {
     /**
      * Attempts to find an existing MLS-capable one-on-one conversation,
      * or creates a new one if none is found.
@@ -45,10 +45,10 @@ internal interface GetOrEstablishMLSOneToOneUseCase {
     suspend operator fun invoke(userId: UserId): Either<CoreFailure, ConversationId>
 }
 
-internal class GetOrEstablishMLSOneToOneUseCaseImpl(
+internal class MLSOneOnOneConversationResolverImpl(
     private val conversationRepository: ConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
-) : GetOrEstablishMLSOneToOneUseCase {
+) : MLSOneOnOneConversationResolver {
 
     override suspend fun invoke(userId: UserId): Either<CoreFailure, ConversationId> =
         conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
