@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -245,7 +244,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .wasInvoked(once)
         }
 
-//    @Test
+    @Test
     fun givenAGroupConversation_whenPersistingMembersAndSomeFailed_ThenShouldCreateASystemMessageForStartedWithAndFailedToAdd() =
         runTest {
             val (arrangement, sysMessageCreator) = Arrangement()
@@ -255,7 +254,8 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
-                TestConversation.CONVERSATION_RESPONSE
+                TestConversation.CONVERSATION_RESPONSE,
+                listOf(TestUser.USER_ID)
             )
 
             result.shouldSucceed()

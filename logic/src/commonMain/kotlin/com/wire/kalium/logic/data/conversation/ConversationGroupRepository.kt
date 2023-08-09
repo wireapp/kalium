@@ -135,7 +135,7 @@ internal class ConversationGroupRepositoryImpl(
                         newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
                     }.flatMap {
                         newConversationMembersRepository.persistMembersAdditionToTheConversation(
-                            conversationEntity.id, conversationResponse
+                            conversationEntity.id, conversationResponse, failedUsersList
                         ).flatMap {
                             when (protocol) {
                                 is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
