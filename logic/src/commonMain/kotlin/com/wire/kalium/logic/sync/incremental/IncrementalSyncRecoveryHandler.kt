@@ -29,7 +29,7 @@ internal interface IncrementalSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback)
 }
 
-internal interface OnIncrementalSyncRetryCallback {
+internal fun interface OnIncrementalSyncRetryCallback {
     suspend fun retry()
 }
 

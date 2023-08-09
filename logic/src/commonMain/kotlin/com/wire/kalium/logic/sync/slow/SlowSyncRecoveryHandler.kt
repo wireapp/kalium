@@ -28,7 +28,7 @@ internal interface SlowSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onSlowSyncRetryCallback: OnSlowSyncRetryCallback)
 }
 
-internal interface OnSlowSyncRetryCallback {
+internal fun interface OnSlowSyncRetryCallback {
     suspend fun retry()
 }
 
