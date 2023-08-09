@@ -57,7 +57,8 @@ interface ConversationGroupRepository {
     suspend fun createGroupConversation(
         name: String? = null,
         usersList: List<UserId>,
-        options: ConversationOptions = ConversationOptions()
+        options: ConversationOptions = ConversationOptions(),
+        failedUsersList: List<UserId> = emptyList()
     ): Either<CoreFailure, Conversation>
 
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -99,7 +100,8 @@ internal class ConversationGroupRepositoryImpl(
     override suspend fun createGroupConversation(
         name: String?,
         usersList: List<UserId>,
-        options: ConversationOptions
+        options: ConversationOptions,
+        failedUsersList: List<UserId>
     ): Either<CoreFailure, Conversation> =
         teamIdProvider().flatMap { selfTeamId ->
             val apiResult = wrapApiRequest {
@@ -110,9 +112,11 @@ internal class ConversationGroupRepositoryImpl(
 
             when (apiResult) {
                 is Either.Left -> {
-                    if (apiResult.value.hasUnreachableDomainsError) {
+                    val canRetryOnce = failedUsersList.isEmpty()
+                    if (apiResult.value.hasUnreachableDomainsError && canRetryOnce) {
                         val error = apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
-                        TODO("retry")
+                        val (validUsers, failedUsers) = usersList.partition { !error.domains.contains(it.domain) }
+                        createGroupConversation(name, validUsers, options, failedUsers)
                     } else {
                         Either.Left(apiResult.value)
                     }
