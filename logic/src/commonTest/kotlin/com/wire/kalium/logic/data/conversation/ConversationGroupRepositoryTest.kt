@@ -1092,11 +1092,7 @@ class ConversationGroupRepositoryTest {
         }
 
         fun withSuccessfulNewConversationGroupStartedHandled() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(
-                    newGroupConversationSystemMessagesCreator::conversationStarted,
-                    fun1<ConversationEntity>()
-                )
+            given(newGroupConversationSystemMessagesCreator).suspendFunction(newGroupConversationSystemMessagesCreator::conversationStarted, fun1<ConversationEntity>())
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
@@ -1108,19 +1104,18 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withUpdateMessageTimerAPISuccess(event: EventContentDTO.Conversation.MessageTimerUpdate): Arrangement =
-            apply {
-                given(conversationApi)
-                    .suspendFunction(conversationApi::updateMessageTimer)
-                    .whenInvokedWith(any(), any())
-                    .thenReturn(
-                        NetworkResponse.Success(
-                            event,
-                            emptyMap(),
-                            HttpStatusCode.NoContent.value
-                        )
+        fun withUpdateMessageTimerAPISuccess(event: EventContentDTO.Conversation.MessageTimerUpdate): Arrangement = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::updateMessageTimer)
+                .whenInvokedWith(any(), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        event,
+                        emptyMap(),
+                        HttpStatusCode.NoContent.value
                     )
-            }
+                )
+        }
 
         fun withUpdateMessageTimerAPIFailed() = apply {
             given(conversationApi)
