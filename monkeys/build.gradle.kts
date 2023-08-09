@@ -68,6 +68,22 @@ sourceSets {
         }
     }
 
+    val test by getting {
+        dependencies {
+            implementation(kotlin("test"))
+
+            // coroutines
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
+
+            // mocking
+            implementation(libs.mockative.runtime)
+            implementation(libs.okio.test)
+            implementation(libs.settings.kmpTest)
+            implementation(libs.mockk)
+        }
+    }
+
     tasks.withType<JavaExec> {
         jvmArgs = listOf("-Djava.library.path=/usr/local/lib/:./native/libs")
     }

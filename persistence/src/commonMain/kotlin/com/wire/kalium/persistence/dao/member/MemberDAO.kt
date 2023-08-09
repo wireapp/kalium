@@ -41,7 +41,6 @@ interface MemberDAO {
     suspend fun insertMembers(memberList: List<MemberEntity>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
-    suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String)
     suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>>
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role)
     suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
@@ -112,14 +111,6 @@ internal class MemberDAOImpl internal constructor(
                 memberQueries.deleteMember(conversationID, it)
             }
         }
-
-    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) {
-        withContext(coroutineContext) {
-            conversationsQueries.selectByGroupId(groupId).executeAsOneOrNull()?.let {
-                nonSuspendDeleteMembersByQualifiedID(userIDList, it.qualifiedId)
-            }
-        }
-    }
 
     override suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID)
