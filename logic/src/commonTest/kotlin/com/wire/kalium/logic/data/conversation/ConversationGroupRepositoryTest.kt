@@ -89,7 +89,7 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenSelfUserBelongsToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
@@ -121,7 +121,7 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
@@ -151,10 +151,59 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenOneRetryIsExecutedWithValidUsersOnce() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(
+                arrayOf(
+                    FEDERATION_ERROR_UNREACHABLE_DOMAINS,
+                    NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)
+                )
+            )
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .arrange()
+
+        val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID, unreachableUserId),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        with(arrangement) {
+            verify(conversationApi)
+                .suspendFunction(conversationApi::createNewConversation)
+                .with(matching { it.qualifiedUsers?.size == 2 })
+                .wasInvoked(once)
+
+            verify(conversationApi)
+                .suspendFunction(conversationApi::createNewConversation)
+                .with(matching { it.qualifiedUsers?.size == 1 })
+                .wasInvoked(once)
+
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(anything())
+                .wasInvoked(once)
+
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .with(anything(), anything(), eq(listOf(unreachableUserId)))
+                .wasInvoked(once)
+        }
+    }
+
+    @Test
     fun givenMLSProtocolIsUsed_whenCallingCreateGroupConversation_thenMLSGroupIsEstablished() = runTest {
         val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withCreateNewConversationAPI(NetworkResponse.Success(conversationResponse, emptyMap(), 201))
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withMlsConversationEstablished()
@@ -827,11 +876,14 @@ class ConversationGroupRepositoryTest {
             return this
         }
 
-        fun withCreateNewConversationAPI(result: NetworkResponse<ConversationResponse>): Arrangement = apply {
+        /**
+         * Mocks a sequence of [NetworkResponse]s for [ConversationApi.createNewConversation].
+         */
+        fun withCreateNewConversationAPIResponses(result: Array<NetworkResponse<ConversationResponse>>): Arrangement = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::createNewConversation)
                 .whenInvokedWith(anything())
-                .thenReturn(result)
+                .thenReturnSequentially(*result)
         }
 
         fun withSelfTeamId(result: Either<StorageFailure, TeamId?>): Arrangement = apply {
