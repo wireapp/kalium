@@ -247,7 +247,6 @@ sealed interface Message {
 
             return properties.toMap()
         }
-
     }
 
     data class System(
@@ -268,7 +267,6 @@ sealed interface Message {
         }
 
         fun toLogMap(): Map<String, Any?> {
-
             val typeKey = "type"
             val properties: MutableMap<String, String> = when (content) {
                 is MessageContent.MemberChange -> mutableMapOf(
@@ -344,24 +342,42 @@ sealed interface Message {
 
     sealed class Status {
 
-        object Pending : Status()
-        object Sent : Status()
+        private companion object {
+            const val statusKey = "status"
+            const val readCountKey = "readCount"
+        }
 
-        object Delivered : Status()
+        open fun toLogString(): String {
+            return "${toLogMap().toJsonElement()}"
+        }
 
-        data class Read(val readCount: Long) : Status()
+        open fun toLogMap(): Map<String, Any?> = mapOf(statusKey to "Status.Unknown")
 
-        object Failed : Status()
+        data object Pending : Status() {
+            override fun toLogMap() = mapOf(statusKey to "Status.Pending")
+        }
 
-        object FailedRemotely : Status()
+        data object Sent : Status() {
+            override fun toLogMap() = mapOf(statusKey to "Status.Sent")
+        }
 
-        override fun toString(): String = when (this) {
-            Pending -> "PENDING"
-            Sent -> "SENT"
-            Delivered -> "DELIVERED"
-            is Read -> "READ_COUNT@$readCount"
-            Failed -> "FAILED"
-            FailedRemotely -> "FAILED_REMOTELY"
+        data object Delivered : Status() {
+            override fun toLogMap() = mapOf(statusKey to "Status.Delivered")
+        }
+
+        data class Read(val readCount: Long) : Status() {
+            override fun toLogMap() = mapOf(
+                statusKey to "Status.Read",
+                readCountKey to "$readCount"
+            )
+        }
+
+        data object Failed : Status() {
+            override fun toLogMap() = mapOf(statusKey to "Status.Failed")
+        }
+
+        data object FailedRemotely : Status() {
+            override fun toLogMap() = mapOf(statusKey to "Status.FailedRemotely")
         }
     }
 
