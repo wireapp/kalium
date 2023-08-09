@@ -74,6 +74,7 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -151,7 +152,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenOneRetryIsExecutedWithValidUsersOnce() = runTest {
+    fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenRetryIsExecutedWithValidUsersOnly() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPIResponses(
                 arrayOf(
@@ -167,7 +168,6 @@ class ConversationGroupRepositoryTest {
             .arrange()
 
         val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
-
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID, unreachableUserId),
@@ -196,6 +196,49 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything(), eq(listOf(unreachableUserId)))
                 .wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenRetryIsExecutedWithValidUsersOnlyOnce() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(
+                arrayOf(
+                    FEDERATION_ERROR_UNREACHABLE_DOMAINS,
+                    FEDERATION_ERROR_UNREACHABLE_DOMAINS,
+                )
+            )
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .arrange()
+
+        val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID, unreachableUserId),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldFail()
+
+        with(arrangement) {
+            verify(conversationApi)
+                .suspendFunction(conversationApi::createNewConversation)
+                .with(any())
+                .wasInvoked(twice)
+
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(anything())
+                .wasNotInvoked()
+
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .with(anything(), anything())
+                .wasNotInvoked()
         }
     }
 
