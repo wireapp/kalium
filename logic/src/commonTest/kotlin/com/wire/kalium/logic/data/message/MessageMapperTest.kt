@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
@@ -34,7 +36,7 @@ class MessageMapperTest {
     @Test
     fun givenRegularMessageEntityWithDeliveredStatus_whenMapping_thenTheMessageHasExpectedData() {
         // given / when
-        val result = arrangement.withRegularMessage(
+        val result = arrangement.withRegularMessageEntity(
             status = MessageEntity.Status.DELIVERED
         )
 
@@ -45,7 +47,7 @@ class MessageMapperTest {
     @Test
     fun givenRegularMessageEntityWithReadStatus_whenMapping_thenTheMessageHasExpectedData() {
         // given / when
-        val result = arrangement.withRegularMessage(
+        val result = arrangement.withRegularMessageEntity(
             status = MessageEntity.Status.READ,
             readCount = 10
         )
@@ -54,12 +56,35 @@ class MessageMapperTest {
         assertEquals(result.status, Message.Status.Read(10))
     }
 
+    @Test
+    fun givenRegularMessageWithReadStatus_whenMapping_thenTheMessageHasExpectedData() {
+        // given / when
+        val result = arrangement.withRegularMessage(
+            status = Message.Status.Read(10)
+        )
+
+        // then
+        assertEquals(result.status, MessageEntity.Status.READ)
+        assertEquals(result.readCount, 10)
+    }
+
+    @Test
+    fun givenRegularMessageWithDeliveredStatus_whenMapping_thenTheMessageHasExpectedData() {
+        // given / when
+        val result = arrangement.withRegularMessage(
+            status = Message.Status.Delivered
+        )
+
+        // then
+        assertEquals(result.status, MessageEntity.Status.DELIVERED)
+    }
+
     class Arrangement {
 
         private val messageMapper = MessageMapperImpl(UserId(value = "someValue", "someDomain"))
 
         @Suppress("LongParameterList")
-        fun withRegularMessage(
+        fun withRegularMessageEntity(
             id: String = "someId",
             conversationId: QualifiedIDEntity = QualifiedIDEntity("someId", "someDomain"),
             date: Instant = Instant.DISTANT_PAST,
@@ -97,6 +122,45 @@ class MessageMapperTest {
                     reactions,
                     expectsReadConfirmation,
                     deliveryStatus
+                )
+            )
+        }
+
+        @Suppress("LongParameterList")
+        fun withRegularMessage(
+            id: String = "someId",
+            content: MessageContent.Regular = MessageContent.Text("someText"),
+            conversationId: ConversationId = ConversationId("someValue", "someDomain"),
+            date: String = Instant.DISTANT_PAST.toString(),
+            senderUserId: UserId = UserId(value = "someValue", "someDomain"),
+            status: Message.Status = Message.Status.Sent,
+            visibility: Message.Visibility = Message.Visibility.VISIBLE,
+            senderUserName: String? = null,
+            isSelfMessage: Boolean = false,
+            senderClientId: ClientId = ClientId("someValue"),
+            editStatus: Message.EditStatus = Message.EditStatus.NotEdited,
+            expirationData: Message.ExpirationData? = null,
+            reactions: Message.Reactions = Message.Reactions.EMPTY,
+            expectsReadConfirmation: Boolean = false,
+            deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
+        ): MessageEntity {
+            return messageMapper.fromMessageToEntity(
+                message = Message.Regular(
+                    id = id,
+                    content = content,
+                    conversationId = conversationId,
+                    date = date,
+                    senderUserId = senderUserId,
+                    status = status,
+                    visibility = visibility,
+                    senderUserName = senderUserName,
+                    isSelfMessage = isSelfMessage,
+                    senderClientId = senderClientId,
+                    editStatus = editStatus,
+                    expirationData = expirationData,
+                    reactions = reactions,
+                    expectsReadConfirmation = expectsReadConfirmation,
+                    deliveryStatus = deliveryStatus
                 )
             )
         }

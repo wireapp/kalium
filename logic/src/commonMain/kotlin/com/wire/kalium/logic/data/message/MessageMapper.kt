@@ -68,8 +68,7 @@ class MessageMapperImpl(
 
     private fun mapFromRegularMessage(
         message: Message.Regular
-    ) =
-        MessageEntity.Regular(
+    ) = MessageEntity.Regular(
             id = message.id,
             content = toMessageEntityContent(message.content),
             conversationId = message.conversationId.toDao(),
