@@ -50,7 +50,7 @@ internal class ReceiptMessageHandlerImpl(
         // and we can squish some performance by skipping it completely
         if (message.senderUserId == selfUserId) return
 
-        updateMessageStatus(messageContent, message)
+        updateMessagesStatus(messageContent, message)
 
         receiptRepository.persistReceipts(
             userId = message.senderUserId,
@@ -61,7 +61,7 @@ internal class ReceiptMessageHandlerImpl(
         )
     }
 
-    private suspend fun updateMessageStatus(
+    private suspend fun updateMessagesStatus(
         messageContent: MessageContent.Receipt,
         message: Message.Signaling
     ) {
