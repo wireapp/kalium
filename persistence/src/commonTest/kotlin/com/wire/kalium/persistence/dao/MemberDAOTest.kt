@@ -150,8 +150,8 @@ class MemberDAOTest : BaseDatabaseTest() {
             conversationID = conversationEntity1.id
         )
 
-        assertEquals(
-            listOf(), memberDAO.observeConversationMembers(conversationEntity1.id).first()
+        assertTrue(
+           memberDAO.observeConversationMembers(conversationEntity1.id).first().isEmpty()
         )
     }
 
