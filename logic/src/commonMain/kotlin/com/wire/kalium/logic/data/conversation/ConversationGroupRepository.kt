@@ -215,7 +215,7 @@ internal class ConversationGroupRepositoryImpl(
         return when (apiResult) {
             is Either.Left -> {
                 val canRetryOnce = failedUsersList.isEmpty()
-                if (apiResult.value.hasUnreachableDomainsError && canRetryOnce) {
+                if ((apiResult.value.hasUnreachableDomainsError || apiResult.value.hasConflictingDomainsError) && canRetryOnce) {
                     val error = apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
                     val (validUsers, failedUsers) = userIdList.partition { !error.domains.contains(it.domain) }
                     if (failedUsers.isEmpty()) Either.Left(apiResult.value) // in case backend goes 🍌 and returns non-matching domains
