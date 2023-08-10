@@ -93,8 +93,8 @@ internal class PrekeyApiV0Test : ApiTest() {
                     |{
                     |  "prekeys": [
                     |    {
-                    |      "id": ${preKeyDTO.key},
-                    |      "key": "${preKeyDTO.id}"
+                    |      "id": ${preKeyDTO.id},
+                    |      "key": "${preKeyDTO.key}"
                     |    }
                     |  ]
                     |}
@@ -103,7 +103,7 @@ internal class PrekeyApiV0Test : ApiTest() {
             }
         )
         val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
-        val response = preKeyApi.uploadNewPrekeys("clientId", listOf())
+        val response = preKeyApi.uploadNewPrekeys("clientId", listOf(preKeyDTO))
         assertTrue(response.isSuccessful())
     }
 
