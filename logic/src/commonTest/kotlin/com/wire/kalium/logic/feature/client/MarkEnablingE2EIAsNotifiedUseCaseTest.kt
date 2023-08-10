@@ -65,7 +65,7 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
     fun whenMarkAsNotifiedIsCalledWithMoreThen1Hour_thenSnoozeIsCalledWith1Hour() = runTest {
         val (arrangement, useCase) = Arrangement().arrange()
 
-        useCase(1.hours)
+        useCase(2.hours)
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
