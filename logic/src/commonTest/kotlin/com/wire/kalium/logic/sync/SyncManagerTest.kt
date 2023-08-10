@@ -39,6 +39,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -151,6 +152,76 @@ class SyncManagerTest {
 
             result.await().shouldFail()
         }
+
+    @Test
+    fun givenSlowSyncFailed_whenWaitingUntilStartedOrFailure_thenShouldReturnFailure() = runTest {
+        val (arrangement, syncManager) = Arrangement().arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(CoreFailure.MissingClientRegistration))
+
+        val result = syncManager.waitUntilStartedOrFailure()
+
+        result.shouldFail()
+    }
+
+    @Test
+    fun givenSlowSyncOngoing_whenWaitingUntilStartedOrFailure_thenShouldReturnSuccess() = runTest {
+        val (arrangement, syncManager) = Arrangement().arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(SlowSyncStep.CONNECTIONS))
+
+        val result = syncManager.waitUntilStartedOrFailure()
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenSlowSyncComplete_whenWaitingUntilStartedOrFailure_thenShouldReturnSuccess() = runTest {
+        val (arrangement, syncManager) = Arrangement().arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+        val result = syncManager.waitUntilStartedOrFailure()
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenSlowSyncRepositoryReturnsOngoingState_whenCallingIsSlowSyncOngoing_thenReturnTrue() = runTest {
+        val (arrangement, syncManager) = Arrangement().arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(SlowSyncStep.CONNECTIONS))
+
+        val result = syncManager.isSlowSyncOngoing()
+
+        assertTrue { result }
+    }
+
+    @Test
+    fun givenSlowSyncRepositoryReturnsDifferentStateThanOngoing_whenCallingIsSlowSyncOngoing_thenReturnFalse() = runTest {
+        val (arrangement, syncManager) = Arrangement().arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+
+        val result = syncManager.isSlowSyncOngoing()
+
+        assertFalse { result }
+    }
+
+    @Test
+    fun givenSlowSyncRepositoryReturnsCompleteState_whenCallingIsSlowSyncCompleted_thenReturnTrue() = runTest {
+        val (arrangement, syncManager) = Arrangement().arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Complete)
+
+        val result = syncManager.isSlowSyncCompleted()
+
+        assertTrue { result }
+    }
+
+    @Test
+    fun givenSlowSyncRepositoryReturnsDifferentStateThanComplete_whenCallingIsSlowSyncCompleted_thenReturnFalse() = runTest {
+        val (arrangement, syncManager) = Arrangement().arrange()
+        arrangement.slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Pending)
+
+        val result = syncManager.isSlowSyncCompleted()
+
+        assertFalse { result }
+    }
 
     @Suppress("unused")
     private class Arrangement {

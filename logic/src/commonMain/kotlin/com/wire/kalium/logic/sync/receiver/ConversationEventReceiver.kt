@@ -104,10 +104,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.ConversationMessageTimer -> {
-                conversationMessageTimerEventHandler.handle(event)
-                Either.Right(Unit)
-            }
+            is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
         }
     }
 }

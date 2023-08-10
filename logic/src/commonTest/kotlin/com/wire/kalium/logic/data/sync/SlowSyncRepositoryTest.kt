@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.sync
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -30,6 +29,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class SlowSyncRepositoryTest {
@@ -59,7 +59,6 @@ class SlowSyncRepositoryTest {
         assertEquals(version, slowSyncRepository.getSlowSyncVersion())
     }
 
-    @IgnoreIOS // TODO investigate why test is failing
     @Test
     fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest(testDispatcher) {
         // Empty Given
@@ -69,9 +68,6 @@ class SlowSyncRepositoryTest {
         assertNull(lastSyncInstant)
     }
 
-    // TODO: Re-enable once we can update Turbine to 0.11.0+ (Requires Kotlin 1.6.21+)
-    // @Ignore
-    @IgnoreIOS // TODO investigate why test is failing
     @Test
     fun givenAnInstantIsUpdated_whenObservingTheLastSlowSyncInstant_thenTheNewStateIsPropagatedForObservers() = runTest(testDispatcher) {
         val firstInstant = DateTimeUtil.currentInstant()
@@ -131,5 +127,14 @@ class SlowSyncRepositoryTest {
         val currentState = slowSyncRepository.needsToRecoverMLSGroups()
 
         assertEquals(newStatus, currentState)
+    }
+
+    @Test
+    fun givenMetaDataDao_whenClearLastSlowSyncCompletionInstantIsCalled_thenInvokeDeleteValueOnce() = runTest(testDispatcher) {
+        slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
+
+        val result = slowSyncRepository.needsToPersistHistoryLostMessage()
+
+        assertTrue { result }
     }
 }
