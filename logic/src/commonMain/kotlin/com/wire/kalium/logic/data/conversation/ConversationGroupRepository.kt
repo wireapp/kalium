@@ -94,7 +94,6 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
-    private val addingMembersFailureMapper: AddingMembersFailureMapper = MapperProvider.addingMembersFailureMapper(),
 ) : ConversationGroupRepository {
 
     override suspend fun createGroupConversation(
@@ -203,7 +202,7 @@ internal class ConversationGroupRepositoryImpl(
     private suspend fun tryAddMembersToCloudAndStorage(
         userIdList: List<UserId>,
         conversationId: ConversationId,
-        previousUserIdsExcluded: Set<UserId> = emptySet(),
+        failedUsersList: Set<UserId> = emptySet(),
     ): Either<CoreFailure, Unit> {
         val apiResult = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
@@ -215,16 +214,14 @@ internal class ConversationGroupRepositoryImpl(
 
         return when (apiResult) {
             is Either.Left -> {
-                if (apiResult.value.hasUnreachableDomainsError) {
-                    val usersReqState = addingMembersFailureMapper.mapToUsersRequestState(
-                        userIdList,
-                        apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains,
-                        previousUserIdsExcluded
-                    )
+                val canRetryOnce = failedUsersList.isEmpty()
+                if (apiResult.value.hasUnreachableDomainsError && canRetryOnce) {
+                    val error = apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
+                    val (validUsers, failedUsers) = userIdList.partition { !error.domains.contains(it.domain) }
+                    if (failedUsers.isEmpty()) Either.Left(apiResult.value) // in case backend goes 🍌 and returns non-matching domains
+
                     // retry adding, only with filtered available members to the conversation
-                    tryAddMembersToCloudAndStorage(
-                        usersReqState.usersThatCanBeAdded.toList(), conversationId, usersReqState.usersThatCannotBeAdded
-                    )
+                    tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
                 } else {
                     Either.Left(apiResult.value)
                 }
@@ -236,9 +233,9 @@ internal class ConversationGroupRepositoryImpl(
                         eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true)
                     )
                 }
-                if (previousUserIdsExcluded.isNotEmpty()) {
+                if (failedUsersList.isNotEmpty()) {
                     newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                        conversationId, previousUserIdsExcluded
+                        conversationId, failedUsersList
                     )
                 }
                 Either.Right(Unit)
