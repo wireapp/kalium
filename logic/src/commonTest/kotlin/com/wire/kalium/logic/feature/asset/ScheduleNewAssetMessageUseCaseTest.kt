@@ -102,7 +102,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetName = assetName,
             assetMimeType = "text/plain",
             assetWidth = null,
-            assetHeight = null
+            assetHeight = null,
+            audioLengthInMs = 0
         )
         advanceUntilIdle()
 
@@ -134,7 +135,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetName = assetName,
                 assetMimeType = "text/plain",
                 assetWidth = null,
-                assetHeight = null
+                assetHeight = null,
+                audioLengthInMs = 0
             )
             advanceUntilIdle()
 
@@ -166,7 +168,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetName = assetName,
                 assetMimeType = "text/plain",
                 assetWidth = null,
-                assetHeight = null
+                assetHeight = null,
+                audioLengthInMs = 0
             )
             advanceUntilIdle()
 
@@ -205,7 +208,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetName = assetName,
             assetMimeType = "text/plain",
             assetWidth = null,
-            assetHeight = null
+            assetHeight = null,
+            audioLengthInMs = 0
         )
 
         advanceUntilIdle()
@@ -250,7 +254,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetName = assetName,
                 assetMimeType = "text/plain",
                 assetWidth = null,
-                assetHeight = null
+                assetHeight = null,
+                audioLengthInMs = 0
             )
             advanceUntilIdle()
 
@@ -289,7 +294,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetName = assetName,
                 assetMimeType = "text/plain",
                 assetWidth = null,
-                assetHeight = null
+                assetHeight = null,
+                audioLengthInMs = 0
             )
             advanceUntilIdle()
 
@@ -336,7 +342,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetName = assetName,
                 assetMimeType = "text/plain",
                 assetWidth = null,
-                assetHeight = null
+                assetHeight = null,
+                audioLengthInMs = 0
             )
             advanceUntilIdle()
 
@@ -390,7 +397,8 @@ class ScheduleNewAssetMessageUseCaseTest {
                 assetName = assetName,
                 assetMimeType = "text/plain",
                 assetWidth = null,
-                assetHeight = null
+                assetHeight = null,
+                audioLengthInMs = 0
             )
             advanceUntilIdle()
 
@@ -434,7 +442,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetName = assetName,
             assetMimeType = "text/plain",
             assetWidth = null,
-            assetHeight = null
+            assetHeight = null,
+            audioLengthInMs = 0
         )
         advanceUntilIdle()
 
@@ -476,7 +485,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             assetName = assetName,
             assetMimeType = "text/plain",
             assetWidth = null,
-            assetHeight = null
+            assetHeight = null,
+            audioLengthInMs = 0
         )
         advanceUntilIdle()
 
