@@ -333,5 +333,5 @@ DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE c
 DELETE FROM Message WHERE conversation_id = :conversationId;
 }
 
-selectConversationIdsByDomain:
-SELECT qualified_id FROM Conversation WHERE qualified_id LIKE ('%@' || :domain);
+selectChanges:
+SELECT changes();

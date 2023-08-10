@@ -28,8 +28,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class MemberDAOTest : BaseDatabaseTest() {
@@ -138,6 +140,22 @@ class MemberDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNonExistingConversation_ThenInsertedOrUpdatedMembersShouldNotBeTriggered() = runTest {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val member1 = TestStubs.member1
+
+        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            member = member1,
+            status = ConnectionEntity.State.ACCEPTED,
+            conversationID = conversationEntity1.id
+        )
+
+        assertTrue(
+           memberDAO.observeConversationMembers(conversationEntity1.id).first().isEmpty()
+        )
+    }
+
+    @Test
     fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest(dispatcher) {
         val conversationEntity1 = TestStubs.conversationEntity1
         val user1 = TestStubs.user1
@@ -156,7 +174,6 @@ class MemberDAOTest : BaseDatabaseTest() {
         assertEquals(ConnectionEntity.State.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
         assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
     }
-
 
     @Test
     fun givenConversation_whenInsertingMembers_thenMembersShouldNotBeDuplicated() = runTest {
@@ -362,34 +379,46 @@ class MemberDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMembersWithSameDomainInConversation_WhenGetMemberIdsByTheSameDomainInConversation_ThenReturnListOfQualifiedIDs() =
+    fun givenTwoDomains_WhenGettingConversationWithUserIdsWithBothDomains_ThenReturnMapConversationIDsWithUserIdList() =
         runTest(dispatcher) {
-            // given
-            val conversation = TestStubs.conversationEntity1
-            val conversationID = conversation.id
-            val otherDomain = "anta.com"
-            val domain = conversation.id.domain
+            // Given
+            val groupConversationEntity = TestStubs.conversationEntity4
+            val oneOnOneConversationEntity = TestStubs.conversationEntity1
+
+            val conversationID = groupConversationEntity.id
+            val firstDomain = groupConversationEntity.id.domain
+            val secondDomain = "other.com"
+
             val user1 = TestStubs.user1
             val user2 = TestStubs.user2
-            val user3 = TestStubs.user3.copy(id = QualifiedIDEntity("3", otherDomain))
+            val user3 = TestStubs.user3.copy(id = QualifiedIDEntity("3", secondDomain))
+            val user4 = TestStubs.user3.copy(id = QualifiedIDEntity("4", secondDomain))
 
             userDAO.insertUser(user1)
             userDAO.insertUser(user2)
             userDAO.insertUser(user3)
+            userDAO.insertUser(user4)
 
-            conversationDAO.insertConversation(conversation)
+            conversationDAO.insertConversation(groupConversationEntity)
+            conversationDAO.insertConversation(oneOnOneConversationEntity)
 
             memberDAO.insertMember(TestStubs.member1, conversationID)
             memberDAO.insertMember(TestStubs.member2, conversationID)
-            memberDAO.insertMember(TestStubs.member3.copy(user = QualifiedIDEntity("3", otherDomain)), conversationID)
+            memberDAO.insertMember(TestStubs.member3.copy(user = user3.id), conversationID)
+            memberDAO.insertMember(TestStubs.member3.copy(user = user4.id), oneOnOneConversationEntity.id)
 
-            // when
-            val result = memberDAO.getMemberIdsByTheSameDomainInConversation(domain, conversationID)
+            // When
+            val result = memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
 
-            // then
-            assertEquals(2, result.size)
-            assertTrue(result.contains(user1.id))
-            assertTrue(result.contains(user2.id))
+            // Then
+            val groupConversation = result.group[conversationID]
+            assertNotNull(groupConversation)
+            assertContains(groupConversation, user1.id)
+            assertContains(groupConversation, user2.id)
+            assertContains(groupConversation, user3.id)
+
+            val oneOnOneConversation = result.oneOnOne[oneOnOneConversationEntity.id]
+            assertNotNull(oneOnOneConversation)
+            assertContains(oneOnOneConversation, user4.id)
         }
-
 }

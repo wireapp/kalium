@@ -38,20 +38,11 @@ class MessageMentionMapperImpl(
 ) : MessageMentionMapper {
 
     override fun fromDaoToModel(mention: MessageEntity.Mention): MessageMention {
-        return MessageMention(
-            start = mention.start,
-            length = mention.length,
-            userId = mention.userId.toModel(),
-            isSelfMention = mention.userId.toModel() == selfUserId
-        )
+        return mention.toModel(selfUserId)
     }
 
     override fun fromModelToDao(mention: MessageMention): MessageEntity.Mention {
-        return MessageEntity.Mention(
-            start = mention.start,
-            length = mention.length,
-            userId = mention.userId.toDao()
-        )
+        return mention.toDao()
     }
 
     override fun fromProtoToModel(mention: Mention): MessageMention? = mention.qualifiedUserId?.let {
@@ -81,3 +72,16 @@ class MessageMentionMapperImpl(
         mentionType = Mention.MentionType.UserId(mention.userId.value)
     )
 }
+
+fun MessageEntity.Mention.toModel(selfUserId: UserId): MessageMention = MessageMention(
+    start = start,
+    length = length,
+    userId = userId.toModel(),
+    isSelfMention = userId.toModel() == selfUserId
+)
+
+fun MessageMention.toDao(): MessageEntity.Mention = MessageEntity.Mention(
+    start = start,
+    length = length,
+    userId = userId.toDao()
+)

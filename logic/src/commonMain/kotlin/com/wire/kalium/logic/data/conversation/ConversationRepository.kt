@@ -208,22 +208,10 @@ interface ConversationRepository {
         isInformed: Boolean
     ): Either<StorageFailure, Unit>
 
-    suspend fun getConversationIdsByDomain(domain: String): Either<CoreFailure, List<ConversationId>>
-    suspend fun getMemberIdsByTheSameDomainInConversation(
-        domain: String,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<UserId>>
-
     suspend fun getConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
     ): Either<CoreFailure, ConversationsWithMembers>
-
-    suspend fun removeMembersFromConversationByDomain(
-        domain: String,
-        conversationID: QualifiedID
-    ): Either<CoreFailure, Unit>
-
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -795,17 +783,6 @@ internal class ConversationDataSource internal constructor(
             conversationMetaDataDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
         }
 
-    override suspend fun getConversationIdsByDomain(domain: String): Either<CoreFailure, List<ConversationId>> = wrapStorageRequest {
-        conversationDAO.getConversationIdsByDomain(domain).map { it.toModel() }
-    }
-
-    override suspend fun getMemberIdsByTheSameDomainInConversation(
-        domain: String,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<UserId>> = wrapStorageRequest {
-        memberDAO.getMemberIdsByTheSameDomainInConversation(domain, conversationId.toDao()).map { it.toModel() }
-    }
-
     override suspend fun getConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
@@ -815,13 +792,6 @@ internal class ConversationDataSource internal constructor(
             oneOnOne = entity.oneOnOne.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } },
             group = entity.group.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } }
         )
-    }
-
-    override suspend fun removeMembersFromConversationByDomain(
-        domain: String,
-        conversationID: QualifiedID
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        memberDAO.removeMembersFromConversationByDomain(domain, conversationID.toDao())
     }
 
     private suspend fun persistIncompleteConversations(

@@ -71,8 +71,8 @@ class FederationEventReceiverImpl internal constructor(
         // remove pending and sent connections from federated users
         connectionRepository.getConnections()
             .map { it.firstOrNull() }
-            .onSuccess {
-                it?.forEach { conversationDetails ->
+            .onSuccess { conversationDetailsList ->
+                conversationDetailsList?.forEach { conversationDetails ->
                     if (conversationDetails is ConversationDetails.Connection
                         && conversationDetails.otherUser?.id?.domain == event.domain
                     ) {
@@ -85,13 +85,19 @@ class FederationEventReceiverImpl internal constructor(
             .onSuccess { conversationsWithMembers ->
                 // mark users as defederated to hold conversation history in oneOnOne conversations
                 conversationsWithMembers.oneOnOne.forEach { (conversationId, userIds) ->
-                    handleFederationDeleteEvent(conversationId, event.domain)
-                    userIds.filter { it.domain == event.domain }.forEach { userId ->
-                        userRepository.defederateUser(userId)
+                    if (conversationId.domain == event.domain) {
+                        handleFederationDeleteEvent(conversationId, event.domain)
+                        userIds.filter { it.domain == event.domain }.forEach { userId ->
+                            userRepository.defederateUser(userId)
+                        }
+                    } else {
+                        userIds.filter { it.domain == event.domain }.forEach { userId ->
+                            handleFederationDeleteEvent(conversationId, event.domain)
+                            userRepository.defederateUser(userId)
+                        }
                     }
                 }
 
-                // remove
                 conversationsWithMembers.group.forEach { (conversationId, userIds) ->
                     handleFederationDeleteEvent(conversationId, event.domain)
                     when (conversationId.domain) {
@@ -146,11 +152,11 @@ class FederationEventReceiverImpl internal constructor(
                         when (conversationId.domain) {
                             // remove secondDomain users from firstDomain conversation
                             firstDomain ->
-                                removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == firstDomain })
+                                removeMembersFromConversation(conversationId, userIds.filter { it.domain == secondDomain })
 
                             // remove firstDomain users from secondDomain conversation
                             secondDomain ->
-                                removeMembersFromConversation(conversationId, userIds.filterNot { it.domain == secondDomain })
+                                removeMembersFromConversation(conversationId, userIds.filter { it.domain == firstDomain })
 
                             // remove firstDomain and secondDomain users from rest conversations
                             else -> removeMembersFromConversation(conversationId, userIds)

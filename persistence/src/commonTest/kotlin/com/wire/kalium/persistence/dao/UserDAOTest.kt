@@ -743,6 +743,15 @@ class UserDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenExistingUser_ThenUserCanBeDefederated() = runTest(dispatcher) {
+        db.userDAO.insertUser(user1)
+        db.userDAO.markUserAsDefederated(user1.id)
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertNotNull(result)
+        assertEquals(true, result.defederated)
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
