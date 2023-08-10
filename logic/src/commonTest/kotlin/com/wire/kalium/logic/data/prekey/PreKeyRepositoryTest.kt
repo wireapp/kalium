@@ -281,6 +281,7 @@ class PreKeyRepositoryTest {
     @Test
     fun givenCurrentClientId_whenFetchingRemotePrekeys_thenShouldCallAPIWithCorrectParameters() = runTest {
         val (arrangement, preKeyRepository) = Arrangement()
+            .withGetClientAvailablePrekeysReturning(NetworkResponse.Success(listOf(), mapOf(), HttpStatusCode.OK.value))
             .withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
             .arrange()
 
@@ -288,7 +289,7 @@ class PreKeyRepositoryTest {
 
         verify(arrangement.preKeyApi)
             .suspendFunction(arrangement.preKeyApi::getClientAvailablePrekeys)
-            .with(eq(TEST_CLIENT_ID_1))
+            .with(eq(TEST_CLIENT_ID_1.value))
             .wasInvoked(exactly = once)
     }
 
@@ -310,6 +311,7 @@ class PreKeyRepositoryTest {
     fun givenPreKeysAndCurrentClientId_whenUploadingMorePrekeys_thenShouldCallAPIWithCorrectArguments() = runTest {
         val preKeys = listOf(PreKeyCrypto(1, "encodedData"))
         val (arrangement, preKeyRepository) = Arrangement()
+            .withUploadPrekeysReturning(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
             .withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
             .arrange()
 
@@ -318,7 +320,7 @@ class PreKeyRepositoryTest {
 
         verify(arrangement.preKeyApi)
             .suspendFunction(arrangement.preKeyApi::uploadNewPrekeys)
-            .with(eq(TEST_CLIENT_ID_1), eq(preKeys.map { PreKeyDTO(it.id, it.encodedData) }))
+            .with(eq(TEST_CLIENT_ID_1.value), eq(preKeys.map { PreKeyDTO(it.id, it.encodedData) }))
             .wasInvoked(exactly = once)
     }
 
