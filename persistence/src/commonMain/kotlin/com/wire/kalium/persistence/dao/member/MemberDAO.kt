@@ -144,7 +144,7 @@ internal class MemberDAOImpl internal constructor(
             }
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
             val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
-            if(conversationRecordExist) {
+            if (conversationRecordExist) {
                 memberQueries.insertMember(member.user, conversationID, member.role)
             } else {
                 kaliumLogger.e("conversation $conversationID doest not exist for user ${member.user}")
