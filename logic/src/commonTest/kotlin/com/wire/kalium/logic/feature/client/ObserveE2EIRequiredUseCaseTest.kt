@@ -34,6 +34,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -52,6 +53,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
+            advanceUntilIdle()
             awaitComplete()
         }
     }
@@ -147,6 +149,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .arrange()
 
         useCase().test {
+            assertTrue { awaitItem() == E2EIRequiredResult.NotRequired }
             awaitComplete()
         }
     }

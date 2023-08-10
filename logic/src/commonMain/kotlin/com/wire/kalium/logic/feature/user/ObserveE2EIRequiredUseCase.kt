@@ -24,9 +24,9 @@ import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -51,21 +51,24 @@ internal class ObserveE2EIRequiredUseCaseImpl(
     private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
 ) : ObserveE2EIRequiredUseCase {
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun invoke(): Flow<E2EIRequiredResult> = userConfigRepository
         .observeE2EINotificationTime()
         .map { it.getOrNull() }
         .filterNotNull()
         .delayUntilNotifyTime()
         .flatMapLatest {
-            combine(observeE2EISettings(), observeCurrentE2EICertificate()) { setting, currentCertificate ->
+            observeE2EISettings().flatMapLatest { setting ->
                 if (!setting.isRequired)
-                    E2EIRequiredResult.NotRequired
+                    flowOf(E2EIRequiredResult.NotRequired)
+                else
+                    observeCurrentE2EICertificate().map { currentCertificate ->
+                        // TODO check here if current certificate needs to be renewed (soon, or now)
 
-                // TODO check here if current certificate needs to be renewed (soon, or now)
-
-                else if (setting.gracePeriodEnd == null || setting.gracePeriodEnd <= DateTimeUtil.currentInstant())
-                    E2EIRequiredResult.NoGracePeriod.Create
-                else E2EIRequiredResult.WithGracePeriod.Create(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
+                        if (setting.gracePeriodEnd == null || setting.gracePeriodEnd <= DateTimeUtil.currentInstant())
+                            E2EIRequiredResult.NoGracePeriod.Create
+                        else E2EIRequiredResult.WithGracePeriod.Create(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
+                    }
             }
         }
         .flowOn(dispatcher)
