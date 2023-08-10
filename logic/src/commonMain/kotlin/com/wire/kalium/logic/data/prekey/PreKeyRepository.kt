@@ -27,6 +27,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.CryptoSessionMapper
 import com.wire.kalium.logic.feature.message.CryptoSessionMapperImpl
@@ -38,10 +39,23 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.prekey.UploadPreKeysRequest
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 
 interface PreKeyRepository {
+    /**
+     * Fetches the IDs of the prekeys currently available on the backend.
+     * @see uploadNewPrekeyBatch
+     */
+    suspend fun fetchRemotelyAvailablePrekeys(): Either<CoreFailure, List<Int>>
+
+    /**
+     * Uploads a batch of prekeys to the backend, so they become available
+     * for other clients to start sessions with this client.
+     * @see fetchRemotelyAvailablePrekeys
+     */
+    suspend fun uploadNewPrekeyBatch(batch: List<PreKeyCrypto>): Either<CoreFailure, Unit>
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
     suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
     suspend fun getLocalFingerprint(): Either<CoreFailure, ByteArray>
@@ -53,13 +67,32 @@ interface PreKeyRepository {
     ): Either<CoreFailure, UsersWithoutSessions>
 }
 
+@Suppress("LongParameterList")
 class PreKeyDataSource(
     private val preKeyApi: PreKeyApi,
     private val proteusClientProvider: ProteusClientProvider,
+    private val provideCurrentClientId: CurrentClientIdProvider,
     private val prekeyDAO: PrekeyDAO,
     private val clientDAO: ClientDAO,
-    private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper()
+    private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper(),
+    private val preKeyMapper: PreKeyMapper = MapperProvider.preyKeyMapper()
 ) : PreKeyRepository, CryptoSessionMapper by CryptoSessionMapperImpl(MapperProvider.preyKeyMapper()) {
+
+    override suspend fun fetchRemotelyAvailablePrekeys(): Either<CoreFailure, List<Int>> =
+        provideCurrentClientId().flatMap { clientId ->
+            wrapApiRequest {
+                preKeyApi.getClientAvailablePrekeys(clientId.value)
+            }
+        }
+
+    override suspend fun uploadNewPrekeyBatch(batch: List<PreKeyCrypto>): Either<CoreFailure, Unit> =
+        provideCurrentClientId().flatMap { clientId ->
+            val preKeyDTOs = batch.map(preKeyMapper::toPreKeyDTO)
+            wrapApiRequest {
+                preKeyApi.uploadNewPrekeys(clientId.value, preKeyDTOs)
+            }
+        }
+
     override suspend fun generateNewPreKeys(
         firstKeyId: Int,
         keysCount: Int
