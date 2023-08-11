@@ -18,7 +18,7 @@
 
 package com.wire.kalium.api
 
-import com.wire.kalium.api.TestNetworkStateObserver.Companion.DEFAULT_NETWORK_STATE_OBSERVER
+import com.wire.kalium.api.TestNetworkStateObserver.Companion.DEFAULT_TEST_NETWORK_STATE_OBSERVER
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.NetworkStateObserver
@@ -84,7 +84,7 @@ internal abstract class ApiTest {
         statusCode: HttpStatusCode,
         assertion: suspend (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String> = mutableMapOf(),
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER
     ): AuthenticatedNetworkClient =
         mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers, networkStateObserver)
 
@@ -94,7 +94,7 @@ internal abstract class ApiTest {
         assertion: suspend (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?,
 
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER,
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): AuthenticatedNetworkClient {
         val head: Map<String, List<String>> = (headers?.let {
             mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
@@ -116,7 +116,9 @@ internal abstract class ApiTest {
         ).networkClient
     }
 
-    fun mockWebsocketClient(networkStateObserver: NetworkStateObserver): AuthenticatedWebSocketClient {
+    fun mockWebsocketClient(
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
+    ): AuthenticatedWebSocketClient {
         val mockEngine = MockEngine {
             TODO("It's not yet possible to mock WebSockets from the client side")
         }
@@ -133,7 +135,7 @@ internal abstract class ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
 
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER,
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): AuthenticatedNetworkClient {
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
         return AuthenticatedNetworkClient(
@@ -157,7 +159,7 @@ internal abstract class ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
 
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER,
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient =
         mockUnauthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers, networkStateObserver)
 
@@ -167,7 +169,7 @@ internal abstract class ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?,
 
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER,
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient {
 
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
@@ -191,7 +193,7 @@ internal abstract class ApiTest {
     fun mockUnauthenticatedNetworkClient(
         expectedRequests: List<TestRequestHandler>,
 
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER,
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient {
         val mockEngine = MockEngine { currentRequest ->
             expectedRequests.forEach { request ->
@@ -231,7 +233,7 @@ internal abstract class ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
 
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER,
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): AuthenticatedNetworkClient {
         val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
@@ -259,7 +261,7 @@ internal abstract class ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
 
-        networkStateObserver: NetworkStateObserver = DEFAULT_NETWORK_STATE_OBSERVER,
+        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnboundNetworkClient {
         val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),

@@ -31,6 +31,6 @@ class TestNetworkStateObserver(initialState: NetworkState = NetworkState.Connect
     suspend fun updateNetworkState(state: NetworkState) { networkState.emit(state) }
 
     companion object {
-        val DEFAULT_NETWORK_STATE_OBSERVER = TestNetworkStateObserver()
+        val DEFAULT_TEST_NETWORK_STATE_OBSERVER = TestNetworkStateObserver()
     }
 }
