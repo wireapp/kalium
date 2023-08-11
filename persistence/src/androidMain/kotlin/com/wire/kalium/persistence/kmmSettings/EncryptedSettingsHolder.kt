@@ -23,7 +23,6 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
-import java.security.InvalidKeyException
 
 private fun SettingOptions.keyAlias(): String = when (this) {
     is SettingOptions.AppSettings -> "_app_settings_master_key_"
@@ -31,8 +30,6 @@ private fun SettingOptions.keyAlias(): String = when (this) {
 }
 
 internal actual object EncryptedSettingsBuilder {
-    private var retry: Boolean = true
-
     private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS): MasterKey =
         MasterKey
             .Builder(context, keyAlias)
@@ -44,33 +41,19 @@ internal actual object EncryptedSettingsBuilder {
         options: SettingOptions,
         param: EncryptedSettingsPlatformParam
     ): Settings = synchronized(this) {
-        try {
-            SharedPreferencesSettings(
-                if (options.shouldEncryptData) {
-                    EncryptedSharedPreferences.create(
-                        param.appContext,
-                        options.fileName,
-                        getOrCreateMasterKey(param.appContext, options.keyAlias()),
-                        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-                    )
-                } else {
-                    param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
-                }, false
-            )
-        } catch (exception: Exception) {
-            exception.printStackTrace()
-            if (exception is InvalidKeyException) {
-                if (retry) {
-                    retry = false
-                    build(options, param)
-                } else {
-                    throw exception
-                }
+        SharedPreferencesSettings(
+            if (options.shouldEncryptData) {
+                EncryptedSharedPreferences.create(
+                    param.appContext,
+                    options.fileName,
+                    getOrCreateMasterKey(param.appContext, options.keyAlias()),
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+                )
             } else {
-                throw exception
-            }
-        }
+                param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
+            }, false
+        )
     }
 }
 
