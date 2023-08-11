@@ -79,14 +79,18 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         // TODO get current client E2EI certificate data here
         return flowOf(Unit).flowOn(dispatcher)
     }
-}
 
-private fun Flow<Instant>.delayUntilNotifyTime(): Flow<Instant> = flatMapLatest { instant ->
-    val delayMillis = instant
-        .minus(DateTimeUtil.currentInstant())
-        .inWholeMilliseconds
-        .coerceAtLeast(0L)
-    flowOf(instant).onStart { delay(delayMillis) }
+    private fun Flow<Instant>.delayUntilNotifyTime(): Flow<Instant> = flatMapLatest { instant ->
+        val delayMillis = instant
+            .minus(DateTimeUtil.currentInstant())
+            .inWholeMilliseconds
+            .coerceAtLeast(NO_DELAY_MS)
+        flowOf(instant).onStart { delay(delayMillis) }
+    }
+
+    companion object {
+        private const val NO_DELAY_MS = 0L
+    }
 }
 
 sealed class E2EIRequiredResult {

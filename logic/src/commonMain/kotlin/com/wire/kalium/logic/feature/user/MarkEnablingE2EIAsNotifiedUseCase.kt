@@ -27,17 +27,21 @@ import kotlin.time.Duration.Companion.minutes
  * Mark the MLS End-to-End Identity enabling status change as notified
  * need to be called after notifying the user about the change
  * e.g. after showing a dialog, or a toast etc.
+ *
+ * @param tillTheEndOfGracePeriod is the [Duration] that is left till the end of GracePeriod for creating/renewing E2EI certificate.
+ * Based on this Duration we calculate how much to snooze the notification for.
+ * This duration should be just passed from the [E2EIRequiredResult.WithGracePeriod].
  */
 interface MarkEnablingE2EIAsNotifiedUseCase {
-    suspend operator fun invoke(timeLeft: Duration)
+    suspend operator fun invoke(tillTheEndOfGracePeriod: Duration)
 }
 
 internal class MarkEnablingE2EIAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : MarkEnablingE2EIAsNotifiedUseCase {
 
-    override suspend fun invoke(timeLeft: Duration) {
-        userConfigRepository.snoozeE2EINotification(snoozeTime(timeLeft))
+    override suspend fun invoke(tillTheEndOfGracePeriod: Duration) {
+        userConfigRepository.snoozeE2EINotification(snoozeTime(tillTheEndOfGracePeriod))
     }
 
     private fun snoozeTime(timeLeft: Duration): Duration =
