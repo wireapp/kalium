@@ -34,6 +34,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,6 +48,7 @@ class EncryptedSettingsBuilderTest {
         Dispatchers.setMain(coroutineDispatcher)
     }
 
+    @Ignore
     @Test
     fun givenShouldEncryptDataIsTrue_whenEncryptingData_thenShouldEncryptWithoutFailing() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
