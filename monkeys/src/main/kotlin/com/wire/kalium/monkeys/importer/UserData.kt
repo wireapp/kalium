@@ -34,5 +34,6 @@ data class Backend(
     val teams: String,
     val website: String,
     val title: String,
-    val domain: String
+    val domain: String,
+    val teamName: String
 )
