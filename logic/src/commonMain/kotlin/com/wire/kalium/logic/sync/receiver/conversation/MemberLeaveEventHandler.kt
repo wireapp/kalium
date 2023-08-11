@@ -64,7 +64,7 @@ internal class MemberLeaveEventHandlerImpl(
                     conversationId = event.conversationId,
                     date = event.timestampIso,
                     senderUserId = event.removedBy,
-                    status = Message.Status.SENT,
+                    status = Message.Status.Sent,
                     visibility = Message.Visibility.VISIBLE,
                     expirationData = null
                 )

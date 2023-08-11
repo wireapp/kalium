@@ -358,7 +358,7 @@ class MessageSenderTest {
             date = TestMessage.TEST_DATE_STRING,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             isSelfMessage = false,
             expirationData = null
         )
@@ -411,7 +411,7 @@ class MessageSenderTest {
             date = TestMessage.TEST_DATE_STRING,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             isSelfMessage = true,
             expirationData = null
         )
@@ -575,7 +575,7 @@ class MessageSenderTest {
             date = TestMessage.TEST_DATE_STRING,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             isSelfMessage = false
         )
 
@@ -628,7 +628,7 @@ class MessageSenderTest {
             date = TestMessage.TEST_DATE_STRING,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             isSelfMessage = false
         )
 
@@ -681,7 +681,7 @@ class MessageSenderTest {
             date = TestMessage.TEST_DATE_STRING,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             isSelfMessage = false
         )
 
@@ -726,7 +726,7 @@ class MessageSenderTest {
             date = TestMessage.TEST_DATE_STRING,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
-            status = Message.Status.PENDING,
+            status = Message.Status.Pending,
             isSelfMessage = false,
             expirationData = null
         )
