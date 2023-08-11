@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.sync.handler
+package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -26,8 +26,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
-import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq

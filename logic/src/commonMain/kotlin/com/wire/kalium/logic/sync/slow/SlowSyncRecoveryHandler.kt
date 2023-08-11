@@ -52,5 +52,4 @@ internal class SlowSyncRecoveryHandlerImpl(private val logoutUseCase: LogoutUseC
     private companion object {
         const val TAG = "SlowSyncRecoveryHandler"
     }
-
 }
