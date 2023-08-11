@@ -71,7 +71,9 @@ object TestDataImporter {
         return testData.backends.flatMap { backendConfig ->
             val httpClient = basicHttpClient(backendConfig)
             val team = httpClient.createTeam(backendConfig, backendConfig.passwordForUsers)
-            (1..backendConfig.userCount.toInt()).map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
+            (1..backendConfig.userCount.toInt())
+                .map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
+                .plus(team.owner)
                 .also { httpClient.close() }
         }
     }
@@ -83,7 +85,6 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig, ownerPas
     val ownerName = faker.name.name()
     val ownerId = "monkey-owner-" + UUID.randomUUID().toString()
     val email = "$ownerId@wire.com"
-    logger.i("Owner $email in team ${backendConfig.teamName} in backend ${backendConfig.domain}")
     post("activate/send") {
         setBody(
             mapOf(
@@ -144,14 +145,14 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig, ownerPas
     put("self/handle") {
         setBody(mapOf("handle" to ownerId).toJsonObject())
     }
+    logger.i("Owner $email (id $userId) of team ${backendConfig.teamName} (id: $teamId) in backend ${backendConfig.domain}")
     return result
 }
 
 private suspend fun HttpClient.createUser(i: Int, team: Team, userPassword: String): UserData {
     val faker = Faker()
     val userName = faker.name.name()
-    val userId = "monkey-user-$i-${team.id}"
-    val email = "$userId@wire.com"
+    val email = "monkey-user-$i-${team.id}@wire.com"
     val invitationCode = invite(team.id, email, userName)
     val response = post("register") {
         setBody(
@@ -167,9 +168,9 @@ private suspend fun HttpClient.createUser(i: Int, team: Team, userPassword: Stri
 //     println(put("self/handle") {
 //         setBody(mapOf("handle" to userId).toJsonObject())
 //     })
-    val newUserId = response["id"]?.jsonPrimitive?.content ?: error("Could not register user in team")
-    logger.d("Created user $email in team ${team.backend.teamName}")
-    return UserData(email, userPassword, UserId(newUserId, team.backend.domain), team.backend)
+    val userId = response["id"]?.jsonPrimitive?.content ?: error("Could not register user in team")
+    logger.d("Created user $email (id $userId) in team ${team.backend.teamName}")
+    return UserData(email, userPassword, UserId(userId, team.backend.domain), team.backend)
 }
 
 private suspend fun HttpClient.login(team: Team) {

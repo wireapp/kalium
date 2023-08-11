@@ -73,5 +73,5 @@ private suspend fun MonkeyConversation.sendMessage(userCount: UserCount, i: Int)
 }
 
 private fun randomMessage(target: String, i: Int): String {
-    return "Hello $target. Give me ${i + 1} banana(s). ${EMOJI.random()}"
+    return "Hello everyone from $target. Give me ${i + 1} banana(s). ${EMOJI.random()}"
 }
