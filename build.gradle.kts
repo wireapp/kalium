@@ -100,7 +100,7 @@ koverReport {
     }
 }
 
-subprojects {
+fun Project.configureKover() {
     pluginManager.apply("org.jetbrains.kotlinx.kover")
 
     kover {
@@ -113,6 +113,15 @@ subprojects {
             }
         }
     }
+}
+
+subprojects {
+    // We only want coverage reports of actual Kalium
+    // Samples and other side-projects can have their own rules
+    if (name in setOf("monkeys", "testservice", "cli", "android")) {
+        return@subprojects
+    }
+    configureKover()
 }
 
 rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
