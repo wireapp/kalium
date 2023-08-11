@@ -27,3 +27,8 @@ data class PreKeyDTO(
     @SerialName("key")
     val key: String
 )
+
+@Serializable
+data class UploadPreKeysRequest(
+    @SerialName("prekeys") val prekeys: List<PreKeyDTO>
+)
