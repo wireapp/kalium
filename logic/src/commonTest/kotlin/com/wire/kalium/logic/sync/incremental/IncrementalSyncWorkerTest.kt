@@ -71,7 +71,7 @@ class IncrementalSyncWorkerTest {
         runTest(TestKaliumDispatcher.default) {
             // Given
             val event = TestEvent.memberJoin()
-            val (arrangement, worker) = Arrangement()
+            val (_, worker) = Arrangement()
                 .withEventGathererReturning(flowOf(event))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
                 .arrange()
@@ -89,7 +89,7 @@ class IncrementalSyncWorkerTest {
         runTest(TestKaliumDispatcher.default) {
             // Given
             val event = TestEvent.memberJoin()
-            val (arrangement, worker) = Arrangement()
+            val (_, worker) = Arrangement()
                 .withEventGathererReturning(flowOf(event))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
                 .arrange()
