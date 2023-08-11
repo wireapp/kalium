@@ -69,7 +69,7 @@ class DeleteMessageUseCaseTest {
             .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
-            .withTextMessage(Message.Status.SENT)
+            .withTextMessage(Message.Status.Sent)
             .arrange()
 
         // when
@@ -103,7 +103,7 @@ class DeleteMessageUseCaseTest {
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
             .withMessageRepositoryDeleteMessageSucceed()
-            .withTextMessage(Message.Status.FAILED)
+            .withTextMessage(Message.Status.Failed)
             .arrange()
 
         // when
@@ -135,7 +135,7 @@ class DeleteMessageUseCaseTest {
             .withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             .withCompletedSlowSync()
             .withMessageRepositoryMarkMessageAsDeletedSucceed()
-            .withTextMessage(Message.Status.SENT)
+            .withTextMessage(Message.Status.Sent)
             .arrange()
 
         // when
@@ -221,7 +221,7 @@ class DeleteMessageUseCaseTest {
             .withCompletedSlowSync()
             .withMessageRepositoryDeletionSucceed()
             .withTextMessage(
-                Message.Status.SENT,
+                Message.Status.Sent,
                 expirationData = Message.ExpirationData(
                     expireAfter = 10.seconds,
                     selfDeletionStatus = Message.ExpirationData.SelfDeletionStatus.NotStarted

@@ -69,7 +69,7 @@ class SendConfirmationUseCase internal constructor(
                 date = Clock.System.now().toString(),
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
-                status = Message.Status.PENDING,
+                status = Message.Status.Pending,
                 isSelfMessage = true,
                 expirationData = null
             )

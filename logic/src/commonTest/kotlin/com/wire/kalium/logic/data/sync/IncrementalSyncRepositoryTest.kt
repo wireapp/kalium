@@ -27,7 +27,6 @@ import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -204,7 +203,6 @@ class IncrementalSyncRepositoryTest {
         assertEquals(initialValue, state)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenASlowStateCollector_whenStateIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
         val updateCount = 10_000
@@ -231,7 +229,6 @@ class IncrementalSyncRepositoryTest {
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenASlowPolicyCollector_whenPolicyIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
         val updateCount = 10_000

@@ -42,13 +42,11 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FeatureConfigEventReceiverTest {
 
     @Test
