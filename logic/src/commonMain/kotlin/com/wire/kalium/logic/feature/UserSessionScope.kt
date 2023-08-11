@@ -1143,6 +1143,7 @@ class UserSessionScope internal constructor(
         get() = PreKeyDataSource(
             authenticatedNetworkContainer.preKeyApi,
             proteusClientProvider,
+            clientIdProvider,
             userStorage.database.prekeyDAO,
             userStorage.database.clientDAO
         )
