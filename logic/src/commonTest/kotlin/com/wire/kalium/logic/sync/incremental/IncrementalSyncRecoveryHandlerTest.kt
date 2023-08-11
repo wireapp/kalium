@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.test_util.TestNetworkException
 import io.mockative.Mock
 import io.mockative.classOf
