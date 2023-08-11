@@ -66,7 +66,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageRepositoryTest {
 
     @Test
@@ -581,7 +580,8 @@ class MessageRepositoryTest {
                 senderClientId = "sender",
                 status = SENT,
                 editStatus = MessageEntity.EditStatus.NotEdited,
-                senderName = "senderName"
+                senderName = "senderName",
+                readCount = 0L
             )
         val TEST_CONVERSATION_ID = ConversationId("value", "domain")
         val TEST_CLIENT_ID = ClientId("clientId")
@@ -595,7 +595,7 @@ class MessageRepositoryTest {
             date = TEST_DATETIME,
             senderUserId = TEST_USER_ID,
             senderClientId = TEST_CLIENT_ID,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             editStatus = Message.EditStatus.NotEdited,
             isSelfMessage = false
         )

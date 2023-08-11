@@ -120,7 +120,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         }
     }
 
-    private suspend fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
+    private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
         conversationId = CONVERSATION_ID,
         visibilities = MessageEntity.Visibility.values().toList(),
         pagingConfig = PagingConfig(PAGE_SIZE)

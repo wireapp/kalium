@@ -1012,7 +1012,8 @@ class UserSessionScope internal constructor(
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
             selfUserId = this.userId,
-            receiptRepository = receiptRepository
+            receiptRepository = receiptRepository,
+            messageRepository = messageRepository
         )
 
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
@@ -1143,6 +1144,7 @@ class UserSessionScope internal constructor(
         get() = PreKeyDataSource(
             authenticatedNetworkContainer.preKeyApi,
             proteusClientProvider,
+            clientIdProvider,
             userStorage.database.prekeyDAO,
             userStorage.database.clientDAO
         )
