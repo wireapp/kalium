@@ -51,27 +51,14 @@ abstract class CoreLogicCommon internal constructor(
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
-    protected abstract val globalPreferences: Lazy<GlobalPrefProvider>
-    protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
+    protected abstract val globalPreferences: GlobalPrefProvider
+    protected abstract val globalDatabase: GlobalDatabaseProvider
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
-
-    init {
-        (1..100).map {
-            GlobalScope.launch {
-                userSessionScopeProvider.value.getOrCreate(
-                    userId = UserId(
-                        "valueUser$it",
-                        "domainUser"
-                    )
-                )
-            }
-        }
-    }
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(
