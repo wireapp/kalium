@@ -43,6 +43,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromStream
@@ -67,14 +68,34 @@ object TestDataImporter {
         )
     }
 
+    private val jsonSerializer: Json by lazy {
+        Json {
+            prettyPrint = true
+        }
+    }
+
+    private fun dumpUsers(teamName: String, users: List<UserData>) {
+        val json = users.associate {
+            it.email to mapOf(
+                "password" to it.password,
+                "domain" to it.backend.domain
+            )
+        }.toJsonObject()
+        File("$teamName.json").writeText(jsonSerializer.encodeToString(json))
+    }
+
     suspend fun generateUserData(testData: TestData): List<UserData> {
         return testData.backends.flatMap { backendConfig ->
             val httpClient = basicHttpClient(backendConfig)
             val team = httpClient.createTeam(backendConfig)
-            (1..backendConfig.userCount.toInt())
+            val users = (1..backendConfig.userCount.toInt())
                 .map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
                 .plus(team.owner)
                 .also { httpClient.close() }
+            if (backendConfig.dumpUsers) {
+                dumpUsers(backendConfig.teamName, users)
+            }
+            users
         }
     }
 

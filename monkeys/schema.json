@@ -140,6 +140,10 @@
                     "userCount": {
                         "description": "How many users should be created in this team",
                         "type": "integer"
+                    },
+                    "dumpUsers": {
+                        "description": "Should the application dump the users created into a file",
+                        "type": "boolean"
                     }
                 }
             }

@@ -143,5 +143,6 @@ data class BackendConfig(
     @SerialName("teamName") val teamName: String,
     @SerialName("authUser") val authUser: String,
     @SerialName("authPassword") val authPassword: String,
-    @SerialName("userCount") val userCount: ULong
+    @SerialName("userCount") val userCount: ULong,
+    @SerialName("dumpUsers") val dumpUsers: Boolean = false
 )
