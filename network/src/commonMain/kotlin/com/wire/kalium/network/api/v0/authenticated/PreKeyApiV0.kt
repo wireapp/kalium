@@ -22,11 +22,14 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.base.authenticated.prekey.UploadPreKeysRequest
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
 internal open class PreKeyApiV0 internal constructor(
@@ -49,6 +52,13 @@ internal open class PreKeyApiV0 internal constructor(
     override suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>> = wrapKaliumResponse {
         httpClient.get("$PATH_CLIENTS/$clientId/$PATH_PRE_KEY")
     }
+
+    override suspend fun uploadNewPrekeys(clientId: String, preKeys: List<PreKeyDTO>): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.put("$PATH_CLIENTS/$clientId/$PATH_PRE_KEY") {
+                setBody(UploadPreKeysRequest(preKeys))
+            }
+        }
 
     protected companion object {
         const val PATH_USERS = "users"

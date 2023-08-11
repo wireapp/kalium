@@ -90,6 +90,12 @@ interface MessageRepository {
         messageUuid: String
     ): Either<CoreFailure, Unit>
 
+    suspend fun updateMessagesStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuids: List<String>
+    ): Either<CoreFailure, Unit>
+
     suspend fun updateAssetMessageUploadStatus(
         uploadStatus: Message.UploadStatus,
         conversationId: ConversationId,
@@ -211,12 +217,12 @@ interface MessageRepository {
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
 class MessageDataSource(
+    private val selfUserId: UserId,
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
-    private val selfUserId: UserId,
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
@@ -312,7 +318,24 @@ class MessageDataSource(
 
     override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
         wrapStorageRequest {
-            messageDAO.updateMessageStatus(messageStatus, messageUuid, conversationId.toDao())
+            messageDAO.updateMessageStatus(
+                status = messageStatus,
+                id = messageUuid,
+                conversationId = conversationId.toDao()
+            )
+        }
+
+    override suspend fun updateMessagesStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuids: List<String>
+    ) =
+        wrapStorageRequest {
+            messageDAO.updateMessagesStatus(
+                status = messageStatus,
+                id = messageUuids,
+                conversationId = conversationId.toDao()
+            )
         }
 
     override suspend fun updateAssetMessageUploadStatus(

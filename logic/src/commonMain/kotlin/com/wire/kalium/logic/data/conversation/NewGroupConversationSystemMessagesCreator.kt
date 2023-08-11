@@ -90,7 +90,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             conversationId = conversationId,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )
@@ -131,7 +131,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             conversationId = conversationId,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )
@@ -153,7 +153,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     conversationId = conversationId.toModel(),
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = selfUserId,
-                    status = Message.Status.SENT,
+                    status = Message.Status.Sent,
                     visibility = Message.Visibility.VISIBLE,
                     expirationData = null
                 )
@@ -171,7 +171,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             conversationId,
             DateTimeUtil.currentIsoDateTimeString(),
             selfUserId,
-            Message.Status.SENT,
+            Message.Status.Sent,
             Message.Visibility.VISIBLE,
             expirationData = null
         )
@@ -186,7 +186,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 conversationResponse.id.toModel(),
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
-                Message.Status.SENT,
+                Message.Status.Sent,
                 Message.Visibility.VISIBLE,
                 expirationData = null
             )

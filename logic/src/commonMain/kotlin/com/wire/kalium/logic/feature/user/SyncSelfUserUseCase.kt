@@ -25,11 +25,15 @@ import com.wire.kalium.logic.functional.Either
 /**
  * This use case will sync the current user with the backend.
  */
-class SyncSelfUserUseCase internal constructor(
+internal interface SyncSelfUserUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
+}
+
+internal class SyncSelfUserUseCaseImpl internal constructor(
     private val userRepository: UserRepository
-) {
+) : SyncSelfUserUseCase {
     /**
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(): Either<CoreFailure, Unit> = userRepository.fetchSelfUser()
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = userRepository.fetchSelfUser()
 }

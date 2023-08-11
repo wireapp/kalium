@@ -326,6 +326,7 @@ sealed class ConversationRepository {
                                     type,
                                     null,
                                     null,
+                                    0L
                                 )
                             }
                             when (sendResult) {
@@ -406,6 +407,7 @@ sealed class ConversationRepository {
                                 "image", type,
                                 width,
                                 height,
+                                0L
                             )
                             if (sendResult is ScheduleNewAssetMessageResult.Failure) {
                                 if (sendResult.coreFailure is StorageFailure.Generic) {

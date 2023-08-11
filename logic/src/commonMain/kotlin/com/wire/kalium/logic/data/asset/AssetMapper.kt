@@ -212,6 +212,13 @@ class AssetMapperImpl(
                             )
                         )
 
+                        is Audio -> Asset.Original.MetaData.Audio(
+                            audio = Asset.AudioMetaData(
+                                durationInMillis = metadata.durationMs,
+                                normalizedLoudness = metadata.normalizedLoudness?.let { ByteArr(it) }
+                            )
+                        )
+
                         else -> null
                     }
                 ),

@@ -30,6 +30,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class SlowSyncRepositoryTest {
@@ -41,6 +42,15 @@ class SlowSyncRepositoryTest {
     fun setup() {
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"), testDispatcher)
         slowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
+    }
+
+    @Test
+    fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest(testDispatcher) {
+        // Empty Given
+
+        val lastSyncInstant = slowSyncRepository.observeLastSlowSyncCompletionInstant().first()
+
+        assertNull(lastSyncInstant)
     }
 
     @Test
@@ -59,19 +69,6 @@ class SlowSyncRepositoryTest {
         assertEquals(version, slowSyncRepository.getSlowSyncVersion())
     }
 
-    @IgnoreIOS // TODO investigate why test is failing
-    @Test
-    fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest(testDispatcher) {
-        // Empty Given
-
-        val lastSyncInstant = slowSyncRepository.observeLastSlowSyncCompletionInstant().first()
-
-        assertNull(lastSyncInstant)
-    }
-
-    // TODO: Re-enable once we can update Turbine to 0.11.0+ (Requires Kotlin 1.6.21+)
-    // @Ignore
-    @IgnoreIOS // TODO investigate why test is failing
     @Test
     fun givenAnInstantIsUpdated_whenObservingTheLastSlowSyncInstant_thenTheNewStateIsPropagatedForObservers() = runTest(testDispatcher) {
         val firstInstant = DateTimeUtil.currentInstant()
@@ -131,5 +128,14 @@ class SlowSyncRepositoryTest {
         val currentState = slowSyncRepository.needsToRecoverMLSGroups()
 
         assertEquals(newStatus, currentState)
+    }
+
+    @Test
+    fun givenMetaDataDao_whenClearLastSlowSyncCompletionInstantIsCalled_thenInvokeDeleteValueOnce() = runTest(testDispatcher) {
+        slowSyncRepository.setNeedsToPersistHistoryLostMessage(true)
+
+        val result = slowSyncRepository.needsToPersistHistoryLostMessage()
+
+        assertTrue { result }
     }
 }

@@ -177,6 +177,7 @@ import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationL
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
@@ -231,6 +232,7 @@ import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCaseImpl
@@ -272,8 +274,8 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
-import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCaseImpl
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -776,14 +778,14 @@ class UserSessionScope internal constructor(
     )
 
     private val syncConversations: SyncConversationsUseCase
-        get() = SyncConversationsUseCase(conversationRepository)
+        get() = SyncConversationsUseCaseImpl(conversationRepository)
 
     private val syncConnections: SyncConnectionsUseCase
         get() = SyncConnectionsUseCaseImpl(
             connectionRepository = connectionRepository
         )
 
-    private val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCase(userRepository)
+    private val syncSelfUser: SyncSelfUserUseCase get() = SyncSelfUserUseCaseImpl(userRepository)
     private val syncContacts: SyncContactsUseCase get() = SyncContactsUseCaseImpl(userRepository)
 
     private val syncSelfTeamUseCase: SyncSelfTeamUseCase
@@ -1021,7 +1023,8 @@ class UserSessionScope internal constructor(
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
             selfUserId = this.userId,
-            receiptRepository = receiptRepository
+            receiptRepository = receiptRepository,
+            messageRepository = messageRepository
         )
 
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
@@ -1173,6 +1176,7 @@ class UserSessionScope internal constructor(
         get() = PreKeyDataSource(
             authenticatedNetworkContainer.preKeyApi,
             proteusClientProvider,
+            clientIdProvider,
             userStorage.database.prekeyDAO,
             userStorage.database.clientDAO
         )

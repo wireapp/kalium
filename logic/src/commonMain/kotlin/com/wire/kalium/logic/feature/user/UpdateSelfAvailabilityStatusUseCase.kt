@@ -60,7 +60,7 @@ class UpdateSelfAvailabilityStatusUseCase internal constructor(
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = selfUserId,
                     senderClientId = selfClientId,
-                    status = Message.Status.PENDING,
+                    status = Message.Status.Pending,
                     isSelfMessage = true
                 )
 

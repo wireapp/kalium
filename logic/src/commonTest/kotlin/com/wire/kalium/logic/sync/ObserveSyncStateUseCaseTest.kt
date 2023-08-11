@@ -18,34 +18,194 @@
 
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
+import app.cash.turbine.test
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.persistence.TestUserDatabase
-import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
+import io.mockative.given
 import io.mockative.mock
-import kotlin.test.BeforeTest
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ObserveSyncStateUseCaseTest {
 
-    private lateinit var slowSyncRepository: SlowSyncRepository
-    private lateinit var incrementalSyncRepository: IncrementalSyncRepository
-    private lateinit var observeSyncState: ObserveSyncStateUseCase
+    @Test
+    fun givenSlowSyncStatusEmitsFailedState_whenRunningUseCase_thenEmitFailedState() = runTest(TestKaliumDispatcher.default) {
+        val (_, useCase) = Arrangement()
+            .withSlowSyncFailureState()
+            .withIncrementalSyncLiveState()
+            .arrange()
 
-    @Mock
-    val sessionRepository = mock(classOf<SessionRepository>())
-
-    @BeforeTest
-    fun setup() {
-        val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"))
-        slowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
-        incrementalSyncRepository = InMemoryIncrementalSyncRepository()
-        observeSyncState = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
+        useCase().test {
+            val item = awaitItem()
+            assertEquals(SyncState.Failed(coreFailure), item)
+        }
     }
 
-    // TODO(test): Add tests
+    @Test
+    fun givenSlowSyncStatusEmitsOngoingState_whenRunningUseCase_thenEmitSlowSyncState() = runTest(TestKaliumDispatcher.default) {
+        val (_, useCase) = Arrangement()
+            .withSlowSyncOngoingState()
+            .withIncrementalSyncLiveState()
+            .arrange()
+
+        useCase().test {
+            val item = awaitItem()
+            assertEquals(SyncState.SlowSync, item)
+        }
+    }
+
+    @Test
+    fun givenSlowSyncStatusEmitsPendingState_whenRunningUseCase_thenEmitWaitingState() = runTest(TestKaliumDispatcher.default) {
+        val (_, useCase) = Arrangement()
+            .withSlowSyncPendingState()
+            .withIncrementalSyncLiveState()
+            .arrange()
+
+        useCase().test {
+            val item = awaitItem()
+            assertEquals(SyncState.Waiting, item)
+        }
+    }
+
+    @Test
+    fun givenIncrementalSyncStateEmitsLiveState_whenRunningUseCase_thenEmitLiveState() = runTest(TestKaliumDispatcher.default) {
+        val (_, useCase) = Arrangement()
+            .withSlowSyncCompletedState()
+            .withIncrementalSyncLiveState()
+            .arrange()
+
+        useCase().test {
+            val item = awaitItem()
+            assertEquals(SyncState.Live, item)
+        }
+    }
+
+    @Test
+    fun givenIncrementalSyncStateEmitsFailedState_whenRunningUseCase_thenEmitFailedState() =
+        runTest(TestKaliumDispatcher.default) {
+            val (_, useCase) = Arrangement()
+                .withSlowSyncCompletedState()
+                .withIncrementalSyncFailedState()
+                .arrange()
+
+            useCase().test {
+                val item = awaitItem()
+                assertEquals(SyncState.Failed(coreFailure), item)
+            }
+        }
+
+    @Test
+    fun givenIncrementalSyncStateEmitsFetchingPendingEventsState_whenRunningUseCase_thenEmitGatheringPendingEventsState() =
+        runTest(TestKaliumDispatcher.default) {
+            val (_, useCase) = Arrangement()
+                .withSlowSyncCompletedState()
+                .withIncrementalSyncFetchingPendingEventsState()
+                .arrange()
+
+            useCase().test {
+                val item = awaitItem()
+                assertEquals(SyncState.GatheringPendingEvents, item)
+            }
+        }
+
+    @Test
+    fun givenIncrementalSyncStateEmitsPendingState_whenRunningUseCase_thenEmitGatheringPendingEventsState() =
+        runTest(TestKaliumDispatcher.default) {
+            val (_, useCase) = Arrangement()
+                .withSlowSyncCompletedState()
+                .withIncrementalSyncPendingState()
+                .arrange()
+
+            useCase().test {
+                val item = awaitItem()
+                assertEquals(SyncState.GatheringPendingEvents, item)
+            }
+        }
+
+    private class Arrangement {
+
+        @Mock
+        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
+
+        @Mock
+        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
+
+        fun arrange() = this to ObserveSyncStateUseCase(
+            slowSyncRepository = slowSyncRepository,
+            incrementalSyncRepository = incrementalSyncRepository
+        )
+
+        fun withSlowSyncFailureState() = apply {
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(slowSyncFailureFlow)
+        }
+
+        fun withSlowSyncOngoingState() = apply {
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(MutableStateFlow(SlowSyncStatus.Ongoing(SlowSyncStep.CONTACTS)).asStateFlow())
+        }
+
+        fun withSlowSyncPendingState() = apply {
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(MutableStateFlow(SlowSyncStatus.Pending).asStateFlow())
+        }
+
+        fun withSlowSyncCompletedState() = apply {
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
+        }
+
+        fun withIncrementalSyncLiveState() = apply {
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::incrementalSyncState)
+                .whenInvoked()
+                .thenReturn(flowOf(IncrementalSyncStatus.Live))
+        }
+
+        fun withIncrementalSyncFailedState() = apply {
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::incrementalSyncState)
+                .whenInvoked()
+                .thenReturn(incrementalSyncFailureFlow)
+        }
+
+        fun withIncrementalSyncFetchingPendingEventsState() = apply {
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::incrementalSyncState)
+                .whenInvoked()
+                .thenReturn(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
+        }
+
+        fun withIncrementalSyncPendingState() = apply {
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::incrementalSyncState)
+                .whenInvoked()
+                .thenReturn(flowOf(IncrementalSyncStatus.Pending))
+        }
+    }
+
+    companion object {
+        val coreFailure = CoreFailure.Unknown(null)
+        val slowSyncFailureFlow = MutableStateFlow(SlowSyncStatus.Failed(coreFailure)).asStateFlow()
+        val incrementalSyncFailureFlow = flowOf(IncrementalSyncStatus.Failed(coreFailure))
+    }
 }

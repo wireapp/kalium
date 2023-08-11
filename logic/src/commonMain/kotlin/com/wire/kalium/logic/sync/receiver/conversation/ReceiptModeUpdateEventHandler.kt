@@ -60,7 +60,7 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                     event.conversationId,
                     DateTimeUtil.currentIsoDateTimeString(),
                     event.senderUserId,
-                    Message.Status.SENT,
+                    Message.Status.Sent,
                     Message.Visibility.VISIBLE,
                     expirationData = null
                 )
