@@ -45,6 +45,15 @@ class SlowSyncRepositoryTest {
     }
 
     @Test
+    fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest(testDispatcher) {
+        // Empty Given
+
+        val lastSyncInstant = slowSyncRepository.observeLastSlowSyncCompletionInstant().first()
+
+        assertNull(lastSyncInstant)
+    }
+
+    @Test
     fun givenInstantIsUpdated_whenGettingTheLastSlowSyncInstant_thenShouldReturnTheNewState() = runTest(testDispatcher) {
         val instant = DateTimeUtil.currentInstant()
 
@@ -58,16 +67,6 @@ class SlowSyncRepositoryTest {
 
         slowSyncRepository.setSlowSyncVersion(version)
         assertEquals(version, slowSyncRepository.getSlowSyncVersion())
-    }
-
-    @IgnoreIOS // TODO investigate why test is failing on iOS
-    @Test
-    fun givenLastInstantWasNeverSet_whenGettingLastInstant_thenTheStateIsNull() = runTest(testDispatcher) {
-        // Empty Given
-
-        val lastSyncInstant = slowSyncRepository.observeLastSlowSyncCompletionInstant().first()
-
-        assertNull(lastSyncInstant)
     }
 
     @Test
