@@ -38,7 +38,7 @@ internal class LogoutApiV0Test : ApiTest() {
     @Test
     fun givenAValidRegisterLogoutRequest_whenCallingTheRegisterLogoutEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
-            val sessionManager = TEST_SESSION_NAMAGER
+            val sessionManager = TEST_SESSION_MANAGER
             val networkClient = mockAuthenticatedNetworkClient(
                 "",
                 statusCode = HttpStatusCode.Created,
@@ -55,7 +55,7 @@ internal class LogoutApiV0Test : ApiTest() {
 
     @Test
     fun givenTheServerReturnsAnError_whenCallingTheLogoutEndpoint_theCorrectExceptionIsThrown() = runTest {
-        val sessionManager = TEST_SESSION_NAMAGER
+        val sessionManager = TEST_SESSION_MANAGER
 
         val networkClient = mockAuthenticatedNetworkClient(
             ERROR_RESPONSE.rawJson,
