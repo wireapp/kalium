@@ -48,7 +48,7 @@ class EncryptedSettingsBuilderTest {
     }
 
     @Test
-    fun aa() = runTest {
+    fun givenShouldEncryptDataIsTrue_whenEncryptingData_thenShouldEncryptWithoutFailing() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         (1..500).map {
             testScope.launch {
