@@ -82,7 +82,7 @@ import kotlin.coroutines.CoroutineContext
  * @see [com.wire.kalium.logic.feature.auth.AuthenticationScope]
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
-
+@Suppress("LongParameterList")
 class GlobalKaliumScope internal constructor(
     userAgent: String,
     private val globalDatabase: Lazy<GlobalDatabaseProvider>,
@@ -90,7 +90,7 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private  val networkStateObserver: NetworkStateObserver
+    private val networkStateObserver: NetworkStateObserver
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
