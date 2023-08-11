@@ -22,11 +22,11 @@ import co.touchlab.kermit.LogWriter
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 
-internal var kaliumLogger = KaliumLogger.disabled()
+internal var kaliumUtilLogger = KaliumLogger.disabled()
 
 object NetworkUtilLogger {
     fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
-        kaliumLogger = KaliumLogger(
+        kaliumUtilLogger = KaliumLogger(
             config = KaliumLogger.Config(
                 severity = level,
                 tag = "Network"
@@ -35,5 +35,5 @@ object NetworkUtilLogger {
         )
     }
 
-    val isRequestLoggingEnabled: Boolean get() = kaliumLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
+    val isRequestLoggingEnabled: Boolean get() = kaliumUtilLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
 }
