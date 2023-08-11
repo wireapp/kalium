@@ -164,10 +164,6 @@ private suspend fun HttpClient.createUser(i: Int, team: Team, userPassword: Stri
             ).toJsonObject()
         )
     }.body<JsonObject>()
-    // needs to login with the newly created user
-//     println(put("self/handle") {
-//         setBody(mapOf("handle" to userId).toJsonObject())
-//     })
     val userId = response["id"]?.jsonPrimitive?.content ?: error("Could not register user in team")
     logger.d("Created user $email (id $userId) in team ${team.backend.teamName}")
     return UserData(email, userPassword, UserId(userId, team.backend.domain), team.backend)
