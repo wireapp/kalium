@@ -111,11 +111,14 @@ internal class ConversationGroupRepositoryImpl(
 
             when (apiResult) {
                 is Either.Left -> {
-                    val canRetryOnce = failedUsersList.isEmpty()
-                    if (apiResult.value.hasUnreachableDomainsError && canRetryOnce) {
-                        val error = apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
-                        val (validUsers, failedUsers) = usersList.partition { !error.domains.contains(it.domain) }
-                        if (failedUsers.isEmpty()) Either.Left(apiResult.value) // in case backend goes 🍌 and returns non-matching domains
+                    val canRetryOnce = apiResult.value.hasUnreachableDomainsError && failedUsersList.isEmpty()
+                    if (canRetryOnce) {
+                        val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
+                            usersList,
+                            apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
+                        )
+                        // edge case, in case backend goes 🍌 and returns non-matching domains
+                        if (failedUsers.isEmpty()) Either.Left(apiResult.value)
 
                         createGroupConversation(name, validUsers, options, failedUsers)
                     } else {
@@ -207,20 +210,19 @@ internal class ConversationGroupRepositoryImpl(
         val apiResult = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
-            conversationApi.addMember(
-                addParticipantRequest, conversationId.toApi()
-            )
+            conversationApi.addMember(addParticipantRequest, conversationId.toApi())
         }
 
         return when (apiResult) {
             is Either.Left -> {
-                val canRetryOnce = failedUsersList.isEmpty()
-                if ((apiResult.value.hasUnreachableDomainsError || apiResult.value.hasConflictingDomainsError) && canRetryOnce) {
-                    val error = apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
-                    val (validUsers, failedUsers) = userIdList.partition { !error.domains.contains(it.domain) }
-                    if (failedUsers.isEmpty()) Either.Left(apiResult.value) // in case backend goes 🍌 and returns non-matching domains
-
-                    // retry adding, only with filtered available members to the conversation
+                val canRetryOnce = apiResult.value.isRetryable && failedUsersList.isEmpty()
+                if (canRetryOnce) {
+                    val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
+                        userIdList,
+                        apiResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure
+                    )
+                    // edge case, in case backend goes 🍌 and returns non-matching domains
+                    if (failedUsers.isEmpty()) Either.Left(apiResult.value)
                     tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
                 } else {
                     Either.Left(apiResult.value)
@@ -234,9 +236,7 @@ internal class ConversationGroupRepositoryImpl(
                     )
                 }
                 if (failedUsersList.isNotEmpty()) {
-                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                        conversationId, failedUsersList
-                    )
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(conversationId, failedUsersList)
                 }
                 Either.Right(Unit)
             }
@@ -338,4 +338,18 @@ internal class ConversationGroupRepositoryImpl(
                 )
             }
             .map { }
+
+    /**
+     * Extract from a [NetworkFailure.FederatedBackendFailure.RetryableFailure] the domains
+     * and filter the initial [userIdList] into valid and invalid users.
+     */
+    private fun extractValidUsersForRetryableFederationError(
+        userIdList: List<UserId>,
+        federatedDomainFailure: NetworkFailure.FederatedBackendFailure.RetryableFailure
+    ): ValidToInvalidUsers {
+        val (validUsers, failedUsers) = userIdList.partition { !federatedDomainFailure.domains.contains(it.domain) }
+        return ValidToInvalidUsers(validUsers, failedUsers)
+    }
+
+    private data class ValidToInvalidUsers(val validUsers: List<UserId>, val failedUsers: List<UserId>)
 }
