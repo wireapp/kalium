@@ -243,8 +243,8 @@ suspend fun <T : Any> wrapFederationResponse(
     response: HttpResponse,
     delegatedHandler: suspend (HttpResponse) -> NetworkResponse<T>
 ) =
-    when (response.status) {
-        HttpStatusCode.Conflict -> {
+    when (response.status.value) {
+        HttpStatusCode.Conflict.value -> {
             val errorResponse = try {
                 response.body()
             } catch (_: NoTransformationFoundException) {
@@ -253,7 +253,7 @@ suspend fun <T : Any> wrapFederationResponse(
             NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
         }
 
-        HttpStatusCode.UnprocessableEntity -> {
+        HttpStatusCode.UnprocessableEntity.value -> {
             val errorResponse = try {
                 response.body()
             } catch (_: NoTransformationFoundException) {
@@ -262,7 +262,7 @@ suspend fun <T : Any> wrapFederationResponse(
             NetworkResponse.Error(KaliumException.FederationError(errorResponse))
         }
 
-        HttpStatusCode.ServiceUnavailable -> {
+        HttpStatusCode.UnreachableRemoteBackends.value -> {
             val errorResponse = try {
                 response.body()
             } catch (_: NoTransformationFoundException) {

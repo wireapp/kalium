@@ -18,8 +18,17 @@
 
 package com.wire.kalium.network.utils
 
+import io.ktor.http.HttpStatusCode
+
 private const val NOT_FOUND_ERROR_CODE = 404
 
 enum class HttpErrorCodes(val code: Int) {
     NOT_FOUND(NOT_FOUND_ERROR_CODE)
 }
+
+/**
+ * Custom [HttpStatusCode] to handle when one or more federated remote servers are unreachable.
+ */
+@Suppress("MagicNumber")
+internal val HttpStatusCode.Companion.UnreachableRemoteBackends: HttpStatusCode
+    get() = HttpStatusCode(533, "Unreachable remote backends")
