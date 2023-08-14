@@ -26,27 +26,32 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.serializer
 
 object ActionScheduler {
     @Suppress("TooGenericExceptionCaught")
+    @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     suspend fun start(testCases: List<TestCase>, coreLogic: CoreLogic) {
-        testCases.flatMap { it.actions }.forEach {
+        testCases.flatMap { it.actions }.forEach { actionConfig ->
             CoroutineScope(Dispatchers.Default).launch {
                 while (this.isActive) {
                     try {
-                        Action.fromConfig(it).execute(coreLogic)
+                        val actionName = actionConfig.type::class.serializer().descriptor.serialName
+                        logger.i("Running action $actionName: ${actionConfig.description} ${actionConfig.count} times")
+                        repeat(actionConfig.count.toInt()) {
+                            val startTime = System.currentTimeMillis()
+                            Action.fromConfig(actionConfig).execute(coreLogic)
+                            logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
+                        }
                     } catch (e: Exception) {
-                        logger.e("Error in action ${it.description}", e)
+                        logger.e("Error in action ${actionConfig.description}", e)
                     }
-                    delay(it.repeatInterval.toLong())
+                    delay(actionConfig.repeatInterval.toLong())
                 }
             }
         }
-    }
-
-    suspend fun schedule(config: ActionConfig, waitTime: ULong, coreLogic: CoreLogic) {
-        delay(waitTime.toLong())
-        Action.fromConfig(config).execute(coreLogic)
     }
 
     suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic) {

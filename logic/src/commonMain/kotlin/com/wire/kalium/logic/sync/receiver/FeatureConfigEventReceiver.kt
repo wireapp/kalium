@@ -151,10 +151,10 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     E2EISettings(
                         isRequired = event.model.status == Status.ENABLED,
                         discoverUrl = event.model.config.discoverUrl,
-                        notifyUserAfter = DateTimeUtil.currentInstant(),
                         gracePeriodEnd = Instant.fromEpochMilliseconds(gracePeriodEndMs)
                     )
                 )
+                userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
 
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,

@@ -374,7 +374,9 @@ sealed class EventContentDTO {
 
     @Serializable
     @SerialName("unknown")
-    object Unknown : EventContentDTO()
+    data class Unknown(
+        val type: String
+    ) : EventContentDTO()
 }
 
 @OptIn(ExperimentalSerializationApi::class, InternalSerializationApi::class)

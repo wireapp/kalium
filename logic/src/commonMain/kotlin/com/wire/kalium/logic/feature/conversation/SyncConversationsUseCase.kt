@@ -22,13 +22,17 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.functional.Either
 
+internal interface SyncConversationsUseCase {
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
+}
 /**
  * This use case will sync against the backend the conversations of the current user.
  */
-class SyncConversationsUseCase(private val conversationRepository: ConversationRepository) {
+internal class SyncConversationsUseCaseImpl(
+    private val conversationRepository: ConversationRepository
+) : SyncConversationsUseCase {
 
-    suspend operator fun invoke(): Either<CoreFailure, Unit> {
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> {
         return conversationRepository.fetchConversations()
     }
-
 }

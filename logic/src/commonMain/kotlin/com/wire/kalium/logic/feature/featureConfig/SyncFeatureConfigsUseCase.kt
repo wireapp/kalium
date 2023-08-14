@@ -172,9 +172,9 @@ internal class SyncFeatureConfigsUseCaseImpl(
             E2EISettings(
                 isRequired = featureConfig.status == Status.ENABLED,
                 discoverUrl = featureConfig.config.discoverUrl,
-                notifyUserAfter = DateTimeUtil.currentInstant(),
                 gracePeriodEnd = Instant.fromEpochMilliseconds(gracePeriodEndMs)
             )
         )
+        userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
     }
 }

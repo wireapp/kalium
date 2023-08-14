@@ -68,6 +68,11 @@ interface MemberDAOArrangement {
         result: Flow<List<MemberEntity>>,
         conversationId: Matcher<QualifiedIDEntity> = any()
     )
+
+    fun withDeleteMembersByQualifiedID(
+        conversationId: Matcher<QualifiedIDEntity> = any(),
+        memberIdList: Matcher<List<QualifiedIDEntity>> = any()
+    )
 }
 
 class MemberDAOArrangementImpl : MemberDAOArrangement {
@@ -137,6 +142,16 @@ class MemberDAOArrangementImpl : MemberDAOArrangement {
             .suspendFunction(memberDAO::observeConversationMembers)
             .whenInvokedWith(conversationId)
             .thenReturn(result)
+    }
+
+    override fun withDeleteMembersByQualifiedID(
+        conversationId: Matcher<QualifiedIDEntity>,
+        memberIdList: Matcher<List<QualifiedIDEntity>>
+    ) {
+        given(memberDAO)
+            .suspendFunction(memberDAO::deleteMembersByQualifiedID)
+            .whenInvokedWith(memberIdList, conversationId)
+            .thenReturn(Unit)
     }
 }
 
