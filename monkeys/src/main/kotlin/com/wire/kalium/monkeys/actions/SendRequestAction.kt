@@ -24,9 +24,9 @@ import kotlinx.coroutines.delay
 
 class SendRequestAction(val config: ActionType.SendRequest) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        val monkeys = MonkeyPool.randomLoggedInMonkeysFromDomain(this.config.originDomain, this.config.userCount)
+        val monkeys = MonkeyPool.randomLoggedInMonkeysFromTeam(this.config.originTeam, this.config.userCount)
         monkeys.forEach { origin ->
-            val targets = MonkeyPool.randomLoggedInMonkeysFromDomain(this.config.targetDomain, this.config.targetUserCount)
+            val targets = MonkeyPool.randomLoggedInMonkeysFromTeam(this.config.targetTeam, this.config.targetUserCount)
             targets.forEach { origin.sendRequest(it) }
             delay(this.config.delayResponse.toLong())
             if (this.config.shouldAccept) {
