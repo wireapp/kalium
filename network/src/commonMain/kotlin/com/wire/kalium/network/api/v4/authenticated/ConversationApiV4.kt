@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.GenerateGuestLinkRequest
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SubconversationId
