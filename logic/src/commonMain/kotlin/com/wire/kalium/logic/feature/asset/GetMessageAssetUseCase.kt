@@ -126,6 +126,7 @@ internal class GetMessageAssetUseCaseImpl(
                                 }
 
                                 it is NetworkFailure.FederatedBackendFailure -> MessageAssetResult.Failure(it, false)
+                                it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
                                 else -> MessageAssetResult.Failure(it, true)
                             }
                         }, { decodedAssetPath ->
