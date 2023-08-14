@@ -89,7 +89,8 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
                         content = generateRandomMessageContent(),
                         senderClientId = Random.nextLong(2_000).toString(),
                         editStatus = MessageEntity.EditStatus.NotEdited,
-                        senderName = "senderName"
+                        senderName = "senderName",
+                        readCount = 0
                     )
                 )
             }

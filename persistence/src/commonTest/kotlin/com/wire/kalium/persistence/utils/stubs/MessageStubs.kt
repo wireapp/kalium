@@ -48,7 +48,8 @@ fun newRegularMessageEntity(
     editStatus = editStatus,
     visibility = visibility,
     senderName = senderName,
-    expectsReadConfirmation = expectsReadConfirmation
+    expectsReadConfirmation = expectsReadConfirmation,
+    readCount = 0
 )
 
 @Suppress("LongParameterList")
@@ -73,5 +74,6 @@ fun newSystemMessageEntity(
     visibility = visibility,
     senderName = "senderName",
     expireAfterMs = null,
-    selfDeletionStartDate = null
+    selfDeletionStartDate = null,
+    readCount = 0
 )

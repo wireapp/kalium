@@ -88,7 +88,9 @@
                     "title",
                     "passwordForUsers",
                     "domain",
-                    "users"
+                    "authUser",
+                    "authPassword",
+                    "userCount"
                 ],
                 "properties": {
                     "api": {
@@ -127,26 +129,21 @@
                         "description": "Domain identifier of the team",
                         "type": "string"
                     },
-                    "users": {
-                        "description": "All users that are going to be used in the test",
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "email",
-                                "id"
-                            ],
-                            "properties": {
-                                "email": {
-                                    "description": "Email of the user",
-                                    "type": "string"
-                                },
-                                "id": {
-                                    "description": "UUID of the user",
-                                    "type": "string"
-                                }
-                            }
-                        }
+                    "authUser": {
+                        "description": "The backend API user to authenticate in order to access its APIs",
+                        "type": "string"
+                    },
+                    "authPassword": {
+                        "description": "The backend API password to authenticate in order to access its APIs",
+                        "type": "string"
+                    },
+                    "userCount": {
+                        "description": "How many users should be created in this team",
+                        "type": "integer"
+                    },
+                    "dumpUsers": {
+                        "description": "Should the application dump the users created into a file",
+                        "type": "boolean"
                     }
                 }
             }
@@ -320,8 +317,8 @@
                         "PROTEUS"
                     ]
                 },
-                "domainOwner": {
-                    "description": "Which domain should the picked user belong to. For better performance, inform this field",
+                "teamOwner": {
+                    "description": "Which team should the picked user belong to. For better performance, inform this field",
                     "type": "string"
                 }
             }
@@ -379,8 +376,8 @@
             "required": [
                 "userCount",
                 "targetUserCount",
-                "originDomain",
-                "targetDomain"
+                "originTeam",
+                "targetTeam"
             ],
             "properties": {
                 "userCount": {
@@ -388,15 +385,15 @@
                     "$ref": "#/$defs/UserCount"
                 },
                 "targetUserCount": {
-                    "description": "How many users of the target domain should receive requests",
+                    "description": "How many users of the target team should receive requests",
                     "$ref": "#/$defs/UserCount"
                 },
-                "originDomain": {
-                    "description": "Users from which domain should the requests originate",
+                "originTeam": {
+                    "description": "Users from which team should the requests originate",
                     "type": "string"
                 },
-                "targetDomain": {
-                    "description": "Users from which domain should be targeted",
+                "targetTeam": {
+                    "description": "Users from which team should be targeted",
                     "type": "string"
                 },
                 "delayResponse": {

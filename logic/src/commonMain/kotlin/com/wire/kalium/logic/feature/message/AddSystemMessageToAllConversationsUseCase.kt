@@ -49,7 +49,7 @@ class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
             conversationId = ConversationId("", ""),
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             expirationData = null
         )
         messageRepository.persistSystemMessageToAllConversations(message)

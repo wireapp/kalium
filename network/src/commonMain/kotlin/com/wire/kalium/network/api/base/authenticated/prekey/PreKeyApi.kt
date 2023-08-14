@@ -32,7 +32,22 @@ interface PreKeyApi {
         users: Map<String, Map<String, List<String>>>
     ): NetworkResponse<ListPrekeysResponse>
 
+    /**
+     * Retrieves the IDs of the prekeys currently available in the backend
+     * for the provided [clientId].
+     * @see uploadNewPrekeys
+     */
     suspend fun getClientAvailablePrekeys(clientId: String): NetworkResponse<List<Int>>
+
+    /**
+     * Uploads more prekeys to be associated with the provided [clientId],
+     * which can be used by other users to start conversations with the client.
+     * @see getClientAvailablePrekeys
+     */
+    suspend fun uploadNewPrekeys(
+        clientId: String,
+        preKeys: List<PreKeyDTO>
+    ): NetworkResponse<Unit>
 }
 
 typealias DomainToUserIdToClientsToPreKeyMap = Map<String, Map<String, Map<String, PreKeyDTO?>>>
