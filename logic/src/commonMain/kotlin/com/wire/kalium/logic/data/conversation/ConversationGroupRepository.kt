@@ -214,31 +214,49 @@ internal class ConversationGroupRepositoryImpl(
         }
 
         return when (apiResult) {
-            is Either.Left -> {
-                val canRetryOnce = apiResult.value.isRetryable && failedUsersList.isEmpty()
-                if (canRetryOnce) {
-                    val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
-                        userIdList,
-                        apiResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure
-                    )
-                    // edge case, in case backend goes 🍌 and returns non-matching domains
-                    if (failedUsers.isEmpty()) Either.Left(apiResult.value)
-                    tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
-                } else {
-                    Either.Left(apiResult.value)
-                }
-            }
+            is Either.Left -> handleAddingMembersFailure(apiResult, failedUsersList, userIdList, conversationId)
+            is Either.Right -> handleAddingMembersSuccess(apiResult, failedUsersList, conversationId)
+        }
+    }
 
-            is Either.Right -> {
-                if (apiResult.value is ConversationMemberAddedResponse.Changed) {
-                    memberJoinEventHandler.handle(
-                        eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true)
-                    )
-                }
-                if (failedUsersList.isNotEmpty()) {
-                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(conversationId, failedUsersList)
-                }
-                Either.Right(Unit)
+    private suspend fun handleAddingMembersSuccess(
+        apiResult: Either.Right<ConversationMemberAddedResponse>,
+        failedUsersList: Set<UserId>,
+        conversationId: ConversationId
+    ) = if (apiResult.value is ConversationMemberAddedResponse.Changed) {
+        memberJoinEventHandler.handle(
+            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true)
+        ).flatMap {
+            if (failedUsersList.isNotEmpty()) {
+                newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(conversationId, failedUsersList)
+            }
+            Either.Right(Unit)
+        }
+    } else {
+        Either.Right(Unit)
+    }
+
+    private suspend fun handleAddingMembersFailure(
+        apiResult: Either.Left<NetworkFailure>,
+        failedUsersList: Set<UserId>,
+        userIdList: List<UserId>,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> {
+        val canRetryOnce = apiResult.value.isRetryable && failedUsersList.isEmpty()
+        return if (canRetryOnce) {
+            val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
+                userIdList,
+                apiResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure
+            )
+            // edge case, in case backend goes 🍌 and returns non-matching domains
+            if (failedUsers.isEmpty()) Either.Left(apiResult.value)
+            tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
+        } else {
+            newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                conversationId,
+                failedUsersList + userIdList
+            ).flatMap {
+                Either.Left(apiResult.value)
             }
         }
     }

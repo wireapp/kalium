@@ -376,16 +376,25 @@ class ConversationGroupRepositoryTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withInsertFailedToAddSystemMessageSuccess()
             .withAddMemberAPIFailed()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        val expectedInitialUsers = listOf(TestConversation.USER_1, TestConversation.USER_2)
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID)
             .shouldFail()
 
         verify(arrangement.memberJoinEventHandler)
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
             .with(anything())
             .wasNotInvoked()
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            .with(anything(), matching {
+                it.containsAll(expectedInitialUsers)
+            })
+            .wasInvoked(once)
     }
 
     @Test
@@ -890,8 +899,10 @@ class ConversationGroupRepositoryTest {
 
             verify(arrangement.newGroupConversationSystemMessagesCreator)
                 .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
-                .with(anything(), anything())
-                .wasNotInvoked()
+                .with(anything(), matching {
+                    it.containsAll(expectedInitialUsers)
+                })
+                .wasInvoked(once)
         }
 
     private class Arrangement :
