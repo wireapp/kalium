@@ -59,7 +59,7 @@ internal class ConversationVerificationStatusHandlerImpl(
                 conversationId = conversation.id,
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 visibility = Message.Visibility.VISIBLE,
                 expirationData = null
             )

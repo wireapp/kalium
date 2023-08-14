@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.receipt.DetailedReceiptEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -156,10 +157,39 @@ class ReceiptsMapperTest {
         )
     }
 
-    private class Arrangement {
+    @Test
+    fun givenReadReceiptType_whenMappingToMessageEntityStatus_thenReturnReadStatus() = runTest {
+        // given
+        val (_, receiptsMapper) = Arrangement()
+            .arrange()
 
-        @Mock
-        val idMapper = mock(IdMapper::class)
+        // when
+        val result = receiptsMapper.fromTypeToMessageStatus(type = ReceiptType.READ)
+
+        // then
+        assertEquals(
+            MessageEntity.Status.READ,
+            result
+        )
+    }
+
+    @Test
+    fun givenDeliveryReceiptType_whenMappingToMessageEntityStatus_thenReturnDeliveryStatus() = runTest {
+        // given
+        val (_, receiptsMapper) = Arrangement()
+            .arrange()
+
+        // when
+        val result = receiptsMapper.fromTypeEntity(type = ReceiptTypeEntity.DELIVERY)
+
+        // then
+        assertEquals(
+            ReceiptType.DELIVERED,
+            result
+        )
+    }
+
+    private class Arrangement {
 
         @Mock
         val availabilityStatusMapper = mock(AvailabilityStatusMapper::class)
@@ -192,7 +222,7 @@ class ReceiptsMapperTest {
         }
 
         fun arrange() = this to ReceiptsMapperImpl(
-            idMapper, availabilityStatusMapper, connectionStateMapper, domainUserTypeMapper
+            availabilityStatusMapper, connectionStateMapper, domainUserTypeMapper
         )
     }
 

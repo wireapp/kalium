@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
-import com.wire.kalium.logic.sync.incremental.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 

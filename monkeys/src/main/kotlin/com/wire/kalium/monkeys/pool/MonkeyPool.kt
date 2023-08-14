@@ -40,15 +40,15 @@ object MonkeyPool {
     fun init(users: List<UserData>) {
         users.forEach {
             val monkey = Monkey(it)
-            this.pool.getOrPut(it.backend.domain) { mutableListOf() }.add(monkey)
-            this.poolLoggedOut.getOrPut(it.backend.domain) { ConcurrentHashMap() }[it.userId] = monkey
+            this.pool.getOrPut(it.backend.teamName) { mutableListOf() }.add(monkey)
+            this.poolLoggedOut.getOrPut(it.backend.teamName) { ConcurrentHashMap() }[it.userId] = monkey
             this.poolById[it.userId] = monkey
         }
     }
 
-    fun randomMonkeysFromDomain(domain: String, userCount: UserCount): List<Monkey> {
+    fun randomMonkeysFromTeam(team: String, userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount)
-        val backendUsers = this.pool[domain]?.shuffled() ?: error("Domain $domain doesn't exist or there are no monkeys in the domain")
+        val backendUsers = this.pool[team]?.shuffled() ?: error("Team $team doesn't exist or there are no monkeys in the team")
         return backendUsers.take(count.toInt())
     }
 
@@ -61,10 +61,10 @@ object MonkeyPool {
         return allUsers.take(count.toInt())
     }
 
-    fun randomLoggedInMonkeysFromDomain(domain: String, userCount: UserCount): List<Monkey> {
-        val count = resolveUserCount(userCount, domain)
+    fun randomLoggedInMonkeysFromTeam(team: String, userCount: UserCount): List<Monkey> {
+        val count = resolveUserCount(userCount, team)
         val backendUsers =
-            this.poolLoggedIn[domain]?.values?.shuffled() ?: error("Domain $domain doesn't exist or there are not monkeys logged in")
+            this.poolLoggedIn[team]?.values?.shuffled() ?: error("Domain $team doesn't exist or there are not monkeys logged in")
         return backendUsers.take(count.toInt())
     }
 
@@ -87,13 +87,13 @@ object MonkeyPool {
     }
 
     fun loggedIn(monkey: Monkey) {
-        this.poolLoggedIn.getOrPut(monkey.user.backend.domain) { ConcurrentHashMap() }[monkey.user.userId] = monkey
-        this.poolLoggedOut[monkey.user.backend.domain]?.remove(monkey.user.userId)
+        this.poolLoggedIn.getOrPut(monkey.user.backend.teamName) { ConcurrentHashMap() }[monkey.user.userId] = monkey
+        this.poolLoggedOut[monkey.user.backend.teamName]?.remove(monkey.user.userId)
     }
 
     fun loggedOut(monkey: Monkey) {
-        this.poolLoggedIn[monkey.user.backend.domain]?.remove(monkey.user.userId)
-        this.poolLoggedOut.getOrPut(monkey.user.backend.domain) { ConcurrentHashMap() }[monkey.user.userId] = monkey
+        this.poolLoggedIn[monkey.user.backend.teamName]?.remove(monkey.user.userId)
+        this.poolLoggedOut.getOrPut(monkey.user.backend.teamName) { ConcurrentHashMap() }[monkey.user.userId] = monkey
     }
 
     private fun resolveUserCount(userCount: UserCount): UInt {
@@ -101,8 +101,8 @@ object MonkeyPool {
         return resolveUserCount(userCount, totalUsers)
     }
 
-    private fun resolveUserCount(userCount: UserCount, domain: String): UInt {
-        val totalUsers: UInt = this.pool[domain]?.count()?.toUInt() ?: error("Domain $domain not found")
+    private fun resolveUserCount(userCount: UserCount, team: String): UInt {
+        val totalUsers: UInt = this.pool[team]?.count()?.toUInt() ?: error("Domain $team not found")
         return resolveUserCount(userCount, totalUsers)
     }
 

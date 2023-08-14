@@ -61,7 +61,6 @@ import kotlin.test.assertEquals
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class IncrementalSyncManagerTest {
 
     @Test

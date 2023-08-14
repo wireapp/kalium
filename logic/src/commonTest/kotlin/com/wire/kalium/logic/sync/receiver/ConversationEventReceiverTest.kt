@@ -1,0 +1,311 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.sync.receiver
+
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MLSWelcomeEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.classOf
+import io.mockative.eq
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
+import kotlin.test.Test
+
+class ConversationEventReceiverTest {
+    @Test
+    fun givenNewMessageEvent_whenOnEventInvoked_thenNewMessageEventHandlerShouldBeCalled() = runTest {
+        val newMessageEvent = TestEvent.newMessageEvent("some-dummy-encrypted-content")
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(newMessageEvent)
+
+        verify(arrangement.newMessageEventHandler)
+            .suspendFunction(arrangement.newMessageEventHandler::handleNewProteusMessage)
+            .with(eq(newMessageEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenNewMLSMessageEvent_whenOnEventInvoked_thenNewMLSMessageEventHandlerShouldBeCalled() = runTest {
+        val newMLSMessageEvent = TestEvent.newMLSMessageEvent(Instant.DISTANT_FUTURE)
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(newMLSMessageEvent)
+
+        verify(arrangement.newMessageEventHandler)
+            .suspendFunction(arrangement.newMessageEventHandler::handleNewMLSMessage)
+            .with(eq(newMLSMessageEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenNewConversationEvent_whenOnEventInvoked_thenNewConversationHandlerShouldBeCalled() = runTest {
+        val newConversationEvent = TestEvent.newConversationEvent()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(newConversationEvent)
+
+        verify(arrangement.newConversationEventHandler)
+            .suspendFunction(arrangement.newConversationEventHandler::handle)
+            .with(eq(newConversationEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenDeletedConversationEvent_whenOnEventInvoked_thenDeletedConversationHandlerShouldBeCalled() = runTest {
+        val deletedConversationEvent = TestEvent.deletedConversation()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(deletedConversationEvent)
+
+        verify(arrangement.deletedConversationEventHandler)
+            .suspendFunction(arrangement.deletedConversationEventHandler::handle)
+            .with(eq(deletedConversationEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenMemberJoinEvent_whenOnEventInvoked_thenMemberJoinHandlerShouldBeCalled() = runTest {
+        val memberJoinEvent = TestEvent.memberJoin()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMemberJoinSucceeded()
+            .arrange()
+
+        val result = featureConfigEventReceiver.onEvent(memberJoinEvent)
+
+        verify(arrangement.memberJoinEventHandler)
+            .suspendFunction(arrangement.memberJoinEventHandler::handle)
+            .with(eq(memberJoinEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenMemberLeaveEvent_whenOnEventInvoked_thenPropagateMemberLeaveHandlerResult() = runTest {
+        val memberLeaveEvent = TestEvent.memberLeave()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMemberLeaveSucceeded()
+            .arrange()
+
+        val result = featureConfigEventReceiver.onEvent(memberLeaveEvent)
+
+        verify(arrangement.memberLeaveEventHandler)
+            .suspendFunction(arrangement.memberLeaveEventHandler::handle)
+            .with(eq(memberLeaveEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenMemberChangeEvent_whenOnEventInvoked_thenMemberChangeHandlerShouldBeCalled() = runTest {
+        val memberChangeEvent = TestEvent.memberChange(member = Conversation.Member(TestUser.USER_ID, Conversation.Member.Role.Admin))
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(memberChangeEvent)
+
+        verify(arrangement.memberChangeEventHandler)
+            .suspendFunction(arrangement.memberChangeEventHandler::handle)
+            .with(eq(memberChangeEvent))
+            .wasInvoked(once)
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenMLSWelcomeEvent_whenOnEventInvoked_thenMlsWelcomeHandlerShouldBeCalled() = runTest {
+        val mlsWelcomeEvent = TestEvent.newMLSWelcomeEvent()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(mlsWelcomeEvent)
+
+        verify(arrangement.mLSWelcomeEventHandler)
+            .suspendFunction(arrangement.mLSWelcomeEventHandler::handle)
+            .with(eq(mlsWelcomeEvent))
+            .wasInvoked(once)
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenRenamedConversationEvent_whenOnEventInvoked_thenRenamedConversationHandlerShouldBeCalled() = runTest {
+        val renamedConversationEvent = TestEvent.renamedConversation()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(renamedConversationEvent)
+
+        verify(arrangement.renamedConversationEventHandler)
+            .suspendFunction(arrangement.renamedConversationEventHandler::handle)
+            .with(eq(renamedConversationEvent))
+            .wasInvoked(once)
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenConversationReceiptModeEvent_whenOnEventInvoked_thenReceiptModeUpdateEventHandlerShouldBeCalled() = runTest {
+        val receiptModeUpdateEvent = TestEvent.receiptModeUpdate()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(receiptModeUpdateEvent)
+
+        verify(arrangement.receiptModeUpdateEventHandler)
+            .suspendFunction(arrangement.receiptModeUpdateEventHandler::handle)
+            .with(eq(receiptModeUpdateEvent))
+            .wasInvoked(once)
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenAccessUpdateEvent_whenOnEventInvoked_thenReturnSuccess() = runTest {
+        val accessUpdateEvent = TestEvent.newAccessUpdateEvent()
+
+        val (_, featureConfigEventReceiver) = Arrangement().arrange()
+
+        val result = featureConfigEventReceiver.onEvent(accessUpdateEvent)
+
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenConversationMessageTimerEvent_whenOnEventInvoked_thenPropagateConversationMessageTimerEventHandlerResult() = runTest {
+        val conversationMessageTimerEvent = TestEvent.timerChanged()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withConversationMessageTimerFailed()
+            .arrange()
+
+        val result = featureConfigEventReceiver.onEvent(conversationMessageTimerEvent)
+
+        verify(arrangement.conversationMessageTimerEventHandler)
+            .suspendFunction(arrangement.conversationMessageTimerEventHandler::handle)
+            .with(eq(conversationMessageTimerEvent))
+            .wasInvoked(once)
+
+        result.shouldFail()
+    }
+
+    private class Arrangement {
+
+        @Mock
+        val conversationMessageTimerEventHandler = mock(classOf<ConversationMessageTimerEventHandler>())
+
+        @Mock
+        val receiptModeUpdateEventHandler = mock(classOf<ReceiptModeUpdateEventHandler>())
+
+        @Mock
+        val renamedConversationEventHandler = mock(classOf<RenamedConversationEventHandler>())
+
+        @Mock
+        val mLSWelcomeEventHandler = mock(classOf<MLSWelcomeEventHandler>())
+
+        @Mock
+        val memberChangeEventHandler = mock(classOf<MemberChangeEventHandler>())
+
+        @Mock
+        val memberLeaveEventHandler = mock(classOf<MemberLeaveEventHandler>())
+
+        @Mock
+        val memberJoinEventHandler = mock(classOf<MemberJoinEventHandler>())
+
+        @Mock
+        val newMessageEventHandler = mock(classOf<NewMessageEventHandler>())
+
+        @Mock
+        val newConversationEventHandler = mock(classOf<NewConversationEventHandler>())
+
+        @Mock
+        val deletedConversationEventHandler = mock(classOf<DeletedConversationEventHandler>())
+
+        private val featureConfigEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
+            newMessageHandler = newMessageEventHandler,
+            newConversationHandler = newConversationEventHandler,
+            deletedConversationHandler = deletedConversationEventHandler,
+            memberJoinHandler = memberJoinEventHandler,
+            memberLeaveHandler = memberLeaveEventHandler,
+            memberChangeHandler = memberChangeEventHandler,
+            mlsWelcomeHandler = mLSWelcomeEventHandler,
+            renamedConversationHandler = renamedConversationEventHandler,
+            receiptModeUpdateEventHandler = receiptModeUpdateEventHandler,
+            conversationMessageTimerEventHandler = conversationMessageTimerEventHandler
+        )
+
+        fun arrange() = this to featureConfigEventReceiver
+
+        fun withMemberLeaveSucceeded() = apply {
+            given(memberLeaveEventHandler)
+                .suspendFunction(memberLeaveEventHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withMemberJoinSucceeded() = apply {
+            given(memberJoinEventHandler)
+                .suspendFunction(memberJoinEventHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withConversationMessageTimerFailed() = apply {
+            given(conversationMessageTimerEventHandler)
+                .suspendFunction(conversationMessageTimerEventHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Left(failure))
+        }
+    }
+
+    companion object {
+        val failure = CoreFailure.MissingClientRegistration
+    }
+}

@@ -25,6 +25,7 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.logic.data.asset.isAudioMimeType
 import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -85,7 +86,8 @@ interface ScheduleNewAssetMessageUseCase {
         assetName: String,
         assetMimeType: String,
         assetWidth: Int?,
-        assetHeight: Int?
+        assetHeight: Int?,
+        audioLengthInMs: Long
     ): ScheduleNewAssetMessageResult
 }
 
@@ -118,6 +120,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetMimeType: String,
         assetWidth: Int?,
         assetHeight: Int?,
+        audioLengthInMs: Long
     ): ScheduleNewAssetMessageResult {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -142,6 +145,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 expireAfter = messageTimer,
+                audioLengthInMs = audioLengthInMs,
                 expectsReadConfirmation = expectsReadConfirmation
             ).onSuccess { (currentAssetMessageContent, message) ->
                 // We schedule the asset upload and return Either.Right so later it's transformed to Success(message.id)
@@ -186,6 +190,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetWidth: Int?,
         assetHeight: Int?,
         expireAfter: Duration?,
+        audioLengthInMs: Long,
         expectsReadConfirmation: Boolean
     ): Either<CoreFailure, Pair<AssetMessageMetadata, Message.Regular>> = currentClientIdProvider().flatMap { currentClientId ->
         // Create a temporary asset key and domain
@@ -208,6 +213,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         sha256Key = SHA256Key(byteArrayOf()),
                         // Asset ID will be replaced with right value after asset upload
                         assetId = UploadedAssetId(generatedAssetUuid, tempAssetDomain),
+                        audioLengthInMs = audioLengthInMs
                     )
 
                     val message = Message.Regular(
@@ -223,7 +229,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         date = DateTimeUtil.currentIsoDateTimeString(),
                         senderUserId = userId,
                         senderClientId = currentClientId,
-                        status = Message.Status.PENDING,
+                        status = Message.Status.Pending,
                         editStatus = Message.EditStatus.NotEdited,
                         expectsReadConfirmation = expectsReadConfirmation,
                         expirationData = expireAfter?.let { Message.ExpirationData(it) },
@@ -307,6 +313,13 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
                     }
 
+                    isAudioMimeType(mimeType) -> {
+                        AssetContent.AssetMetadata.Audio(
+                            durationMs = audioLengthInMs,
+                            normalizedLoudness = null
+                        )
+                    }
+
                     else -> null
                 },
                 remoteData = AssetContent.RemoteData(
@@ -345,5 +358,6 @@ private data class AssetMessageMetadata(
     val assetWidth: Int?,
     val assetHeight: Int?,
     val otrKey: AES256Key,
-    val sha256Key: SHA256Key
+    val sha256Key: SHA256Key,
+    val audioLengthInMs: Long
 )

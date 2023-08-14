@@ -84,11 +84,11 @@ object ConversationPool {
     }
 
     suspend fun createDynamicConversation(
-        domain: String,
+        team: String,
         userCount: UserCount,
         protocol: ConversationOptions.Protocol
     ) {
-        val creator = MonkeyPool.randomMonkeysFromDomain(domain, UserCount.single())[0]
+        val creator = MonkeyPool.randomMonkeysFromTeam(team, UserCount.single())[0]
         this.createDynamicConversation(creator, userCount, protocol)
     }
 

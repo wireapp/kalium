@@ -45,16 +45,14 @@ actual class CoreLogic(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
 
-    override val globalPreferences: Lazy<GlobalPrefProvider> = lazy {
+    override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
             rootPath = rootPath,
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
-    }
 
-    override val globalDatabase: Lazy<GlobalDatabaseProvider> = lazy {
+    override val globalDatabase: GlobalDatabaseProvider =
         GlobalDatabaseProvider(File("$rootPath/global-storage"))
-    }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
@@ -73,7 +71,7 @@ actual class CoreLogic(
             rootPathsProvider,
             getGlobalScope(),
             kaliumConfigs,
-            globalPreferences.value,
+            globalPreferences,
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
