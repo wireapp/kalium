@@ -53,7 +53,7 @@ internal class ConversationMessageTimerEventHandlerImpl(
                     event.conversationId,
                     event.timestampIso,
                     event.senderUserId,
-                    Message.Status.SENT,
+                    Message.Status.Sent,
                     Message.Visibility.VISIBLE,
                     expirationData = null
                 )

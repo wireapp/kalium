@@ -139,7 +139,7 @@ class MemberLeaveEventHandlerTest {
             conversationId = memberLeaveEvent.conversationId,
             date = memberLeaveEvent.timestampIso,
             senderUserId = memberLeaveEvent.removedBy,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )

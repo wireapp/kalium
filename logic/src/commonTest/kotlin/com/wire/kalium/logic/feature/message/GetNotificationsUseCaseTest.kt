@@ -409,7 +409,7 @@ class GetNotificationsUseCaseTest {
                 date = TIME,
                 senderUserId = senderId,
                 senderClientId = ClientId("client_1"),
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 editStatus = Message.EditStatus.NotEdited,
                 visibility = visibility,
                 isSelfMessage = false
@@ -444,7 +444,7 @@ class GetNotificationsUseCaseTest {
                 date = TIME,
                 senderUserId = senderId,
                 senderClientId = ClientId("client_1"),
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 editStatus = Message.EditStatus.NotEdited,
                 isSelfMessage = false
             )
@@ -460,7 +460,7 @@ class GetNotificationsUseCaseTest {
                 conversationId = conversationId,
                 date = "some_time",
                 senderUserId = senderId,
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 expirationData = null
             )
 
