@@ -302,6 +302,7 @@ object MessageMapper {
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
         selfDeletionStartDate: Instant?,
+        readCount: Long,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?
     ): MessageEntity = when (content) {
@@ -325,6 +326,7 @@ object MessageMapper {
                 senderName = senderName,
                 isSelfMessage = isSelfMessage,
                 expectsReadConfirmation = expectsReadConfirmation,
+                readCount = readCount,
                 deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
                     recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
                     recipientsFailedDeliveryList = recipientsFailedDeliveryList
@@ -342,6 +344,7 @@ object MessageMapper {
             visibility = visibility,
             senderName = senderName,
             isSelfMessage = isSelfMessage,
+            readCount = readCount,
             expireAfterMs = expireAfterMillis,
             selfDeletionStartDate = selfDeletionStartDate
         )
@@ -365,6 +368,7 @@ object MessageMapper {
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
         selfDeletionStartDate: Instant?,
+        readCount: Long,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -426,7 +430,7 @@ object MessageMapper {
         messageTimerChanged: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
-        buttonsJson: String,
+        buttonsJson: String
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -568,6 +572,7 @@ object MessageMapper {
             expectsReadConfirmation,
             expireAfterMillis,
             selfDeletionStartDate,
+            readCount,
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList
         )

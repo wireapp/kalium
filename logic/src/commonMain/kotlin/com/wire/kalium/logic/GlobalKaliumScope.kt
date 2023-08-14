@@ -84,8 +84,8 @@ import kotlin.coroutines.CoroutineContext
 
 class GlobalKaliumScope internal constructor(
     userAgent: String,
-    private val globalDatabase: Lazy<GlobalDatabaseProvider>,
-    private val globalPreferences: Lazy<GlobalPrefProvider>,
+    private val globalDatabase: GlobalDatabaseProvider,
+    private val globalPreferences: GlobalPrefProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider
@@ -104,15 +104,15 @@ class GlobalKaliumScope internal constructor(
     internal val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
             unboundNetworkContainer.serverConfigApi,
-            globalDatabase.value.serverConfigurationDAO,
+            globalDatabase.serverConfigurationDAO,
             unboundNetworkContainer.remoteVersion,
             kaliumConfigs.developmentApiEnabled
         )
 
     val sessionRepository: SessionRepository
         get() = SessionDataSource(
-            globalDatabase.value.accountsDAO,
-            globalPreferences.value.authTokenStorage,
+            globalDatabase.accountsDAO,
+            globalPreferences.authTokenStorage,
             serverConfigRepository,
             kaliumConfigs
         )
@@ -122,7 +122,7 @@ class GlobalKaliumScope internal constructor(
 
     private val notificationTokenRepository: NotificationTokenRepository
         get() =
-            NotificationTokenDataSource(globalPreferences.value.tokenStorage)
+            NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()

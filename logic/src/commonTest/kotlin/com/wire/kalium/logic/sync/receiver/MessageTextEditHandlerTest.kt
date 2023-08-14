@@ -80,7 +80,7 @@ class MessageTextEditHandlerTest {
         val originalMessage = ORIGINAL_MESSAGE.copy(
             editStatus = originalEditStatus,
             content = originalContent,
-            status = Message.Status.PENDING
+            status = Message.Status.Pending
         )
         val editContent = EDIT_CONTENT
         val editMessage = EDIT_MESSAGE.copy(
@@ -112,7 +112,8 @@ class MessageTextEditHandlerTest {
         val originalMessage = ORIGINAL_MESSAGE.copy(
             editStatus = originalEditStatus,
             content = originalContent,
-            status = Message.Status.PENDING
+            status = Message.Status.Pending
+
         )
         val editContent = EDIT_CONTENT
         val editMessage = EDIT_MESSAGE.copy(

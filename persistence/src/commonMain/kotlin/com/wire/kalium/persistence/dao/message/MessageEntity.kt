@@ -42,11 +42,11 @@ sealed interface MessageEntity {
     val date: Instant
     val senderUserId: QualifiedIDEntity
     val status: Status
+    val readCount: Long
     val visibility: Visibility
     val isSelfMessage: Boolean
     val expireAfterMs: Long?
     val selfDeletionStartDate: Instant?
-
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
@@ -56,6 +56,7 @@ sealed interface MessageEntity {
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
         override val isSelfMessage: Boolean = false,
+        override val readCount: Long,
         override val expireAfterMs: Long? = null,
         override val selfDeletionStartDate: Instant? = null,
         val senderName: String?,
@@ -75,6 +76,7 @@ sealed interface MessageEntity {
         override val status: Status,
         override val expireAfterMs: Long?,
         override val selfDeletionStartDate: Instant?,
+        override val readCount: Long,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
@@ -90,6 +92,11 @@ sealed interface MessageEntity {
          * The message was sent to the backend.
          */
         SENT,
+
+        /**
+         * The message was delivered but not read.
+         */
+        DELIVERED,
 
         /**
          * The message was marked as read locally.

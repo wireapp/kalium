@@ -23,8 +23,8 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 
 class CreateConversationAction(val config: ActionType.CreateConversation) : Action() {
     override suspend fun execute(coreLogic: CoreLogic) {
-        if (this.config.domain != null) {
-            ConversationPool.createDynamicConversation(this.config.domain, this.config.userCount, this.config.protocol)
+        if (this.config.team != null) {
+            ConversationPool.createDynamicConversation(this.config.team, this.config.userCount, this.config.protocol)
         } else {
             ConversationPool.createDynamicConversation(this.config.userCount, this.config.protocol)
         }

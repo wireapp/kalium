@@ -67,7 +67,7 @@ class SendButtonActionMessageUseCase internal constructor(
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = selfUserId,
                     senderClientId = currentClientId,
-                    status = Message.Status.PENDING,
+                    status = Message.Status.Pending,
                     isSelfMessage = true,
                     expirationData = null
                 )

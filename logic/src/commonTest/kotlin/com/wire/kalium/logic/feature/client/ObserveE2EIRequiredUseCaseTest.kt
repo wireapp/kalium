@@ -34,7 +34,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
@@ -47,9 +49,11 @@ class ObserveE2EIRequiredUseCaseTest {
     fun givenSettingWithoutNotifyDate_thenNoEmitting() = runTest {
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(MLS_E2EI_SETTING)
+            .withE2EINotificationTime(null)
             .arrange()
 
         useCase().test {
+            advanceUntilIdle()
             awaitComplete()
         }
     }
@@ -57,11 +61,11 @@ class ObserveE2EIRequiredUseCaseTest {
     @Test
     fun givenSettingWithNotifyDateInPast_thenEmitResult() = runTest {
         val setting = MLS_E2EI_SETTING.copy(
-            notifyUserAfter = DateTimeUtil.currentInstant(),
             gracePeriodEnd = DateTimeUtil.currentInstant().plus(2.days)
         )
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .arrange()
 
         useCase().test {
@@ -73,15 +77,15 @@ class ObserveE2EIRequiredUseCaseTest {
     @Test
     fun givenSettingWithDeadlineInPast_thenEmitResult() = runTest {
         val setting = MLS_E2EI_SETTING.copy(
-            notifyUserAfter = DateTimeUtil.currentInstant(),
             gracePeriodEnd = DateTimeUtil.currentInstant()
         )
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .arrange()
 
         useCase().test {
-            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod }
+            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod.Create }
             awaitComplete()
         }
     }
@@ -90,11 +94,11 @@ class ObserveE2EIRequiredUseCaseTest {
     fun givenSettingWithNotifyDateInFuture_thenEmitResultWithDelay() = runTest(TestKaliumDispatcher.io) {
         val delayDuration = 10.minutes
         val setting = MLS_E2EI_SETTING.copy(
-            notifyUserAfter = DateTimeUtil.currentInstant().plus(delayDuration),
             gracePeriodEnd = DateTimeUtil.currentInstant()
         )
         val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant().plus(delayDuration))
             .arrange()
 
         useCase().test {
@@ -102,7 +106,7 @@ class ObserveE2EIRequiredUseCaseTest {
             expectNoEvents()
 
             advanceTimeBy(delayDuration.inWholeMilliseconds)
-            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod }
+            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod.Create }
             awaitComplete()
         }
     }
@@ -110,16 +114,16 @@ class ObserveE2EIRequiredUseCaseTest {
     @Test
     fun givenSettingWithNotifyDateInPast_thenEmitResultWithoutDelay() = runTest(TestKaliumDispatcher.io) {
         val setting = MLS_E2EI_SETTING.copy(
-            notifyUserAfter = DateTimeUtil.currentInstant(),
             gracePeriodEnd = DateTimeUtil.currentInstant()
         )
         val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .arrange()
 
         useCase().test {
             advanceTimeBy(1000L)
-            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod }
+            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod.Create }
             awaitComplete()
         }
     }
@@ -128,6 +132,7 @@ class ObserveE2EIRequiredUseCaseTest {
     fun givenSettingWithoutDeadline_thenNoEmitting() = runTest {
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(MLS_E2EI_SETTING)
+            .withE2EINotificationTime(null)
             .arrange()
 
         useCase().test {
@@ -137,12 +142,14 @@ class ObserveE2EIRequiredUseCaseTest {
 
     @Test
     fun givenSettingWithDisabledStatus_thenNoEmitting() = runTest {
-        val setting = MLS_E2EI_SETTING.copy(isRequired = false, notifyUserAfter = DateTimeUtil.currentInstant())
+        val setting = MLS_E2EI_SETTING.copy(isRequired = false)
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .arrange()
 
         useCase().test {
+            assertTrue { awaitItem() == E2EIRequiredResult.NotRequired }
             awaitComplete()
         }
     }
@@ -160,11 +167,17 @@ class ObserveE2EIRequiredUseCaseTest {
                 .whenInvoked()
                 .then { flowOf(Either.Right(setting)) }
         }
+        fun withE2EINotificationTime(instant: Instant?) = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::observeE2EINotificationTime)
+                .whenInvoked()
+                .then { flowOf(Either.Right(instant)) }
+        }
 
         fun arrange() = this to observeMLSEnabledUseCase
     }
 
     companion object {
-        private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null, null)
+        private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null)
     }
 }
