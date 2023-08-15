@@ -305,7 +305,7 @@ SET guest_room_link = :link, is_guest_password_protected = :isPasswordProtected
 WHERE qualified_id = :conversationId;
 
 getGuestRoomLinkByConversationId:
-SELECT guest_room_link FROM Conversation WHERE qualified_id = ?;
+SELECT guest_room_link, is_guest_password_protected FROM Conversation WHERE qualified_id = :conversationId;
 
 updateMessageTimer:
 UPDATE Conversation

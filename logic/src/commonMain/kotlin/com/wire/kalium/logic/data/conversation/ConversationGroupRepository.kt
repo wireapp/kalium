@@ -40,6 +40,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimer
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapNullableFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
@@ -53,6 +54,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 interface ConversationGroupRepository {
     suspend fun createGroupConversation(
@@ -78,7 +80,7 @@ interface ConversationGroupRepository {
     ): Either<NetworkFailure, EventContentDTO.Conversation.CodeUpdated>
 
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
-    suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
+    suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
     suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit>
 }
 
@@ -332,8 +334,11 @@ internal class ConversationGroupRepositoryImpl(
             }
         }
 
-    override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
-        conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
+    override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>> =
+        wrapNullableFlowStorageRequest {
+            conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
+                .map { it?.let { ConversationGuestLink(it.link, it.isPasswordProtected) } }
+        }
 
     override suspend fun updateMessageTimer(
         conversationId: ConversationId,

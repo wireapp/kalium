@@ -81,7 +81,7 @@ interface ConversationDAO {
         isPasswordProtected: Boolean
     )
 
-    suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
+    suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
