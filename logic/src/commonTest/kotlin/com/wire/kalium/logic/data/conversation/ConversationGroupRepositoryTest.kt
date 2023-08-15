@@ -63,6 +63,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
@@ -75,6 +76,7 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -694,8 +696,13 @@ class ConversationGroupRepositoryTest {
     fun givenDaoRunsEmitsValues_whenObservingGuestRoomLink_thenPropagateGuestRoomLink() = runTest {
         val conversationId = ConversationId("value", "domain")
 
+        val expected = ConversationGuestLinkEntity(
+            link = "link",
+            isPasswordProtected = false
+        )
+
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withSuccessfulFetchOfGuestRoomLink()
+            .withSuccessfulFetchOfGuestRoomLink(flowOf(expected))
             .arrange()
 
         val result = conversationGroupRepository.observeGuestRoomLink(conversationId)
@@ -704,7 +711,10 @@ class ConversationGroupRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::observeGuestRoomLinkByConversationId)
             .with(any())
             .wasInvoked(exactly = once)
-        assertEquals(LINK, result.first())
+        result.first().shouldSucceed {
+            assertEquals(expected.link, it?.link)
+            assertEquals(expected.isPasswordProtected, it?.isPasswordProtected)
+        }
     }
 
     @Test
@@ -1131,11 +1141,13 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulFetchOfGuestRoomLink() = apply {
+        fun withSuccessfulFetchOfGuestRoomLink(
+            result: Flow<ConversationGuestLinkEntity?>
+        ) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::observeGuestRoomLinkByConversationId)
                 .whenInvokedWith(any())
-                .thenReturn(GUEST_ROOM_LINK_FLOW)
+                .thenReturn(result)
         }
 
         fun withSuccessfulNewConversationGroupStartedHandled() = apply {
@@ -1203,8 +1215,6 @@ class ConversationGroupRepositoryTest {
 
     companion object {
         private const val RAW_GROUP_ID = "mlsGroupId"
-        const val LINK = "www.wire.com"
-        private val GUEST_ROOM_LINK_FLOW = flowOf(LINK)
         val GROUP_ID = GroupID(RAW_GROUP_ID)
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo

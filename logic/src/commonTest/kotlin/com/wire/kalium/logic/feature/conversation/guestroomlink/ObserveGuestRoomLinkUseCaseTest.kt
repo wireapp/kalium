@@ -18,7 +18,10 @@
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.ConversationGuestLink
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -46,24 +49,22 @@ class ObserveGuestRoomLinkUseCaseTest {
         observeGuestRoomLink = ObserveGuestRoomLinkUseCaseImpl(conversationGroupRepository)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsValues_whenObservingGuestRoomLink_thenPropagateTheLink() = runTest {
-        val guestLink = "www.wire.com"
+        val guestLink = ConversationGuestLink("link", false)
         given(conversationGroupRepository)
             .suspendFunction(conversationGroupRepository::observeGuestRoomLink)
             .whenInvokedWith(eq(conversationId))
-            .thenReturn(flowOf(guestLink))
+            .thenReturn(flowOf(Either.Right(guestLink)))
 
-        val result = observeGuestRoomLink(conversationId)
+        observeGuestRoomLink(conversationId).first().shouldSucceed {
+            assertEquals(guestLink, it)
+        }
 
-        assertEquals(guestLink, result.first())
         verify(conversationGroupRepository)
             .suspendFunction(conversationGroupRepository::observeGuestRoomLink)
             .with(eq(conversationId))
             .wasInvoked(exactly = once)
-
-
     }
 
     companion object {
