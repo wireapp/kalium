@@ -215,10 +215,16 @@ object EventContentDTOJson {
 
     val validGenerateGuestRoomLink = """
         |{
-        |  "conversation" : "f2520615-f860-****-****-9ace3b5f6c37",
+        |  "qualified_conversation" : {
+                    "domain": "wire.com",
+                    "id": "f2520615-f860-****-****-9ace3b5f6c37"
+        },
         |  "type" : "conversation.code-update",
         |  "time" : "2018-02-15T17:44:54.351Z",
-        |  "from" : "f52eed1b-aa64-****-****-96529f72105f",
+        |  "qualified_from" : {
+                    "domain": "wire.com",
+                    "id": "f52eed1b-aa64-****-****-96529f72105f"
+        },
         |  "data" : {
         |     "uri" : "https:\/\/wire-webapp-staging.zinfra.io\/join\/?key=NHRSj7****JkEZV5qsPd&code=755Asq****nITN_0AHV9",
         |     "key" : "NHRSj7****JkEZV5qsPd",
