@@ -51,7 +51,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
@@ -557,12 +557,22 @@ class ConversationGroupRepositoryTest {
     fun givenASuccessApiCall_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
         val conversationId = ConversationId("value", "domain")
         val link = "www.wire.com"
+
+        val expected = EventContentDTO.Conversation.CodeUpdated(
+            qualifiedConversation = conversationId.toApi(),
+            data = ConversationInviteLinkResponse(
+                uri = link,
+                code = "code",
+                key = "key",
+                hasPassword = false
+            ),
+            qualifiedFrom = TestUser.USER_ID.toApi()
+        )
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withSuccessfulCallToGenerateGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB(link)
+            .withSuccessfulCallToGenerateGuestRoomLinkApi(expected)
             .arrange()
 
-        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, null)
 
         result.shouldSucceed()
 
@@ -573,8 +583,8 @@ class ConversationGroupRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+            .with(any(), anything(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -584,7 +594,7 @@ class ConversationGroupRepositoryTest {
             .withFailedCallToGenerateGuestRoomLinkApi()
             .arrange()
 
-        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, null)
 
         result.shouldFail()
 
@@ -596,6 +606,42 @@ class ConversationGroupRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
             .with(any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenPassword_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val link = "www.wire.com"
+
+        val expected = EventContentDTO.Conversation.CodeUpdated(
+            qualifiedConversation = conversationId.toApi(),
+            data = ConversationInviteLinkResponse(
+                uri = link,
+                code = "code",
+                key = "key",
+                hasPassword = true
+            ),
+            qualifiedFrom = TestUser.USER_ID.toApi()
+        )
+
+        val expectedPassword = "password"
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withSuccessfulCallToGenerateGuestRoomLinkApi(expected)
+            .arrange()
+
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, expectedPassword)
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::generateGuestRoomLink)
+            .with(any(), eq(expectedPassword))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), anything(), any())
             .wasNotInvoked()
     }
 
@@ -1028,13 +1074,15 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withSuccessfulCallToGenerateGuestRoomLinkApi() = apply {
+        fun withSuccessfulCallToGenerateGuestRoomLinkApi(
+            result: EventContentDTO.Conversation.CodeUpdated
+        ) = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::generateGuestRoomLink)
                 .whenInvokedWith(any())
                 .thenReturn(
                     NetworkResponse.Success(
-                        GenerateGuestRoomLinkResponse(uri = "mock-guest-room-link"),
+                        result,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )

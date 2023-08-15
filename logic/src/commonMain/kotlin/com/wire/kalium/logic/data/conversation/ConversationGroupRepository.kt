@@ -47,6 +47,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -71,7 +72,11 @@ interface ConversationGroupRepository {
     ): Either<NetworkFailure, ConversationMemberAddedResponse>
 
     suspend fun fetchLimitedInfoViaInviteCode(code: String, key: String): Either<NetworkFailure, ConversationCodeInfo>
-    suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
+    suspend fun generateGuestRoomLink(
+        conversationId: ConversationId,
+        password: String?
+    ): Either<NetworkFailure, EventContentDTO.Conversation.CodeUpdated>
+
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?>
     suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit>
@@ -310,23 +315,22 @@ internal class ConversationGroupRepositoryImpl(
             }
         }.map { }
 
-    override suspend fun generateGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
+    override suspend fun generateGuestRoomLink(
+        conversationId: ConversationId,
+        password: String?
+    ): Either<NetworkFailure, EventContentDTO.Conversation.CodeUpdated> =
         wrapApiRequest {
-            conversationApi.generateGuestRoomLink(conversationId.toApi())
-        }.onSuccess {
-            it.data
-            // TODO: set the correct value for is passwordProtected
-            it.data?.let { data -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), data.uri, false) }
-            it.uri?.let { link -> conversationDAO.updateGuestRoomLink(conversationId.toDao(), link, false) }
-        }.map { Either.Right(Unit) }
+            conversationApi.generateGuestRoomLink(conversationId.toApi(), password)
+        }
 
     override suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit> =
         wrapApiRequest {
             conversationApi.revokeGuestRoomLink(conversationId.toApi())
         }.onSuccess {
-            // TODO: set the correct value for is passwordProtected
-            conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
-        }.map { }
+            wrapStorageRequest {
+                conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
+            }
+        }
 
     override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<String?> =
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())

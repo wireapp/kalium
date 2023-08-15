@@ -109,7 +109,6 @@ internal class ConversationEventReceiverImpl(
             }
 
             is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
-
             is Event.Conversation.CodeDeleted -> codeDeletedHandler.handle(event)
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
         }

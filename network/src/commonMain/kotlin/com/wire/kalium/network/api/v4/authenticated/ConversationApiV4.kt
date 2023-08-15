@@ -25,9 +25,11 @@ import com.wire.kalium.network.api.base.authenticated.conversation.CreateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.GenerateGuestLinkRequest
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SubconversationId
@@ -130,6 +132,16 @@ internal open class ConversationApiV4 internal constructor(
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
                 parameter(QUERY_KEY_KEY, key)
+            }
+        }
+
+    override suspend fun generateGuestRoomLink(
+        conversationId: ConversationId,
+        password: String?
+    ): NetworkResponse<EventContentDTO.Conversation.CodeUpdated> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE") {
+                setBody(GenerateGuestLinkRequest(password))
             }
         }
 

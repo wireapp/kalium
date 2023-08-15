@@ -22,7 +22,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class GetGuestRoomResponse(
+data class ConversationInviteLinkResponse(
     @SerialName("uri") val uri: String,
     @SerialName("key") val key: String,
     @SerialName("code") val code: String,
