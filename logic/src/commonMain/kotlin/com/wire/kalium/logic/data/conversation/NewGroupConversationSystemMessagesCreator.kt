@@ -190,7 +190,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 conversationId.toModel(),
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
-                Message.Status.SENT,
+                Message.Status.Sent,
                 Message.Visibility.VISIBLE,
                 expirationData = null
             )

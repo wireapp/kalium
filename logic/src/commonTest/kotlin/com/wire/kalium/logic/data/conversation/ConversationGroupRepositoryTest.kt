@@ -376,16 +376,25 @@ class ConversationGroupRepositoryTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withInsertFailedToAddSystemMessageSuccess()
             .withAddMemberAPIFailed()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        val expectedInitialUsers = listOf(TestConversation.USER_1, TestConversation.USER_2)
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID)
             .shouldFail()
 
         verify(arrangement.memberJoinEventHandler)
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
             .with(anything())
             .wasNotInvoked()
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            .with(anything(), matching {
+                it.containsAll(expectedInitialUsers)
+            })
+            .wasInvoked(once)
     }
 
     @Test
@@ -855,6 +864,45 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
                 .with(anything(), matching { it.size == expectedValidUsersCount })
                 .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation__thenRetryIsExecutedWithValidUsersOnlyOnce() =
+        runTest {
+            val failedDomain = "unstableDomain1.com"
+            // given
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                    arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, FEDERATION_ERROR_UNREACHABLE_DOMAINS)
+                )
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .arrange()
+
+            // when
+            val expectedInitialUsers = listOf(TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID)
+            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+
+            // then
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(anything())
+                .wasInvoked(exactly = twice)
+
+            verify(arrangement.memberJoinEventHandler)
+                .suspendFunction(arrangement.memberJoinEventHandler::handle)
+                .with(anything())
+                .wasNotInvoked()
+
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), matching {
+                    it.containsAll(expectedInitialUsers)
+                })
+                .wasInvoked(once)
         }
 
     private class Arrangement :
