@@ -33,6 +33,7 @@ import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -182,7 +183,7 @@ internal class ConversationApiV4Test : ApiTest() {
 
         val networkClient = mockAuthenticatedNetworkClient(
             EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable,
-            statusCode = HttpStatusCode.ServiceUnavailable,
+            statusCode = HttpStatusCode.UnreachableRemoteBackends,
             assertion = {
                 assertPost()
                 assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_MEMBERS}")

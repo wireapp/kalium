@@ -40,6 +40,12 @@ sealed interface CoreFailure {
     val hasUnreachableDomainsError: Boolean
         get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
 
+    val hasConflictingDomainsError: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure.ConflictingBackends && this.domains.isNotEmpty()
+
+    val isRetryable: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure.RetryableFailure
+
     /**
      * The attempted operation requires that this client is registered.
      */
@@ -117,12 +123,19 @@ sealed class NetworkFailure : CoreFailure {
      */
     sealed class FederatedBackendFailure : NetworkFailure() {
 
+        /**
+         * Failure due to a federated backend context that can be retried
+         */
+        interface RetryableFailure {
+            val domains: List<String>
+        }
+
         data class General(val label: String) : FederatedBackendFailure()
         data class FederationDenied(val label: String) : FederatedBackendFailure()
 
-        data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
+        data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
 
-        data class FailedDomains(val domains: List<String> = emptyList()) : FederatedBackendFailure()
+        data class FailedDomains(override val domains: List<String> = emptyList()) : FederatedBackendFailure(), RetryableFailure
 
     }
 
