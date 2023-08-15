@@ -52,8 +52,9 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
-    private val jsonProviderAccessUpdateWithDeprecatedAccessRoleField = { serializable: EventContentDTO.Conversation.AccessUpdate ->
-        """
+    private val jsonProviderAccessUpdateWithDeprecatedAccessRoleField =
+        { serializable: EventContentDTO.Conversation.AccessUpdate ->
+            """
         |{
         |  "qualified_conversation" : {
         |    "id" : "${serializable.qualifiedConversation.value}",
@@ -70,7 +71,7 @@ object EventContentDTOJson {
         |  }
         |}
         """.trimMargin()
-    }
+        }
 
     private val jsonProviderMemberJoin = { serializable: EventContentDTO.Conversation.MemberJoinDTO ->
         """
@@ -114,8 +115,9 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
-    private val jsonProviderUpdateConversationReceiptMode = { serializable: EventContentDTO.Conversation.ReceiptModeUpdate ->
-        """
+    private val jsonProviderUpdateConversationReceiptMode =
+        { serializable: EventContentDTO.Conversation.ReceiptModeUpdate ->
+            """
         |{
         |  "conversation":"${serializable.qualifiedConversation.value}",
         |  "data":{
@@ -134,7 +136,7 @@ object EventContentDTOJson {
         |  "type":"conversation.receipt-mode-update"
         |}
         """.trimMargin()
-    }
+        }
 
     val validAccessUpdate = ValidJsonProvider(
         EventContentDTO.Conversation.AccessUpdate(
@@ -224,6 +226,13 @@ object EventContentDTOJson {
         |     "key" : "NHRSj7****JkEZV5qsPd",
         |     "code" : "755Asq****nITN_0AHV9"
         |  }
+        |}
+        """.trimMargin()
+
+    val jsonProviderMemberJoinFailureUnreachable =
+        """
+        |{
+        |   "unreachable_backends": ["foma.wire.link"]
         |}
         """.trimMargin()
 }
