@@ -59,10 +59,7 @@ import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")

@@ -136,7 +136,10 @@ interface ConversationApi {
         receiptMode: ConversationReceiptModeDTO
     ): NetworkResponse<UpdateConversationReceiptModeResponse>
 
-    suspend fun generateGuestRoomLink(conversationId: ConversationId, password: String?): NetworkResponse<EventContentDTO.Conversation.CodeUpdated>
+    suspend fun generateGuestRoomLink(
+        conversationId: ConversationId,
+        password: String?
+    ): NetworkResponse<EventContentDTO.Conversation.CodeUpdated>
 
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit>
 
