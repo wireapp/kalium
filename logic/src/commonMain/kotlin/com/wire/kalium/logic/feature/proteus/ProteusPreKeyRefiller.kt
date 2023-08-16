@@ -38,30 +38,47 @@ internal class ProteusPreKeyRefillerImpl(
      */
     private val lowOnPrekeysTreshold: Int = MINIMUM_PREKEYS_COUNT,
     /**
-     * Number of prekeys to be generated and uploaded to the backend,
-     * if a refill is triggered.
+     * Number of remaining prekeys in the backend to aim for
+     * when generating a new batch if a refill is triggered.
      */
-    private val newPrekeysCount: Int = NEXT_PREKEY_BATCH_SIZE,
+    private val remotePreKeyTargetCount: Int = REMOTE_PREKEYS_TARGET_COUNT,
 ) : ProteusPreKeyRefiller {
     override suspend fun refillIfNeeded(): Either<CoreFailure, Unit> =
-        preKeyRepository.fetchRemotelyAvailablePrekeys().flatMap { availableKeys ->
-            val isLowOnPrekeys = availableKeys.size < lowOnPrekeysTreshold
+        preKeyRepository.fetchRemotelyAvailablePrekeys().flatMap { remotePreKeys ->
+            val isLowOnPrekeys = remotePreKeys.size < lowOnPrekeysTreshold
             if (!isLowOnPrekeys) {
-                Either.Right(Unit)
-            } else {
-                val lastKnownPrekeyId = availableKeys.maxOrNull() ?: 0
-                // TODO: Fill logic to generate preKeys and reset after 65k
-                preKeyRepository.generateNewPreKeys(
-                    lastKnownPrekeyId,
-                    newPrekeysCount
-                ).flatMap { generatedPreKeys ->
-                    preKeyRepository.uploadNewPrekeyBatch(generatedPreKeys)
+                return Either.Right(Unit)
+            }
+            // Exclude the last resort prekey from the result
+            val rollingPreKeys = remotePreKeys.filter { it <= MAX_PREKEY_ID }
+            val nextPreKeyBatchSize = remotePreKeyTargetCount - rollingPreKeys.size
+
+            preKeyRepository.mostRecentPreKeyId().flatMap { mostRecentPreKeyId ->
+                val wouldNewBatchGoOverTheLimit = mostRecentPreKeyId + nextPreKeyBatchSize >= MAX_PREKEY_ID
+                val nextBatchStartId = if(wouldNewBatchGoOverTheLimit) {
+                    0
+                } else {
+                    mostRecentPreKeyId + 1
                 }
+                preKeyRepository.generateNewPreKeys(
+                    nextBatchStartId,
+                    remotePreKeyTargetCount
+                )
+            }
+            .flatMap { generatedPreKeys ->
+                preKeyRepository.uploadNewPrekeyBatch(generatedPreKeys)
             }
         }
 
     private companion object {
-        private const val MINIMUM_PREKEYS_COUNT = 20
-        private const val NEXT_PREKEY_BATCH_SIZE = 100
+        private const val MINIMUM_PREKEYS_COUNT = 40
+        private const val REMOTE_PREKEYS_TARGET_COUNT = 100
+
+        /**
+         * The number of prekeys that can be generated before
+         * resetting back to ID 0.
+         * This number is dictated by Cryptobox.
+         */
+        private const val MAX_PREKEY_ID = 65_534
     }
 }
