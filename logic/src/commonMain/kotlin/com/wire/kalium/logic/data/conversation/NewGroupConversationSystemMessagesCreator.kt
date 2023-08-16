@@ -46,7 +46,8 @@ internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
     suspend fun conversationResolvedMembersAddedAndFailed(
         conversationId: ConversationIDEntity,
-        conversationResponse: ConversationResponse
+        conversationResponse: ConversationResponse,
+        failedUsersList: List<UserId> = emptyList()
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationFailedToAddMembers(
@@ -90,7 +91,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             conversationId = conversationId,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )
@@ -131,7 +132,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             conversationId = conversationId,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = creatorId,
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )
@@ -139,7 +140,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 
     override suspend fun conversationResolvedMembersAddedAndFailed(
         conversationId: ConversationIDEntity,
-        conversationResponse: ConversationResponse
+        conversationResponse: ConversationResponse,
+        failedUsersList: List<UserId>
     ): Either<CoreFailure, Unit> = run {
         if (conversationResponse.members.otherMembers.isEmpty()) {
             Either.Right(Unit)
@@ -153,11 +155,13 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     conversationId = conversationId.toModel(),
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = selfUserId,
-                    status = Message.Status.SENT,
+                    status = Message.Status.Sent,
                     visibility = Message.Visibility.VISIBLE,
                     expirationData = null
                 )
-            ).also { createFailedToAddSystemMessage(conversationResponse) }
+            ).also {
+                createFailedToAddSystemMessage(conversationId, failedUsersList)
+            }
         }
     }
 
@@ -171,26 +175,27 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             conversationId,
             DateTimeUtil.currentIsoDateTimeString(),
             selfUserId,
-            Message.Status.SENT,
+            Message.Status.Sent,
             Message.Visibility.VISIBLE,
             expirationData = null
         )
         return persistMessage(messageFailedToAddMembers)
     }
 
-    private suspend fun createFailedToAddSystemMessage(conversationResponse: ConversationResponse) {
-        if (conversationResponse.failedToAdd.isNotEmpty()) {
+    private suspend fun createFailedToAddSystemMessage(conversationId: ConversationIDEntity, failedUsersList: List<UserId>) {
+        if (failedUsersList.isNotEmpty()) {
             val messageStartedWithFailedMembers = Message.System(
                 uuid4().toString(),
-                MessageContent.MemberChange.FailedToAdd(conversationResponse.failedToAdd.map { it.toModel() }),
-                conversationResponse.id.toModel(),
+                MessageContent.MemberChange.FailedToAdd(failedUsersList),
+                conversationId.toModel(),
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
-                Message.Status.SENT,
+                Message.Status.Sent,
                 Message.Visibility.VISIBLE,
                 expirationData = null
             )
             persistMessage(messageStartedWithFailedMembers)
         }
+
     }
 }

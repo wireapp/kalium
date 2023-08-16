@@ -42,7 +42,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     override fun startSelfDeletion(conversationId: ConversationId, messageId: String) {
         launch {
             messageRepository.getMessageById(conversationId, messageId).map { message ->
-                if (message.expirationData != null && message.status != Message.Status.PENDING) {
+                if (message.expirationData != null && message.status != Message.Status.Pending) {
                     enqueueSelfDeletion(
                         message = message,
                         expirationData = message.expirationData!!

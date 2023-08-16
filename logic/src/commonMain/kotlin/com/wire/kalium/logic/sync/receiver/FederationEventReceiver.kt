@@ -205,7 +205,7 @@ class FederationEventReceiverImpl internal constructor(
             conversationId = conversationID,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
-            status = Message.Status.READ,
+            status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )
@@ -219,7 +219,7 @@ class FederationEventReceiverImpl internal constructor(
             conversationId = conversationID,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
-            status = Message.Status.READ,
+            status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )
@@ -233,7 +233,7 @@ class FederationEventReceiverImpl internal constructor(
             conversationId = conversationID,
             date = DateTimeUtil.currentIsoDateTimeString(),
             senderUserId = selfUserId,
-            status = Message.Status.READ,
+            status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
         )

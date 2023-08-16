@@ -32,12 +32,10 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MissingMetadataUpdateManagerTest {
 
     @Test

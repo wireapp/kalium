@@ -88,7 +88,8 @@ class UserDatabaseDataGenerator(
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE),
                     visibility = sanitizedVisibility,
-                    senderName = "$messagePrefix SenderName"
+                    senderName = "$messagePrefix SenderName",
+                    readCount = 0
                 )
             )
 
@@ -132,7 +133,8 @@ class UserDatabaseDataGenerator(
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE),
                     visibility = sanitizedVisibility,
-                    senderName = "$messagePrefix SenderName"
+                    senderName = "$messagePrefix SenderName",
+                    readCount = 0
                 )
             )
 
@@ -225,7 +227,8 @@ class UserDatabaseDataGenerator(
                     visibility = sanitizedVisibility,
                     senderName = "$messagePrefix SenderName",
                     expireAfterMs = null,
-                    selfDeletionStartDate = null
+                    selfDeletionStartDate = null,
+                    readCount = 0
                 )
             )
 

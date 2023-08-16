@@ -101,10 +101,10 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
         return metadataDao.valueByKey(key = SLOW_SYNC_VERSION_KEY)?.toIntOrNull() ?: 0
     }
 
-    private companion object {
+    companion object {
         const val LAST_SLOW_SYNC_INSTANT_KEY = "lastSlowSyncInstant"
-        const val SLOW_SYNC_VERSION_KEY = "slowSyncVersion"
-        const val MLS_NEEDS_RECOVERY_KEY = "mlsNeedsRecovery"
-        const val NEEDS_TO_PERSIST_HISTORY_LOST_MESSAGES_KEY = "needsToPersistHistoryLostMessages"
+        private const val SLOW_SYNC_VERSION_KEY = "slowSyncVersion"
+        private const val MLS_NEEDS_RECOVERY_KEY = "mlsNeedsRecovery"
+        private const val NEEDS_TO_PERSIST_HISTORY_LOST_MESSAGES_KEY = "needsToPersistHistoryLostMessages"
     }
 }

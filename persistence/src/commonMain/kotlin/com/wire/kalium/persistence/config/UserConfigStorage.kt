@@ -126,6 +126,9 @@ interface UserConfigStorage {
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
     fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
     fun persistScreenshotCensoring(enabled: Boolean)
+    fun setE2EINotificationTime(timeStamp: Long)
+    fun getE2EINotificationTime(): Long?
+    fun e2EINotificationTimeFlow(): Flow<Long?>
 }
 
 @Serializable
@@ -156,7 +159,6 @@ data class TeamSettingsSelfDeletionStatusEntity(
 data class E2EISettingsEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("discoverUrl") val discoverUrl: String,
-    @SerialName("notifyUserAfter") val notifyUserAfterMs: Long?,
     @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
 )
 
@@ -194,6 +196,9 @@ class UserConfigStorageImpl(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val e2EIFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val e2EINotificationFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isScreenshotCensoringEnabledFlow =
@@ -289,6 +294,24 @@ class UserConfigStorageImpl(
         .onStart { emit(getE2EISettings()) }
         .distinctUntilChanged()
 
+    override fun setE2EINotificationTime(timeStamp: Long) {
+        kaliumPreferences.putLong(
+            E2EI_NOTIFICATION_TIME,
+            timeStamp
+        ).also {
+            e2EIFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun getE2EINotificationTime(): Long? {
+        return kaliumPreferences.getLong(E2EI_NOTIFICATION_TIME)
+    }
+
+    override fun e2EINotificationTimeFlow(): Flow<Long?> = e2EINotificationFlow
+        .map { getE2EINotificationTime() }
+        .onStart { emit(getE2EINotificationTime()) }
+        .distinctUntilChanged()
+
     override fun persistConferenceCalling(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_CONFERENCE_CALLING, enabled)
     }
@@ -346,6 +369,7 @@ class UserConfigStorageImpl(
         const val ENABLE_CLASSIFIED_DOMAINS = "enable_classified_domains"
         const val ENABLE_MLS = "enable_mls"
         const val E2EI_SETTINGS = "end_to_end_identity_settings"
+        const val E2EI_NOTIFICATION_TIME = "end_to_end_identity_notification_time"
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false

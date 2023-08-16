@@ -24,19 +24,18 @@ import com.wire.kalium.api.json.model.DomainToUserIdToClientsMapJson
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.api.v0.authenticated.PreKeyApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
 
-@ExperimentalCoroutinesApi
 internal class PrekeyApiV0Test : ApiTest() {
 
     @Test
@@ -68,6 +67,44 @@ internal class PrekeyApiV0Test : ApiTest() {
         assertFalse(errorResponse.isSuccessful())
         assertTrue(errorResponse.kException is KaliumException.InvalidRequestError)
         assertEquals((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE)
+    }
+
+    @Test
+    fun givenTheServerReturnsOK_whenUploadingPreKeys_thenTheCorrectResponseIsReturned() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = "",
+            statusCode = HttpStatusCode.OK
+        )
+        val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
+        val response = preKeyApi.uploadNewPrekeys("clientId", listOf())
+        assertTrue(response.isSuccessful())
+    }
+
+    @Test
+    fun givenPreKeyAndClientId_whenUploadingPreKeys_thenTheRequestIsConfiguredCorrectly() = runTest {
+        val preKeyDTO = PreKeyDTO(42, "testKey")
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertJsonBodyContent(
+                    """
+                    |{
+                    |  "prekeys": [
+                    |    {
+                    |      "id": ${preKeyDTO.id},
+                    |      "key": "${preKeyDTO.key}"
+                    |    }
+                    |  ]
+                    |}
+                    """.trimMargin()
+                )
+            }
+        )
+        val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
+        val response = preKeyApi.uploadNewPrekeys("clientId", listOf(preKeyDTO))
+        assertTrue(response.isSuccessful())
     }
 
     private companion object {

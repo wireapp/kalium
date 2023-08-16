@@ -80,7 +80,7 @@ internal class MemberJoinEventHandlerImpl(
                     conversationId = event.conversationId,
                     date = event.timestampIso,
                     senderUserId = event.addedBy,
-                    status = Message.Status.SENT,
+                    status = Message.Status.Sent,
                     visibility = Message.Visibility.VISIBLE,
                     expirationData = null
                 )

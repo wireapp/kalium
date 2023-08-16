@@ -309,6 +309,7 @@ object MessageMapper {
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
         selfDeletionStartDate: Instant?,
+        readCount: Long,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?
     ): MessageEntity = when (content) {
@@ -332,6 +333,7 @@ object MessageMapper {
                 senderName = senderName,
                 isSelfMessage = isSelfMessage,
                 expectsReadConfirmation = expectsReadConfirmation,
+                readCount = readCount,
                 deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
                     recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
                     recipientsFailedDeliveryList = recipientsFailedDeliveryList
@@ -349,6 +351,7 @@ object MessageMapper {
             visibility = visibility,
             senderName = senderName,
             isSelfMessage = isSelfMessage,
+            readCount = readCount,
             expireAfterMs = expireAfterMillis,
             selfDeletionStartDate = selfDeletionStartDate
         )
@@ -372,6 +375,7 @@ object MessageMapper {
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
         selfDeletionStartDate: Instant?,
+        readCount: Long,
         senderName: String?,
         senderHandle: String?,
         senderEmail: String?,
@@ -580,6 +584,7 @@ object MessageMapper {
             expectsReadConfirmation,
             expireAfterMillis,
             selfDeletionStartDate,
+            readCount,
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList
         )
