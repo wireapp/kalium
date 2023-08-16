@@ -36,6 +36,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
@@ -71,6 +72,8 @@ interface UserConfigRepository {
 
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
     suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
+    fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant?>>
+    fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -159,15 +162,23 @@ class UserConfigDataSource(
     override fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.setE2EISettings(setting.toEntity()) }
 
+    override fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant?>> =
+        userConfigStorage.e2EINotificationTimeFlow()
+            .wrapStorageRequest()
+            .mapRight { Instant.fromEpochMilliseconds(it) }
+
+    override fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.setE2EINotificationTime(instant.toEpochMilliseconds()) }
+
     override fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            getE2EISettingEntityOrNull()?.let { current ->
-                val notifyUserAfterMs = current.notifyUserAfterMs?.plus(duration.inWholeMilliseconds)
-                userConfigStorage.setE2EISettings(current.copy(notifyUserAfterMs = notifyUserAfterMs))
+            getE2EINotificationTimeOrNull()?.let { current ->
+                val notifyUserAfterMs = current.plus(duration.inWholeMilliseconds)
+                userConfigStorage.setE2EINotificationTime(notifyUserAfterMs)
             }
         }
 
-    private fun getE2EISettingEntityOrNull() = wrapStorageRequest { userConfigStorage.getE2EISettings() }.getOrNull()
+    private fun getE2EINotificationTimeOrNull() = wrapStorageRequest { userConfigStorage.getE2EINotificationTime() }.getOrNull()
 
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {

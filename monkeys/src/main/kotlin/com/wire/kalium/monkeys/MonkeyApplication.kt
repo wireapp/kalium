@@ -72,7 +72,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
         val testData = TestDataImporter.importFromFile(dataFilePath)
-        val users = TestDataImporter.getUserData(testData)
+        val users = TestDataImporter.generateUserData(testData)
         MonkeyPool.init(users)
         runMonkeys(coreLogic, testData)
     }

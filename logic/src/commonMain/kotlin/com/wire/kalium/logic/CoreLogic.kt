@@ -48,8 +48,8 @@ abstract class CoreLogicCommon internal constructor(
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
-    protected abstract val globalPreferences: Lazy<GlobalPrefProvider>
-    protected abstract val globalDatabase: Lazy<GlobalDatabaseProvider>
+    protected abstract val globalPreferences: GlobalPrefProvider
+    protected abstract val globalDatabase: GlobalDatabaseProvider
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
