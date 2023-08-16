@@ -182,6 +182,8 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
+import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
+import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
@@ -1237,6 +1239,12 @@ class UserSessionScope internal constructor(
             protoContentMapper = protoContentMapper
         )
 
+    private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
+        get() = MLSOneOnOneConversationResolverImpl(
+            conversationRepository,
+            joinExistingMLSConversationUseCase
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1281,6 +1289,8 @@ class UserSessionScope internal constructor(
             renamedConversationHandler,
             qualifiedIdMapper,
             team.isSelfATeamMember,
+            mlsOneOnOneConversationResolver,
+            userConfigRepository,
             this
         )
 

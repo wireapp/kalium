@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -122,8 +123,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(arrangement.establishMLSOneToOne)
-            .suspendFunction(arrangement.establishMLSOneToOne::invoke)
+        verify(arrangement.mlsOneOnOneConversationResolver)
+            .suspendFunction(arrangement.mlsOneOnOneConversationResolver::invoke)
             .with(eq(USER_ID))
             .wasInvoked(exactly = once)
 
@@ -133,7 +134,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-    class Arrangement {
+    internal class Arrangement {
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -142,7 +143,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
 
         @Mock
-        val establishMLSOneToOne = mock(classOf<EstablishMLSOneToOneUseCase>())
+        val mlsOneOnOneConversationResolver = mock(classOf<MLSOneOnOneConversationResolver>())
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
@@ -176,16 +177,16 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         }
 
         fun withEstablishMLSOneToOneReturning(result: Either<CoreFailure, ConversationId>) = apply {
-            given(establishMLSOneToOne)
-                .suspendFunction(establishMLSOneToOne::invoke)
+            given(mlsOneOnOneConversationResolver)
+                .suspendFunction(mlsOneOnOneConversationResolver::invoke)
                 .whenInvokedWith(anything())
                 .thenReturn(result)
         }
 
-        fun arrange() = this to GetOrCreateOneToOneConversationUseCase(
+        fun arrange() = this to GetOrCreateOneToOneConversationUseCaseImpl(
             conversationRepository = conversationRepository,
             conversationGroupRepository = conversationGroupRepository,
-            establishMLSOneToOne = establishMLSOneToOne,
+            mlsOneOnOneConversationResolver = mlsOneOnOneConversationResolver,
             userConfigRepository = userConfigRepository
         )
     }

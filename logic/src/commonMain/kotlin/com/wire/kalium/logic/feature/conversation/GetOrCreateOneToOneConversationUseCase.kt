@@ -24,13 +24,16 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.getOrNull
 import kotlinx.coroutines.flow.first
+
+interface GetOrCreateOneToOneConversationUseCase {
+    suspend operator fun invoke(otherUserId: UserId): CreateConversationResult
+}
 
 /**
  * Operation that creates one-to-one Conversation with specific [UserId] (only if it is absent in local DB)
@@ -40,13 +43,13 @@ import kotlinx.coroutines.flow.first
  * @return Result with [Conversation] in case of success, or [CoreFailure] if something went wrong:
  * can't get data from local DB, or can't create a conversation.
  */
-class GetOrCreateOneToOneConversationUseCase(
+internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
-    private val establishMLSOneToOne: EstablishMLSOneToOneUseCase,
+    private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver,
     private val userConfigRepository: UserConfigRepository
-) {
-    suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
+) : GetOrCreateOneToOneConversationUseCase {
+    override suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         // TODO: filter out self user from the list (just in case of client bug that leads to self user to be included part of the list)
         return conversationRepository.observeOneToOneConversationWithOtherUser(otherUserId)
             .first()
@@ -55,7 +58,7 @@ class GetOrCreateOneToOneConversationUseCase(
                     userConfigRepository.getDefaultProtocol().flatMap { defaultProtocol ->
                         when (defaultProtocol) {
                             SupportedProtocol.MLS ->
-                                establishMLSOneToOne(otherUserId)
+                                mlsOneOnOneConversationResolver(otherUserId)
                                     .flatMap {
                                         conversationRepository.detailsById(it)
                                     }
