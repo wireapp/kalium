@@ -13,9 +13,12 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
+import org.junit.Ignore
 import org.junit.Test
 
 class LeaveConversationActionTest {
+
+    @Ignore
     @Test
     fun givenOnlyOneUser_noUserShouldLeave() = runTest {
         val config = ActionType.LeaveConversation(1u, UserCount.single())

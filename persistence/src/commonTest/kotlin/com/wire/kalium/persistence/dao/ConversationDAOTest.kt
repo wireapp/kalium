@@ -957,7 +957,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             selfRole = MemberEntity.Role.Member,
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null
         )
     }
 

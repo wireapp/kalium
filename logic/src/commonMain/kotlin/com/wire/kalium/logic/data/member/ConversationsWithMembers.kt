@@ -15,22 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.dao.member
+package com.wire.kalium.logic.data.member
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.logic.data.id.QualifiedID
 
-data class MemberEntity(
-    val user: QualifiedIDEntity,
-    val role: Role
-) {
-    sealed class Role {
-        object Member : Role()
-        object Admin : Role()
-        data class Unknown(val name: String) : Role()
-    }
-}
-
-data class ConversationsWithMembersEntity(
-    val oneOnOne: Map<QualifiedIDEntity, List<QualifiedIDEntity>>,
-    val group: Map<QualifiedIDEntity, List<QualifiedIDEntity>>
+data class ConversationsWithMembers(
+    val oneOnOne: Map<QualifiedID, List<QualifiedID>>,
+    val group: Map<QualifiedID, List<QualifiedID>>
 )

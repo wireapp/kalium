@@ -46,6 +46,7 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
                     }
                     is ConversationDetails.OneOne -> {
                         when {
+                            conversationDetails.otherUser.defederated -> InteractionAvailability.DISABLED
                             conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
                             conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED ->
                                 InteractionAvailability.BLOCKED_USER

@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.protobuf.messages.Button
 import kotlinx.datetime.Instant
 
 sealed class MessageContent {
@@ -232,6 +231,7 @@ sealed class MessageContent {
         data class Removed(override val members: List<UserId>) : MemberChange(members)
         data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
         data class CreationAdded(override val members: List<UserId>) : MemberChange(members)
+        data class FederationRemoved(override val members: List<UserId>) : MemberChange(members)
     }
 
     data class LastRead(
@@ -293,6 +293,10 @@ sealed class MessageContent {
     object ConversationCreated : System()
     object ConversationDegradedMLS : System()
     object ConversationDegradedProteus : System()
+    sealed class FederationStopped : System() {
+        data class Removed(val domain: String) : FederationStopped()
+        data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
+    }
 }
 
 /**
@@ -336,6 +340,9 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.Composite -> "Composite"
     is MessageContent.ButtonAction -> "ButtonAction"
     is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
+    is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
+    is MessageContent.FederationStopped.ConnectionRemoved -> "Federation.ConnectionRemoved"
+    is MessageContent.FederationStopped.Removed -> "Federation.Removed"
     is MessageContent.Unknown -> "Unknown"
     null -> "null"
 }
@@ -394,6 +401,11 @@ sealed interface MessagePreviewContent {
     }
 
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent
+
+    data class FederatedMembersRemoved(
+        val isSelfUserRemoved: Boolean,
+        val otherUserIdList: List<UserId>
+    ) : MessagePreviewContent
 
     object CryptoSessionReset : MessagePreviewContent
 

@@ -42,6 +42,7 @@ data class ConversationViewEntity(
     val userType: UserTypeEntity?,
     val botService: BotIdEntity?,
     val userDeleted: Boolean?,
+    val userDefederated: Boolean?,
     val connectionStatus: ConnectionEntity.State? = ConnectionEntity.State.NOT_CONNECTED,
     val otherUserId: QualifiedIDEntity?,
     val isCreator: Long,

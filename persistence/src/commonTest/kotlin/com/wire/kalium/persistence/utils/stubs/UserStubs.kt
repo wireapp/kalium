@@ -41,7 +41,8 @@ fun newUserEntity(id: String = "test") =
         botService = null,
         deleted = false,
         hasIncompleteMetadata = false,
-        expiresAt = null
+        expiresAt = null,
+        defederated = false
     )
 
 fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
@@ -61,5 +62,6 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         botService = null,
         deleted = false,
         hasIncompleteMetadata = false,
-        expiresAt = null
+        expiresAt = null,
+        defederated = false
     )

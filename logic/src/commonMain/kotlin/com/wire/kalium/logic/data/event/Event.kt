@@ -628,6 +628,38 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             "cause" to cause
         )
     }
+
+    sealed class Federation(
+        id: String,
+        override val transient: Boolean,
+    ) : Event(id, transient) {
+
+        data class Delete(
+            override val id: String,
+            override val transient: Boolean,
+            val domain: String,
+        ) : Federation(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Federation.Delete",
+                idKey to id.obfuscateId(),
+                "transient" to "$transient",
+                "domain" to domain
+            )
+        }
+
+        data class ConnectionRemoved(
+            override val id: String,
+            override val transient: Boolean,
+            val domains: List<String>,
+        ) : Federation(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Federation.ConnectionRemoved",
+                idKey to id.obfuscateId(),
+                "transient" to "$transient",
+                "domains" to domains
+            )
+        }
+    }
 }
 
 internal enum class EventLoggingStatus {

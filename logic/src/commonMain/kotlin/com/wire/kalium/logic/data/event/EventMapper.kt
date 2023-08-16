@@ -93,6 +93,22 @@ class EventMapper(
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
+            is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
+        }
+
+    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
+        when (eventContentDTO) {
+            is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
+                id,
+                transient,
+                eventContentDTO.domains
+            )
+
+            is EventContentDTO.Federation.FederationDeleteDTO -> Event.Federation.Delete(
+                id,
+                transient,
+                eventContentDTO.domain
+            )
         }
 
     private fun conversationCodeDeleted(

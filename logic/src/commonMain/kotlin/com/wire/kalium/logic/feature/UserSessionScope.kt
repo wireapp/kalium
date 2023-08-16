@@ -280,6 +280,8 @@ import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
+import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
@@ -758,7 +760,8 @@ class UserSessionScope internal constructor(
             userEventReceiver,
             teamEventReceiver,
             featureConfigEventReceiver,
-            userPropertiesEventReceiver
+            userPropertiesEventReceiver,
+            federationEventReceiver
         )
 
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
@@ -1165,6 +1168,10 @@ class UserSessionScope internal constructor(
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
         get() = UserPropertiesEventReceiverImpl(userConfigRepository)
+
+    private val federationEventReceiver: FederationEventReceiver
+        get() = FederationEventReceiverImpl(conversationRepository, connectionRepository, userRepository,
+            userStorage.database.memberDAO, persistMessage, userId)
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)

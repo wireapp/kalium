@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.member.ConversationsWithMembers
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
@@ -206,6 +207,11 @@ interface ConversationRepository {
         conversationId: ConversationId,
         isInformed: Boolean
     ): Either<StorageFailure, Unit>
+
+    suspend fun getConversationsWithMembersWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Either<CoreFailure, ConversationsWithMembers>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -776,6 +782,17 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest {
             conversationMetaDataDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
         }
+
+    override suspend fun getConversationsWithMembersWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Either<CoreFailure, ConversationsWithMembers> = wrapStorageRequest {
+        val entity = memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
+        ConversationsWithMembers(
+            oneOnOne = entity.oneOnOne.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } },
+            group = entity.group.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } }
+        )
+    }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>
