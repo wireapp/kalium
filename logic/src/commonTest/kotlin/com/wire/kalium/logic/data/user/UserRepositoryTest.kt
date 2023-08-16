@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
@@ -242,7 +243,7 @@ class UserRepositoryTest {
         val knownUserIds = knownUserEntities.map { UserId(it.value, it.domain) }.toSet()
         val (arrangement, userRepository) = Arrangement()
             .withSuccessfulGetMultipleUsers()
-            .arrange{
+            .arrange {
                 withAllOtherUsersIdSuccess(knownUserEntities)
             }
 
@@ -495,6 +496,23 @@ class UserRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenUserIdWhenDefederateUser_thenShouldMarkUserAsDefederated() = runTest {
+        // Given
+        val (arrangement, userRepository) = Arrangement()
+            .withMarkUserAsDefederated()
+            .arrange()
+
+        // When
+        userRepository.defederateUser(TestUser.OTHER_FEDERATED_USER_ID).shouldSucceed()
+
+        // Then
+        verify(arrangement.userDAO)
+            .function(arrangement.userDAO::markUserAsDefederated)
+            .with(eq(TestUser.OTHER_FEDERATED_USER_ID.toDao()))
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
@@ -664,6 +682,7 @@ class UserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) }
         }
+
         fun withAllOtherUsersIdSuccess(
             result: List<UserIDEntity>,
         ) {
@@ -671,6 +690,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDAO::allOtherUsersId)
                 .whenInvoked()
                 .then { result }
+        }
+
+        fun withMarkUserAsDefederated() = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::markUserAsDefederated)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {

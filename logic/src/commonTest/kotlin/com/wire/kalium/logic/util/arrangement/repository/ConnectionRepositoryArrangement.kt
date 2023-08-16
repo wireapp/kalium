@@ -20,9 +20,12 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.given
+import io.mockative.matchers.Matcher
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
@@ -30,6 +33,7 @@ internal interface ConnectionRepositoryArrangement {
     val connectionRepository: ConnectionRepository
 
     fun withGetConnections(result: Either<StorageFailure, Flow<List<ConversationDetails>>>)
+    fun withDeleteConnection(result: Either<StorageFailure, Unit>, conversationId: Matcher<ConversationId> = any())
 }
 
 internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryArrangement {
@@ -42,6 +46,16 @@ internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryAr
         given(connectionRepository)
             .suspendFunction(connectionRepository::getConnections)
             .whenInvoked()
+            .thenReturn(result)
+    }
+
+    override fun withDeleteConnection(
+        result: Either<StorageFailure, Unit>,
+        conversationId: Matcher<ConversationId>,
+    ) {
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::deleteConnection)
+            .whenInvokedWith(conversationId)
             .thenReturn(result)
     }
 }

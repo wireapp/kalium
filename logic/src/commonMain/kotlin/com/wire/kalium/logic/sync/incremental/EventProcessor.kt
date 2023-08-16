@@ -29,6 +29,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
+import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -50,6 +51,7 @@ internal interface EventProcessor {
     suspend fun processEvent(event: Event): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class EventProcessorImpl(
     private val eventRepository: EventRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
@@ -57,6 +59,7 @@ internal class EventProcessorImpl(
     private val teamEventReceiver: TeamEventReceiver,
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
+    private val federationEventReceiver: FederationEventReceiver
 ) : EventProcessor {
 
     private val logger by lazy {
@@ -79,6 +82,7 @@ internal class EventProcessorImpl(
 
         is Event.Team -> teamEventReceiver.onEvent(event)
         is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
+        is Event.Federation -> federationEventReceiver.onEvent(event)
     }.onSuccess {
         val logMap = mapOf<String, Any>(
             "event" to event.toLogMap()

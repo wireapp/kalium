@@ -19,7 +19,10 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -28,6 +31,7 @@ import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class MessageMapperTest {
 
@@ -77,6 +81,71 @@ class MessageMapperTest {
 
         // then
         assertEquals(result.status, MessageEntity.Status.DELIVERED)
+    }
+
+    @Test
+    fun givenMessageVisibility_whenMappingToMessageEntityVisibility_thenMessageEntityVisibilityShouldMatch() {
+        // Given & When & Then
+        assertEquals(
+            MessageEntity.Visibility.VISIBLE,
+            Message.Visibility.VISIBLE.toEntityVisibility(),
+            "Visibility should match VISIBLE"
+        )
+        assertEquals(
+            MessageEntity.Visibility.HIDDEN,
+            Message.Visibility.HIDDEN.toEntityVisibility(),
+            "Visibility should match HIDDEN"
+        )
+        assertEquals(
+            MessageEntity.Visibility.DELETED,
+            Message.Visibility.DELETED.toEntityVisibility(),
+            "Visibility should match DELETED"
+        )
+    }
+
+    @Test
+    fun givenTextEntityContent_whenMappingToMessageContent_thenMessageContentShouldMatchText() {
+        // Given
+        val messageBody = "Heyo @John"
+        val mentionList = listOf(MessageEntity.Mention(5, 5, TestUser.SELF.id.toDao()))
+        val textEntityContent = MessageEntityContent.Text(
+            messageBody = messageBody,
+            mentions = mentionList
+        )
+
+        // When
+        val messageContent = textEntityContent.toMessageContent(false, TestUser.SELF.id)
+
+        // Then
+        assertIs<MessageContent.Text>(messageContent, "Content should be of type Text")
+        assertEquals(messageBody, messageContent.value, "Message body should match")
+        assertEquals(mentionList.map { it.toModel(TestUser.SELF.id) }, messageContent.mentions, "Mentions should match")
+    }
+
+    @Test
+    fun givenMemberChangeFederationRemoved_whenMappingToMessageEntityContent_thenMessageEntityContentShouldMatchFederationRemoved() {
+        // Given
+        val memberUserIdList = listOf(
+            UserId("value1", "domain1"),
+            UserId("value2", "domain2")
+        )
+        val messageContent = MessageContent.MemberChange.FederationRemoved(memberUserIdList)
+
+        // When
+        val messageEntityContent = messageContent.toMessageEntityContent()
+
+        // Then
+        assertIs<MessageEntityContent.MemberChange>(messageEntityContent, "Content should be of type MemberChange")
+        assertEquals(
+            MessageEntity.MemberChangeType.FEDERATION_REMOVED,
+            messageEntityContent.memberChangeType,
+            "Type should match FEDERATION_REMOVED"
+        )
+        assertEquals(
+            memberUserIdList.map { it.toDao() },
+            messageEntityContent.memberUserIdList,
+            "Member user ID list should match"
+        )
     }
 
     class Arrangement {

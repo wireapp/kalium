@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
@@ -109,6 +110,17 @@ CREATE TABLE MessageMemberChangeContent (
 
       member_change_list TEXT AS List<QualifiedIDEntity> NOT NULL,
       member_change_type TEXT AS MemberChangeType NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageFederationTerminatedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      domain_list TEXT AS List<String> NOT NULL,
+      federation_type TEXT AS FederationType NOT NULL,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -322,6 +334,10 @@ VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMemberChangeMessage:
 INSERT OR IGNORE INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
+VALUES(?, ?, ?, ?);
+
+insertFederationTerminatedMessage:
+INSERT OR IGNORE INTO MessageFederationTerminatedContent(message_id, conversation_id, domain_list, federation_type)
 VALUES(?, ?, ?, ?);
 
 insertMessageUnknownContent:

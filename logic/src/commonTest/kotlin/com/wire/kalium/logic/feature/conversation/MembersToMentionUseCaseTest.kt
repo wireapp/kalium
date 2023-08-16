@@ -65,6 +65,7 @@ class MembersToMentionUseCaseTest {
             .whenInvokedWith(anything())
             .thenReturn(flowOf(members))
     }
+
     @Test
     fun givenAListOfMembers_whenRequestingMembersToMentionWithAnEmptySearchQuery_thenReturnAllConversationMembers() = runTest {
         val searchQuery = ""
@@ -137,7 +138,8 @@ class MembersToMentionUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
             userType = UserType.INTERNAL,
             botService = null,
-            deleted = false
+            deleted = false,
+            defederated = false
         )
 
         val members = listOf(

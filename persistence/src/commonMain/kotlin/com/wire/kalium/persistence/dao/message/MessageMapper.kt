@@ -169,6 +169,12 @@ object MessageMapper {
                         isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                         otherUserIdList = userIdList.filterNot { it == selfUserId },
                     )
+
+                    MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessagePreviewEntityContent.FederatedMembersRemoved(
+                        isContainSelfUserId = userIdList
+                            .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                        otherUserIdList = userIdList.filterNot { it == selfUserId },
+                    )
                 }
             }
 
@@ -184,6 +190,7 @@ object MessageMapper {
 
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
 
+            MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.HISTORY_LOST -> MessagePreviewEntityContent.Unknown
@@ -430,7 +437,9 @@ object MessageMapper {
         messageTimerChanged: Long?,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
-        buttonsJson: String
+        buttonsJson: String,
+        federationDomainList: List<String>?,
+        federationType: MessageEntity.FederationType?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -552,7 +561,10 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessageEntityContent.ConversationDegradedMLS
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessageEntityContent.ConversationDegradedProteus
-
+            MessageEntity.ContentType.FEDERATION -> MessageEntityContent.Federation(
+                domainList = federationDomainList.requireField("federationDomainList"),
+                type = federationType.requireField("federationType")
+            )
         }
 
         return createMessageEntity(
