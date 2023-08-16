@@ -15,15 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
+package com.wire.kalium.api
 
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-internal actual class NetworkStateObserverImpl : NetworkStateObserver {
+class TestNetworkStateObserver(initialState: NetworkState = NetworkState.ConnectedWithInternet) : NetworkStateObserver {
 
-    override fun observeNetworkState(): StateFlow<NetworkState> =
-        MutableStateFlow(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
+    private val networkState = MutableStateFlow(initialState)
+
+    override fun observeNetworkState(): StateFlow<NetworkState> = networkState
+
+    suspend fun updateNetworkState(state: NetworkState) { networkState.emit(state) }
+
+    companion object {
+        val DEFAULT_TEST_NETWORK_STATE_OBSERVER = TestNetworkStateObserver()
+    }
 }
