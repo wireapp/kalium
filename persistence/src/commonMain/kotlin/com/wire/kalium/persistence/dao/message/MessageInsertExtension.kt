@@ -234,6 +234,15 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.ConversationDegradedProteus -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.Federation -> {
+                messagesQueries.insertFederationTerminatedMessage(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    domain_list = content.domainList,
+                    federation_type = content.type
+                )
+            }
         }
     }
 
@@ -282,6 +291,7 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.MLSWrongEpochWarning,
                 is MessageEntityContent.MemberChange,
                 is MessageEntityContent.NewConversationReceiptMode,
+                is MessageEntityContent.Federation,
                 is MessageEntityContent.TeamMemberRemoved -> {
                     /* no-op */
                 }
@@ -372,5 +382,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationDegradedMLS -> MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS
         is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS
         is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
+        is MessageEntityContent.Federation -> MessageEntity.ContentType.FEDERATION
     }
 }

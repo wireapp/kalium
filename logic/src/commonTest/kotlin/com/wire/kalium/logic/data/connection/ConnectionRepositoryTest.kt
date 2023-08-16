@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -305,6 +306,24 @@ class ConnectionRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenConversationId_WhenDeletingConnection_thenDeleteConnectionDataAndConversationShouldBeTriggered() = runTest {
+        // given
+        val conversationId = com.wire.kalium.logic.data.id.QualifiedID("conversation_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement.withDeleteConnectionDataAndConversation(conversationId.toDao())
+
+        // when
+        val result = connectionRepository.deleteConnection(conversationId)
+
+        // then
+        result.shouldSucceed()
+        verify(arrangement.connectionDAO)
+            .suspendFunction(arrangement.connectionDAO::deleteConnectionDataAndConversation)
+            .with(eq(conversationId.toDao()))
+            .wasInvoked(once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -394,7 +413,8 @@ class ConnectionRepositoryTest {
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
@@ -481,6 +501,13 @@ class ConnectionRepositoryTest {
                 .suspendFunction(connectionApi::updateConnection)
                 .whenInvokedWith(eq(userId), any())
                 .then { _, _ -> NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
+        }
+
+        fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
+            given(connectionDAO)
+                .suspendFunction(connectionDAO::deleteConnectionDataAndConversation)
+                .whenInvokedWith(eq(conversationId))
+                .thenReturn(Unit)
         }
 
         fun withSuccessfulFetchSelfUserConnectionsResponse(stubUserProfileDTO: UserProfileDTO): Arrangement {

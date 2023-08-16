@@ -78,6 +78,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.member.ConversationsWithMembersEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
@@ -1009,6 +1010,48 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenDomains_whenGettingConversationsWithMembersWithBothDomains_thenShouldReturnConversationsWithMembers() = runTest {
+        // Given
+        val federatedDomain = "federated.com"
+        val selfDomain = "selfdomain.com"
+        val singleFederatedUserList = listOf(QualifiedIDEntity("fed_user", federatedDomain))
+        val federatedUserIdList = List(5) {
+            QualifiedIDEntity("fed_user_$it", federatedDomain)
+        }
+        val selfUserIdList = List(5) {
+            QualifiedIDEntity("self_user_$it", selfDomain)
+        }
+
+        val userIdList = federatedUserIdList + selfUserIdList
+        val groupConversationId = QualifiedIDEntity("conversation_group", selfDomain)
+        val oneOnOneConversationId = QualifiedIDEntity("conversation_one_on_one", selfDomain)
+
+
+        val conversationsWithMembersEntity = ConversationsWithMembersEntity(
+            oneOnOne = mapOf(oneOnOneConversationId to singleFederatedUserList),
+            group = mapOf(groupConversationId to userIdList)
+        )
+
+        val (arrangement, conversationRepository) = Arrangement()
+            .withGetConversationWithUserIdsWithBothDomains(conversationsWithMembersEntity, eq(selfDomain), eq(federatedDomain))
+            .arrange()
+
+        // When
+        val result = conversationRepository.getConversationsWithMembersWithBothDomains(selfDomain, federatedDomain)
+
+        // Then
+        result.shouldSucceed {
+            assertEquals(userIdList.map { idEntity -> idEntity.toModel() }, it.group[groupConversationId.toModel()])
+            assertEquals(singleFederatedUserList.map { idEntity -> idEntity.toModel() }, it.oneOnOne[oneOnOneConversationId.toModel()])
+        }
+
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::getConversationWithUserIdsWithBothDomains)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -1321,6 +1364,17 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationsWithoutMetadata)
                 .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withGetConversationWithUserIdsWithBothDomains(
+            result: ConversationsWithMembersEntity,
+            firstDomain: Matcher<String> = any(),
+            secondDomain: Matcher<String> = any()
+        ) = apply {
+            given(memberDAO)
+                .suspendFunction(memberDAO::getConversationWithUserIdsWithBothDomains)
+                .whenInvokedWith(firstDomain, secondDomain)
                 .thenReturn(result)
         }
 

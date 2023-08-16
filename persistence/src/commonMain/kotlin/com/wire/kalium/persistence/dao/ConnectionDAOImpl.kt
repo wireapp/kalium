@@ -69,7 +69,8 @@ private class ConnectionMapper {
         bot_service: BotIdEntity?,
         deleted: Boolean?,
         incomplete_metadata: Boolean?,
-        expires_at: Instant?
+        expires_at: Instant?,
+        defederated: Boolean?
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
@@ -95,7 +96,8 @@ private class ConnectionMapper {
             botService = bot_service,
             deleted = deleted.requireField("deleted"),
             hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata"),
-            expiresAt = expires_at
+            expiresAt = expires_at,
+            defederated = defederated.requireField("defederated")
         ) else null
     )
 

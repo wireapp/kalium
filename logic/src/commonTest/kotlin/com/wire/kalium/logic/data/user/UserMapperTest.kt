@@ -81,7 +81,8 @@ class UserMapperTest {
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
         val (_, userMapper) = Arrangement().arrange()
 
@@ -96,7 +97,7 @@ class UserMapperTest {
     }
 
     private class Arrangement {
-        
+
         private val userMapper = UserMapperImpl()
 
         fun arrange() = this to userMapper

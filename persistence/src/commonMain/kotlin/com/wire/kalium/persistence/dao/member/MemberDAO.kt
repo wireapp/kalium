@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +52,11 @@ interface MemberDAO {
 
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
+
+    suspend fun getConversationWithUserIdsWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): ConversationsWithMembersEntity
 }
 
 @Suppress("TooManyFunctions")
@@ -132,12 +138,17 @@ internal class MemberDAOImpl internal constructor(
     ) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.updateUserConnectionStatus(status, member.user)
-            val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-            if (recordDidNotExist) {
+            val userRecordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+            if (userRecordDidNotExist) {
                 userQueries.insertOrIgnoreUserIdWithConnectionStatus(member.user, status)
             }
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
-            memberQueries.insertMember(member.user, conversationID, member.role)
+            val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
+            if (conversationRecordExist) {
+                memberQueries.insertMember(member.user, conversationID, member.role)
+            } else {
+                kaliumLogger.w("conversation $conversationID doest not exist for user ${member.user}")
+            }
         }
     }
 
@@ -158,4 +169,27 @@ internal class MemberDAOImpl internal constructor(
                 }
             }
         }
+
+    override suspend fun getConversationWithUserIdsWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): ConversationsWithMembersEntity = withContext(coroutineContext) {
+        val membersByConversationType = memberQueries.getMembersFromOneOfTwoDomains(firstDomain, secondDomain).executeAsList()
+            .groupBy { it.type }
+
+        ConversationsWithMembersEntity(
+            oneOnOne = membersByConversationType[ConversationEntity.Type.ONE_ON_ONE]
+                ?.groupBy { it.conversation }
+                ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
+                ?: mapOf(),
+            group = membersByConversationType[ConversationEntity.Type.GROUP]
+                ?.groupBy { it.conversation }
+                ?.filter { (_, members) ->
+                    members.any { it.user.domain == firstDomain } &&
+                            members.any { it.user.domain == secondDomain }
+                }
+                ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
+                ?: mapOf()
+        )
+    }
 }

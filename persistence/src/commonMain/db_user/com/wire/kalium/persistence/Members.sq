@@ -51,3 +51,8 @@ WHERE conversation IN (
 
 isUserMember:
 SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;
+
+getMembersFromOneOfTwoDomains:
+SELECT mem.*, con.type FROM Member AS mem
+JOIN Conversation AS con ON con.qualified_id = mem.conversation
+WHERE user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain);

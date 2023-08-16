@@ -15,22 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.dao.member
+package com.wire.kalium.persistence.adapter
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import app.cash.sqldelight.ColumnAdapter
 
-data class MemberEntity(
-    val user: QualifiedIDEntity,
-    val role: Role
-) {
-    sealed class Role {
-        object Member : Role()
-        object Admin : Role()
-        data class Unknown(val name: String) : Role()
+internal object StringListAdapter : ColumnAdapter<List<String>, String> {
+
+    override fun decode(databaseValue: String): List<String> {
+        return databaseValue.split(",")
+    }
+
+    override fun encode(value: List<String>): String {
+        return value.joinToString(separator = ",")
     }
 }
-
-data class ConversationsWithMembersEntity(
-    val oneOnOne: Map<QualifiedIDEntity, List<QualifiedIDEntity>>,
-    val group: Map<QualifiedIDEntity, List<QualifiedIDEntity>>
-)

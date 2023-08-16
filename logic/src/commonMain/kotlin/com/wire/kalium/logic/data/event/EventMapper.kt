@@ -91,6 +91,22 @@ class EventMapper(
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
+        }
+
+    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
+        when (eventContentDTO) {
+            is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
+                id,
+                transient,
+                eventContentDTO.domains
+            )
+
+            is EventContentDTO.Federation.FederationDeleteDTO -> Event.Federation.Delete(
+                id,
+                transient,
+                eventContentDTO.domain
+            )
         }
 
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)

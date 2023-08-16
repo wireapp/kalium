@@ -151,6 +151,7 @@ data class OtherUser(
     override val availabilityStatus: UserAvailabilityStatus,
     val botService: BotService?,
     val deleted: Boolean,
+    val defederated: Boolean,
     override val expiresAt: Instant? = null
 ) : User() {
 
