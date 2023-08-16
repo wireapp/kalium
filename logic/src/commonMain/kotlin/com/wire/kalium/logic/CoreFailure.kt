@@ -203,12 +203,16 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
                     Either.Left(NetworkFailure.ProxyError(exception.cause))
                 }
 
+                exception is KaliumException.NoNetwork -> {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
+                exception is KaliumException.GenericError && exception.cause is IOException -> {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
                 else -> {
-                    if (exception is KaliumException.GenericError && exception.cause is IOException) {
-                        Either.Left(NetworkFailure.NoNetworkConnection(exception))
-                    } else {
-                        Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
-                    }
+                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
                 }
             }
         }

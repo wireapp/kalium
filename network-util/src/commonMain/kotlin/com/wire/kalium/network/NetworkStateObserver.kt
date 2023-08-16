@@ -15,9 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
+package com.wire.kalium.network
 
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -32,7 +31,7 @@ interface NetworkStateObserver {
     // Delay which will be completed earlier if there is a reconnection in the meantime.
     suspend fun delayUntilConnectedWithInternetAgain(delay: Duration) {
         // Delay for given amount but break it if reconnected again.
-        kaliumLogger.i("$TAG delayUntilConnectedWithInternetAgain")
+        kaliumUtilLogger.i("$TAG delayUntilConnectedWithInternetAgain")
         withTimeoutOrNull(delay) {
             // Drop the current value, so it will complete only if the connection changed again to connected during that time.
             observeNetworkState()
@@ -46,8 +45,6 @@ interface NetworkStateObserver {
         const val TAG = "NetworkStateObserver"
     }
 }
-
-internal expect class NetworkStateObserverImpl : NetworkStateObserver
 
 sealed class NetworkState {
     object ConnectedWithInternet : NetworkState()

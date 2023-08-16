@@ -28,6 +28,7 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.intervalFlow
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -54,7 +55,8 @@ interface ObserveIfAppUpdateRequiredUseCase {
 class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val networkStateObserver: NetworkStateObserver
 ) : ObserveIfAppUpdateRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -96,7 +98,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                         withContext(coroutineContext) {
                             async {
                                 val isUpdateRequired = authenticationScopeProvider
-                                    .provide(serverConfig, proxyCredentials, serverConfigRepository)
+                                    .provide(serverConfig, proxyCredentials, serverConfigRepository, networkStateObserver)
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
                                 serverConfig.id to isUpdateRequired
                             }

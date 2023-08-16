@@ -257,7 +257,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
-import com.wire.kalium.logic.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
@@ -440,6 +440,7 @@ class UserSessionScope internal constructor(
         logout = { logoutReason -> logout(logoutReason) }
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
+        networkStateObserver,
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
         userAgent
@@ -451,7 +452,8 @@ class UserSessionScope internal constructor(
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
-        globalScope.serverConfigRepository
+        globalScope.serverConfigRepository,
+        networkStateObserver
     )
 
     private val userConfigRepository: UserConfigRepository

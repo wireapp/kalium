@@ -136,6 +136,7 @@ dependencies {
     kover(project(":cryptography"))
     kover(project(":util"))
     kover(project(":network"))
+    kover(project(":network-util"))
     kover(project(":persistence"))
     kover(project(":logger"))
     kover(project(":calling"))
