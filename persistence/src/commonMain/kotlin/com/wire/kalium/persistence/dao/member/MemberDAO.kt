@@ -177,7 +177,7 @@ internal class MemberDAOImpl internal constructor(
         firstDomain: String,
         secondDomain: String
     ): Map<ConversationIDEntity, List<UserIDEntity>> = withContext(coroutineContext) {
-        memberQueries.getFederatedMembersWithOneOfDomainsFromGroupConversation(firstDomain, secondDomain)
+        memberQueries.selectFederatedMembersWithOneOfDomainsFromGroupConversation(firstDomain, secondDomain)
             .executeAsList()
             .groupBy { it.conversation }
             .filter { (_, members) ->
@@ -190,7 +190,7 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun getOneOneConversationWithFederatedMembers(
         domain: String,
     ): Map<ConversationIDEntity, UserIDEntity> = withContext(coroutineContext) {
-        memberQueries.getFederatedMembersFromOneOnOneConversations(domain)
+        memberQueries.selectFederatedMembersFromOneOnOneConversations(domain)
             .executeAsList()
             .associateBy({ it.conversation }, { it.user })
     }

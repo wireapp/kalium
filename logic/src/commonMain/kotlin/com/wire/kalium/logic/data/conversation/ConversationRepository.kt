@@ -210,11 +210,11 @@ interface ConversationRepository {
     suspend fun getGroupConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Either<CoreFailure, Map<QualifiedID, List<QualifiedID>>>
+    ): Either<CoreFailure, GroupConversationMembers>
 
     suspend fun getOneOnOneConversationsWithFederatedMembers(
         domain: String
-    ): Either<CoreFailure, Map<QualifiedID, QualifiedID>>
+    ): Either<CoreFailure, OneOnOneMembers>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -789,7 +789,7 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getGroupConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Either<CoreFailure, Map<QualifiedID, List<QualifiedID>>> = wrapStorageRequest {
+    ): Either<CoreFailure, GroupConversationMembers> = wrapStorageRequest {
         memberDAO.getGroupConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
             .mapKeys { it.key.toModel() }
             .mapValues { it.value.map { userId -> userId.toModel() } }
@@ -797,7 +797,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun getOneOnOneConversationsWithFederatedMembers(
         domain: String
-    ): Either<CoreFailure, Map<QualifiedID, QualifiedID>> = wrapStorageRequest {
+    ): Either<CoreFailure, OneOnOneMembers> = wrapStorageRequest {
         memberDAO.getOneOneConversationWithFederatedMembers(domain)
             .mapKeys { it.key.toModel() }
             .mapValues { it.value.toModel() }

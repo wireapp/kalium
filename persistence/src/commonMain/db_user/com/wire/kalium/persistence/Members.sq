@@ -52,12 +52,12 @@ WHERE conversation IN (
 isUserMember:
 SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;
 
-getFederatedMembersWithOneOfDomainsFromGroupConversation:
+selectFederatedMembersWithOneOfDomainsFromGroupConversation:
 SELECT mem.* FROM Member AS mem
 JOIN Conversation AS con ON con.qualified_id = mem.conversation
 WHERE con.type == 'GROUP' AND (user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain));
 
-getFederatedMembersFromOneOnOneConversations:
+selectFederatedMembersFromOneOnOneConversations:
 SELECT mem.* FROM Member AS mem
 JOIN Conversation AS con ON con.qualified_id = mem.conversation
 JOIN User AS usr ON usr.qualified_id = mem.user
