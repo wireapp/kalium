@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -26,6 +27,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
@@ -273,6 +276,44 @@ class NewGroupConversationSystemMessagesCreatorTest {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
                 })
                 .wasInvoked(once)
+
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(matching {
+                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
+                })
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenAGroupConversation_whenPersistingMembersAndAllFailed_ThenShouldCreateASystemMessageOnlyWithFailedToAdd() =
+        runTest {
+            val (arrangement, sysMessageCreator) = Arrangement()
+                .withIsASelfTeamMember(false)
+                .withPersistMessageSuccess()
+                .arrange()
+
+            val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
+                TestConversation.CONVERSATION_RESPONSE.id.toDao(),
+                TestConversation.CONVERSATION_RESPONSE.copy(
+                    members = ConversationMembersResponse(
+                        ConversationMemberDTO.Self(
+                            TestUser.SELF.id.toApi(),
+                            "wire_admin"
+                        ), listOf()
+                    )
+                ),
+                listOf(TestUser.USER_ID)
+            )
+
+            result.shouldSucceed()
+
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(matching {
+                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
+                })
+                .wasNotInvoked()
 
             verify(arrangement.persistMessage)
                 .suspendFunction(arrangement.persistMessage::invoke)
