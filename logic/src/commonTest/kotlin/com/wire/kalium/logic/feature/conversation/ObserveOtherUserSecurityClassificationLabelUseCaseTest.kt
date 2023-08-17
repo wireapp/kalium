@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import app.cash.turbine.test
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.ClassifiedDomainsStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestUser
@@ -27,49 +29,62 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
-class GetOtherUserSecurityClassificationLabelUseCaseTest {
+class ObserveOtherUserSecurityClassificationLabelUseCaseTest {
 
     @Test
     fun givenAOtherUserId_WhenNoClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest(dispatcher.io) {
-        val (_, getOtherUserSecurityClassificationLabel) = Arrangement()
+        val (_, observeOtherUserSecurityClassificationLabel) = Arrangement()
             .withGettingClassifiedDomainsDisabled()
             .arrange()
 
-        val result = getOtherUserSecurityClassificationLabel(TestUser.OTHER_USER_ID)
+        observeOtherUserSecurityClassificationLabel(TestUser.OTHER_USER_ID).test {
+            assertEquals(SecurityClassificationType.NONE, awaitItem())
+            awaitComplete()
+        }
+    }
 
-        assertEquals(SecurityClassificationType.NONE, result)
+    @Test
+    fun givenASelfUserId_WhenClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest(dispatcher.io) {
+        val (_, observeOtherUserSecurityClassificationLabel) = Arrangement()
+            .withGettingClassifiedDomainsDisabled()
+            .arrange()
+
+        observeOtherUserSecurityClassificationLabel(TestUser.SELF.id).test {
+            assertEquals(SecurityClassificationType.NONE, awaitItem())
+            awaitComplete()
+        }
     }
 
     @Test
     fun givenAOtherUserId_WhenClassifiedFeatureFlagEnabledAndOtherUserInSameDomainAndTrusted_ThenClassificationIsClassified() =
         runTest(dispatcher.io) {
-            val (_, getOtherUserSecurityClassificationLabel) = Arrangement()
+            val (_, observeOtherUserSecurityClassificationLabel) = Arrangement()
                 .withGettingClassifiedDomains()
                 .arrange()
 
-            val result = getOtherUserSecurityClassificationLabel(TestUser.OTHER_USER_ID.copy(domain = "bella.com"))
-
-            assertEquals(SecurityClassificationType.CLASSIFIED, result)
+            observeOtherUserSecurityClassificationLabel(TestUser.OTHER_USER_ID.copy(domain = "bella.com")).test {
+                assertEquals(SecurityClassificationType.CLASSIFIED, awaitItem())
+                awaitComplete()
+            }
         }
 
     @Test
     fun givenAOtherUserId_WhenClassifiedFeatureFlagEnabledAndOtherUserNotInSameDomain_ThenClassificationIsNotClassified() =
         runTest(dispatcher.io) {
-            val (_, getOtherUserSecurityClassificationLabel) = Arrangement()
+            val (_, observeOtherUserSecurityClassificationLabel) = Arrangement()
                 .withGettingClassifiedDomains()
                 .arrange()
 
-            val result = getOtherUserSecurityClassificationLabel(TestUser.OTHER_USER_ID.copy(domain = "not-trusted.com"))
+            observeOtherUserSecurityClassificationLabel(TestUser.OTHER_USER_ID.copy(domain = "not-trusted.com")).test {
+                assertEquals(SecurityClassificationType.NOT_CLASSIFIED, awaitItem())
+                awaitComplete()
+            }
 
-            assertEquals(SecurityClassificationType.NOT_CLASSIFIED, result)
         }
 
     private class Arrangement {
@@ -80,7 +95,7 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
             given(userConfigRepository)
                 .function(userConfigRepository::getClassifiedDomainsStatus)
                 .whenInvoked()
-                .thenReturn(emptyFlow())
+                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun withGettingClassifiedDomains() = apply {
@@ -91,7 +106,9 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
         }
 
         fun arrange() = this to ObserveOtherUserSecurityClassificationLabelUseCaseImpl(
-            userConfigRepository, dispatcher
+            userConfigRepository,
+            TestUser.SELF.id,
+            dispatcher
         )
     }
 

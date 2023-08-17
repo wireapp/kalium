@@ -1403,7 +1403,7 @@ class UserSessionScope internal constructor(
         )
 
     val getOtherUserSecurityClassificationLabel: ObserveOtherUserSecurityClassificationLabelUseCase
-        get() = ObserveOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)
+        get() = ObserveOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository, userId)
 
     val persistScreenshotCensoringConfig: PersistScreenshotCensoringConfigUseCase
         get() = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -39,10 +40,14 @@ interface ObserveOtherUserSecurityClassificationLabelUseCase {
 
 internal class ObserveOtherUserSecurityClassificationLabelUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
+    private val selfUserId: UserId,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveOtherUserSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(otherUserId: UserId): Flow<SecurityClassificationType> = withContext(dispatchers.io) {
+        if (otherUserId == selfUserId) {
+            return@withContext flowOf(SecurityClassificationType.NONE)
+        }
         getClassifiedDomainsStatus().map {
             when (it?.contains(otherUserId.domain)) {
                 true -> SecurityClassificationType.CLASSIFIED
