@@ -32,7 +32,6 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.member.ConversationsWithMembers
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.UnreadEventType
 import com.wire.kalium.logic.data.user.UserId
@@ -208,10 +207,14 @@ interface ConversationRepository {
         isInformed: Boolean
     ): Either<StorageFailure, Unit>
 
-    suspend fun getConversationsWithMembersWithBothDomains(
+    suspend fun getGroupConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Either<CoreFailure, ConversationsWithMembers>
+    ): Either<CoreFailure, Map<QualifiedID, List<QualifiedID>>>
+
+    suspend fun getOneOnOneConversationsWithFederatedMembers(
+        domain: String
+    ): Either<CoreFailure, Map<QualifiedID, QualifiedID>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -330,7 +333,7 @@ internal class ConversationDataSource internal constructor(
         conversations.forEach { conversationsResponse ->
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
-            if (invalidateMembers) {
+            if (invalidateMembers && conversationsResponse.type == ConversationResponse.Type.GROUP) {
                 memberDAO.updateFullMemberList(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
@@ -783,15 +786,21 @@ internal class ConversationDataSource internal constructor(
             conversationMetaDataDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
         }
 
-    override suspend fun getConversationsWithMembersWithBothDomains(
+    override suspend fun getGroupConversationsWithMembersWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): Either<CoreFailure, ConversationsWithMembers> = wrapStorageRequest {
-        val entity = memberDAO.getConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
-        ConversationsWithMembers(
-            oneOnOne = entity.oneOnOne.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } },
-            group = entity.group.mapKeys { it.key.toModel() }.mapValues { it.value.map { userIdEntity -> userIdEntity.toModel() } }
-        )
+    ): Either<CoreFailure, Map<QualifiedID, List<QualifiedID>>> = wrapStorageRequest {
+        memberDAO.getGroupConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
+            .mapKeys { it.key.toModel() }
+            .mapValues { it.value.map { userId -> userId.toModel() } }
+    }
+
+    override suspend fun getOneOnOneConversationsWithFederatedMembers(
+        domain: String
+    ): Either<CoreFailure, Map<QualifiedID, QualifiedID>> = wrapStorageRequest {
+        memberDAO.getOneOneConversationWithFederatedMembers(domain)
+            .mapKeys { it.key.toModel() }
+            .mapValues { it.value.toModel() }
     }
 
     private suspend fun persistIncompleteConversations(

@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
@@ -47,7 +46,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 internal interface SearchUserRepository {
@@ -96,8 +94,7 @@ internal class SearchUserRepositoryImpl(
     private val userSearchAPiWrapper: UserSearchApiWrapper,
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
