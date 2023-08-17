@@ -309,5 +309,5 @@ typealias ClientId = PlainId
 data class Recipient(val id: UserId, val clients: List<ClientId>)
 
 typealias UnreadEventCount = Map<UnreadEventType, Int>
-typealias OneOnOneMembers =  Map<ConversationId, UserId>
+typealias OneOnOneMembers = Map<ConversationId, UserId>
 typealias GroupConversationMembers = Map<ConversationId, List<UserId>>
