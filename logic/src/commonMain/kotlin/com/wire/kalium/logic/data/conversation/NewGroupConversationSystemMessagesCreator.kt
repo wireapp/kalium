@@ -143,9 +143,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         conversationResponse: ConversationResponse,
         failedUsersList: List<UserId>
     ): Either<CoreFailure, Unit> = run {
-        if (conversationResponse.members.otherMembers.isEmpty()) {
-            Either.Right(Unit)
-        } else {
+        if (conversationResponse.members.otherMembers.isNotEmpty()) {
             persistMessage(
                 Message.System(
                     id = uuid4().toString(),
@@ -159,10 +157,10 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     visibility = Message.Visibility.VISIBLE,
                     expirationData = null
                 )
-            ).also {
-                createFailedToAddSystemMessage(conversationId, failedUsersList)
-            }
+            )
         }
+        createFailedToAddSystemMessage(conversationId, failedUsersList)
+        Either.Right(Unit)
     }
 
     override suspend fun conversationFailedToAddMembers(
