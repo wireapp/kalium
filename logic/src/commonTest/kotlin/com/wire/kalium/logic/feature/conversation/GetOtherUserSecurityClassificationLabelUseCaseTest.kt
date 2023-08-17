@@ -90,7 +90,7 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
                 .thenReturn(flowOf(Either.Right(ClassifiedDomainsStatus(true, listOf("wire.com", "bella.com")))))
         }
 
-        fun arrange() = this to GetOtherUserSecurityClassificationLabelUseCaseImpl(
+        fun arrange() = this to ObserveOtherUserSecurityClassificationLabelUseCaseImpl(
             userConfigRepository, dispatcher
         )
     }
