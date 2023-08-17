@@ -2,10 +2,28 @@
 
 This application enables the creation of stress tests in clients and in the backend.
 
-To use, simply create a configuration and execute:
+## Building
+
+To build, run:
 
 ```bash
-./gradlew :monkeys:run --args="config.json"
+./gradlew :monkeys:build
+```
+
+A jar file will be created inside `./monkeys/build/libs` called `monkeys.jar`.
+
+## Running
+
+Create a configuration and execute:
+
+```bash
+java -jar monkeys.jar config.json
+```
+
+For a list of the possible options and parameters run:
+
+```bash
+java -jar monkeys.jar --help
 ```
 
 An [example](example.json) config is in this repo and the schema can be seen [here](schema.json).
