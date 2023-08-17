@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.logger
 import com.wire.kalium.network.KaliumKtorCustomLogging
 import com.wire.kalium.network.tools.KtxSerializer
+import com.wire.kalium.util.serialization.toJsonArray
 import com.wire.kalium.util.serialization.toJsonObject
 import io.github.serpro69.kfaker.Faker
 import io.ktor.client.HttpClient
@@ -74,28 +75,56 @@ object TestDataImporter {
         }
     }
 
-    private fun dumpUsers(teamName: String, users: List<UserData>) {
-        val json = users.associate {
-            it.email to mapOf(
-                "password" to it.password,
-                "domain" to it.backend.domain
+    private fun getUserData(backendConfig: BackendConfig): List<UserData> {
+        val backend = with(backendConfig) {
+            Backend(
+                api,
+                accounts,
+                webSocket,
+                blackList,
+                teams,
+                website,
+                title,
+                domain,
+                teamName
             )
-        }.toJsonObject()
+        }
+        return backendConfig.users.map { user ->
+            UserData(
+                user.email,
+                backendConfig.passwordForUsers,
+                UserId(user.unqualifiedId, backendConfig.domain),
+                backend
+            )
+        }
+    }
+
+    private fun dumpUsers(teamName: String, users: List<UserData>) {
+        val json = users.map {
+            mapOf(
+                "email" to it.email,
+                "id" to it.userId.value
+            )
+        }.toJsonArray()
         File("$teamName.json").writeText(jsonSerializer.encodeToString(json))
     }
 
     suspend fun generateUserData(testData: TestData): List<UserData> {
         return testData.backends.flatMap { backendConfig ->
-            val httpClient = basicHttpClient(backendConfig)
-            val team = httpClient.createTeam(backendConfig)
-            val users = (1..backendConfig.userCount.toInt())
-                .map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
-                .plus(team.owner)
-                .also { httpClient.close() }
-            if (backendConfig.dumpUsers) {
-                dumpUsers(backendConfig.teamName, users)
+            if (backendConfig.users.isNotEmpty()) {
+                getUserData(backendConfig)
+            } else {
+                val httpClient = basicHttpClient(backendConfig)
+                val team = httpClient.createTeam(backendConfig)
+                val users = (1..backendConfig.userCount.toInt())
+                    .map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
+                    .plus(team.owner)
+                    .also { httpClient.close() }
+                if (backendConfig.dumpUsers) {
+                    dumpUsers(backendConfig.teamName, users)
+                }
+                users
             }
-            users
         }
     }
 
@@ -210,7 +239,7 @@ private fun basicHttpClient(backendConfig: BackendConfig) = HttpClient(OkHttp.cr
     expectSuccess = true
     install(KaliumKtorCustomLogging)
     install(UserAgent) {
-        agent = "Infinite Monkeys"
+        agent = "Wire Infinite Monkeys"
     }
 
     install(ContentNegotiation) {

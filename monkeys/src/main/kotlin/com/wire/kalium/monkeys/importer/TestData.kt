@@ -144,5 +144,12 @@ data class BackendConfig(
     @SerialName("authUser") val authUser: String,
     @SerialName("authPassword") val authPassword: String,
     @SerialName("userCount") val userCount: ULong,
-    @SerialName("dumpUsers") val dumpUsers: Boolean = false
+    @SerialName("dumpUsers") val dumpUsers: Boolean = false,
+    @SerialName("users") val users: List<UserAccount> = listOf()
+)
+
+@Serializable
+data class UserAccount(
+    @SerialName("email") val email: String,
+    @SerialName("id") val unqualifiedId: String
 )
