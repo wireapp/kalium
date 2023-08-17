@@ -30,8 +30,6 @@ internal interface ProteusPreKeyRefiller {
      * Generates more prekeys and upload them to the backend if needed.
      */
     suspend fun refillIfNeeded(): Either<CoreFailure, Unit>
-
-
     companion object {
         const val MINIMUM_PREKEYS_COUNT = 40
         const val REMOTE_PREKEYS_TARGET_COUNT = 100
