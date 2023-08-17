@@ -19,6 +19,9 @@ package com.wire.kalium.logic.feature.proteus
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.MAX_PREKEY_ID
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.MINIMUM_PREKEYS_COUNT
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller.Companion.REMOTE_PREKEYS_TARGET_COUNT
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 
@@ -27,21 +30,36 @@ internal interface ProteusPreKeyRefiller {
      * Generates more prekeys and upload them to the backend if needed.
      */
     suspend fun refillIfNeeded(): Either<CoreFailure, Unit>
+
+
+    companion object {
+        const val MINIMUM_PREKEYS_COUNT = 40
+        const val REMOTE_PREKEYS_TARGET_COUNT = 100
+
+        /**
+         * The number of prekeys that can be generated before
+         * resetting back to ID 0.
+         * This number is dictated by Cryptobox.
+         */
+        const val MAX_PREKEY_ID = 65_534
+    }
 }
 
+/**
+ * @param preKeyRepository The repository that is used to operate on prekeys.
+ * @param lowOnPrekeysTreshold The minimum of prekeys that will trigger the refill.
+ * If the number of available prekeys is lower than this value,
+ * the refill will be triggered.
+ * @param remotePreKeyTargetCount Number of remaining prekeys in the backend to aim for
+ * when generating a new batch if a refill is triggered.
+ * @param maxPreKeyId The highest possible prekey ID, before it needs to be reset down to zero.
+ * This number is dictated by Cryptobox.
+ */
 internal class ProteusPreKeyRefillerImpl(
     private val preKeyRepository: PreKeyRepository,
-    /**
-     * The minimum of prekeys that will trigger the refill.
-     * If the number of available prekeys is lower than this value,
-     * the refill will be triggered.
-     */
     private val lowOnPrekeysTreshold: Int = MINIMUM_PREKEYS_COUNT,
-    /**
-     * Number of remaining prekeys in the backend to aim for
-     * when generating a new batch if a refill is triggered.
-     */
     private val remotePreKeyTargetCount: Int = REMOTE_PREKEYS_TARGET_COUNT,
+    private val maxPreKeyId: Int = MAX_PREKEY_ID,
 ) : ProteusPreKeyRefiller {
     override suspend fun refillIfNeeded(): Either<CoreFailure, Unit> =
         preKeyRepository.fetchRemotelyAvailablePrekeys().flatMap { remotePreKeys ->
@@ -50,12 +68,12 @@ internal class ProteusPreKeyRefillerImpl(
                 return Either.Right(Unit)
             }
             // Exclude the last resort prekey from the result
-            val rollingPreKeys = remotePreKeys.filter { it <= MAX_PREKEY_ID }
+            val rollingPreKeys = remotePreKeys.filter { it <= maxPreKeyId }
             val nextPreKeyBatchSize = remotePreKeyTargetCount - rollingPreKeys.size
 
             preKeyRepository.mostRecentPreKeyId().flatMap { mostRecentPreKeyId ->
-                val wouldNewBatchGoOverTheLimit = mostRecentPreKeyId + nextPreKeyBatchSize >= MAX_PREKEY_ID
-                val nextBatchStartId = if(wouldNewBatchGoOverTheLimit) {
+                val wouldNewBatchGoOverTheLimit = mostRecentPreKeyId + nextPreKeyBatchSize >= maxPreKeyId
+                val nextBatchStartId = if (wouldNewBatchGoOverTheLimit) {
                     0
                 } else {
                     mostRecentPreKeyId + 1
@@ -64,21 +82,10 @@ internal class ProteusPreKeyRefillerImpl(
                     nextBatchStartId,
                     remotePreKeyTargetCount
                 )
-            }
-            .flatMap { generatedPreKeys ->
-                preKeyRepository.uploadNewPrekeyBatch(generatedPreKeys)
+            }.flatMap { generatedPreKeys ->
+                preKeyRepository.updateMostRecentPreKeyId(generatedPreKeys.last().id).flatMap {
+                    preKeyRepository.uploadNewPrekeyBatch(generatedPreKeys)
+                }
             }
         }
-
-    private companion object {
-        private const val MINIMUM_PREKEYS_COUNT = 40
-        private const val REMOTE_PREKEYS_TARGET_COUNT = 100
-
-        /**
-         * The number of prekeys that can be generated before
-         * resetting back to ID 0.
-         * This number is dictated by Cryptobox.
-         */
-        private const val MAX_PREKEY_ID = 65_534
-    }
 }
