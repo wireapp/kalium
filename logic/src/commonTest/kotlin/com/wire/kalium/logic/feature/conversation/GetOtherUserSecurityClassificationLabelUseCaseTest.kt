@@ -27,14 +27,12 @@ import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetOtherUserSecurityClassificationLabelUseCaseTest {
 
     @Test
@@ -44,6 +42,17 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
             .arrange()
 
         val result = getOtherUserSecurityClassificationLabel(TestUser.OTHER_USER_ID)
+
+        assertEquals(SecurityClassificationType.NONE, result)
+    }
+
+    @Test
+    fun givenASelfUserId_WhenClassifiedFeatureFlagEnabled_ThenClassificationIsNone() = runTest(dispatcher.io) {
+        val (_, getOtherUserSecurityClassificationLabel) = Arrangement()
+            .withGettingClassifiedDomainsDisabled()
+            .arrange()
+
+        val result = getOtherUserSecurityClassificationLabel(TestUser.SELF.id)
 
         assertEquals(SecurityClassificationType.NONE, result)
     }
@@ -91,7 +100,9 @@ class GetOtherUserSecurityClassificationLabelUseCaseTest {
         }
 
         fun arrange() = this to GetOtherUserSecurityClassificationLabelUseCaseImpl(
-            userConfigRepository, dispatcher
+            userConfigRepository,
+            TestUser.SELF.id,
+            dispatcher
         )
     }
 

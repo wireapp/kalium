@@ -38,10 +38,14 @@ interface GetOtherUserSecurityClassificationLabelUseCase {
 
 internal class GetOtherUserSecurityClassificationLabelUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
+    private val selfUserId: UserId,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetOtherUserSecurityClassificationLabelUseCase {
 
     override suspend fun invoke(otherUserId: UserId): SecurityClassificationType = withContext(dispatchers.io) {
+        if (otherUserId == selfUserId) {
+            return@withContext SecurityClassificationType.NONE
+        }
         return@withContext when (getClassifiedDomainsStatus()?.contains(otherUserId.domain)) {
             true -> SecurityClassificationType.CLASSIFIED
             false -> SecurityClassificationType.NOT_CLASSIFIED
