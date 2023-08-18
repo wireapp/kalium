@@ -106,8 +106,7 @@ class SearchUserRepositoryTest {
             userSearchApiWrapper,
             publicUserMapper,
             userMapper,
-            domainUserTypeMapper,
-            idMapper
+            domainUserTypeMapper
         )
 
         given(domainUserTypeMapper).invocation { federated }.then { UserType.FEDERATED }

@@ -29,8 +29,3 @@ data class MemberEntity(
         data class Unknown(val name: String) : Role()
     }
 }
-
-data class ConversationsWithMembersEntity(
-    val oneOnOne: Map<QualifiedIDEntity, List<QualifiedIDEntity>>,
-    val group: Map<QualifiedIDEntity, List<QualifiedIDEntity>>
-)

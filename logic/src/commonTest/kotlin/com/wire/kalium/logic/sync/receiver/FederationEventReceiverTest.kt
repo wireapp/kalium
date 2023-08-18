@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.member.ConversationsWithMembers
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
@@ -73,12 +72,8 @@ class FederationEventReceiverTest {
 
         val userIdWithBothDomainsList = defederatedUserIdList + selfUserIdList
         val defederatedOneOnOneConversations = mapOf(
-            selfConversation.copy("1on1") to listOf(UserId("someDef", defederatedDomain), selfUserId),
-            defederatedConversation.copy("def1on1") to listOf(selfUserId, UserId("someDefTwo", defederatedDomain)),
-        )
-        val otherOneOnOneConversations = mapOf(
-            otherConversation.copy("other1on1") to listOf(selfUserId, UserId("someOther", otherDomain)),
-            selfConversation.copy("1on1self") to listOf(selfUserId, UserId("someOtherTwo", otherDomain)),
+            selfConversation.copy("1on1") to UserId("someDef", defederatedDomain),
+            defederatedConversation.copy("def1on1") to UserId("someDefTwo", defederatedDomain),
         )
 
         val defederatedGroupConversations = mapOf(
@@ -94,14 +89,8 @@ class FederationEventReceiverTest {
         val (arrangement, useCase) = arrange {
             withGetConnections(Either.Right(flowOf(connectionConversationList)))
             withDeleteConnection(Either.Right(Unit))
-            withGetConversationsWithMembersWithBothDomains(
-                Either.Right(
-                    ConversationsWithMembers(
-                        oneOnOne = defederatedOneOnOneConversations + otherOneOnOneConversations,
-                        group = defederatedGroupConversations
-                    )
-                )
-            )
+            withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
+            withGetOneOnOneConversationsWithFederatedMember(Either.Right(defederatedOneOnOneConversations))
             withDefederateUser(Either.Right(Unit))
             withDeleteMembersByQualifiedID()
             withPersistingMessage(Either.Right(Unit))
@@ -172,14 +161,7 @@ class FederationEventReceiverTest {
             val systemMessageCount = defederatedGroupConversations.size * 2
 
             val (arrangement, useCase) = arrange {
-                withGetConversationsWithMembersWithBothDomains(
-                    Either.Right(
-                        ConversationsWithMembers(
-                            oneOnOne = mapOf(),
-                            group = defederatedGroupConversations
-                        )
-                    )
-                )
+                withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
                 withDeleteMembersByQualifiedID()
                 withPersistingMessage(Either.Right(Unit))
             }

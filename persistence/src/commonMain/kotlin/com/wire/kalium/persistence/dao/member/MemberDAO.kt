@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -53,10 +54,12 @@ interface MemberDAO {
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
 
-    suspend fun getConversationWithUserIdsWithBothDomains(
+    suspend fun getGroupConversationWithUserIdsWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): ConversationsWithMembersEntity
+    ): Map<ConversationIDEntity, List<UserIDEntity>>
+
+    suspend fun getOneOneConversationWithFederatedMembers(domain: String): Map<ConversationIDEntity, UserIDEntity>
 }
 
 @Suppress("TooManyFunctions")
@@ -170,26 +173,25 @@ internal class MemberDAOImpl internal constructor(
             }
         }
 
-    override suspend fun getConversationWithUserIdsWithBothDomains(
+    override suspend fun getGroupConversationWithUserIdsWithBothDomains(
         firstDomain: String,
         secondDomain: String
-    ): ConversationsWithMembersEntity = withContext(coroutineContext) {
-        val membersByConversationType = memberQueries.getMembersFromOneOfTwoDomains(firstDomain, secondDomain).executeAsList()
-            .groupBy { it.type }
+    ): Map<ConversationIDEntity, List<UserIDEntity>> = withContext(coroutineContext) {
+        memberQueries.selectFederatedMembersWithOneOfDomainsFromGroupConversation(firstDomain, secondDomain)
+            .executeAsList()
+            .groupBy { it.conversation }
+            .filter { (_, members) ->
+                members.any { it.user.domain == firstDomain } &&
+                        members.any { it.user.domain == secondDomain }
+            }
+            .mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
+    }
 
-        ConversationsWithMembersEntity(
-            oneOnOne = membersByConversationType[ConversationEntity.Type.ONE_ON_ONE]
-                ?.groupBy { it.conversation }
-                ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
-                ?: mapOf(),
-            group = membersByConversationType[ConversationEntity.Type.GROUP]
-                ?.groupBy { it.conversation }
-                ?.filter { (_, members) ->
-                    members.any { it.user.domain == firstDomain } &&
-                            members.any { it.user.domain == secondDomain }
-                }
-                ?.mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
-                ?: mapOf()
-        )
+    override suspend fun getOneOneConversationWithFederatedMembers(
+        domain: String,
+    ): Map<ConversationIDEntity, UserIDEntity> = withContext(coroutineContext) {
+        memberQueries.selectFederatedMembersFromOneOnOneConversations(domain)
+            .executeAsList()
+            .associateBy({ it.conversation }, { it.user })
     }
 }
