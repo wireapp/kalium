@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationN
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
@@ -207,9 +208,20 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 
-        // TODO conversation.code-update
+        @Serializable
+        @SerialName("conversation.code-update")
+        data class CodeUpdated(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ConversationInviteLinkResponse,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+        ) : Conversation()
 
-        // TODO conversation.code-delete
+        @Serializable
+        @SerialName("conversation.code-delete")
+        data class CodeDeleted(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+        ) : Conversation()
 
         @Serializable
         @SerialName("conversation.receipt-mode-update")

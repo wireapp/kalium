@@ -15,15 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.conversation
 
-package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
-
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class GetGuestRoomResponse(
-    @SerialName("uri") val uri: String,
-    @SerialName("key") val key: String,
-    @SerialName("code") val code: String
+data class ConversationGuestLink(
+    val link: String,
+    val isPasswordProtected: Boolean
 )

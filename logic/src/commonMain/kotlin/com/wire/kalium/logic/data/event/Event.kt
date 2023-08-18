@@ -62,7 +62,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         return "${toLogMap().toJsonElement()}"
     }
 
-    open fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Event.Unknown")
+    abstract fun toLogMap(): Map<String, Any?>
 
     sealed class Conversation(
         id: String,
@@ -321,6 +321,26 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 senderUserIdKey to senderUserId.toLogString(),
                 timestampIsoKey to timestampIso
             )
+        }
+
+        data class CodeUpdated(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+            val key: String,
+            val code: String,
+            val uri: String,
+            val isPasswordProtected: Boolean,
+        ) : Conversation(id, transient, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeUpdated")
+        }
+
+        data class CodeDeleted(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+        ) : Conversation(id, transient, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeDeleted")
         }
     }
 

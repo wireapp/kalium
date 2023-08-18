@@ -317,10 +317,20 @@ class ServerConfigMapperImpl(
         )
 }
 
-sealed class CommonApiVersionType(open val version: Int) {
-    object New : CommonApiVersionType(NEW_API_VERSION_NUMBER)
-    object Unknown : CommonApiVersionType(UNKNOWN_API_VERSION_NUMBER)
-    data class Valid(override val version: Int) : CommonApiVersionType(version)
+sealed interface CommonApiVersionType {
+    val version: Int
+
+    data object New : CommonApiVersionType {
+        override val version: Int
+            get() = NEW_API_VERSION_NUMBER
+    }
+
+    data object Unknown : CommonApiVersionType {
+        override val version: Int
+            get() = UNKNOWN_API_VERSION_NUMBER
+    }
+
+    data class Valid(override val version: Int) : CommonApiVersionType
 
     companion object {
         const val NEW_API_VERSION_NUMBER = -1
