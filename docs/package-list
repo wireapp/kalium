@@ -332,7 +332,6 @@ com.wire.kalium.logic.data.featureConfig
 com.wire.kalium.logic.data.id
 com.wire.kalium.logic.data.keypackage
 com.wire.kalium.logic.data.logout
-com.wire.kalium.logic.data.member
 com.wire.kalium.logic.data.message
 com.wire.kalium.logic.data.message.mention
 com.wire.kalium.logic.data.message.reaction
