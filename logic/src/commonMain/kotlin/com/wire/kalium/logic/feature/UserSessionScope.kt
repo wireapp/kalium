@@ -182,8 +182,6 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
-import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
-import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
@@ -213,6 +211,8 @@ import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrator
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorImpl
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -1239,10 +1239,9 @@ class UserSessionScope internal constructor(
             protoContentMapper = protoContentMapper
         )
 
-    private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
-        get() = MLSOneOnOneConversationResolverImpl(
-            conversationRepository,
-            joinExistingMLSConversationUseCase
+    private val oneOnOneProtocolSelector: OneOnOneProtocolSelector
+        get() = OneOnOneProtocolSelectorImpl(
+            userRepository
         )
 
     @OptIn(DelicateKaliumApi::class)
@@ -1277,7 +1276,6 @@ class UserSessionScope internal constructor(
             syncManager,
             mlsConversationRepository,
             clientIdProvider,
-            assetRepository,
             messages.messageSender,
             teamRepository,
             userId,
@@ -1289,8 +1287,7 @@ class UserSessionScope internal constructor(
             renamedConversationHandler,
             qualifiedIdMapper,
             team.isSelfATeamMember,
-            mlsOneOnOneConversationResolver,
-            userConfigRepository,
+            oneOnOneProtocolSelector,
             this
         )
 

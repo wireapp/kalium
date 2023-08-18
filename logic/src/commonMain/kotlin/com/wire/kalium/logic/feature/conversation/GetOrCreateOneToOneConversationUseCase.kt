@@ -20,13 +20,12 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.first
@@ -46,8 +45,7 @@ interface GetOrCreateOneToOneConversationUseCase {
 internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
-    private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver,
-    private val userConfigRepository: UserConfigRepository
+    private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
 ) : GetOrCreateOneToOneConversationUseCase {
     override suspend operator fun invoke(otherUserId: UserId): CreateConversationResult {
         // TODO: filter out self user from the list (just in case of client bug that leads to self user to be included part of the list)
@@ -55,14 +53,10 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
             .first()
             .fold({ conversationFailure ->
                 if (conversationFailure is StorageFailure.DataNotFound) {
-                    userConfigRepository.getDefaultProtocol().flatMap { defaultProtocol ->
-                        when (defaultProtocol) {
+                    oneOnOneProtocolSelector.getProtocolForUser(otherUserId).flatMap { protocol ->
+                        when (protocol) {
                             SupportedProtocol.MLS ->
-                                mlsOneOnOneConversationResolver(otherUserId)
-                                    .flatMap {
-                                        conversationRepository.detailsById(it)
-                                    }
-
+                                conversationRepository.fetchMlsOneToOneConversation(otherUserId)
                             SupportedProtocol.PROTEUS ->
                                 conversationGroupRepository.createGroupConversation(usersList = listOf(otherUserId))
                         }

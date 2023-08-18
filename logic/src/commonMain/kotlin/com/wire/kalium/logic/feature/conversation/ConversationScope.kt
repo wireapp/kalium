@@ -19,8 +19,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -49,9 +47,9 @@ import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMa
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCase
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
@@ -70,7 +68,6 @@ class ConversationScope internal constructor(
     private val syncManager: SyncManager,
     private val mlsConversationRepository: MLSConversationRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val assetRepository: AssetRepository,
     private val messageSender: MessageSender,
     private val teamRepository: TeamRepository,
     private val selfUserId: UserId,
@@ -82,8 +79,7 @@ class ConversationScope internal constructor(
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
-    private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver,
-    private val userConfigRepository: UserConfigRepository,
+    private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val scope: CoroutineScope
 ) {
 
@@ -153,8 +149,7 @@ class ConversationScope internal constructor(
         get() = GetOrCreateOneToOneConversationUseCaseImpl(
             conversationRepository,
             conversationGroupRepository,
-            mlsOneOnOneConversationResolver,
-            userConfigRepository
+            oneOnOneProtocolSelector
         )
 
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
