@@ -43,8 +43,8 @@ sealed class LocalNotification(open val conversationId: ConversationId) {
 }
 
 sealed class LocalNotificationUpdateMessageAction {
-    data object Delete: LocalNotificationUpdateMessageAction()
-    data class Edit(val updateText: String, val newMessageId: String): LocalNotificationUpdateMessageAction()
+    data object Delete : LocalNotificationUpdateMessageAction()
+    data class Edit(val updateText: String, val newMessageId: String) : LocalNotificationUpdateMessageAction()
 }
 
 sealed class LocalNotificationMessage(
