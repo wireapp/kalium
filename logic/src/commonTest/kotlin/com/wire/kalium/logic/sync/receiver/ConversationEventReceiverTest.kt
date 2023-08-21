@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
@@ -32,6 +33,10 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
+import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
@@ -236,7 +241,89 @@ class ConversationEventReceiverTest {
         result.shouldFail()
     }
 
-    private class Arrangement {
+    @Test
+    fun givenCodeUpdateEventAndHandlingSuccess_whenOnEventInvoked_thenPropagateCodeUpdatedHandlerResult() = runTest {
+        val codeUpdatedEvent = TestEvent.codeUpdated()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .arrange {
+                withHandleCodeUpdatedEvent(Either.Right(Unit))
+            }
+
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+
+        verify(arrangement.codeUpdatedHandler)
+            .suspendFunction(arrangement.codeUpdatedHandler::handle)
+            .with(eq(codeUpdatedEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+
+    @Test
+    fun givenCodeUpdateEventAndHandlingFail_whenOnEventInvoked_thenPropagateCodeUpdatedHandlerResult() = runTest {
+        val codeUpdatedEvent = TestEvent.codeUpdated()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .arrange {
+                withHandleCodeUpdatedEvent(Either.Left(StorageFailure.DataNotFound))
+            }
+
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+
+        verify(arrangement.codeUpdatedHandler)
+            .suspendFunction(arrangement.codeUpdatedHandler::handle)
+            .with(eq(codeUpdatedEvent))
+            .wasInvoked(once)
+
+        result.shouldFail()
+    }
+
+
+    @Test
+    fun givenCodeDeleteEventAndHandlingSuccess_whenOnEventInvoked_thenPropagateCodeUpdatedHandlerResult() = runTest {
+        val codeUpdatedEvent = TestEvent.codeDeleted()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .arrange {
+                withHandleCodeDeleteEvent(Either.Right(Unit))
+            }
+
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+
+        verify(arrangement.codeDeletedHandler)
+            .suspendFunction(arrangement.codeDeletedHandler::handle)
+            .with(eq(codeUpdatedEvent))
+            .wasInvoked(once)
+
+        result.shouldSucceed()
+    }
+
+
+    @Test
+    fun givenCodeDeleteEventAndHandlingFail_whenOnEventInvoked_thenPropagateCodeUpdatedHandlerResult() = runTest {
+        val codeUpdatedEvent = TestEvent.codeDeleted()
+
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .arrange {
+                withHandleCodeDeleteEvent(Either.Left(StorageFailure.DataNotFound))
+            }
+
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+
+
+        verify(arrangement.codeDeletedHandler)
+            .suspendFunction(arrangement.codeDeletedHandler::handle)
+            .with(eq(codeUpdatedEvent))
+            .wasInvoked(once)
+
+        result.shouldFail()
+    }
+
+    private class Arrangement :
+        CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
+        CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl() {
 
         @Mock
         val conversationMessageTimerEventHandler = mock(classOf<ConversationMessageTimerEventHandler>())
@@ -268,7 +355,7 @@ class ConversationEventReceiverTest {
         @Mock
         val deletedConversationEventHandler = mock(classOf<DeletedConversationEventHandler>())
 
-        private val featureConfigEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
+        private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
             deletedConversationHandler = deletedConversationEventHandler,
@@ -278,10 +365,14 @@ class ConversationEventReceiverTest {
             mlsWelcomeHandler = mLSWelcomeEventHandler,
             renamedConversationHandler = renamedConversationEventHandler,
             receiptModeUpdateEventHandler = receiptModeUpdateEventHandler,
-            conversationMessageTimerEventHandler = conversationMessageTimerEventHandler
+            conversationMessageTimerEventHandler = conversationMessageTimerEventHandler,
+            codeUpdatedHandler = codeUpdatedHandler,
+            codeDeletedHandler = codeDeletedHandler
         )
 
-        fun arrange() = this to featureConfigEventReceiver
+        fun arrange(block: Arrangement.() -> Unit = {}) = apply(block).run {
+            this to conversationEventReceiver
+        }
 
         fun withMemberLeaveSucceeded() = apply {
             given(memberLeaveEventHandler)

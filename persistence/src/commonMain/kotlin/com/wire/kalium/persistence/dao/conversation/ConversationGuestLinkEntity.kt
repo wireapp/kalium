@@ -15,11 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.member
+package com.wire.kalium.persistence.dao.conversation
 
-import com.wire.kalium.logic.data.id.QualifiedID
-
-data class ConversationsWithMembers(
-    val oneOnOne: Map<QualifiedID, List<QualifiedID>>,
-    val group: Map<QualifiedID, List<QualifiedID>>
+data class ConversationGuestLinkEntity(
+    val link: String,
+    val isPasswordProtected: Boolean
 )

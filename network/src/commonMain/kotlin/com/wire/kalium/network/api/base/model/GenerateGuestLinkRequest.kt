@@ -15,17 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.model
 
-package com.wire.kalium.monkeys
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-
-fun homeDirectory(): String {
-    return System.getProperty("user.home")
-}
-
-fun coreLogic(
-    rootPath: String,
-    kaliumConfigs: KaliumConfigs
-): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Wire Infinite Monkeys")
+@Serializable
+internal data class GenerateGuestLinkRequest(
+    @SerialName("password") val password: String?
+)

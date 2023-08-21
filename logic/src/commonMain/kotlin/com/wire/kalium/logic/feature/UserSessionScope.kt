@@ -160,8 +160,8 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCase
-import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -318,13 +318,17 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
@@ -375,11 +379,12 @@ class UserSessionScope internal constructor(
     private var _clientId: ClientId? = null
 
     @OptIn(DelicateKaliumApi::class) // Use the uncached client ID in order to create the cache itself.
-    private suspend fun clientId(): Either<CoreFailure, ClientId> = if (_clientId != null) Either.Right(_clientId!!) else {
-        clientRepository.currentClientId().onSuccess {
-            _clientId = it
+    private suspend fun clientId(): Either<CoreFailure, ClientId> =
+        if (_clientId != null) Either.Right(_clientId!!) else {
+            clientRepository.currentClientId().onSuccess {
+                _clientId = it
+            }
         }
-    }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
@@ -457,7 +462,11 @@ class UserSessionScope internal constructor(
     )
 
     private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(userStorage.preferences.userConfigStorage, userStorage.database.userConfigDAO, kaliumConfigs)
+        get() = UserConfigDataSource(
+            userStorage.preferences.userConfigStorage,
+            userStorage.database.userConfigDAO,
+            kaliumConfigs
+        )
 
     private val userPropertyRepository: UserPropertyRepository
         get() = UserPropertyDataSource(
@@ -907,7 +916,9 @@ class UserSessionScope internal constructor(
 
     private val apiMigrationManager
         get() = ApiMigrationManager(
-            sessionManager.serverConfig().metaData.commonApiVersion.version, userStorage.database.metadataDAO, apiMigrations
+            sessionManager.serverConfig().metaData.commonApiVersion.version,
+            userStorage.database.metadataDAO,
+            apiMigrations
         )
 
     private val eventRepository: EventRepository
@@ -1094,7 +1105,10 @@ class UserSessionScope internal constructor(
         get() = MemberLeaveEventHandlerImpl(
             userStorage.database.memberDAO, userRepository, persistMessage, updateConversationClientsForCurrentCall
         )
-    private val memberChangeHandler: MemberChangeEventHandler get() = MemberChangeEventHandlerImpl(conversationRepository)
+    private val memberChangeHandler: MemberChangeEventHandler
+        get() = MemberChangeEventHandlerImpl(
+            conversationRepository
+        )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
             mlsClientProvider, userStorage.database.conversationDAO, conversationRepository
@@ -1116,6 +1130,16 @@ class UserSessionScope internal constructor(
             persistMessage = persistMessage
         )
 
+    private val conversationCodeUpdateHandler: CodeUpdatedHandler
+        get() = CodeUpdateHandlerImpl(
+            conversationDAO = userStorage.database.conversationDAO
+        )
+
+    private val conversationCodeDeletedHandler: CodeDeletedHandler
+        get() = CodeDeletedHandlerImpl(
+            conversationDAO = userStorage.database.conversationDAO
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1127,13 +1151,21 @@ class UserSessionScope internal constructor(
             mlsWelcomeHandler,
             renamedConversationHandler,
             receiptModeUpdateEventHandler,
-            conversationMessageTimerEventHandler
+            conversationMessageTimerEventHandler,
+            conversationCodeUpdateHandler,
+            conversationCodeDeletedHandler
         )
     }
 
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
-            clientRepository, connectionRepository, conversationRepository, userRepository, logout, userId, clientIdProvider
+            clientRepository,
+            connectionRepository,
+            conversationRepository,
+            userRepository,
+            logout,
+            userId,
+            clientIdProvider
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1216,7 +1248,6 @@ class UserSessionScope internal constructor(
             syncManager,
             mlsConversationRepository,
             clientIdProvider,
-            assetRepository,
             messages.messageSender,
             teamRepository,
             userId,
@@ -1228,6 +1259,8 @@ class UserSessionScope internal constructor(
             renamedConversationHandler,
             qualifiedIdMapper,
             team.isSelfATeamMember,
+            globalScope.serverConfigRepository,
+            userStorage,
             this
         )
 
@@ -1332,7 +1365,10 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(userConfigRepository)
+    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase
+        get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(
+            userConfigRepository
+        )
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
@@ -1402,8 +1438,8 @@ class UserSessionScope internal constructor(
             conversations.observeConversationMembers, conversationRepository, userConfigRepository
         )
 
-    val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
-        get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)
+    val getOtherUserSecurityClassificationLabel: ObserveOtherUserSecurityClassificationLabelUseCase
+        get() = ObserveOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository, userId)
 
     val persistScreenshotCensoringConfig: PersistScreenshotCensoringConfigUseCase
         get() = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)

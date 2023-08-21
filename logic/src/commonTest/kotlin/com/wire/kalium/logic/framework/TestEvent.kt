@@ -221,4 +221,20 @@ object TestEvent {
         qualifiedFrom = TestUser.USER_ID,
         transient = false
     )
+
+    fun codeUpdated() = Event.Conversation.CodeUpdated(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = false,
+        code = "code",
+        key = "key",
+        uri = "uri",
+        isPasswordProtected = false
+    )
+
+    fun codeDeleted() = Event.Conversation.CodeDeleted(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = false,
+    )
 }
