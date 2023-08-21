@@ -34,11 +34,11 @@ actual fun defaultHttpEngine(
     return Darwin.create {
         pipelining = true
 
-        if (certPinning.certs.isNotEmpty()) {
+        if (certPinning.isNotEmpty()) {
             val certPinner: CertificatePinner = CertificatePinner.Builder().apply {
-                certPinning.certs.forEach { (host, pins) ->
-                    pins.forEach { pin ->
-                        add(host, pin)
+                certPinning.forEach { (cert, hosts) ->
+                    hosts.forEach { host ->
+                        add(host, cert)
                     }
                 }
             }.build()

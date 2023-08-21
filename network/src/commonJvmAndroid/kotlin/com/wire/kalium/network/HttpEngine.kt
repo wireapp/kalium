@@ -46,11 +46,11 @@ actual fun defaultHttpEngine(
 
     val okHttpClient = OkHttpClient.Builder()
 
-    if (certPinning.certs.isNotEmpty()) {
+    if (certPinning.isNotEmpty()) {
         val certPinner = CertificatePinner.Builder().apply {
-            certPinning.certs.forEach { (host, pins) ->
-                pins.forEach { pin ->
-                    add(host, pin)
+            certPinning.forEach { (cert, hosts) ->
+                hosts.forEach { host ->
+                    add(host, cert)
                 }
             }
         }.build()

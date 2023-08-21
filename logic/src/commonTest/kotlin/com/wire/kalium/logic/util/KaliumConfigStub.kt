@@ -38,7 +38,7 @@ data class KaliumConfigStub(
     override val wipeOnDeviceRemoval: Boolean = false,
     override val wipeOnRootedDevice: Boolean = false,
     override val isWebSocketEnabledByDefault: Boolean = false,
-    private val certificatePinning: CertificatePinning = CertificatePinning(emptyMap())
+    private val certificatePinning: CertificatePinning = emptyMap()
 ): KaliumConfigs() {
     override fun certPinningConfig(): CertificatePinning = certificatePinning
 }

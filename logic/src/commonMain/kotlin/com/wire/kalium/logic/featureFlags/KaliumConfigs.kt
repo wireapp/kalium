@@ -38,7 +38,7 @@ abstract class KaliumConfigs {
     open val wipeOnDeviceRemoval: Boolean = false
     open val wipeOnRootedDevice: Boolean = false
     open val isWebSocketEnabledByDefault: Boolean = false
-    abstract fun certPinningConfig(): CertificatePinning
+    abstract fun certPinningConfig(): Map<String, List<String>>
 }
 
 sealed interface BuildFileRestrictionState {

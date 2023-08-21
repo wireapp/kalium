@@ -85,5 +85,5 @@ private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
 
 typealias CertificateKey = String
 typealias CertificateUrls = List<String>
-@JvmInline
-value class CertificatePinning(val certs: Map<CertificateKey, CertificateUrls>)
+
+typealias CertificatePinning = Map<CertificateKey, CertificateUrls>
