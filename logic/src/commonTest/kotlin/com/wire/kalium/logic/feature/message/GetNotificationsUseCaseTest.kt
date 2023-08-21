@@ -496,7 +496,7 @@ class GetNotificationsUseCaseTest {
         private fun notificationMessageConnectionRequest(
             authorName: String = "Author Name",
             time: Instant = TIME_INSTANCE,
-            messageId: String = "message_id"
+            messageId: String = ""
         ) =
             LocalNotificationMessage.ConnectionRequest(
                 messageId,
