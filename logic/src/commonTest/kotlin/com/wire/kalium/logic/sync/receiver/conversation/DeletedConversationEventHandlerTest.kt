@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.message.DeleteConversationNotificationsManager
+import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
@@ -92,7 +92,7 @@ class DeletedConversationEventHandlerTest {
         private val userRepository = mock(classOf<UserRepository>())
 
         @Mock
-        private val ephemeralNotifications = mock(classOf<DeleteConversationNotificationsManager>())
+        private val ephemeralNotifications = mock(classOf<EphemeralEventsNotificationManager>())
 
         private val deletedConversationEventHandler: DeletedConversationEventHandler = DeletedConversationEventHandlerImpl(
             userRepository,
@@ -123,7 +123,7 @@ class DeletedConversationEventHandlerTest {
 
         fun withEphemeralNotificationEnqueue() = apply {
             given(ephemeralNotifications)
-                .suspendFunction(ephemeralNotifications::scheduleNotification)
+                .suspendFunction(ephemeralNotifications::scheduleDeleteConversationNotification)
                 .whenInvokedWith(any())
                 .thenDoNothing()
         }

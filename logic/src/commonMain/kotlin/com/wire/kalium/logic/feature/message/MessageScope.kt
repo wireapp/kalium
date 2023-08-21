@@ -282,7 +282,7 @@ class MessageScope internal constructor(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            deleteConversationNotificationsManager = DeleteConversationNotificationsManagerImpl
+            deleteConversationNotificationsManager = EphemeralEventsNotificationManagerImpl
         )
 
     internal val sendConfirmation: SendConfirmationUseCase

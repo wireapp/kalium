@@ -22,6 +22,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -31,6 +32,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
+import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -148,6 +150,9 @@ class MessageTextEditHandlerTest {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
 
+        @Mock
+        val ephemeralNotifications = mock(classOf<EphemeralEventsNotificationManager>())
+
         init {
             given(messageRepository)
                 .suspendFunction(messageRepository::updateTextMessage)
@@ -167,7 +172,7 @@ class MessageTextEditHandlerTest {
         }
 
         fun arrange(): Pair<Arrangement, MessageTextEditHandler> =
-            this to MessageTextEditHandlerImpl(messageRepository)
+            this to MessageTextEditHandlerImpl(messageRepository, ephemeralNotifications)
 
     }
 

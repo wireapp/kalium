@@ -27,51 +27,71 @@ import kotlinx.datetime.Instant
  * Kalium local data classes that contains all the necessary data for displaying Message Notifications,
  * and suppose to be mapped (in platform side) into platform-specific objects to show the notification
  */
-data class LocalNotificationConversation(
-    val id: ConversationId,
-    val conversationName: String,
-    val messages: List<LocalNotificationMessage>,
-    val isOneToOneConversation: Boolean
-)
+sealed class LocalNotification(open val conversationId: ConversationId) {
+    data class Conversation(
+        val id: ConversationId,
+        val conversationName: String,
+        val messages: List<LocalNotificationMessage>,
+        val isOneToOneConversation: Boolean
+    ) : LocalNotification(id)
+
+    data class UpdateMessage(
+        override val conversationId: ConversationId,
+        val messageId: String,
+        val action: LocalNotificationUpdateMessageAction
+    ) : LocalNotification(conversationId)
+}
+
+sealed class LocalNotificationUpdateMessageAction {
+    data object Delete: LocalNotificationUpdateMessageAction()
+    data class Edit(val updateText: String, val newMessageId: String): LocalNotificationUpdateMessageAction()
+}
 
 sealed class LocalNotificationMessage(
+    open val messageId: String,
     open val author: LocalNotificationMessageAuthor?,
     open val time: Instant
 ) {
     data class SelfDeleteMessage(
+        override val messageId: String,
         override val time: Instant
-    ) : LocalNotificationMessage(null, time)
+    ) : LocalNotificationMessage(messageId, null, time)
 
     data class Text(
+        override val messageId: String,
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant,
         val text: String,
         val isQuotingSelfUser: Boolean = false
     ) :
-        LocalNotificationMessage(author, time)
+        LocalNotificationMessage(messageId, author, time)
 
     // shared file, picture, reaction
     data class Comment(
+        override val messageId: String,
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant,
         val type: LocalNotificationCommentType
-    ) : LocalNotificationMessage(author, time)
+    ) : LocalNotificationMessage(messageId, author, time)
 
     data class Knock(
+        override val messageId: String,
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant
-    ) : LocalNotificationMessage(author, time)
+    ) : LocalNotificationMessage(messageId, author, time)
 
     data class ConnectionRequest(
+        override val messageId: String,
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant,
         val authorId: QualifiedID
-    ) : LocalNotificationMessage(author, time)
+    ) : LocalNotificationMessage(messageId, author, time)
 
     data class ConversationDeleted(
+        override val messageId: String,
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant
-    ) : LocalNotificationMessage(author, time)
+    ) : LocalNotificationMessage(messageId, author, time)
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: UserAssetId?)

@@ -24,10 +24,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -242,7 +244,15 @@ class DeleteMessageHandlerTest {
         @Mock
         val assetRepository: AssetRepository = mock(AssetRepository::class)
 
-        private val handler: DeleteMessageHandler = DeleteMessageHandlerImpl(messageRepository, assetRepository, SELF_USER_ID)
+        @Mock
+        private val ephemeralNotifications = mock(classOf<EphemeralEventsNotificationManager>())
+
+        private val handler: DeleteMessageHandler = DeleteMessageHandlerImpl(
+            messageRepository,
+            assetRepository,
+            ephemeralNotifications,
+            SELF_USER_ID
+        )
 
         fun withOriginalMessage(result: Either<StorageFailure, Message>) = apply {
             given(messageRepository)
