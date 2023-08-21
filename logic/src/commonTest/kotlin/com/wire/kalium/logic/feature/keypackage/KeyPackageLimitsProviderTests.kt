@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.KaliumConfigStub
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -59,7 +60,7 @@ class KeyPackageLimitsProviderTests {
 
     private class Arrangement {
 
-        val kaliumConfigs = KaliumConfigs()
+        val kaliumConfigs = KaliumConfigStub()
 
         fun arrange() = this to KeyPackageLimitsProviderImpl(
             kaliumConfigs

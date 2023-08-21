@@ -39,6 +39,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
+import com.wire.kalium.logic.util.KaliumConfigStub
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -349,7 +350,7 @@ class LogoutUseCaseTest {
         @Mock
         val endCall = configure(mock(EndCallUseCase::class)) { stubsUnitByDefault = true }
 
-        var kaliumConfigs = KaliumConfigs()
+        var kaliumConfigs = KaliumConfigStub()
 
         val globalTestScope = TestScope()
 
@@ -449,7 +450,7 @@ class LogoutUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
+        fun withKaliumConfigs(changeConfigs: (KaliumConfigStub) -> KaliumConfigStub) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
 

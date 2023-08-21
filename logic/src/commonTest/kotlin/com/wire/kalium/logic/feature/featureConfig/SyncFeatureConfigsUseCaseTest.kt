@@ -41,6 +41,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.KaliumConfigStub
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
@@ -608,7 +609,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         private val inMemoryStorage = inMemoryUserConfigStorage()
 
-        var kaliumConfigs = KaliumConfigs()
+        var kaliumConfigs = KaliumConfigStub()
 
         @Mock
         val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
@@ -687,7 +688,7 @@ class SyncFeatureConfigsUseCaseTest {
                 .then { }
         }
 
-        fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
+        fun withKaliumConfigs(changeConfigs: (KaliumConfigStub) -> KaliumConfigStub) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
 

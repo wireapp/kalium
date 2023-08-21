@@ -72,7 +72,12 @@ abstract class CoreLogicCommon internal constructor(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials? = null
     ): AuthenticationScope =
-        authenticationScopeProvider.provide(serverConfig, proxyCredentials, getGlobalScope().serverConfigRepository)
+        authenticationScopeProvider.provide(
+            serverConfig,
+            proxyCredentials,
+            getGlobalScope().serverConfigRepository,
+            kaliumConfigs::certPinningConfig
+        )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope

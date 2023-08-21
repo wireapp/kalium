@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeleti
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.KaliumConfigStub
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -318,7 +319,7 @@ class FeatureConfigEventReceiverTest {
 
     private class Arrangement {
 
-        var kaliumConfigs = KaliumConfigs()
+        var kaliumConfigs = KaliumConfigStub()
 
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())

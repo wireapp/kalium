@@ -39,6 +39,7 @@ import io.ktor.util.InternalAPI
 import io.ktor.util.date.GMTDate
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.coroutines.CoroutineContext
+import kotlin.jvm.JvmInline
 
 interface SessionManager {
     suspend fun session(): SessionDTO?
@@ -81,3 +82,8 @@ private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
         }
     }
 }
+
+typealias CertificateKey = String
+typealias CertificateUrls = List<String>
+@JvmInline
+value class CertificatePinning(val certs: Map<CertificateKey, CertificateUrls>)

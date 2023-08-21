@@ -447,7 +447,8 @@ class UserSessionScope internal constructor(
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
-        userAgent
+        userAgent,
+        certificatePinning = kaliumConfigs.certPinningConfig()
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
@@ -456,7 +457,8 @@ class UserSessionScope internal constructor(
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
-        globalScope.serverConfigRepository
+        globalScope.serverConfigRepository,
+        kaliumConfigs::certPinningConfig
     )
 
     private val userConfigRepository: UserConfigRepository

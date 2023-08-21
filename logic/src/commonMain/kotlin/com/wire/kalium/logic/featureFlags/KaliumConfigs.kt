@@ -18,30 +18,28 @@
 
 package com.wire.kalium.logic.featureFlags
 
-data class KaliumConfigs(
-    val isChangeEmailEnabled: Boolean = false,
-    val forceConstantBitrateCalls: Boolean = false,
-    val developerFeaturesEnabled: Boolean = false,
-    val isLoggingEnabled: Boolean = false,
-    val enableBlacklist: Boolean = false,
-    val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
-    var isMLSSupportEnabled: Boolean = true,
+import com.wire.kalium.network.session.CertificatePinning
+
+abstract class KaliumConfigs(
+    open val forceConstantBitrateCalls: Boolean = false,
+    open val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
+    open var isMLSSupportEnabled: Boolean = true,
     // Disabling db-encryption will crash on android-api level below 30
-    val shouldEncryptData: Boolean = true,
-    val encryptProteusStorage: Boolean = false,
-    val lowerKeyPackageLimits: Boolean = false,
-    val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
-    val blacklistHost: String = "",
-    val maxAccount: Int = 0,
-    val developmentApiEnabled: Boolean = false,
-    val ignoreSSLCertificatesForUnboundCalls: Boolean = true,
-    val guestRoomLink: Boolean = true,
-    val selfDeletingMessages: Boolean = true,
-    val wipeOnCookieInvalid: Boolean = false,
-    val wipeOnDeviceRemoval: Boolean = false,
-    val wipeOnRootedDevice: Boolean = false,
-    val isWebSocketEnabledByDefault: Boolean = false
-)
+    open val shouldEncryptData: Boolean = true,
+    open val encryptProteusStorage: Boolean = false,
+    open val lowerKeyPackageLimits: Boolean = false,
+    open val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
+    open val developmentApiEnabled: Boolean = false,
+    open val ignoreSSLCertificatesForUnboundCalls: Boolean = true,
+    open val guestRoomLink: Boolean = true,
+    open val selfDeletingMessages: Boolean = true,
+    open val wipeOnCookieInvalid: Boolean = false,
+    open val wipeOnDeviceRemoval: Boolean = false,
+    open val wipeOnRootedDevice: Boolean = false,
+    open val isWebSocketEnabledByDefault: Boolean = false
+) {
+    abstract fun certPinningConfig(): CertificatePinning
+}
 
 sealed interface BuildFileRestrictionState {
     object NoRestriction : BuildFileRestrictionState

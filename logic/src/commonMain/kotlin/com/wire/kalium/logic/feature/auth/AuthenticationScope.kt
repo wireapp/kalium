@@ -38,6 +38,7 @@ import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.util.collections.ConcurrentMap
 
 class AuthenticationScopeProvider internal constructor(
@@ -52,14 +53,16 @@ class AuthenticationScopeProvider internal constructor(
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
-        serverConfigRepository: ServerConfigRepository
+        serverConfigRepository: ServerConfigRepository,
+        certConfig: () -> CertificatePinning
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,
                 proxyCredentials,
-                serverConfigRepository
+                serverConfigRepository,
+                certConfig
             )
         }
 }
@@ -68,13 +71,15 @@ class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
-    private val serverConfigRepository: ServerConfigRepository
+    private val serverConfigRepository: ServerConfigRepository,
+    certConfig: () -> CertificatePinning
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
             proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
-            userAgent
+            userAgent,
+            certificatePinning = certConfig()
         )
     }
     private val loginRepository: LoginRepository

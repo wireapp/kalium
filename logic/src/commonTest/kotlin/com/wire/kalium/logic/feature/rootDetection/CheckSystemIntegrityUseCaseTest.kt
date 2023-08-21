@@ -23,6 +23,7 @@ import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.KaliumConfigStub
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -42,7 +43,7 @@ class CheckSystemIntegrityUseCaseTest {
     @Test
     fun givenDeviceIsRootedAndWipeOnRootedDeviceIsEnabled_whenInvoked_thenReturnFailureAndDeleteSessions() = runTest {
         val (arrangement, checkSystemIntegrity) = Arrangement()
-            .withKaliumConfig(KaliumConfigs(wipeOnRootedDevice = true))
+            .withKaliumConfig(KaliumConfigStub(wipeOnRootedDevice = true))
             .withIsSystemRooted(true)
             .withAccounts(listOf(Arrangement.INVALID_ACCOUNT, Arrangement.VALID_ACCOUNT))
             .withDeleteSessionSucceeds()
@@ -66,7 +67,7 @@ class CheckSystemIntegrityUseCaseTest {
     @Test
     fun givenDeviceIsNotRootedAndWipeOnRootedDeviceIsEnabled_whenInvoked_thenReturnSuccess() = runTest {
         val (arrangement, checkSystemIntegrity) = Arrangement()
-            .withKaliumConfig(KaliumConfigs(wipeOnRootedDevice = true))
+            .withKaliumConfig(KaliumConfigStub(wipeOnRootedDevice = true))
             .withIsSystemRooted(false)
             .withAccounts(listOf(Arrangement.VALID_ACCOUNT))
             .arrange()
@@ -84,7 +85,7 @@ class CheckSystemIntegrityUseCaseTest {
     @Test
     fun givenDeviceIsRootedAndWipeOnRootedDeviceIsDisabled_whenInvoked_thenReturnSuccess() = runTest {
         val (arrangement, checkSystemIntegrity) = Arrangement()
-            .withKaliumConfig(KaliumConfigs(wipeOnRootedDevice = false))
+            .withKaliumConfig(KaliumConfigStub(wipeOnRootedDevice = false))
             .withIsSystemRooted(true)
             .withAccounts(listOf(Arrangement.VALID_ACCOUNT))
             .arrange()
@@ -101,7 +102,7 @@ class CheckSystemIntegrityUseCaseTest {
 
     private class Arrangement {
 
-        var kaliumConfigs = KaliumConfigs()
+        var kaliumConfigs = KaliumConfigStub()
 
         @Mock
         val rootDetector = mock(classOf<RootDetector>())
@@ -115,7 +116,7 @@ class CheckSystemIntegrityUseCaseTest {
             sessionRepository
         )
 
-        fun withKaliumConfig(kaliumConfigs: KaliumConfigs) = apply {
+        fun withKaliumConfig(kaliumConfigs: KaliumConfigStub) = apply {
             this.kaliumConfigs = kaliumConfigs
         }
 

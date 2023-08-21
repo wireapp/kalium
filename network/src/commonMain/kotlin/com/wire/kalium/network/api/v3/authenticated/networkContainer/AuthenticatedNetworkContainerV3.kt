@@ -65,13 +65,19 @@ import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
 
 internal class AuthenticatedNetworkContainerV3 internal constructor(
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials())
+    certificatePinning: CertificatePinning,
+    engine: HttpClientEngine = defaultHttpEngine(
+        serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
+        proxyCredentials = sessionManager.proxyCredentials(),
+        certPinning = certificatePinning
+    )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,

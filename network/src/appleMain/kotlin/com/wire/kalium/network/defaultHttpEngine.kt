@@ -19,16 +19,31 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
+import io.ktor.client.engine.darwin.certificates.CertificatePinner
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
-    ignoreSSLCertificates: Boolean
+    ignoreSSLCertificates: Boolean,
+    certPinning: CertificatePinning
 ): HttpClientEngine {
     return Darwin.create {
         pipelining = true
+
+        if (certPinning.certs.isNotEmpty()) {
+            val certPinner: CertificatePinner = CertificatePinner.Builder().apply {
+                certPinning.certs.forEach { (host, pins) ->
+                    pins.forEach { pin ->
+                        add(host, pin)
+                    }
+                }
+            }.build()
+            handleChallenge(certPinner)
+        }
+
     }
 }

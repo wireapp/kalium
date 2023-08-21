@@ -19,10 +19,12 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import java.net.Authenticator
 import java.net.InetSocketAddress
@@ -38,10 +40,22 @@ import javax.net.ssl.X509TrustManager
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
-    ignoreSSLCertificates: Boolean
+    ignoreSSLCertificates: Boolean,
+    certPinning: CertificatePinning
 ): HttpClientEngine = OkHttp.create {
 
     val okHttpClient = OkHttpClient.Builder()
+
+    if (certPinning.certs.isNotEmpty()) {
+        val certPinner = CertificatePinner.Builder().apply {
+            certPinning.certs.forEach { (host, pins) ->
+                pins.forEach { pin ->
+                    add(host, pin)
+                }
+            }
+        }.build()
+        okHttpClient.certificatePinner(certPinner)
+    }
 
     if (ignoreSSLCertificates) okHttpClient.ignoreAllSSLErrors()
 

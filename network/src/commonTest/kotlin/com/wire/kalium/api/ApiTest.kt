@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.serialization.XProtoBuf
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.engine.mock.*
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
@@ -106,7 +107,8 @@ internal abstract class ApiTest {
         }
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            certificatePinning = CertificatePinning(emptyMap())
         ).networkClient
     }
 
@@ -116,7 +118,8 @@ internal abstract class ApiTest {
         }
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            certificatePinning = CertificatePinning(emptyMap())
         ).websocketClient
     }
 
@@ -160,7 +163,8 @@ internal abstract class ApiTest {
         return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
-            proxyCredentials = null
+            proxyCredentials = null,
+            certificatePinning = CertificatePinning(emptyMap())
         ).unauthenticatedNetworkClient
     }
 
@@ -195,7 +199,8 @@ internal abstract class ApiTest {
         return UnauthenticatedNetworkContainerV0(
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
-            proxyCredentials = null
+            proxyCredentials = null,
+            certificatePinning = CertificatePinning(emptyMap())
         ).unauthenticatedNetworkClient
     }
 
@@ -220,7 +225,8 @@ internal abstract class ApiTest {
         )
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_NAMAGER
+            sessionManager = TEST_SESSION_NAMAGER,
+            certificatePinning = CertificatePinning(emptyMap())
         ).networkClient
     }
 

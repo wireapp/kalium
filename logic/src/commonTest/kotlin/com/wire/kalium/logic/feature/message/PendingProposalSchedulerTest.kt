@@ -30,6 +30,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.KaliumConfigStub
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
@@ -192,7 +193,7 @@ class PendingProposalSchedulerTest {
 
     private class Arrangement {
 
-        val kaliumConfigs = KaliumConfigs()
+        val kaliumConfigs = KaliumConfigStub()
 
         @Mock
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()

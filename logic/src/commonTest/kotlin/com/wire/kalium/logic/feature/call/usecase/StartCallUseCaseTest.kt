@@ -26,6 +26,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.KaliumConfigStub
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -123,14 +124,14 @@ class StartCallUseCaseTest {
         @Mock
         val syncManager = mock(classOf<SyncManager>())
 
-        private val kaliumConfigs = KaliumConfigs()
+        private val kaliumConfigs =  KaliumConfigStub()
 
         private val startCallUseCase = StartCallUseCase(
             lazy { callManager }, syncManager, kaliumConfigs
         )
 
         private val startCallUseCaseWithCBR = StartCallUseCase(
-            lazy { callManager }, syncManager, KaliumConfigs(forceConstantBitrateCalls = true)
+            lazy { callManager }, syncManager, KaliumConfigStub(forceConstantBitrateCalls = true)
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
