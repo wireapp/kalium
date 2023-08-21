@@ -25,40 +25,75 @@ import android.net.NetworkCapabilities
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 
-internal actual class NetworkStateObserverImpl(appContext: Context) : NetworkStateObserver {
-    private val connectivityManager: ConnectivityManager = appContext.getSystemService(Activity.CONNECTIVITY_SERVICE) as ConnectivityManager
-    private val networkStateFlow: MutableStateFlow<NetworkState>
+internal actual class NetworkStateObserverImpl(
+    connectivityManager: ConnectivityManager,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+) : NetworkStateObserver {
+
+    constructor(
+        appContext: Context,
+        kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    ) : this(
+        connectivityManager = appContext.getSystemService(Activity.CONNECTIVITY_SERVICE) as ConnectivityManager,
+        kaliumDispatcher = kaliumDispatcher
+    )
+    private val defaultNetworkDataStateFlow: MutableStateFlow<DefaultNetworkData?>
+    private val networkStateFlow: StateFlow<NetworkState>
+    private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default)
 
     init {
-        val initialState = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork).toState()
-        networkStateFlow = MutableStateFlow(initialState)
+        val defaultNetwork = connectivityManager.activeNetwork
+        val defaultNetworkCapabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+        defaultNetworkDataStateFlow = MutableStateFlow(defaultNetwork?.let { DefaultNetworkData(it, defaultNetworkCapabilities) })
+        val initialState = defaultNetwork?.let { defaultNetworkCapabilities.toState() } ?: NetworkState.NotConnected
+        networkStateFlow = defaultNetworkDataStateFlow
+            .map { networkData ->
+                when {
+                    networkData == null -> NetworkState.NotConnected
+                    networkData.isBlocked -> NetworkState.ConnectedWithoutInternet
+                    else -> networkData.networkCapabilities.toState()
+                }
+            }
+            .stateIn(scope, SharingStarted.Eagerly, initialState)
 
         val callback = object : ConnectivityManager.NetworkCallback() {
 
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                 super.onCapabilitiesChanged(network, networkCapabilities)
-                val networkState = networkCapabilities.toState()
-                kaliumLogger.i("${NetworkStateObserver.TAG} capabilities changed $networkState")
-                networkStateFlow.tryEmit(networkState)
+                kaliumLogger.i(
+                    "${NetworkStateObserver.TAG} capabilities changed " +
+                            "internet:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)} " +
+                            "validated:${networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)}"
+                )
+                defaultNetworkDataStateFlow.update { DefaultNetworkData(network, networkCapabilities) }
             }
 
             override fun onLost(network: Network) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} lost connection")
-                networkStateFlow.tryEmit(NetworkState.NotConnected)
+                defaultNetworkDataStateFlow.update { null }
                 super.onLost(network)
             }
 
             override fun onUnavailable() {
                 kaliumLogger.i("${NetworkStateObserver.TAG} connection unavailable")
-                networkStateFlow.tryEmit(NetworkState.NotConnected)
+                defaultNetworkDataStateFlow.update { null }
                 super.onUnavailable()
             }
 
             override fun onAvailable(network: Network) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} connection available")
+                defaultNetworkDataStateFlow.update { DefaultNetworkData(network) }
                 super.onAvailable(network)
             }
 
@@ -69,6 +104,7 @@ internal actual class NetworkStateObserverImpl(appContext: Context) : NetworkSta
 
             override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
                 kaliumLogger.i("${NetworkStateObserver.TAG} block connection changed to $blocked")
+                defaultNetworkDataStateFlow.update { it?.copy(isBlocked = blocked) }
                 super.onBlockedStatusChanged(network, blocked)
             }
         }
@@ -81,11 +117,16 @@ internal actual class NetworkStateObserverImpl(appContext: Context) : NetworkSta
         // and should still be able to make requests.
         val isValidated = this?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true
         return when {
-            !hasInternet -> NetworkState.NotConnected
-            isValidated -> NetworkState.ConnectedWithInternet
+            hasInternet && isValidated -> NetworkState.ConnectedWithInternet
             else -> NetworkState.ConnectedWithoutInternet
         }
     }
 
     override fun observeNetworkState(): StateFlow<NetworkState> = networkStateFlow
+
+    private data class DefaultNetworkData(
+        val network: Network,
+        val networkCapabilities: NetworkCapabilities? = null,
+        val isBlocked: Boolean = false
+    )
 }

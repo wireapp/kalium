@@ -93,7 +93,17 @@ kotlin {
                 implementation(libs.work)
             }
         }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation("org.robolectric:robolectric:4.9")
+                implementation("androidx.test:core-ktx:1.5.0")
+            }
+        }
     }
+}
+
+android {
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
