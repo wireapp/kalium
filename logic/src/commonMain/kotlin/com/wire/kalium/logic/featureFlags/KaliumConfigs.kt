@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.featureFlags
 
-import com.wire.kalium.network.session.CertificatePinning
-
 abstract class KaliumConfigs {
     open val forceConstantBitrateCalls: Boolean = false
     open val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction
