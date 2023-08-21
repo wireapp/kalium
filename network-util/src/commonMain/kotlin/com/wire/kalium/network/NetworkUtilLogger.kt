@@ -15,11 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.member
 
-import com.wire.kalium.logic.data.id.QualifiedID
+package com.wire.kalium.network
 
-data class ConversationsWithMembers(
-    val oneOnOne: Map<QualifiedID, List<QualifiedID>>,
-    val group: Map<QualifiedID, List<QualifiedID>>
-)
+import co.touchlab.kermit.LogWriter
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
+
+internal var kaliumUtilLogger = KaliumLogger.disabled()
+
+object NetworkUtilLogger {
+    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
+        kaliumUtilLogger = KaliumLogger(
+            config = KaliumLogger.Config(
+                severity = level,
+                tag = "Network"
+            ),
+            logWriters = logWriters
+        )
+    }
+
+    val isRequestLoggingEnabled: Boolean get() = kaliumUtilLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
+}

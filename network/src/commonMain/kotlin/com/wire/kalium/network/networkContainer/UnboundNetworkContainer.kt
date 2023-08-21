@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
@@ -40,6 +41,7 @@ private interface UnboundNetworkClientProvider {
 }
 
 internal class UnboundNetworkClientProviderImpl(
+    networkStateObserver: NetworkStateObserver,
     userAgent: String,
     engine: HttpClientEngine
 ) : UnboundNetworkClientProvider {
@@ -49,17 +51,19 @@ internal class UnboundNetworkClientProviderImpl(
     }
 
     override val unboundNetworkClient by lazy {
-        UnboundNetworkClient(engine)
+        UnboundNetworkClient(networkStateObserver, engine)
     }
 }
 
 class UnboundNetworkContainerCommon(
+    networkStateObserver: NetworkStateObserver,
     private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
+        networkStateObserver = networkStateObserver,
         userAgent = userAgent,
         engine = defaultHttpEngine(
             ignoreSSLCertificates = ignoreSSLCertificates,

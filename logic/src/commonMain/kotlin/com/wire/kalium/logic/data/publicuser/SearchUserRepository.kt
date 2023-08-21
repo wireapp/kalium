@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
@@ -41,13 +40,12 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
-import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 internal interface SearchUserRepository {
@@ -96,8 +94,7 @@ internal class SearchUserRepositoryImpl(
     private val userSearchAPiWrapper: UserSearchApiWrapper,
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
@@ -181,12 +178,12 @@ internal class SearchUserRepositoryImpl(
     // TODO: code duplication here for getting self user, the same is done inside
     // UserRepository, what would be best ?
     // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
-    @OptIn(FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun getSelfUser(): SelfUser {
         return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
             .filterNotNull()
             .flatMapMerge { encodedValue ->
-                val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
+                val selfUserID: QualifiedIDEntity = Json.decodeFromString(string = encodedValue)
 
                 userDAO.getUserByQualifiedID(selfUserID)
                     .filterNotNull()

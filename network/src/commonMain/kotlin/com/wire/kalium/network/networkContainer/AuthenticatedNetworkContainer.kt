@@ -20,6 +20,7 @@ package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -105,6 +106,7 @@ interface AuthenticatedNetworkContainer {
 
     companion object {
         fun create(
+            networkStateObserver: NetworkStateObserver,
             sessionManager: SessionManager,
             selfUserId: UserId,
             userAgent: String,
@@ -115,28 +117,33 @@ interface AuthenticatedNetworkContainer {
 
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
+                    networkStateObserver,
                     sessionManager,
                     certificatePinning
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
+                    networkStateObserver,
                     sessionManager,
                     certificatePinning
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
+                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
+                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
+                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning
@@ -158,6 +165,7 @@ internal interface AuthenticatedHttpClientProvider {
 
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
+    private val networkStateObserver: NetworkStateObserver,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine
 ) : AuthenticatedHttpClientProvider {
@@ -184,6 +192,7 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     override val networkClient by lazy {
         AuthenticatedNetworkClient(
+            networkStateObserver,
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider
@@ -191,6 +200,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     }
     override val websocketClient by lazy {
         AuthenticatedWebSocketClient(
+            networkStateObserver,
             engine,
             bearerAuthProvider,
             sessionManager.serverConfig()
@@ -198,6 +208,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     }
     override val networkClientWithoutCompression by lazy {
         AuthenticatedNetworkClient(
+            networkStateObserver,
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider,

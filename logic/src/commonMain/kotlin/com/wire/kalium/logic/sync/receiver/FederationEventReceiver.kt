@@ -81,24 +81,18 @@ class FederationEventReceiverImpl internal constructor(
                 }
             }
 
-        conversationRepository.getConversationsWithMembersWithBothDomains(event.domain, selfUserId.domain)
+        conversationRepository.getOneOnOneConversationsWithFederatedMembers(event.domain)
             .onSuccess { conversationsWithMembers ->
                 // mark users as defederated to hold conversation history in oneOnOne conversations
-                conversationsWithMembers.oneOnOne.forEach { (conversationId, userIds) ->
-                    if (conversationId.domain == event.domain) {
-                        handleFederationDeleteEvent(conversationId, event.domain)
-                        userIds.filter { it.domain == event.domain }.forEach { userId ->
-                            userRepository.defederateUser(userId)
-                        }
-                    } else {
-                        userIds.filter { it.domain == event.domain }.forEach { userId ->
-                            handleFederationDeleteEvent(conversationId, event.domain)
-                            userRepository.defederateUser(userId)
-                        }
-                    }
+                conversationsWithMembers.forEach { (conversationId, userId) ->
+                    handleFederationDeleteEvent(conversationId, event.domain)
+                    userRepository.defederateUser(userId)
                 }
+            }
 
-                conversationsWithMembers.group.forEach { (conversationId, userIds) ->
+        conversationRepository.getGroupConversationsWithMembersWithBothDomains(event.domain, selfUserId.domain)
+            .onSuccess { conversationsWithMembers ->
+                conversationsWithMembers.forEach { (conversationId, userIds) ->
                     handleFederationDeleteEvent(conversationId, event.domain)
                     when (conversationId.domain) {
                         // remove defederated users from self domain conversations
@@ -145,9 +139,9 @@ class FederationEventReceiverImpl internal constructor(
             val firstDomain = event.domains.first()
             val secondDomain = event.domains.last()
 
-            conversationRepository.getConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
+            conversationRepository.getGroupConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
                 .onSuccess { conversationsWithMembers ->
-                    conversationsWithMembers.group.forEach { (conversationId, userIds) ->
+                    conversationsWithMembers.forEach { (conversationId, userIds) ->
                         handleFederationConnectionRemovedEvent(conversationId, event.domains)
                         when (conversationId.domain) {
                             // remove secondDomain users from firstDomain conversation

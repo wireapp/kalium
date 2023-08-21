@@ -160,8 +160,8 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCase
-import com.wire.kalium.logic.feature.conversation.GetOtherUserSecurityClassificationLabelUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -257,7 +257,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
-import com.wire.kalium.logic.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
@@ -445,6 +445,7 @@ class UserSessionScope internal constructor(
         logout = { logoutReason -> logout(logoutReason) }
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
+        networkStateObserver,
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
         userAgent,
@@ -458,6 +459,7 @@ class UserSessionScope internal constructor(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
+        networkStateObserver,
         kaliumConfigs::certPinningConfig
     )
 
@@ -1438,8 +1440,8 @@ class UserSessionScope internal constructor(
             conversations.observeConversationMembers, conversationRepository, userConfigRepository
         )
 
-    val getOtherUserSecurityClassificationLabel: GetOtherUserSecurityClassificationLabelUseCase
-        get() = GetOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository)
+    val getOtherUserSecurityClassificationLabel: ObserveOtherUserSecurityClassificationLabelUseCase
+        get() = ObserveOtherUserSecurityClassificationLabelUseCaseImpl(userConfigRepository, userId)
 
     val persistScreenshotCensoringConfig: PersistScreenshotCensoringConfigUseCase
         get() = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)

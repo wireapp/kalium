@@ -144,6 +144,27 @@
                     "dumpUsers": {
                         "description": "Should the application dump the users created into a file",
                         "type": "boolean"
+                    },
+                    "users": {
+                        "description": "All users that are going to be used in the test. If set the parameters to create users will be ignored",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "email",
+                                "id"
+                            ],
+                            "properties": {
+                                "email": {
+                                    "description": "Email of the user",
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "description": "UUID of the user",
+                                    "type": "string"
+                                }
+                            }
+                        }
                     }
                 }
             }

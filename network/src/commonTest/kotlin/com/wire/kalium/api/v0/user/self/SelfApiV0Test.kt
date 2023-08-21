@@ -47,7 +47,7 @@ internal class SelfApiV0Test : ApiTest() {
                     assertPathEqual(PATH_SELF)
                 }
             )
-            val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
+            val selfApi = SelfApiV0(networkClient, TEST_SESSION_MANAGER)
             val response = selfApi.getSelfInfo()
             assertTrue(response.isSuccessful())
             assertEquals(response.value, VALID_SELF_RESPONSE.serializableData)
@@ -59,7 +59,7 @@ internal class SelfApiV0Test : ApiTest() {
             ErrorResponseJson.valid.rawJson,
             statusCode = HttpStatusCode.BadRequest
         )
-        val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
+        val selfApi = SelfApiV0(networkClient, TEST_SESSION_MANAGER)
         val response = selfApi.getSelfInfo()
         assertFalse(response.isSuccessful())
         assertTrue(response.kException is KaliumException.InvalidRequestError)
@@ -74,11 +74,11 @@ internal class SelfApiV0Test : ApiTest() {
             assertion = {
                 assertPut()
                 assertNoQueryParams()
-                assertHeaderEqual(HttpHeaders.Cookie, "zuid=${TEST_SESSION_NAMAGER.session().refreshToken}")
+                assertHeaderEqual(HttpHeaders.Cookie, "zuid=${TEST_SESSION_MANAGER.session().refreshToken}")
                 assertPathEqual("access/self/email")
             }
         )
-        val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
+        val selfApi = SelfApiV0(networkClient, TEST_SESSION_MANAGER)
         selfApi.updateEmailAddress("new Email").also {
             assertTrue(it.isSuccessful())
             assertTrue(it.value)
@@ -93,11 +93,11 @@ internal class SelfApiV0Test : ApiTest() {
             assertion = {
                 assertPut()
                 assertNoQueryParams()
-                assertHeaderEqual(HttpHeaders.Cookie, "zuid=${TEST_SESSION_NAMAGER.session().refreshToken}")
+                assertHeaderEqual(HttpHeaders.Cookie, "zuid=${TEST_SESSION_MANAGER.session().refreshToken}")
                 assertPathEqual("access/self/email")
             }
         )
-        val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
+        val selfApi = SelfApiV0(networkClient, TEST_SESSION_MANAGER)
         selfApi.updateEmailAddress("new Email").also {
             assertTrue(it.isSuccessful())
             assertFalse(it.value)
@@ -117,7 +117,7 @@ internal class SelfApiV0Test : ApiTest() {
                 assertPathEqual("access/self/email")
             }
         )
-        val selfApi = SelfApiV0(networkClient, TEST_SESSION_NAMAGER)
+        val selfApi = SelfApiV0(networkClient, TEST_SESSION_MANAGER)
         selfApi.updateEmailAddress("new Email").also {
             assertFalse(it.isSuccessful())
             assertTrue(it.kException is KaliumException.InvalidRequestError)

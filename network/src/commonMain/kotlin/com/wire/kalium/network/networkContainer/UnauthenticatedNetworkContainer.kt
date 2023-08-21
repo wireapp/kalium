@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
@@ -45,6 +46,7 @@ interface UnauthenticatedNetworkContainer {
 
     companion object {
         fun create(
+            networkStateObserver: NetworkStateObserver,
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,
@@ -55,30 +57,35 @@ interface UnauthenticatedNetworkContainer {
 
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
+                    networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
+                    networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
+                    networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                 )
 
                 3 -> UnauthenticatedNetworkContainerV3(
+                    networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
+                    networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
@@ -95,10 +102,11 @@ internal interface UnauthenticatedNetworkClientProvider {
 }
 
 internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
+    networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     engine: HttpClientEngine
 ) : UnauthenticatedNetworkClientProvider {
     override val unauthenticatedNetworkClient by lazy {
-        UnauthenticatedNetworkClient(engine, backendLinks)
+        UnauthenticatedNetworkClient(networkStateObserver, engine, backendLinks)
     }
 }

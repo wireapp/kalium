@@ -41,8 +41,8 @@ import sun.misc.Signal
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private val dataFilePath by argument(help = "path to the test data file")
-    private val logLevel by option(help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
-    private val logOutputFile by option(help = "output file for logs")
+    private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
+    private val logOutputFile by option("-f", "--log-file", help = "output file for logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
     override fun run() = runBlocking {
