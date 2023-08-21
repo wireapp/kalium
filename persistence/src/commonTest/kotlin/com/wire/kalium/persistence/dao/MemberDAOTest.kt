@@ -28,8 +28,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MemberDAOTest : BaseDatabaseTest() {
@@ -138,6 +141,22 @@ class MemberDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNonExistingConversation_ThenInsertedOrUpdatedMembersShouldNotBeTriggered() = runTest {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val member1 = TestStubs.member1
+
+        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            member = member1,
+            status = ConnectionEntity.State.ACCEPTED,
+            conversationID = conversationEntity1.id
+        )
+
+        assertTrue(
+            memberDAO.observeConversationMembers(conversationEntity1.id).first().isEmpty()
+        )
+    }
+
+    @Test
     fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest(dispatcher) {
         val conversationEntity1 = TestStubs.conversationEntity1
         val user1 = TestStubs.user1
@@ -156,7 +175,6 @@ class MemberDAOTest : BaseDatabaseTest() {
         assertEquals(ConnectionEntity.State.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
         assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
     }
-
 
     @Test
     fun givenConversation_whenInsertingMembers_thenMembersShouldNotBeDuplicated() = runTest {
@@ -361,4 +379,71 @@ class MemberDAOTest : BaseDatabaseTest() {
         assertTrue(fetchedMembers.containsAll(memberList))
     }
 
+    @Test
+    fun givenTwoDomains_WhenGettingGroupConversationWithUserIdsWithBothDomains_ThenReturnMapConversationIDsWithUserIdList() =
+        runTest(dispatcher) {
+            // Given
+            val groupConversationEntity = TestStubs.conversationEntity4
+
+            val conversationID = groupConversationEntity.id
+            val firstDomain = groupConversationEntity.id.domain
+            val secondDomain = "other.com"
+
+            val user1 = TestStubs.user1
+            val user2 = TestStubs.user2
+            val user3 = TestStubs.user3.copy(id = QualifiedIDEntity("3", secondDomain))
+
+            userDAO.insertUser(user1)
+            userDAO.insertUser(user2)
+            userDAO.insertUser(user3)
+
+            conversationDAO.insertConversation(groupConversationEntity)
+
+            memberDAO.insertMember(TestStubs.member1, conversationID)
+            memberDAO.insertMember(TestStubs.member2, conversationID)
+            memberDAO.insertMember(TestStubs.member3.copy(user = user3.id), conversationID)
+
+            // When
+            val result = memberDAO.getGroupConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
+
+            // Then
+            val groupConversation = result[conversationID]
+            assertNotNull(groupConversation)
+            assertContains(groupConversation, user1.id)
+            assertContains(groupConversation, user2.id)
+            assertContains(groupConversation, user3.id)
+        }
+
+    @Test
+    fun givenTwoDomains_WhenGettingOneOnOneConversationWithFederatedUserId_ThenReturnMapConversationIDsWithUserId() =
+        runTest(dispatcher) {
+            // Given
+            val oneOnOneConversationEntity = TestStubs.conversationEntity1
+            val otherOneOnOneConversationEntity = TestStubs.conversationEntity1.copy(
+                id = QualifiedIDEntity("other", "wire.com")
+            )
+
+            val federatedDomain = "federated.com"
+
+            val federatedUser = TestStubs.user1.copy(id = QualifiedIDEntity("fedid", federatedDomain))
+            val otherUser = TestStubs.user1.copy(id = QualifiedIDEntity("other", "other.com"))
+
+            userDAO.insertUser(federatedUser)
+            userDAO.insertUser(otherUser)
+
+            conversationDAO.insertConversation(oneOnOneConversationEntity)
+            conversationDAO.insertConversation(otherOneOnOneConversationEntity)
+
+            memberDAO.insertMember(TestStubs.member3.copy(user = federatedUser.id), oneOnOneConversationEntity.id)
+            memberDAO.insertMember(TestStubs.member1.copy(user = otherUser.id), otherOneOnOneConversationEntity.id)
+
+            // When
+            val result = memberDAO.getOneOneConversationWithFederatedMembers(federatedDomain)
+
+            // Then
+            assertNull(result[otherOneOnOneConversationEntity.id])
+            val oneOnOneConversation = result[oneOnOneConversationEntity.id]
+            assertNotNull(oneOnOneConversation)
+            assertEquals(oneOnOneConversation, federatedUser.id)
+        }
 }

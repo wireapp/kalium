@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
-import com.wire.kalium.network.exceptions.isUnreachableDomains
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +39,12 @@ sealed interface CoreFailure {
 
     val hasUnreachableDomainsError: Boolean
         get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
+
+    val hasConflictingDomainsError: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure.ConflictingBackends && this.domains.isNotEmpty()
+
+    val isRetryable: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure.RetryableFailure
 
     /**
      * The attempted operation requires that this client is registered.
@@ -118,12 +123,19 @@ sealed class NetworkFailure : CoreFailure {
      */
     sealed class FederatedBackendFailure : NetworkFailure() {
 
+        /**
+         * Failure due to a federated backend context that can be retried
+         */
+        interface RetryableFailure {
+            val domains: List<String>
+        }
+
         data class General(val label: String) : FederatedBackendFailure()
         data class FederationDenied(val label: String) : FederatedBackendFailure()
 
-        data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
+        data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
 
-        data class FailedDomains(val domains: List<String> = emptyList()) : FederatedBackendFailure()
+        data class FailedDomains(override val domains: List<String> = emptyList()) : FederatedBackendFailure(), RetryableFailure
 
     }
 
@@ -171,14 +183,15 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             val exception = result.kException
             when {
                 exception is KaliumException.FederationError -> {
-                    val cause = exception.errorResponse.cause
                     if (exception.isFederationDenied()) {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
-                    } else if (exception.isUnreachableDomains()) {
-                        Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
                     }
+                }
+
+                exception is KaliumException.FederationUnreachableException -> {
+                    Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(exception.errorResponse.unreachableBackends))
                 }
 
                 exception is KaliumException.FederationConflictException -> {
@@ -190,12 +203,16 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
                     Either.Left(NetworkFailure.ProxyError(exception.cause))
                 }
 
+                exception is KaliumException.NoNetwork -> {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
+                exception is KaliumException.GenericError && exception.cause is IOException -> {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
                 else -> {
-                    if (exception is KaliumException.GenericError && exception.cause is IOException) {
-                        Either.Left(NetworkFailure.NoNetworkConnection(exception))
-                    } else {
-                        Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
-                    }
+                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
                 }
             }
         }

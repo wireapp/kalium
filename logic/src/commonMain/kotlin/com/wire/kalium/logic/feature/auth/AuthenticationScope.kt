@@ -37,6 +37,7 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import io.ktor.util.collections.ConcurrentMap
 
@@ -52,14 +53,16 @@ class AuthenticationScopeProvider internal constructor(
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
-        serverConfigRepository: ServerConfigRepository
+        serverConfigRepository: ServerConfigRepository,
+        networkStateObserver: NetworkStateObserver,
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,
                 proxyCredentials,
-                serverConfigRepository
+                serverConfigRepository,
+                networkStateObserver
             )
         }
 }
@@ -68,10 +71,12 @@ class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
-    private val serverConfigRepository: ServerConfigRepository
+    private val serverConfigRepository: ServerConfigRepository,
+    private val networkStateObserver: NetworkStateObserver
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
+            networkStateObserver,
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
             proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
             userAgent

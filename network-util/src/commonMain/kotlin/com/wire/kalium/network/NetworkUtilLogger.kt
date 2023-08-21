@@ -16,14 +16,24 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
+package com.wire.kalium.network
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import co.touchlab.kermit.LogWriter
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 
-@Serializable
-data class GetGuestRoomResponse(
-    @SerialName("uri") val uri: String,
-    @SerialName("key") val key: String,
-    @SerialName("code") val code: String
-)
+internal var kaliumUtilLogger = KaliumLogger.disabled()
+
+object NetworkUtilLogger {
+    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
+        kaliumUtilLogger = KaliumLogger(
+            config = KaliumLogger.Config(
+                severity = level,
+                tag = "Network"
+            ),
+            logWriters = logWriters
+        )
+    }
+
+    val isRequestLoggingEnabled: Boolean get() = kaliumUtilLogger.severity in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
+}

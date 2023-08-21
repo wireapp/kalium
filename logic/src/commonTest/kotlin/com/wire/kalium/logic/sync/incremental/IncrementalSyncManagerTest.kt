@@ -24,8 +24,8 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepositoryImpl
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.network.NetworkState
-import com.wire.kalium.logic.network.NetworkStateObserver
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime

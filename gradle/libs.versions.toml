@@ -25,7 +25,7 @@ androidx-test-orchestrator = "1.4.2"
 androidx-sqlite = "2.3.0"
 benasher-uuid = "0.8.0"
 ktx-datetime = { strictly = "0.4.0" }
-ktx-serialization = "1.4.1"
+ktx-serialization = "1.5.1"
 ktx-atomicfu = "0.18.5"
 kover = "0.7.1"
 multiplatform-settings = "1.0.0"
@@ -47,11 +47,12 @@ agp = "7.4.1"
 dokka = "1.8.20"
 carthage = "0.0.1"
 libsodiumBindings = "0.8.6"
-protobufCodegen = "0.9.1"
+protobufCodegen = "0.9.4"
 annotation = "1.2.0"
 mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
 mockk = "1.13.5"
+faker = "1.14.0"
 
 [plugins]
 # Home-made convention plugins
@@ -175,6 +176,7 @@ pbandk-runtime-macArm64 = { module = "pro.streem.pbandk:pbandk-runtime-macosarm6
 pbandk-runtime-common = { module = "pro.streem.pbandk:pbandk-runtime", version.ref = "pbandk" }
 benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
 apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
+faker = { module = "io.github.serpro69:kotlin-faker", version.ref = "faker" }
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }

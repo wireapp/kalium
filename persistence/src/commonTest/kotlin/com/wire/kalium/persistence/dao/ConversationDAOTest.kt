@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -858,6 +859,40 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenConversionWithNoCode_whenObservingCode_thenShouldReturnNull() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
+            assertNull(awaitItem())
+        }
+    }
+
+    @Test
+    fun givenConversionWithCode_whenObservingCode_thenShouldReturnValue() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.updateGuestRoomLink(conversationEntity1.id,"link", true)
+
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
+            assertEquals(ConversationGuestLinkEntity("link", true), awaitItem())
+        }
+    }
+
+    @Test
+    fun givenConversionCodeRevoked_whenObservingCode_thenShouldReturnNull() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.updateGuestRoomLink(conversationEntity1.id,"link", true)
+
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
+            assertEquals(ConversationGuestLinkEntity("link", true), awaitItem())
+        }
+
+        conversationDAO.updateGuestRoomLink(conversationEntity1.id,null, true)
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
+            assertNull(awaitItem())
+        }
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
@@ -922,7 +957,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             selfRole = MemberEntity.Role.Member,
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null
         )
     }
 

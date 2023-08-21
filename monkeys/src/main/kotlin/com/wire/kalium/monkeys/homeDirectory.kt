@@ -28,4 +28,4 @@ fun homeDirectory(): String {
 fun coreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs
-): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Wire Monkeys/JVM")
+): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Wire Infinite Monkeys")

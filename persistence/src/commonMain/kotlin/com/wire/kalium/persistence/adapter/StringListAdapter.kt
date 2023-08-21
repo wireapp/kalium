@@ -15,20 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.adapter
 
-package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
+import app.cash.sqldelight.ColumnAdapter
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+internal object StringListAdapter : ColumnAdapter<List<String>, String> {
 
-@Serializable
-data class GenerateGuestRoomLinkResponse(
-    @SerialName("conversation") val conversation: String? = null,
-    @SerialName("type") val type: String? = null,
-    @SerialName("time") val time: String? = null,
-    @SerialName("from") val from: String? = null,
-    @SerialName("data") val data: GetGuestRoomResponse? = null,
-    @SerialName("uri") val uri: String? = null,
-    @SerialName("key") val key: String? = null,
-    @SerialName("code") val code: String? = null
-)
+    override fun decode(databaseValue: String): List<String> {
+        return databaseValue.split(",")
+    }
+
+    override fun encode(value: List<String>): String {
+        return value.joinToString(separator = ",")
+    }
+}

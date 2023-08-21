@@ -96,7 +96,7 @@ sealed class ActionType {
     data class CreateConversation(
         @SerialName("userCount") val userCount: UserCount,
         @SerialName("protocol") val protocol: ConversationOptions.Protocol = ConversationOptions.Protocol.MLS,
-        @SerialName("domainOwner") val domain: String?
+        @SerialName("teamOwner") val team: String?
     ) : ActionType()
 
     @Serializable
@@ -122,8 +122,8 @@ sealed class ActionType {
     data class SendRequest(
         @SerialName("userCount") val userCount: UserCount,
         @SerialName("targetUserCount") val targetUserCount: UserCount,
-        @SerialName("originDomain") val originDomain: String,
-        @SerialName("targetDomain") val targetDomain: String,
+        @SerialName("originTeam") val originTeam: String,
+        @SerialName("targetTeam") val targetTeam: String,
         @SerialName("delayResponse") val delayResponse: ULong = 0u,
         @SerialName("shouldAccept") val shouldAccept: Boolean = true
     ) : ActionType()
@@ -140,7 +140,12 @@ data class BackendConfig(
     @SerialName("title") val title: String,
     @SerialName("passwordForUsers") val passwordForUsers: String,
     @SerialName("domain") val domain: String,
-    @SerialName("users") val users: List<UserAccount>
+    @SerialName("teamName") val teamName: String,
+    @SerialName("authUser") val authUser: String,
+    @SerialName("authPassword") val authPassword: String,
+    @SerialName("userCount") val userCount: ULong,
+    @SerialName("dumpUsers") val dumpUsers: Boolean = false,
+    @SerialName("users") val users: List<UserAccount> = listOf()
 )
 
 @Serializable

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
@@ -39,6 +40,7 @@ private interface UnboundNetworkClientProvider {
 }
 
 internal class UnboundNetworkClientProviderImpl(
+    networkStateObserver: NetworkStateObserver,
     val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
@@ -50,16 +52,22 @@ internal class UnboundNetworkClientProviderImpl(
     }
 
     override val unboundNetworkClient by lazy {
-        UnboundNetworkClient(engine)
+        UnboundNetworkClient(networkStateObserver, engine)
     }
 }
 
 class UnboundNetworkContainerCommon(
+    networkStateObserver: NetworkStateObserver,
     private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
 ) : UnboundNetworkContainer,
-    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled, userAgent, ignoreSSLCertificates) {
+    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
+        networkStateObserver,
+        developmentApiEnabled,
+        userAgent,
+        ignoreSSLCertificates
+    ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
     override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)

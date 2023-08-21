@@ -51,3 +51,14 @@ WHERE conversation IN (
 
 isUserMember:
 SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;
+
+selectFederatedMembersWithOneOfDomainsFromGroupConversation:
+SELECT mem.* FROM Member AS mem
+JOIN Conversation AS con ON con.qualified_id = mem.conversation
+WHERE con.type == 'GROUP' AND (user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain));
+
+selectFederatedMembersFromOneOnOneConversations:
+SELECT mem.* FROM Member AS mem
+JOIN Conversation AS con ON con.qualified_id = mem.conversation
+JOIN User AS usr ON usr.qualified_id = mem.user
+WHERE con.type == 'ONE_ON_ONE' AND user LIKE ('%@' || :domain) AND usr.defederated == 0;

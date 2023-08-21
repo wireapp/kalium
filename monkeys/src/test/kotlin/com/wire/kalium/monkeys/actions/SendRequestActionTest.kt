@@ -22,8 +22,8 @@ class SendRequestActionTest {
         val monkeyOrigin = mockk<Monkey>(relaxed = true)
         val monkeyTarget = mockk<Monkey>(relaxed = true)
         val coreLogic = mockk<CoreLogic>()
-        every { MonkeyPool.randomLoggedInMonkeysFromDomain(config.originDomain, UserCount.single()) } returns listOf(monkeyOrigin)
-        every { MonkeyPool.randomLoggedInMonkeysFromDomain(config.targetDomain, UserCount.single()) } returns listOf(monkeyTarget)
+        every { MonkeyPool.randomLoggedInMonkeysFromTeam(config.originTeam, UserCount.single()) } returns listOf(monkeyOrigin)
+        every { MonkeyPool.randomLoggedInMonkeysFromTeam(config.targetTeam, UserCount.single()) } returns listOf(monkeyTarget)
         SendRequestAction(config).execute(coreLogic)
         coVerify(exactly = 1) { monkeyOrigin.sendRequest(monkeyTarget) }
         coVerify(exactly = 1) { monkeyTarget.acceptRequest(monkeyOrigin) }
@@ -38,8 +38,8 @@ class SendRequestActionTest {
         val monkeyOrigin = mockk<Monkey>(relaxed = true)
         val monkeyTarget = mockk<Monkey>(relaxed = true)
         val coreLogic = mockk<CoreLogic>()
-        every { MonkeyPool.randomLoggedInMonkeysFromDomain(config.originDomain, UserCount.single()) } returns listOf(monkeyOrigin)
-        every { MonkeyPool.randomLoggedInMonkeysFromDomain(config.targetDomain, UserCount.single()) } returns listOf(monkeyTarget)
+        every { MonkeyPool.randomLoggedInMonkeysFromTeam(config.originTeam, UserCount.single()) } returns listOf(monkeyOrigin)
+        every { MonkeyPool.randomLoggedInMonkeysFromTeam(config.targetTeam, UserCount.single()) } returns listOf(monkeyTarget)
         SendRequestAction(config).execute(coreLogic)
         coVerify(exactly = 1) { monkeyOrigin.sendRequest(monkeyTarget) }
         coVerify(exactly = 1) { monkeyTarget.rejectRequest(monkeyOrigin) }

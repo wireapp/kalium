@@ -2,17 +2,34 @@
 
 This application enables the creation of stress tests in clients and in the backend.
 
-To use, simply create a configuration and execute:
+## Building
+
+To build, run:
 
 ```bash
-./gradlew :monkeys:run --args="config.json"
+./gradlew :monkeys:build
+```
+
+A jar file will be created inside `./monkeys/build/libs` called `monkeys.jar`.
+
+## Running
+
+Create a configuration and execute:
+
+```bash
+java -jar monkeys.jar config.json
+```
+
+For a list of the possible options and parameters run:
+
+```bash
+java -jar monkeys.jar --help
 ```
 
 An [example](example.json) config is in this repo and the schema can be seen [here](schema.json).
 
 ## Current Limitations (to be fixed in the future)
 
-* It is assumed that all users under a backend belongs to a single team
 * The application runs until it receives a `SIGINT` (Ctrl+C) signal. There should be a configuration
   to finish the test run
 * Tests need to be implemented

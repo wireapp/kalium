@@ -165,7 +165,8 @@ class EndCallOnConversationChangeUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
             userType = UserType.INTERNAL,
             botService = null,
-            deleted = true
+            deleted = true,
+            defederated = false
         )
 
         private val groupConversationDetail = ConversationDetails.Group(

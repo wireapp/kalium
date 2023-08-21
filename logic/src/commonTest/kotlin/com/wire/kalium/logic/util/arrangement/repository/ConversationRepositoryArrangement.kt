@@ -17,15 +17,53 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
+import io.mockative.given
+import io.mockative.matchers.Matcher
 import io.mockative.mock
 
 internal interface ConversationRepositoryArrangement {
     val conversationRepository: ConversationRepository
+    fun withGetGroupConversationsWithMembersWithBothDomains(
+        result: Either<CoreFailure, Map<ConversationId, List<UserId>>>,
+        firstDomain: Matcher<String> = any(),
+        secondDomain: Matcher<String> = any()
+    )
+
+    fun withGetOneOnOneConversationsWithFederatedMember(
+        result: Either<CoreFailure, Map<ConversationId, UserId>>,
+        domain: Matcher<String> = any()
+    )
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
     @Mock
     override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+
+    override fun withGetGroupConversationsWithMembersWithBothDomains(
+        result: Either<CoreFailure, Map<ConversationId, List<UserId>>>,
+        firstDomain: Matcher<String>,
+        secondDomain: Matcher<String>,
+    ) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getGroupConversationsWithMembersWithBothDomains)
+            .whenInvokedWith(firstDomain, secondDomain)
+            .thenReturn(result)
+    }
+
+    override fun withGetOneOnOneConversationsWithFederatedMember(
+        result: Either<CoreFailure, Map<ConversationId, UserId>>,
+        domain: Matcher<String>
+    ) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getOneOnOneConversationsWithFederatedMembers)
+            .whenInvokedWith(domain)
+            .thenReturn(result)
+    }
 }
