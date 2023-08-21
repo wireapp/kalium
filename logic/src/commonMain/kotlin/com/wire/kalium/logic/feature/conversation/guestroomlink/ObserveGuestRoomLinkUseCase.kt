@@ -18,20 +18,23 @@
 
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.ConversationGuestLink
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.flow.Flow
 
 /**
  * observe guest room link
  */
 interface ObserveGuestRoomLinkUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<String?>
+    suspend operator fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
 }
 
 class ObserveGuestRoomLinkUseCaseImpl internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : ObserveGuestRoomLinkUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Flow<String?> =
+    override suspend fun invoke(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>> =
         conversationGroupRepository.observeGuestRoomLink(conversationId)
 }

@@ -35,9 +35,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -47,14 +47,12 @@ import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ConversationApiV0Test : ApiTest() {
 
     @Test
@@ -388,10 +386,10 @@ internal class ConversationApiV0Test : ApiTest() {
         val conversationApi = ConversationApiV0(networkClient)
 
         // when
-        val response = conversationApi.generateGuestRoomLink(conversationId)
+        val response = conversationApi.generateGuestRoomLink(conversationId, null)
 
         // then
-        assertIs<NetworkResponse.Success<GenerateGuestRoomLinkResponse>>(response)
+        assertIs<NetworkResponse.Success<EventContentDTO.Conversation.CodeUpdated>>(response)
     }
 
     @Test

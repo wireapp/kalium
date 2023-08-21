@@ -23,6 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.ConversationGuestLink
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
@@ -38,6 +39,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -231,9 +233,11 @@ class UpdateConversationAccessUseCaseTest {
             access = listOf(Conversation.Access.INVITE)
         )
 
+        val expected = ConversationGuestLink("guestLink", false)
+
         val (arrangement, updateConversationAccess) = Arrangement()
             .withUpdateAccessInfoRetuning(Either.Right(Unit))
-            .withGuestRoomLink("link")
+            .withGuestRoomLink(flowOf(Either.Right(expected)))
             .arrange()
 
         updateConversationAccess(
@@ -315,9 +319,10 @@ class UpdateConversationAccessUseCaseTest {
     fun givenError_whenCallingUpdateAccessInfo_thenFailureIsPropagated() = runTest {
         val conversation = conversationStub
 
+        val expected: ConversationGuestLink? = null
         val (arrangement, updateConversationAccess) = Arrangement()
             .withUpdateAccessInfoRetuning(Either.Left(NetworkFailure.NoNetworkConnection(IOException())))
-            .withGuestRoomLink(null)
+            .withGuestRoomLink(flowOf(Either.Right(expected)))
             .arrange()
 
         // allowGuest = false, allowServices = true, allowNonTeamMember = true
@@ -338,9 +343,11 @@ class UpdateConversationAccessUseCaseTest {
     fun givenAnGuestAccessRole_whenInvokingUpdateAccessInfo_thenRevokeGuestLinkShouldNotBeInvoked() = runTest {
         val accessRoles = setOf(Conversation.AccessRole.GUEST)
 
+        val expected = ConversationGuestLink("guestLink", false)
+
         val (arrangement, updateConversationAccessRole) = Arrangement()
             .withWaitUntilLiveOrFailure(Either.Right(Unit))
-            .withGuestRoomLink("guestLink")
+            .withGuestRoomLink(flowOf(Either.Right(expected)))
             .withUpdateAccessInfoRetuning(Either.Right(Unit))
             .arrange()
 
@@ -358,9 +365,11 @@ class UpdateConversationAccessUseCaseTest {
     fun givenAnAccessRoleWithoutGuestAndSyncFailing_whenInvokingUpdateAccessInfo_thenRevokeGuestLinkShouldNotBeInvoked() = runTest {
         val accessRoles = setOf(Conversation.AccessRole.TEAM_MEMBER)
 
+        val expected = ConversationGuestLink("guestLink", false)
+
         val (arrangement, updateConversationAccessRole) = Arrangement()
             .withWaitUntilLiveOrFailure(Either.Left(CoreFailure.Unknown(RuntimeException("Error"))))
-            .withGuestRoomLink("guestLink")
+            .withGuestRoomLink(flowOf(Either.Right(expected)))
             .withUpdateAccessInfoRetuning(Either.Right(Unit))
             .arrange()
 
@@ -371,7 +380,6 @@ class UpdateConversationAccessUseCaseTest {
             .suspendFunction(arrangement.conversationGroupRepository::revokeGuestRoomLink)
             .with(any())
             .wasNotInvoked()
-
     }
 
     companion object {
@@ -444,11 +452,11 @@ class UpdateConversationAccessUseCaseTest {
                 .thenReturn(either)
         }
 
-        fun withGuestRoomLink(link: String?) = apply {
+        fun withGuestRoomLink(result: Flow<Either<CoreFailure, ConversationGuestLink?>>) = apply {
             given(conversationGroupRepository)
                 .suspendFunction(conversationGroupRepository::observeGuestRoomLink)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(link))
+                .thenReturn(result)
         }
 
         fun arrange() = this to updateConversationAccess

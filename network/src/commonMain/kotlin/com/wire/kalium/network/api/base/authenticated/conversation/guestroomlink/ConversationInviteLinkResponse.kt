@@ -22,13 +22,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class GenerateGuestRoomLinkResponse(
-    @SerialName("conversation") val conversation: String? = null,
-    @SerialName("type") val type: String? = null,
-    @SerialName("time") val time: String? = null,
-    @SerialName("from") val from: String? = null,
-    @SerialName("data") val data: GetGuestRoomResponse? = null,
-    @SerialName("uri") val uri: String? = null,
-    @SerialName("key") val key: String? = null,
-    @SerialName("code") val code: String? = null
+data class ConversationInviteLinkResponse(
+    @SerialName("uri") val uri: String,
+    @SerialName("key") val key: String,
+    @SerialName("code") val code: String,
+    // the initial value for has password because password protected invite links
+    // are supported on api v4+
+    @SerialName("has_password") val hasPassword: Boolean = false
 )
