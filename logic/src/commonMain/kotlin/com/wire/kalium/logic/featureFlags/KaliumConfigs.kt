@@ -20,24 +20,24 @@ package com.wire.kalium.logic.featureFlags
 
 import com.wire.kalium.network.session.CertificatePinning
 
-abstract class KaliumConfigs(
-    open val forceConstantBitrateCalls: Boolean = false,
-    open val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
-    open var isMLSSupportEnabled: Boolean = true,
+abstract class KaliumConfigs {
+    open val forceConstantBitrateCalls: Boolean = false
+    open val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction
+    open var isMLSSupportEnabled: Boolean = true
+
     // Disabling db-encryption will crash on android-api level below 30
-    open val shouldEncryptData: Boolean = true,
-    open val encryptProteusStorage: Boolean = false,
-    open val lowerKeyPackageLimits: Boolean = false,
-    open val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
-    open val developmentApiEnabled: Boolean = false,
-    open val ignoreSSLCertificatesForUnboundCalls: Boolean = true,
-    open val guestRoomLink: Boolean = true,
-    open val selfDeletingMessages: Boolean = true,
-    open val wipeOnCookieInvalid: Boolean = false,
-    open val wipeOnDeviceRemoval: Boolean = false,
-    open val wipeOnRootedDevice: Boolean = false,
+    open val shouldEncryptData: Boolean = true
+    open val encryptProteusStorage: Boolean = false
+    open val lowerKeyPackageLimits: Boolean = false
+    open val lowerKeyingMaterialsUpdateThreshold: Boolean = false
+    open val developmentApiEnabled: Boolean = false
+    open val ignoreSSLCertificatesForUnboundCalls: Boolean = true
+    open val guestRoomLink: Boolean = true
+    open val selfDeletingMessages: Boolean = true
+    open val wipeOnCookieInvalid: Boolean = false
+    open val wipeOnDeviceRemoval: Boolean = false
+    open val wipeOnRootedDevice: Boolean = false
     open val isWebSocketEnabledByDefault: Boolean = false
-) {
     abstract fun certPinningConfig(): CertificatePinning
 }
 
