@@ -53,6 +53,7 @@ mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
 mockk = "1.13.5"
 faker = "1.14.0"
+archUnit = "0.23.1"
 
 [plugins]
 # Home-made convention plugins
@@ -161,6 +162,7 @@ mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockativ
 mockative-processor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+archUnit = { module = "com.tngtech.archunit:archunit-junit4", version.ref = "archUnit" }
 
 # detekt
 detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
