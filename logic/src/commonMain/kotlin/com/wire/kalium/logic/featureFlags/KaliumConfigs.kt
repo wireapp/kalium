@@ -18,26 +18,25 @@
 
 package com.wire.kalium.logic.featureFlags
 
-abstract class KaliumConfigs {
-    open val forceConstantBitrateCalls: Boolean = false
-    open val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction
-    open var isMLSSupportEnabled: Boolean = true
-
+data class KaliumConfigs(
+    val forceConstantBitrateCalls: Boolean = false,
+    val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
+    var isMLSSupportEnabled: Boolean = true,
     // Disabling db-encryption will crash on android-api level below 30
-    open val shouldEncryptData: Boolean = true
-    open val encryptProteusStorage: Boolean = false
-    open val lowerKeyPackageLimits: Boolean = false
-    open val lowerKeyingMaterialsUpdateThreshold: Boolean = false
-    open val developmentApiEnabled: Boolean = false
-    open val ignoreSSLCertificatesForUnboundCalls: Boolean = true
-    open val guestRoomLink: Boolean = true
-    open val selfDeletingMessages: Boolean = true
-    open val wipeOnCookieInvalid: Boolean = false
-    open val wipeOnDeviceRemoval: Boolean = false
-    open val wipeOnRootedDevice: Boolean = false
-    open val isWebSocketEnabledByDefault: Boolean = false
-    abstract fun certPinningConfig(): Map<String, List<String>>
-}
+    val shouldEncryptData: Boolean = true,
+    val encryptProteusStorage: Boolean = false,
+    val lowerKeyPackageLimits: Boolean = false,
+    val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
+    val developmentApiEnabled: Boolean = false,
+    val ignoreSSLCertificatesForUnboundCalls: Boolean = true,
+    val guestRoomLink: Boolean = true,
+    val selfDeletingMessages: Boolean = true,
+    val wipeOnCookieInvalid: Boolean = false,
+    val wipeOnDeviceRemoval: Boolean = false,
+    val wipeOnRootedDevice: Boolean = false,
+    val isWebSocketEnabledByDefault: Boolean = false,
+    val certPinningConfig: Map<String, List<String>> = emptyMap()
+)
 
 sealed interface BuildFileRestrictionState {
     object NoRestriction : BuildFileRestrictionState

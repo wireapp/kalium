@@ -101,7 +101,7 @@ class GlobalKaliumScope internal constructor(
             kaliumConfigs.developmentApiEnabled,
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
-            kaliumConfigs.certPinningConfig()
+            kaliumConfigs.certPinningConfig
         )
     }
 

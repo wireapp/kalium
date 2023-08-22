@@ -24,7 +24,6 @@ import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.util.KaliumConfigStub
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -57,7 +56,7 @@ class AnswerCallUseCaseTest {
         muteCall = muteCall,
         unMuteCall = unMuteCall,
         callManager = lazy { callManager },
-        kaliumConfigs = KaliumConfigStub()
+        kaliumConfigs = KaliumConfigs()
     )
 
     @BeforeTest
@@ -71,7 +70,7 @@ class AnswerCallUseCaseTest {
     @Test
     fun givenCbrEnabled_whenAnsweringACall_thenInvokeAnswerCallWithCbrOnce() = runTest {
         val isCbrEnabled = true
-        val configs = KaliumConfigStub(forceConstantBitrateCalls = isCbrEnabled)
+        val configs = KaliumConfigs(forceConstantBitrateCalls = isCbrEnabled)
 
         given(getAllCallsWithSortedParticipants).coroutine { invoke() }
             .then { flowOf(listOf()) }

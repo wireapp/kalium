@@ -449,7 +449,7 @@ class UserSessionScope internal constructor(
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
         userAgent,
-        certificatePinning = kaliumConfigs.certPinningConfig()
+        certificatePinning = kaliumConfigs.certPinningConfig
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,

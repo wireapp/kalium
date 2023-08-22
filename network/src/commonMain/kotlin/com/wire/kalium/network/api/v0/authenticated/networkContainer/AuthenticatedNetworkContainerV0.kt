@@ -75,7 +75,7 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
     engine: HttpClientEngine = defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),
-        certPinning = certificatePinning
+        certificatePinning = certificatePinning
     )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(

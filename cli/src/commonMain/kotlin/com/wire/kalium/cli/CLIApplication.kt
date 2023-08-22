@@ -43,12 +43,10 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
         currentContext.findOrSetObject {
             coreLogic(
                 rootPath = "$HOME_DIRECTORY/.kalium/accounts",
-                kaliumConfigs = object : KaliumConfigs() {
-                    override val developmentApiEnabled: Boolean = this@CLIApplication.developmentApiEnabled
-                    override fun certPinningConfig(): Map<String, List<String>> = emptyMap()
-
-                    override val encryptProteusStorage = this@CLIApplication.encryptProteusStorage
-                }
+                kaliumConfigs = KaliumConfigs(
+                    developmentApiEnabled = developmentApiEnabled,
+                    encryptProteusStorage = encryptProteusStorage
+                )
             )
         }
 

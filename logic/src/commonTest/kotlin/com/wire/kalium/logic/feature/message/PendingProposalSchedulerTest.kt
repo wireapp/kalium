@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -30,7 +29,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.KaliumConfigStub
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
@@ -193,7 +191,7 @@ class PendingProposalSchedulerTest {
 
     private class Arrangement {
 
-        val kaliumConfigs = KaliumConfigStub()
+        val kaliumConfigs = KaliumConfigs()
 
         @Mock
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()

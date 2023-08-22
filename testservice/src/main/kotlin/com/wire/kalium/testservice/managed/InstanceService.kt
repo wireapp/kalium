@@ -141,11 +141,9 @@ class InstanceService(
         val instancePath = System.getProperty("user.home") +
                 File.separator + ".testservice" + File.separator + instanceId
         log.info("Instance $instanceId: Creating $instancePath")
-        val kaliumConfigs = object : KaliumConfigs() {
-            override val developmentApiEnabled = false
-            override fun certPinningConfig(): Map<String, List<String>> = emptyMap()
-
-        }
+        val kaliumConfigs = KaliumConfigs(
+            developmentApiEnabled = false
+        )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
         CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
 
