@@ -112,7 +112,9 @@ class OnIncomingCallTest {
             stubsUnitByDefault = true
         }
 
-        val kaliumConfigs = KaliumConfigs()
+        val kaliumConfigs = object : KaliumConfigs() {
+            override fun certPinningConfig(): Map<String, List<String>> = emptyMap()
+        }
 
         val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 

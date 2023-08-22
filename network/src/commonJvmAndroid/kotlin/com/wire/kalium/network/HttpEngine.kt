@@ -41,14 +41,14 @@ actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
-    certPinning: CertificatePinning
+    certificatePinning: CertificatePinning
 ): HttpClientEngine = OkHttp.create {
 
     val okHttpClient = OkHttpClient.Builder()
 
-    if (certPinning.isNotEmpty()) {
+    if (certificatePinning.isNotEmpty()) {
         val certPinner = CertificatePinner.Builder().apply {
-            certPinning.forEach { (cert, hosts) ->
+            certificatePinning.forEach { (cert, hosts) ->
                 hosts.forEach { host ->
                     add(host, cert)
                 }

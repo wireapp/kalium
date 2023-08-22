@@ -29,14 +29,14 @@ actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
-    certPinning: CertificatePinning
+    certificatePinning: CertificatePinning
 ): HttpClientEngine {
     return Darwin.create {
         pipelining = true
 
-        if (certPinning.isNotEmpty()) {
+        if (certificatePinning.isNotEmpty()) {
             val certPinner: CertificatePinner = CertificatePinner.Builder().apply {
-                certPinning.forEach { (cert, hosts) ->
+                certificatePinning.forEach { (cert, hosts) ->
                     hosts.forEach { host ->
                         add(host, cert)
                     }
