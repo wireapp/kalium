@@ -859,9 +859,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenObserConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
+    fun givenObserveConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
         // given
-        val conversation = conversationEntity1.copy(name = null, type = ConversationEntity.Type.GROUP)
+        val conversation = conversationEntity1.copy(name = null, type = ConversationEntity.Type.GROUP, hasIncompleteMetadata = false)
         conversationDAO.insertConversation(conversation)
         insertTeamUserAndMember(team, user1, conversation.id)
 
@@ -870,6 +870,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
+    }
+
+    @Test
+    fun givenObserveConversationList_whenAConversationHaveIncompleteMetadata_thenItIsNotIncluded() = runTest {
+        // given
+        val conversation = conversationEntity1.copy(hasIncompleteMetadata = true)
+        conversationDAO.insertConversation(conversation)
+        insertTeamUserAndMember(team, user1, conversation.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails().first()
+
+        // then
+        assertNull(result.firstOrNull { it.id == conversation.id })
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
