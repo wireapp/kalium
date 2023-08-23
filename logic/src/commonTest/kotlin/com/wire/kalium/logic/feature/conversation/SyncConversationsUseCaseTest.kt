@@ -30,13 +30,10 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SyncConversationsUseCaseTest {
-
     @Test
     fun givenUseCase_whenInvoked_thenFetchConversations() = runTest {
 
