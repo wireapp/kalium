@@ -67,7 +67,7 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
-            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsOneOrNull() != null
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsList().firstOrNull() != null
             if (conversationExist) {
                 memberQueries.insertMember(member.user, conversationID, member.role)
             } else {
@@ -91,7 +91,7 @@ internal class MemberDAOImpl internal constructor(
 
     private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
         memberQueries.transaction {
-            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsOneOrNull() != null
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsList().firstOrNull() != null
             for (member: MemberEntity in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
                 if (conversationExist) {
