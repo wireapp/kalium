@@ -858,6 +858,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenObserConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
+        // given
+        val conversation = conversationEntity1.copy(name = null)
+        conversationDAO.insertConversation(conversation)
+        insertTeamUserAndMember(team, user1, conversation.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails().first()
+
+        // then
+        assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
