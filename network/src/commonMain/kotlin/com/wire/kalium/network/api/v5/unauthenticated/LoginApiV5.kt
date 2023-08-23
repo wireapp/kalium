@@ -16,11 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v4.authenticated
+package com.wire.kalium.network.api.v5.unauthenticated
 
-import com.wire.kalium.network.api.v3.authenticated.AccessTokenApiV3
-import io.ktor.client.HttpClient
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v4.unauthenticated.LoginApiV4
 
-internal open class AccessTokenApiV4 internal constructor(
-    private val httpClient: HttpClient
-) : AccessTokenApiV3(httpClient)
+internal open class LoginApiV5 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : LoginApiV4(unauthenticatedNetworkClient)
