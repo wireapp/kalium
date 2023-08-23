@@ -1127,7 +1127,8 @@ class UserSessionScope internal constructor(
             proteusClientProvider,
             clientIdProvider,
             userStorage.database.prekeyDAO,
-            userStorage.database.clientDAO
+            userStorage.database.clientDAO,
+            userStorage.database.metadataDAO,
         )
 
     private val keyPackageRepository: KeyPackageRepository
