@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -66,7 +67,13 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
-            memberQueries.insertMember(member.user, conversationID, member.role)
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsOneOrNull() != null
+            if(conversationExist) {
+                memberQueries.insertMember(member.user, conversationID, member.role)
+            } else {
+                kaliumLogger.w("conversation ${conversationID.toLogString()} " +
+                        "doest not exist for user ${member.user.toLogString()}")
+            }
         }
     }
 
@@ -82,9 +89,15 @@ internal class MemberDAOImpl internal constructor(
 
     private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
         memberQueries.transaction {
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsOneOrNull() != null
             for (member: MemberEntity in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
-                memberQueries.insertMember(member.user, conversationID, member.role)
+                if(conversationExist) {
+                    memberQueries.insertMember(member.user, conversationID, member.role)
+                } else {
+                    kaliumLogger.w("conversation ${conversationID.toLogString()} " +
+                            "doest not exist for user ${member.user.toLogString()}")
+                }
             }
         }
 
@@ -141,12 +154,18 @@ internal class MemberDAOImpl internal constructor(
     ) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.updateUserConnectionStatus(status, member.user)
-            val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-            if (recordDidNotExist) {
+            val userRecordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+            if (userRecordDidNotExist) {
                 userQueries.insertOrIgnoreUserIdWithConnectionStatus(member.user, status)
             }
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
-            memberQueries.insertMember(member.user, conversationID, member.role)
+            val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
+            if (conversationRecordExist) {
+                memberQueries.insertMember(member.user, conversationID, member.role)
+            } else {
+                kaliumLogger.w("conversation ${conversationID.toLogString()} " +
+                        "doest not exist for user ${member.user.toLogString()}")
+            }
         }
     }
 
