@@ -84,6 +84,12 @@ sealed interface CoreFailure {
      * This operation is not supported by proteus conversations
      */
     object NotSupportedByProteus : FeatureFailure()
+
+    /**
+     * No common Protocol found in order to establish a conversation between parties.
+     * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
+     */
+    object NoCommonProtocolFound : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure {
@@ -139,7 +145,6 @@ sealed class NetworkFailure : CoreFailure {
         data class FailedDomains(override val domains: List<String> = emptyList()) : FederatedBackendFailure(), RetryableFailure
 
     }
-
 
     /**
      * Failure due to a feature not supported by the current client/backend.

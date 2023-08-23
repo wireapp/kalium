@@ -224,7 +224,6 @@ interface ConversationRepository {
         secondDomain: String
     ): Either<CoreFailure, ConversationsWithMembers>
 
-
     /**
      * Update a conversation's protocol.
      *
