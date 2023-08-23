@@ -100,6 +100,12 @@ sealed interface CoreFailure {
     data object SyncEventOrClientNotFound : FeatureFailure()
 
     data object FeatureNotImplemented : FeatureFailure()
+    
+    /**
+     * No common Protocol found in order to establish a conversation between parties.
+     * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
+     */
+    data object NoCommonProtocolFound : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure {
