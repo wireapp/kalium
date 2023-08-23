@@ -68,11 +68,13 @@ internal class MemberDAOImpl internal constructor(
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
             val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsOneOrNull() != null
-            if(conversationExist) {
+            if (conversationExist) {
                 memberQueries.insertMember(member.user, conversationID, member.role)
             } else {
-                kaliumLogger.w("conversation ${conversationID.toLogString()} " +
-                        "doest not exist for user ${member.user.toLogString()}")
+                kaliumLogger.w(
+                    "conversation ${conversationID.toLogString()} " +
+                            "doest not exist for user ${member.user.toLogString()}"
+                )
             }
         }
     }
@@ -92,11 +94,13 @@ internal class MemberDAOImpl internal constructor(
             val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsOneOrNull() != null
             for (member: MemberEntity in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
-                if(conversationExist) {
+                if (conversationExist) {
                     memberQueries.insertMember(member.user, conversationID, member.role)
                 } else {
-                    kaliumLogger.w("conversation ${conversationID.toLogString()} " +
-                            "doest not exist for user ${member.user.toLogString()}")
+                    kaliumLogger.w(
+                        "conversation ${conversationID.toLogString()} " +
+                                "doest not exist for user ${member.user.toLogString()}"
+                    )
                 }
             }
         }
@@ -163,8 +167,10 @@ internal class MemberDAOImpl internal constructor(
             if (conversationRecordExist) {
                 memberQueries.insertMember(member.user, conversationID, member.role)
             } else {
-                kaliumLogger.w("conversation ${conversationID.toLogString()} " +
-                        "doest not exist for user ${member.user.toLogString()}")
+                kaliumLogger.w(
+                    "conversation ${conversationID.toLogString()} " +
+                            "doest not exist for user ${member.user.toLogString()}"
+                )
             }
         }
     }
