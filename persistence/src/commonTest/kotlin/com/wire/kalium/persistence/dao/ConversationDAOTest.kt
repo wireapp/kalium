@@ -861,7 +861,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenObserConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
         // given
-        val conversation = conversationEntity1.copy(name = null)
+        val conversation = conversationEntity1.copy(name = null, type = ConversationEntity.Type.GROUP)
         conversationDAO.insertConversation(conversation)
         insertTeamUserAndMember(team, user1, conversation.id)
 
