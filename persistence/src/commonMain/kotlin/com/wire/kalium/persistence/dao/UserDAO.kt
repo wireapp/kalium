@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
@@ -28,7 +30,20 @@ import kotlinx.serialization.Serializable
 data class QualifiedIDEntity(
     @SerialName("value") val value: String,
     @SerialName("domain") val domain: String
-)
+) {
+    override fun toString(): String = if (domain.isEmpty()) value else "$value${VALUE_DOMAIN_SEPARATOR}$domain"
+
+    fun toLogString(): String = if (domain.isEmpty()) {
+        value.obfuscateId()
+    } else {
+        "${value.obfuscateId()}${VALUE_DOMAIN_SEPARATOR}${domain.obfuscateDomain()}"
+    }
+
+    companion object {
+        private const val VALUE_DOMAIN_SEPARATOR = '@'
+    }
+
+}
 
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
