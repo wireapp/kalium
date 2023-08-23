@@ -44,13 +44,10 @@ internal class OneOnOneProtocolSelectorImpl(
 
             val commonProtocols = selfUserProtocols.intersect(otherUserProtocols)
 
-            val protocol = when {
-                commonProtocols.contains(SupportedProtocol.MLS) -> SupportedProtocol.MLS
-                commonProtocols.contains(SupportedProtocol.PROTEUS) -> SupportedProtocol.PROTEUS
-                else -> null
-            }
-            protocol?.let { Either.Right(it) } ?: run {
-                Either.Left(CoreFailure.NoCommonProtocolFound)
+            return when {
+                commonProtocols.contains(SupportedProtocol.MLS) -> Either.Right(SupportedProtocol.MLS)
+                commonProtocols.contains(SupportedProtocol.PROTEUS) -> Either.Right(SupportedProtocol.PROTEUS)
+                else -> Either.Left(CoreFailure.NoCommonProtocolFound)
             }
         }
 }
