@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.config
 
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -138,5 +139,20 @@ class UserConfigStorageTest {
     fun givenScreenshotCensoringConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
         userConfigStorage.persistScreenshotCensoring(enabled = true)
         assertEquals(true, userConfigStorage.isScreenshotCensoringEnabledFlow().first())
+    }
+
+    @Test
+    fun givenDefaultProtocolIsNotSet_whenGettingItsValue_thenItShouldBeProteus() {
+        userConfigStorage.defaultProtocol().let {
+            assertEquals(SupportedProtocolEntity.PROTEUS, it)
+        }
+    }
+
+    @Test
+    fun givenDefaultProtocolIsSetToMls_whenGettingItsValue_thenItShouldBeMls() {
+        userConfigStorage.persistDefaultProtocol(SupportedProtocolEntity.MLS)
+        userConfigStorage.defaultProtocol().let {
+            assertEquals(SupportedProtocolEntity.MLS, it)
+        }
     }
 }

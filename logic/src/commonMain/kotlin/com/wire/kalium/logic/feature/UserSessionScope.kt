@@ -215,6 +215,8 @@ import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefillerImpl
 import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
 import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -1292,6 +1294,11 @@ class UserSessionScope internal constructor(
             protoContentMapper = protoContentMapper
         )
 
+    private val oneOnOneProtocolSelector: OneOnOneProtocolSelector
+        get() = OneOnOneProtocolSelectorImpl(
+            userRepository
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1337,6 +1344,7 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             globalScope.serverConfigRepository,
             userStorage,
+            oneOnOneProtocolSelector,
             this
         )
 
