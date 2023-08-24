@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -454,6 +455,9 @@ class SlowSyncWorkerTest {
         @Mock
         val updateSupportedProtocols: UpdateSupportedProtocolsUseCase = mock(UpdateSupportedProtocolsUseCase::class)
 
+        @Mock
+        val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
+
         fun arrange() = this to SlowSyncWorkerImpl(
             syncSelfUser = syncSelfUser,
             syncFeatureConfigs = syncFeatureConfigs,
@@ -462,7 +466,8 @@ class SlowSyncWorkerTest {
             syncSelfTeam = syncSelfTeam,
             syncContacts = syncContacts,
             joinMLSConversations = joinMLSConversations,
-            updateSupportedProtocols = updateSupportedProtocols
+            updateSupportedProtocols = updateSupportedProtocols,
+            oneOnOneResolver = oneOnOneResolver,
         )
 
         fun withSyncSelfUserFailure() = apply {

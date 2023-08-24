@@ -47,6 +47,7 @@ import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMa
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCase
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
@@ -79,7 +80,7 @@ class ConversationScope internal constructor(
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
-    private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
+    private val oneOnOneResolver: OneOnOneResolver,
     private val scope: CoroutineScope
 ) {
 
@@ -148,8 +149,8 @@ class ConversationScope internal constructor(
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
         get() = GetOrCreateOneToOneConversationUseCaseImpl(
             conversationRepository,
-            conversationGroupRepository,
-            oneOnOneProtocolSelector
+            userRepository,
+            oneOnOneResolver
         )
 
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase

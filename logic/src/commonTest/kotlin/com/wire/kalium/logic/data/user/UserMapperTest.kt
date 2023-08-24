@@ -84,7 +84,8 @@ class UserMapperTest {
             deleted = false,
             expiresAt = null,
             defederated = false,
-            supportedProtocols = null
+            supportedProtocols = null,
+            oneOnOneConversationId = null
         )
         val (_, userMapper) = Arrangement().arrange()
 

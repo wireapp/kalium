@@ -54,7 +54,8 @@ class UserMapper {
             hasIncompleteMetadata = user.incomplete_metadata,
             expiresAt = user.expires_at,
             defederated = user.defederated,
-            supportedProtocols = user.supported_protocols
+            supportedProtocols = user.supported_protocols,
+            oneOnOneConversationId = user.one_on_one_conversation_id
         )
     }
 
@@ -78,6 +79,7 @@ class UserMapper {
         expiresAt: Instant?,
         defederated: Boolean,
         supportedProtocols: Set<SupportedProtocolEntity>?,
+        oneOnOneConversationId: QualifiedIDEntity?,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -100,7 +102,8 @@ class UserMapper {
             hasIncompleteMetadata = hasIncompleteMetadata,
             expiresAt = expiresAt,
             defederated = defederated,
-            supportedProtocols = supportedProtocols
+            supportedProtocols = supportedProtocols,
+            oneOnOneConversationId = oneOnOneConversationId
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -150,7 +153,8 @@ class UserDAOImpl internal constructor(
             expires_at = user.expiresAt,
             connection_status = user.connectionStatus,
             deleted = user.deleted,
-            supported_protocols = user.supportedProtocols
+            supported_protocols = user.supportedProtocols,
+            one_on_one_conversation_id = user.oneOnOneConversationId
         )
     }
 
@@ -212,7 +216,8 @@ class UserDAOImpl internal constructor(
                         expires_at = user.expiresAt,
                         connection_status = user.connectionStatus,
                         deleted = user.deleted,
-                        supported_protocols = user.supportedProtocols
+                        supported_protocols = user.supportedProtocols,
+                        one_on_one_conversation_id = user.oneOnOneConversationId
                     )
                 }
             }
@@ -255,7 +260,8 @@ class UserDAOImpl internal constructor(
                         deleted = user.deleted,
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt,
-                        supported_protocols = user.supportedProtocols
+                        supported_protocols = user.supportedProtocols,
+                        one_on_one_conversation_id = user.oneOnOneConversationId
                     )
                 }
             }
@@ -284,7 +290,8 @@ class UserDAOImpl internal constructor(
                         deleted = user.deleted,
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt,
-                        supported_protocols = user.supportedProtocols
+                        supported_protocols = user.supportedProtocols,
+                        one_on_one_conversation_id = user.oneOnOneConversationId
                     )
                 }
             }
@@ -353,6 +360,10 @@ class UserDAOImpl internal constructor(
         .flowOn(queriesContext)
         .mapToList()
         .map { it.map(mapper::toModel) }
+
+    override suspend fun getUsersWithOneOnOneConversation(): List<UserEntity> = withContext(queriesContext) {
+        userQueries.selectUsersWithOneOnOne().executeAsList().map(mapper::toModel)
+    }
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
         userQueries.deleteUser(qualifiedID)
@@ -440,5 +451,10 @@ class UserDAOImpl internal constructor(
     override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
         withContext(queriesContext) {
             userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
+        }
+
+    override suspend fun updateOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity) =
+        withContext(queriesContext) {
+            userQueries.updateOneOnOnConversationId(conversationId, userId)
         }
 }

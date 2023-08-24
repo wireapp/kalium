@@ -106,7 +106,7 @@ internal class ConversationMapperImpl(
         mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
         removedBy = null,
-        creatorId = apiModel.creator,
+        creatorId = apiModel.creator ?: "", // TODO jacob make optional
         lastReadDate = Instant.UNIX_FIRST_DATE,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime.toInstant(),

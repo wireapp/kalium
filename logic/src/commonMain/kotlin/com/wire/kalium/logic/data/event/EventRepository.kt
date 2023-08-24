@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.event
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
@@ -130,6 +132,7 @@ class EventDataSource(
             .flatMap { currentClientId ->
                 wrapApiRequest { notificationApi.lastNotification(currentClientId.value) }
                     .flatMap { lastEvent ->
+                        kaliumLogger.i("Setting initial lastProcessedEventId: ${lastEvent.id.obfuscateId()}")
                         updateLastProcessedEventId(lastEvent.id).map { lastEvent.id }
                     }
             }

@@ -110,7 +110,8 @@ object TestUser {
         hasIncompleteMetadata = false,
         expiresAt = null,
         defederated = false,
-        supportedProtocols = setOf(SupportedProtocolEntity.MLS)
+        supportedProtocols = setOf(SupportedProtocolEntity.MLS),
+        oneOnOneConversationId = null
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

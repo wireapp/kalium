@@ -27,7 +27,8 @@ CREATE TABLE User (
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
     expires_at INTEGER AS Instant,
     defederated INTEGER AS Boolean NOT NULL DEFAULT 0,
-    supported_protocols TEXT AS Set<SupportedProtocolEntity>
+    supported_protocols TEXT AS Set<SupportedProtocolEntity>,
+    one_on_one_conversation_id TEXT AS QualifiedIDEntity
 );
 CREATE INDEX user_team_index ON User(team);
 CREATE INDEX user_service_id ON User(bot_service);
@@ -39,8 +40,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, one_on_one_conversation_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 handle = excluded.handle,
@@ -57,7 +58,8 @@ deleted = excluded.deleted,
 incomplete_metadata = excluded.incomplete_metadata,
 expires_at = excluded.expires_at,
 defederated = 0,
-supported_protocols = excluded.supported_protocols;
+supported_protocols = excluded.supported_protocols,
+one_on_one_conversation_id = excluded.one_on_one_conversation_id;
 
 insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
@@ -172,8 +174,21 @@ selectUsersWithoutMetadata:
 SELECT * FROM User AS user
 WHERE deleted = 0 AND incomplete_metadata = 1;
 
+selectUsersWithOneOnOne:
+SELECT * FROM User
+WHERE deleted = 0 AND qualified_id != (SELECT id FROM SelfUser) AND qualified_id IN
+(
+	SELECT user FROM Member
+	JOIN ConversationDetails ON ConversationDetails.qualifiedId = Member.conversation
+	WHERE ConversationDetails.type = 'ONE_ON_ONE' AND Member.user = User.qualified_id
+	LIMIT 1
+);
+
 userIdsWithoutSelf:
 SELECT qualified_id FROM User WHERE qualified_id != (SELECT id FROM SelfUser);
 
 updateUserSupportedProtocols:
 UPDATE User SET supported_protocols = ? WHERE qualified_id = ?;
+
+updateOneOnOnConversationId:
+UPDATE User SET one_on_one_conversation_id = ? WHERE qualified_id = ?;

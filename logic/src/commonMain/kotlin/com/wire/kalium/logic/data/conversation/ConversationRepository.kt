@@ -55,6 +55,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
@@ -66,6 +67,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -154,6 +156,8 @@ interface ConversationRepository {
 
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
+
+    suspend fun getOneOnOneConversationWithOtherUser(otherUserId: UserId, protocol: Conversation.Protocol): Either<StorageFailure, ConversationId>
 
     suspend fun updateMutedStatusLocally(
         conversationId: ConversationId,
@@ -675,9 +679,13 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<StorageFailure, Conversation>> {
-        return conversationDAO.observeConversationWithOtherUser(otherUserId.toDao())
+        return conversationDAO.observeOneOnOneConversationWithOtherUser(otherUserId.toDao())
             .wrapStorageRequest()
             .mapRight { conversationMapper.fromDaoModel(it) }
+    }
+
+    override suspend fun getOneOnOneConversationWithOtherUser(otherUserId: UserId, protocol: Conversation.Protocol): Either<StorageFailure, ConversationId> = wrapStorageRequest {
+        conversationDAO.getOneOnOneConversationIdWithOtherUser(otherUserId.toDao(), protocol.toDao())?.toModel()
     }
 
     override suspend fun updateMutedStatusLocally(

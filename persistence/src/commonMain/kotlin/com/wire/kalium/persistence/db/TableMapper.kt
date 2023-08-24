@@ -177,7 +177,8 @@ internal object TableMapper {
         user_typeAdapter = EnumColumnAdapter(),
         bot_serviceAdapter = BotServiceAdapter(),
         expires_atAdapter = InstantTypeAdapter,
-        supported_protocolsAdapter = SupportedProtocolSetAdapter
+        supported_protocolsAdapter = SupportedProtocolSetAdapter,
+        one_on_one_conversation_idAdapter = QualifiedIDAdapter
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter

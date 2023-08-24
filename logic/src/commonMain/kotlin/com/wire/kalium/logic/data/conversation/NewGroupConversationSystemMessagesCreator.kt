@@ -116,7 +116,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 
         persistReadReceiptSystemMessage(
             conversationId = conversation.id.toModel(),
-            creatorId = qualifiedIdMapper.fromStringToQualifiedID(conversation.creator),
+            creatorId = qualifiedIdMapper.fromStringToQualifiedID(conversation.creator!!), // TODO jacob handle optionality
             receiptMode = conversation.receiptMode == ReceiptMode.ENABLED
         )
     }

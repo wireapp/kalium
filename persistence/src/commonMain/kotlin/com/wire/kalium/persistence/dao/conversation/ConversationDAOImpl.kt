@@ -194,12 +194,17 @@ internal class ConversationDAOImpl internal constructor(
             }
         }
 
-    override suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
-        return memberQueries.selectConversationByMember(userId)
+    override suspend fun getOneOnOneConversationIdWithOtherUser(userId: UserIDEntity, protocol: ConversationEntity.Protocol): QualifiedIDEntity? =
+        withContext(coroutineContext) {
+            conversationQueries.selectOneOnOneByProtocol(protocol, userId).executeAsOneOrNull()
+        }
+
+    override suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
+        return conversationQueries.selectByUserId(userId)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(coroutineContext)
-            .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
+            .map { it?.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo? =

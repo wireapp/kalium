@@ -36,8 +36,9 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 fun obfuscatedJsonMessage(text: String): String = try {
-    val obj = (Json.decodeFromString(text) as JsonElement)
-    obfuscatedJsonElement(obj).toString()
+    text
+//     val obj = (Json.decodeFromString(text) as JsonElement)
+//     obfuscatedJsonElement(obj).toString()
 } catch (e: Exception) {
     "\"Error while obfuscating. Content probably not json.\""
 }
