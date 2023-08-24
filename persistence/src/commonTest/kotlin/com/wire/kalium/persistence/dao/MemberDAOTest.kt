@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.utils.stubs.TestStubs
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -124,7 +125,7 @@ class MemberDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest {
+    fun givenExistingConversation_ThenInsertedOrUpdatedMembersAreRetrieved() = runTest(dispatcher) {
         val conversationEntity1 = TestStubs.conversationEntity1
         val member1 = TestStubs.member1
 
@@ -137,6 +138,31 @@ class MemberDAOTest : BaseDatabaseTest() {
 
         assertEquals(
             listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first()
+        )
+        assertNotNull(userDAO.getUserByQualifiedID(member1.user).firstOrNull())
+    }
+
+    @Test
+    fun givenExistingUser_WhenInsertingToOneOnOneConversationThenConnectionStatusShouldBeAccepted() = runTest(dispatcher) {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val member1 = TestStubs.member1
+        val user = TestStubs.user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
+
+        userDAO.insertUser(user)
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+            member = member1,
+            status = ConnectionEntity.State.ACCEPTED,
+            conversationID = conversationEntity1.id
+        )
+
+        assertEquals(
+            listOf(member1),
+            memberDAO.observeConversationMembers(conversationEntity1.id).first()
+        )
+        assertEquals(
+            user.copy(connectionStatus = ConnectionEntity.State.ACCEPTED),
+            userDAO.getUserByQualifiedID(member1.user).firstOrNull()
         )
     }
 

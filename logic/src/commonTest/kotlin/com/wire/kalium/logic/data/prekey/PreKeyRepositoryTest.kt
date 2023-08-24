@@ -122,13 +122,13 @@ class PreKeyRepositoryTest {
             .withGenerateLastPreKeysSuccess(expected)
             .arrange()
 
-        preKeyRepository.generateNewLastKey().also {
+        preKeyRepository.generateNewLastResortKey().also {
             assertIs<Either.Right<PreKeyCrypto>>(it)
             assertEquals(expected, it.value)
         }
 
         verify(arrange.proteusClient)
-            .suspendFunction(arrange.proteusClient::newLastPreKey)
+            .suspendFunction(arrange.proteusClient::newLastResortPreKey)
             .wasInvoked(exactly = once)
     }
 
@@ -420,7 +420,7 @@ class PreKeyRepositoryTest {
 
         suspend fun withGenerateLastPreKeysSuccess(expected: PreKeyCrypto) = apply {
             given(proteusClient)
-                .coroutine { proteusClient.newLastPreKey() }
+                .coroutine { proteusClient.newLastResortPreKey() }
                 .then { expected }
         }
 

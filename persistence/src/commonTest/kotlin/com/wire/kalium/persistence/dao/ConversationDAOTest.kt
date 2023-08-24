@@ -860,37 +860,31 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversionWithNoCode_whenObservingCode_thenShouldReturnNull() = runTest {
-        conversationDAO.insertConversation(conversationEntity1)
+    fun givenObserveConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
+        // given
+        val conversation = conversationEntity1.copy(name = null, type = ConversationEntity.Type.GROUP, hasIncompleteMetadata = false)
+        conversationDAO.insertConversation(conversation)
+        insertTeamUserAndMember(team, user1, conversation.id)
 
-        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
-            assertNull(awaitItem())
-        }
+        // when
+        val result = conversationDAO.getAllConversationDetails().first()
+
+        // then
+        assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
     }
 
     @Test
-    fun givenConversionWithCode_whenObservingCode_thenShouldReturnValue() = runTest {
-        conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.updateGuestRoomLink(conversationEntity1.id,"link", true)
+    fun givenObserveConversationList_whenAConversationHaveIncompleteMetadata_thenItIsNotIncluded() = runTest {
+        // given
+        val conversation = conversationEntity1.copy(hasIncompleteMetadata = true)
+        conversationDAO.insertConversation(conversation)
+        insertTeamUserAndMember(team, user1, conversation.id)
 
-        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
-            assertEquals(ConversationGuestLinkEntity("link", true), awaitItem())
-        }
-    }
+        // when
+        val result = conversationDAO.getAllConversationDetails().first()
 
-    @Test
-    fun givenConversionCodeRevoked_whenObservingCode_thenShouldReturnNull() = runTest {
-        conversationDAO.insertConversation(conversationEntity1)
-        conversationDAO.updateGuestRoomLink(conversationEntity1.id,"link", true)
-
-        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
-            assertEquals(ConversationGuestLinkEntity("link", true), awaitItem())
-        }
-
-        conversationDAO.updateGuestRoomLink(conversationEntity1.id,null, true)
-        conversationDAO.observeGuestRoomLinkByConversationId(conversationEntity1.id).test {
-            assertNull(awaitItem())
-        }
+        // then
+        assertNull(result.firstOrNull { it.id == conversation.id })
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {

@@ -67,7 +67,7 @@ internal class BreakSessionUseCaseImpl internal constructor(
                 cryptoClientId = CryptoClientId(clientId.value)
             )
             // create a new session with the same session id
-            proteusClient.createSession(proteusClient.newLastPreKey(), cryptoSessionId)
+            proteusClient.createSession(proteusClient.newLastResortPreKey(), cryptoSessionId)
             kaliumLogger.e("Created new session for ${userId.toLogString()} with ${clientId.value.obfuscateId()}")
             return@fold BreakSessionResult.Success
         })

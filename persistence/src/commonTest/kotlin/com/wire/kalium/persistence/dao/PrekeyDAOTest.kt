@@ -41,25 +41,25 @@ class PrekeyDAOTest : BaseDatabaseTest() {
     @Test
     fun givenOTRLastPrekeyId_whenUpdating_thenItsOnlyUpdatedIfTheNewIdIsHigher() = runTest {
         val currentStoredId = 100
-        prekeyDAO.forceInsertOTRLastPrekeyId(100)
+        prekeyDAO.forceInsertMostRecentPreKeyId(100)
 
-        prekeyDAO.updateOTRLastPrekeyId(50)
-        assertEquals(currentStoredId, prekeyDAO.lastOTRPrekeyId())
+        prekeyDAO.updateMostRecentPreKeyId(50)
+        assertEquals(currentStoredId, prekeyDAO.mostRecentPreKeyId())
 
-        prekeyDAO.updateOTRLastPrekeyId(101)
-        assertEquals(101, prekeyDAO.lastOTRPrekeyId())
+        prekeyDAO.updateMostRecentPreKeyId(101)
+        assertEquals(101, prekeyDAO.mostRecentPreKeyId())
     }
 
     @Test
     fun whenForceInsertingPrekeyId_thenTheNewIdIsInserted() = runTest {
-        prekeyDAO.forceInsertOTRLastPrekeyId(100)
+        prekeyDAO.forceInsertMostRecentPreKeyId(100)
 
-        prekeyDAO.forceInsertOTRLastPrekeyId(50)
-        assertEquals(50, prekeyDAO.lastOTRPrekeyId())
+        prekeyDAO.forceInsertMostRecentPreKeyId(50)
+        assertEquals(50, prekeyDAO.mostRecentPreKeyId())
     }
 
     @Test
     fun whenNotLastPreKeyIdIsStored_thenReturnNull() = runTest {
-        assertEquals(null, prekeyDAO.lastOTRPrekeyId())
+        assertEquals(null, prekeyDAO.mostRecentPreKeyId())
     }
 }

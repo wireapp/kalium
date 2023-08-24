@@ -150,7 +150,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                             Either.Right(registeredClient)
                         }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
                     }.flatMap { (client, otrLastKeyId) ->
-                        otrLastKeyId?.let { preKeyRepository.updateOTRLastPreKeyId(it) }
+                        otrLastKeyId?.let { preKeyRepository.updateMostRecentPreKeyId(it) }
                         Either.Right(client)
                     }.fold({ failure ->
                         handleFailure(failure)
@@ -217,7 +217,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
         secondFactorVerificationCode: String? = null,
     ) = withContext(dispatchers.io) {
         preKeyRepository.generateNewPreKeys(FIRST_KEY_ID, preKeysToSend).flatMap { preKeys ->
-            preKeyRepository.generateNewLastKey().flatMap { lastKey ->
+            preKeyRepository.generateNewLastResortKey().flatMap { lastKey ->
                 Either.Right(
                     RegisterClientParam(
                         password = password,
