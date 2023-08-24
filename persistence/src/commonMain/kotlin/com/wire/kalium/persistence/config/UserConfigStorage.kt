@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.config
 
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
 import com.wire.kalium.util.time.Second
 import kotlinx.coroutines.channels.BufferOverflow
@@ -94,6 +95,16 @@ interface UserConfigStorage {
      * @see persistSecondFactorPasswordChallengeStatus
      */
     fun isSecondFactorPasswordChallengeRequired(): Boolean
+
+    /**
+     * Save default protocol to use
+     */
+    fun persistDefaultProtocol(protocol: SupportedProtocolEntity)
+
+    /**
+     * Gets default protocol to use. Defaults to PROTEUS if not default protocol has been saved.
+     */
+    fun defaultProtocol(): SupportedProtocolEntity
 
     /**
      * Save flag from the user settings to enable and disable MLS
@@ -332,6 +343,14 @@ class UserConfigStorageImpl(
     override fun isSecondFactorPasswordChallengeRequired(): Boolean =
         kaliumPreferences.getBoolean(REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE, false)
 
+    override fun persistDefaultProtocol(protocol: SupportedProtocolEntity) {
+        kaliumPreferences.putString(DEFAULT_PROTOCOL, protocol.name)
+    }
+
+    override fun defaultProtocol(): SupportedProtocolEntity =
+        kaliumPreferences.getString(DEFAULT_PROTOCOL)?.let { SupportedProtocolEntity.valueOf(it) }
+            ?: SupportedProtocolEntity.PROTEUS
+
     override fun enableMLS(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_MLS, enabled)
     }
@@ -451,5 +470,6 @@ class UserConfigStorageImpl(
         const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
         const val APP_LOCK = "app_lock"
+        const val DEFAULT_PROTOCOL = "default_protocol"
     }
 }
