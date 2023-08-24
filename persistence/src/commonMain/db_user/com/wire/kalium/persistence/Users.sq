@@ -94,8 +94,11 @@ insertOrIgnoreUserIdWithConnectionStatus:
 INSERT OR IGNORE INTO User(qualified_id, connection_status)
 VALUES(?, ?);
 
-updateUserConnectionStatus:
-UPDATE User SET connection_status = ? WHERE qualified_id = ?;
+upsertUserConnectionStatus:
+INSERT INTO User(qualified_id, connection_status)
+VALUES(?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+connection_status = excluded.connection_status;
 
 selectAllUsers:
 SELECT * FROM User;
