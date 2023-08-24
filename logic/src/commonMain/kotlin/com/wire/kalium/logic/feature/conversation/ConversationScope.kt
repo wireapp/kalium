@@ -54,6 +54,7 @@ import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTime
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
+import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
@@ -86,6 +87,7 @@ class ConversationScope internal constructor(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
+    private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val scope: CoroutineScope
 ) {
 
@@ -152,7 +154,11 @@ class ConversationScope internal constructor(
         get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
 
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
-        get() = GetOrCreateOneToOneConversationUseCase(conversationRepository, conversationGroupRepository)
+        get() = GetOrCreateOneToOneConversationUseCaseImpl(
+            conversationRepository,
+            conversationGroupRepository,
+            oneOnOneProtocolSelector
+        )
 
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
         get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)

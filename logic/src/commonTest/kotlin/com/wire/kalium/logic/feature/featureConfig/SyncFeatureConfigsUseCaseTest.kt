@@ -103,10 +103,68 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
+    fun givenMlsIsEnabledAndMlsIsDefaultProtocol_whenSyncing_thenMlsShouldBeStoredAsDefault() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(mlsModel = MLSModel(
+                    allowedUsers = emptyList(),
+                    defaultProtocol = SupportedProtocol.MLS,
+                    supportedProtocols = emptySet(),
+                    status = Status.ENABLED))
+            ).arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getDefaultProtocol().shouldSucceed {
+            assertEquals(SupportedProtocol.MLS, it)
+        }
+    }
+
+    @Test
+    fun givenMlsIsEnabledAndProteusIsDefaultProtocol_whenSyncing_thenProteusShouldBeStoredAsDefault() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(mlsModel = MLSModel(
+                    allowedUsers = emptyList(),
+                    defaultProtocol = SupportedProtocol.PROTEUS,
+                    supportedProtocols = emptySet(),
+                    status = Status.ENABLED))
+            ).arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getDefaultProtocol().shouldSucceed {
+            assertEquals(SupportedProtocol.PROTEUS, it)
+        }
+    }
+
+    @Test
+    fun givenMlsIsDisabledAndMlsIsDefaultProtocol_whenSyncing_thenProteusShouldBeStoredAsDefault() = runTest {
+        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
+            .withRemoteFeatureConfigsSucceeding(
+                FeatureConfigTest.newModel(mlsModel = MLSModel(
+                    allowedUsers = emptyList(),
+                    defaultProtocol = SupportedProtocol.MLS,
+                    supportedProtocols = emptySet(),
+                    status = Status.DISABLED))
+            ).arrange()
+
+        syncFeatureConfigsUseCase()
+
+        arrangement.userConfigRepository.getDefaultProtocol().shouldSucceed {
+            assertEquals(SupportedProtocol.PROTEUS, it)
+        }
+    }
+
+    @Test
     fun givenMlsIsEnabledAndSelfUserIsWhitelisted_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(SELF_USER_ID.toPlainID()), emptySet(), Status.ENABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(
+                    allowedUsers = listOf(SELF_USER_ID.toPlainID()),
+                    defaultProtocol = SupportedProtocol.MLS,
+                    supportedProtocols = emptySet(),
+                    status = Status.ENABLED))
             ).arrange()
 
         syncFeatureConfigsUseCase()
@@ -120,7 +178,11 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenMlsIsEnabledAndSelfUserIsNotWhitelisted_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), emptySet(), Status.ENABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(
+                    allowedUsers = emptyList(),
+                    defaultProtocol = SupportedProtocol.MLS,
+                    supportedProtocols = emptySet(),
+                    status = Status.ENABLED))
             ).arrange()
 
         syncFeatureConfigsUseCase()
@@ -134,7 +196,11 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenMlsIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), emptySet(), Status.DISABLED))
+                FeatureConfigTest.newModel(mlsModel = MLSModel(
+                    allowedUsers = emptyList(),
+                    defaultProtocol = SupportedProtocol.MLS,
+                    supportedProtocols = emptySet(),
+                    status = Status.DISABLED))
             ).arrange()
 
         syncFeatureConfigsUseCase()

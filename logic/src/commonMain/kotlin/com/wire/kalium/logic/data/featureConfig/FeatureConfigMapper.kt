@@ -77,11 +77,13 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         data?.let {
             MLSModel(
                 it.config.protocolToggleUsers.map { userId -> PlainId(userId) },
+                it.config.defaultProtocol.toModel(),
                 it.config.supportedProtocols.map { it.toModel() }.toSet(),
                 fromDTO(it.status)
             )
         } ?: MLSModel(
             listOf(),
+            SupportedProtocol.PROTEUS,
             setOf(SupportedProtocol.PROTEUS),
             Status.DISABLED
         )
