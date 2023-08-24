@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.api.base.authenticated.featureConfigs
 
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import kotlinx.datetime.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -88,7 +87,7 @@ data class MLSConfigDTO(
     @SerialName("protocolToggleUsers")
     val protocolToggleUsers: List<String>,
     @SerialName("defaultProtocol")
-    val defaultProtocol: ConvProtocol,
+    val defaultProtocol: SupportedProtocolDTO,
     @SerialName("supportedProtocols")
     val supportedProtocols: List<SupportedProtocolDTO> = listOf(SupportedProtocolDTO.PROTEUS),
     @SerialName("allowedCipherSuites")

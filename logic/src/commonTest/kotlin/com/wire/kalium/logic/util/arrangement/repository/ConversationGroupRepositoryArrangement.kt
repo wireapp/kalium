@@ -17,13 +17,16 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
@@ -40,9 +43,17 @@ interface ConversationGroupRepositoryArrangement {
             .whenInvokedWith(conversationId)
             .thenReturn(result)
     }
+
+    fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) {
+        given(conversationGroupRepository)
+            .suspendFunction(conversationGroupRepository::createGroupConversation)
+            .whenInvokedWith(anything(), anything(), anything())
+            .thenReturn(result)
+    }
 }
 
 class ConversationGroupRepositoryArrangementImpl : ConversationGroupRepositoryArrangement {
     @Mock
     override val conversationGroupRepository = mock(ConversationGroupRepository::class)
 }
+
