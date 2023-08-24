@@ -61,7 +61,7 @@ class UpdateConversationAccessRoleUseCase internal constructor(
 
         syncManager.waitUntilLiveOrFailure().flatMap {
             if (!accessRoles.contains(Conversation.AccessRole.GUEST)
-                && !conversationGroupRepository.observeGuestRoomLink(conversationId).first().isNullOrEmpty()
+                && conversationGroupRepository.observeGuestRoomLink(conversationId).first() != null
             ) {
                 conversationGroupRepository.revokeGuestRoomLink(conversationId)
             } else {

@@ -91,6 +91,8 @@ class EventMapper(
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
         }
 
@@ -108,6 +110,30 @@ class EventMapper(
                 eventContentDTO.domain
             )
         }
+
+    private fun conversationCodeDeleted(
+        id: String,
+        event: EventContentDTO.Conversation.CodeDeleted,
+        transient: Boolean
+    ): Event.Conversation.CodeDeleted = Event.Conversation.CodeDeleted(
+        id = id,
+        transient = transient,
+        conversationId = event.qualifiedConversation.toModel()
+    )
+
+    private fun conversationCodeUpdated(
+        id: String,
+        event: EventContentDTO.Conversation.CodeUpdated,
+        transient: Boolean
+    ): Event.Conversation.CodeUpdated = Event.Conversation.CodeUpdated(
+        id = id,
+        key = event.data.key,
+        code = event.data.code,
+        uri = event.data.uri,
+        isPasswordProtected = event.data.hasPassword,
+        conversationId = event.qualifiedConversation.toModel(),
+        transient = transient
+    )
 
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     fun unknown(
