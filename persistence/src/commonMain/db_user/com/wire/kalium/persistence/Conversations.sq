@@ -208,7 +208,7 @@ Conversation.last_modified_date,
 Conversation.receipt_mode,
 Conversation.message_timer,
 Conversation.user_message_timer,
-Conversation.incomplete_metadata
+Conversation.incomplete_metadata,
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
