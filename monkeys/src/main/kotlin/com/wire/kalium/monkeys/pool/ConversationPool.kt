@@ -67,29 +67,32 @@ object ConversationPool {
     private suspend fun createDynamicConversation(
         creator: Monkey,
         userCount: UserCount,
-        protocol: ConversationOptions.Protocol
+        protocol: ConversationOptions.Protocol,
+        monkeyPool: MonkeyPool
     ) {
         val name = "By monkey ${creator.user.email} - $protocol - ${Random.nextUInt()}"
-        val monkeyList = creator.randomPeers(userCount)
+        val monkeyList = creator.randomPeers(userCount, monkeyPool)
         val conversation = creator.createConversation(name, monkeyList, protocol)
         this.addToPool(conversation)
     }
 
     suspend fun createDynamicConversation(
         userCount: UserCount,
-        protocol: ConversationOptions.Protocol
+        protocol: ConversationOptions.Protocol,
+        monkeyPool: MonkeyPool
     ) {
-        val creator = MonkeyPool.randomMonkeys(UserCount.single())[0]
-        this.createDynamicConversation(creator, userCount, protocol)
+        val creator = monkeyPool.randomMonkeys(UserCount.single())[0]
+        this.createDynamicConversation(creator, userCount, protocol, monkeyPool)
     }
 
     suspend fun createDynamicConversation(
         team: String,
         userCount: UserCount,
-        protocol: ConversationOptions.Protocol
+        protocol: ConversationOptions.Protocol,
+        monkeyPool: MonkeyPool
     ) {
-        val creator = MonkeyPool.randomMonkeysFromTeam(team, UserCount.single())[0]
-        this.createDynamicConversation(creator, userCount, protocol)
+        val creator = monkeyPool.randomMonkeysFromTeam(team, UserCount.single())[0]
+        this.createDynamicConversation(creator, userCount, protocol, monkeyPool)
     }
 
     // Should be called on the setup free from concurrent access as it is not thread safe
@@ -98,13 +101,14 @@ object ConversationPool {
         prefix: String,
         count: UInt,
         userCount: UserCount,
-        protocol: ConversationOptions.Protocol
+        protocol: ConversationOptions.Protocol,
+        monkeyPool: MonkeyPool
     ) {
         repeat(count.toInt()) { groupIndex ->
-            val creator = MonkeyPool.randomMonkeys(UserCount.single())[0]
+            val creator = monkeyPool.randomMonkeys(UserCount.single())[0]
             val name = "Prefixed $prefix by monkey ${creator.user.email} - $protocol - $groupIndex"
-            val conversation = creator.makeReadyThen(coreLogic) {
-                val participants = creator.randomPeers(userCount)
+            val conversation = creator.makeReadyThen(coreLogic, monkeyPool) {
+                val participants = creator.randomPeers(userCount, monkeyPool)
                 createConversation(name, participants, protocol, false)
             }
             this.addToPool(conversation)

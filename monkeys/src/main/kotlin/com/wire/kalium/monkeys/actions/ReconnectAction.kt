@@ -24,11 +24,11 @@ import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.delay
 
 class ReconnectAction(val config: ActionType.Reconnect) : Action() {
-    override suspend fun execute(coreLogic: CoreLogic) {
-        val monkeys = MonkeyPool.randomLoggedInMonkeys(this.config.userCount)
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+        val monkeys = monkeyPool.randomLoggedInMonkeys(this.config.userCount)
         logger.i("Logging ${monkeys.count()} monkeys out")
-        monkeys.forEach { it.logout(MonkeyPool::loggedOut) }
+        monkeys.forEach { it.logout(monkeyPool::loggedOut) }
         delay(config.durationOffline.toLong())
-        monkeys.forEach { it.login(coreLogic, MonkeyPool::loggedOut) }
+        monkeys.forEach { it.login(coreLogic, monkeyPool::loggedOut) }
     }
 }
