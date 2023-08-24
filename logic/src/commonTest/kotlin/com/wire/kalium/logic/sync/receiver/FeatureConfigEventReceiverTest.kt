@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -50,13 +51,48 @@ import kotlin.time.toDuration
 class FeatureConfigEventReceiverTest {
 
     @Test
-    fun givenMLSUpdatedEventGrantingAccessForSelfUser_whenProcessingEvent_ThenSetMLSEnabledToTrue() = runTest {
+    fun givenMLSUpdatedEventSettingMlsAsDefaultProtocol_whenProcessingEvent_ThenSetMLSAsDefaultProtocol() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
             .withSettingMLSEnabledSuccessful()
+            .withSettingDefaultProtocolSuccessful()
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), emptySet(), Status.ENABLED))
+            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), SupportedProtocol.MLS, emptySet(), Status.ENABLED))
+        )
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setDefaultProtocol)
+            .with(eq(SupportedProtocol.MLS))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenMLSUpdatedEventSettingMlsAsDefaultProtocolButStatusIsDisabled_whenProcessingEvent_ThenSetProteusAsDefaultProtocol() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSettingMLSEnabledSuccessful()
+            .withSettingDefaultProtocolSuccessful()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), SupportedProtocol.MLS, emptySet(), Status.DISABLED))
+        )
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setDefaultProtocol)
+            .with(eq(SupportedProtocol.PROTEUS))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenMLSUpdatedEventGrantingAccessForSelfUser_whenProcessingEvent_ThenSetMLSEnabledToTrue() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSettingMLSEnabledSuccessful()
+            .withSettingDefaultProtocolSuccessful()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), SupportedProtocol.MLS, emptySet(), Status.ENABLED))
         )
 
         verify(arrangement.userConfigRepository)
@@ -69,9 +105,10 @@ class FeatureConfigEventReceiverTest {
     fun givenMLSUpdatedEventRemovingAccessForSelfUser_whenProcessingEvent_ThenSetMLSEnabledToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
             .withSettingMLSEnabledSuccessful()
+            .withSettingDefaultProtocolSuccessful()
             .arrange()
 
-        featureConfigEventReceiver.onEvent(arrangement.newMLSUpdatedEvent(MLSModel(emptyList(), emptySet(), Status.ENABLED)))
+        featureConfigEventReceiver.onEvent(arrangement.newMLSUpdatedEvent(MLSModel(emptyList(), SupportedProtocol.MLS, emptySet(), Status.ENABLED)))
 
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setMLSEnabled)
@@ -84,10 +121,11 @@ class FeatureConfigEventReceiverTest {
     fun givenMLSUpdatedEventGrantingAccessForSelfUserButStatusIsDisabled_whenProcessingEvent_ThenSetMLSEnabledToFalse() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
             .withSettingMLSEnabledSuccessful()
+            .withSettingDefaultProtocolSuccessful()
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), emptySet(), Status.DISABLED))
+            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), SupportedProtocol.PROTEUS, emptySet(), Status.DISABLED))
         )
 
         verify(arrangement.userConfigRepository)
@@ -329,6 +367,13 @@ class FeatureConfigEventReceiverTest {
                 kaliumConfigs,
                 TestUser.SELF.id
             )
+        }
+
+        fun withSettingDefaultProtocolSuccessful() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setDefaultProtocol)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withSettingMLSEnabledSuccessful() = apply {

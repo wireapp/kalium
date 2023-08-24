@@ -19,6 +19,9 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
@@ -53,6 +56,8 @@ interface UserConfigRepository {
     fun observeE2EISettings(): Flow<Either<StorageFailure, E2EISettings>>
     fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit>
     fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit>
+    fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit>
+    fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
@@ -181,6 +186,12 @@ class UserConfigDataSource(
         }
 
     private fun getE2EINotificationTimeOrNull() = wrapStorageRequest { userConfigStorage.getE2EINotificationTime() }.getOrNull()
+
+    override fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.persistDefaultProtocol(protocol.toDao()) }
+
+    override fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
+        wrapStorageRequest { userConfigStorage.defaultProtocol().toModel() }
 
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
