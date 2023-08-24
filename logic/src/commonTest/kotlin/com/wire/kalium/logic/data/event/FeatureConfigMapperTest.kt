@@ -158,7 +158,7 @@ class FeatureConfigMapperTest {
             FeatureConfigData.MLS(
                 MLSConfigDTO(
                     listOf("someId"),
-                    ConvProtocol.MLS,
+                    SupportedProtocolDTO.MLS,
                     listOf(SupportedProtocolDTO.MLS),
                     emptyList(),
                     1

@@ -30,6 +30,7 @@ import io.mockative.any
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
+import kotlinx.coroutines.flow.flowOf
 
 internal interface ConversationRepositoryArrangement {
     val conversationRepository: ConversationRepository
@@ -55,6 +56,7 @@ internal interface ConversationRepositoryArrangement {
     fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
     fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
     fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
+    fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -158,5 +160,12 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .suspendFunction(conversationRepository::fetchMlsOneToOneConversation)
             .whenInvokedWith(any())
             .thenReturn(result)
+    }
+
+    override fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(result))
     }
 }
