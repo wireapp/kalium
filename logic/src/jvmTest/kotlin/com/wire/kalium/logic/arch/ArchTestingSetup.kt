@@ -17,9 +17,15 @@
  */
 package com.wire.kalium.logic.arch
 
+import com.tngtech.archunit.base.DescribedPredicate
+import com.tngtech.archunit.core.domain.JavaClass
 import com.tngtech.archunit.core.domain.JavaClasses
 import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.core.importer.ImportOption
+import com.tngtech.archunit.lang.ArchCondition
+import com.tngtech.archunit.lang.ConditionEvents
+import com.tngtech.archunit.lang.SimpleConditionEvent
+import kotlin.reflect.KVisibility
 
 internal object ArchTestingSetup {
 
@@ -29,3 +35,32 @@ internal object ArchTestingSetup {
 
 }
 
+
+fun isKotlinInternal() = object : DescribedPredicate<JavaClass>("Kotlin internal class") {
+    override fun apply(input: JavaClass) = input.reflect().isKotlinInternal()
+
+    private fun Class<*>.isKotlinInternal() = isKotlinClass() && isInternal()
+
+}
+
+fun Class<*>.isInternal() = this.kotlin.visibility == KVisibility.INTERNAL
+
+private fun Class<*>.isKotlinClass() = this.declaredAnnotations.any {
+    it.annotationClass.qualifiedName == "kotlin.Metadata"
+}
+
+internal fun HaveInternalVisibilityOnly() = object : ArchCondition<JavaClass>("Be Kotlin internal class") {
+
+    override fun check(item: JavaClass?, events: ConditionEvents?) {
+        val onlyInternalModifier = isKotlinInternal().apply(item)
+        if (!onlyInternalModifier) {
+            events!!.add(
+                SimpleConditionEvent(
+                    item,
+                    false,
+                    "class: ${item!!.name} should only be possible to instantiate internally"
+                )
+            )
+        }
+    }
+}

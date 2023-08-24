@@ -21,19 +21,19 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import org.junit.Test
 
 
-class UseCaseVisibilityRulesTest {
+class NetworkVisibilityRulesTest {
 
     /**
      * Use cases implementation should be internal classes.
      */
     @Test
-    fun useCaseImplementationsShouldBeInternal() {
+    fun networkModuleClassesShouldBeClosedAsInternally() {
         classes()
             .that()
-            .resideInAPackage("..feature..")
-            .and()
-            .haveSimpleNameEndingWith("UseCaseImpl")
+            .resideInAPackage("..network..")
             .should(HaveInternalVisibilityOnly())
             .check(ArchTestingSetup.importedClasses)
     }
 }
+
+
