@@ -170,7 +170,7 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/encrypt
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/getIdentity/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/get-identity.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/getLocalFingerprint/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/get-local-fingerprint.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/needsMigration/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/needs-migration.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/newLastPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/new-last-pre-key.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/newLastResortPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/new-last-resort-pre-key.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/new-pre-keys.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/openOrCreate/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/open-or-create.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCoreCryptoImpl/openOrError/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-core-crypto-impl/open-or-error.html
@@ -190,7 +190,7 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/encryptW
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/getIdentity/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/get-identity.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/getLocalFingerprint/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/get-local-fingerprint.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/needsMigration/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/needs-migration.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/newLastPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/new-last-pre-key.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/newLastResortPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/new-last-resort-pre-key.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/new-pre-keys.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/openOrCreate/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/open-or-create.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientCryptoBoxImpl/openOrError/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/[jvm]-proteus-client-crypto-box-impl/open-or-error.html
@@ -206,7 +206,7 @@ $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/encryptWithPreKey
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/getIdentity/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]get-identity.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/getLocalFingerprint/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]get-local-fingerprint.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/needsMigration/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]needs-migration.html
-$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newLastPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-last-pre-key.html
+$dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newLastResortPreKey/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-last-resort-pre-key.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/newPreKeys/#kotlin.Int#kotlin.Int/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]new-pre-keys.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/openOrCreate/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open-or-create.html
 $dokka.location:com.wire.kalium.cryptography/ProteusClientImpl/openOrError/#/PointingToDeclaration/cryptography/com.wire.kalium.cryptography/-proteus-client-impl/[jvm]open-or-error.html
@@ -379,6 +379,7 @@ com.wire.kalium.logic.feature.message.composite
 com.wire.kalium.logic.feature.message.ephemeral
 com.wire.kalium.logic.feature.migration
 com.wire.kalium.logic.feature.notificationToken
+com.wire.kalium.logic.feature.proteus
 com.wire.kalium.logic.feature.publicuser
 com.wire.kalium.logic.feature.publicuser.search
 com.wire.kalium.logic.feature.register
