@@ -21,12 +21,15 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.member.ConversationsWithMembers
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.feature.conversation.GetOrCreateOneToOneConversationUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
+import kotlinx.coroutines.flow.flowOf
 
 internal interface ConversationRepositoryArrangement {
     val conversationRepository: ConversationRepository
@@ -39,6 +42,8 @@ internal interface ConversationRepositoryArrangement {
     fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
 
     fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
+
+    fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -69,5 +74,12 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .suspendFunction(conversationRepository::fetchMlsOneToOneConversation)
             .whenInvokedWith(any())
             .thenReturn(result)
+    }
+
+    override fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(result))
     }
 }

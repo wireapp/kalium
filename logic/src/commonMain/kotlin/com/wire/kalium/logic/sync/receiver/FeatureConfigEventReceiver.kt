@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer.Companion.SELF_DELETION_LOG_TAG
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
@@ -95,6 +96,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 val mlsEnabled = event.model.status == Status.ENABLED
                 val selfUserIsWhitelisted = event.model.allowedUsers.contains(selfUserId.toPlainID())
                 userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
+                userConfigRepository.setDefaultProtocol(if (mlsEnabled) event.model.defaultProtocol else SupportedProtocol.PROTEUS)
 
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
