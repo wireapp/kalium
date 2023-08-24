@@ -98,9 +98,8 @@ sealed interface CoreFailure {
      * The client should identify this scenario through other means and logout.
      */
     data object SyncEventOrClientNotFound : FeatureFailure()
-
-    data object FeatureNotImplemented : FeatureFailure()
     
+    data object FeatureNotImplemented : FeatureFailure()
     /**
      * No common Protocol found in order to establish a conversation between parties.
      * Could be, for example, that the desired user only supports Proteus, but we only support MLS.

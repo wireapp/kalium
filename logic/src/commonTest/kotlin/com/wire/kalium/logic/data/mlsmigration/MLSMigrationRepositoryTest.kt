@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.mlsmigration
 
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.util.shouldSucceed
@@ -163,7 +164,7 @@ class MLSMigrationRepositoryTest {
                 FeatureConfigData.MLS(
                     MLSConfigDTO(
                         emptyList(),
-                        ConvProtocol.MLS,
+                        SupportedProtocolDTO.MLS,
                         listOf(SupportedProtocolDTO.MLS),
                         emptyList(),
                         1
