@@ -1,4 +1,4 @@
-name: "Android Tests"
+name: "Android Instrumented Tests"
 
 on:
     merge_group:
