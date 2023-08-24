@@ -103,6 +103,7 @@ object FeatureConfigJson {
             |    "config": {
             |       "protocolToggleUsers": ["60368759-d23f-4502-ba6f-68b10e926f7a"],
             |       "defaultProtocol": "proteus",
+            |       "supportedProtocols": ["proteus", "mls"],
             |       "allowedCipherSuites": [1],
             |       "defaultCipherSuite": 1
             |    }
@@ -128,7 +129,7 @@ object FeatureConfigJson {
             SSO(FeatureFlagStatusDTO.ENABLED),
             ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             MLS(
-                MLSConfigDTO(emptyList(), ConvProtocol.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
+                MLSConfigDTO(emptyList(), SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED),
