@@ -80,6 +80,7 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             MLSModel(
                 emptyList(),
+                SupportedProtocol.PROTEUS,
                 setOf(SupportedProtocol.PROTEUS),
                 Status.ENABLED
             ),
@@ -162,7 +163,7 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.MLS(
                 MLSConfigDTO(
                     emptyList(),
-                    ConvProtocol.MLS,
+                    SupportedProtocolDTO.PROTEUS,
                     listOf(SupportedProtocolDTO.PROTEUS),
                     emptyList(),
                     1

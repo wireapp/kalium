@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
@@ -139,6 +140,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
         val mlsEnabled = featureConfig.status == Status.ENABLED
         val selfUserIsWhitelisted = featureConfig.allowedUsers.contains(selfUserId.toPlainID())
         userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
+        userConfigRepository.setDefaultProtocol(if (mlsEnabled) featureConfig.defaultProtocol else SupportedProtocol.PROTEUS)
     }
 
     private suspend fun handleSelfDeletingMessagesStatus(model: SelfDeletingMessagesModel) {

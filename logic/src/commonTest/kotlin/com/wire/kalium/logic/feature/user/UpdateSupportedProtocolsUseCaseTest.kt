@@ -297,6 +297,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 .thenReturn(Either.Right(FeatureConfigTest.newModel(
                     mlsModel = MLSModel(
                         allowedUsers = emptyList(),
+                        defaultProtocol = SupportedProtocol.PROTEUS,
                         supportedProtocols = supportedProtocols,
                         status = Status.ENABLED
                     ),
