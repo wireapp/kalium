@@ -30,10 +30,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.first
 
-interface GetOrCreateOneToOneConversationUseCase {
-    suspend operator fun invoke(otherUserId: UserId): CreateConversationResult
-}
-
 /**
  * Operation that creates one-to-one Conversation with specific [UserId] (only if it is absent in local DB)
  * and returns [Conversation] data.
@@ -42,6 +38,10 @@ interface GetOrCreateOneToOneConversationUseCase {
  * @return Result with [Conversation] in case of success, or [CoreFailure] if something went wrong:
  * can't get data from local DB, or can't create a conversation.
  */
+interface GetOrCreateOneToOneConversationUseCase {
+    suspend operator fun invoke(otherUserId: UserId): CreateConversationResult
+}
+
 internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
