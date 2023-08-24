@@ -24,7 +24,7 @@ import org.junit.Test
 class NetworkVisibilityRulesTest {
 
     /**
-     * Use cases implementation should be internal classes.
+     * network classes should be internal.
      */
     @Test
     fun networkModuleClassesShouldBeClosedAsInternally() {
