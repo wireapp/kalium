@@ -29,10 +29,9 @@ import kotlin.reflect.KVisibility
 
 internal object ArchTestingSetup {
 
-    var importedClasses: JavaClasses = ClassFileImporter()
+    var logicImportedClasses: JavaClasses = ClassFileImporter()
         .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
         .importPackages("com.wire.kalium.logic")
-
 }
 
 

@@ -35,7 +35,7 @@ class LayerRulesTest {
             .should()
             .accessClassesThat()
             .resideInAnyPackage("..feature..")
-            .check(ArchTestingSetup.importedClasses)
+            .check(ArchTestingSetup.logicImportedClasses)
     }
 
     /**
@@ -50,7 +50,7 @@ class LayerRulesTest {
             .should()
             .accessClassesThat()
             .resideInAnyPackage("..network..", "..crypto..") // just an example, we can adjust.
-            .check(ArchTestingSetup.importedClasses)
+            .check(ArchTestingSetup.logicImportedClasses)
     }
 
 }

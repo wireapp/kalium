@@ -34,6 +34,6 @@ class UseCaseVisibilityRulesTest {
             .and()
             .haveSimpleNameEndingWith("UseCaseImpl")
             .should(HaveInternalVisibilityOnly())
-            .check(ArchTestingSetup.importedClasses)
+            .check(ArchTestingSetup.logicImportedClasses)
     }
 }
