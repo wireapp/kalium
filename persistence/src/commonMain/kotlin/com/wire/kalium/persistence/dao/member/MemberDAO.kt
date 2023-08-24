@@ -156,11 +156,7 @@ internal class MemberDAOImpl internal constructor(
         conversationID: QualifiedIDEntity
     ) = withContext(coroutineContext) {
         memberQueries.transaction {
-            userQueries.updateUserConnectionStatus(status, member.user)
-            val userRecordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-            if (userRecordDidNotExist) {
-                userQueries.insertOrIgnoreUserIdWithConnectionStatus(member.user, status)
-            }
+            userQueries.upsertUserConnectionStatus(member.user, status)
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
             val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
             if (conversationRecordExist) {
