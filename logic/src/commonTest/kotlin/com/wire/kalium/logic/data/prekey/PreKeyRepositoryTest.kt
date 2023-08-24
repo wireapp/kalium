@@ -42,6 +42,7 @@ import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -360,6 +361,9 @@ class PreKeyRepositoryTest {
         val prekeyDAO: PrekeyDAO = mock(PrekeyDAO::class)
 
         @Mock
+        val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
+
+        @Mock
         val clientDAO: ClientDAO = mock(ClientDAO::class)
 
         private val preKeyRepository: PreKeyDataSource =
@@ -368,7 +372,8 @@ class PreKeyRepositoryTest {
                 proteusClientProvider = proteusClientProvider,
                 provideCurrentClientId = currentClientIdProvider,
                 prekeyDAO = prekeyDAO,
-                clientDAO = clientDAO
+                clientDAO = clientDAO,
+                metadataDAO = metadataDAO,
             )
 
         init {

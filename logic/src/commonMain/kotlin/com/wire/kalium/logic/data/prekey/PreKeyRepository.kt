@@ -39,8 +39,12 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 interface PreKeyRepository {
     /**
@@ -66,6 +70,22 @@ interface PreKeyRepository {
      * @see generateNewLastResortKey
      */
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
+
+    /**
+     * Observes the last pre-key check instant.
+     *
+     * @return A [Flow] of [Instant] objects representing the last pre-key upload instant.
+     * It emits `null` if no pre-key upload has occurred.
+     */
+    suspend fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?>
+
+    /**
+     * Sets the last prekey refill check date.
+     *
+     * @param instant The instant representing the date and time of the last prekey upload.
+     * @return Either a [StorageFailure] if the operation fails, or [Unit] if successful.
+     */
+    suspend fun setLastPreKeyRefillCheckInstant(instant: Instant): Either<StorageFailure, Unit>
 
     /**
      * Also known as "last prekey", it's the prekey that the backend will
@@ -107,6 +127,7 @@ class PreKeyDataSource(
     private val provideCurrentClientId: CurrentClientIdProvider,
     private val prekeyDAO: PrekeyDAO,
     private val clientDAO: ClientDAO,
+    private val metadataDAO: MetadataDAO,
     private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper(),
     private val preKeyMapper: PreKeyMapper = MapperProvider.preyKeyMapper()
 ) : PreKeyRepository, CryptoSessionMapper by CryptoSessionMapperImpl(MapperProvider.preyKeyMapper()) {
@@ -156,6 +177,16 @@ class PreKeyDataSource(
         prekeyDAO.forceInsertMostRecentPreKeyId(newId)
     }
 
+    override suspend fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?> =
+        metadataDAO.valueByKeyFlow(PREKEY_REFILL_INSTANT_KEY).map { instant ->
+            instant?.let { Instant.parse(it) }
+        }
+
+    override suspend fun setLastPreKeyRefillCheckInstant(instant: Instant): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            metadataDAO.insertValue(instant.toString(), PREKEY_REFILL_INSTANT_KEY)
+        }
+
     override suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
     ): Either<CoreFailure, UsersWithoutSessions> {
@@ -167,7 +198,11 @@ class PreKeyDataSource(
             .flatMap { listUserPrekeysResponse ->
                 establishProteusSessions(listUserPrekeysResponse.qualifiedUserClientPrekeys)
                     .flatMap {
-                        Either.Right(preKeyListMapper.fromListPrekeyResponseToUsersWithoutSessions(listUserPrekeysResponse))
+                        Either.Right(
+                            preKeyListMapper.fromListPrekeyResponseToUsersWithoutSessions(
+                                listUserPrekeysResponse
+                            )
+                        )
                     }
             }
     }
@@ -192,4 +227,8 @@ class PreKeyDataSource(
                     }
                 }
             }
+
+    private companion object {
+        const val PREKEY_REFILL_INSTANT_KEY = "last_prekey_refill_instant"
+    }
 }
