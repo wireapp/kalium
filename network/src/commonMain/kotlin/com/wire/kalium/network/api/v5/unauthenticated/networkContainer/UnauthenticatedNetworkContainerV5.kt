@@ -43,7 +43,7 @@ class UnauthenticatedNetworkContainerV5 internal constructor(
     networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
-    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links.apiProxy, proxyCredentials),
+    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links.apiProxy, proxyCredentials)
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         networkStateObserver,

@@ -22,5 +22,5 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v4.authenticated.PropertiesApiV4
 
 internal open class PropertiesApiV5 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : PropertiesApiV4(authenticatedNetworkClient)
