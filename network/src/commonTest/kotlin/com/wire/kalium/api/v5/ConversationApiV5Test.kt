@@ -25,7 +25,7 @@ import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
+import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -38,7 +38,7 @@ internal class ConversationApiV5Test : ApiTest() {
     @Test
     fun givenRequest_whenFetchingSubconversationDetails_thenRequestIsConfiguredCorrectly() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v4.rawJson,
+            SubconversationDetailsResponseJson.v5.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
@@ -48,7 +48,7 @@ internal class ConversationApiV5Test : ApiTest() {
             }
         )
 
-        val conversationApi = ConversationApiV4(networkClient)
+        val conversationApi = ConversationApiV5(networkClient)
         conversationApi.fetchSubconversationDetails(
             ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             "sub"
@@ -59,11 +59,11 @@ internal class ConversationApiV5Test : ApiTest() {
     fun givenSuccessSubconversationDetails_whenFetchingSubconversationDetails_thenResponseIsParsedCorrectly() =
         runTest {
             val networkClient = mockAuthenticatedNetworkClient(
-                SubconversationDetailsResponseJson.v4.rawJson,
+                SubconversationDetailsResponseJson.v5.rawJson,
                 statusCode = HttpStatusCode.OK
             )
 
-            val conversationApi = ConversationApiV4(networkClient)
+            val conversationApi = ConversationApiV5(networkClient)
             conversationApi.fetchSubconversationDetails(
                 ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
                 "sub"
@@ -85,7 +85,7 @@ internal class ConversationApiV5Test : ApiTest() {
             }
         )
 
-        val conversationApi = ConversationApiV4(networkClient)
+        val conversationApi = ConversationApiV5(networkClient)
         conversationApi.fetchSubconversationGroupInfo(
             ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             "sub"
@@ -109,7 +109,7 @@ internal class ConversationApiV5Test : ApiTest() {
         )
 
         val deleteRequest = SubconversationDeleteRequest(43UL, "groupid")
-        val conversationApi = ConversationApiV4(networkClient)
+        val conversationApi = ConversationApiV5(networkClient)
         conversationApi.deleteSubconversation(
             ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             "sub",
@@ -130,16 +130,10 @@ internal class ConversationApiV5Test : ApiTest() {
             }
         )
 
-        val conversationApi = ConversationApiV4(networkClient)
+        val conversationApi = ConversationApiV5(networkClient)
         conversationApi.leaveSubconversation(
             ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             "sub",
         )
-    }
-
-    private companion object {
-        const val PATH_CONVERSATIONS = "/conversations"
-        const val PATH_MEMBERS = "members"
-        val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
     }
 }
