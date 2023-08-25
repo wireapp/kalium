@@ -74,8 +74,8 @@ import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Instant
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.minutes
 
@@ -96,6 +96,7 @@ internal interface UserRepository {
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
+    suspend fun getUsersWithOneOnOneConversation(): List<OtherUser>
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
@@ -129,6 +130,8 @@ internal interface UserRepository {
     suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID): Either<CoreFailure, Unit>
 
     suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit>
+
+    suspend fun updateOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -186,6 +189,13 @@ internal class UserDataSource internal constructor(
             }.onEach { otherUser ->
                 processFederatedUserRefresh(userId, otherUser)
             }
+
+    override suspend fun getUsersWithOneOnOneConversation(): List<OtherUser> {
+        return userDAO.getUsersWithOneOnOneConversation()
+            .map {
+                publicUserMapper.fromUserEntityToOtherUser(it)
+            }
+    }
 
     /**
      * Only in case of federated users and if it's expired or not cached, we fetch and refresh the user info.
@@ -400,6 +410,9 @@ internal class UserDataSource internal constructor(
                 }
             }
     }
+
+    override suspend fun updateOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { userDAO.updateOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
 
     override fun observeAllKnownUsersNotInConversation(
         conversationId: ConversationId

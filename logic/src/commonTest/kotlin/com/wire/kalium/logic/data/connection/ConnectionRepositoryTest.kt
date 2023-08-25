@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
@@ -67,8 +66,6 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import com.wire.kalium.network.api.base.model.UserId as NetworkUserId
 
 class ConnectionRepositoryTest {
@@ -327,44 +324,6 @@ class ConnectionRepositoryTest {
             .wasInvoked(once)
     }
 
-    @Test
-    fun givenUserIdAndConversationId_whenUpdatingConversation_thenShouldCallDAOWithCorrectArguments() = runTest {
-        val userId = TestUser.USER_ID
-        val conversationId = TestConversation.CONVERSATION.id
-
-        val (arrangement, connectionRepository) = Arrangement()
-            .withSuccessfulConversationUpdate()
-            .arrange()
-
-        connectionRepository.updateConversationForConnection(
-            userId,
-            conversationId
-        ).shouldSucceed()
-
-        verify(arrangement.connectionDAO)
-            .suspendFunction(arrangement.connectionDAO::updateConnectionConversation)
-            .with(eq(conversationId.toDao()), eq(userId.toDao()))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenDAOFails_whenUpdatingConversation_thenShouldPropagateException() = runTest {
-        val exception = IllegalStateException("Oopsie Doopsie!")
-        val (_, connectionRepository) = Arrangement()
-            .withFailingConversationUpdate(exception)
-            .arrange()
-        val userId = TestUser.USER_ID
-        val conversationId = TestConversation.CONVERSATION.id
-
-        connectionRepository.updateConversationForConnection(
-            userId,
-            conversationId
-        ).shouldFail {
-            assertIs<StorageFailure.Generic>(it)
-            assertEquals(exception, it.rootCause)
-        }
-    }
-
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -457,7 +416,8 @@ class ConnectionRepositoryTest {
             hasIncompleteMetadata = false,
             expiresAt = null,
             defederated = false,
-            supportedProtocols = null
+            supportedProtocols = null,
+            oneOnOneConversationId = null
         )
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
@@ -590,20 +550,6 @@ class ConnectionRepositoryTest {
                 .then { flowOf(stubUserEntity) }
 
             return this
-        }
-
-        fun withSuccessfulConversationUpdate() = apply {
-            given(connectionDAO)
-                .suspendFunction(connectionDAO::updateConnectionConversation)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
-        }
-
-        fun withFailingConversationUpdate(throwable: Throwable) = apply {
-            given(connectionDAO)
-                .suspendFunction(connectionDAO::updateConnectionConversation)
-                .whenInvokedWith(any())
-                .thenThrow(throwable)
         }
 
         fun arrange() = this to connectionRepository

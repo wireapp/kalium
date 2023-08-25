@@ -194,7 +194,8 @@ class UserDatabaseDataGenerator(
             hasIncompleteMetadata = false,
             expiresAt = null,
             defederated = false,
-            supportedProtocols = null
+            supportedProtocols = null,
+            oneOnOneConversationId = null
         )
     }
 

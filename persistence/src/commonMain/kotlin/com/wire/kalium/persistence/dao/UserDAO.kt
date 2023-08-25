@@ -76,7 +76,8 @@ data class UserEntity(
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
     val defederated: Boolean,
-    val supportedProtocols: Set<SupportedProtocolEntity>?
+    val supportedProtocols: Set<SupportedProtocolEntity>?,
+    val oneOnOneConversationId: QualifiedIDEntity?
 )
 
 data class UserEntityMinimized(
@@ -202,6 +203,8 @@ interface UserDAO {
         connectionStates: List<ConnectionEntity.State>
     ): Flow<List<UserEntity>>
 
+    suspend fun getUsersWithOneOnOneConversation(): List<UserEntity>
+
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
@@ -229,4 +232,6 @@ interface UserDAO {
     suspend fun allOtherUsersId(): List<UserIDEntity>
 
     suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>)
+
+    suspend fun updateOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
 }
