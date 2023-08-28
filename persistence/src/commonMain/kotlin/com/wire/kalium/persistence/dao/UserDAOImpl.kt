@@ -239,7 +239,7 @@ class UserDAOImpl internal constructor(
                         expires_at = user.expiresAt,
                         connection_status = user.connectionStatus,
                         deleted = user.deleted,
-                        supported_protocols =  user.supportedProtocols
+                        supported_protocols = user.supportedProtocols
                     )
                 }
             }
