@@ -52,6 +52,7 @@ mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
 mockk = "1.13.5"
 faker = "1.14.0"
+robolectric = "4.9"
 
 [plugins]
 # Home-made convention plugins
@@ -104,6 +105,8 @@ androidtest-rules = { module = "androidx.test:rules", version.ref = "android-tes
 androidtest-core = { module = "androidx.test:core", version.ref = "android-test-core" }
 androidtest-arch = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch" }
 androidtest-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-test-orchestrator" }
+core-ktx = { module = "androidx.test:core-ktx", version.ref = "android-test-runner" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 # coroutines
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
