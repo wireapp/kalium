@@ -154,7 +154,6 @@ sealed class NetworkFailure : CoreFailure {
 
     }
 
-
     /**
      * Failure due to a feature not supported by the current client/backend.
      */
