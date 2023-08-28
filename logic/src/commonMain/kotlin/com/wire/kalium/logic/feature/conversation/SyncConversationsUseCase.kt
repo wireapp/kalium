@@ -36,7 +36,7 @@ internal interface SyncConversationsUseCase {
 internal class SyncConversationsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val systemMessageInserter: SystemMessageInserter
-) : SyncConversationsUseCase  {
+) : SyncConversationsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         conversationRepository.getConversationIds(Conversation.Type.GROUP, Conversation.Protocol.PROTEUS)
             .flatMap { proteusConversationIds ->
