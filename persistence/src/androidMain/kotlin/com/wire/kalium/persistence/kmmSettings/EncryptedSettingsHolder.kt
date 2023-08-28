@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.kmmSettings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
@@ -30,7 +31,10 @@ private fun SettingOptions.keyAlias(): String = when (this) {
 }
 
 internal actual object EncryptedSettingsBuilder {
-    private fun getOrCreateMasterKey(context: Context, keyAlias: String = MasterKey.DEFAULT_MASTER_KEY_ALIAS): MasterKey =
+    private fun getOrCreateMasterKey(
+        context: Context,
+        keyAlias: String
+    ): MasterKey =
         MasterKey
             .Builder(context, keyAlias)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -41,19 +45,34 @@ internal actual object EncryptedSettingsBuilder {
         options: SettingOptions,
         param: EncryptedSettingsPlatformParam
     ): Settings = synchronized(this) {
-        SharedPreferencesSettings(
-            if (options.shouldEncryptData) {
-                EncryptedSharedPreferences.create(
-                    param.appContext,
-                    options.fileName,
-                    getOrCreateMasterKey(param.appContext, options.keyAlias()),
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-                )
-            } else {
-                param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
-            }, false
-        )
+        val settings = if (true) {
+            encryptedSharedPref(options, param, false)
+        } else {
+            param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
+        }
+        SharedPreferencesSettings(settings, false)
+    }
+
+    private fun encryptedSharedPref(
+        options: SettingOptions,
+        param: EncryptedSettingsPlatformParam,
+        isRetry: Boolean
+    ): SharedPreferences {
+        return try {
+            val masterKey = getOrCreateMasterKey(param.appContext, options.keyAlias())
+            EncryptedSharedPreferences.create(
+                param.appContext,
+                options.fileName,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            if (isRetry) {
+                throw e
+            }
+            encryptedSharedPref(options, param, true)
+        }
     }
 }
 

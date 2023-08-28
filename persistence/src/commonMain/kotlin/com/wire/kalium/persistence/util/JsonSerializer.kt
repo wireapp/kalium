@@ -18,10 +18,12 @@
 
 package com.wire.kalium.persistence.util
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 
 internal object JsonSerializer {
 
+    @OptIn(ExperimentalSerializationApi::class)
     private val instance: Json by lazy {
         Json {
             encodeDefaults = true

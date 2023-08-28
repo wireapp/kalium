@@ -23,6 +23,7 @@ import com.russhwolf.settings.set
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -32,6 +33,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import java.lang.Thread.sleep
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
@@ -48,27 +50,25 @@ class EncryptedSettingsBuilderTest {
         Dispatchers.setMain(coroutineDispatcher)
     }
 
-    @Ignore
+//    @Ignore
     @Test
-    fun givenShouldEncryptDataIsTrue_whenEncryptingData_thenShouldEncryptWithoutFailing() = runTest {
+    fun givenShouldEncryptDataIsTrue_whenEncryptingData_thenShouldEncryptWithoutFailing() = runTest(coroutineDispatcher) {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        (1..500).map {
-            testScope.launch {
+        (1..10000 ).map {
+            launch() {
                 EncryptedSettingsBuilder.build(
                     options = SettingOptions.UserSettings(
                         shouldEncryptData = true,
                         userIDEntity = UserIDEntity(
-                            value = "userValue",
+                            value = "userValue$it",
                             domain = "domainValue"
                         )
                     ),
                     param = EncryptedSettingsPlatformParam(context)
-                ).also {
-                    it["key$it"] = "value$it"
-                }
+                )
             }
         }.joinAll()
-        testScope.advanceUntilIdle()
+        advanceUntilIdle()
     }
 
     @AfterTest
