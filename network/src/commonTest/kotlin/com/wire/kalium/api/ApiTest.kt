@@ -113,6 +113,7 @@ internal abstract class ApiTest {
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
             networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap()
         ).networkClient
     }
 
@@ -125,7 +126,8 @@ internal abstract class ApiTest {
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
-            networkStateObserver = networkStateObserver
+            networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap()
         ).websocketClient
     }
 
@@ -178,7 +180,8 @@ internal abstract class ApiTest {
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
             proxyCredentials = null,
-            networkStateObserver = networkStateObserver
+            networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap()
         ).unauthenticatedNetworkClient
     }
 
@@ -216,7 +219,8 @@ internal abstract class ApiTest {
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
             proxyCredentials = null,
-            networkStateObserver = networkStateObserver
+            networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap()
         ).unauthenticatedNetworkClient
     }
 
@@ -244,7 +248,8 @@ internal abstract class ApiTest {
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
-            networkStateObserver = networkStateObserver
+            networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap()
         ).networkClient
     }
 

@@ -46,7 +46,7 @@ import com.wire.kalium.network.api.v0.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
-import com.wire.kalium.network.defaultHttpEngine
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
@@ -109,7 +109,8 @@ interface AuthenticatedNetworkContainer {
             networkStateObserver: NetworkStateObserver,
             sessionManager: SessionManager,
             selfUserId: UserId,
-            userAgent: String
+            userAgent: String,
+            certificatePinning: CertificatePinning
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -118,29 +119,34 @@ interface AuthenticatedNetworkContainer {
                 0 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
+                    certificatePinning
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
+                    certificatePinning
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    certificatePinning
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    certificatePinning
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    certificatePinning
                 )
 
                 else -> error("Unsupported version: $version")
@@ -161,7 +167,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val networkStateObserver: NetworkStateObserver,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
-    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
+    private val engine: HttpClientEngine
 ) : AuthenticatedHttpClientProvider {
 
     override suspend fun clearCachedToken() {
@@ -206,6 +212,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider,
-            installCompression = false)
+            installCompression = false
+        )
     }
 }
