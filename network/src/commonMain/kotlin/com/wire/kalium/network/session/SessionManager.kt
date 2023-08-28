@@ -81,3 +81,8 @@ private fun HttpClient.addWWWAuthenticateHeaderIfNeeded() {
         }
     }
 }
+
+typealias CertificateKey = String
+typealias CertificateUrls = List<String>
+
+typealias CertificatePinning = Map<CertificateKey, CertificateUrls>
