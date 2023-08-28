@@ -246,7 +246,7 @@ interface ConversationRepository {
     suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
 
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
-
+    
     /**
      * Update a conversation's protocol.
      *
