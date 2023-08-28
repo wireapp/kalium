@@ -17,18 +17,17 @@
  */
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.ClientId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
-import com.wire.crypto.client.CoreCryptoCentral.Companion.lower
+import com.wire.crypto.client.Ciphersuites
 import com.wire.crypto.coreCryptoDeferredInit
 import java.io.File
 
 actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, listOf(CoreCryptoCentralImpl.defaultCiphersuite))
+    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, Ciphersuites.DEFAULT.lower())
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(coreCrypto, rootDir)
 }
@@ -63,7 +62,7 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
 
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
-        cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()), listOf(defaultCiphersuite))
+        cc.mlsInit(clientId.toString().encodeToByteArray(), Ciphersuites.DEFAULT.lower())
         return MLSClientImpl(cc)
     }
 
@@ -73,6 +72,5 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
 
     companion object {
         const val KEYSTORE_NAME = "keystore"
-        val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     }
 }
