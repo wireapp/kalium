@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
-actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = true) {
+actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean) {
 
     private val encryptedSettingsHolder: KaliumPreferences = KaliumPreferencesSettings(
         EncryptedSettingsBuilder.build(SettingOptions.AppSettings(shouldEncryptData), EncryptedSettingsPlatformParam(context))

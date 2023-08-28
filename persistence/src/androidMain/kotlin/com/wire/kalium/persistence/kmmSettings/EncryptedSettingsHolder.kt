@@ -45,7 +45,7 @@ internal actual object EncryptedSettingsBuilder {
         options: SettingOptions,
         param: EncryptedSettingsPlatformParam
     ): Settings = synchronized(this) {
-        val settings = if (true) {
+        val settings = if (options.shouldEncryptData) {
             encryptedSharedPref(options, param, false)
         } else {
             param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
