@@ -236,7 +236,6 @@ interface ConversationRepository {
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
 
-
     /**
      * Update a conversation's protocol.
      *
