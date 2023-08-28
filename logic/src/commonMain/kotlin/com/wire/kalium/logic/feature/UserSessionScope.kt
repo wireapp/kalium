@@ -204,6 +204,10 @@ import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefillerImpl
+import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
+import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -448,7 +452,8 @@ class UserSessionScope internal constructor(
         networkStateObserver,
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
-        userAgent
+        userAgent,
+        certificatePinning = kaliumConfigs.certPinningConfig
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
@@ -458,7 +463,8 @@ class UserSessionScope internal constructor(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
-        networkStateObserver
+        networkStateObserver,
+        kaliumConfigs::certPinningConfig
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -1187,8 +1193,20 @@ class UserSessionScope internal constructor(
             proteusClientProvider,
             clientIdProvider,
             userStorage.database.prekeyDAO,
-            userStorage.database.clientDAO
+            userStorage.database.clientDAO,
+            userStorage.database.metadataDAO,
         )
+
+    private val proteusPreKeyRefiller: ProteusPreKeyRefiller
+        get() = ProteusPreKeyRefillerImpl(preKeyRepository)
+
+    private val proteusSyncWorker: ProteusSyncWorker by lazy {
+        ProteusSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            proteusPreKeyRefiller = proteusPreKeyRefiller,
+            preKeyRepository = preKeyRepository
+        )
+    }
 
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
@@ -1506,6 +1524,10 @@ class UserSessionScope internal constructor(
 
         launch {
             messages.ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
+        }
+
+        launch {
+            proteusSyncWorker.execute()
         }
     }
 

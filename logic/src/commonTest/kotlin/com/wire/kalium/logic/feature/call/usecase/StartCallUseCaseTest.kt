@@ -123,7 +123,7 @@ class StartCallUseCaseTest {
         @Mock
         val syncManager = mock(classOf<SyncManager>())
 
-        private val kaliumConfigs = KaliumConfigs()
+        private val kaliumConfigs =  KaliumConfigs()
 
         private val startCallUseCase = StartCallUseCase(
             lazy { callManager }, syncManager, kaliumConfigs
