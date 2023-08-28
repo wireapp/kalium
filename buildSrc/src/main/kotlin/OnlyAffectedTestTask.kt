@@ -125,7 +125,8 @@ open class OnlyAffectedTestTask : DefaultTask() {
      * @param testTarget the target test task that would be wrapped in this "smart" execution
      */
     enum class TestTaskConfiguration(val taskName: String, val testTarget: String) {
-        ANDROID_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest"),
+        ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest"),
+        ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testDebugUnitTest"),
         IOS_TEST_TASK("iOSOnlyAffectedTest", "iosX64Test")
     }
 

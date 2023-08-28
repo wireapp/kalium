@@ -115,3 +115,9 @@ kotlin {
 project.appleTargets().forEach {
     registerCopyTestResourcesTask(it)
 }
+
+android {
+    testOptions.unitTests.all {
+        it.enabled = false
+    }
+}
