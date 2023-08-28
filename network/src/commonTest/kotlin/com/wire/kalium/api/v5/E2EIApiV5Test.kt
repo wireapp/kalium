@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.api.v4
+package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.api.v4.authenticated.E2EIApiV4
+import com.wire.kalium.network.api.v5.authenticated.E2EIApiV5
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -28,7 +28,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-internal class E2EIApiV4Test : ApiTest() {
+internal class E2EIApiV5Test : ApiTest() {
 
     @Test
     fun giveAValidResponseWithNonceInHeader_whenCallingNonceApi_theResponseShouldBeConfigureCorrectly() = runTest {
@@ -42,7 +42,7 @@ internal class E2EIApiV4Test : ApiTest() {
                 assertPathEqual(NONCE_PATH)
             }
         )
-        val e2EIApi: E2EIApi = E2EIApiV4(networkClient)
+        val e2EIApi: E2EIApi = E2EIApiV5(networkClient)
 
         val response = e2EIApi.getWireNonce(VALID_CLIENT_ID)
         assertTrue(response.isSuccessful())
@@ -60,7 +60,7 @@ internal class E2EIApiV4Test : ApiTest() {
                 assertPathEqual(NONCE_PATH)
             }
         )
-        val e2EIApi: E2EIApi = E2EIApiV4(networkClient)
+        val e2EIApi: E2EIApi = E2EIApiV5(networkClient)
 
         val response = e2EIApi.getWireNonce(VALID_CLIENT_ID)
         assertFalse(response.isSuccessful())
