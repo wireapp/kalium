@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
+import com.wire.kalium.persistence.MessageFederationTerminatedContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
@@ -57,6 +58,7 @@ import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 import com.wire.kalium.persistence.content.ButtonContent
+import com.wire.kalium.persistence.adapter.StringListAdapter
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -126,6 +128,11 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         member_change_listAdapter = QualifiedIDListAdapter,
         member_change_typeAdapter = EnumColumnAdapter()
+    )
+    val messageFederationTerminatedContentAdapter = MessageFederationTerminatedContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        domain_listAdapter = StringListAdapter,
+        federation_typeAdapter = EnumColumnAdapter()
     )
     val messageMentionAdapter = MessageMention.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,

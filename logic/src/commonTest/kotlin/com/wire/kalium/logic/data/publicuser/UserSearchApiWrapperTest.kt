@@ -484,7 +484,8 @@ class UserSearchApiWrapperTest {
                 userType = UserTypeEntity.EXTERNAL,
                 botService = null,
                 deleted = false,
-                expiresAt = null
+                expiresAt = null,
+                defederated = false
             )
         }
     }

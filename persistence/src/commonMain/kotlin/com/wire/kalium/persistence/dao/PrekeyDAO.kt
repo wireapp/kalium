@@ -23,34 +23,39 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
 interface PrekeyDAO {
-    suspend fun updateOTRLastPrekeyId(newKeyId: Int)
-    suspend fun forceInsertOTRLastPrekeyId(newKeyId: Int)
-    suspend fun lastOTRPrekeyId(): Int?
+    suspend fun updateMostRecentPreKeyId(newKeyId: Int)
+    suspend fun forceInsertMostRecentPreKeyId(newKeyId: Int)
+    suspend fun mostRecentPreKeyId(): Int?
 }
 
 internal class PrekeyDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
     private val queriesContext: CoroutineContext
 ) : PrekeyDAO {
-    override suspend fun updateOTRLastPrekeyId(newKeyId: Int) = withContext(queriesContext) {
+    override suspend fun updateMostRecentPreKeyId(newKeyId: Int) = withContext(queriesContext) {
         metadataQueries.transaction {
-            val currentId = metadataQueries.selectValueByKey(OTR_LAST_PRE_KEY_ID).executeAsOneOrNull()?.toInt()
+            val currentId = metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).executeAsOneOrNull()?.toInt()
             if (currentId == null || newKeyId > currentId) {
-                metadataQueries.insertValue(OTR_LAST_PRE_KEY_ID, newKeyId.toString())
+                metadataQueries.insertValue(MOST_RECENT_PREKEY_ID, newKeyId.toString())
             }
         }
     }
 
-    override suspend fun forceInsertOTRLastPrekeyId(newKeyId: Int) = withContext(queriesContext) {
-        metadataQueries.insertValue(OTR_LAST_PRE_KEY_ID, newKeyId.toString())
+    override suspend fun forceInsertMostRecentPreKeyId(newKeyId: Int) = withContext(queriesContext) {
+        metadataQueries.insertValue(MOST_RECENT_PREKEY_ID, newKeyId.toString())
     }
 
-    override suspend fun lastOTRPrekeyId(): Int? = withContext(queriesContext) {
-        metadataQueries.selectValueByKey(OTR_LAST_PRE_KEY_ID).executeAsOneOrNull()?.toInt()
+    override suspend fun mostRecentPreKeyId(): Int? = withContext(queriesContext) {
+        metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).executeAsOneOrNull()?.toInt()
     }
 
     private companion object {
-        const val OTR_LAST_PRE_KEY_ID = "otr_last_pre_key_id"
+        /**
+         * Key used to store the most recent prekey ID in the metadata table.
+         * In order to not be confused with "last prekey", which is the "last resort" permanent prekey
+         * used when all prekeys are consumed, the variable was renamed to "most recent prekey".
+         */
+        const val MOST_RECENT_PREKEY_ID = "otr_last_pre_key_id"
     }
 
 }

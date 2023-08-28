@@ -22,9 +22,11 @@ import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -41,7 +43,6 @@ interface MemberDAO {
     suspend fun insertMembers(memberList: List<MemberEntity>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
-    suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String)
     suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>>
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role)
     suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
@@ -52,6 +53,13 @@ interface MemberDAO {
 
     suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
+
+    suspend fun getGroupConversationWithUserIdsWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Map<ConversationIDEntity, List<UserIDEntity>>
+
+    suspend fun getOneOneConversationWithFederatedMembers(domain: String): Map<ConversationIDEntity, UserIDEntity>
 }
 
 @Suppress("TooManyFunctions")
@@ -66,7 +74,15 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity) = withContext(coroutineContext) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
-            memberQueries.insertMember(member.user, conversationID, member.role)
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsList().firstOrNull() != null
+            if (conversationExist) {
+                memberQueries.insertMember(member.user, conversationID, member.role)
+            } else {
+                kaliumLogger.w(
+                    "conversation ${conversationID.toLogString()} " +
+                            "doest not exist for user ${member.user.toLogString()}"
+                )
+            }
         }
     }
 
@@ -82,9 +98,17 @@ internal class MemberDAOImpl internal constructor(
 
     private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
         memberQueries.transaction {
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsList().firstOrNull() != null
             for (member: MemberEntity in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
-                memberQueries.insertMember(member.user, conversationID, member.role)
+                if (conversationExist) {
+                    memberQueries.insertMember(member.user, conversationID, member.role)
+                } else {
+                    kaliumLogger.w(
+                        "conversation ${conversationID.toLogString()} " +
+                                "doest not exist for user ${member.user.toLogString()}"
+                    )
+                }
             }
         }
 
@@ -113,14 +137,6 @@ internal class MemberDAOImpl internal constructor(
             }
         }
 
-    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, groupId: String) {
-        withContext(coroutineContext) {
-            conversationsQueries.selectByGroupId(groupId).executeAsOneOrNull()?.let {
-                nonSuspendDeleteMembersByQualifiedID(userIDList, it.qualifiedId)
-            }
-        }
-    }
-
     override suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>> {
         return memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
@@ -140,13 +156,17 @@ internal class MemberDAOImpl internal constructor(
         conversationID: QualifiedIDEntity
     ) = withContext(coroutineContext) {
         memberQueries.transaction {
-            userQueries.updateUserConnectionStatus(status, member.user)
-            val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-            if (recordDidNotExist) {
-                userQueries.insertOrIgnoreUserIdWithConnectionStatus(member.user, status)
-            }
+            userQueries.upsertUserConnectionStatus(member.user, status)
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
-            memberQueries.insertMember(member.user, conversationID, member.role)
+            val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
+            if (conversationRecordExist) {
+                memberQueries.insertMember(member.user, conversationID, member.role)
+            } else {
+                kaliumLogger.w(
+                    "conversation ${conversationID.toLogString()} " +
+                            "doest not exist for user ${member.user.toLogString()}"
+                )
+            }
         }
     }
 
@@ -167,4 +187,26 @@ internal class MemberDAOImpl internal constructor(
                 }
             }
         }
+
+    override suspend fun getGroupConversationWithUserIdsWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Map<ConversationIDEntity, List<UserIDEntity>> = withContext(coroutineContext) {
+        memberQueries.selectFederatedMembersWithOneOfDomainsFromGroupConversation(firstDomain, secondDomain)
+            .executeAsList()
+            .groupBy { it.conversation }
+            .filter { (_, members) ->
+                members.any { it.user.domain == firstDomain } &&
+                        members.any { it.user.domain == secondDomain }
+            }
+            .mapValues { it.value.map { membersFromOneOfTwoDomains -> membersFromOneOfTwoDomains.user } }
+    }
+
+    override suspend fun getOneOneConversationWithFederatedMembers(
+        domain: String,
+    ): Map<ConversationIDEntity, UserIDEntity> = withContext(coroutineContext) {
+        memberQueries.selectFederatedMembersFromOneOnOneConversations(domain)
+            .executeAsList()
+            .associateBy({ it.conversation }, { it.user })
+    }
 }

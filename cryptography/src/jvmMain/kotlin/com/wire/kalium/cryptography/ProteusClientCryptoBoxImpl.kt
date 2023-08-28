@@ -63,7 +63,7 @@ class ProteusClientCryptoBoxImpl constructor(
         TODO("get session is private in Cryptobox4j")
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 

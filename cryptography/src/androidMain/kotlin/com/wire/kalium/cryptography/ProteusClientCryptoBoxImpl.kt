@@ -78,7 +78,7 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto = lock.withLock {
+    override suspend fun newLastResortPreKey(): PreKeyCrypto = lock.withLock {
         withContext(defaultContext) {
             wrapException { toPreKey(box.newLastPreKey()) }
         }

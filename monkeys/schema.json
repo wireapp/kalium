@@ -26,7 +26,7 @@
                         "type": "string"
                     },
                     "conversationDistribution": {
-                        "description": "List of predefined groups to run the tests. A random user will be selected to create and it will include only other users, it is connected to.",
+                        "description": "List of predefined groups to run the tests. A random user will be selected to create (if not logged in, it will automatically) and it will include only other users it is connected to.",
                         "type": "object",
                         "patternProperties": {
                             ".*": {
@@ -88,7 +88,9 @@
                     "title",
                     "passwordForUsers",
                     "domain",
-                    "users"
+                    "authUser",
+                    "authPassword",
+                    "userCount"
                 ],
                 "properties": {
                     "api": {
@@ -127,8 +129,24 @@
                         "description": "Domain identifier of the team",
                         "type": "string"
                     },
+                    "authUser": {
+                        "description": "The backend API user to authenticate in order to access its APIs",
+                        "type": "string"
+                    },
+                    "authPassword": {
+                        "description": "The backend API password to authenticate in order to access its APIs",
+                        "type": "string"
+                    },
+                    "userCount": {
+                        "description": "How many users should be created in this team",
+                        "type": "integer"
+                    },
+                    "dumpUsers": {
+                        "description": "Should the application dump the users created into a file",
+                        "type": "boolean"
+                    },
                     "users": {
-                        "description": "All users that are going to be used in the test",
+                        "description": "All users that are going to be used in the test. If set the parameters to create users will be ignored",
                         "type": "array",
                         "items": {
                             "type": "object",
@@ -179,8 +197,7 @@
             "type": "object",
             "required": [
                 "description",
-                "config",
-                "count"
+                "config"
             ],
             "properties": {
                 "description": {
@@ -188,11 +205,11 @@
                     "type": "string"
                 },
                 "count": {
-                    "description": "How many times the action should be executed each round",
+                    "description": "How many times the action should be executed each round. Defaults to 1 and in the setup it will be ignored",
                     "type": "integer"
                 },
                 "repeatInterval": {
-                    "description": "How long in milliseconds, should the app wait until next execution. This property is ignored in the setup. Defaults to 0. Please set this up as this can overload the computer running the application",
+                    "description": "How long in milliseconds, should the app wait until next execution. This property is ignored in the setup. Defaults to 0. Please set this up as this can overload the computer running the application. Ignored in the setup",
                     "type": "integer"
                 },
                 "config": {
@@ -246,7 +263,14 @@
         "Login": {
             "description": "Log users in and be available to execute actions",
             "type": "object",
+            "required": [
+                "userCount"
+            ],
             "properties": {
+                "userCount": {
+                    "description": "How many users should login",
+                    "$ref": "#/$defs/UserCount"
+                },
                 "duration": {
                     "description": "How long in milliseconds should the user be logged in. 0 means until the end",
                     "type": "integer"
@@ -257,9 +281,14 @@
             "description": "Log users out and in after a configured delay",
             "type": "object",
             "required": [
+                "userCount",
                 "durationOffline"
             ],
             "properties": {
+                "userCount": {
+                    "description": "How many users should login",
+                    "$ref": "#/$defs/UserCount"
+                },
                 "durationOffline": {
                     "description": "How long in milliseconds should the user be logged out, until a re-login",
                     "type": "integer"
@@ -273,6 +302,10 @@
                 "count"
             ],
             "properties": {
+                "userCount": {
+                    "description": "How many users should be send messages. Defaults to a fixed number of 1",
+                    "$ref": "#/$defs/UserCount"
+                },
                 "count": {
                     "description": "How many messages should be sent at once. Each message will be sent by a random user",
                     "type": "integer"
@@ -305,8 +338,8 @@
                         "PROTEUS"
                     ]
                 },
-                "domainOwner": {
-                    "description": "Which domain should the picked user belong to. For better performance, inform this field",
+                "teamOwner": {
+                    "description": "Which team should the picked user belong to. For better performance, inform this field",
                     "type": "string"
                 }
             }
@@ -318,13 +351,13 @@
                 "userCount"
             ],
             "properties": {
+                "countGroups": {
+                    "description": "To how many groups should have users being added",
+                    "type": "integer"
+                },
                 "userCount": {
                     "description": "How many users should be added to the group",
                     "$ref": "#/$defs/UserCount"
-                },
-                "domain": {
-                    "description": "Which domain should the picked users belong to. For better performance, inform this field",
-                    "type": "string"
                 }
             }
         },
@@ -335,6 +368,10 @@
                 "userCount"
             ],
             "properties": {
+                "countGroups": {
+                    "description": "To how many groups should have users leaving",
+                    "type": "integer"
+                },
                 "userCount": {
                     "description": "How many users should leave to the group. The creator will never leave the group",
                     "$ref": "#/$defs/UserCount"
@@ -359,19 +396,25 @@
             "type": "object",
             "required": [
                 "userCount",
-                "targetDomain"
+                "targetUserCount",
+                "originTeam",
+                "targetTeam"
             ],
             "properties": {
                 "userCount": {
                     "description": "How many users should send requests",
                     "$ref": "#/$defs/UserCount"
                 },
-                "originDomain": {
-                    "description": "Users from which domain should the requests originate",
+                "targetUserCount": {
+                    "description": "How many users of the target team should receive requests",
+                    "$ref": "#/$defs/UserCount"
+                },
+                "originTeam": {
+                    "description": "Users from which team should the requests originate",
                     "type": "string"
                 },
-                "targetDomain": {
-                    "description": "Users from which domain should be targeted",
+                "targetTeam": {
+                    "description": "Users from which team should be targeted",
                     "type": "string"
                 },
                 "delayResponse": {

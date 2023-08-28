@@ -39,7 +39,7 @@ class KaliumWebSocketFactory(private val okHttpClient: OkHttpClient) : WebSocket
 
     /**
      * Wraps the provided [wrappedListener], keeping the normal behaviour,
-     * but using [kaliumLogger] to log all operations.
+     * but using [kaliumUtilLogger] to log all operations.
      */
     inner class WrapperListener(private val wrappedListener: WebSocketListener) : WebSocketListener() {
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {

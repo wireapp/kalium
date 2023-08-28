@@ -74,7 +74,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenProteusClient_whenCallingNewLastKey_thenItReturnsALastPreKey() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        val lastPreKey = aliceClient.newLastPreKey()
+        val lastPreKey = aliceClient.newLastResortPreKey()
         assertEquals(65535, lastPreKey.id)
     }
 

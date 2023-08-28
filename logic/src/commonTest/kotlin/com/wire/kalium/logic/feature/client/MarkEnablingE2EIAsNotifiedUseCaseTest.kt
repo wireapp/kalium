@@ -31,18 +31,69 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
     @Test
-    fun whenMarkAsNotifiedIsCalled_thenSnoozeIsCalled() = runTest {
+    fun whenMarkAsNotifiedIsCalledWithMoreThen1Day_thenSnoozeIsCalledWith1day() = runTest {
         val (arrangement, useCase) = Arrangement().arrange()
 
-        useCase()
+        useCase(2.days)
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
-            .with(eq(MarkEnablingE2EIAsNotifiedUseCaseImpl.SNOOZE_MLS_ENABLE_CHANGE_MS))
+            .with(eq(1.days))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenMarkAsNotifiedIsCalledWithMoreThen4Hours_thenSnoozeIsCalledWith4Hours() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange()
+
+        useCase(5.hours)
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
+            .with(eq(4.hours))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenMarkAsNotifiedIsCalledWithMoreThen1Hour_thenSnoozeIsCalledWith1Hour() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange()
+
+        useCase(2.hours)
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
+            .with(eq(1.hours))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenMarkAsNotifiedIsCalledWithMoreThen15Minutes_thenSnoozeIsCalledWith15Minutes() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange()
+
+        useCase(16.minutes)
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
+            .with(eq(15.minutes))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun whenMarkAsNotifiedIsCalledWithLessThen15Minutes_thenSnoozeIsCalledWith5Minutes() = runTest {
+        val (arrangement, useCase) = Arrangement().arrange()
+
+        useCase(14.minutes)
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
+            .with(eq(5.minutes))
             .wasInvoked(exactly = once)
     }
 

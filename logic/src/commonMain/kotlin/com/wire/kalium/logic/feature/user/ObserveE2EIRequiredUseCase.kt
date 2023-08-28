@@ -20,18 +20,20 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
 /**
@@ -49,29 +51,58 @@ internal class ObserveE2EIRequiredUseCaseImpl(
     private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
 ) : ObserveE2EIRequiredUseCase {
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun invoke(): Flow<E2EIRequiredResult> = userConfigRepository
-        .observeE2EISettings()
+        .observeE2EINotificationTime()
         .map { it.getOrNull() }
         .filterNotNull()
-        .filter { setting -> setting.isRequired && setting.gracePeriodEnd != null }
         .delayUntilNotifyTime()
-        .map { setting ->
-            if (setting.gracePeriodEnd!! <= DateTimeUtil.currentInstant()) E2EIRequiredResult.NoGracePeriod
-            else E2EIRequiredResult.WithGracePeriod(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
+        .flatMapLatest {
+            observeE2EISettings().flatMapLatest { setting ->
+                if (!setting.isRequired)
+                    flowOf(E2EIRequiredResult.NotRequired)
+                else
+                    observeCurrentE2EICertificate().map { currentCertificate ->
+                        // TODO check here if current certificate needs to be renewed (soon, or now)
+
+                        if (setting.gracePeriodEnd == null || setting.gracePeriodEnd <= DateTimeUtil.currentInstant())
+                            E2EIRequiredResult.NoGracePeriod.Create
+                        else E2EIRequiredResult.WithGracePeriod.Create(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
+                    }
+            }
         }
         .flowOn(dispatcher)
-}
 
-private fun Flow<E2EISettings>.delayUntilNotifyTime(): Flow<E2EISettings> = flatMapLatest { setting ->
-    val delayMillis = setting.notifyUserAfter
-        ?.minus(DateTimeUtil.currentInstant())
-        ?.inWholeMilliseconds
-        ?.coerceAtLeast(0L)
-        ?: 0L
-    flowOf(setting).onStart { delay(delayMillis) }
+    private fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
+
+    private fun observeCurrentE2EICertificate(): Flow<Unit> {
+        // TODO get current client E2EI certificate data here
+        return flowOf(Unit).flowOn(dispatcher)
+    }
+
+    private fun Flow<Instant>.delayUntilNotifyTime(): Flow<Instant> = flatMapLatest { instant ->
+        val delayMillis = instant
+            .minus(DateTimeUtil.currentInstant())
+            .inWholeMilliseconds
+            .coerceAtLeast(NO_DELAY_MS)
+        flowOf(instant).onStart { delay(delayMillis) }
+    }
+
+    companion object {
+        private const val NO_DELAY_MS = 0L
+    }
 }
 
 sealed class E2EIRequiredResult {
-    data class WithGracePeriod(val gracePeriod: Duration) : E2EIRequiredResult()
-    object NoGracePeriod : E2EIRequiredResult()
+    sealed class WithGracePeriod(open val timeLeft: Duration) : E2EIRequiredResult() {
+        data class Create(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
+        data class Renew(override val timeLeft: Duration) : WithGracePeriod(timeLeft)
+    }
+
+    sealed class NoGracePeriod : E2EIRequiredResult() {
+        data object Create : NoGracePeriod()
+        data object Renew : NoGracePeriod()
+    }
+
+    data object NotRequired : E2EIRequiredResult()
 }

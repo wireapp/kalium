@@ -106,8 +106,7 @@ class SearchUserRepositoryTest {
             userSearchApiWrapper,
             publicUserMapper,
             userMapper,
-            domainUserTypeMapper,
-            idMapper
+            domainUserTypeMapper
         )
 
         given(domainUserTypeMapper).invocation { federated }.then { UserType.FEDERATED }
@@ -517,7 +516,8 @@ class SearchUserRepositoryTest {
             connectionStatus = ConnectionState.NOT_CONNECTED,
             botService = null,
             deleted = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
 
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
@@ -573,7 +573,8 @@ class SearchUserRepositoryTest {
             userType = UserTypeEntity.EXTERNAL,
             botService = null,
             deleted = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
 
         val SELF_USER = SelfUser(

@@ -63,8 +63,30 @@ sourceSets {
             implementation(libs.ktxDateTime)
 
             implementation(libs.ktxSerialization)
+            implementation(libs.ktor.serialization)
             implementation(libs.ktor.okHttp)
+            implementation(libs.ktor.contentNegotiation)
+            implementation(libs.ktor.json)
+            implementation(libs.ktor.authClient)
             implementation(libs.okhttp.loggingInterceptor)
+
+            implementation(libs.faker)
+        }
+    }
+
+    val test by getting {
+        dependencies {
+            implementation(kotlin("test"))
+
+            // coroutines
+            implementation(libs.coroutines.test)
+            implementation(libs.turbine)
+
+            // mocking
+            implementation(libs.mockative.runtime)
+            implementation(libs.okio.test)
+            implementation(libs.settings.kmpTest)
+            implementation(libs.mockk)
         }
     }
 

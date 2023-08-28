@@ -268,7 +268,8 @@ class SearchUserUseCaseTest {
                     availabilityStatus = UserAvailabilityStatus.NONE,
                     userType = UserType.FEDERATED,
                     botService = null,
-                    deleted = false
+                    deleted = false,
+                    defederated = false
                 )
             }
         )

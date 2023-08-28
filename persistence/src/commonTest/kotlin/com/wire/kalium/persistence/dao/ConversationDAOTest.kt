@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -858,6 +859,34 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenObserveConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
+        // given
+        val conversation = conversationEntity1.copy(name = null, type = ConversationEntity.Type.GROUP, hasIncompleteMetadata = false)
+        conversationDAO.insertConversation(conversation)
+        insertTeamUserAndMember(team, user1, conversation.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails().first()
+
+        // then
+        assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
+    }
+
+    @Test
+    fun givenObserveConversationList_whenAConversationHaveIncompleteMetadata_thenItIsNotIncluded() = runTest {
+        // given
+        val conversation = conversationEntity1.copy(hasIncompleteMetadata = true)
+        conversationDAO.insertConversation(conversation)
+        insertTeamUserAndMember(team, user1, conversation.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails().first()
+
+        // then
+        assertNull(result.firstOrNull { it.id == conversation.id })
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
@@ -922,7 +951,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             selfRole = MemberEntity.Role.Member,
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null
         )
     }
 

@@ -17,81 +17,98 @@
  */
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCase
-import com.wire.kalium.logic.feature.conversation.AddMemberToConversationUseCaseImpl
-import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangementImpl
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.model.QualifiedID
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.eq
-import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class GenerateGuestRoomLinkUseCaseTest {
 
-    @Mock
-    val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
-
-    private lateinit var generateGuestRoomLink: GenerateGuestRoomLinkUseCase
-
-    @BeforeTest
-    fun setUp() {
-        generateGuestRoomLink = GenerateGuestRoomLinkUseCaseImpl(
-            conversationGroupRepository
-        )
-    }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryReturnsSuccess_whenTryingToGenerateAGuestRoomLink_ThenReturnSuccess() = runTest {
 
-        given(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::generateGuestRoomLink)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+        val eventDTO = EventContentDTO.Conversation.CodeUpdated(
+            qualifiedConversation = conversationId.toApi(),
+            qualifiedFrom = QualifiedID("userId", "domain"),
+            data = ConversationInviteLinkResponse(
+                uri = "uri",
+                code = "code",
+                key = "key",
+                hasPassword = false
+            )
+        )
 
-        val result = generateGuestRoomLink(conversationId)
+        val (arrangement, useCase) = Arrangement()
+            .arrange {
+                withGenerateGuestRoomLink(Either.Right(eventDTO))
+                withHandleCodeUpdatedEvent(Either.Right(Unit))
+            }
 
-        assertIs<GenerateGuestRoomLinkResult.Success>(result)
-        verify(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::generateGuestRoomLink)
+        useCase(conversationId, null).also { result ->
+            assertIs<GenerateGuestRoomLinkResult.Success>(result)
+        }
+
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::generateGuestRoomLink)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.codeUpdatedHandler)
+            .suspendFunction(arrangement.codeUpdatedHandler::handle)
             .with(any())
             .wasInvoked(exactly = once)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryReturnsFailure_whenTryingToGenerateAGuestRoomLink_ThenReturnError() = runTest {
 
-        given(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::generateGuestRoomLink)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        val (arrangement, useCase) = Arrangement()
+            .arrange {
+                withGenerateGuestRoomLink(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            }
+        useCase(conversationId, null).also { result ->
+            assertIs<GenerateGuestRoomLinkResult.Failure>(result)
+        }
 
-        val result = generateGuestRoomLink(conversationId)
-
-        assertIs<GenerateGuestRoomLinkResult.Failure>(result)
-        verify(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::generateGuestRoomLink)
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::generateGuestRoomLink)
             .with(any())
             .wasInvoked(exactly = once)
+
+        verify(arrangement.codeUpdatedHandler)
+            .suspendFunction(arrangement.codeUpdatedHandler::handle)
+            .with(any())
+            .wasNotInvoked()
     }
 
     companion object {
         private val conversationId = ConversationId("value", "domain")
+    }
+
+    private class Arrangement :
+        ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
+        CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl() {
+
+        private val generateGuestRoomLink: GenerateGuestRoomLinkUseCase = GenerateGuestRoomLinkUseCaseImpl(
+            conversationGroupRepository,
+            codeUpdatedHandler
+        )
+
+        fun arrange(block: Arrangement.() -> Unit) = apply(block).run {
+            this to generateGuestRoomLink
+        }
     }
 }

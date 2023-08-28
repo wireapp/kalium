@@ -27,6 +27,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.CryptoSessionMapper
 import com.wire.kalium.logic.feature.message.CryptoSessionMapperImpl
@@ -38,37 +39,123 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
+import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.client.ClientDAO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 interface PreKeyRepository {
+    /**
+     * Fetches the IDs of the prekeys currently available on the backend.
+     * @see uploadNewPrekeyBatch
+     */
+    suspend fun fetchRemotelyAvailablePrekeys(): Either<CoreFailure, List<Int>>
+
+    /**
+     * Uploads a batch of prekeys to the backend, so they become available
+     * for other clients to start sessions with this client.
+     * @see fetchRemotelyAvailablePrekeys
+     */
+    suspend fun uploadNewPrekeyBatch(batch: List<PreKeyCrypto>): Either<CoreFailure, Unit>
+
+    /**
+     * Generate prekeys to be uploaded to the backend and shared with other clients in
+     * order to initialise a new conversation with this client.
+     *
+     * As these are consumed, we should keep uploading new prekeys to the backend.
+     * For this reason, these can be called "rolling" prekeys, in an attempt to separate them
+     * from the "last resort" prekey, which is described in [generateNewLastResortKey].
+     * @see generateNewLastResortKey
+     */
     suspend fun generateNewPreKeys(firstKeyId: Int, keysCount: Int): Either<CoreFailure, List<PreKeyCrypto>>
-    suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto>
+
+    /**
+     * Observes the last pre-key check instant.
+     *
+     * @return A [Flow] of [Instant] objects representing the last pre-key upload instant.
+     * It emits `null` if no pre-key upload has occurred.
+     */
+    suspend fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?>
+
+    /**
+     * Sets the last prekey refill check date.
+     *
+     * @param instant The instant representing the date and time of the last prekey upload.
+     * @return Either a [StorageFailure] if the operation fails, or [Unit] if successful.
+     */
+    suspend fun setLastPreKeyRefillCheckInstant(instant: Instant): Either<StorageFailure, Unit>
+
+    /**
+     * Also known as "last prekey", it's the prekey that the backend will
+     * share with other clients when it runs out of prekeys for this client.
+     * For "rolling" prekeys, see [generateNewPreKeys].
+     * @see generateNewPreKeys
+     */
+    suspend fun generateNewLastResortKey(): Either<ProteusFailure, PreKeyCrypto>
     suspend fun getLocalFingerprint(): Either<CoreFailure, ByteArray>
-    suspend fun lastPreKeyId(): Either<StorageFailure, Int>
-    suspend fun updateOTRLastPreKeyId(newId: Int): Either<StorageFailure, Unit>
-    suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit>
+
+    /**
+     * Returns the ID of the most recent "rolling" prekey that was generated.
+     * @see generateNewPreKeys
+     */
+    suspend fun mostRecentPreKeyId(): Either<StorageFailure, Int>
+
+    /**
+     * Updates the ID of the most recent "rolling" prekey that was generated.
+     * @see generateNewPreKeys
+     * @see forceInsertMostRecentPreKeyId
+     */
+    suspend fun updateMostRecentPreKeyId(newId: Int): Either<StorageFailure, Unit>
+
+    /**
+     * Forces the insert of the ID of the most recent "rolling" prekey that was generated.
+     * Useful
+     * @see updateMostRecentPreKeyId
+     */
+    suspend fun forceInsertMostRecentPreKeyId(newId: Int): Either<StorageFailure, Unit>
     suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
     ): Either<CoreFailure, UsersWithoutSessions>
 }
 
+@Suppress("LongParameterList")
 class PreKeyDataSource(
     private val preKeyApi: PreKeyApi,
     private val proteusClientProvider: ProteusClientProvider,
+    private val provideCurrentClientId: CurrentClientIdProvider,
     private val prekeyDAO: PrekeyDAO,
     private val clientDAO: ClientDAO,
-    private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper()
+    private val metadataDAO: MetadataDAO,
+    private val preKeyListMapper: PreKeyListMapper = MapperProvider.preKeyListMapper(),
+    private val preKeyMapper: PreKeyMapper = MapperProvider.preyKeyMapper()
 ) : PreKeyRepository, CryptoSessionMapper by CryptoSessionMapperImpl(MapperProvider.preyKeyMapper()) {
+
+    override suspend fun fetchRemotelyAvailablePrekeys(): Either<CoreFailure, List<Int>> =
+        provideCurrentClientId().flatMap { clientId ->
+            wrapApiRequest {
+                preKeyApi.getClientAvailablePrekeys(clientId.value)
+            }
+        }
+
+    override suspend fun uploadNewPrekeyBatch(batch: List<PreKeyCrypto>): Either<CoreFailure, Unit> =
+        provideCurrentClientId().flatMap { clientId ->
+            val preKeyDTOs = batch.map(preKeyMapper::toPreKeyDTO)
+            wrapApiRequest {
+                preKeyApi.uploadNewPrekeys(clientId.value, preKeyDTOs)
+            }
+        }
+
     override suspend fun generateNewPreKeys(
         firstKeyId: Int,
         keysCount: Int
     ): Either<ProteusFailure, List<PreKeyCrypto>> =
         wrapProteusRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }
 
-    override suspend fun generateNewLastKey(): Either<ProteusFailure, PreKeyCrypto> =
+    override suspend fun generateNewLastResortKey(): Either<ProteusFailure, PreKeyCrypto> =
         wrapProteusRequest {
-            proteusClientProvider.getOrCreate().newLastPreKey()
+            proteusClientProvider.getOrCreate().newLastResortPreKey()
         }
 
     override suspend fun getLocalFingerprint(): Either<CoreFailure, ByteArray> =
@@ -78,17 +165,27 @@ class PreKeyDataSource(
             }
         }
 
-    override suspend fun lastPreKeyId(): Either<StorageFailure, Int> = wrapStorageRequest {
-        prekeyDAO.lastOTRPrekeyId()
+    override suspend fun mostRecentPreKeyId(): Either<StorageFailure, Int> = wrapStorageRequest {
+        prekeyDAO.mostRecentPreKeyId()
     }
 
-    override suspend fun updateOTRLastPreKeyId(newId: Int): Either<StorageFailure, Unit> = wrapStorageRequest {
-        prekeyDAO.updateOTRLastPrekeyId(newId)
+    override suspend fun updateMostRecentPreKeyId(newId: Int): Either<StorageFailure, Unit> = wrapStorageRequest {
+        prekeyDAO.updateMostRecentPreKeyId(newId)
     }
 
-    override suspend fun forceInsertPrekeyId(newId: Int): Either<StorageFailure, Unit> = wrapStorageRequest {
-        prekeyDAO.forceInsertOTRLastPrekeyId(newId)
+    override suspend fun forceInsertMostRecentPreKeyId(newId: Int): Either<StorageFailure, Unit> = wrapStorageRequest {
+        prekeyDAO.forceInsertMostRecentPreKeyId(newId)
     }
+
+    override suspend fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?> =
+        metadataDAO.valueByKeyFlow(PREKEY_REFILL_INSTANT_KEY).map { instant ->
+            instant?.let { Instant.parse(it) }
+        }
+
+    override suspend fun setLastPreKeyRefillCheckInstant(instant: Instant): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            metadataDAO.insertValue(instant.toString(), PREKEY_REFILL_INSTANT_KEY)
+        }
 
     override suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
@@ -101,7 +198,11 @@ class PreKeyDataSource(
             .flatMap { listUserPrekeysResponse ->
                 establishProteusSessions(listUserPrekeysResponse.qualifiedUserClientPrekeys)
                     .flatMap {
-                        Either.Right(preKeyListMapper.fromListPrekeyResponseToUsersWithoutSessions(listUserPrekeysResponse))
+                        Either.Right(
+                            preKeyListMapper.fromListPrekeyResponseToUsersWithoutSessions(
+                                listUserPrekeysResponse
+                            )
+                        )
                     }
             }
     }
@@ -126,4 +227,8 @@ class PreKeyDataSource(
                     }
                 }
             }
+
+    private companion object {
+        const val PREKEY_REFILL_INSTANT_KEY = "last_prekey_refill_instant"
+    }
 }

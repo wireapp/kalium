@@ -75,7 +75,8 @@ class PublicUserMapperImpl(
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
-        expiresAt = userEntity.expiresAt
+        expiresAt = userEntity.expiresAt,
+        defederated = userEntity.defederated
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -94,7 +95,9 @@ class PublicUserMapperImpl(
             userType = userEntityTypeMapper.fromUserType(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
-            expiresAt = expiresAt
+            expiresAt = expiresAt,
+            hasIncompleteMetadata = false,
+            defederated = defederated
         )
     }
 
@@ -124,6 +127,7 @@ class PublicUserMapperImpl(
         userType = userType,
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
         deleted = userDetailResponse.deleted ?: false,
-        expiresAt = userDetailResponse.expiresAt?.toInstant()
+        expiresAt = userDetailResponse.expiresAt?.toInstant(),
+        defederated = false
     )
 }

@@ -53,7 +53,7 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         }
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(UShort.MAX_VALUE.toInt(), toByteArray(coreCrypto.proteusNewPrekey(UShort.MAX_VALUE))) }
     }
 

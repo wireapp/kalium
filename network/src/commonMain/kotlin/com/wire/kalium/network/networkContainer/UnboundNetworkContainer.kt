@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
@@ -26,6 +27,7 @@ import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImp
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
+import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
 interface UnboundNetworkContainer {
@@ -39,10 +41,9 @@ private interface UnboundNetworkClientProvider {
 }
 
 internal class UnboundNetworkClientProviderImpl(
-    val developmentApiEnabled: Boolean,
+    networkStateObserver: NetworkStateObserver,
     userAgent: String,
-    private val ignoreSSLCertificates: Boolean,
-    engine: HttpClientEngine = defaultHttpEngine(ignoreSSLCertificates = ignoreSSLCertificates)
+    engine: HttpClientEngine
 ) : UnboundNetworkClientProvider {
 
     init {
@@ -50,16 +51,25 @@ internal class UnboundNetworkClientProviderImpl(
     }
 
     override val unboundNetworkClient by lazy {
-        UnboundNetworkClient(engine)
+        UnboundNetworkClient(networkStateObserver, engine)
     }
 }
 
 class UnboundNetworkContainerCommon(
+    networkStateObserver: NetworkStateObserver,
     private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
+    certificatePinning: CertificatePinning
 ) : UnboundNetworkContainer,
-    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(developmentApiEnabled, userAgent, ignoreSSLCertificates) {
+    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
+        networkStateObserver = networkStateObserver,
+        userAgent = userAgent,
+        engine = defaultHttpEngine(
+            ignoreSSLCertificates = ignoreSSLCertificates,
+            certificatePinning = certificatePinning
+        )
+    ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
     override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)

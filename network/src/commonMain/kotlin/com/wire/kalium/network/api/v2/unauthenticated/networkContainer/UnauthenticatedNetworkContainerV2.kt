@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v2.unauthenticated.networkContainer
 
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
@@ -35,17 +36,24 @@ import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProvider
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProviderImpl
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
 class UnauthenticatedNetworkContainerV2 internal constructor(
+    networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
-    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links.apiProxy, proxyCredentials)
+    certificatePinning: CertificatePinning,
+    engine: HttpClientEngine = defaultHttpEngine(
+        serverConfigDTOApiProxy = backendLinks.links.apiProxy,
+        proxyCredentials = proxyCredentials,
+        certificatePinning = certificatePinning
+    )
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
+        networkStateObserver,
         backendLinks,
-        proxyCredentials,
         engine
     ) {
     override val loginApi: LoginApi get() = LoginApiV2(unauthenticatedNetworkClient)

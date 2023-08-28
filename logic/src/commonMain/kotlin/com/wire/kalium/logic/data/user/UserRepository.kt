@@ -93,7 +93,7 @@ internal interface UserRepository {
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
     suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
     suspend fun getSelfUser(): SelfUser?
-    fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
+    suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
     suspend fun observeUser(userId: UserId): Flow<User?>
@@ -108,6 +108,12 @@ internal interface UserRepository {
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
+
+    /**
+     * Marks federated user as defederated in order to hold conversation history
+     * when backends stops federating.
+     */
+    suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
     // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
@@ -334,7 +340,7 @@ internal class UserDataSource internal constructor(
     override suspend fun getSelfUser(): SelfUser? =
         observeSelfUser().firstOrNull()
 
-    override fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
+    override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
         return userDAO.observeAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .wrapStorageRequest()
@@ -425,6 +431,12 @@ internal class UserDataSource internal constructor(
     override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             userDAO.markUserAsDeleted(userId.toDao())
+        }
+    }
+
+    override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            userDAO.markUserAsDefederated(userId.toDao())
         }
     }
 

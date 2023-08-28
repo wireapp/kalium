@@ -18,11 +18,60 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.monkeys.conversation.MonkeyConversation
 import com.wire.kalium.monkeys.importer.ActionType
 import com.wire.kalium.monkeys.importer.UserCount
+import com.wire.kalium.monkeys.logger
+import com.wire.kalium.monkeys.pool.ConversationPool
+import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class SendMessageAction(val userCount: UserCount, val config: ActionType.SendMessage) : Action() {
+private const val ONE_2_1: String = "One21"
+private val EMOJI: List<String> = listOf(
+    "👀", "🦭", "😵‍💫", "👨‍🍳",
+    "🍌", "🍆", "👨‍🌾", "🏄‍",
+    "🥶", "🤤", "🙈", "🙊",
+    "🐒", "🙉", "🦍", "🐵"
+)
+
+class SendMessageAction(val config: ActionType.SendMessage) : Action() {
+
     override suspend fun execute(coreLogic: CoreLogic) {
-        TODO("Not yet implemented")
+        repeat(this.config.count.toInt()) { i ->
+            if (this.config.targets.isNotEmpty()) {
+                this.config.targets.forEach { target ->
+                    if (target == ONE_2_1) {
+                        val monkeys = MonkeyPool.randomLoggedInMonkeys(this.config.userCount)
+                        monkeys.forEach { monkey ->
+                            val targetMonkey = monkey.randomPeer()
+                            monkey.sendDirectMessageTo(targetMonkey, randomMessage(targetMonkey.user.email, i))
+                        }
+                    } else {
+                        ConversationPool.getFromPrefixed(target).forEach { conv ->
+                            conv.sendMessage(this.config.userCount, i)
+                        }
+                    }
+                }
+            } else {
+                val conversations = ConversationPool.randomConversations(this.config.countGroups)
+                conversations.forEach {
+                    it.sendMessage(this.config.userCount, i)
+                }
+            }
+        }
     }
+}
+
+private suspend fun MonkeyConversation.sendMessage(userCount: UserCount, i: Int) {
+    val monkeys = this.randomMonkeys(userCount)
+    if (monkeys.isEmpty()) {
+        logger.d("No monkey is logged in in the picked conversation")
+    }
+    monkeys.forEach { monkey ->
+        val message = randomMessage(this.conversation.name ?: "fellow stranger", i)
+        monkey.sendMessageTo(this.conversation.id, message)
+    }
+}
+
+private fun randomMessage(target: String, i: Int): String {
+    return "Hello everyone from $target. Give me ${i + 1} banana(s). ${EMOJI.random()}"
 }

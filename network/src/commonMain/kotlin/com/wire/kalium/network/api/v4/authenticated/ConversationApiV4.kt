@@ -19,16 +19,18 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV4
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ApiModelMapper
 import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.FederationConflictResponse
+import com.wire.kalium.network.api.base.model.GenerateGuestLinkRequest
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SubconversationId
@@ -37,16 +39,15 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.call.NoTransformationFoundException
-import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpStatusCode.Companion.Conflict
+import io.ktor.utils.io.errors.IOException
 
 internal open class ConversationApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -54,24 +55,14 @@ internal open class ConversationApiV4 internal constructor(
 ) : ConversationApiV3(authenticatedNetworkClient) {
 
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest) =
-        wrapKaliumResponse<ConversationResponseV4>(unsuccessfulResponseOverride = { response ->
-            if (response.status == Conflict) {
-                val errorResponse = try {
-                    response.body()
-                } catch (_: NoTransformationFoundException) {
-                    // When the backend returns something that is not a JSON for whatever reason.
-                    FederationConflictResponse(listOf())
-                }
-                NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
-            } else {
-                handleUnsuccessfulResponse(response)
-            }
+        wrapKaliumResponse<ConversationResponseV3>(unsuccessfulResponseOverride = { response ->
+            wrapFederationResponse(response) { handleUnsuccessfulResponse(response) }
         }) {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
             }
         }.mapSuccess { conversationResponseV4 ->
-            apiModelMapper.fromApiV4(conversationResponseV4)
+            apiModelMapper.fromApiV3(conversationResponseV4)
         }
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
@@ -138,11 +129,38 @@ internal open class ConversationApiV4 internal constructor(
         }.execute { httpResponse ->
             handleConversationMemberAddedResponse(httpResponse)
         }
-    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
+
+    override suspend fun fetchLimitedInformationViaCode(
+        code: String,
+        key: String
+    ): NetworkResponse<ConversationCodeInfo> =
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
                 parameter(QUERY_KEY_KEY, key)
+            }
+        }
+
+    override suspend fun addMember(
+        addParticipantRequest: AddConversationMembersRequest,
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationMemberAddedResponse> = try {
+        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
+            setBody(addParticipantRequest)
+        }.let { response ->
+            wrapFederationResponse(response) { handleConversationMemberAddedResponse(response) }
+        }
+    } catch (e: IOException) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
+
+    override suspend fun generateGuestRoomLink(
+        conversationId: ConversationId,
+        password: String?
+    ): NetworkResponse<EventContentDTO.Conversation.CodeUpdated> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE") {
+                setBody(GenerateGuestLinkRequest(password))
             }
         }
 

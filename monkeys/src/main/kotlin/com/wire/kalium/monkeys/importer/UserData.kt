@@ -34,5 +34,12 @@ data class Backend(
     val teams: String,
     val website: String,
     val title: String,
-    val domain: String
-)
+    val domain: String,
+    val teamName: String
+) {
+    companion object {
+        fun fromConfig(config: BackendConfig): Backend = with(config) {
+            Backend(api, accounts, webSocket, blackList, teams, website, title, domain, teamName)
+        }
+    }
+}

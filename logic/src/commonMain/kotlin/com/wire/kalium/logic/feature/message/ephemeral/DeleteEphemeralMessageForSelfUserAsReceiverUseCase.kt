@@ -100,7 +100,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
-                status = Message.Status.PENDING,
+                status = Message.Status.Pending,
                 isSelfMessage = true,
                 expirationData = null
             ).let { deleteSignalingMessage ->
@@ -121,7 +121,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
         date = DateTimeUtil.currentIsoDateTimeString(),
         senderUserId = selfUserId,
         senderClientId = currentClientId,
-        status = Message.Status.PENDING,
+        status = Message.Status.Pending,
         isSelfMessage = true,
         expirationData = null
     ).let { deleteSignalingMessage ->

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -30,13 +31,12 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 /**
  * Handles the addition of members to a new conversation and the related system messages when a conversation is started.
  * Either all users are added or some of them could fail to be added.
- *
- * TODO(offline backend branch): And add failed members handling in api v4
  */
 internal interface NewConversationMembersRepository {
     suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
+        failedUsersList: List<UserId> = emptyList()
     ): Either<CoreFailure, Unit>
 }
 
@@ -50,6 +50,7 @@ internal class NewConversationMembersRepositoryImpl(
     override suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
+        failedUsersList: List<UserId>
     ) = wrapStorageRequest {
         memberDAO.insertMembersWithQualifiedId(
             memberMapper.fromApiModelToDaoModel(conversationResponse.members),
@@ -58,7 +59,8 @@ internal class NewConversationMembersRepositoryImpl(
     }.flatMap {
         newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
             conversationId,
-            conversationResponse
+            conversationResponse,
+            failedUsersList
         )
     }
 
