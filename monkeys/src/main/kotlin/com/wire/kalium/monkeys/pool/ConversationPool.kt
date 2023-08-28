@@ -96,6 +96,7 @@ object ConversationPool {
     }
 
     // Should be called on the setup free from concurrent access as it is not thread safe
+    @Suppress("LongParameterList")
     suspend fun createPrefixedConversations(
         coreLogic: CoreLogic,
         prefix: String,
