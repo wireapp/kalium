@@ -58,6 +58,7 @@ internal actual object EncryptedSettingsBuilder {
         param: EncryptedSettingsPlatformParam,
         isRetry: Boolean
     ): SharedPreferences {
+        @Suppress("TooGenericExceptionCaught")
         return try {
             val masterKey = getOrCreateMasterKey(param.appContext, options.keyAlias())
             EncryptedSharedPreferences.create(
