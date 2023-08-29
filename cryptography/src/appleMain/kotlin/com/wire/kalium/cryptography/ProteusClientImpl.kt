@@ -63,8 +63,8 @@ actual class ProteusClientImpl actual constructor(
         return client.newPreKeys(from, count)
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
-        return client.newLastPreKey()
+    override suspend fun newLastResortPreKey(): PreKeyCrypto {
+        return client.newLastResortPreKey()
     }
 
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean {

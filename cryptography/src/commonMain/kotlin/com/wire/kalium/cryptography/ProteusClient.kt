@@ -78,7 +78,7 @@ interface ProteusClient {
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class, CancellationException::class)
-    suspend fun newLastPreKey(): PreKeyCrypto
+    suspend fun newLastResortPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
