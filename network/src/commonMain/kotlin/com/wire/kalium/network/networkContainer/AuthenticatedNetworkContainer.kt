@@ -153,7 +153,8 @@ interface AuthenticatedNetworkContainer {
                 5 -> AuthenticatedNetworkContainerV5(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    certificatePinning
                 )
 
                 else -> error("Unsupported version: $version")
