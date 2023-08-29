@@ -16,15 +16,14 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v4
+package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
-import com.wire.kalium.network.api.v4.authenticated.MLSMessageApiV4
+import com.wire.kalium.network.api.v5.authenticated.MLSMessageApiV5
 import com.wire.kalium.network.serialization.Mls
-import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -35,7 +34,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-internal class MLSMessageApiV4Test : ApiTest() {
+internal class MLSMessageApiV5Test : ApiTest() {
 
     @Test
     fun givenMessage_whenSendingCommitBundle_theRequestShouldBeConfiguredCorrectly() =
@@ -50,7 +49,7 @@ internal class MLSMessageApiV4Test : ApiTest() {
                     assertPathEqual(PATH_COMMIT_BUNDLES)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV4(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
             val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
             assertTrue(response.isSuccessful())
         }
@@ -68,7 +67,7 @@ internal class MLSMessageApiV4Test : ApiTest() {
                     assertPathEqual(PATH_MESSAGE)
                 }
             )
-            val mlsMessageApi: MLSMessageApi = MLSMessageApiV4(networkClient)
+            val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
             val response = mlsMessageApi.sendMessage(MESSAGE)
             assertTrue(response.isSuccessful())
         }
