@@ -196,11 +196,13 @@ class MessageMapperImpl(
         )
         if (message.isSelfDelete) {
             return LocalNotificationMessage.SelfDeleteMessage(
+                message.id,
                 message.date
             )
         }
         return when (message.contentType) {
             MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
+                messageId = message.id,
                 author = sender,
                 text = message.text.orEmpty(),
                 time = message.date,
@@ -212,11 +214,12 @@ class MessageMapperImpl(
                     if (it) LocalNotificationCommentType.PICTURE else LocalNotificationCommentType.FILE
                 } ?: LocalNotificationCommentType.FILE
 
-                LocalNotificationMessage.Comment(sender, message.date, type)
+                LocalNotificationMessage.Comment(message.id, sender, message.date, type)
             }
 
             MessageEntity.ContentType.KNOCK -> {
                 LocalNotificationMessage.Knock(
+                    message.id,
                     sender,
                     message.date
                 )
@@ -224,6 +227,7 @@ class MessageMapperImpl(
 
             MessageEntity.ContentType.MISSED_CALL -> {
                 LocalNotificationMessage.Comment(
+                    message.id,
                     sender,
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
