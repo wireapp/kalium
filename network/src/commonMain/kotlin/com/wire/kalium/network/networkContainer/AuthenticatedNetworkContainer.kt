@@ -47,6 +47,7 @@ import com.wire.kalium.network.api.v2.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
