@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -55,6 +57,7 @@ class AuthenticationScopeProvider internal constructor(
         proxyCredentials: ProxyCredentials?,
         serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
+        dataStore: DataStore<Preferences>
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
@@ -62,7 +65,8 @@ class AuthenticationScopeProvider internal constructor(
                 serverConfig,
                 proxyCredentials,
                 serverConfigRepository,
-                networkStateObserver
+                networkStateObserver,
+                dataStore
             )
         }
 }
@@ -72,7 +76,8 @@ class AuthenticationScope internal constructor(
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
     private val serverConfigRepository: ServerConfigRepository,
-    private val networkStateObserver: NetworkStateObserver
+    private val networkStateObserver: NetworkStateObserver,
+    private val dataStore: DataStore<Preferences>
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
@@ -108,7 +113,8 @@ class AuthenticationScope internal constructor(
             validateUserHandleUseCase,
             serverConfig,
             proxyCredentials,
-            secondFactorVerificationRepository
+            secondFactorVerificationRepository,
+            dataStore
         )
     val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)

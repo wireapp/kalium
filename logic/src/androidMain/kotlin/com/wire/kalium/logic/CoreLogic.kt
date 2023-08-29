@@ -19,6 +19,9 @@
 package com.wire.kalium.logic
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import com.wire.kalium.logic.configuration.getDataStore
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -76,6 +79,9 @@ actual class CoreLogic(
     override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
         appContext = appContext
     )
+
+    override val dataStore: DataStore<Preferences>
+        get() = getDataStore(appContext)
 
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(

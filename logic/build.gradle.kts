@@ -58,6 +58,9 @@ kotlin {
 
                 // CoreCrypto
                 implementation(libs.coreCrypto)
+
+                // DataStore
+                implementation(libs.androidx.dataStore)
             }
         }
         val commonTest by getting {

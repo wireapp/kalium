@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
@@ -90,7 +92,8 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val networkStateObserver: NetworkStateObserver
+    private val networkStateObserver: NetworkStateObserver,
+    private val dataStore: DataStore<Preferences>
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -165,7 +168,8 @@ class GlobalKaliumScope internal constructor(
             serverConfigRepository,
             authenticationScopeProvider,
             userSessionScopeProvider.value,
-            networkStateObserver
+            networkStateObserver,
+            dataStore,
         )
 
     val checkSystemIntegrity: CheckSystemIntegrityUseCase

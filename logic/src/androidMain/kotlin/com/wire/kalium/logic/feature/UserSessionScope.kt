@@ -19,9 +19,12 @@
 package com.wire.kalium.logic.feature
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
+import com.wire.kalium.logic.configuration.getDataStore
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
@@ -56,6 +59,7 @@ internal fun UserSessionScope(
         PlatformUserStorageProperties(applicationContext, SecurityHelperImpl(globalPreferences.passphraseStorage))
 
     val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
+    val dataStore: DataStore<Preferences> = getDataStore(applicationContext)
 
     return UserSessionScope(
         userAgent,
@@ -72,6 +76,7 @@ internal fun UserSessionScope(
         userStorageProvider,
         clientConfig,
         platformUserStorageProperties,
-        networkStateObserver
+        networkStateObserver,
+        dataStore
     )
 }

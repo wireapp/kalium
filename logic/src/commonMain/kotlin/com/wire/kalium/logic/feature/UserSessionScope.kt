@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
@@ -369,7 +371,8 @@ class UserSessionScope internal constructor(
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
     platformUserStorageProperties: PlatformUserStorageProperties,
-    networkStateObserver: NetworkStateObserver
+    networkStateObserver: NetworkStateObserver,
+    dataStore: DataStore<Preferences>
 ) : CoroutineScope {
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -458,7 +461,8 @@ class UserSessionScope internal constructor(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
-        networkStateObserver
+        networkStateObserver,
+        dataStore
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -1334,8 +1338,8 @@ class UserSessionScope internal constructor(
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
     val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
-    val logout: LogoutUseCase
-        get() = LogoutUseCaseImpl(
+
+    val logout: LogoutUseCase = LogoutUseCaseImpl(
             logoutRepository,
             globalScope.sessionRepository,
             clientRepository,
@@ -1349,7 +1353,8 @@ class UserSessionScope internal constructor(
             userSessionWorkScheduler,
             calls.establishedCall,
             calls.endCall,
-            kaliumConfigs
+            kaliumConfigs,
+            dataStore = dataStore
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)

@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
@@ -34,9 +36,9 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -65,7 +67,8 @@ abstract class CoreLogicCommon internal constructor(
             kaliumConfigs,
             userSessionScopeProvider,
             authenticationScopeProvider,
-            networkStateObserver
+            networkStateObserver,
+            dataStore
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
@@ -73,7 +76,7 @@ abstract class CoreLogicCommon internal constructor(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials? = null
     ): AuthenticationScope =
-        authenticationScopeProvider.provide(serverConfig, proxyCredentials, getGlobalScope().serverConfigRepository, networkStateObserver)
+        authenticationScopeProvider.provide(serverConfig, proxyCredentials, getGlobalScope().serverConfigRepository, networkStateObserver, dataStore)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
@@ -101,6 +104,7 @@ abstract class CoreLogicCommon internal constructor(
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
     abstract val networkStateObserver: NetworkStateObserver
+    abstract val dataStore: DataStore<Preferences>
 }
 
 expect val clientPlatform: String

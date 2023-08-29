@@ -53,6 +53,7 @@ mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
 mockk = "1.13.5"
 faker = "1.14.0"
+androidx-dataStore = "1.1.0-alpha04"
 
 [plugins]
 # Home-made convention plugins
@@ -95,6 +96,7 @@ paging3 = { module = "androidx.paging:paging-runtime", version.ref = "android-pa
 securityCrypto = { module = "androidx.security:security-crypto", version.ref = "android-security" }
 desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk" }
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+androidx-dataStore = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-dataStore" }
 
 # kmp Settings (shared pref)
 settings-kmp = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
