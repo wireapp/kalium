@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.v4.authenticated.networkContainer
+package com.wire.kalium.network.api.v5.authenticated.networkContainer
 
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
@@ -41,26 +41,26 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.v4.authenticated.AccessTokenApiV4
-import com.wire.kalium.network.api.v4.authenticated.AssetApiV4
-import com.wire.kalium.network.api.v4.authenticated.CallApiV4
-import com.wire.kalium.network.api.v4.authenticated.ClientApiV4
-import com.wire.kalium.network.api.v4.authenticated.ConnectionApiV4
-import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
-import com.wire.kalium.network.api.v4.authenticated.E2EIApiV4
-import com.wire.kalium.network.api.v4.authenticated.FeatureConfigApiV4
-import com.wire.kalium.network.api.v4.authenticated.KeyPackageApiV4
-import com.wire.kalium.network.api.v4.authenticated.LogoutApiV4
-import com.wire.kalium.network.api.v4.authenticated.MLSMessageApiV4
-import com.wire.kalium.network.api.v4.authenticated.MLSPublicKeyApiV4
-import com.wire.kalium.network.api.v4.authenticated.MessageApiV4
-import com.wire.kalium.network.api.v4.authenticated.NotificationApiV4
-import com.wire.kalium.network.api.v4.authenticated.PreKeyApiV4
-import com.wire.kalium.network.api.v4.authenticated.PropertiesApiV4
-import com.wire.kalium.network.api.v4.authenticated.SelfApiV4
-import com.wire.kalium.network.api.v4.authenticated.TeamsApiV4
-import com.wire.kalium.network.api.v4.authenticated.UserDetailsApiV4
-import com.wire.kalium.network.api.v4.authenticated.UserSearchApiV4
+import com.wire.kalium.network.api.v5.authenticated.AccessTokenApiV5
+import com.wire.kalium.network.api.v5.authenticated.AssetApiV5
+import com.wire.kalium.network.api.v5.authenticated.CallApiV5
+import com.wire.kalium.network.api.v5.authenticated.ClientApiV5
+import com.wire.kalium.network.api.v5.authenticated.ConnectionApiV5
+import com.wire.kalium.network.api.v5.authenticated.ConversationApiV5
+import com.wire.kalium.network.api.v5.authenticated.E2EIApiV5
+import com.wire.kalium.network.api.v5.authenticated.FeatureConfigApiV5
+import com.wire.kalium.network.api.v5.authenticated.KeyPackageApiV5
+import com.wire.kalium.network.api.v5.authenticated.LogoutApiV5
+import com.wire.kalium.network.api.v5.authenticated.MLSMessageApiV5
+import com.wire.kalium.network.api.v5.authenticated.MLSPublicKeyApiV5
+import com.wire.kalium.network.api.v5.authenticated.MessageApiV5
+import com.wire.kalium.network.api.v5.authenticated.NotificationApiV5
+import com.wire.kalium.network.api.v5.authenticated.PreKeyApiV5
+import com.wire.kalium.network.api.v5.authenticated.PropertiesApiV5
+import com.wire.kalium.network.api.v5.authenticated.SelfApiV5
+import com.wire.kalium.network.api.v5.authenticated.TeamsApiV5
+import com.wire.kalium.network.api.v5.authenticated.UserDetailsApiV5
+import com.wire.kalium.network.api.v5.authenticated.UserSearchApiV5
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderImpl
@@ -68,7 +68,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
 
-internal class AuthenticatedNetworkContainerV4 internal constructor(
+internal class AuthenticatedNetworkContainerV5 internal constructor(
     private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
@@ -80,47 +80,47 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
         networkStateObserver,
-        { httpClient -> AccessTokenApiV4(httpClient) },
+        { httpClient -> AccessTokenApiV5(httpClient) },
         engine
     ) {
 
-    override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV4(networkClient.httpClient)
+    override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV5(networkClient.httpClient)
 
-    override val logoutApi: LogoutApi get() = LogoutApiV4(networkClient, sessionManager)
+    override val logoutApi: LogoutApi get() = LogoutApiV5(networkClient, sessionManager)
 
-    override val clientApi: ClientApi get() = ClientApiV4(networkClient)
+    override val clientApi: ClientApi get() = ClientApiV5(networkClient)
 
-    override val messageApi: MessageApi get() = MessageApiV4(networkClient, EnvelopeProtoMapperImpl())
+    override val messageApi: MessageApi get() = MessageApiV5(networkClient, EnvelopeProtoMapperImpl())
 
-    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV4()
+    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV5(networkClient)
 
-    override val e2eiApi: E2EIApi get() = E2EIApiV4()
+    override val e2eiApi: E2EIApi get() = E2EIApiV5(networkClient)
 
-    override val conversationApi: ConversationApi get() = ConversationApiV4(networkClient)
+    override val conversationApi: ConversationApi get() = ConversationApiV5(networkClient)
 
-    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV4()
+    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV5(networkClient)
 
-    override val preKeyApi: PreKeyApi get() = PreKeyApiV4(networkClient)
+    override val preKeyApi: PreKeyApi get() = PreKeyApiV5(networkClient)
 
-    override val assetApi: AssetApi get() = AssetApiV4(networkClientWithoutCompression, selfUserId)
+    override val assetApi: AssetApi get() = AssetApiV5(networkClientWithoutCompression, selfUserId)
 
-    override val notificationApi: NotificationApi get() = NotificationApiV4(networkClient, websocketClient, backendConfig)
+    override val notificationApi: NotificationApi get() = NotificationApiV5(networkClient, websocketClient, backendConfig)
 
-    override val teamsApi: TeamsApi get() = TeamsApiV4(networkClient)
+    override val teamsApi: TeamsApi get() = TeamsApiV5(networkClient)
 
-    override val selfApi: SelfApi get() = SelfApiV4(networkClient, sessionManager)
+    override val selfApi: SelfApi get() = SelfApiV5(networkClient, sessionManager)
 
-    override val userDetailsApi: UserDetailsApi get() = UserDetailsApiV4(networkClient)
+    override val userDetailsApi: UserDetailsApi get() = UserDetailsApiV5(networkClient)
 
-    override val userSearchApi: UserSearchApi get() = UserSearchApiV4(networkClient)
+    override val userSearchApi: UserSearchApi get() = UserSearchApiV5(networkClient)
 
-    override val callApi: CallApi get() = CallApiV4(networkClient)
+    override val callApi: CallApi get() = CallApiV5(networkClient)
 
-    override val connectionApi: ConnectionApi get() = ConnectionApiV4(networkClient)
+    override val connectionApi: ConnectionApi get() = ConnectionApiV5(networkClient)
 
-    override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV4(networkClient)
+    override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV5(networkClient)
 
-    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV4()
+    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV5(networkClient)
 
-    override val propertiesApi: PropertiesApi get() = PropertiesApiV4(networkClient)
+    override val propertiesApi: PropertiesApi get() = PropertiesApiV5(networkClient)
 }

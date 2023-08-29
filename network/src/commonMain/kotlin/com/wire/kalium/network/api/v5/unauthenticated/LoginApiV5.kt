@@ -16,17 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.featureFlags
+package com.wire.kalium.network.api.v5.unauthenticated
 
-interface FeatureSupport {
-    val isMLSSupported: Boolean
-}
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v4.unauthenticated.LoginApiV4
 
-@Suppress("MagicNumber")
-class FeatureSupportImpl(
-    kaliumConfigs: KaliumConfigs,
-    apiVersion: Int
-) : FeatureSupport {
-
-    override val isMLSSupported: Boolean = kaliumConfigs.isMLSSupportEnabled && apiVersion >= 5
-}
+internal open class LoginApiV5 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : LoginApiV4(unauthenticatedNetworkClient)

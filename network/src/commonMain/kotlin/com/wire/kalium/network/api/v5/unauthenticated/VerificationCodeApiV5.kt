@@ -15,18 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v5.unauthenticated
 
-package com.wire.kalium.logic.featureFlags
+import com.wire.kalium.network.UnauthenticatedNetworkClient
+import com.wire.kalium.network.api.v4.unauthenticated.VerificationCodeApiV4
 
-interface FeatureSupport {
-    val isMLSSupported: Boolean
-}
-
-@Suppress("MagicNumber")
-class FeatureSupportImpl(
-    kaliumConfigs: KaliumConfigs,
-    apiVersion: Int
-) : FeatureSupport {
-
-    override val isMLSSupported: Boolean = kaliumConfigs.isMLSSupportEnabled && apiVersion >= 5
-}
+internal open class VerificationCodeApiV5 internal constructor(
+    unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+) : VerificationCodeApiV4(unauthenticatedNetworkClient)

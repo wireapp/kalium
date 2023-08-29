@@ -16,13 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v4
+package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.KeyPackageJson
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.v4.authenticated.KeyPackageApiV4
+import com.wire.kalium.network.api.v5.authenticated.KeyPackageApiV5
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
@@ -30,7 +30,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-internal class KeyPackageApiV4Test : ApiTest() {
+internal class KeyPackageApiV5Test : ApiTest() {
 
     @Test
     fun givenAValidClientId_whenCallingGetAvailableKeyPackageCountEndpoint_theRequestShouldBeConfiguredCorrectly() = runTest {
@@ -42,7 +42,7 @@ internal class KeyPackageApiV4Test : ApiTest() {
                 assertPathEqual(KEY_PACKAGE_COUNT_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiV4(networkClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiV5(networkClient)
 
         val response = keyPackageApi.getAvailableKeyPackageCount(VALID_CLIENT_ID)
         assertTrue(response.isSuccessful())
@@ -60,7 +60,7 @@ internal class KeyPackageApiV4Test : ApiTest() {
                 assertPathEqual(KEY_PACKAGE_UPLOAD_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiV4(networkClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiV5(networkClient)
 
         val response = keyPackageApi.uploadKeyPackages(VALID_CLIENT_ID, listOf(VALID_KEY_PACKAGE))
         assertTrue(response.isSuccessful())
@@ -76,7 +76,7 @@ internal class KeyPackageApiV4Test : ApiTest() {
                 assertPathEqual(KEY_PACKAGE_CLAIM_PATH)
             }
         )
-        val keyPackageApi: KeyPackageApi = KeyPackageApiV4(networkClient)
+        val keyPackageApi: KeyPackageApi = KeyPackageApiV5(networkClient)
 
         val response = keyPackageApi.claimKeyPackages(KeyPackageApi.Param.IncludeOwnClient(VALID_USER_ID))
         assertTrue(response.isSuccessful())
