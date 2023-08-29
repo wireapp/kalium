@@ -16,12 +16,12 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v4
+package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.model.MLSPublicKeysResponseJson
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
-import com.wire.kalium.network.api.v4.authenticated.MLSPublicKeyApiV4
+import com.wire.kalium.network.api.v5.authenticated.MLSPublicKeyApiV5
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
@@ -31,7 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class MLSPublicKeysApiV4Test : ApiTest() {
+internal class MLSPublicKeysApiV5Test : ApiTest() {
 
     @Test
     fun givenWhenGetMLSPublicKeys_theRequestShouldBeConfiguredCorrectly() = runTest {
@@ -45,7 +45,7 @@ internal class MLSPublicKeysApiV4Test : ApiTest() {
                 assertPathEqual("$PATH_MLS/$PATH_PUBLIC_KEYS")
             }
         )
-        val mlsPublicKeyApi: MLSPublicKeyApi = MLSPublicKeyApiV4(networkClient)
+        val mlsPublicKeyApi: MLSPublicKeyApi = MLSPublicKeyApiV5(networkClient)
         val response = mlsPublicKeyApi.getMLSPublicKeys()
         assertTrue(response.isSuccessful())
     }

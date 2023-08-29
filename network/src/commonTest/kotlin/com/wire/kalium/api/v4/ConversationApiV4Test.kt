@@ -22,17 +22,12 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
-import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
-import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -40,7 +35,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 internal class ConversationApiV4Test : ApiTest() {
@@ -72,108 +66,6 @@ internal class ConversationApiV4Test : ApiTest() {
                 conflictingBackends
             )
         }
-
-    @Test
-    fun givenRequest_whenFetchingSubconversationDetails_thenRequestIsConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v4.rawJson,
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub"
-                )
-            }
-        )
-
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.fetchSubconversationDetails(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub"
-        )
-    }
-
-    @Test
-    fun givenSuccessSubconversationDetails_whenFetchingSubconversationDetails_thenResponseIsParsedCorrectly() =
-        runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                SubconversationDetailsResponseJson.v4.rawJson,
-                statusCode = HttpStatusCode.OK
-            )
-
-            val conversationApi = ConversationApiV4(networkClient)
-            conversationApi.fetchSubconversationDetails(
-                ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-                "sub"
-            ).also {
-                assertIs<NetworkResponse.Success<SubconversationResponse>>(it)
-            }
-        }
-
-    @Test
-    fun givenRequest_whenFetchingSubconversationGroupInfo_thenRequestIsConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            "groupinfo".encodeToByteArray(),
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub/groupinfo"
-                )
-            }
-        )
-
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.fetchSubconversationGroupInfo(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub"
-        ).also {
-            assertIs<NetworkResponse.Success<ByteArray>>(it)
-        }
-    }
-
-    @Test
-    fun givenRequest_whenDeletingSubconversation_thenRequestIsConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            ByteArray(0),
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertDelete()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub"
-                )
-                assertJsonBodyContent(SubconversationDeleteRequestJson.v4.rawJson)
-            }
-        )
-
-        val deleteRequest = SubconversationDeleteRequest(43UL, "groupid")
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.deleteSubconversation(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub",
-            deleteRequest
-        )
-    }
-
-    @Test
-    fun givenRequest_whenLeavingSubconversation_thenRequestIsConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            ByteArray(0),
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertDelete()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub/self"
-                )
-            }
-        )
-
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.leaveSubconversation(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub",
-        )
-    }
 
     @Test
     fun whenAddingMemberToGroup_AndRemoteFailureUnreachable_thenTheMemberShouldBeAddedCorrectly() = runTest {

@@ -16,17 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.featureFlags
+package com.wire.kalium.network.api.v5.authenticated
 
-interface FeatureSupport {
-    val isMLSSupported: Boolean
-}
+import com.wire.kalium.network.api.v4.authenticated.AccessTokenApiV4
+import io.ktor.client.HttpClient
 
-@Suppress("MagicNumber")
-class FeatureSupportImpl(
-    kaliumConfigs: KaliumConfigs,
-    apiVersion: Int
-) : FeatureSupport {
-
-    override val isMLSSupported: Boolean = kaliumConfigs.isMLSSupportEnabled && apiVersion >= 5
-}
+internal class AccessTokenApiV5 internal constructor(
+    private val httpClient: HttpClient
+) : AccessTokenApiV4(httpClient)
