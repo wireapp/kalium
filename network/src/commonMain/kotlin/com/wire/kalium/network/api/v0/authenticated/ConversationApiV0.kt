@@ -235,7 +235,7 @@ internal open class ConversationApiV0 internal constructor(
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
         NetworkResponse.Error(
-            APINotSupported("MLS: fetchGroupInfo api is only available on API V3")
+            APINotSupported("MLS: fetchGroupInfo api is only available on API V5")
         )
 
     override suspend fun joinConversation(
@@ -269,7 +269,7 @@ internal open class ConversationApiV0 internal constructor(
         subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
         NetworkResponse.Error(
-            APINotSupported("MLS: fetchSubconversationDetails api is only available on API V3")
+            APINotSupported("MLS: fetchSubconversationDetails api is only available on API V5")
         )
 
     override suspend fun fetchSubconversationGroupInfo(
@@ -277,7 +277,7 @@ internal open class ConversationApiV0 internal constructor(
         subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
         NetworkResponse.Error(
-            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V3")
+            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V5")
         )
 
     override suspend fun deleteSubconversation(
@@ -286,7 +286,7 @@ internal open class ConversationApiV0 internal constructor(
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
         NetworkResponse.Error(
-            APINotSupported("MLS: deleteSubconversation api is only available on API V3")
+            APINotSupported("MLS: deleteSubconversation api is only available on API V5")
         )
 
     override suspend fun leaveSubconversation(
@@ -294,7 +294,7 @@ internal open class ConversationApiV0 internal constructor(
         subconversationId: SubconversationId
     ): NetworkResponse<Unit> =
         NetworkResponse.Error(
-            APINotSupported("MLS: leaveSubconversation api is only available on API V3")
+            APINotSupported("MLS: leaveSubconversation api is only available on API V5")
         )
 
     protected suspend fun handleConversationMemberAddedResponse(

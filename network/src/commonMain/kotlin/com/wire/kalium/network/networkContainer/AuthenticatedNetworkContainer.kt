@@ -46,7 +46,8 @@ import com.wire.kalium.network.api.v0.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
-import com.wire.kalium.network.session.CertificatePinning
+import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
+import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
@@ -147,6 +148,12 @@ interface AuthenticatedNetworkContainer {
                     sessionManager,
                     selfUserId,
                     certificatePinning
+                )
+
+                5 -> AuthenticatedNetworkContainerV5(
+                    networkStateObserver,
+                    sessionManager,
+                    selfUserId
                 )
 
                 else -> error("Unsupported version: $version")
