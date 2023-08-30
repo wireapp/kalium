@@ -184,8 +184,8 @@ SELECT * FROM User
 WHERE deleted = 0 AND qualified_id != (SELECT id FROM SelfUser) AND qualified_id IN
 (
 	SELECT user FROM Member
-	JOIN ConversationDetails ON ConversationDetails.qualifiedId = Member.conversation
-	WHERE ConversationDetails.type = 'ONE_ON_ONE' AND Member.user = User.qualified_id
+	JOIN Conversation ON Conversation.qualified_id = Member.conversation
+	WHERE Conversation.type = 'ONE_ON_ONE' AND Member.user = User.qualified_id
 	LIMIT 1
 );
 

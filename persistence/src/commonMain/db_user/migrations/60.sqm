@@ -109,8 +109,8 @@ LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = C
 UPDATE User
 SET one_on_one_conversation_id = (
 	SELECT Member.conversation FROM Member
-	JOIN ConversationDetails ON ConversationDetails.qualifiedId = Member.conversation
-	WHERE ConversationDetails.type = 'ONE_ON_ONE' AND ConversationDetails.protocol = 'PROTEUS' AND Member.user = User.qualified_id
+	JOIN Conversation ON Conversation.qualified_id = Member.conversation
+	WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = 'PROTEUS' AND Member.user = User.qualified_id
 	LIMIT  1
 )
 WHERE qualified_id != (SELECT id FROM SelfUser);
