@@ -40,13 +40,16 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.util.toLowerCasePreservingASCIIRules
 import io.mockative.Mock
 import io.mockative.Times
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -157,6 +160,36 @@ class SearchUserUseCaseTest {
             assertIs<SearchUsersResult.Success>(actual)
             assertEquals(expected.value, actual.userSearchResult)
             awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenValidParams_whenSearching_thenCorrectlyIgnoreCase() = runTest {
+        // given
+        val expected = Either.Right(VALID_SEARCH_PUBLIC_RESULT)
+
+        given(qualifiedIdMapper)
+            .function(qualifiedIdMapper::fromStringToQualifiedID)
+            .whenInvokedWith(anything())
+            .thenReturn(QualifiedID(TEST_QUERY.toLowerCasePreservingASCIIRules(), "wire.com"))
+
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchUserDirectory)
+            .whenInvokedWith(anything(), anything(), anything(), anything())
+            .thenReturn(expected)
+
+        // when
+        searchPublicUsersUseCase(TEST_QUERY).test {
+            // then
+            val actual = awaitItem()
+            assertIs<SearchUsersResult.Success>(actual)
+            assertEquals(expected.value, actual.userSearchResult)
+            awaitComplete()
+
+            verify(searchUserRepository)
+                .suspendFunction(searchUserRepository::searchUserDirectory)
+                .with(eq(TEST_QUERY.toLowerCasePreservingASCIIRules()), any(), eq(null), any())
+                .wasInvoked(once)
         }
     }
 
