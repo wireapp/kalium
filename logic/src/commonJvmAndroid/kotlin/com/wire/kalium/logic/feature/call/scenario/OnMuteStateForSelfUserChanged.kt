@@ -31,16 +31,12 @@ internal class OnMuteStateForSelfUserChanged(
 ) : SelfUserMuteHandler {
 
     override fun onMuteStateChanged(isMuted: Int, arg: Pointer?) {
-        println("onMuteStateChanged start")
-
         scope.launch {
-            println("onMuteStateChanged called")
             callingLogger.i("[OnMuteStateForSelfUserChanged] - STARTED")
             callRepository.establishedCallsFlow().first().takeIf {
-                println("call is not empty: ${it}")
                 it.isNotEmpty()
             }?.first()?.conversationId?.let {
-                callingLogger.i("[OnMuteStateForSelfUserChanged] - conversationId: $it muted: $isMuted")
+                callingLogger.i("[OnMuteStateForSelfUserChanged] - conversationId: ${it.toLogString()} muted: $isMuted")
                 callRepository.updateIsMutedById(it, isMuted == 1)
             }
         }
