@@ -100,7 +100,7 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.cryptoboxAndroid)
-                implementation(libs.javaxCrypto)
+                implementation(libs.androidCrypto)
                 implementation(libs.coreCryptoAndroid)
             }
         }
