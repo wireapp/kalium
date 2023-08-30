@@ -40,9 +40,9 @@ import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-expect class CoreLogic : CoreLogicCommon
+open expect class CoreLogic : CoreLogicCommon
 
-abstract class CoreLogicCommon internal constructor(
+abstract class CoreLogicCommon constructor(
     protected val rootPath: String,
     protected val userAgent: String,
     protected val kaliumConfigs: KaliumConfigs,
@@ -57,7 +57,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
-    fun getGlobalScope(): GlobalKaliumScope =
+    open fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(
             userAgent,
             globalDatabase,

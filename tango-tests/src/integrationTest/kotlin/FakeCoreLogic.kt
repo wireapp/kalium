@@ -16,8 +16,9 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic
-
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.CoreLogicCommon
+import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
+import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
@@ -37,13 +39,34 @@ import java.io.File
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
-open actual class CoreLogic(
+class FakeCoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String
-) : CoreLogicCommon(
+) : CoreLogic(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
+
+    override fun getGlobalScope(): GlobalKaliumScope =
+        GlobalKaliumScope(
+            userAgent,
+            globalDatabase,
+            globalPreferences,
+            kaliumConfigs,
+            userSessionScopeProvider,
+            authenticationScopeProvider,
+            networkStateObserver,
+            unboundNetworkContainer = lazy {
+                UnboundNetworkContainerCommon(
+                    networkStateObserver,
+                    kaliumConfigs.developmentApiEnabled,
+                    userAgent,
+                    kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
+                    kaliumConfigs.certPinningConfig
+                )
+            }
+        )
+
 
     override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
@@ -62,8 +85,6 @@ open actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager = GlobalCallManager(PlatformContext())
-    override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
     override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
@@ -80,5 +101,3 @@ open actual class CoreLogic(
     }
 }
 
-@Suppress("MayBeConst")
-actual val clientPlatform: String = "jvm"

@@ -35,7 +35,7 @@ import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
-internal actual class UserSessionScopeProviderImpl(
+actual class UserSessionScopeProviderImpl(
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val rootPathsProvider: RootPathsProvider,
     private val globalScope: GlobalKaliumScope,

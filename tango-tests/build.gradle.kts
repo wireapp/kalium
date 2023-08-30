@@ -30,11 +30,16 @@ kotlin {
             dependencies {
                 implementation(project(":network"))
                 implementation(project(":logic"))
+                implementation(project(":persistence"))
+                implementation(kotlin("test"))
+                implementation(libs.settings.kmpTest)
 
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
-
+                // coroutines
+                implementation(libs.coroutines.test)
+                implementation(libs.turbine)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktor.serialization)
                 implementation(libs.ktor.okHttp)

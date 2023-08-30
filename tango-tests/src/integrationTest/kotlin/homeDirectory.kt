@@ -15,8 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
 
-import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
-expect class NetworkStateObserverImpl : NetworkStateObserver
+fun homeDirectory(): String {
+    return System.getProperty("user.home")
+}
+
+fun coreLogic(
+    rootPath: String,
+    kaliumConfigs: KaliumConfigs
+): FakeCoreLogic = FakeCoreLogic(rootPath, kaliumConfigs, "Wire Infinite Monkeys")

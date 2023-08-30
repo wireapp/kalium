@@ -83,19 +83,15 @@ import kotlin.coroutines.CoroutineContext
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
 @Suppress("LongParameterList")
-class GlobalKaliumScope internal constructor(
+class GlobalKaliumScope constructor(
     userAgent: String,
     private val globalDatabase: GlobalDatabaseProvider,
     private val globalPreferences: GlobalPrefProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val networkStateObserver: NetworkStateObserver
-) : CoroutineScope {
-
-    override val coroutineContext: CoroutineContext = SupervisorJob()
-
-    val unboundNetworkContainer: UnboundNetworkContainer by lazy {
+    private val networkStateObserver: NetworkStateObserver,
+    val unboundNetworkContainer: Lazy<UnboundNetworkContainer> =  lazy {
         UnboundNetworkContainerCommon(
             networkStateObserver,
             kaliumConfigs.developmentApiEnabled,
@@ -104,12 +100,15 @@ class GlobalKaliumScope internal constructor(
             kaliumConfigs.certPinningConfig
         )
     }
+) : CoroutineScope {
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
 
     internal val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
-            unboundNetworkContainer.serverConfigApi,
+            unboundNetworkContainer.value.serverConfigApi,
             globalDatabase.serverConfigurationDAO,
-            unboundNetworkContainer.remoteVersion,
+            unboundNetworkContainer.value.remoteVersion,
             kaliumConfigs.developmentApiEnabled
         )
 

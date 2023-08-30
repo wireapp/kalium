@@ -1,3 +1,6 @@
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import org.junit.Test
+
 /*
  * Wire
  * Copyright (C) 2023 Wire Swiss GmbH
@@ -15,8 +18,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.network
+class TempTest {
+    @Test
+    fun testFun(){
+        val coreLogic = coreLogic(
+            rootPath = "$HOME_DIRECTORY/.kalium/accounts",
+            kaliumConfigs = KaliumConfigs(
+                developmentApiEnabled = true,
+                encryptProteusStorage = true,
+                isMLSSupportEnabled = true,
+                wipeOnDeviceRemoval = true,
+            )
+        )
 
-import com.wire.kalium.network.NetworkStateObserver
+    }
 
-expect class NetworkStateObserverImpl : NetworkStateObserver
+    companion object {
+        val HOME_DIRECTORY: String = homeDirectory()
+    }
+}
