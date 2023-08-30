@@ -63,7 +63,8 @@ internal class SearchPublicUsersUseCaseImpl(
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
     ): Flow<SearchUsersResult> {
-        val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(searchQuery)
+        val sanitizedSearchQuery = searchQuery.lowercase()
+        val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(sanitizedSearchQuery)
 
         return connectionRepository.observeConnectionList()
             .map { connections ->
