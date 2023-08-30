@@ -192,9 +192,7 @@ internal class UserDataSource internal constructor(
 
     override suspend fun getUsersWithOneOnOneConversation(): List<OtherUser> {
         return userDAO.getUsersWithOneOnOneConversation()
-            .map {
-                publicUserMapper.fromUserEntityToOtherUser(it)
-            }
+            .map(publicUserMapper::fromUserEntityToOtherUser)
     }
 
     /**
