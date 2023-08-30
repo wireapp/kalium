@@ -195,7 +195,7 @@ class UserDatabaseDataGenerator(
             expiresAt = null,
             defederated = false,
             supportedProtocols = null,
-            oneOnOneConversationId = null
+            activeOneOnOneConversationId = null
         )
     }
 

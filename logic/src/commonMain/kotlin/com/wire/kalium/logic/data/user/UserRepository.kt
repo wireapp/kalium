@@ -75,7 +75,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.minutes
 
@@ -410,7 +409,7 @@ internal class UserDataSource internal constructor(
     }
 
     override suspend fun updateOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
-        wrapStorageRequest { userDAO.updateOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
+        wrapStorageRequest { userDAO.updateActiveOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
 
     override fun observeAllKnownUsersNotInConversation(
         conversationId: ConversationId

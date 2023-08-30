@@ -1,8 +1,8 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
-ALTER TABLE User ADD COLUMN one_on_one_conversation_id TEXT AS QualifiedIDEntity;
+ALTER TABLE User ADD COLUMN active_one_on_one_conversation_id TEXT AS QualifiedIDEntity;
 
--- Re-create ConversationDetails view since it depends on one_on_one_conversation_id
+-- Re-create ConversationDetails view since it depends on active_one_on_one_conversation_id
 
 DROP VIEW IF EXISTS ConversationDetails;
 
@@ -67,7 +67,7 @@ CASE
     ELSE 0
 END AS isCreator,
 CASE (Conversation.type)
-    WHEN 'ONE_ON_ONE' THEN coalesce(User.one_on_one_conversation_id = Conversation.qualified_id, 0)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
     ELSE 1
 END AS isActive,
 Conversation.last_notified_date AS lastNotifiedMessageDate,
@@ -104,10 +104,10 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
 LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
 
--- Populate one_on_one_conversation_id for users with existing one-on-one conversations
+-- Populate active_one_on_one_conversation_id for users with existing one-on-one conversations
 
 UPDATE User
-SET one_on_one_conversation_id = (
+SET active_one_on_one_conversation_id = (
 	SELECT Member.conversation FROM Member
 	JOIN Conversation ON Conversation.qualified_id = Member.conversation
 	WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = 'PROTEUS' AND Member.user = User.qualified_id

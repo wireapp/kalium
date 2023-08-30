@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.user
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -46,7 +45,6 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -577,7 +575,7 @@ class UserRepositoryTest {
         ).shouldSucceed()
 
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::updateOneOnOneConversation)
+            .suspendFunction(arrangement.userDAO::updateActiveOneOnOneConversation)
             .with(eq(userId.toDao()), eq(conversationId.toDao()))
             .wasInvoked(exactly = once)
     }
@@ -795,14 +793,14 @@ class UserRepositoryTest {
 
         fun withUpdateOneOnOneConversationSuccess() = apply {
             given(userDAO)
-                .suspendFunction(userDAO::updateOneOnOneConversation)
+                .suspendFunction(userDAO::updateActiveOneOnOneConversation)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
         }
 
         fun withUpdateOneOnOneConversationFailing(exception: Throwable) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::updateOneOnOneConversation)
+                .suspendFunction(userDAO::updateActiveOneOnOneConversation)
                 .whenInvokedWith(any(), any())
                 .thenThrow(exception)
         }

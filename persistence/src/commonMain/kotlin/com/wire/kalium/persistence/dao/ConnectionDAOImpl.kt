@@ -101,7 +101,7 @@ private class ConnectionMapper {
             expiresAt = expires_at,
             defederated = defederated.requireField("defederated"),
             supportedProtocols = supportedProtocols,
-            oneOnOneConversationId = oneToOneConversationId
+            activeOneOnOneConversationId = oneToOneConversationId
         ) else null
     )
 

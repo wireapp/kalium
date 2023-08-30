@@ -81,7 +81,7 @@ class PublicUserMapperImpl(
         expiresAt = userEntity.expiresAt,
         defederated = userEntity.defederated,
         supportedProtocols = userEntity.supportedProtocols?.toModel(),
-        oneOnOneConversationId = userEntity.oneOnOneConversationId?.toModel()
+        activeOneOnOneConversationId = userEntity.activeOneOnOneConversationId?.toModel()
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -104,7 +104,7 @@ class PublicUserMapperImpl(
             hasIncompleteMetadata = false,
             defederated = defederated,
             supportedProtocols = supportedProtocols?.toDao(),
-            oneOnOneConversationId = oneOnOneConversationId?.toDao()
+            activeOneOnOneConversationId = activeOneOnOneConversationId?.toDao()
         )
     }
 

@@ -111,7 +111,7 @@ object TestUser {
         expiresAt = null,
         defederated = false,
         supportedProtocols = setOf(SupportedProtocolEntity.MLS),
-        oneOnOneConversationId = null
+        activeOneOnOneConversationId = null
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

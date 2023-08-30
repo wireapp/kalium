@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -975,8 +974,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
-        userDAO.insertUser(user1.copy(oneOnOneConversationId = conversationEntity1.id)) // user with metadata
-        userDAO.insertUser(user2.copy(oneOnOneConversationId = conversationEntity2.id, name = null)) // user without metadata
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user with metadata
+        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id, name = null)) // user without metadata
 
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
@@ -1020,8 +1019,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
-        userDAO.insertUser(user1.copy(oneOnOneConversationId = conversationEntity1.id)) // user active one-on-one
-        userDAO.insertUser(user2.copy(oneOnOneConversationId = null)) // user without active one-on-one
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user active one-on-one
+        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = null)) // user without active one-on-one
 
         memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity1.id)
         memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity2.id)
@@ -1035,7 +1034,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenOneOnOneConversationNotExisting_whenGettingOneOnOneConversationId_thenShouldReturnEmptyList() = runTest {
         // given
-        userDAO.insertUser(user1.copy(oneOnOneConversationId = conversationEntity1.id))
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
 
         // then
         assertTrue(conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).isEmpty())

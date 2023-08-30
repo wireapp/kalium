@@ -129,7 +129,7 @@ internal class UserMapperImpl(
             expiresAt = expiresAt,
             defederated = false,
             supportedProtocols = supportedProtocols?.toDao(),
-            oneOnOneConversationId = null
+            activeOneOnOneConversationId = null
         )
     }
 
@@ -151,7 +151,7 @@ internal class UserMapperImpl(
             expiresAt = expiresAt?.toInstant(),
             defederated = false,
             supportedProtocols = supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
-            oneOnOneConversationId = null
+            activeOneOnOneConversationId = null
         )
     }
 
@@ -214,7 +214,7 @@ internal class UserMapperImpl(
             expiresAt = null,
             defederated = false,
             supportedProtocols = null,
-            oneOnOneConversationId = null
+            activeOneOnOneConversationId = null
         )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -241,7 +241,7 @@ internal class UserMapperImpl(
         expiresAt = userProfile.expiresAt?.toInstant(),
         defederated = false,
         supportedProtocols = userProfile.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
-        oneOnOneConversationId = null
+        activeOneOnOneConversationId = null
     )
 
     override fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity {
@@ -284,7 +284,7 @@ internal class UserMapperImpl(
             expiresAt = null,
             defederated = false,
             supportedProtocols = null,
-            oneOnOneConversationId = null
+            activeOneOnOneConversationId = null
         )
     }
 }

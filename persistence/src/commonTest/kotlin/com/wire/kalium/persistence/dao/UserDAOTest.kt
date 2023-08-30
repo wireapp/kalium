@@ -729,11 +729,11 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
 
         // when
-        db.userDAO.updateOneOnOneConversation(user1.id, expectedNewOneOnOneConversationId)
+        db.userDAO.updateActiveOneOnOneConversation(user1.id, expectedNewOneOnOneConversationId)
 
         // then
         val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(expectedNewOneOnOneConversationId, persistedUser?.oneOnOneConversationId)
+        assertEquals(expectedNewOneOnOneConversationId, persistedUser?.activeOneOnOneConversationId)
     }
 
     private companion object {

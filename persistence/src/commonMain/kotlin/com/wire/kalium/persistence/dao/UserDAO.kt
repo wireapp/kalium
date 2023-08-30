@@ -77,7 +77,7 @@ data class UserEntity(
     val expiresAt: Instant?,
     val defederated: Boolean,
     val supportedProtocols: Set<SupportedProtocolEntity>?,
-    val oneOnOneConversationId: QualifiedIDEntity?
+    val activeOneOnOneConversationId: QualifiedIDEntity?
 )
 
 data class UserEntityMinimized(
@@ -233,5 +233,9 @@ interface UserDAO {
 
     suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>)
 
-    suspend fun updateOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
+    /**
+     * Update which 1-1 conversation is the currently active one. If multiple encryption protocols are enabled
+     * there can be multiple co-existing 1-1 conversations.
+     */
+    suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
 }

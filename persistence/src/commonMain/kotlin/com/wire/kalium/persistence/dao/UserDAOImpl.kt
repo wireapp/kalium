@@ -55,7 +55,7 @@ class UserMapper {
             expiresAt = user.expires_at,
             defederated = user.defederated,
             supportedProtocols = user.supported_protocols,
-            oneOnOneConversationId = user.one_on_one_conversation_id
+            activeOneOnOneConversationId = user.active_one_on_one_conversation_id
         )
     }
 
@@ -103,7 +103,7 @@ class UserMapper {
             expiresAt = expiresAt,
             defederated = defederated,
             supportedProtocols = supportedProtocols,
-            oneOnOneConversationId = oneOnOneConversationId
+            activeOneOnOneConversationId = oneOnOneConversationId
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -154,7 +154,7 @@ class UserDAOImpl internal constructor(
             connection_status = user.connectionStatus,
             deleted = user.deleted,
             supported_protocols = user.supportedProtocols,
-            one_on_one_conversation_id = user.oneOnOneConversationId
+            active_one_on_one_conversation_id = user.activeOneOnOneConversationId
         )
     }
 
@@ -217,7 +217,7 @@ class UserDAOImpl internal constructor(
                         connection_status = user.connectionStatus,
                         deleted = user.deleted,
                         supported_protocols = user.supportedProtocols,
-                        one_on_one_conversation_id = user.oneOnOneConversationId
+                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
                     )
                 }
             }
@@ -261,7 +261,7 @@ class UserDAOImpl internal constructor(
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt,
                         supported_protocols = user.supportedProtocols,
-                        one_on_one_conversation_id = user.oneOnOneConversationId
+                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
                     )
                 }
             }
@@ -291,7 +291,7 @@ class UserDAOImpl internal constructor(
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt,
                         supported_protocols = user.supportedProtocols,
-                        one_on_one_conversation_id = user.oneOnOneConversationId
+                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
                     )
                 }
             }
@@ -453,7 +453,7 @@ class UserDAOImpl internal constructor(
             userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
         }
 
-    override suspend fun updateOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity) =
+    override suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity) =
         withContext(queriesContext) {
             userQueries.updateOneOnOnConversationId(conversationId, userId)
         }

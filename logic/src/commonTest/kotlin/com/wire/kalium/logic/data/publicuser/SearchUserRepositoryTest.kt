@@ -578,7 +578,7 @@ class SearchUserRepositoryTest {
             expiresAt = null,
             defederated = false,
             supportedProtocols = null,
-            oneOnOneConversationId = null
+            activeOneOnOneConversationId = null
         )
 
         val SELF_USER = SelfUser(

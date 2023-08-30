@@ -178,7 +178,7 @@ internal object TableMapper {
         bot_serviceAdapter = BotServiceAdapter(),
         expires_atAdapter = InstantTypeAdapter,
         supported_protocolsAdapter = SupportedProtocolSetAdapter,
-        one_on_one_conversation_idAdapter = QualifiedIDAdapter
+        active_one_on_one_conversation_idAdapter = QualifiedIDAdapter
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter

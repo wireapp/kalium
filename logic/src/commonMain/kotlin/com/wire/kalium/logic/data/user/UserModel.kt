@@ -160,7 +160,7 @@ data class OtherUser(
     val deleted: Boolean,
     val defederated: Boolean,
     override val expiresAt: Instant? = null,
-    val oneOnOneConversationId: ConversationId? = null
+    val activeOneOnOneConversationId: ConversationId? = null
 ) : User() {
 
     /**

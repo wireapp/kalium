@@ -47,5 +47,5 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         expiresAt = null,
         defederated = false,
         supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS),
-        oneOnOneConversationId = null
+        activeOneOnOneConversationId = null
     )
