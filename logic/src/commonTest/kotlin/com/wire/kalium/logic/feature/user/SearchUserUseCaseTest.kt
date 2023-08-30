@@ -84,12 +84,12 @@ class SearchUserUseCaseTest {
 
         given(qualifiedIdMapper)
             .function(qualifiedIdMapper::fromStringToQualifiedID)
-            .whenInvokedWith(eq(TEST_QUERY))
+            .whenInvokedWith(eq(TEST_QUERY.lowercase()))
             .thenReturn(QualifiedID(TEST_QUERY, ""))
 
         given(qualifiedIdMapper)
             .function(qualifiedIdMapper::fromStringToQualifiedID)
-            .whenInvokedWith(eq(TEST_QUERY_FEDERATED))
+            .whenInvokedWith(eq(TEST_QUERY_FEDERATED.lowercase()))
             .thenReturn(QualifiedID(TEST_QUERY, "wire.com"))
 
     }
