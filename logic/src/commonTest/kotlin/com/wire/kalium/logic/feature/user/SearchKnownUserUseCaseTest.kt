@@ -35,7 +35,6 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
 import com.wire.kalium.logic.framework.TestUser
-import io.ktor.util.toLowerCasePreservingASCIIRules
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -98,7 +97,7 @@ class SearchKnownUserUseCaseTest {
 
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-                .with(eq(searchQuery.toLowerCasePreservingASCIIRules()), anything())
+                .with(eq(searchQuery.lowercase()), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -280,7 +279,7 @@ class SearchKnownUserUseCaseTest {
 
             given(qualifiedIdMapper)
                 .function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(eq("someSearchQuery@wire.com".toLowerCasePreservingASCIIRules()))
+                .whenInvokedWith(eq("someSearchQuery@wire.com".lowercase()))
                 .thenReturn(QualifiedID("someSearchQuery", "wire.com"))
 
             return this
@@ -333,7 +332,7 @@ class SearchKnownUserUseCaseTest {
             extraOtherUser: OtherUser? = null,
             searchUsersOptions: SearchUsersOptions? = null
         ): Arrangement {
-            val query = searchQuery?.toLowerCasePreservingASCIIRules()
+            val query = searchQuery?.lowercase()
             val otherUsers = listOf(
                 OtherUser(
                     id = QualifiedID(

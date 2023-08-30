@@ -40,7 +40,6 @@ import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.util.toLowerCasePreservingASCIIRules
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
@@ -171,7 +170,7 @@ class SearchUserUseCaseTest {
         given(qualifiedIdMapper)
             .function(qualifiedIdMapper::fromStringToQualifiedID)
             .whenInvokedWith(anything())
-            .thenReturn(QualifiedID(TEST_QUERY.toLowerCasePreservingASCIIRules(), "wire.com"))
+            .thenReturn(QualifiedID(TEST_QUERY.lowercase(), "wire.com"))
 
         given(searchUserRepository)
             .suspendFunction(searchUserRepository::searchUserDirectory)
@@ -188,7 +187,7 @@ class SearchUserUseCaseTest {
 
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchUserDirectory)
-                .with(eq(TEST_QUERY.toLowerCasePreservingASCIIRules()), any(), eq(null), any())
+                .with(eq(TEST_QUERY.lowercase()), any(), eq(null), any())
                 .wasInvoked(once)
         }
     }
