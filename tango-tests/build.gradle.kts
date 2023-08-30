@@ -1,5 +1,3 @@
-import com.wire.kalium.plugins.commonDokkaConfig
-
 /*
  * Wire
  * Copyright (C) 2023 Wire Swiss GmbH
@@ -22,66 +20,35 @@ import com.wire.kalium.plugins.commonDokkaConfig
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    id(libs.plugins.android.library.get().pluginId)
-    id(libs.plugins.kotlin.multiplatform.get().pluginId)
-    id(libs.plugins.kalium.library.get().pluginId)
-}
-
-kaliumLibrary {
-    multiplatform {
-        // enableJs.set(false)
-        enableIntegrationTests.set(true)
-        // enableIntegrationTests.set(true)
-    }
+    kotlin("jvm")
 }
 
 kotlin {
     sourceSets {
-        val commonMain by getting {
+        val test by getting {
+            kotlin.srcDir("src/integrationTest/kotlin")
             dependencies {
-                // implementation(project(":persistence"))
-                // implementation(kotlin("integrationTest"))
-                // coroutines
+                implementation(project(":network"))
+                implementation(project(":logic"))
+
+                implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)
-                implementation(libs.coroutines.test)
-                implementation(libs.settings.kmp)
-                implementation(libs.settings.kmpTest)
+                implementation(libs.ktxDateTime)
+
+                implementation(libs.ktxSerialization)
+                implementation(libs.ktor.serialization)
+                implementation(libs.ktor.okHttp)
+                implementation(libs.ktor.contentNegotiation)
+                implementation(libs.ktor.json)
+                implementation(libs.ktor.authClient)
+                implementation(libs.okhttp.loggingInterceptor)
+
+                implementation(libs.faker)
             }
         }
-//         val androidMain by getting {
-//             dependencies {
-//                 implementation(libs.androidtest.runner)
-//                 implementation(libs.androidtest.rules)
-//                 implementation(libs.androidtest.core)
-//             }
-//         }
-
-        val jvmTest by getting
-        val jvmIntegrationTest by getting // {
-//             dependencies {
-//                 // implementation(kotlin("integrationTest"))
-//
-//                 // coroutines
-//                 implementation(libs.coroutines.test)
-//                 implementation(libs.turbine)
-//
-//                 // mocking
-//                 implementation(libs.mockative.runtime)
-//                 implementation(libs.okio.test)
-//                 implementation(libs.settings.kmpTest)
-//                 implementation(libs.mockk)
-//             }
-        // }
 
         tasks.withType<JavaExec> {
             jvmArgs = listOf("-Djava.library.path=/usr/local/lib/:./native/libs")
         }
     }
-}
-
-commonDokkaConfig()
-
-tasks.withType<Wrapper> {
-    gradleVersion = "7.3.1"
-    distributionType = Wrapper.DistributionType.BIN
 }
