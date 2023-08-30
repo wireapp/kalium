@@ -16,31 +16,19 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.networkContainer
-
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
-import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
-import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
+import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
+import com.wire.kalium.network.networkContainer.UnboundNetworkClientProvider
+import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
-interface UnboundNetworkContainer {
-    val serverConfigApi: ServerConfigApi
-    val remoteVersion: VersionApi
-    val acmeApi: ACMEApi
-}
-
-interface UnboundNetworkClientProvider {
-    val unboundNetworkClient: UnboundNetworkClient
-}
-
-internal class UnboundNetworkClientProviderImpl(
+internal class FakeUnboundNetworkClientProviderImpl(
     networkStateObserver: NetworkStateObserver,
     userAgent: String,
     engine: HttpClientEngine
@@ -55,14 +43,14 @@ internal class UnboundNetworkClientProviderImpl(
     }
 }
 
-class UnboundNetworkContainerCommon(
+class FakeUnboundNetworkContainer(
     networkStateObserver: NetworkStateObserver,
     private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning
 ) : UnboundNetworkContainer,
-    UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
+    UnboundNetworkClientProvider by FakeUnboundNetworkClientProviderImpl(
         networkStateObserver = networkStateObserver,
         userAgent = userAgent,
         engine = defaultHttpEngine(
@@ -70,7 +58,7 @@ class UnboundNetworkContainerCommon(
             certificatePinning = certificatePinning
         )
     ) {
-    override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
-    override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
-    override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
+    override val serverConfigApi: ServerConfigApi get() = FakeServerConfigApiImpl(unboundNetworkClient)
+    override val remoteVersion: VersionApi get() = FakeVersionApiImpl(unboundNetworkClient, developmentApiEnabled)
+    override val acmeApi: ACMEApi get() = FakeACMEApiImpl(unboundNetworkClient)
 }

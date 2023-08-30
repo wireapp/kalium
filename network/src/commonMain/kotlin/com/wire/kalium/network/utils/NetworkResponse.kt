@@ -32,7 +32,7 @@ sealed class NetworkResponse<out T : Any> {
         val headers: Map<String, String?>,
         val httpCode: Int
     ) : NetworkResponse<T>() {
-        internal constructor(value: T, httpResponse: HttpResponse) : this(
+        constructor(value: T, httpResponse: HttpResponse) : this(
             value,
             // small issue here where keys are converted to small case letters
             // this is an issue for ktor to solve

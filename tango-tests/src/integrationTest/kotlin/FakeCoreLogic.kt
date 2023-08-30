@@ -17,20 +17,14 @@
  */
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.CoreLogicCommon
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
-import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
-import com.wire.kalium.logic.sync.GlobalWorkScheduler
-import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
-import com.wire.kalium.logic.util.PlatformContext
-import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
@@ -57,7 +51,7 @@ class FakeCoreLogic(
             authenticationScopeProvider,
             networkStateObserver,
             unboundNetworkContainer = lazy {
-                UnboundNetworkContainerCommon(
+                FakeUnboundNetworkContainer(
                     networkStateObserver,
                     kaliumConfigs.developmentApiEnabled,
                     userAgent,

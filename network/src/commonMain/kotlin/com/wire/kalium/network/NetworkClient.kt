@@ -87,7 +87,7 @@ internal class UnauthenticatedNetworkClient(
  * Serialization, and Content Negotiation.
  * Unlike others, this one has no strict ties with any API version nor default Base Url
  */
-internal class UnboundNetworkClient(
+class UnboundNetworkClient(
     networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine
 ) {

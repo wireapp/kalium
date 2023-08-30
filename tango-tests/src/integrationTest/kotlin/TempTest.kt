@@ -1,6 +1,3 @@
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import org.junit.Test
-
 /*
  * Wire
  * Copyright (C) 2023 Wire Swiss GmbH
@@ -18,9 +15,19 @@ import org.junit.Test
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.utils.isSuccessful
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+
 class TempTest {
     @Test
-    fun testFun(){
+    fun testFun() = runTest {
         val coreLogic = coreLogic(
             rootPath = "$HOME_DIRECTORY/.kalium/accounts",
             kaliumConfigs = KaliumConfigs(
@@ -31,6 +38,28 @@ class TempTest {
             )
         )
 
+        launch {
+            val expectedResult = AcmeDirectoriesResponse(
+                newNonce = "nonce",
+                newAccount = "newAccount",
+                newOrder = "newOrder",
+                revokeCert = "revokeCert",
+                keyChange = "keyChange"
+            )
+
+            val result = coreLogic
+                .getGlobalScope()
+                .unboundNetworkContainer
+                .value.acmeApi
+                .getACMEDirectories()
+
+            assertTrue(result.isSuccessful())
+            assertEquals(expectedResult.newNonce, result.value.newNonce)
+            assertEquals(expectedResult.newAccount, result.value.newAccount)
+            assertEquals(expectedResult.newOrder, result.value.newOrder)
+            assertEquals(expectedResult.revokeCert, result.value.revokeCert)
+            assertEquals(expectedResult.keyChange, result.value.keyChange)
+        }
     }
 
     companion object {
