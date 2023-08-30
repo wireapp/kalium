@@ -100,7 +100,7 @@ kotlin {
         val jsTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(libs.securityCrypto)
+                implementation(libs.androidCrypto)
                 implementation(libs.sqldelight.androidDriver)
                 implementation(libs.sqldelight.androidxPaging)
                 implementation(libs.paging3)
