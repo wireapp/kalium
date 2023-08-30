@@ -29,6 +29,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
+import io.ktor.util.toLowerCasePreservingASCIIRules
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -63,7 +64,8 @@ internal class SearchPublicUsersUseCaseImpl(
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
     ): Flow<SearchUsersResult> {
-        val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(searchQuery)
+        val sanitizedSearchQuery = searchQuery.toLowerCasePreservingASCIIRules()
+        val qualifiedID = qualifiedIdMapper.fromStringToQualifiedID(sanitizedSearchQuery)
 
         return connectionRepository.observeConnectionList()
             .map { connections ->

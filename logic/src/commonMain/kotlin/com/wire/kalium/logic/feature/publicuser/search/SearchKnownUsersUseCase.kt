@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import io.ktor.util.toLowerCasePreservingASCIIRules
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -57,18 +58,19 @@ internal class SearchKnownUsersUseCaseImpl(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
     ): Flow<SearchUsersResult> {
-        return if (isUserLookingForHandle(searchQuery)) {
+        val sanitizedSearchQuery = searchQuery.toLowerCasePreservingASCIIRules()
+        return if (isUserLookingForHandle(sanitizedSearchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
-                handle = searchQuery.removePrefix("@"),
+                handle = sanitizedSearchQuery.removePrefix("@"),
                 searchUsersOptions = searchUsersOptions
             )
         } else {
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
-                searchQuery = if (searchQuery.matches(FEDERATION_REGEX))
-                    searchQuery.run {
+                searchQuery = if (sanitizedSearchQuery.matches(FEDERATION_REGEX))
+                    sanitizedSearchQuery.run {
                         qualifiedIdMapper.fromStringToQualifiedID(this)
                     }.value
-                else searchQuery,
+                else sanitizedSearchQuery,
                 searchUsersOptions = searchUsersOptions
             )
         }
