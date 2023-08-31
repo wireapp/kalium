@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.utils.stubs.TestStubs
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
@@ -81,25 +82,12 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest(dispatcher) {
         db.userDAO.insertUser(user1)
-        val updatedUser1 = UserEntity(
-            user1.id,
-            "John Doe",
-            "johndoe",
-            "email1",
-            "phone1",
-            1,
-            "team",
-            ConnectionEntity.State.ACCEPTED,
-            UserAssetIdEntity("asset1", "domain"),
-            UserAssetIdEntity("asset1", "domain"),
-            UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.STANDARD,
-            botService = null,
-            deleted = false,
-            hasIncompleteMetadata = false,
-            expiresAt = null,
-            defederated = false,
-            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
+        val updatedUser1 = newUserEntity(user1.id).copy(
+            name = "John Doe",
+            handle = "johndoe",
+            email = "email1",
+            phone = "phone1",
+            accentId = 1
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -112,25 +100,12 @@ class UserDAOTest : BaseDatabaseTest() {
 
         db.userDAO.insertUser(user1)
 
-        val updatedUser1 = UserEntity(
-            user1.id,
-            "John Doe",
-            "johndoe",
-            "email1",
-            "phone1",
-            1,
-            "team",
-            ConnectionEntity.State.ACCEPTED,
-            null,
-            null,
-            UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.STANDARD,
-            botService = null,
-            false,
-            hasIncompleteMetadata = false,
-            expiresAt = null,
-            defederated = false,
-            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
+        val updatedUser1 = newUserEntity(user1.id).copy(
+            name = "John Doe",
+            handle = "johndoe",
+            email = "email1",
+            phone = "phone1",
+            accentId = 1
         )
 
         db.userDAO.getUserByQualifiedID(user1.id).take(2).collect {
@@ -243,46 +218,14 @@ class UserDAOTest : BaseDatabaseTest() {
                 USER_ENTITY_3.copy(email = commonEmailPrefix + "u3@example.org")
             )
             val notCommonEmailUsers = listOf(
-                UserEntity(
-                    id = QualifiedIDEntity("4", "wire.com"),
-                    name = "testName4",
-                    handle = "testHandle4",
-                    email = "someDifferentEmail1@wire.com",
-                    phone = "testPhone4",
-                    accentId = 4,
-                    team = "testTeam4",
-                    ConnectionEntity.State.ACCEPTED,
-                    null,
-                    null,
-                    UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.STANDARD,
-                    botService = null,
-                    false,
-                    hasIncompleteMetadata = false,
-                    expiresAt = null,
-                    defederated = false,
-                    supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
-                ),
-                UserEntity(
-                    id = QualifiedIDEntity("5", "wire.com"),
-                    name = "testName5",
-                    handle = "testHandle5",
-                    email = "someDifferentEmail2@wire.com",
-                    phone = "testPhone5",
-                    accentId = 5,
-                    team = "testTeam5",
-                    ConnectionEntity.State.ACCEPTED,
-                    null,
-                    null,
-                    UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.STANDARD,
-                    botService = null,
-                    deleted = false,
-                    hasIncompleteMetadata = false,
-                    expiresAt = null,
-                    defederated = false,
-                    supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
-                )
+                newUserEntity(QualifiedIDEntity("4", "wire.com"))
+                    .copy(
+                        email = "someDifferentEmail1@wire.com",
+                    ),
+                newUserEntity(QualifiedIDEntity("5", "wire.com"))
+                    .copy(
+                        email = "someDifferentEmail2@wire.com"
+                    )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
 
@@ -777,6 +720,20 @@ class UserDAOTest : BaseDatabaseTest() {
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertNotNull(result)
         assertEquals(false, result.defederated)
+    }
+
+    @Test
+    fun givenAnExistingUser_WhenUpdatingOneOnOneConversationId_ThenItIsUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewOneOnOneConversationId = TestStubs.conversationEntity1.id
+        db.userDAO.insertUser(user1)
+
+        // when
+        db.userDAO.updateActiveOneOnOneConversation(user1.id, expectedNewOneOnOneConversationId)
+
+        // then
+        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(expectedNewOneOnOneConversationId, persistedUser?.activeOneOnOneConversationId)
     }
 
     private companion object {

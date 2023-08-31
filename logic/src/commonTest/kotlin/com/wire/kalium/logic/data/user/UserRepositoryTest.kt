@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.user
 
 import app.cash.turbine.test
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
@@ -71,6 +72,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class UserRepositoryTest {
@@ -558,6 +560,44 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenUserIdAndConversationId_whenUpdatingOneOnOneConversation_thenShouldCallDAOWithCorrectArguments() = runTest {
+        val userId = TestUser.USER_ID
+        val conversationId = TestConversation.CONVERSATION.id
+
+        val (arrangement, userRepository) = Arrangement()
+            .withUpdateOneOnOneConversationSuccess()
+            .arrange()
+
+        userRepository.updateOneOnOneConversation(
+            userId,
+            conversationId
+        ).shouldSucceed()
+
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::updateActiveOneOnOneConversation)
+            .with(eq(userId.toDao()), eq(conversationId.toDao()))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenDAOFails_whenUpdatingOneOnOneConversation_thenShouldPropagateException() = runTest {
+        val exception = IllegalStateException("Oopsie Doopsie!")
+        val (_, connectionRepository) = Arrangement()
+            .withUpdateOneOnOneConversationFailing(exception)
+            .arrange()
+        val userId = TestUser.USER_ID
+        val conversationId = TestConversation.CONVERSATION.id
+
+        connectionRepository.updateOneOnOneConversation(
+            userId,
+            conversationId
+        ).shouldFail {
+            assertIs<StorageFailure.Generic>(it)
+            assertEquals(exception, it.rootCause)
+        }
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
@@ -749,6 +789,20 @@ class UserRepositoryTest {
                 .suspendFunction(userDAO::markUserAsDefederated)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
+        }
+
+        fun withUpdateOneOnOneConversationSuccess() = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::updateActiveOneOnOneConversation)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Unit)
+        }
+
+        fun withUpdateOneOnOneConversationFailing(exception: Throwable) = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::updateActiveOneOnOneConversation)
+                .whenInvokedWith(any(), any())
+                .thenThrow(exception)
         }
 
         fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
