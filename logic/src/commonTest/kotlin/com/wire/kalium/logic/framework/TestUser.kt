@@ -112,7 +112,8 @@ object TestUser {
         hasIncompleteMetadata = false,
         expiresAt = null,
         defederated = false,
-        supportedProtocols = setOf(SupportedProtocolEntity.MLS)
+        supportedProtocols = setOf(SupportedProtocolEntity.MLS),
+        activeOneOnOneConversationId = null
     )
 
     val DETAILS_ENTITY = UserDetailsEntity(

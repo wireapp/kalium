@@ -489,7 +489,8 @@ class UserSearchApiWrapperTest {
                 deleted = false,
                 expiresAt = null,
                 defederated = false,
-                supportedProtocols = null
+                supportedProtocols = null,
+                activeOneOnOneConversationId = null
             )
         }
     }

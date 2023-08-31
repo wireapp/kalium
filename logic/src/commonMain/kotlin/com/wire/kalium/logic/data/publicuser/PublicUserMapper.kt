@@ -88,7 +88,8 @@ class PublicUserMapperImpl(
         expiresAt = userEntity.expiresAt,
         defederated = userEntity.defederated,
         isProteusVerified = false,
-        supportedProtocols = userEntity.supportedProtocols?.toModel()
+        supportedProtocols = userEntity.supportedProtocols?.toModel(),
+        activeOneOnOneConversationId = userEntity.activeOneOnOneConversationId?.toModel()
     )
 
     override fun fromUserDetailsEntityToOtherUser(userDetailsEntity: UserDetailsEntity) = OtherUser(
@@ -131,7 +132,8 @@ class PublicUserMapperImpl(
             expiresAt = expiresAt,
             hasIncompleteMetadata = false,
             defederated = defederated,
-            supportedProtocols = supportedProtocols?.toDao()
+            supportedProtocols = supportedProtocols?.toDao(),
+            activeOneOnOneConversationId = activeOneOnOneConversationId?.toDao()
         )
     }
 
@@ -155,7 +157,8 @@ class PublicUserMapperImpl(
             hasIncompleteMetadata = false,
             defederated = defederated,
             isProteusVerified = otherUser.isProteusVerified,
-            supportedProtocols = supportedProtocols?.toDao()
+            supportedProtocols = supportedProtocols?.toDao(),
+            activeOneOnOneConversationId = activeOneOnOneConversationId?.toDao()
         )
     }
 

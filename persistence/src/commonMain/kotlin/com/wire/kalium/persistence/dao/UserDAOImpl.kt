@@ -57,6 +57,7 @@ class UserMapper {
             defederated = user.defederated,
             supportedProtocols = user.supported_protocols,
             isProteusVerified = user.is_proteus_verified == 1L,
+            activeOneOnOneConversationId = user.active_one_on_one_conversation_id
         )
     }
 
@@ -79,7 +80,8 @@ class UserMapper {
             hasIncompleteMetadata = user.incomplete_metadata,
             expiresAt = user.expires_at,
             defederated = user.defederated,
-            supportedProtocols = user.supported_protocols
+            supportedProtocols = user.supported_protocols,
+            activeOneOnOneConversationId = user.active_one_on_one_conversation_id
         )
     }
 
@@ -103,6 +105,7 @@ class UserMapper {
         expiresAt: Instant?,
         defederated: Boolean,
         supportedProtocols: Set<SupportedProtocolEntity>?,
+        oneOnOneConversationId: QualifiedIDEntity?,
         isVerifiedProteus: Long,
         id: String?,
         teamName: String?,
@@ -127,7 +130,8 @@ class UserMapper {
             expiresAt = expiresAt,
             defederated = defederated,
             isProteusVerified = isVerifiedProteus == 1L,
-            supportedProtocols = supportedProtocols
+            supportedProtocols = supportedProtocols,
+            activeOneOnOneConversationId = oneOnOneConversationId
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -177,7 +181,8 @@ class UserDAOImpl internal constructor(
             expires_at = user.expiresAt,
             connection_status = user.connectionStatus,
             deleted = user.deleted,
-            supported_protocols = user.supportedProtocols
+            supported_protocols = user.supportedProtocols,
+            active_one_on_one_conversation_id = user.activeOneOnOneConversationId
         )
     }
 
@@ -239,7 +244,8 @@ class UserDAOImpl internal constructor(
                         expires_at = user.expiresAt,
                         connection_status = user.connectionStatus,
                         deleted = user.deleted,
-                        supported_protocols = user.supportedProtocols
+                        supported_protocols = user.supportedProtocols,
+                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
                     )
                 }
             }
@@ -282,7 +288,8 @@ class UserDAOImpl internal constructor(
                         deleted = user.deleted,
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt,
-                        supported_protocols = user.supportedProtocols
+                        supported_protocols = user.supportedProtocols,
+                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
                     )
                 }
             }
@@ -311,7 +318,8 @@ class UserDAOImpl internal constructor(
                         deleted = user.deleted,
                         incomplete_metadata = user.hasIncompleteMetadata,
                         expires_at = user.expiresAt,
-                        supported_protocols = user.supportedProtocols
+                        supported_protocols = user.supportedProtocols,
+                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
                     )
                 }
             }
@@ -381,6 +389,10 @@ class UserDAOImpl internal constructor(
         .flowOn(queriesContext)
         .mapToList()
         .map { it.map(mapper::toDetailsModel) }
+
+    override suspend fun getUsersWithOneOnOneConversation(): List<UserEntity> = withContext(queriesContext) {
+        userQueries.selectUsersWithOneOnOne().executeAsList().map(mapper::toModel)
+    }
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
         userQueries.deleteUser(qualifiedID)
@@ -471,5 +483,10 @@ class UserDAOImpl internal constructor(
     override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
         withContext(queriesContext) {
             userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
+        }
+
+    override suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity) =
+        withContext(queriesContext) {
+            userQueries.updateOneOnOnConversationId(conversationId, userId)
         }
 }

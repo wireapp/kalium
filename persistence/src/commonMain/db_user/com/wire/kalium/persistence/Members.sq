@@ -25,12 +25,6 @@ DELETE FROM Member WHERE conversation = ?;
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = :conversation;
 
-selectConversationByMember:
-SELECT * FROM Member
-JOIN ConversationDetails ON ConversationDetails.qualifiedId = Member.conversation
-WHERE ConversationDetails.type = 'ONE_ON_ONE' AND Member.user = ?
-LIMIT  1;
-
 selectConversationsByMember:
 SELECT
     qualified_id,
@@ -54,7 +48,10 @@ SELECT
     mls_cipher_suite,
     receipt_mode,
     message_timer,
-    user_message_timer
+    user_message_timer,
+    archived,
+    archived_date_time,
+    verification_status
 FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;

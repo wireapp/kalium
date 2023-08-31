@@ -76,7 +76,8 @@ data class UserEntity(
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
     val defederated: Boolean,
-    val supportedProtocols: Set<SupportedProtocolEntity>?
+    val supportedProtocols: Set<SupportedProtocolEntity>?,
+    val activeOneOnOneConversationId: QualifiedIDEntity?
 )
 
 data class UserDetailsEntity(
@@ -100,7 +101,8 @@ data class UserDetailsEntity(
     val expiresAt: Instant?,
     val defederated: Boolean,
     val isProteusVerified: Boolean,
-    val supportedProtocols: Set<SupportedProtocolEntity>?
+    val supportedProtocols: Set<SupportedProtocolEntity>?,
+    val activeOneOnOneConversationId: QualifiedIDEntity?
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,
@@ -120,7 +122,8 @@ data class UserDetailsEntity(
         hasIncompleteMetadata = hasIncompleteMetadata,
         expiresAt = expiresAt,
         defederated = defederated,
-        supportedProtocols = supportedProtocols
+        supportedProtocols = supportedProtocols,
+        activeOneOnOneConversationId = activeOneOnOneConversationId
     )
 }
 
@@ -247,6 +250,8 @@ interface UserDAO {
         connectionStates: List<ConnectionEntity.State>
     ): Flow<List<UserDetailsEntity>>
 
+    suspend fun getUsersWithOneOnOneConversation(): List<UserEntity>
+
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
@@ -274,4 +279,10 @@ interface UserDAO {
     suspend fun allOtherUsersId(): List<UserIDEntity>
 
     suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>)
+
+    /**
+     * Update which 1-1 conversation is the currently active one. If multiple encryption protocols are enabled
+     * there can be multiple co-existing 1-1 conversations.
+     */
+    suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
 }

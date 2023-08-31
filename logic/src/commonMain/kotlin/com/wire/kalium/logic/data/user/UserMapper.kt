@@ -162,7 +162,8 @@ internal class UserMapperImpl(
             deleted = false,
             expiresAt = expiresAt,
             defederated = false,
-            supportedProtocols = supportedProtocols?.toDao()
+            supportedProtocols = supportedProtocols?.toDao(),
+            activeOneOnOneConversationId = null
         )
     }
 
@@ -206,7 +207,8 @@ internal class UserMapperImpl(
             deleted = userDTO.deleted ?: false,
             expiresAt = expiresAt?.toInstant(),
             defederated = false,
-            supportedProtocols = supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS)
+            supportedProtocols = supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
+            activeOneOnOneConversationId = null
         )
     }
 
@@ -290,7 +292,8 @@ internal class UserMapperImpl(
             deleted = false,
             expiresAt = null,
             defederated = false,
-            supportedProtocols = null
+            supportedProtocols = null,
+            activeOneOnOneConversationId = null
         )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -316,7 +319,8 @@ internal class UserMapperImpl(
         deleted = userProfile.deleted ?: false,
         expiresAt = userProfile.expiresAt?.toInstant(),
         defederated = false,
-        supportedProtocols = userProfile.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS)
+        supportedProtocols = userProfile.supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
+        activeOneOnOneConversationId = null
     )
 
     override fun fromUserProfileDtoToUserDetailsEntity(
@@ -411,7 +415,8 @@ internal class UserMapperImpl(
             hasIncompleteMetadata = true,
             expiresAt = null,
             defederated = false,
-            supportedProtocols = null
+            supportedProtocols = null,
+            activeOneOnOneConversationId = null
         )
     }
 
