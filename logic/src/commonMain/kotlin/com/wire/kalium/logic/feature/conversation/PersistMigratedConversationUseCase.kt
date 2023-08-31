@@ -22,6 +22,7 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIO
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
@@ -46,8 +47,9 @@ fun interface PersistMigratedConversationUseCase {
 }
 
 internal class PersistMigratedConversationUseCaseImpl(
+    private val selfUserId: UserId,
     private val migrationDAO: MigrationDAO,
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) : PersistMigratedConversationUseCase {
 
     val logger by lazy { kaliumLogger.withFeatureId(CONVERSATIONS) }
