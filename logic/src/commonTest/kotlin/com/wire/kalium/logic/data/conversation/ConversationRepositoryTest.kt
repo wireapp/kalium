@@ -1387,7 +1387,7 @@ class ConversationRepositoryTest {
 
         fun withExpectedConversationWithOtherUser(conversation: ConversationViewEntity?) = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::observeConversationWithOtherUser)
+                .suspendFunction(conversationDAO::observeOneOnOneConversationWithOtherUser)
                 .whenInvokedWith(anything())
                 .then { flowOf(conversation) }
         }

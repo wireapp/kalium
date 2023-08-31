@@ -154,6 +154,11 @@ interface ConversationRepository {
     suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
+    suspend fun getOneOnOneConversationsWithOtherUser(
+        otherUserId: UserId,
+        protocol: Conversation.Protocol
+    ): Either<StorageFailure, List<ConversationId>>
+
     suspend fun updateMutedStatusLocally(
         conversationId: ConversationId,
         mutedStatus: MutedConversationStatus,
@@ -701,10 +706,19 @@ internal class ConversationDataSource internal constructor(
             wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
         }
 
-    override suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<StorageFailure, Conversation>> {
-        return conversationDAO.observeConversationWithOtherUser(otherUserId.toDao())
+    override suspend fun observeOneToOneConversationWithOtherUser(
+        otherUserId: UserId
+    ): Flow<Either<StorageFailure, Conversation>> {
+        return conversationDAO.observeOneOnOneConversationWithOtherUser(otherUserId.toDao())
             .wrapStorageRequest()
             .mapRight { conversationMapper.fromDaoModel(it) }
+    }
+
+    override suspend fun getOneOnOneConversationsWithOtherUser(
+        otherUserId: UserId,
+        protocol: Conversation.Protocol
+    ): Either<StorageFailure, List<ConversationId>> = wrapStorageRequest {
+        conversationDAO.getOneOnOneConversationIdsWithOtherUser(otherUserId.toDao(), protocol.toDao()).map { it.toModel() }
     }
 
     override suspend fun updateMutedStatusLocally(

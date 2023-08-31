@@ -46,5 +46,6 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         hasIncompleteMetadata = false,
         expiresAt = null,
         defederated = false,
-        supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS)
+        supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS),
+        activeOneOnOneConversationId = null
     )
