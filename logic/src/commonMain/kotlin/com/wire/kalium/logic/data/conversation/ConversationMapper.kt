@@ -85,6 +85,7 @@ interface ConversationMapper {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class ConversationMapperImpl(
+    private val selfUserId: UserId,
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
     private val protocolInfoMapper: ProtocolInfoMapper,
@@ -108,7 +109,7 @@ internal class ConversationMapperImpl(
         mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
         removedBy = null,
-        creatorId = apiModel.creator,
+        creatorId = apiModel.creator ?: selfUserId.value, // NOTE mls 1-1 does not have the creator field set.
         lastReadDate = Instant.UNIX_FIRST_DATE,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
