@@ -595,7 +595,7 @@ class UserRepositoryTest {
             .withUpdateOneOnOneConversationSuccess()
             .arrange()
 
-        userRepository.updateOneOnOneConversation(
+        userRepository.updateActiveOneOnOneConversation(
             userId,
             conversationId
         ).shouldSucceed()
@@ -615,7 +615,7 @@ class UserRepositoryTest {
         val userId = TestUser.USER_ID
         val conversationId = TestConversation.CONVERSATION.id
 
-        connectionRepository.updateOneOnOneConversation(
+        connectionRepository.updateActiveOneOnOneConversation(
             userId,
             conversationId
         ).shouldFail {
