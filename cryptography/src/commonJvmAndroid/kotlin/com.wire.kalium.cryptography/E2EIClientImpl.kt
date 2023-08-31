@@ -18,8 +18,6 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.E2eiEnrollment
-import com.wire.kalium.cryptography.MLSClientImpl.Companion.toByteArray
-import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
 
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)

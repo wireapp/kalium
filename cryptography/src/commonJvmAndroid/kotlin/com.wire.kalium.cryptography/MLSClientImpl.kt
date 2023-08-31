@@ -18,7 +18,6 @@
 
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CustomConfiguration
