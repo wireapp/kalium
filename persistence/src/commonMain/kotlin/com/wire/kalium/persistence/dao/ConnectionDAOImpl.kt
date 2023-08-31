@@ -71,7 +71,8 @@ private class ConnectionMapper {
         incomplete_metadata: Boolean?,
         expires_at: Instant?,
         defederated: Boolean?,
-        supportedProtocols: Set<SupportedProtocolEntity>?
+        supportedProtocols: Set<SupportedProtocolEntity>?,
+        oneToOneConversationId: QualifiedIDEntity?
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
@@ -99,7 +100,8 @@ private class ConnectionMapper {
             hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata"),
             expiresAt = expires_at,
             defederated = defederated.requireField("defederated"),
-            supportedProtocols = supportedProtocols
+            supportedProtocols = supportedProtocols,
+            activeOneOnOneConversationId = oneToOneConversationId
         ) else null
     )
 
@@ -157,10 +159,6 @@ class ConnectionDAOImpl(
 
     override suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String) = withContext(queriesContext) {
         connectionsQueries.updateConnectionLastUpdated(lastUpdate.toInstant(), id)
-    }
-
-    override suspend fun updateConnectionConversation(conversationId: QualifiedIDEntity, userId: QualifiedIDEntity) {
-        connectionsQueries.updateConnectionConversation(conversationId.value, conversationId, userId)
     }
 
     override suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity) = withContext(queriesContext) {
