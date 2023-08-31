@@ -180,6 +180,12 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
+import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
+import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
@@ -873,6 +879,27 @@ class UserSessionScope internal constructor(
             clientIdProvider,
         )
 
+    private val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
+        get() = MLSOneOnOneConversationResolverImpl(
+            conversationRepository,
+            joinExistingMLSConversationUseCase
+        )
+
+    private val oneOnOneMigrator: OneOnOneMigrator
+        get() = OneOnOneMigratorImpl(
+            mlsOneOnOneConversationResolver,
+            conversationGroupRepository,
+            conversationRepository,
+            messageRepository,
+            userRepository
+        )
+    private val oneOnOneResolver: OneOnOneResolver
+        get() = OneOnOneResolverImpl(
+            userRepository,
+            oneOnOneProtocolSelector,
+            oneOnOneMigrator
+        )
+
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
             eventRepository,
@@ -883,7 +910,8 @@ class UserSessionScope internal constructor(
             syncConnections,
             syncSelfTeamUseCase,
             syncContacts,
-            joinExistingMLSConversations
+            joinExistingMLSConversations,
+            oneOnOneResolver
         )
     }
 
@@ -1381,7 +1409,7 @@ class UserSessionScope internal constructor(
             globalScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,
-            oneOnOneProtocolSelector,
+            oneOnOneResolver,
             this
         )
     }
