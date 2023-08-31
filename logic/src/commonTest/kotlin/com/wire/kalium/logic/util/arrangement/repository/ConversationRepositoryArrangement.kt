@@ -20,10 +20,12 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -57,6 +59,10 @@ internal interface ConversationRepositoryArrangement {
     fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
     fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
     fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
+
+    fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
+
+    fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -167,5 +173,19 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
             .whenInvokedWith(any())
             .thenReturn(flowOf(result))
+    }
+
+    override fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationIds)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getOneOnOneConversationsWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(result)
     }
 }

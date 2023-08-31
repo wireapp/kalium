@@ -199,6 +199,10 @@ CASE
     WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
     ELSE 0
 END AS isCreator,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
+    ELSE 1
+END AS isActive,
 Conversation.last_notified_date AS lastNotifiedMessageDate,
 memberRole. role AS selfRole,
 Conversation.protocol,
@@ -247,6 +251,7 @@ WHERE
     )
     AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
     AND archived = :fromArchive
+    AND isActive
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectAllConversations:
@@ -278,6 +283,15 @@ SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 
 selectByGroupState:
 SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS "MLS" OR protocol IS "MIXED");
+
+selectActiveOneOnOneConversation:
+SELECT * FROM ConversationDetails
+WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);
+
+selectOneOnOneConversationIdsByProtocol:
+SELECT Member.conversation FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = :protocol AND Member.user = :user;
 
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
