@@ -20,21 +20,20 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.ConversationOptions
-import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangement.protocol.OneOnOneProtocolSelectorArrangement
-import com.wire.kalium.logic.util.arrangement.protocol.OneOnOneProtocolSelectorArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.anything
 import io.mockative.eq
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -50,14 +49,14 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         }
 
         // when
-        val result = useCase.invoke(USER_ID)
+        val result = useCase.invoke(OTHER_USER_ID)
 
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::createGroupConversation)
-            .with(anything(), anything(), anything())
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
+            .with(anything())
             .wasNotInvoked()
 
         verify(arrangement.conversationRepository)
@@ -71,55 +70,36 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // given
         val (_, useCase) =  arrange {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
-            withGetProtocolForUser(Either.Left(CoreFailure.NoCommonProtocolFound))
+            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withResolveOneOnOneConversationWithUserReturning(Either.Left(CoreFailure.NoCommonProtocolFound))
         }
 
         // when
-        val result = useCase.invoke(USER_ID)
+        val result = useCase.invoke(OTHER_USER_ID)
 
         // then
         assertIs<CreateConversationResult.Failure>(result)
     }
 
     @Test
-    fun givenConversationDoesNotExistWithProteusAsProtocol_whenCallingTheUseCase_ThenCreateGroupConversation() = runTest {
+    fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenResolveOneOnOneConversation() = runTest {
         // given
         val (arrangement, useCase) = arrange {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
-            withGetProtocolForUser(Either.Right(SupportedProtocol.PROTEUS))
-            withCreateGroupConversationReturning(Either.Right(CONVERSATION))
+            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION.id))
+            withGetConversationByIdReturning(CONVERSATION)
         }
 
         // when
-        val result = useCase.invoke(USER_ID)
+        val result = useCase.invoke(OTHER_USER_ID)
 
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::createGroupConversation)
-            .with(eq(null), eq(MEMBER), eq(ConversationOptions()))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenConversationDoesNotExistWithMlsAsProtocol_whenCallingTheUseCase_thenFetchMlsOneToOne() = runTest {
-        // given
-        val (arrangement, useCase) = arrange {
-            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
-            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
-            withFetchMlsOneToOneConversation(Either.Right(CONVERSATION))
-        }
-
-        // when
-        val result = useCase.invoke(USER_ID)
-
-        // then
-        assertIs<CreateConversationResult.Success>(result)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchMlsOneToOneConversation)
-            .with(eq(USER_ID))
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
+            .with(eq(OTHER_USER))
             .wasInvoked(exactly = once)
     }
 
@@ -128,21 +108,21 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     internal class Arrangement(
         private val block: Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
-        ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl() {
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
 
         fun arrange() = block().run {
             this@Arrangement to GetOrCreateOneToOneConversationUseCaseImpl(
                 conversationRepository = conversationRepository,
-                conversationGroupRepository = conversationGroupRepository,
-                oneOnOneProtocolSelector = oneOnOneProtocolSelector
+                userRepository = userRepository,
+                oneOnOneResolver = oneOnOneResolver
             )
         }
     }
 
     private companion object {
-        val USER_ID = TestUser.USER_ID
-        val MEMBER = listOf(USER_ID)
+        val OTHER_USER = TestUser.OTHER
+        val OTHER_USER_ID = OTHER_USER.id
         val CONVERSATION = TestConversation.ONE_ON_ONE
     }
 }

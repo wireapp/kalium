@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
@@ -60,6 +61,7 @@ class SlowSyncWorkerTest {
             .withSyncSelfTeamSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess()
             .arrange()
 
         worker.slowSyncStepsFlow().collect()
@@ -468,6 +470,7 @@ class SlowSyncWorkerTest {
             .withSyncSelfTeamSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess()
             .arrange()
 
         slowSyncWorker.slowSyncStepsFlow().collect()
@@ -539,6 +542,9 @@ class SlowSyncWorkerTest {
         @Mock
         val updateSupportedProtocols: UpdateSupportedProtocolsUseCase = mock(UpdateSupportedProtocolsUseCase::class)
 
+        @Mock
+        val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
+
         init {
             withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
         }
@@ -552,7 +558,8 @@ class SlowSyncWorkerTest {
             syncSelfTeam = syncSelfTeam,
             syncContacts = syncContacts,
             joinMLSConversations = joinMLSConversations,
-            updateSupportedProtocols = updateSupportedProtocols
+            updateSupportedProtocols = updateSupportedProtocols,
+            oneOnOneResolver = oneOnOneResolver,
         )
 
         fun withSyncSelfUserFailure() = apply {
@@ -664,6 +671,13 @@ class SlowSyncWorkerTest {
             given(joinMLSConversations)
                 .suspendFunction(joinMLSConversations::invoke)
                 .whenInvokedWith(eq(keepRetryingOnFailure))
+                .thenReturn(success)
+        }
+
+        fun withResolveOneOnOneConversationsSuccess() = apply {
+            given(oneOnOneResolver)
+                .suspendFunction(oneOnOneResolver::resolveAllOneOnOneConversations)
+                .whenInvoked()
                 .thenReturn(success)
         }
     }
