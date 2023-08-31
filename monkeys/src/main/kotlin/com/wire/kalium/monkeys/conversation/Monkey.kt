@@ -121,13 +121,13 @@ class Monkey(val user: UserData) {
         callback(this)
     }
 
-    suspend fun randomPeer(): Monkey {
-        return MonkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
+    suspend fun randomPeer(monkeyPool: MonkeyPool): Monkey {
+        return monkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
     }
 
-    suspend fun randomPeers(userCount: UserCount, filterOut: List<UserId> = listOf()): List<Monkey> {
+    suspend fun randomPeers(userCount: UserCount, monkeyPool: MonkeyPool, filterOut: List<UserId> = listOf()): List<Monkey> {
         val count = resolveUserCount(userCount, this.connectedMonkeys().count().toUInt())
-        return this.connectedMonkeys().filterNot { filterOut.contains(it) }.shuffled().map(MonkeyPool::get).take(count.toInt())
+        return this.connectedMonkeys().filterNot { filterOut.contains(it) }.shuffled().map(monkeyPool::get).take(count.toInt())
     }
 
     suspend fun sendRequest(anotherMonkey: Monkey) {
@@ -148,9 +148,9 @@ class Monkey(val user: UserData) {
         }
     }
 
-    suspend fun <T> makeReadyThen(coreLogic: CoreLogic, func: suspend Monkey.() -> T): T {
+    suspend fun <T> makeReadyThen(coreLogic: CoreLogic, monkeyPool: MonkeyPool, func: suspend Monkey.() -> T): T {
         if (this.monkeyState is MonkeyState.NotReady) {
-            this.login(coreLogic, MonkeyPool::loggedIn)
+            this.login(coreLogic, monkeyPool::loggedIn)
         }
         return this.func()
     }
