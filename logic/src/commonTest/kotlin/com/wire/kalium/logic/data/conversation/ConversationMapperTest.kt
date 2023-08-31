@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
@@ -74,6 +75,7 @@ class ConversationMapperTest {
     @BeforeTest
     fun setup() {
         conversationMapper = ConversationMapperImpl(
+            TestUser.SELF.id,
             idMapper,
             conversationStatusMapper,
             protocolInfoMapper,
