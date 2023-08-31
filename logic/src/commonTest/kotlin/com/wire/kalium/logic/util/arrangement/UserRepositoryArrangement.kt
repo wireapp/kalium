@@ -33,6 +33,8 @@ internal interface UserRepositoryArrangement {
     fun withSelfUserReturning(selfUser: SelfUser?)
 
     fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>)
+
+    fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>)
 }
 
 internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
@@ -50,6 +52,13 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
     override fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>) {
         given(userRepository)
             .suspendFunction(userRepository::userById)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>) {
+        given(userRepository)
+            .suspendFunction(userRepository::updateOneOnOneConversation)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
