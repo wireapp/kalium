@@ -540,6 +540,7 @@ class UserSessionScope internal constructor(
 
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
+            userId,
             keyPackageRepository,
             mlsClientProvider,
             authenticatedNetworkContainer.mlsMessageApi,
@@ -1414,7 +1415,7 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val migration get() = MigrationScope(userStorage.database)
+    val migration get() = MigrationScope(userId, userStorage.database)
     val debug: DebugScope
         get() = DebugScope(
             messageRepository,

@@ -1219,6 +1219,7 @@ class MLSConversationRepositoryTest {
         }
 
         fun arrange() = this to MLSConversationDataSource(
+            TestUser.SELF.id,
             keyPackageRepository,
             mlsClientProvider,
             mlsMessageApi,

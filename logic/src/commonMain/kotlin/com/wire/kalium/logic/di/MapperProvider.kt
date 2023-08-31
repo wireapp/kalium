@@ -118,8 +118,9 @@ internal object MapperProvider {
     )
 
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
-    fun conversationMapper(): ConversationMapper =
+    fun conversationMapper(selfUserId: UserId): ConversationMapper =
         ConversationMapperImpl(
+            selfUserId,
             idMapper(),
             ConversationStatusMapperImpl(idMapper()),
             ProtocolInfoMapperImpl(),
