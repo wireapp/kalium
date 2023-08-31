@@ -130,7 +130,7 @@ internal interface UserRepository {
 
     suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit>
 
-    suspend fun updateOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -408,7 +408,7 @@ internal class UserDataSource internal constructor(
             }
     }
 
-    override suspend fun updateOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { userDAO.updateActiveOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
 
     override fun observeAllKnownUsersNotInConversation(
