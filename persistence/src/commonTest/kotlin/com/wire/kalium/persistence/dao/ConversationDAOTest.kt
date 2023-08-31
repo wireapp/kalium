@@ -974,8 +974,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
-        userDAO.insertUser(user1) // user with metadata
-        userDAO.insertUser(user2.copy(name = null)) // user without metadata
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user with metadata
+        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id, name = null)) // user without metadata
 
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
@@ -1043,6 +1043,46 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(conversation2.id, result[0].id)
         assertEquals(conversation1.id, result[1].id)
+    }
+
+    @Test
+    fun givenOneOnOneConversations_whenGettingAllConversations_thenShouldReturnsOnlyActiveConversations() = runTest {
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user active one-on-one
+        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = null)) // user without active one-on-one
+
+        memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity1.id)
+        memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity2.id)
+
+        conversationDAO.getAllConversationDetails().first().let {
+            assertEquals(1, it.size)
+            assertEquals(conversationEntity1.id, it.first().id)
+        }
+    }
+
+    @Test
+    fun givenOneOnOneConversationNotExisting_whenGettingOneOnOneConversationId_thenShouldReturnEmptyList() = runTest {
+        // given
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
+
+        // then
+        assertTrue(conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).isEmpty())
+    }
+
+    @Test
+    fun givenOneOnOneConversationExisting_whenGettingOneOnOneConversationId_thenShouldRespectProtocol() = runTest {
+        // given
+        userDAO.insertUser(user1)
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        memberDAO.insertMember(member1, conversationEntity1.id)
+        memberDAO.insertMember(member1, conversationEntity2.id)
+
+        // then
+        assertEquals(listOf(conversationEntity1.id), conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS))
+        assertEquals(listOf(conversationEntity2.id), conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.MLS))
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
