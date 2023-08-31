@@ -886,6 +886,37 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertNull(result.firstOrNull { it.id == conversation.id })
     }
 
+    @Test
+    fun givenConversaions_whenObservingTheFullList_thenConvWithNullNameAreLast() = runTest {
+        // given
+        val conversation1 = conversationEntity1.copy(
+            id = ConversationIDEntity("convNullName", "domain"),
+            name = null,
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+        )
+
+        val conversation2 = conversationEntity2.copy(
+            id = ConversationIDEntity("convWithName", "domain"),
+            name = "name",
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+        )
+        conversationDAO.insertConversation(conversation1)
+        conversationDAO.insertConversation(conversation2)
+        insertTeamUserAndMember(team, user1, conversation1.id)
+        insertTeamUserAndMember(team, user1, conversation2.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails().first()
+
+        // then
+        assertEquals(conversation2.id, result[0].id)
+        assertEquals(conversation1.id, result[1].id)
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
