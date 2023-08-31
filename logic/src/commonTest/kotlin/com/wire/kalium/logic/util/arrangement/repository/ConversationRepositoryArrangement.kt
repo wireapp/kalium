@@ -57,6 +57,8 @@ internal interface ConversationRepositoryArrangement {
     fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
     fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
+
+    fun withGetConversationByIdReturning(result: Conversation?)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -144,6 +146,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getOneOnOneConversationsWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetConversationByIdReturning(result: Conversation?) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationById)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
