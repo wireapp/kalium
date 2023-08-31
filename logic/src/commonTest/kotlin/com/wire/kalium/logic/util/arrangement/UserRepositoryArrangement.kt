@@ -26,6 +26,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
 
 internal interface UserRepositoryArrangement {
     val userRepository: UserRepository
@@ -35,6 +36,10 @@ internal interface UserRepositoryArrangement {
     fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>)
 
     fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>)
+
+    fun withGetKnownUserReturning(result: Flow<OtherUser?>)
+
+    fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>)
 }
 
 internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
@@ -58,8 +63,22 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
 
     override fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>) {
         given(userRepository)
-            .suspendFunction(userRepository::updateOneOnOneConversation)
+            .suspendFunction(userRepository::updateActiveOneOnOneConversation)
             .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetKnownUserReturning(result: Flow<OtherUser?>) {
+        given(userRepository)
+            .suspendFunction(userRepository::getKnownUser)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>) {
+        given(userRepository)
+            .suspendFunction(userRepository::getUsersWithOneOnOneConversation)
+            .whenInvoked()
             .thenReturn(result)
     }
 }
