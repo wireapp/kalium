@@ -37,3 +37,5 @@ An [example](example.json) config is in this repo and the schema can be seen [he
 * Tracing and replaying a test run. For this the order is the important factor, so when replayed it
   won't be executed in parallel.
 * Multi-clients. Right now each user can have just one client within the application
+* Clean-up the data created during the tests
+* Randomising times for action execution
