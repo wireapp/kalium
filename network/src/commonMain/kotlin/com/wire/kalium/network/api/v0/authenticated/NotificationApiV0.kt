@@ -64,13 +64,16 @@ internal open class NotificationApiV0 internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun lastNotification(
+    override suspend fun mostRecentNotification(
         queryClient: String
     ): NetworkResponse<EventResponse> = wrapKaliumResponse {
         httpClient.get("$PATH_NOTIFICATIONS/$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }
     }
+
+    override suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponse> =
+        getAllNotifications(querySize = 1, queryClient = queryClient).mapSuccess { it.notifications.first() }
 
     override suspend fun notificationsByBatch(
         querySize: Int,
@@ -104,7 +107,7 @@ internal open class NotificationApiV0 internal constructor(
     }
 
     override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>> =
-        lastNotification(clientId).mapSuccess {
+        mostRecentNotification(clientId).mapSuccess {
             flow {
                 // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
                 //       WebSocket requests are not intercept-able, and they throw
