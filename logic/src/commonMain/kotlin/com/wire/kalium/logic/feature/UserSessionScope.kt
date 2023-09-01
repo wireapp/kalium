@@ -263,9 +263,12 @@ import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.sync.AvsSyncStateReporter
+import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
+import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
@@ -1178,8 +1181,10 @@ class UserSessionScope internal constructor(
         get() = UserPropertiesEventReceiverImpl(userConfigRepository)
 
     private val federationEventReceiver: FederationEventReceiver
-        get() = FederationEventReceiverImpl(conversationRepository, connectionRepository, userRepository,
-            userStorage.database.memberDAO, persistMessage, userId)
+        get() = FederationEventReceiverImpl(
+            conversationRepository, connectionRepository, userRepository,
+            userStorage.database.memberDAO, persistMessage, userId
+        )
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
@@ -1219,7 +1224,14 @@ class UserSessionScope internal constructor(
     )
 
     val observeSyncState: ObserveSyncStateUseCase
-        get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
+        get() = ObserveSyncStateUseCaseImpl(slowSyncRepository, incrementalSyncRepository)
+
+    private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
+        AvsSyncStateReporterImpl(
+            callManager = callManager,
+            observeSyncStateUseCase = observeSyncState
+        )
+    }
 
     val setConnectionPolicy: SetConnectionPolicyUseCase
         get() = SetConnectionPolicyUseCase(incrementalSyncRepository)
@@ -1528,6 +1540,10 @@ class UserSessionScope internal constructor(
 
         launch {
             proteusSyncWorker.execute()
+        }
+
+        launch {
+            avsSyncStateReporter.execute()
         }
     }
 
