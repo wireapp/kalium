@@ -56,6 +56,13 @@ interface EventRepository {
      * in remote.
      */
     suspend fun lastEventId(): Either<CoreFailure, String>
+
+    /**
+     * Fetches the oldest available event ID from remote.
+     *
+     * @return Either containing a [CoreFailure] or the oldest available event ID as a String.
+     */
+    suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
 }
 
 class EventDataSource(
@@ -128,7 +135,7 @@ class EventDataSource(
     }.fold({
         currentClientId()
             .flatMap { currentClientId ->
-                wrapApiRequest { notificationApi.lastNotification(currentClientId.value) }
+                wrapApiRequest { notificationApi.mostRecentNotification(currentClientId.value) }
                     .flatMap { lastEvent ->
                         updateLastProcessedEventId(lastEvent.id).map { lastEvent.id }
                     }
@@ -146,6 +153,13 @@ class EventDataSource(
     ): NetworkResponse<NotificationResponse> = lastFetchedNotificationId?.let {
         notificationApi.notificationsByBatch(NOTIFICATIONS_QUERY_SIZE, clientId.value, it)
     } ?: notificationApi.getAllNotifications(NOTIFICATIONS_QUERY_SIZE, clientId.value)
+
+    override suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String> =
+        currentClientId().flatMap { clientId ->
+            wrapApiRequest {
+                notificationApi.oldestNotification(clientId.value)
+            }
+        }.map { it.id }
 
     private companion object {
         const val NOTIFICATIONS_QUERY_SIZE = 100
