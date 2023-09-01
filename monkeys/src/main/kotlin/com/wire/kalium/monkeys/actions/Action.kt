@@ -20,6 +20,7 @@ package com.wire.kalium.monkeys.actions
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionConfig
 import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.pool.MonkeyPool
 
 abstract class Action {
     companion object {
@@ -37,5 +38,5 @@ abstract class Action {
         }
     }
 
-    abstract suspend fun execute(coreLogic: CoreLogic)
+    abstract suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool)
 }
