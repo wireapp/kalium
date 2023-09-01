@@ -32,7 +32,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -41,7 +40,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class NotificationApiV0Test : ApiTest() {
 
     /**
@@ -176,6 +174,35 @@ internal class NotificationApiV0Test : ApiTest() {
         val result = notificationsApi.listenToLiveEvents("")
 
         assertIs<NetworkResponse.Error>(result)
+    }
+
+    @Test
+    fun givenClientId_whenGettingOldestNotification_thenShouldPassCorrectIdParameter() = runTest {
+        val clientId = "cId"
+        val networkClient = mockAuthenticatedNetworkClient(
+            NotificationEventsResponseJson.notificationWithLastEvent,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertQueryParameter(CLIENT_QUERY_KEY, clientId)
+            }
+        )
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        notificationsApi.oldestNotification(clientId)
+    }
+
+    @Test
+    fun givenSuccessResponse_whenGettingOldestNotification_thenTheResponseIsParsedCorrectly() = runTest {
+        val jsonProvider = NotificationEventsResponseJson.notificationResponsePageWithSingleEvent
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            jsonProvider.rawJson,
+            statusCode = HttpStatusCode.OK
+        )
+        val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
+        val result = notificationsApi.oldestNotification("")
+
+        assertTrue(result.isSuccessful())
+        assertEquals(jsonProvider.serializableData.notifications.first(), result.value)
     }
 
     private companion object {
