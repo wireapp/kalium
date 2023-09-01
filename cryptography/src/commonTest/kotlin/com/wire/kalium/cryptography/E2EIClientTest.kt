@@ -153,7 +153,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     companion object {
 
         val ALICE1 = SampleUser(
-            CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "wire.com"), CryptoClientId("fb4b58152e20"), "Alice", "Alice_wire"
+            CryptoQualifiedID("t6wRpI8BRSeviBwwiFp5MQ", "wire.com"), CryptoClientId("fb4b58152e20"), "Alice", "Alice_wire"
         )
 
         val ACME_DIRECTORY_API_RESPONSE = """
