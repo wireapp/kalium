@@ -58,6 +58,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
 import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
+import com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChanged
 import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantsVideoStateChanged
@@ -416,6 +417,7 @@ class CallManagerImpl internal constructor(
         initClientsHandler()
         initActiveSpeakersHandler()
         initRequestNewEpochHandler()
+        initSelfUserMuteHandler()
     }
 
     private fun initParticipantsHandler() {
@@ -508,6 +510,25 @@ class CallManagerImpl internal constructor(
                 )
 
                 callingLogger.d("$TAG - wcall_set_req_new_epoch_handler() called")
+            }
+        }
+    }
+
+    private fun initSelfUserMuteHandler() {
+        scope.launch {
+            withCalling {
+                val selfUserMuteHandler = OnMuteStateForSelfUserChanged(
+                    scope = scope,
+                    callRepository = callRepository
+                ).keepingStrongReference()
+
+                wcall_set_mute_handler(
+                    inst = deferredHandle.await(),
+                    selfUserMuteHandler = selfUserMuteHandler,
+                    arg = null
+                )
+
+                callingLogger.d("$TAG - wcall_set_mute_handler() called")
             }
         }
     }
