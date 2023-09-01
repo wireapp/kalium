@@ -17,13 +17,18 @@
  */
 package com.wire.kalium.logic
 
-import com.wire.crypto.CryptoException
+import com.wire.crypto.CoreCryptoException
+import uniffi.core_crypto.CryptoError
 
 actual fun mapMLSException(exception: Exception): MLSFailure =
-    when (exception) {
-        is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
-        is CryptoException.DuplicateMessage -> MLSFailure.DuplicateMessage
-        is CryptoException.SelfCommitIgnored -> MLSFailure.SelfCommitIgnored
-        is CryptoException.UnmergedPendingGroup -> MLSFailure.UnmergedPendingGroup
-        else -> MLSFailure.Generic(exception)
-    }
+        if (exception is CoreCryptoException.CryptoException) {
+            when (exception.error) {
+                is CryptoError.WrongEpoch -> MLSFailure.WrongEpoch
+                is CryptoError.DuplicateMessage -> MLSFailure.DuplicateMessage
+                is CryptoError.SelfCommitIgnored -> MLSFailure.SelfCommitIgnored
+                is CryptoError.UnmergedPendingGroup -> MLSFailure.UnmergedPendingGroup
+                else -> MLSFailure.Generic(exception)
+            }
+        } else {
+            MLSFailure.Generic(exception)
+        }
