@@ -20,7 +20,9 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.notification.LocalNotificationConversation
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.coroutines.flow.Flow
@@ -31,27 +33,38 @@ import kotlinx.coroutines.flow.MutableSharedFlow
  * Ideally we should have logic that allows to mark messages as notified, but this will act for cases when we need to notify the user on
  * information we have not persisted or that is not available anymore.
  */
-object DeleteConversationNotificationsManagerImpl : DeleteConversationNotificationsManager {
+object EphemeralEventsNotificationManagerImpl : EphemeralEventsNotificationManager {
 
     private val mapper by lazy { MapperProvider.localNotificationMessageMapper() }
 
-    private val notifications = MutableSharedFlow<LocalNotificationConversation>()
+    private val notifications = MutableSharedFlow<LocalNotification>()
 
-    override suspend fun observeEphemeralNotifications(): Flow<LocalNotificationConversation> = notifications
+    override suspend fun observeEphemeralNotifications(): Flow<LocalNotification> = notifications
 
-    override suspend fun scheduleNotification(ephemeralConversationNotification: EphemeralConversationNotification) {
-        val localNotificationConversation = mapper.fromConversationEventToLocalNotification(
+    override suspend fun scheduleDeleteConversationNotification(ephemeralConversationNotification: EphemeralConversationNotification) {
+        val localNotification = mapper.fromConversationEventToLocalNotification(
             ephemeralConversationNotification.conversationEvent,
             ephemeralConversationNotification.conversation,
             ephemeralConversationNotification.user
         )
-        notifications.emit(localNotificationConversation)
+        notifications.emit(localNotification)
+    }
+    override suspend fun scheduleDeleteMessageNotification(message: Message) {
+        val localNotification = mapper.fromMessageToMessageDeletedLocalNotification(message)
+        notifications.emit(localNotification)
+    }
+
+    override suspend fun scheduleEditMessageNotification(message: Message, messageContent: MessageContent.TextEdited) {
+        val localNotification = mapper.fromMessageToMessageEditedLocalNotification(message, messageContent)
+        notifications.emit(localNotification)
     }
 }
 
-interface DeleteConversationNotificationsManager {
-    suspend fun observeEphemeralNotifications(): Flow<LocalNotificationConversation>
-    suspend fun scheduleNotification(ephemeralConversationNotification: EphemeralConversationNotification)
+interface EphemeralEventsNotificationManager {
+    suspend fun observeEphemeralNotifications(): Flow<LocalNotification>
+    suspend fun scheduleDeleteConversationNotification(ephemeralConversationNotification: EphemeralConversationNotification)
+    suspend fun scheduleDeleteMessageNotification(message: Message)
+    suspend fun scheduleEditMessageNotification(message: Message, messageContent: MessageContent.TextEdited)
 }
 
 /**

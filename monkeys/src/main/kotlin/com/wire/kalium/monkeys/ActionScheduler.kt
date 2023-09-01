@@ -20,7 +20,7 @@ package com.wire.kalium.monkeys
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.importer.ActionConfig
-import com.wire.kalium.monkeys.importer.TestCase
+import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -33,8 +33,8 @@ import kotlinx.serialization.serializer
 object ActionScheduler {
     @Suppress("TooGenericExceptionCaught")
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
-    suspend fun start(testCases: List<TestCase>, coreLogic: CoreLogic) {
-        testCases.flatMap { it.actions }.forEach { actionConfig ->
+    suspend fun start(actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+        actions.forEach { actionConfig ->
             CoroutineScope(Dispatchers.Default).launch {
                 while (this.isActive) {
                     try {
@@ -42,7 +42,7 @@ object ActionScheduler {
                         logger.i("Running action $actionName: ${actionConfig.description} ${actionConfig.count} times")
                         repeat(actionConfig.count.toInt()) {
                             val startTime = System.currentTimeMillis()
-                            Action.fromConfig(actionConfig).execute(coreLogic)
+                            Action.fromConfig(actionConfig).execute(coreLogic, monkeyPool)
                             logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
                         }
                     } catch (e: Exception) {
@@ -54,9 +54,9 @@ object ActionScheduler {
         }
     }
 
-    suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic) {
+    suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         actions.forEach {
-            Action.fromConfig(it).execute(coreLogic)
+            Action.fromConfig(it).execute(coreLogic, monkeyPool)
         }
     }
 }

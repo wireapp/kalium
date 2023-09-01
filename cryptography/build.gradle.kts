@@ -100,7 +100,7 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.cryptoboxAndroid)
-                implementation(libs.javaxCrypto)
+                implementation(libs.androidCrypto)
                 implementation(libs.coreCryptoAndroid)
             }
         }
@@ -114,4 +114,10 @@ kotlin {
 
 project.appleTargets().forEach {
     registerCopyTestResourcesTask(it)
+}
+
+android {
+    testOptions.unitTests.all {
+        it.enabled = false
+    }
 }

@@ -24,7 +24,7 @@ import com.wire.kalium.monkeys.importer.UserData
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
-object MonkeyPool {
+class MonkeyPool(users: List<UserData>) {
     // a map of monkeys per domain
     private val pool: ConcurrentHashMap<String, MutableList<Monkey>> = ConcurrentHashMap()
 
@@ -37,7 +37,7 @@ object MonkeyPool {
     // a map of logged out monkeys per domain
     private val poolLoggedOut: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
-    fun init(users: List<UserData>) {
+    init {
         users.forEach {
             val monkey = Monkey(it)
             this.pool.getOrPut(it.backend.teamName) { mutableListOf() }.add(monkey)
