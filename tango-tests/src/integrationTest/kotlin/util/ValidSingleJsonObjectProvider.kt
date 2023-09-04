@@ -16,21 +16,24 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.UnboundNetworkClient
+package util
 
-fun homeDirectory(): String {
-    return System.getProperty("user.home")
+sealed interface JsonProvider {
+    val rawJson: String
 }
 
-fun coreLogic(
-    rootPath: String,
-    kaliumConfigs: KaliumConfigs,
-    networkClient: UnboundNetworkClient
-): FakeCoreLogic = FakeCoreLogic(
-    rootPath,
-    kaliumConfigs,
-    "Wire Tango Tests",
-    networkClient
-)
+data class FaultyJsonProvider(override val rawJson: String) : JsonProvider
+
+data class ValidJsonProvider<Serializable : Any>(
+    val serializableData: Serializable,
+    private val jsonProvider: (Serializable) -> String
+) : JsonProvider {
+    override val rawJson: String = jsonProvider(serializableData).replace("\\s".toRegex(), "")
+}
+
+data class AnyResponseProvider<T>(
+    val data: T,
+    private val jsonProvider: (T) -> String
+) : JsonProvider {
+    override val rawJson: String = jsonProvider(data).replace("\\s".toRegex(), "")
+}

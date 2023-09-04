@@ -16,21 +16,20 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-fun homeDirectory(): String {
-    return System.getProperty("user.home")
+class TestNetworkStateObserver(initialState: NetworkState = NetworkState.ConnectedWithInternet) : NetworkStateObserver {
+
+    private val networkState = MutableStateFlow(initialState)
+
+    override fun observeNetworkState(): StateFlow<NetworkState> = networkState
+
+    suspend fun updateNetworkState(state: NetworkState) { networkState.emit(state) }
+
+    companion object {
+        val DEFAULT_TEST_NETWORK_STATE_OBSERVER = TestNetworkStateObserver()
+    }
 }
-
-fun coreLogic(
-    rootPath: String,
-    kaliumConfigs: KaliumConfigs,
-    networkClient: UnboundNetworkClient
-): FakeCoreLogic = FakeCoreLogic(
-    rootPath,
-    kaliumConfigs,
-    "Wire Tango Tests",
-    networkClient
-)

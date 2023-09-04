@@ -49,6 +49,9 @@ kotlin {
                 implementation(libs.okhttp.loggingInterceptor)
 
                 implementation(libs.faker)
+
+                // ktor test
+                implementation(libs.ktor.mock)
             }
         }
 

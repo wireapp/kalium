@@ -40,7 +40,7 @@ class VersionApiImpl internal constructor(
     private val util: BackendMetaDataUtil = BackendMetaDataUtilImpl,
     private val developmentApiEnabled: Boolean
 ) : VersionApi {
-    internal constructor(unboundNetworkClient: UnboundNetworkClient, developmentApiEnabled: Boolean) : this(
+    constructor(unboundNetworkClient: UnboundNetworkClient, developmentApiEnabled: Boolean) : this(
         unboundNetworkClient.httpClient,
         developmentApiEnabled = developmentApiEnabled
     )

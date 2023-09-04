@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
@@ -36,7 +37,8 @@ import java.io.File
 class FakeCoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
-    userAgent: String
+    userAgent: String,
+    private val networkClient: UnboundNetworkClient
 ) : CoreLogic(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
@@ -56,7 +58,8 @@ class FakeCoreLogic(
                     kaliumConfigs.developmentApiEnabled,
                     userAgent,
                     kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
-                    kaliumConfigs.certPinningConfig
+                    kaliumConfigs.certPinningConfig,
+                    networkClient
                 )
             }
         )

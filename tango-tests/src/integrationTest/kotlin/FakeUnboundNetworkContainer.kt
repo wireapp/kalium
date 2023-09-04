@@ -19,28 +19,41 @@
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
+import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.networkContainer.UnboundNetworkClientProvider
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.request.HttpRequestData
+import io.ktor.http.HeadersImpl
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.utils.io.ByteReadChannel
 
 internal class FakeUnboundNetworkClientProviderImpl(
     networkStateObserver: NetworkStateObserver,
     userAgent: String,
-    engine: HttpClientEngine
+    engine: HttpClientEngine,
+    networkClient: UnboundNetworkClient
 ) : UnboundNetworkClientProvider {
 
     init {
         KaliumUserAgentProvider.setUserAgent(userAgent)
     }
 
-    override val unboundNetworkClient by lazy {
-        UnboundNetworkClient(networkStateObserver, engine)
-    }
+    override val unboundNetworkClient = networkClient
+//     override val unboundNetworkClient by lazy {
+//         // UnboundNetworkClient(networkStateObserver, engine)
+//         networkClient
+//     }
 }
 
 class FakeUnboundNetworkContainer(
@@ -48,7 +61,8 @@ class FakeUnboundNetworkContainer(
     private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    networkClient: UnboundNetworkClient
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by FakeUnboundNetworkClientProviderImpl(
         networkStateObserver = networkStateObserver,
@@ -56,9 +70,10 @@ class FakeUnboundNetworkContainer(
         engine = defaultHttpEngine(
             ignoreSSLCertificates = ignoreSSLCertificates,
             certificatePinning = certificatePinning
-        )
+        ),
+        networkClient = networkClient
     ) {
-    override val serverConfigApi: ServerConfigApi get() = FakeServerConfigApiImpl(unboundNetworkClient)
-    override val remoteVersion: VersionApi get() = FakeVersionApiImpl(unboundNetworkClient, developmentApiEnabled)
-    override val acmeApi: ACMEApi get() = FakeACMEApiImpl(unboundNetworkClient)
+    override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
+    override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
+    override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
 }
