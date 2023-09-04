@@ -25,7 +25,7 @@ class TestNetworkStateObserver(initialState: NetworkState = NetworkState.Connect
 
     private val networkState = MutableStateFlow(initialState)
 
-    override fun observeNetworkState(): StateFlow<NetworkState> = networkState
+    override fun observeNetworkState(): MutableStateFlow<NetworkState> = networkState
 
     suspend fun updateNetworkState(state: NetworkState) { networkState.emit(state) }
 

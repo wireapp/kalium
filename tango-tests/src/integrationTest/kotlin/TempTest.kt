@@ -17,7 +17,9 @@
  */
 
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
@@ -84,10 +86,28 @@ class TempTest {
 
             val expected = ACME_DIRECTORIES_SAMPLE
 
+            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.NotConnected)
+
+            coreLogic.getGlobalScope().unboundNetworkContainer
+                .value.acmeApi.getACMEDirectories().also { actual ->
+                    assertIs<NetworkResponse.Error>(actual)
+                    assertIs<KaliumException.NoNetwork>(actual.kException.cause)
+                }
+
+            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
+
             coreLogic.getGlobalScope().unboundNetworkContainer
                 .value.acmeApi.getACMEDirectories().also { actual ->
                     assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
                     assertEquals(expected, actual.value)
+                }
+
+            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithoutInternet)
+
+            coreLogic.getGlobalScope().unboundNetworkContainer
+                .value.acmeApi.getACMEDirectories().also { actual ->
+                    assertIs<NetworkResponse.Error>(actual)
+                    assertIs<KaliumException.NoNetwork>(actual.kException.cause)
                 }
 
             /*
