@@ -15,17 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.util
 
-package com.wire.kalium.cryptography
+import java.io.File
+import kotlin.io.path.Path
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.createTempDirectory
+import kotlin.io.path.createTempFile
+actual object FileTestHelper {
+    actual fun createRandomDirectory(): String {
+        return createTempDirectory("testDirectory").absolutePathString()
+    }
 
-import kotlin.jvm.JvmInline
+    actual fun createRandomFileAt(path: String) {
+        createTempFile(directory = Path(path), prefix = "testFile")
+    }
 
-@JvmInline
-value class ProteusStoreRef(val value: String)
-
-expect open class BaseProteusClientTest() {
-
-    fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef
-    suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret? = null): ProteusClient
-
+    actual fun directoryExists(path: String): Boolean {
+        return File(path).exists()
+    }
 }

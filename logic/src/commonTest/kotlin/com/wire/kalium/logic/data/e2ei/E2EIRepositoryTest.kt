@@ -101,7 +101,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::directoryResponse)
+            .suspendFunction(arrangement.e2eiClient::directoryResponse)
             .with(any())
             .wasNotInvoked()
     }
@@ -253,7 +253,7 @@ class E2EIRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewAuthzRequest)
+            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
             .with(anyInstanceOf(String::class))
             .wasInvoked(once)
 
@@ -263,7 +263,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setAuthzResponse)
+            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
@@ -285,7 +285,7 @@ class E2EIRepositoryTest {
         result.shouldFail()
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewAuthzRequest)
+            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
             .with(anyInstanceOf(String::class))
             .wasInvoked(once)
 
@@ -295,7 +295,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setAuthzResponse)
+            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
@@ -446,7 +446,7 @@ class E2EIRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::checkOrderRequest)
+            .suspendFunction(arrangement.e2eiClient::checkOrderRequest)
             .with(anyInstanceOf(String::class))
             .wasInvoked(once)
 
@@ -478,7 +478,7 @@ class E2EIRepositoryTest {
         result.shouldFail()
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::checkOrderRequest)
+            .suspendFunction(arrangement.e2eiClient::checkOrderRequest)
             .with(anyInstanceOf(String::class))
             .wasInvoked(once)
 
@@ -488,7 +488,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::checkOrderResponse)
+            .suspendFunction(arrangement.e2eiClient::checkOrderResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
@@ -521,7 +521,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::finalizeResponse)
+            .suspendFunction(arrangement.e2eiClient::finalizeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
@@ -543,7 +543,7 @@ class E2EIRepositoryTest {
         result.shouldFail()
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::finalizeRequest)
+            .suspendFunction(arrangement.e2eiClient::finalizeRequest)
             .with(anyInstanceOf(String::class))
             .wasInvoked(once)
 
@@ -553,7 +553,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::finalizeResponse)
+            .suspendFunction(arrangement.e2eiClient::finalizeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
@@ -575,7 +575,7 @@ class E2EIRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::certificateRequest)
+            .suspendFunction(arrangement.e2eiClient::certificateRequest)
             .with(anyInstanceOf(String::class))
             .wasInvoked(once)
 
@@ -602,7 +602,7 @@ class E2EIRepositoryTest {
         result.shouldFail()
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::certificateRequest)
+            .suspendFunction(arrangement.e2eiClient::certificateRequest)
             .with(anyInstanceOf(String::class))
             .wasInvoked(once)
 
@@ -623,91 +623,91 @@ class E2EIRepositoryTest {
 
         fun withE2EIClientLoadDirectoriesSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::directoryResponse)
+                .suspendFunction(e2eiClient::directoryResponse)
                 .whenInvokedWith(anything())
                 .thenReturn(ACME_DIRECTORIES)
         }
 
         fun withGetNewAccountSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::getNewAccountRequest)
+                .suspendFunction(e2eiClient::getNewAccountRequest)
                 .whenInvokedWith(anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withGetNewOrderSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::getNewOrderRequest)
+                .suspendFunction(e2eiClient::getNewOrderRequest)
                 .whenInvokedWith(anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withGetNewAuthzRequestSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::getNewAuthzRequest)
+                .suspendFunction(e2eiClient::getNewAuthzRequest)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withCheckOrderRequestSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::checkOrderRequest)
+                .suspendFunction(e2eiClient::checkOrderRequest)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withFinalizeRequestSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::finalizeRequest)
+                .suspendFunction(e2eiClient::finalizeRequest)
                 .whenInvokedWith(anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withCertificateRequestSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::certificateRequest)
+                .suspendFunction(e2eiClient::certificateRequest)
                 .whenInvokedWith(anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withFinalizeResponseSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::finalizeResponse)
+                .suspendFunction(e2eiClient::finalizeResponse)
                 .whenInvokedWith(anything())
                 .thenReturn("")
         }
 
         fun withCheckOrderResponseSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::checkOrderResponse)
+                .suspendFunction(e2eiClient::checkOrderResponse)
                 .whenInvokedWith(anything())
                 .thenReturn("")
         }
 
         fun withGetNewDpopChallengeRequest() = apply {
             given(e2eiClient)
-                .function(e2eiClient::getNewDpopChallengeRequest)
+                .suspendFunction(e2eiClient::getNewDpopChallengeRequest)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withGetNewOidcChallengeRequest() = apply {
             given(e2eiClient)
-                .function(e2eiClient::getNewOidcChallengeRequest)
+                .suspendFunction(e2eiClient::getNewOidcChallengeRequest)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
         fun withSetOrderResponseSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::setOrderResponse)
+                .suspendFunction(e2eiClient::setOrderResponse)
                 .whenInvokedWith(anything())
                 .thenReturn(ACME_ORDER)
         }
 
         fun withSetAuthzResponseSuccessful() = apply {
             given(e2eiClient)
-                .function(e2eiClient::setAuthzResponse)
+                .suspendFunction(e2eiClient::setAuthzResponse)
                 .whenInvokedWith(anything())
                 .thenReturn(ACME_AUTHZ)
         }

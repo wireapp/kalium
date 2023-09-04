@@ -15,17 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.cryptography
 
-import kotlin.jvm.JvmInline
-
-@JvmInline
-value class ProteusStoreRef(val value: String)
-
-expect open class BaseProteusClientTest() {
-
-    fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef
-    suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret? = null): ProteusClient
-
-}
+actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral = TODO("Not yet implemented")

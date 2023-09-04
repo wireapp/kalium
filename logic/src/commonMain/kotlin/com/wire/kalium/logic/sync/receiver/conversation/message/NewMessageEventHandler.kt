@@ -108,6 +108,22 @@ internal class NewMessageEventHandlerImpl(
                     return@onFailure
                 }
 
+                if (it is MLSFailure.DuplicateMessage) {
+                    logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
+                    return@onFailure
+                }
+
+                if (it is MLSFailure.SelfCommitIgnored) {
+                    logger.i("Ignoring replayed self commit: ${logMap.toJsonElement()}")
+                    return@onFailure
+                }
+
+                if (it is MLSFailure.UnmergedPendingGroup) {
+                    logger.i("Message arrive in an unmerged group, " +
+                            "it has been buffered and will be consumed later: ${logMap.toJsonElement()}")
+                    return@onFailure
+                }
+
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,
                     conversationId = event.conversationId,

@@ -15,17 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic
 
-package com.wire.kalium.cryptography
+import com.wire.crypto.CryptoException
 
-import kotlin.jvm.JvmInline
-
-@JvmInline
-value class ProteusStoreRef(val value: String)
-
-expect open class BaseProteusClientTest() {
-
-    fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef
-    suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret? = null): ProteusClient
-
-}
+actual fun mapMLSException(exception: Exception): MLSFailure =
+    when (exception) {
+        is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
+        else -> MLSFailure.Generic(exception)
+    }

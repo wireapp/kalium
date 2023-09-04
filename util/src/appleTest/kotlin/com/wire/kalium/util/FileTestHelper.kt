@@ -15,27 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.util
 
-package com.wire.kalium.cryptography
-
-import kotlinx.coroutines.test.TestCoroutineScheduler
+import platform.Foundation.NSFileManager
 import platform.Foundation.NSTemporaryDirectory
 import platform.Foundation.NSURL
 
-actual open class BaseProteusClientTest actual constructor() {
-
-    private val testCoroutineScheduler = TestCoroutineScheduler()
-
-    actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
-        val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "proteus/${userId.value}", isDirectory = true)
-        return ProteusStoreRef(rootDir.path!!)
+actual object FileTestHelper {
+    actual fun createRandomDirectory(): String {
+        val directory = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/testDirectory", isDirectory = true)
+        NSFileManager.defaultManager.createDirectoryAtURL(directory, true, null, null)
+        return directory.absoluteString!!
     }
 
-    actual suspend fun createProteusClient(
-        proteusStore: ProteusStoreRef,
-        databaseKey: ProteusDBSecret?
-    ): ProteusClient {
-            return coreCryptoCentral(proteusStore.value, "secret").proteusClient()
+    actual fun createRandomFileAt(path: String) {
+        val directory = NSURL.fileURLWithPath(path + "/testFile", isDirectory = true)
+        NSFileManager.defaultManager.createDirectoryAtURL(directory, true, null, null)
     }
 
+    actual fun directoryExists(path: String): Boolean {
+        return NSFileManager.defaultManager.fileExistsAtPath(path)
+    }
 }

@@ -152,14 +152,14 @@ class MLSWelcomeEventHandlerTest {
 
         fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
             given(mlsClient)
-                .function(mlsClient::processWelcomeMessage)
+                .suspendFunction(mlsClient::processWelcomeMessage)
                 .whenInvokedWith(any())
                 .thenThrow(exception)
         }
 
         fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(mlsGroupId: MLSGroupId) = apply {
             given(mlsClient)
-                .function(mlsClient::processWelcomeMessage)
+                .suspendFunction(mlsClient::processWelcomeMessage)
                 .whenInvokedWith(any())
                 .thenReturn(mlsGroupId)
         }

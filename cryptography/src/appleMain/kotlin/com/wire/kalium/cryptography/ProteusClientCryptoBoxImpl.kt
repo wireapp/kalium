@@ -18,14 +18,10 @@
 
 package com.wire.kalium.cryptography
 
-import kotlin.jvm.JvmInline
+import kotlin.coroutines.CoroutineContext
 
-@JvmInline
-value class ProteusStoreRef(val value: String)
-
-expect open class BaseProteusClientTest() {
-
-    fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef
-    suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret? = null): ProteusClient
-
-}
+actual suspend fun cryptoboxProteusClient(
+    rootDir: String,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+): ProteusClient = TODO("Proteus cryptobox support not available")
