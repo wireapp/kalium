@@ -895,7 +895,10 @@ class UserSessionScope internal constructor(
         )
     }
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
-        get() = IncrementalSyncRecoveryHandlerImpl(restartSlowSyncProcessForRecoveryUseCase)
+        get() = IncrementalSyncRecoveryHandlerImpl(
+            restartSlowSyncProcessForRecoveryUseCase,
+            eventRepository,
+        )
 
     private val incrementalSyncManager by lazy {
         IncrementalSyncManager(
