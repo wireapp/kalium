@@ -184,6 +184,7 @@ internal class NotificationApiV0Test : ApiTest() {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertQueryParameter(CLIENT_QUERY_KEY, clientId)
+                assertQueryDoesNotExist(SINCE_QUERY_KEY)
             }
         )
         val notificationsApi = NotificationApiV0(networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links)
