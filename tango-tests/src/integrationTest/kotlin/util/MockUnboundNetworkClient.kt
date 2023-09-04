@@ -20,6 +20,7 @@ package util
 import TestNetworkStateObserver
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -46,6 +47,9 @@ import io.ktor.utils.io.ByteReadChannel
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 object MockUnboundNetworkClient {
+    init {
+        KaliumUserAgentProvider.setUserAgent("test/useragent")
+    }
 
     /**
      * Creates a mock Ktor Http client
