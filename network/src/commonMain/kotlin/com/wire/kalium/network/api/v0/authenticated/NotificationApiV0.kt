@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.MINIMUM_QUERY_SIZE
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_AWAIT
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_LAST
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_NOTIFICATIONS
@@ -73,7 +74,10 @@ internal open class NotificationApiV0 internal constructor(
     }
 
     override suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponse> =
-        getAllNotifications(querySize = 1, queryClient = queryClient).mapSuccess { it.notifications.first() }
+        getAllNotifications(
+            querySize = MINIMUM_QUERY_SIZE,
+            queryClient = queryClient
+        ).mapSuccess { it.notifications.first() }
 
     override suspend fun notificationsByBatch(
         querySize: Int,
@@ -166,6 +170,12 @@ internal open class NotificationApiV0 internal constructor(
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
         const val SINCE_QUERY_KEY = "since"
+
+        /**
+         * The backend doesn't allow queries smaller than a minimum
+         * value.
+         */
+        const val MINIMUM_QUERY_SIZE = 100
     }
 
     internal object Hardcoded {
