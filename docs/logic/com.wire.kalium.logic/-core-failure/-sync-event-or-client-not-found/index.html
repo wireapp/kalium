@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
-    <title>InvalidEventSenderID</title>
+    <title>SyncEventOrClientNotFound</title>
 <link href="../../../../images/logo-icon.svg" rel="icon" type="image/svg"><script>var pathToRoot = "../../../../";</script>    <script>const storage = localStorage.getItem("dokka-dark-mode")
     if (storage == null) {
         const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -49,11 +49,11 @@
         <div id="sideMenu"></div>
     </div>
     <div id="main">
-<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic/CoreFailure.InvalidEventSenderID///PointingToDeclaration//867774983">
-  <div class="breadcrumbs"><a href="../../../index.html">logic</a><span class="delimiter">/</span><a href="../../index.html">com.wire.kalium.logic</a><span class="delimiter">/</span><a href="../index.html">CoreFailure</a><span class="delimiter">/</span><span class="current">InvalidEventSenderID</span></div>
+<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic/CoreFailure.SyncEventOrClientNotFound///PointingToDeclaration//867774983">
+  <div class="breadcrumbs"><a href="../../../index.html">logic</a><span class="delimiter">/</span><a href="../../index.html">com.wire.kalium.logic</a><span class="delimiter">/</span><a href="../index.html">CoreFailure</a><span class="delimiter">/</span><span class="current">SyncEventOrClientNotFound</span></div>
   <div class="cover ">
-    <h1 class="cover"><span>Invalid</span><wbr><span>Event</span><wbr><span>Sender</span><wbr><span><span>ID</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">object </span><a href="index.html">InvalidEventSenderID</a> : <a href="../-feature-failure/index.html">CoreFailure.FeatureFailure</a></div><p class="paragraph">The sender ID of the event is invalid. usually happens with events that alter a message state ButtonActionConfirmation when the sender ID is not the same are the original message sender id</p></div></div>
+    <h1 class="cover"><span>Sync</span><wbr><span>Event</span><wbr><span>Or</span><wbr><span>Client</span><wbr><span>Not</span><wbr><span><span>Found</span></span></h1>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">object </span><a href="index.html">SyncEventOrClientNotFound</a> : <a href="../-feature-failure/index.html">CoreFailure.FeatureFailure</a></div><p class="paragraph">The desired event was not found when fetching pending events. This can happen when this client has been offline for a long period of time, and the backend has deleted old events.</p><p class="paragraph">This is a recoverable error, the client should:</p><ul><li><p class="paragraph">Do a full slow sync</p></li><li><p class="paragraph">Try incremental sync again using the oldest event ID available in the backend</p></li><li><p class="paragraph">Warn the user that some events might have been missed.</p></li></ul><p class="paragraph">This could also mean that the client was deleted. In this case, SlowSync will fail. The client should identify this scenario through other means and logout.</p></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
