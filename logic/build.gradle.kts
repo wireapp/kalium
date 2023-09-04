@@ -97,7 +97,10 @@ kotlin {
             dependencies {
                 implementation(libs.paging3)
                 implementation(libs.work)
-                implementation(libs.coreCryptoAndroid)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
         }
         val androidUnitTest by getting {
