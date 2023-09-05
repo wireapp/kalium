@@ -21,7 +21,6 @@ import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
@@ -63,27 +62,6 @@ class TempTest {
         )
 
         launch {
-//             val expectedResult = AcmeDirectoriesResponse(
-//                 newNonce = "nonce",
-//                 newAccount = "newAccount",
-//                 newOrder = "newOrder",
-//                 revokeCert = "revokeCert",
-//                 keyChange = "keyChange"
-//             )
-//
-//             val result = coreLogic
-//                 .getGlobalScope()
-//                 .unboundNetworkContainer
-//                 .value.acmeApi
-//                 .getACMEDirectories()
-//
-//             assertTrue(result.isSuccessful())
-//             assertEquals(expectedResult.newNonce, result.value.newNonce)
-//             assertEquals(expectedResult.newAccount, result.value.newAccount)
-//             assertEquals(expectedResult.newOrder, result.value.newOrder)
-//             assertEquals(expectedResult.revokeCert, result.value.revokeCert)
-//             assertEquals(expectedResult.keyChange, result.value.keyChange)
-
             val expected = ACME_DIRECTORIES_SAMPLE
 
             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.NotConnected)
@@ -109,26 +87,6 @@ class TempTest {
                     assertIs<NetworkResponse.Error>(actual)
                     assertIs<KaliumException.NoNetwork>(actual.kException.cause)
                 }
-
-            /*
-
-            val networkClient = mockUnboundNetworkClient(
-                ACME_DIRECTORIES_RESPONSE,
-                statusCode = HttpStatusCode.OK,
-                assertion = {
-                    assertJson()
-                    assertUrlEqual(ACME_DIRECTORIES_PATH)
-                    assertGet()
-                    assertNoQueryParams()
-                }
-            )
-            val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
-
-            acmeApi.getACMEDirectories().also { actual ->
-                assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
-                assertEquals(expected, actual.value)
-            }
-             */
         }
     }
 
