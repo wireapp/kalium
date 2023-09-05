@@ -207,7 +207,8 @@ Conversation.creator_id,
 Conversation.last_modified_date,
 Conversation.receipt_mode,
 Conversation.message_timer,
-Conversation.user_message_timer
+Conversation.user_message_timer,
+Conversation.incomplete_metadata
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
@@ -225,14 +226,15 @@ LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = C
 
 selectAllConversationDetails:
 SELECT * FROM ConversationDetails
-WHERE type IS NOT 'SELF'
-AND (
-    type IS 'GROUP' AND (name IS NOT NULL OR otherUserId IS NOT NULL) --filter deleted groups after first sync
-    OR (type IS NOT 'GROUP' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos and connection requests if they have user metadata
+WHERE
+    type IS NOT 'SELF'
+    AND incomplete_metadata = 0
+    AND (
+    type IS 'GROUP' OR (type IS NOT 'GROUP' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos and connection requests if they have user metadata
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
-)
-AND (protocol IS 'PROTEUS' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
-ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
+    )
+    AND (protocol IS 'PROTEUS' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectAllConversations:
 SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;

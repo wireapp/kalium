@@ -99,7 +99,7 @@ class RegisterMLSClientUseCaseTest {
 
         fun withGetPublicKey(result: ByteArray) = apply {
             given(mlsClient)
-                .function(mlsClient::getPublicKey)
+                .suspendFunction(mlsClient::getPublicKey)
                 .whenInvoked()
                 .thenReturn(result)
         }

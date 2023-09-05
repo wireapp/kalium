@@ -28,5 +28,5 @@ class FeatureSupportImpl(
     apiVersion: Int
 ) : FeatureSupport {
 
-    override val isMLSSupported: Boolean = kaliumConfigs.isMLSSupportEnabled && apiVersion >= 4
+    override val isMLSSupported: Boolean = kaliumConfigs.isMLSSupportEnabled && apiVersion >= 5
 }

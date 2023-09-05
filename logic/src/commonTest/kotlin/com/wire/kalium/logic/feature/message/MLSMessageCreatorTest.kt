@@ -66,7 +66,7 @@ class MLSMessageCreatorTest {
             .then { Either.Right(MLS_CLIENT) }
 
         given(MLS_CLIENT)
-            .function(MLS_CLIENT::encryptMessage)
+            .suspendFunction(MLS_CLIENT::encryptMessage)
             .whenInvokedWith(anything(), anything())
             .thenReturn(encryptedData)
 

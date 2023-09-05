@@ -100,7 +100,7 @@ kotlin {
         val jsTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(libs.securityCrypto)
+                implementation(libs.androidCrypto)
                 implementation(libs.sqldelight.androidDriver)
                 implementation(libs.sqldelight.androidxPaging)
                 implementation(libs.paging3)
@@ -113,5 +113,11 @@ kotlin {
                 implementation(libs.sqldelight.nativeDriver)
             }
         }
+    }
+}
+
+android {
+    testOptions.unitTests.all {
+        it.enabled = false
     }
 }

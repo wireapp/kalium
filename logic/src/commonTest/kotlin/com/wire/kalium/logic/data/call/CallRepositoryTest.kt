@@ -1710,21 +1710,21 @@ class CallRepositoryTest {
 
         fun givenGetMlsEpochReturns(epoch: ULong) = apply {
             given(mlsClient)
-                .function(mlsClient::conversationEpoch)
+                .suspendFunction(mlsClient::conversationEpoch)
                 .whenInvokedWith(any())
                 .thenReturn(epoch)
         }
 
         fun givenMlsMembersReturns(members: List<CryptoQualifiedClientId>) = apply {
             given(mlsClient)
-                .function(mlsClient::members)
+                .suspendFunction(mlsClient::members)
                 .whenInvokedWith(any())
                 .thenReturn(members)
         }
 
         fun givenDeriveSecretSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::deriveSecret)
+                .suspendFunction(mlsClient::deriveSecret)
                 .whenInvokedWith(any(), any())
                 .thenReturn(ByteArray(32))
         }

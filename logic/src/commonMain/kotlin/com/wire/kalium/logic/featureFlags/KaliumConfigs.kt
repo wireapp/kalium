@@ -19,11 +19,7 @@
 package com.wire.kalium.logic.featureFlags
 
 data class KaliumConfigs(
-    val isChangeEmailEnabled: Boolean = false,
     val forceConstantBitrateCalls: Boolean = false,
-    val developerFeaturesEnabled: Boolean = false,
-    val isLoggingEnabled: Boolean = false,
-    val enableBlacklist: Boolean = false,
     val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
     var isMLSSupportEnabled: Boolean = true,
     // Disabling db-encryption will crash on android-api level below 30
@@ -31,8 +27,6 @@ data class KaliumConfigs(
     val encryptProteusStorage: Boolean = false,
     val lowerKeyPackageLimits: Boolean = false,
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
-    val blacklistHost: String = "",
-    val maxAccount: Int = 0,
     val developmentApiEnabled: Boolean = false,
     val ignoreSSLCertificatesForUnboundCalls: Boolean = true,
     val guestRoomLink: Boolean = true,
@@ -40,7 +34,8 @@ data class KaliumConfigs(
     val wipeOnCookieInvalid: Boolean = false,
     val wipeOnDeviceRemoval: Boolean = false,
     val wipeOnRootedDevice: Boolean = false,
-    val isWebSocketEnabledByDefault: Boolean = false
+    val isWebSocketEnabledByDefault: Boolean = false,
+    val certPinningConfig: Map<String, List<String>> = emptyMap()
 )
 
 sealed interface BuildFileRestrictionState {

@@ -20,9 +20,10 @@ package com.wire.kalium.monkeys.actions
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
 import com.wire.kalium.monkeys.pool.ConversationPool
+import com.wire.kalium.monkeys.pool.MonkeyPool
 
 class DestroyConversationAction(val config: ActionType.DestroyConversation) : Action() {
-    override suspend fun execute(coreLogic: CoreLogic) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         val targets = ConversationPool.randomDynamicConversations(this.config.count.toInt())
         targets.forEach { it.destroy() }
     }

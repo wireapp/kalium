@@ -31,7 +31,8 @@ import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.Unauthent
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v3.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV3
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
-import com.wire.kalium.network.defaultHttpEngine
+import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
@@ -49,7 +50,8 @@ interface UnauthenticatedNetworkContainer {
             networkStateObserver: NetworkStateObserver,
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
-            userAgent: String
+            userAgent: String,
+            certificatePinning: CertificatePinning
         ): UnauthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -58,31 +60,43 @@ interface UnauthenticatedNetworkContainer {
                 0 -> UnauthenticatedNetworkContainerV0(
                     networkStateObserver,
                     serverConfigDTO,
-                    proxyCredentials = proxyCredentials
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
                     networkStateObserver,
                     serverConfigDTO,
-                    proxyCredentials = proxyCredentials
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
                     networkStateObserver,
                     serverConfigDTO,
-                    proxyCredentials = proxyCredentials
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
                 )
 
                 3 -> UnauthenticatedNetworkContainerV3(
                     networkStateObserver,
                     serverConfigDTO,
-                    proxyCredentials = proxyCredentials
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
                     networkStateObserver,
                     serverConfigDTO,
-                    proxyCredentials = proxyCredentials
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
+                )
+
+                5 -> UnauthenticatedNetworkContainerV5(
+                    networkStateObserver,
+                    serverConfigDTO,
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
                 )
 
                 else -> error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
@@ -98,8 +112,7 @@ internal interface UnauthenticatedNetworkClientProvider {
 internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
     networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
-    proxyCredentials: ProxyCredentialsDTO?,
-    engine: HttpClientEngine = defaultHttpEngine(backendLinks.links.apiProxy, proxyCredentials),
+    engine: HttpClientEngine
 ) : UnauthenticatedNetworkClientProvider {
     override val unauthenticatedNetworkClient by lazy {
         UnauthenticatedNetworkClient(networkStateObserver, engine, backendLinks)

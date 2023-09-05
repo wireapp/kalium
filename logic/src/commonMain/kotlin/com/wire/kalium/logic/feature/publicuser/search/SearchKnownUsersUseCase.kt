@@ -57,18 +57,19 @@ internal class SearchKnownUsersUseCaseImpl(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
     ): Flow<SearchUsersResult> {
-        return if (isUserLookingForHandle(searchQuery)) {
+        val sanitizedSearchQuery = searchQuery.lowercase()
+        return if (isUserLookingForHandle(sanitizedSearchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
-                handle = searchQuery.removePrefix("@"),
+                handle = sanitizedSearchQuery.removePrefix("@"),
                 searchUsersOptions = searchUsersOptions
             )
         } else {
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
-                searchQuery = if (searchQuery.matches(FEDERATION_REGEX))
-                    searchQuery.run {
+                searchQuery = if (sanitizedSearchQuery.matches(FEDERATION_REGEX))
+                    sanitizedSearchQuery.run {
                         qualifiedIdMapper.fromStringToQualifiedID(this)
                     }.value
-                else searchQuery,
+                else sanitizedSearchQuery,
                 searchUsersOptions = searchUsersOptions
             )
         }

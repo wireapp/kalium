@@ -22,18 +22,12 @@ import com.wire.bots.cryptobox.CryptoBox
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
-import java.io.FileNotFoundException
 import java.util.Base64
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-/**
- *
- */
 class ProteusClientCryptoBoxImpl constructor(
-    rootDir: String,
-    private val defaultContext: CoroutineContext,
-    private val ioContext: CoroutineContext
+    rootDir: String
 ) : ProteusClient {
 
     private val path: String
@@ -43,18 +37,7 @@ class ProteusClientCryptoBoxImpl constructor(
         path = rootDir
     }
 
-    override fun clearLocalFiles(): Boolean {
-        if (::box.isInitialized) {
-            box.close()
-        }
-        return File(path).deleteRecursively()
-    }
-
-    override fun needsMigration(): Boolean {
-        return false
-    }
-
-    override suspend fun openOrCreate() {
+    fun openOrCreate() {
         val directory = File(path)
         box = wrapException {
             directory.mkdirs()
@@ -62,19 +45,9 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun openOrError() {
-        val directory = File(path)
-        if (directory.exists()) {
-            box = wrapException {
-                directory.mkdirs()
-                CryptoBox.open(path)
-            }
-        } else {
-            throw ProteusException(
-                "Local files were not found",
-                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
-                FileNotFoundException()
-            )
+    override suspend fun close() {
+        if (::box.isInitialized) {
+            box.close()
         }
     }
 
@@ -82,7 +55,7 @@ class ProteusClientCryptoBoxImpl constructor(
         return wrapException { box.identity }
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return wrapException { box.localFingerprint }
     }
 
@@ -90,7 +63,7 @@ class ProteusClientCryptoBoxImpl constructor(
         TODO("get session is private in Cryptobox4j")
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto {
+    override suspend fun newLastResortPreKey(): PreKeyCrypto {
         return wrapException { toPreKey(box.newLastPreKey()) }
     }
 
@@ -161,4 +134,14 @@ class ProteusClientCryptoBoxImpl constructor(
             PreKeyCrypto(preKey.id, Base64.getEncoder().encodeToString(preKey.data))
     }
 
+}
+
+actual suspend fun cryptoboxProteusClient(
+    rootDir: String,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+): ProteusClient {
+    val proteusClient = ProteusClientCryptoBoxImpl(rootDir)
+    proteusClient.openOrCreate()
+    return proteusClient
 }

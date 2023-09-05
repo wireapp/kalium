@@ -21,8 +21,8 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MLSClientImpl
 import com.wire.kalium.cryptography.MlsDBSecret
+import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
@@ -38,6 +38,8 @@ import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
+
+    suspend fun clearLocalFiles()
 }
 
 class MLSClientProviderImpl(
@@ -73,12 +75,17 @@ class MLSClientProviderImpl(
         }
     }
 
-    private fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String, passphrase: MlsDBSecret): MLSClient {
-        return MLSClientImpl(
-            "$location/$KEYSTORE_NAME",
-            passphrase,
-            CryptoQualifiedClientId(clientId.value, userId)
-        )
+    override suspend fun clearLocalFiles() {
+        mlsClient?.close()
+        mlsClient = null
+        FileUtil.deleteDirectory(rootKeyStorePath)
+    }
+
+    private suspend fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String, passphrase: MlsDBSecret): MLSClient {
+        return coreCryptoCentral(
+            rootDir = "$location/$KEYSTORE_NAME",
+            databaseKey = passphrase.value
+        ).mlsClient(CryptoQualifiedClientId(clientId.value, userId))
     }
 
     private companion object {

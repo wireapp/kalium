@@ -44,20 +44,20 @@ data class NewAcmeAuthz(
 
 @Suppress("TooManyFunctions")
 interface E2EIClient {
-    fun directoryResponse(directory: JsonRawData): AcmeDirectory
-    fun getNewAccountRequest(previousNonce: String): JsonRawData
-    fun setAccountResponse(account: JsonRawData)
-    fun getNewOrderRequest(previousNonce: String): JsonRawData
-    fun setOrderResponse(order: JsonRawData): NewAcmeOrder
-    fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData
-    fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
-    fun createDpopToken(backendNonce: String): DpopToken
-    fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
-    fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
-    fun setChallengeResponse(challenge: JsonRawData)
-    fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
-    fun checkOrderResponse(order: JsonRawData): String
-    fun finalizeRequest(previousNonce: String): JsonRawData
-    fun finalizeResponse(finalize: JsonRawData): String
-    fun certificateRequest(previousNonce: String): JsonRawData
+    suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory
+    suspend fun getNewAccountRequest(previousNonce: String): JsonRawData
+    suspend fun setAccountResponse(account: JsonRawData)
+    suspend fun getNewOrderRequest(previousNonce: String): JsonRawData
+    suspend fun setOrderResponse(order: JsonRawData): NewAcmeOrder
+    suspend fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData
+    suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
+    suspend fun createDpopToken(backendNonce: String): DpopToken
+    suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
+    suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
+    suspend fun setChallengeResponse(challenge: JsonRawData)
+    suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
+    suspend fun checkOrderResponse(order: JsonRawData): String
+    suspend fun finalizeRequest(previousNonce: String): JsonRawData
+    suspend fun finalizeResponse(finalize: JsonRawData): String
+    suspend fun certificateRequest(previousNonce: String): JsonRawData
 }

@@ -28,7 +28,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -54,15 +53,10 @@ class ProteusClientTest : BaseProteusClientTest() {
     fun givenExistingUnencryptedProteusData_whenCallingOpenOrError_thenItMigratesExistingData() = runTest {
         val proteusStoreRef = createProteusStoreRef(alice.id)
         val unencryptedAliceClient = createProteusClient(proteusStoreRef)
-        unencryptedAliceClient.openOrCreate()
         val previousFingerprint = unencryptedAliceClient.getLocalFingerprint()
         val encryptedAliceClient = createProteusClient(proteusStoreRef, PROTEUS_DB_SECRET)
 
-        assertTrue(encryptedAliceClient.needsMigration())
-        encryptedAliceClient.openOrError()
-
         assertEquals(previousFingerprint.decodeToString(), encryptedAliceClient.getLocalFingerprint().decodeToString())
-        assertFalse(encryptedAliceClient.needsMigration())
     }
 
     @IgnoreJS
@@ -71,29 +65,22 @@ class ProteusClientTest : BaseProteusClientTest() {
     fun givenExistingUnencryptedProteusData_whenCallingOpenOrCreate_thenItMigratesExistingData() = runTest {
         val proteusStoreRef = createProteusStoreRef(alice.id)
         val unencryptedAliceClient = createProteusClient(proteusStoreRef)
-        unencryptedAliceClient.openOrCreate()
         val previousFingerprint = unencryptedAliceClient.getLocalFingerprint()
         val encryptedAliceClient = createProteusClient(proteusStoreRef, PROTEUS_DB_SECRET)
 
-        assertTrue(encryptedAliceClient.needsMigration())
-        encryptedAliceClient.openOrCreate()
-
         assertEquals(previousFingerprint.decodeToString(), encryptedAliceClient.getLocalFingerprint().decodeToString())
-        assertFalse(encryptedAliceClient.needsMigration())
     }
 
     @Test
     fun givenProteusClient_whenCallingNewLastKey_thenItReturnsALastPreKey() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        aliceClient.openOrCreate()
-        val lastPreKey = aliceClient.newLastPreKey()
+        val lastPreKey = aliceClient.newLastResortPreKey()
         assertEquals(65535, lastPreKey.id)
     }
 
     @Test
     fun givenProteusClient_whenCallingNewPreKeys_thenItReturnsAListOfPreKeys() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        aliceClient.openOrCreate()
         val preKeyList = aliceClient.newPreKeys(0, 10)
         assertEquals(preKeyList.size, 10)
     }
@@ -101,10 +88,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenIncomingPreKeyMessage_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        aliceClient.openOrCreate()
-
         val bobClient = createProteusClient(createProteusStoreRef(bob.id))
-        bobClient.openOrCreate()
 
         val message = "Hi Alice!"
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
@@ -116,10 +100,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenSessionAlreadyExists_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        aliceClient.openOrCreate()
-
         val bobClient = createProteusClient(createProteusStoreRef(bob.id))
-        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
@@ -138,10 +119,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenReceivingSameMessageTwice_whenCallingDecrypt_thenDuplicateMessageError() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id), PROTEUS_DB_SECRET)
-        aliceClient.openOrCreate()
-
         val bobClient = createProteusClient(createProteusStoreRef(bob.id), PROTEUS_DB_SECRET)
-        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
@@ -159,10 +137,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenMissingSession_whenCallingEncryptBatched_thenMissingSessionAreIgnored() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        aliceClient.openOrCreate()
-
         val bobClient = createProteusClient(createProteusStoreRef(bob.id))
-        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
@@ -178,10 +153,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenNoSessionExists_whenCallingCreateSession_thenSessionIsCreated() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        aliceClient.openOrCreate()
-
         val bobClient = createProteusClient(createProteusStoreRef(bob.id))
-        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         bobClient.createSession(aliceKey, aliceSessionId)
@@ -195,7 +167,6 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenNoSessionExists_whenGettingRemoteFingerPrint_thenReturnSessionNotFound() = runTest {
         val bobClient = createProteusClient(createProteusStoreRef(bob.id))
-        bobClient.openOrCreate()
 
         assertFailsWith<ProteusException> {
             bobClient.remoteFingerPrint(aliceSessionId)
@@ -208,10 +179,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     @Test
     fun givenSessionExists_whenGettingRemoteFingerPrint_thenReturnSuccess() = runTest {
         val aliceClient = createProteusClient(createProteusStoreRef(alice.id))
-        aliceClient.openOrCreate()
-
         val bobClient = createProteusClient(createProteusStoreRef(bob.id))
-        bobClient.openOrCreate()
 
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         bobClient.createSession(aliceKey, aliceSessionId)
