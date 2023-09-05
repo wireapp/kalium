@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
@@ -236,21 +237,22 @@ class UserRepositoryTest {
     fun whenFetchingKnownUsers_thenShouldFetchFromDatabaseAndApiAndSucceed() = runTest {
         // Given
         val knownUserEntities = listOf(
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
+            UserIDEntity(value = "id1", domain = "domain1"),
+            UserIDEntity(value = "id2", domain = "domain2")
         )
-        val knownUserIds = knownUserEntities.map { UserId(it.id.value, it.id.domain) }.toSet()
+        val knownUserIds = knownUserEntities.map { UserId(it.value, it.domain) }.toSet()
         val (arrangement, userRepository) = Arrangement()
-            .withSuccessfulGetAllUsers(knownUserEntities)
             .withSuccessfulGetMultipleUsers()
-            .arrange()
+            .arrange {
+                withAllOtherUsersIdSuccess(knownUserEntities)
+            }
 
         // When
-        userRepository.fetchKnownUsers().shouldSucceed()
+        userRepository.fetchAllOtherUsers().shouldSucceed()
 
         // Then
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getAllUsers)
+            .suspendFunction(arrangement.userDAO::allOtherUsersId)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userDetailsApi)
@@ -459,7 +461,7 @@ class UserRepositoryTest {
         }
 
         verify(arrangement.userDAO)
-            .function(arrangement.userDAO::observeAllUsersByConnectionStatus)
+            .suspendFunction(arrangement.userDAO::observeAllUsersByConnectionStatus)
             .with(any())
             .wasInvoked(once)
     }
@@ -491,6 +493,23 @@ class UserRepositoryTest {
         verify(arrangement.userDAO)
             .function(arrangement.userDAO::observeUsersNotInConversation)
             .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenUserIdWhenDefederateUser_thenShouldMarkUserAsDefederated() = runTest {
+        // Given
+        val (arrangement, userRepository) = Arrangement()
+            .withMarkUserAsDefederated()
+            .arrange()
+
+        // When
+        userRepository.defederateUser(TestUser.OTHER_FEDERATED_USER_ID).shouldSucceed()
+
+        // Then
+        verify(arrangement.userDAO)
+            .function(arrangement.userDAO::markUserAsDefederated)
+            .with(eq(TestUser.OTHER_FEDERATED_USER_ID.toDao()))
             .wasInvoked(once)
     }
 
@@ -556,7 +575,7 @@ class UserRepositoryTest {
 
         fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserEntity>) = apply {
             given(userDAO)
-                .function(userDAO::observeAllUsersByConnectionStatus)
+                .suspendFunction(userDAO::observeAllUsersByConnectionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(userEntities))
         }
@@ -664,7 +683,26 @@ class UserRepositoryTest {
                 .then { NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) }
         }
 
-        fun arrange() = this to userRepository
+        fun withAllOtherUsersIdSuccess(
+            result: List<UserIDEntity>,
+        ) {
+            given(userDAO)
+                .suspendFunction(userDAO::allOtherUsersId)
+                .whenInvoked()
+                .then { result }
+        }
+
+        fun withMarkUserAsDefederated() = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::markUserAsDefederated)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
+        }
+
+        fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
+            apply(block)
+            return this to userRepository
+        }
     }
 
     private companion object {

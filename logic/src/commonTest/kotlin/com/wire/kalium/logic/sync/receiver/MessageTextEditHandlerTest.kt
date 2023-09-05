@@ -18,22 +18,21 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.eq
 import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -43,9 +42,9 @@ class MessageTextEditHandlerTest {
 
     @Test
     fun givenEditMatchesOriginalSender_whenHandling_thenShouldUpdateContentWithCorrectParameters() = runTest {
-        val (arrangement, messageTextEditHandler) = Arrangement()
-            .withCurrentMessageByIdReturning(Either.Right(ORIGINAL_MESSAGE))
-            .arrange()
+        val (arrangement, messageTextEditHandler) = arrange {
+            withGetMessageById(Either.Right(ORIGINAL_MESSAGE))
+        }
 
         messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = ORIGINAL_SENDER_USER_ID), EDIT_CONTENT)
 
@@ -59,9 +58,9 @@ class MessageTextEditHandlerTest {
 
     @Test
     fun givenEditDoesNOTMatchesOriginalSender_whenHandling_thenShouldNOTUpdateContent() = runTest {
-        val (arrangement, messageTextEditHandler) = Arrangement()
-            .withCurrentMessageByIdReturning(Either.Right(ORIGINAL_MESSAGE))
-            .arrange()
+        val (arrangement, messageTextEditHandler) = arrange {
+            withGetMessageById(Either.Right(ORIGINAL_MESSAGE))
+        }
 
         messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = TestUser.OTHER_USER_ID), EDIT_CONTENT)
 
@@ -80,16 +79,16 @@ class MessageTextEditHandlerTest {
         val originalMessage = ORIGINAL_MESSAGE.copy(
             editStatus = originalEditStatus,
             content = originalContent,
-            status = Message.Status.PENDING
+            status = Message.Status.Pending
         )
         val editContent = EDIT_CONTENT
         val editMessage = EDIT_MESSAGE.copy(
             date = "2000-01-01T12:00:00.001Z",
             content = editContent
         )
-        val (arrangement, messageTextEditHandler) = Arrangement()
-            .withCurrentMessageByIdReturning(Either.Right(originalMessage))
-            .arrange()
+        val (arrangement, messageTextEditHandler) = arrange {
+            withGetMessageById(Either.Right(originalMessage))
+        }
 
         messageTextEditHandler.handle(editMessage, editContent)
 
@@ -102,6 +101,10 @@ class MessageTextEditHandlerTest {
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .with(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
                 .wasInvoked(exactly = once)
+            verify(ephemeralNotifications)
+                .suspendFunction(ephemeralNotifications::scheduleEditMessageNotification)
+                .with(eq(editMessage), eq(editContent), )
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -112,7 +115,8 @@ class MessageTextEditHandlerTest {
         val originalMessage = ORIGINAL_MESSAGE.copy(
             editStatus = originalEditStatus,
             content = originalContent,
-            status = Message.Status.PENDING
+            status = Message.Status.Pending
+
         )
         val editContent = EDIT_CONTENT
         val editMessage = EDIT_MESSAGE.copy(
@@ -124,9 +128,9 @@ class MessageTextEditHandlerTest {
             newContent = originalContent.value,
             newMentions = originalContent.mentions
         )
-        val (arrangement, messageTextEditHandler) = Arrangement()
-            .withCurrentMessageByIdReturning(Either.Right(originalMessage))
-            .arrange()
+        val (arrangement, messageTextEditHandler) = arrange {
+            withGetMessageById(Either.Right(originalMessage))
+        }
 
         messageTextEditHandler.handle(editMessage, editContent)
 
@@ -142,10 +146,12 @@ class MessageTextEditHandlerTest {
         }
     }
 
-    private class Arrangement {
+    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
 
-        @Mock
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
+    private class Arrangement(
+        private val block: Arrangement.() -> Unit
+    ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
+        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
         init {
             given(messageRepository)
@@ -158,15 +164,12 @@ class MessageTextEditHandlerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withCurrentMessageByIdReturning(result: Either<StorageFailure, Message>) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        fun arrange() = block().run {
+            this@Arrangement to MessageTextEditHandlerImpl(
+                messageRepository = messageRepository,
+                editMessageNotificationsManager = ephemeralNotifications,
+            )
         }
-
-        fun arrange(): Pair<Arrangement, MessageTextEditHandler> =
-            this to MessageTextEditHandlerImpl(messageRepository)
 
     }
 

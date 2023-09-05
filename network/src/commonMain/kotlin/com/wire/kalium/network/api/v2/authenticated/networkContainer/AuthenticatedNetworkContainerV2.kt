@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v2.authenticated.networkContainer
 
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.v2.authenticated.E2EIApiV2
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -64,16 +65,23 @@ import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
 
 internal class AuthenticatedNetworkContainerV2 internal constructor(
+    private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials())
+    certificatePinning: CertificatePinning,
+    engine: HttpClientEngine = defaultHttpEngine(
+        sessionManager.serverConfig().links.apiProxy,
+        certificatePinning = certificatePinning
+    )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
+        networkStateObserver,
         { httpClient -> AccessTokenApiV2(httpClient) },
         engine
     ) {

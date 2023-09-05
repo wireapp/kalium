@@ -58,12 +58,14 @@ import com.wire.kalium.logic.feature.call.scenario.OnConfigRequest
 import com.wire.kalium.logic.feature.call.scenario.OnEstablishedCall
 import com.wire.kalium.logic.feature.call.scenario.OnIncomingCall
 import com.wire.kalium.logic.feature.call.scenario.OnMissedCall
+import com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChanged
 import com.wire.kalium.logic.feature.call.scenario.OnNetworkQualityChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantListChanged
 import com.wire.kalium.logic.feature.call.scenario.OnParticipantsVideoStateChanged
 import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
@@ -96,6 +98,7 @@ class CallManagerImpl internal constructor(
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
+    private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val kaliumConfigs: KaliumConfigs,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
@@ -394,6 +397,16 @@ class CallManagerImpl internal constructor(
         }
     }
 
+    override suspend fun updateConversationClients(conversationId: ConversationId, clients: String) {
+        withCalling {
+            wcall_set_clients_for_conv(
+                it,
+                federatedIdMapper.parseToFederatedId(conversationId),
+                clients
+            )
+        }
+    }
+
     /**
      * onCallingReady
      * Will start the handlers for: ParticipantsChanged, NetworkQuality, ClientsRequest and ActiveSpeaker
@@ -404,6 +417,7 @@ class CallManagerImpl internal constructor(
         initClientsHandler()
         initActiveSpeakersHandler()
         initRequestNewEpochHandler()
+        initSelfUserMuteHandler()
     }
 
     private fun initParticipantsHandler() {
@@ -448,9 +462,7 @@ class CallManagerImpl internal constructor(
         scope.launch {
             withCalling {
                 val onClientsRequest = OnClientsRequest(
-                    calling = calling,
-                    conversationRepository = conversationRepository,
-                    federatedIdMapper = federatedIdMapper,
+                    conversationClientsInCallUpdater = conversationClientsInCallUpdater,
                     qualifiedIdMapper = qualifiedIdMapper,
                     callingScope = scope
                 ).keepingStrongReference()
@@ -498,6 +510,25 @@ class CallManagerImpl internal constructor(
                 )
 
                 callingLogger.d("$TAG - wcall_set_req_new_epoch_handler() called")
+            }
+        }
+    }
+
+    private fun initSelfUserMuteHandler() {
+        scope.launch {
+            withCalling {
+                val selfUserMuteHandler = OnMuteStateForSelfUserChanged(
+                    scope = scope,
+                    callRepository = callRepository
+                ).keepingStrongReference()
+
+                wcall_set_mute_handler(
+                    inst = deferredHandle.await(),
+                    selfUserMuteHandler = selfUserMuteHandler,
+                    arg = null
+                )
+
+                callingLogger.d("$TAG - wcall_set_mute_handler() called")
             }
         }
     }

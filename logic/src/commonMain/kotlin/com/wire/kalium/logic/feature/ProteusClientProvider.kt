@@ -19,16 +19,16 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.cryptography.ProteusClient
-import com.wire.kalium.cryptography.ProteusClientImpl
-import com.wire.kalium.cryptography.exceptions.ProteusException
+import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.cryptography.cryptoboxProteusClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.sync.Mutex
@@ -63,8 +63,9 @@ class ProteusClientProviderImpl(
     override suspend fun clearLocalFiles() {
         mutex.withLock {
             withContext(dispatcher.io) {
-                (_proteusClient ?: createProteusClient()).clearLocalFiles()
+                _proteusClient?.close()
                 _proteusClient = null
+                FileUtil.deleteDirectory(rootProteusPath)
             }
         }
     }
@@ -72,7 +73,6 @@ class ProteusClientProviderImpl(
     override suspend fun getOrCreate(): ProteusClient {
         mutex.withLock {
             return _proteusClient ?: createProteusClient().also {
-                it.openOrCreate()
                 _proteusClient = it
             }
         }
@@ -81,33 +81,36 @@ class ProteusClientProviderImpl(
     override suspend fun getOrError(): Either<CoreFailure, ProteusClient> {
         return mutex.withLock {
             _proteusClient?.let { Either.Right(it) } ?: run {
-                wrapProteusRequest {
-                    createProteusClient().also {
-                        it.openOrError()
-                        _proteusClient = it
+                if (FileUtil.isDirectoryNonEmpty(rootProteusPath)) {
+                    wrapProteusRequest {
+                        createProteusClient().also {
+                            _proteusClient = it
+                        }
                     }
-                }.mapLeft {
-                    if (it.proteusException.code == ProteusException.Code.LOCAL_FILES_NOT_FOUND) CoreFailure.MissingClientRegistration
-                    else it
+                } else {
+                    Either.Left(CoreFailure.MissingClientRegistration)
                 }
             }
         }
     }
 
-    private fun createProteusClient(): ProteusClient {
+    private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            ProteusClientImpl(
-                rootProteusPath,
-                SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId),
-                defaultContext = dispatcher.default,
-                ioContext = dispatcher.io
+            val central = coreCryptoCentral(
+                rootDir = "$rootProteusPath/$KEYSTORE_NAME",
+                databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
             )
+            central.proteusClient()
         } else {
-            ProteusClientImpl(
-                rootProteusPath, null,
+            cryptoboxProteusClient(
+                rootDir = rootProteusPath,
                 defaultContext = dispatcher.default,
                 ioContext = dispatcher.io
             )
         }
+    }
+
+    private companion object {
+        const val KEYSTORE_NAME = "keystore"
     }
 }

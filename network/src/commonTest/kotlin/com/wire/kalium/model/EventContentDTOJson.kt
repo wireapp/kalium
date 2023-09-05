@@ -52,8 +52,9 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
-    private val jsonProviderAccessUpdateWithDeprecatedAccessRoleField = { serializable: EventContentDTO.Conversation.AccessUpdate ->
-        """
+    private val jsonProviderAccessUpdateWithDeprecatedAccessRoleField =
+        { serializable: EventContentDTO.Conversation.AccessUpdate ->
+            """
         |{
         |  "qualified_conversation" : {
         |    "id" : "${serializable.qualifiedConversation.value}",
@@ -70,7 +71,7 @@ object EventContentDTOJson {
         |  }
         |}
         """.trimMargin()
-    }
+        }
 
     private val jsonProviderMemberJoin = { serializable: EventContentDTO.Conversation.MemberJoinDTO ->
         """
@@ -114,8 +115,9 @@ object EventContentDTOJson {
         """.trimMargin()
     }
 
-    private val jsonProviderUpdateConversationReceiptMode = { serializable: EventContentDTO.Conversation.ReceiptModeUpdate ->
-        """
+    private val jsonProviderUpdateConversationReceiptMode =
+        { serializable: EventContentDTO.Conversation.ReceiptModeUpdate ->
+            """
         |{
         |  "conversation":"${serializable.qualifiedConversation.value}",
         |  "data":{
@@ -134,7 +136,7 @@ object EventContentDTOJson {
         |  "type":"conversation.receipt-mode-update"
         |}
         """.trimMargin()
-    }
+        }
 
     val validAccessUpdate = ValidJsonProvider(
         EventContentDTO.Conversation.AccessUpdate(
@@ -215,15 +217,28 @@ object EventContentDTOJson {
 
     val validGenerateGuestRoomLink = """
         |{
-        |  "conversation" : "f2520615-f860-****-****-9ace3b5f6c37",
+        |  "qualified_conversation" : {
+                    "domain": "wire.com",
+                    "id": "f2520615-f860-****-****-9ace3b5f6c37"
+        },
         |  "type" : "conversation.code-update",
         |  "time" : "2018-02-15T17:44:54.351Z",
-        |  "from" : "f52eed1b-aa64-****-****-96529f72105f",
+        |  "qualified_from" : {
+                    "domain": "wire.com",
+                    "id": "f52eed1b-aa64-****-****-96529f72105f"
+        },
         |  "data" : {
         |     "uri" : "https:\/\/wire-webapp-staging.zinfra.io\/join\/?key=NHRSj7****JkEZV5qsPd&code=755Asq****nITN_0AHV9",
         |     "key" : "NHRSj7****JkEZV5qsPd",
         |     "code" : "755Asq****nITN_0AHV9"
         |  }
+        |}
+        """.trimMargin()
+
+    val jsonProviderMemberJoinFailureUnreachable =
+        """
+        |{
+        |   "unreachable_backends": ["foma.wire.link"]
         |}
         """.trimMargin()
 }

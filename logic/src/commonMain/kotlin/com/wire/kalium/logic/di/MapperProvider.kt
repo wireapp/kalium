@@ -33,8 +33,6 @@ import com.wire.kalium.logic.data.connection.ConnectionMapper
 import com.wire.kalium.logic.data.connection.ConnectionMapperImpl
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapperImpl
-import com.wire.kalium.logic.data.conversation.AddingMembersFailureMapper
-import com.wire.kalium.logic.data.conversation.AddingMembersFailureMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationMapper
 import com.wire.kalium.logic.data.conversation.ConversationMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
@@ -173,6 +171,4 @@ internal object MapperProvider {
     fun receiptModeMapper(): ReceiptModeMapper = ReceiptModeMapperImpl()
     fun sendMessagePartialFailureMapper(): SendMessagePartialFailureMapper = SendMessagePartialFailureMapperImpl()
     fun serviceMapper(): ServiceMapper = ServiceMapper()
-    fun addingMembersFailureMapper(): AddingMembersFailureMapper = AddingMembersFailureMapperImpl()
-
 }

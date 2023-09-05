@@ -41,6 +41,10 @@ import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.serializer
 
 @Suppress("TooManyFunctions")
 class EventMapper(
@@ -74,8 +78,8 @@ class EventMapper(
             is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO, transient)
             is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO, transient)
             is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient)
-            is EventContentDTO.Unknown -> Event.Unknown(id, transient)
-            is EventContentDTO.Conversation.AccessUpdate -> Event.Unknown(id, transient) // TODO: update it after logic code is merged
+            is EventContentDTO.Unknown -> unknown(id, transient, eventContentDTO)
+            is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient)
@@ -83,11 +87,73 @@ class EventMapper(
             is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO.value, transient)
+            is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
+            is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
         }
+
+    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
+        when (eventContentDTO) {
+            is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
+                id,
+                transient,
+                eventContentDTO.domains
+            )
+
+            is EventContentDTO.Federation.FederationDeleteDTO -> Event.Federation.Delete(
+                id,
+                transient,
+                eventContentDTO.domain
+            )
+        }
+
+    private fun conversationCodeDeleted(
+        id: String,
+        event: EventContentDTO.Conversation.CodeDeleted,
+        transient: Boolean
+    ): Event.Conversation.CodeDeleted = Event.Conversation.CodeDeleted(
+        id = id,
+        transient = transient,
+        conversationId = event.qualifiedConversation.toModel()
+    )
+
+    private fun conversationCodeUpdated(
+        id: String,
+        event: EventContentDTO.Conversation.CodeUpdated,
+        transient: Boolean
+    ): Event.Conversation.CodeUpdated = Event.Conversation.CodeUpdated(
+        id = id,
+        key = event.data.key,
+        code = event.data.code,
+        uri = event.data.uri,
+        isPasswordProtected = event.data.hasPassword,
+        conversationId = event.qualifiedConversation.toModel(),
+        transient = transient
+    )
+
+    @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
+    fun unknown(
+        id: String,
+        transient: Boolean,
+        eventContentDTO: EventContentDTO,
+        cause: String? = null
+    ): Event.Unknown = Event.Unknown(
+        id = id,
+        transient = transient,
+        unknownType = when (eventContentDTO) {
+            is EventContentDTO.Unknown -> eventContentDTO.type
+            else -> try {
+                eventContentDTO::class.serializer().descriptor.serialName
+            } catch (e: SerializationException) {
+                "" // this should never happen, by default serializer returns EventContentDTO.Unknown
+            }
+        },
+        cause = cause
+    )
 
     fun conversationMessageTimerUpdate(
         id: String,
@@ -116,12 +182,17 @@ class EventMapper(
 
     private fun updateUserProperties(
         id: String,
-        eventContentDTO: EventContentDTO.FieldKeyValue,
+        eventContentDTO: EventContentDTO.UserProperty.PropertiesSetDTO,
         transient: Boolean
     ): Event {
-        return when (eventContentDTO) {
-            is EventContentDTO.FieldKeyNumberValue -> ReadReceiptModeSet(id, transient, eventContentDTO.value == 1)
-            is EventContentDTO.FieldUnknownValue -> Event.Unknown(id, transient)
+        return when (val fieldKeyValue = eventContentDTO.value) {
+            is EventContentDTO.FieldKeyNumberValue -> ReadReceiptModeSet(id, transient, fieldKeyValue.value == 1)
+            is EventContentDTO.FieldUnknownValue -> unknown(
+                id = id,
+                transient = transient,
+                eventContentDTO = eventContentDTO,
+                cause = "Unknown value type for key: ${eventContentDTO.key} "
+            )
         }
     }
 
@@ -133,7 +204,12 @@ class EventMapper(
         return if (PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE.key == eventContentDTO.key) {
             ReadReceiptModeSet(id, transient, false)
         } else {
-            Event.Unknown(id, transient)
+            unknown(
+                id = id,
+                transient = transient,
+                eventContentDTO = eventContentDTO,
+                cause = "Unknown key: ${eventContentDTO.key} "
+            )
         }
     }
 

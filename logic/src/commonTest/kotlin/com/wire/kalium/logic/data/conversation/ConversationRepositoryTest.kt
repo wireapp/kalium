@@ -272,6 +272,37 @@ class ConversationRepositoryTest {
         }
 
     @Test
+    fun givenFetchingAConversation_whenFetchingAConnectionSentConversation_thenTheTypeShouldBePersistedAsPendingAlways() =
+        runTest {
+            // given
+            val (arrangement, conversationRepository) = Arrangement()
+                .withFetchConversationDetailsResult(
+                    NetworkResponse.Success(
+                        TestConversation.CONVERSATION_RESPONSE,
+                        mapOf(),
+                        HttpStatusCode.OK.value
+                    )
+                )
+                .withSelfUserFlow(flowOf(TestUser.SELF))
+                .arrange()
+
+            // when
+            conversationRepository.fetchSentConnectionConversation(TestConversation.ID)
+
+            // then
+            verify(arrangement.conversationDAO)
+                .suspendFunction(arrangement.conversationDAO::insertConversations)
+                .with(
+                    matching { list ->
+                        list.any {
+                            it.type == ConversationEntity.Type.CONNECTION_PENDING
+                        }
+                    }
+                )
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
     fun givenConversationDaoReturnsAGroupConversation_whenGettingConversationDetailsById_thenReturnAGroupConversationDetails() = runTest {
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
 
@@ -917,6 +948,7 @@ class ConversationRepositoryTest {
                 null,
                 null,
                 null,
+                null,
                 null
             )
         )
@@ -975,6 +1007,54 @@ class ConversationRepositoryTest {
                 })
                 .wasInvoked(exactly = once)
         }
+    }
+
+    @Test
+    fun givenDomains_whenGettingConversationsWithMembersWithBothDomains_thenShouldReturnConversationsWithMembers() = runTest {
+        // Given
+        val federatedDomain = "federated.com"
+        val selfDomain = "selfdomain.com"
+        val federatedUserId = QualifiedIDEntity("fed_user", federatedDomain)
+        val federatedUserIdList = List(5) {
+            QualifiedIDEntity("fed_user_$it", federatedDomain)
+        }
+        val selfUserIdList = List(5) {
+            QualifiedIDEntity("self_user_$it", selfDomain)
+        }
+
+        val userIdList = federatedUserIdList + selfUserIdList
+        val groupConversationId = QualifiedIDEntity("conversation_group", selfDomain)
+        val oneOnOneConversationId = QualifiedIDEntity("conversation_one_on_one", selfDomain)
+
+        val (arrangement, conversationRepository) = Arrangement()
+            .withGetGroupConversationWithUserIdsWithBothDomains(
+                mapOf(groupConversationId to userIdList),
+                eq(selfDomain),
+                eq(federatedDomain)
+            )
+            .withGetOneOnOneConversationWithFederatedUserId(
+                mapOf(oneOnOneConversationId to federatedUserId),
+                eq(federatedDomain)
+            )
+            .arrange()
+
+        // When
+        val groupConversationResult = conversationRepository.getGroupConversationsWithMembersWithBothDomains(selfDomain, federatedDomain)
+        val oneOnOneConversationResult = conversationRepository.getOneOnOneConversationsWithFederatedMembers(federatedDomain)
+
+        // Then
+        groupConversationResult.shouldSucceed {
+            assertEquals(userIdList.map { idEntity -> idEntity.toModel() }, it[groupConversationId.toModel()])
+        }
+
+        oneOnOneConversationResult.shouldSucceed {
+            assertEquals(federatedUserId.toModel(), it[oneOnOneConversationId.toModel()])
+        }
+
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::getGroupConversationWithUserIdsWithBothDomains)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement :
@@ -1052,7 +1132,7 @@ class ConversationRepositoryTest {
 
         fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
             given(mlsClient)
-                .function(mlsClient::conversationExists)
+                .suspendFunction(mlsClient::conversationExists)
                 .whenInvokedWith(anything())
                 .thenReturn(isClient)
         }
@@ -1289,6 +1369,27 @@ class ConversationRepositoryTest {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getConversationsWithoutMetadata)
                 .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withGetGroupConversationWithUserIdsWithBothDomains(
+            result: Map<ConversationIDEntity, List<UserIDEntity>>,
+            firstDomain: Matcher<String> = any(),
+            secondDomain: Matcher<String> = any()
+        ) = apply {
+            given(memberDAO)
+                .suspendFunction(memberDAO::getGroupConversationWithUserIdsWithBothDomains)
+                .whenInvokedWith(firstDomain, secondDomain)
+                .thenReturn(result)
+        }
+
+        fun withGetOneOnOneConversationWithFederatedUserId(
+            result: Map<ConversationIDEntity, UserIDEntity>,
+            domain: Matcher<String> = any()
+        ) = apply {
+            given(memberDAO)
+                .suspendFunction(memberDAO::getOneOneConversationWithFederatedMembers)
+                .whenInvokedWith(domain)
                 .thenReturn(result)
         }
 

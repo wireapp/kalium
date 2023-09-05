@@ -101,7 +101,7 @@ internal class TeamEventReceiverImpl(
                                     conversationId = conversationId,
                                     date = event.timestampIso,
                                     senderUserId = userId,
-                                    status = Message.Status.SENT,
+                                    status = Message.Status.Sent,
                                     visibility = Message.Visibility.VISIBLE,
                                     expirationData = null
                                 )

@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -26,6 +28,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -51,7 +54,19 @@ class ConversationMessageTimerEventHandlerTest {
         with(arrangement) {
             verify(persistMessageUseCase)
                 .suspendFunction(persistMessageUseCase::invoke)
-                .with(any())
+                .with(
+                    eq(Message.System(
+                    event.id,
+                    MessageContent.ConversationMessageTimerChanged(
+                        messageTimer = event.messageTimer
+                    ),
+                    event.conversationId,
+                    event.timestampIso,
+                    event.senderUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )))
                 .wasInvoked(once)
         }
     }

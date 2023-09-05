@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.util.suffixIfNot
+
 /*
  * Wire
  * Copyright (C) 2023 Wire Swiss GmbH
@@ -36,6 +38,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":network"))
+                api(project(":network-util"))
                 implementation(project(":cryptography"))
                 implementation(project(":persistence"))
                 implementation(project(":protobuf"))
@@ -82,10 +85,17 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coreCrypto)
+            }
+        }
+
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting
@@ -94,9 +104,23 @@ kotlin {
             dependencies {
                 implementation(libs.paging3)
                 implementation(libs.work)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
+            }
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.robolectric)
+                implementation(libs.core.ktx)
             }
         }
     }
+}
+
+android {
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
@@ -109,4 +133,21 @@ dependencies {
 
 ksp {
     arg("mockative.stubsUnitByDefault", "true")
+}
+
+android {
+    testOptions.unitTests.all { test ->
+        // only run tests that are different for the android platform, the rest is covered by the jvm tests
+        file("src/androidUnitTest/kotlin").let { dir ->
+            if (dir.exists() && dir.isDirectory) {
+                dir.walk().forEach {
+                    if (it.isFile && it.extension == "kt") {
+                        it.relativeToOrNull(dir)?.let {
+                            test.include(it.path.removeSuffix(".kt").suffixIfNot("*"))
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

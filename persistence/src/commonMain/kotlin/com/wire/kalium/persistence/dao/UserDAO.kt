@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.logger.obfuscateDomain
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.persistence.dao.ManagedByEntity.WIRE
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
@@ -28,7 +30,20 @@ import kotlinx.serialization.Serializable
 data class QualifiedIDEntity(
     @SerialName("value") val value: String,
     @SerialName("domain") val domain: String
-)
+) {
+    override fun toString(): String = if (domain.isEmpty()) value else "$value${VALUE_DOMAIN_SEPARATOR}$domain"
+
+    fun toLogString(): String = if (domain.isEmpty()) {
+        value.obfuscateId()
+    } else {
+        "${value.obfuscateId()}${VALUE_DOMAIN_SEPARATOR}${domain.obfuscateDomain()}"
+    }
+
+    companion object {
+        private const val VALUE_DOMAIN_SEPARATOR = '@'
+    }
+
+}
 
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
@@ -55,7 +70,8 @@ data class UserEntity(
     val botService: BotIdEntity?,
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
-    val expiresAt: Instant?
+    val expiresAt: Instant?,
+    val defederated: Boolean
 )
 
 data class UserEntityMinimized(
@@ -166,7 +182,7 @@ interface UserDAO {
      */
     suspend fun updateUser(user: UserEntity)
     suspend fun getAllUsers(): Flow<List<UserEntity>>
-    fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
+    suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
     suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
@@ -183,6 +199,7 @@ interface UserDAO {
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
+    suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>>
@@ -199,4 +216,10 @@ interface UserDAO {
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 
     suspend fun getUsersWithoutMetadata(): List<UserEntity>
+
+    /**
+     * @return [List] of [UserIDEntity] of all other users.
+     * the list does not contain self user ID
+     */
+    suspend fun allOtherUsersId(): List<UserIDEntity>
 }

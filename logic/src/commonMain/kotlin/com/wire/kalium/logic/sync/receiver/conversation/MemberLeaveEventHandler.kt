@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -45,6 +46,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val memberDAO: MemberDAO,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
+    private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
 ) : MemberLeaveEventHandler {
 
     override suspend fun handle(event: Event.Conversation.MemberLeave) =
@@ -55,13 +57,14 @@ internal class MemberLeaveEventHandlerImpl(
                 userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
             }
             .onSuccess {
+                updateConversationClientsForCurrentCall.value(event.conversationId)
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.MemberChange.Removed(members = event.removedList),
                     conversationId = event.conversationId,
                     date = event.timestampIso,
                     senderUserId = event.removedBy,
-                    status = Message.Status.SENT,
+                    status = Message.Status.Sent,
                     visibility = Message.Visibility.VISIBLE,
                     expirationData = null
                 )

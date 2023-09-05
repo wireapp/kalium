@@ -42,11 +42,11 @@ sealed interface MessageEntity {
     val date: Instant
     val senderUserId: QualifiedIDEntity
     val status: Status
+    val readCount: Long
     val visibility: Visibility
     val isSelfMessage: Boolean
     val expireAfterMs: Long?
     val selfDeletionStartDate: Instant?
-
     data class Regular(
         override val id: String,
         override val conversationId: QualifiedIDEntity,
@@ -56,6 +56,7 @@ sealed interface MessageEntity {
         override val visibility: Visibility = Visibility.VISIBLE,
         override val content: MessageEntityContent.Regular,
         override val isSelfMessage: Boolean = false,
+        override val readCount: Long,
         override val expireAfterMs: Long? = null,
         override val selfDeletionStartDate: Instant? = null,
         val senderName: String?,
@@ -75,6 +76,7 @@ sealed interface MessageEntity {
         override val status: Status,
         override val expireAfterMs: Long?,
         override val selfDeletionStartDate: Instant?,
+        override val readCount: Long,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
         val senderName: String?,
@@ -90,6 +92,11 @@ sealed interface MessageEntity {
          * The message was sent to the backend.
          */
         SENT,
+
+        /**
+         * The message was delivered but not read.
+         */
+        DELIVERED,
 
         /**
          * The message was marked as read locally.
@@ -184,11 +191,15 @@ sealed interface MessageEntity {
         CONVERSATION_RENAMED, UNKNOWN, FAILED_DECRYPTION, REMOVED_FROM_TEAM, CRYPTO_SESSION_RESET,
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, CONVERSATION_MESSAGE_TIMER_CHANGED,
         CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS, CONVERSATION_DEGRADED_PREOTEUS,
-        COMPOSITE
+        COMPOSITE, FEDERATION
     }
 
     enum class MemberChangeType {
-        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD
+        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED
+    }
+
+    enum class FederationType {
+        DELETE, CONNECTION_REMOVED
     }
 
     enum class Visibility {
@@ -317,6 +328,7 @@ sealed class MessageEntityContent {
     object ConversationCreated : System()
     object ConversationDegradedMLS : System()
     object ConversationDegradedProteus : System()
+    data class Federation(val domainList: List<String>, val type: MessageEntity.FederationType) : System()
 }
 
 /**
@@ -392,12 +404,16 @@ sealed class MessagePreviewEntityContent {
         val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()
 
+    data class FederatedMembersRemoved(
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+
     data class MemberJoined(val senderName: String?) : MessagePreviewEntityContent()
 
     data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
-
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     object CryptoSessionReset : MessagePreviewEntityContent()

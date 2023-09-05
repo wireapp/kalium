@@ -84,29 +84,29 @@ class RetryFailedMessageUseCaseTest {
 
     @Test
     fun givenAFailedMessage_whenRetryingFailedMessage_thenShouldReturnSuccess() =
-        testResendingWithGivenMessageStatus(Message.Status.FAILED, true)
+        testResendingWithGivenMessageStatus(Message.Status.Failed, true)
 
     @Test
     fun givenAFailedRemotelyMessage_whenRetryingFailedMessage_thenShouldReturnFailure() =
-        testResendingWithGivenMessageStatus(Message.Status.FAILED_REMOTELY, false)
+        testResendingWithGivenMessageStatus(Message.Status.FailedRemotely, false)
 
     @Test
     fun givenASentMessage_whenRetryingFailedMessage_thenShouldReturnFailure() =
-        testResendingWithGivenMessageStatus(Message.Status.SENT, false)
+        testResendingWithGivenMessageStatus(Message.Status.Sent, false)
 
     @Test
     fun givenAReadMessage_whenRetryingFailedMessage_thenShouldReturnFailure() =
-        testResendingWithGivenMessageStatus(Message.Status.READ, false)
+        testResendingWithGivenMessageStatus(Message.Status.Read(1), false)
 
     @Test
     fun givenAPendingMessage_whenRetryingFailedMessage_thenShouldReturnFailure() =
-        testResendingWithGivenMessageStatus(Message.Status.PENDING, false)
+        testResendingWithGivenMessageStatus(Message.Status.Pending, false)
 
     @Test
     fun givenAValidFailedMessage_whenRetryingFailedMessage_thenShouldSendAMessage() =
         runTest(testDispatcher.default) {
             // given
-            val message = TEXT_MESSAGE.copy(status = Message.Status.FAILED)
+            val message = TEXT_MESSAGE.copy(status = Message.Status.Failed)
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
@@ -132,7 +132,7 @@ class RetryFailedMessageUseCaseTest {
     fun givenAValidFailedEditedMessage_whenRetryingFailedMessage_thenShouldSendAsSignalingWithNewId() =
         runTest(testDispatcher.default) {
             // given
-            val message = TEXT_MESSAGE.copy(status = Message.Status.FAILED, editStatus = Message.EditStatus.Edited(TEST_DATE_STRING))
+            val message = TEXT_MESSAGE.copy(status = Message.Status.Failed, editStatus = Message.EditStatus.Edited(TEST_DATE_STRING))
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
@@ -164,7 +164,7 @@ class RetryFailedMessageUseCaseTest {
             val name = "some_asset.txt"
             val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.FAILED_UPLOAD))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
-            val message = assetMessage().copy(content = content, status = Message.Status.FAILED)
+            val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
             val uploadedAssetSha = SHA256Key(byteArrayOf())
             val (arrangement, useCase) = Arrangement()
@@ -205,7 +205,7 @@ class RetryFailedMessageUseCaseTest {
             val name = "some_asset.txt"
             val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.UPLOADED))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
-            val message = assetMessage().copy(content = content, status = Message.Status.FAILED)
+            val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
@@ -235,7 +235,7 @@ class RetryFailedMessageUseCaseTest {
     fun givenSendingMessageReturnsFailure_whenRetryingFailedMessage_thenShouldStillReturnSuccess() =
         runTest(testDispatcher.default) {
             // given
-            val message = TEXT_MESSAGE.copy(status = Message.Status.FAILED)
+            val message = TEXT_MESSAGE.copy(status = Message.Status.Failed)
             val (_, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
@@ -257,7 +257,7 @@ class RetryFailedMessageUseCaseTest {
             val name = "some_asset.txt"
             val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.FAILED_UPLOAD))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
-            val message = assetMessage().copy(content = content, status = Message.Status.FAILED)
+            val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val (_, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
@@ -282,7 +282,7 @@ class RetryFailedMessageUseCaseTest {
             val name = "some_asset.txt"
             val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.FAILED_UPLOAD))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
-            val message = assetMessage().copy(content = content, status = Message.Status.FAILED)
+            val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
             val uploadedAssetSha = SHA256Key(byteArrayOf())
             val (arrangement, useCase) = Arrangement()

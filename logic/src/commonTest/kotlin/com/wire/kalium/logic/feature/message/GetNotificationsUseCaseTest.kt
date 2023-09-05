@@ -20,23 +20,20 @@ package com.wire.kalium.logic.feature.message
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
-import com.wire.kalium.logic.data.notification.LocalNotificationConversation
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.notification.LocalNotificationUpdateMessageAction
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -44,15 +41,21 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.IncrementalSyncRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.IncrementalSyncRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
@@ -69,11 +72,12 @@ class GetNotificationsUseCaseTest {
         val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
-        val (arrange, getNotifications) = Arrangement()
-            .withEphemeralNotification()
-            .withIncrementalSyncState(syncStatusFlow)
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
+        val (arrange, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(flowOf(expectedConversations)))
+            withConnectionList(flowOf(listOf()))
+            withIncrementalSyncState(syncStatusFlow)
+            withEphemeralNotification()
+        }
 
         getNotifications().test {
             syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
@@ -116,11 +120,12 @@ class GetNotificationsUseCaseTest {
         val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
-        val (arrange, getNotifications) = Arrangement()
-            .withEphemeralNotification()
-            .withIncrementalSyncState(syncStatusFlow)
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
+        val (arrange, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(flowOf(expectedConversations)))
+            withConnectionList(flowOf(listOf()))
+            withIncrementalSyncState(syncStatusFlow)
+            withEphemeralNotification()
+        }
 
         getNotifications().test {
             syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
@@ -163,11 +168,12 @@ class GetNotificationsUseCaseTest {
         val syncStatusFlow = MutableSharedFlow<IncrementalSyncStatus>(1)
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
-        val (arrange, getNotifications) = Arrangement()
-            .withEphemeralNotification()
-            .withIncrementalSyncState(syncStatusFlow)
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(flowOf(expectedConversations)).arrange()
+        val (arrange, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(flowOf(expectedConversations)))
+            withConnectionList(flowOf(listOf()))
+            withIncrementalSyncState(syncStatusFlow)
+            withEphemeralNotification()
+        }
 
         getNotifications().test {
             syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
@@ -207,15 +213,17 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenEmptyConversationList_thenNoItemsAreEmitted() = runTest {
-        val (_, getNotifications) = Arrangement()
-            .withEphemeralNotification(
-                LocalNotificationConversation(
-                    conversationId(1), "some convo", listOf(), false
+        val (_, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(flowOf(listOf())))
+            withConnectionList(flowOf(listOf()))
+            withEphemeralNotification(
+                flowOf(
+                    LocalNotification.Conversation(
+                        conversationId(1), "some convo", listOf(), false
+                    )
                 )
             )
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(flowOf(listOf()))
-            .arrange()
+        }
 
         getNotifications().test {
             awaitComplete()
@@ -224,15 +232,17 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenConversationWithEmptyMessageList_thenNoItemsAreEmitted() = runTest {
-        val (_, getNotifications) = Arrangement()
-            .withEphemeralNotification(
-                LocalNotificationConversation(
-                    conversationId(1), "some convo", listOf(), false
+        val (_, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(flowOf(listOf(localNotificationConversation()))))
+            withConnectionList(flowOf(listOf()))
+            withEphemeralNotification(
+                flowOf(
+                    LocalNotification.Conversation(
+                        conversationId(1), "some convo", listOf(), false
+                    )
                 )
             )
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(flowOf(listOf(localNotificationConversation())))
-            .arrange()
+        }
 
         getNotifications().test {
             awaitComplete()
@@ -240,38 +250,43 @@ class GetNotificationsUseCaseTest {
     }
 
     @Test
-    fun givenConversationWithOnlyMyMessageList_thenNoItemsAreEmitted() = runTest {
-        val (_, getNotifications) = Arrangement()
-            .withEphemeralNotification()
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(flowOf(listOf(localNotificationConversation(messages = emptyList()))))
-            .arrange()
+    fun givenUpdateMessageFromEphemeralManager_thenCorrespondingItemsAreEmitted() = runTest {
+        val (_, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(flowOf(listOf())))
+            withConnectionList(flowOf(listOf()))
+            withEphemeralNotification(flowOf(localNotificationUpdateMessage()))
+        }
 
         getNotifications().test {
+            assertEquals(listOf(localNotificationUpdateMessage()), awaitItem())
             awaitComplete()
         }
     }
 
     @Test
-    fun givenSelfUserWithStatusAway_whenNewMessageCome_thenNoNotificationsAreEmitted() = runTest {
-        val (_, getNotifications) = Arrangement()
-            .withEphemeralNotification()
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(flowOf(listOf(localNotificationConversation(messages = emptyList()))))
-            .arrange()
+    fun givenUpdateMessageFromEphemeralManager_2_thenCorrespondingItemsAreEmitted() = runTest {
+        val ephemeralNotification = localNotificationUpdateMessage(
+            action = LocalNotificationUpdateMessageAction.Edit("updated text", "newId")
+        )
+        val (_, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(flowOf()))
+            withConnectionList(flowOf(listOf()))
+            withEphemeralNotification(flowOf(ephemeralNotification))
+        }
 
         getNotifications().test {
+            assertEquals(listOf(ephemeralNotification), awaitItem())
             awaitComplete()
         }
     }
 
     @Test
     fun givenConnectionRequests_thenNotificationListWithConnectionRequestMessage() = runTest {
-        val (_, getNotifications) = Arrangement()
-            .withConnectionList(listOf(connectionRequest()))
-            .withConversationsForNotifications(emptyFlow())
-            .withEphemeralNotification()
-            .arrange()
+        val (_, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(emptyFlow()))
+            withConnectionList(flowOf(listOf(connectionRequest())))
+            withEphemeralNotification()
+        }
 
         getNotifications().test {
             val actualToCheck = awaitItem()
@@ -281,7 +296,10 @@ class GetNotificationsUseCaseTest {
                 listOf(
                     notificationMessageConnectionRequest(authorName = otherUserName(otherUserId()))
                 ),
-                actualToCheck.first { message -> message.messages.any { it is LocalNotificationMessage.ConnectionRequest } }.messages
+                (actualToCheck.first { notification ->
+                    notification is LocalNotification.Conversation
+                            && notification.messages.any { it is LocalNotificationMessage.ConnectionRequest }
+                } as LocalNotification.Conversation).messages
             )
             awaitComplete()
         }
@@ -289,39 +307,26 @@ class GetNotificationsUseCaseTest {
 
     @Test
     fun givenNoNewNotifications_thenShouldNotEmitAnything() = runTest {
-        val (_, getNotifications) = Arrangement()
-            .withConnectionList(listOf())
-            .withConversationsForNotifications(emptyFlow())
-            .withEphemeralNotification(null)
-            .arrange()
+        val (_, getNotifications) = arrange {
+            withLocalNotifications(Either.Right(emptyFlow()))
+            withConnectionList(flowOf(listOf()))
+            withEphemeralNotification()
+        }
 
         getNotifications().test {
             awaitComplete()
         }
     }
 
-    private class Arrangement {
-        @Mock
-        val connectionRepository = mock(classOf<ConnectionRepository>())
+    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
 
-        @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
-
-        @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
-        val ephemeralNotifications = mock(classOf<DeleteConversationNotificationsManager>())
-
-        @Mock
-        private val incrementalSyncRepository = mock(classOf<IncrementalSyncRepository>())
-
-        val getNotificationsUseCase: GetNotificationsUseCase = GetNotificationsUseCaseImpl(
-            connectionRepository = connectionRepository,
-            messageRepository = messageRepository,
-            deleteConversationNotificationsManager = ephemeralNotifications,
-            incrementalSyncRepository = incrementalSyncRepository
-        )
+    private class Arrangement(
+        private val block: Arrangement.() -> Unit
+    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
+        IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl(),
+        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl(),
+        ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl() {
 
         init {
             given(conversationRepository)
@@ -339,39 +344,14 @@ class GetNotificationsUseCaseTest {
                 .then { flowOf(IncrementalSyncStatus.Live) }
         }
 
-        fun withConversationsForNotifications(list: Flow<List<LocalNotificationConversation>> = emptyFlow()): Arrangement {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getNotificationMessage)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(list))
-
-            return this
+        fun arrange() = block().run {
+            this@Arrangement to GetNotificationsUseCaseImpl(
+                connectionRepository = connectionRepository,
+                messageRepository = messageRepository,
+                deleteConversationNotificationsManager = ephemeralNotifications,
+                incrementalSyncRepository = incrementalSyncRepository
+            )
         }
-
-        fun withIncrementalSyncState(statusFlow: Flow<IncrementalSyncStatus>): Arrangement {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .then { statusFlow }
-
-            return this
-        }
-
-        fun withConnectionList(connections: List<ConversationDetails>?) = apply {
-            given(connectionRepository)
-                .suspendFunction(connectionRepository::observeConnectionRequestsForNotification)
-                .whenInvoked()
-                .thenReturn(connections?.let { flowOf(it) } ?: flowOf())
-        }
-
-        fun withEphemeralNotification(ephemeral: LocalNotificationConversation? = null) = apply {
-            given(ephemeralNotifications)
-                .suspendFunction(ephemeralNotifications::observeEphemeralNotifications)
-                .whenInvoked()
-                .thenReturn(ephemeral?.let { flowOf(it) } ?: flowOf())
-        }
-
-        fun arrange() = this to getNotificationsUseCase
     }
 
     companion object {
@@ -388,11 +368,21 @@ class GetNotificationsUseCaseTest {
             messages: List<LocalNotificationMessage> = emptyList(),
             conversationIdSeed: Int = 0,
             isOneOnOne: Boolean = true,
-        ) = LocalNotificationConversation(
+        ) = LocalNotification.Conversation(
             conversationId(conversationIdSeed),
             conversationName = "conversation_$conversationIdSeed",
             messages = messages,
             isOneToOneConversation = isOneOnOne
+        )
+
+        private fun localNotificationUpdateMessage(
+            action: LocalNotificationUpdateMessageAction = LocalNotificationUpdateMessageAction.Delete,
+            conversationIdSeed: Int = 0,
+            messageId: String = "message_id",
+        ) = LocalNotification.UpdateMessage(
+            conversationId(conversationIdSeed),
+            messageId = messageId,
+            action = action
         )
 
         private fun entityTextMessage(
@@ -409,7 +399,7 @@ class GetNotificationsUseCaseTest {
                 date = TIME,
                 senderUserId = senderId,
                 senderClientId = ClientId("client_1"),
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 editStatus = Message.EditStatus.NotEdited,
                 visibility = visibility,
                 isSelfMessage = false
@@ -444,7 +434,7 @@ class GetNotificationsUseCaseTest {
                 date = TIME,
                 senderUserId = senderId,
                 senderClientId = ClientId("client_1"),
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 editStatus = Message.EditStatus.NotEdited,
                 isSelfMessage = false
             )
@@ -460,16 +450,18 @@ class GetNotificationsUseCaseTest {
                 conversationId = conversationId,
                 date = "some_time",
                 senderUserId = senderId,
-                status = Message.Status.SENT,
+                status = Message.Status.Sent,
                 expirationData = null
             )
 
         private fun notificationMessageText(
             authorName: String = "Author Name",
             time: Instant = TIME_INSTANCE,
-            text: String = "test text"
+            text: String = "test text",
+            messageId: String = "message_id"
         ) =
             LocalNotificationMessage.Text(
+                messageId,
                 LocalNotificationMessageAuthor(authorName, null),
                 time,
                 text
@@ -478,9 +470,11 @@ class GetNotificationsUseCaseTest {
         private fun notificationMessageComment(
             authorName: String = "Author Name",
             time: Instant = TIME_INSTANCE,
-            commentType: LocalNotificationCommentType = LocalNotificationCommentType.PICTURE
+            commentType: LocalNotificationCommentType = LocalNotificationCommentType.PICTURE,
+            messageId: String = "message_id"
         ) =
             LocalNotificationMessage.Comment(
+                messageId,
                 LocalNotificationMessageAuthor(authorName, null),
                 time,
                 commentType
@@ -488,9 +482,11 @@ class GetNotificationsUseCaseTest {
 
         private fun notificationMessageConnectionRequest(
             authorName: String = "Author Name",
-            time: Instant = TIME_INSTANCE
+            time: Instant = TIME_INSTANCE,
+            messageId: String = ""
         ) =
             LocalNotificationMessage.ConnectionRequest(
+                messageId,
                 LocalNotificationMessageAuthor(authorName, null),
                 time,
                 otherUserId()

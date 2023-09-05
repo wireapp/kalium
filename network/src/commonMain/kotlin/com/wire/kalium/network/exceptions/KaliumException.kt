@@ -20,14 +20,17 @@
 
 package com.wire.kalium.network.exceptions
 
+import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.FederationConflictResponse
+import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.GUEST_LINKS_DISABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.HANDLE_EXISTS
@@ -50,9 +53,12 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_CLIENTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.TOO_MANY_MEMBERS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.UNKNOWN_CLIENT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.USER_CREATION_RESTRICTED
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.WRONG_CONVERSATION_PASSWORD
 import io.ktor.http.HttpStatusCode
 
 sealed class KaliumException : Exception() {
+
+    data class NoNetwork(val networkState: NetworkState = NetworkState.NotConnected) : KaliumException()
 
     data class Unauthorized(val errorCode: Int) : KaliumException()
 
@@ -82,6 +88,7 @@ sealed class KaliumException : Exception() {
     data class FederationError(val errorResponse: ErrorResponse) : KaliumException()
 
     data class FederationConflictException(val errorResponse: FederationConflictResponse) : KaliumException()
+    data class FederationUnreachableException(val errorResponse: FederationUnreachableResponse) : KaliumException()
 
     sealed class FeatureError : KaliumException()
 }
@@ -206,7 +213,14 @@ fun KaliumException.InvalidRequestError.isAccessDenied(): Boolean {
     return errorResponse.label == ACCESS_DENIED
 }
 
+fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
+    return (errorResponse.label == WRONG_CONVERSATION_PASSWORD) ||
+            (errorResponse.label == BAD_REQUEST && errorResponse.message.contains("password"))
+}
+
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
     get() = AuthenticationCodeFailure.values().firstOrNull {
         errorResponse.label == it.responseLabel
     }
+
+fun KaliumException.FederationError.isFederationDenied() = errorResponse.label == FEDERATION_DENIED

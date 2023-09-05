@@ -57,7 +57,7 @@ class SearchKnownUserUseCaseTest {
     @Test
     fun givenAnInputStartingWithAtSymbol_whenSearchingUsers_thenSearchOnlyByHandle() = runTest {
         // given
-        val handleSearchQuery = "@someHandle"
+        val handleSearchQuery = "@somehandle"
 
         val (arrangement, searchKnownUsersUseCase) = Arrangement()
             .withSuccessFullSelfUserRetrieve()
@@ -97,7 +97,7 @@ class SearchKnownUserUseCaseTest {
 
             verify(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
-                .with(eq(searchQuery), anything())
+                .with(eq(searchQuery.lowercase()), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -151,7 +151,8 @@ class SearchKnownUserUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.NONE,
             userType = UserType.EXTERNAL,
             botService = null,
-            deleted = false
+            deleted = false,
+            defederated = false
         )
 
         val (_, searchKnownUsersUseCase) = Arrangement()
@@ -173,7 +174,7 @@ class SearchKnownUserUseCaseTest {
     @Test
     fun givenSearchingForHandleWithConversationExcluded_whenSearchingUsers_ThenPropagateTheSearchOption() = runTest {
         // given
-        val searchQuery = "@someHandle"
+        val searchQuery = "@somehandle"
 
         val searchUsersOptions = SearchUsersOptions(
             ConversationMemberExcludedOptions.ConversationExcluded(
@@ -278,7 +279,7 @@ class SearchKnownUserUseCaseTest {
 
             given(qualifiedIdMapper)
                 .function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(eq("someSearchQuery@wire.com"))
+                .whenInvokedWith(eq("someSearchQuery@wire.com".lowercase()))
                 .thenReturn(QualifiedID("someSearchQuery", "wire.com"))
 
             return this
@@ -315,7 +316,8 @@ class SearchKnownUserUseCaseTest {
                                     availabilityStatus = UserAvailabilityStatus.NONE,
                                     userType = UserType.EXTERNAL,
                                     botService = null,
-                                    deleted = false
+                                    deleted = false,
+                                    defederated = false
                                 )
                             )
                         )
@@ -330,6 +332,7 @@ class SearchKnownUserUseCaseTest {
             extraOtherUser: OtherUser? = null,
             searchUsersOptions: SearchUsersOptions? = null
         ): Arrangement {
+            val query = searchQuery?.lowercase()
             val otherUsers = listOf(
                 OtherUser(
                     id = QualifiedID(
@@ -348,7 +351,8 @@ class SearchKnownUserUseCaseTest {
                     availabilityStatus = UserAvailabilityStatus.NONE,
                     userType = UserType.FEDERATED,
                     botService = null,
-                    deleted = false
+                    deleted = false,
+                    defederated = false
                 )
             )
 
@@ -359,7 +363,7 @@ class SearchKnownUserUseCaseTest {
             given(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
                 .whenInvokedWith(
-                    if (searchQuery == null) any() else eq(searchQuery.removePrefix("@")),
+                    if (query == null) any() else eq(query.removePrefix("@")),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(flowOf(UserSearchResult(otherUsers)))

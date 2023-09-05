@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
@@ -47,13 +47,13 @@ class CheckConversationInviteCodeUseCaseTest {
 
     @Test
     fun givenSuccess_whenFetchingConversationInfoViaCode_thenReturnSuccess() = runTest {
-        val conversationInfo = LimitedConversationInfo("id", null)
+        val conversationInfo = ConversationCodeInfo("id", null)
         val (code, key, domain) = Triple("code", "key", "domain")
 
         val (arrangement, useCase) = Arrangement()
             .withFetchLimitedInfoViaInviteCodeResult(code, key, Either.Right(conversationInfo))
             .withObserveIsUserMemberResult(
-                ConversationId(conversationInfo.nonQualifiedConversationId, domain),
+                ConversationId(conversationInfo.nonQualifiedId, domain),
                 selfUserId,
                 Either.Right(true)
             )
@@ -62,7 +62,7 @@ class CheckConversationInviteCodeUseCaseTest {
         useCase(code, key, domain).also { result ->
             assertIs<CheckConversationInviteCodeUseCase.Result.Success>(result)
             assertEquals(conversationInfo.name, result.name)
-            assertEquals(result.conversationId, ConversationId(conversationInfo.nonQualifiedConversationId, domain))
+            assertEquals(result.conversationId, ConversationId(conversationInfo.nonQualifiedId, domain))
             assertTrue(result.isSelfMember)
         }
 
@@ -81,13 +81,13 @@ class CheckConversationInviteCodeUseCaseTest {
 
     @Test
     fun whenNoDomainIsPassed_thenUseTheUserSelfDomain() = runTest {
-        val conversationInfo = LimitedConversationInfo("id", null)
+        val conversationInfo = ConversationCodeInfo("id", null)
         val (code, key, domain) = Triple("code", "key", null)
 
         val (arrangement, useCase) = Arrangement()
             .withFetchLimitedInfoViaInviteCodeResult(code, key, Either.Right(conversationInfo))
             .withObserveIsUserMemberResult(
-                ConversationId(conversationInfo.nonQualifiedConversationId, selfUserId.domain),
+                ConversationId(conversationInfo.nonQualifiedId, selfUserId.domain),
                 selfUserId,
                 Either.Right(true)
             )
@@ -96,7 +96,7 @@ class CheckConversationInviteCodeUseCaseTest {
         useCase(code, key, domain).also { result ->
             assertIs<CheckConversationInviteCodeUseCase.Result.Success>(result)
             assertEquals(conversationInfo.name, result.name)
-            assertEquals(result.conversationId, ConversationId(conversationInfo.nonQualifiedConversationId, selfUserId.domain))
+            assertEquals(result.conversationId, ConversationId(conversationInfo.nonQualifiedId, selfUserId.domain))
             assertTrue(result.isSelfMember)
         }
 
@@ -278,7 +278,7 @@ class CheckConversationInviteCodeUseCaseTest {
         fun withFetchLimitedInfoViaInviteCodeResult(
             code: String,
             key: String,
-            result: Either<NetworkFailure, LimitedConversationInfo>
+            result: Either<NetworkFailure, ConversationCodeInfo>
         ) = apply {
             given(conversationGroupRepository)
                 .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)

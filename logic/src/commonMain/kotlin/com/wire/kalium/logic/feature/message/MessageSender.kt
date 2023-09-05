@@ -448,14 +448,15 @@ internal class MessageSenderImpl internal constructor(
      * At this point the message was SENT, here we are mapping/persisting the recipients that couldn't get the message.
      */
     private suspend fun handleRecipientsDeliveryFailure(envelope: MessageEnvelope, message: Message, messageSent: MessageSent) =
-        if (messageSent.failed.isEmpty()) Either.Right(Unit)
+        if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
         else {
-            val usersWithoutSessions = messageSent.failed.filter { failedIds -> failedIds !in envelope.recipients.map { it.userId } }
+            val usersWithoutSessions =
+                messageSent.failedToConfirmClients.filter { failedIds -> failedIds !in envelope.recipients.map { it.userId } }
             if (usersWithoutSessions.isNotEmpty()) {
                 messageRepository.persistNoClientsToDeliverFailure(message.conversationId, message.id, usersWithoutSessions)
             }
 
-            val filteredUsersFailed = messageSent.failed.minus(usersWithoutSessions.toSet())
+            val filteredUsersFailed = messageSent.failedToConfirmClients.minus(usersWithoutSessions.toSet())
             if (filteredUsersFailed.isNotEmpty()) {
                 messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, filteredUsersFailed)
             } else {
@@ -464,9 +465,9 @@ internal class MessageSenderImpl internal constructor(
         }
 
     private suspend fun handleMlsRecipientsDeliveryFailure(message: Message, messageSent: MessageSent) =
-        if (messageSent.failed.isEmpty()) Either.Right(Unit)
+        if (messageSent.failedToConfirmClients.isEmpty()) Either.Right(Unit)
         else {
-            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failed)
+            messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
         }
 
 }

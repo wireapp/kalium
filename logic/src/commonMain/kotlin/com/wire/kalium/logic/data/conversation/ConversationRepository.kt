@@ -114,6 +114,7 @@ interface ConversationRepository {
     suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
+    suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
@@ -205,6 +206,15 @@ interface ConversationRepository {
         conversationId: ConversationId,
         isInformed: Boolean
     ): Either<StorageFailure, Unit>
+
+    suspend fun getGroupConversationsWithMembersWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Either<CoreFailure, GroupConversationMembers>
+
+    suspend fun getOneOnOneConversationsWithFederatedMembers(
+        domain: String
+    ): Either<CoreFailure, OneOnOneMembers>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -323,7 +333,7 @@ internal class ConversationDataSource internal constructor(
         conversations.forEach { conversationsResponse ->
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
-            if (invalidateMembers) {
+            if (invalidateMembers && conversationsResponse.type == ConversationResponse.Type.GROUP) {
                 memberDAO.updateFullMemberList(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
@@ -417,6 +427,19 @@ internal class ConversationDataSource internal constructor(
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
             persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
+        }
+    }
+
+    // TODO: this function should/might be need to be removed when BE implements https://wearezeta.atlassian.net/browse/WPB-3560
+    override suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
+        return wrapApiRequest {
+            conversationApi.fetchConversationDetails(conversationID.toApi())
+        }.flatMap {
+            val selfUserTeamId = selfTeamIdProvider().getOrNull()
+            val conversation = it.copy(
+                type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
+            )
+            persistConversations(listOf(conversation), selfUserTeamId?.value, invalidateMembers = true)
         }
     }
 
@@ -762,6 +785,23 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest {
             conversationMetaDataDAO.setInformedAboutDegradedMLSVerificationFlag(conversationId.toDao(), isInformed)
         }
+
+    override suspend fun getGroupConversationsWithMembersWithBothDomains(
+        firstDomain: String,
+        secondDomain: String
+    ): Either<CoreFailure, GroupConversationMembers> = wrapStorageRequest {
+        memberDAO.getGroupConversationWithUserIdsWithBothDomains(firstDomain, secondDomain)
+            .mapKeys { it.key.toModel() }
+            .mapValues { it.value.map { userId -> userId.toModel() } }
+    }
+
+    override suspend fun getOneOnOneConversationsWithFederatedMembers(
+        domain: String
+    ): Either<CoreFailure, OneOnOneMembers> = wrapStorageRequest {
+        memberDAO.getOneOneConversationWithFederatedMembers(domain)
+            .mapKeys { it.key.toModel() }
+            .mapValues { it.value.toModel() }
+    }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>

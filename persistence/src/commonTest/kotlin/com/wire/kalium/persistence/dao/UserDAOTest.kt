@@ -20,9 +20,10 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.test.TestResult
@@ -31,11 +32,11 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserDAOTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -96,7 +97,8 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
         db.userDAO.updateUser(updatedUser1)
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
@@ -125,7 +127,8 @@ class UserDAOTest : BaseDatabaseTest() {
             botService = null,
             false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
 
         db.userDAO.getUserByQualifiedID(user1.id).take(2).collect {
@@ -254,7 +257,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     botService = null,
                     false,
                     hasIncompleteMetadata = false,
-                    expiresAt = null
+                    expiresAt = null,
+                    defederated = false
                 ),
                 UserEntity(
                     id = QualifiedIDEntity("5", "wire.com"),
@@ -272,7 +276,8 @@ class UserDAOTest : BaseDatabaseTest() {
                     botService = null,
                     deleted = false,
                     hasIncompleteMetadata = false,
-                    expiresAt = null
+                    expiresAt = null,
+                    defederated = false
                 )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
@@ -570,6 +575,37 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenIncompleteTeamMemberInserted_whenUpsert_thenMarkAsComplete() = runTest(dispatcher) {
+        // given
+        val teamMember = user1.copy(team = "team")
+        val conversation = newConversationEntity(id = ConversationIDEntity("conversationId", "domain"))
+
+        db.conversationDAO.insertConversation(conversation)
+        db.memberDAO.insertMember(MemberEntity(teamMember.id, MemberEntity.Role.Member), conversation.id)
+
+        // then
+        db.userDAO.getAllUsers().first().also {
+            assertNotNull(it)
+            it.firstOrNull { it.id == teamMember.id }.also {
+                assertNotNull(it)
+                assertTrue { it.hasIncompleteMetadata }
+            }
+        }
+
+        // when
+        db.userDAO.upsertTeamMembers(listOf(teamMember))
+
+        // then
+        db.userDAO.getAllUsers().first().also {
+            assertNotNull(it)
+            it.firstOrNull { it.id == teamMember.id }.also {
+                assertNotNull(it)
+                assertFalse { it.hasIncompleteMetadata }
+            }
+        }
+    }
+
+    @Test
     fun givenAExistingUsers_whenUpsertingUsers_ThenResultsOneUpdatedAnotherInsertedWithNoConnectionStatusOverride() = runTest(dispatcher) {
         // given
         val newTeamId = "new team id"
@@ -685,6 +721,45 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertNull(result)
+    }
+
+    @Test
+    fun givenUsersId_whenCallingAllOtherUsers_thenSelfIdIsNotIncluded() = runTest {
+        val selfUser = newUserEntity().copy(id = selfUserId)
+        val user1 = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
+        val user2 = newUserEntity().copy(id = UserIDEntity("user-2", "domain-2"))
+        val user3 = newUserEntity().copy(id = UserIDEntity("user-3", "domain-1"))
+
+        db.userDAO.insertUser(selfUser)
+        db.userDAO.insertUser(user1)
+        db.userDAO.insertUser(user2)
+        db.userDAO.insertUser(user3)
+
+        db.userDAO.allOtherUsersId().also { result ->
+            assertFalse {
+                result.contains(selfUser.id)
+            }
+            assertEquals(result, listOf(user1.id, user2.id, user3.id))
+        }
+    }
+
+    @Test
+    fun givenExistingUser_ThenUserCanBeDefederated() = runTest(dispatcher) {
+        db.userDAO.insertUser(user1)
+        db.userDAO.markUserAsDefederated(user1.id)
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertNotNull(result)
+        assertEquals(true, result.defederated)
+    }
+
+    @Test
+    fun givenExistingUserIsDefederated_ThenUserCanBeRefederatedAfterUpdate() = runTest(dispatcher) {
+        db.userDAO.insertUser(user1)
+        db.userDAO.markUserAsDefederated(user1.id)
+        db.userDAO.insertUser(user1)
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertNotNull(result)
+        assertEquals(false, result.defederated)
     }
 
     private companion object {

@@ -35,8 +35,8 @@ sealed class QualifiedSendMessageResponse {
     @SerialName("deleted")
     abstract val deleted: QualifiedUserIdToClientMap
 
-    @SerialName("failed_to_send")
-    abstract val failed: QualifiedUserIdToClientMap?
+    @SerialName("failed_to_confirm_clients")
+    abstract val failedToConfirmClients: QualifiedUserIdToClientMap?
 
     @Serializable
     data class MissingDevicesResponse(
@@ -48,8 +48,8 @@ sealed class QualifiedSendMessageResponse {
         override val redundant: QualifiedUserIdToClientMap,
         @SerialName("deleted")
         override val deleted: QualifiedUserIdToClientMap,
-        @SerialName("failed_to_send")
-        override val failed: QualifiedUserIdToClientMap? = null
+        @SerialName("failed_to_confirm_clients")
+        override val failedToConfirmClients: QualifiedUserIdToClientMap? = null
     ) : QualifiedSendMessageResponse()
 
     @Serializable
@@ -62,8 +62,8 @@ sealed class QualifiedSendMessageResponse {
         override val redundant: QualifiedUserIdToClientMap,
         @SerialName("deleted")
         override val deleted: QualifiedUserIdToClientMap,
-        @SerialName("failed_to_send")
-        override val failed: QualifiedUserIdToClientMap? = null
+        @SerialName("failed_to_confirm_clients")
+        override val failedToConfirmClients: QualifiedUserIdToClientMap? = null
     ) : QualifiedSendMessageResponse()
 }
 

@@ -36,6 +36,7 @@ kotlin {
             dependencies {
                 implementation(project(":protobuf"))
                 implementation(project(":util"))
+                implementation(project(":network-util"))
                 api(project(":logger"))
 
                 // coroutines
@@ -96,5 +97,11 @@ kotlin {
                 implementation(libs.ktor.iosHttp)
             }
         }
+    }
+}
+
+android {
+    testOptions.unitTests.all {
+        it.enabled = false
     }
 }

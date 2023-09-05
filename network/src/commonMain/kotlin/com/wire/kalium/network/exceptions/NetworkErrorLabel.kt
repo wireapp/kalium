@@ -48,6 +48,9 @@ internal object NetworkErrorLabel {
     const val NO_CONVERSATION_CODE = "no-conversation-code"
     const val GUEST_LINKS_DISABLED = "guest-links-disabled"
     const val ACCESS_DENIED = "access-denied"
+    const val WRONG_CONVERSATION_PASSWORD = "invalid-conversation-password"
+    const val FEDERATION_UNREACHABLE_DOMAINS = "federation-unreachable-domains-error"
+    const val FEDERATION_DENIED = "federation-denied"
 
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"

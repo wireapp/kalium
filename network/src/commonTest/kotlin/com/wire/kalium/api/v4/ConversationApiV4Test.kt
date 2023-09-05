@@ -20,57 +20,31 @@ package com.wire.kalium.api.v4
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.conversation.ConversationResponseJson
+import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
-import com.wire.kalium.model.conversation.SubconversationDeleteRequestJson
-import com.wire.kalium.model.conversation.SubconversationDetailsResponseJson
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ConversationApiV4Test : ApiTest() {
 
     @Test
-    fun givenACreateNewConversationRequest_whenCallingCreateNewConversation_thenTheResponseShouldMapFailedToAddCorrectly() =
-        runTest {
-            val networkClient = mockAuthenticatedNetworkClient(
-                CREATE_CONVERSATION_RESPONSE,
-                statusCode = HttpStatusCode.Created,
-                assertion = {
-                    assertJson()
-                    assertPost()
-                    assertPathEqual(PATH_CONVERSATIONS)
-                    assertJsonBodyContent(CREATE_CONVERSATION_REQUEST.rawJson)
-                }
-            )
-            val conversationApi = ConversationApiV4(networkClient)
-            val result = conversationApi.createNewConversation(CREATE_CONVERSATION_REQUEST.serializableData)
-
-            assertTrue(result.isSuccessful())
-            assertTrue(result.value.failedToAdd.isNotEmpty())
-            assertEquals(result.value.failedToAdd.first(), UserId("failedId", "failedDomain"))
-        }
-
-    @Test
-    fun givenACreateNewConversationRequest_whenReturnsFederationError_thenTheResponseShouldMapToFederationError() =
+    fun givenACreateNewConversation_whenReturnsNFCGFederationError_thenTheResponseShouldMapToFederationConflictError() =
         runTest {
             val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
-            val response = ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
+            val response =
+                ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
 
             val networkClient = mockAuthenticatedNetworkClient(
                 response,
@@ -94,109 +68,63 @@ internal class ConversationApiV4Test : ApiTest() {
         }
 
     @Test
-    fun givenRequest_whenFetchingSubconversationDetails_thenRequestIsConfiguredCorrectly() = runTest {
+    fun whenAddingMemberToGroup_AndRemoteFailureUnreachable_thenTheMemberShouldBeAddedCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val userId = UserId("userId", "userDomain")
+        val request = AddConversationMembersRequest(listOf(userId), "Member")
+
         val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v4.rawJson,
-            statusCode = HttpStatusCode.OK,
+            EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable,
+            statusCode = HttpStatusCode.UnreachableRemoteBackends,
             assertion = {
-                assertGet()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub"
-                )
+                assertPost()
+                assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_MEMBERS}")
             }
         )
-
         val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.fetchSubconversationDetails(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub"
-        )
-    }
+        val response = conversationApi.addMember(request, conversationId)
 
-    @Test
-    fun givenSuccessSubconversationDetails_whenFetchingSubconversationDetails_thenResponseIsParsedCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            SubconversationDetailsResponseJson.v4.rawJson,
-            statusCode = HttpStatusCode.OK
-        )
-
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.fetchSubconversationDetails(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub"
-        ).also {
-            assertIs<NetworkResponse.Success<SubconversationResponse>>(it)
+        assertFalse(response.isSuccessful())
+        assertTrue(response.kException is KaliumException.FederationUnreachableException)
+        assertTrue {
+            (response.kException as KaliumException.FederationUnreachableException).errorResponse.unreachableBackends.contains(
+                "foma.wire.link"
+            )
         }
     }
 
     @Test
-    fun givenRequest_whenFetchingSubconversationGroupInfo_thenRequestIsConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            "groupinfo".encodeToByteArray(),
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub/groupinfo"
-                )
-            }
-        )
+    fun givenAddingMembersConversationRequest_whenReturnsFederationConflictError_thenTheResponseShouldMapToFederationError() =
+        runTest {
+            val conversationId = ConversationId("conversationId", "conversationDomain")
+            val userId = UserId("userId", "userDomain")
+            val request = AddConversationMembersRequest(listOf(userId), "Member")
+            val conflictingBackends = listOf("bella.wire.link", "foma.wire.link")
+            val expectedResponse =
+                ErrorResponseJson.validFederationConflictingBackends(FederationConflictResponse(conflictingBackends)).rawJson
 
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.fetchSubconversationGroupInfo(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub"
-        ).also {
-            assertIs<NetworkResponse.Success<ByteArray>>(it)
+            val networkClient = mockAuthenticatedNetworkClient(
+                expectedResponse,
+                statusCode = HttpStatusCode.Conflict,
+                assertion = {
+                    assertPost()
+                    assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_MEMBERS}")
+                }
+            )
+            val conversationApi = ConversationApiV4(networkClient)
+            val response = conversationApi.addMember(request, conversationId)
+
+            assertFalse(response.isSuccessful())
+            assertTrue(response.kException is KaliumException.FederationConflictException)
+            assertEquals(
+                (response.kException as KaliumException.FederationConflictException).errorResponse.nonFederatingBackends,
+                conflictingBackends
+            )
         }
-    }
-
-    @Test
-    fun givenRequest_whenDeletingSubconversation_thenRequestIsConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            ByteArray(0),
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertDelete()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub"
-                )
-                assertJsonBodyContent(SubconversationDeleteRequestJson.v4.rawJson)
-            }
-        )
-
-        val deleteRequest = SubconversationDeleteRequest(43UL, "groupid")
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.deleteSubconversation(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub",
-            deleteRequest
-        )
-    }
-
-    @Test
-    fun givenRequest_whenLeavingSubconversation_thenRequestIsConfiguredCorrectly() = runTest {
-        val networkClient = mockAuthenticatedNetworkClient(
-            ByteArray(0),
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertDelete()
-                assertPathEqual(
-                    "/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/subconversations/sub/self"
-                )
-            }
-        )
-
-        val conversationApi = ConversationApiV4(networkClient)
-        conversationApi.leaveSubconversation(
-            ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
-            "sub",
-        )
-    }
 
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
-        val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v4_withFailedToAdd.rawJson
+        const val PATH_MEMBERS = "members"
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
     }
 }

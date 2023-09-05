@@ -286,13 +286,17 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateConversationReceiptMode(receiptMode, conversationID)
         }
 
-    override suspend fun updateGuestRoomLink(conversationId: QualifiedIDEntity, link: String?) = withContext(coroutineContext) {
-        conversationQueries.updateGuestRoomLink(link, conversationId)
+    override suspend fun updateGuestRoomLink(
+        conversationId: QualifiedIDEntity,
+        link: String?,
+        isPasswordProtected: Boolean
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(link, isPasswordProtected, conversationId)
     }
 
-    override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
-        conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().map {
-            it.executeAsOne().guest_room_link
+    override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?> =
+        conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().mapToOneOrNull().map {
+            it?.guest_room_link?.let { link -> ConversationGuestLinkEntity(link, it.is_guest_password_protected) }
         }.flowOn(coroutineContext)
 
     override suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?) = withContext(coroutineContext) {
@@ -310,5 +314,4 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
     }
-
 }

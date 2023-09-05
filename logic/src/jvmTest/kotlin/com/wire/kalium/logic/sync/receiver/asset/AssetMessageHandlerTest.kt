@@ -355,7 +355,7 @@ class AssetMessageHandlerTest {
             date = "1970-01-01T00:00:01.000Z",
             senderUserId = UserId("some-sender-value", "some-sender-domain.com"),
             senderClientId = ClientId("some-client-value"),
-            status = Message.Status.SENT,
+            status = Message.Status.Sent,
             editStatus = Message.EditStatus.NotEdited,
             isSelfMessage = false
         )

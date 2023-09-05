@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
@@ -60,6 +61,8 @@ import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOffUseCase
 import com.wire.kalium.logic.feature.call.usecase.TurnLoudSpeakerOnUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
+import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
@@ -77,6 +80,7 @@ class CallsScope internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,
+    private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val kaliumConfigs: KaliumConfigs
 ) {
 
@@ -123,6 +127,12 @@ class CallsScope internal constructor(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
             endCallUseCase = endCall
+        )
+
+    val updateConversationClientsForCurrentCallUseCase: UpdateConversationClientsForCurrentCallUseCase
+        get() = UpdateConversationClientsForCurrentCallUseCaseImpl(
+            callRepository,
+            conversationClientsInCallUpdater
         )
 
     val rejectCall: RejectCallUseCase get() = RejectCallUseCase(callManager, callRepository, KaliumDispatcherImpl)

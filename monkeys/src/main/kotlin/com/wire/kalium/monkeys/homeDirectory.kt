@@ -27,5 +27,16 @@ fun homeDirectory(): String {
 
 fun coreLogic(
     rootPath: String,
-    kaliumConfigs: KaliumConfigs
-): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Wire Monkeys/JVM")
+): CoreLogic {
+    val coreLogic = CoreLogic(
+        rootPath,
+        kaliumConfigs = KaliumConfigs(
+            developmentApiEnabled = true,
+            encryptProteusStorage = true,
+            isMLSSupportEnabled = true,
+            wipeOnDeviceRemoval = true,
+        ), "Wire Infinite Monkeys"
+    )
+    coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
+    return coreLogic
+}

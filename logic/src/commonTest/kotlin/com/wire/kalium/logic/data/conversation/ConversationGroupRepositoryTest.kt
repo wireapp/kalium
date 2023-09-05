@@ -51,18 +51,19 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.Cause
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
@@ -74,7 +75,9 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -89,7 +92,7 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenSelfUserBelongsToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
@@ -121,7 +124,7 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenSelfUserDoesNotBelongToATeam_whenCallingCreateGroupConversation_thenConversationIsCreatedAtBackendAndPersisted() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withCreateNewConversationAPI(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(null))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
@@ -151,10 +154,101 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenRetryIsExecutedWithValidUsersOnly() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(
+                arrayOf(
+                    FEDERATION_ERROR_UNREACHABLE_DOMAINS,
+                    NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)
+                )
+            )
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .arrange()
+
+        val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID, unreachableUserId),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        with(arrangement) {
+            verify(conversationApi)
+                .suspendFunction(conversationApi::createNewConversation)
+                .with(matching { it.qualifiedUsers?.size == 2 })
+                .wasInvoked(once)
+
+            verify(conversationApi)
+                .suspendFunction(conversationApi::createNewConversation)
+                .with(matching { it.qualifiedUsers?.size == 1 })
+                .wasInvoked(once)
+
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(anything())
+                .wasInvoked(once)
+
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .with(anything(), anything(), eq(listOf(unreachableUserId)))
+                .wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenRetryIsExecutedWithValidUsersOnlyOnce() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(
+                arrayOf(
+                    FEDERATION_ERROR_UNREACHABLE_DOMAINS,
+                    FEDERATION_ERROR_UNREACHABLE_DOMAINS,
+                )
+            )
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .arrange()
+
+        val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID, unreachableUserId),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldFail()
+
+        with(arrangement) {
+            verify(conversationApi)
+                .suspendFunction(conversationApi::createNewConversation)
+                .with(any())
+                .wasInvoked(twice)
+
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(anything())
+                .wasNotInvoked()
+
+            verify(newConversationMembersRepository)
+                .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                .with(anything(), anything())
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenMLSProtocolIsUsed_whenCallingCreateGroupConversation_thenMLSGroupIsEstablished() = runTest {
         val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withCreateNewConversationAPI(NetworkResponse.Success(conversationResponse, emptyMap(), 201))
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withMlsConversationEstablished()
@@ -284,16 +378,25 @@ class ConversationGroupRepositoryTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
             .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+            .withInsertFailedToAddSystemMessageSuccess()
             .withAddMemberAPIFailed()
             .arrange()
 
-        conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
+        val expectedInitialUsers = listOf(TestConversation.USER_1, TestConversation.USER_2)
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID)
             .shouldFail()
 
         verify(arrangement.memberJoinEventHandler)
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
             .with(anything())
             .wasNotInvoked()
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            .with(anything(), matching {
+                it.containsAll(expectedInitialUsers)
+            })
+            .wasInvoked(once)
     }
 
     @Test
@@ -423,7 +526,10 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenProteusConversation_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
-        val (code, key, uri) = Triple("code", "key", null)
+        val code = "code"
+        val key = "key"
+        val uri = null
+        val password = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
@@ -437,7 +543,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulHandleMemberJoinEvent()
             .arrange()
 
-        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
         verify(arrangement.conversationApi)
@@ -453,7 +559,10 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenMlsConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
-        val (code, key, uri) = Triple("code", "key", null)
+        val code = "code"
+        val key = "key"
+        val uri = null
+        val password = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
@@ -469,7 +578,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
-        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
         verify(arrangement.conversationApi)
@@ -495,7 +604,10 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenProteusConversation_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
-        val (code, key, uri) = Triple("code", "key", null)
+        val code = "code"
+        val key = "key"
+        val uri = null
+        val password = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.CONVERSATION)
@@ -509,7 +621,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulHandleMemberJoinEvent()
             .arrange()
 
-        conversationGroupRepository.joinViaInviteCode(code, key, uri)
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
         verify(arrangement.conversationApi)
@@ -531,7 +643,7 @@ class ConversationGroupRepositoryTest {
             .withFetchLimitedConversationInfo(
                 code,
                 key,
-                NetworkResponse.Success(TestConversation.LIMITED_CONVERSATION_INFO, emptyMap(), 200)
+                NetworkResponse.Success(TestConversation.CONVERSATION_CODE_INFO, emptyMap(), 200)
             )
             .arrange()
 
@@ -548,12 +660,22 @@ class ConversationGroupRepositoryTest {
     fun givenASuccessApiCall_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
         val conversationId = ConversationId("value", "domain")
         val link = "www.wire.com"
+
+        val expected = EventContentDTO.Conversation.CodeUpdated(
+            qualifiedConversation = conversationId.toApi(),
+            data = ConversationInviteLinkResponse(
+                uri = link,
+                code = "code",
+                key = "key",
+                hasPassword = false
+            ),
+            qualifiedFrom = TestUser.USER_ID.toApi()
+        )
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withSuccessfulCallToGenerateGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB(link)
+            .withSuccessfulCallToGenerateGuestRoomLinkApi(expected)
             .arrange()
 
-        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, null)
 
         result.shouldSucceed()
 
@@ -564,8 +686,8 @@ class ConversationGroupRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+            .with(any(), anything(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -575,7 +697,7 @@ class ConversationGroupRepositoryTest {
             .withFailedCallToGenerateGuestRoomLinkApi()
             .arrange()
 
-        val result = conversationGroupRepository.generateGuestRoomLink(conversationId)
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, null)
 
         result.shouldFail()
 
@@ -587,6 +709,42 @@ class ConversationGroupRepositoryTest {
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
             .with(any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenPassword_whenTryingToGenerateANewGuestRoomLink_ThenCallUpdateGuestLinkInDB() = runTest {
+        val conversationId = ConversationId("value", "domain")
+        val link = "www.wire.com"
+
+        val expected = EventContentDTO.Conversation.CodeUpdated(
+            qualifiedConversation = conversationId.toApi(),
+            data = ConversationInviteLinkResponse(
+                uri = link,
+                code = "code",
+                key = "key",
+                hasPassword = true
+            ),
+            qualifiedFrom = TestUser.USER_ID.toApi()
+        )
+
+        val expectedPassword = "password"
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withSuccessfulCallToGenerateGuestRoomLinkApi(expected)
+            .arrange()
+
+        val result = conversationGroupRepository.generateGuestRoomLink(conversationId, expectedPassword)
+
+        result.shouldSucceed()
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::generateGuestRoomLink)
+            .with(any(), eq(expectedPassword))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(any(), anything(), any())
             .wasNotInvoked()
     }
 
@@ -639,8 +797,13 @@ class ConversationGroupRepositoryTest {
     fun givenDaoRunsEmitsValues_whenObservingGuestRoomLink_thenPropagateGuestRoomLink() = runTest {
         val conversationId = ConversationId("value", "domain")
 
+        val expected = ConversationGuestLinkEntity(
+            link = "link",
+            isPasswordProtected = false
+        )
+
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withSuccessfulFetchOfGuestRoomLink()
+            .withSuccessfulFetchOfGuestRoomLink(flowOf(expected))
             .arrange()
 
         val result = conversationGroupRepository.observeGuestRoomLink(conversationId)
@@ -649,7 +812,10 @@ class ConversationGroupRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::observeGuestRoomLinkByConversationId)
             .with(any())
             .wasInvoked(exactly = once)
-        assertEquals(LINK, result.first())
+        result.first().shouldSucceed {
+            assertEquals(expected.link, it?.link)
+            assertEquals(expected.isPasswordProtected, it?.isPasswordProtected)
+        }
     }
 
     @Test
@@ -756,6 +922,45 @@ class ConversationGroupRepositoryTest {
                 .wasInvoked(exactly = once)
         }
 
+    @Test
+    fun givenAConversationAndAPIFailsWithUnreachableDomains_whenAddingMembersToConversation__thenRetryIsExecutedWithValidUsersOnlyOnce() =
+        runTest {
+            val failedDomain = "unstableDomain1.com"
+            // given
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                    arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, FEDERATION_ERROR_UNREACHABLE_DOMAINS)
+                )
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .arrange()
+
+            // when
+            val expectedInitialUsers = listOf(TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID)
+            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+
+            // then
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(anything())
+                .wasInvoked(exactly = twice)
+
+            verify(arrangement.memberJoinEventHandler)
+                .suspendFunction(arrangement.memberJoinEventHandler::handle)
+                .with(anything())
+                .wasNotInvoked()
+
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), matching {
+                    it.containsAll(expectedInitialUsers)
+                })
+                .wasInvoked(once)
+        }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -818,11 +1023,14 @@ class ConversationGroupRepositoryTest {
             return this
         }
 
-        fun withCreateNewConversationAPI(result: NetworkResponse<ConversationResponse>): Arrangement = apply {
+        /**
+         * Mocks a sequence of [NetworkResponse]s for [ConversationApi.createNewConversation].
+         */
+        fun withCreateNewConversationAPIResponses(result: Array<NetworkResponse<ConversationResponse>>): Arrangement = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::createNewConversation)
                 .whenInvokedWith(anything())
-                .thenReturn(result)
+                .thenReturnSequentially(*result)
         }
 
         fun withSelfTeamId(result: Either<StorageFailure, TeamId?>): Arrangement = apply {
@@ -842,7 +1050,7 @@ class ConversationGroupRepositoryTest {
         fun withFetchLimitedConversationInfo(
             code: String,
             key: String,
-            result: NetworkResponse<LimitedConversationInfo>
+            result: NetworkResponse<ConversationCodeInfo>
         ): Arrangement = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::fetchLimitedInformationViaCode)
@@ -1019,13 +1227,15 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withSuccessfulCallToGenerateGuestRoomLinkApi() = apply {
+        fun withSuccessfulCallToGenerateGuestRoomLinkApi(
+            result: EventContentDTO.Conversation.CodeUpdated
+        ) = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::generateGuestRoomLink)
                 .whenInvokedWith(any())
                 .thenReturn(
                     NetworkResponse.Success(
-                        GenerateGuestRoomLinkResponse(uri = "mock-guest-room-link"),
+                        result,
                         mapOf(),
                         HttpStatusCode.OK.value
                     )
@@ -1074,11 +1284,13 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulFetchOfGuestRoomLink() = apply {
+        fun withSuccessfulFetchOfGuestRoomLink(
+            result: Flow<ConversationGuestLinkEntity?>
+        ) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::observeGuestRoomLinkByConversationId)
                 .whenInvokedWith(any())
-                .thenReturn(GUEST_ROOM_LINK_FLOW)
+                .thenReturn(result)
         }
 
         fun withSuccessfulNewConversationGroupStartedHandled() = apply {
@@ -1146,8 +1358,6 @@ class ConversationGroupRepositoryTest {
 
     companion object {
         private const val RAW_GROUP_ID = "mlsGroupId"
-        const val LINK = "www.wire.com"
-        private val GUEST_ROOM_LINK_FLOW = flowOf(LINK)
         val GROUP_ID = GroupID(RAW_GROUP_ID)
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
@@ -1188,16 +1398,11 @@ class ConversationGroupRepositoryTest {
         )
 
         val FEDERATION_ERROR_UNREACHABLE_DOMAINS = NetworkResponse.Error(
-            KaliumException.FederationError(
-                ErrorResponse(
-                    HttpStatusCode.InternalServerError.value,
-                    "remote backend unreachable",
-                    "federation-unreachable-domains-error",
-                    Cause(
-                        "federation",
+            KaliumException.FederationUnreachableException(
+                FederationUnreachableResponse(
+                    listOf(
                         "unstableDomain1.com",
-                        listOf("unstableDomain1.com", "unstableDomain2.com"),
-                        "/some/path"
+                        "unstableDomain2.com"
                     )
                 )
             )

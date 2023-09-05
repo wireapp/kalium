@@ -31,7 +31,7 @@ version = "0.0.1-SNAPSHOT"
 protobuf {
     generatedFilesBaseDir = "$projectDir/generated"
     protoc {
-        artifact = "com.google.protobuf:protoc:3.19.4"
+        artifact = "com.google.protobuf:protoc:3.24.0"
     }
     plugins {
         id("pbandk") {

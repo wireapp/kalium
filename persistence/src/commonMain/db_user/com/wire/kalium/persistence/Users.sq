@@ -23,13 +23,11 @@ CREATE TABLE User (
     bot_service TEXT AS BotIdEntity,
     deleted INTEGER AS Boolean NOT NULL DEFAULT 0,
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
-    expires_at INTEGER AS Instant
+    expires_at INTEGER AS Instant,
+    defederated INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 CREATE INDEX user_team_index ON User(team);
 CREATE INDEX user_service_id ON User(bot_service);
-
-deleteAllUsers:
-DELETE FROM User;
 
 deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
@@ -51,7 +49,8 @@ user_type = excluded.user_type,
 bot_service = excluded.bot_service,
 deleted = excluded.deleted,
 incomplete_metadata = excluded.incomplete_metadata,
-expires_at = excluded.expires_at;
+expires_at = excluded.expires_at,
+defederated = 0;
 
 insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at)
@@ -64,7 +63,7 @@ WHERE qualified_id = ?;
 
 updateTeamMemberUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?, incomplete_metadata = 0
 WHERE qualified_id = ?;
 
 updateTeamMemberType:
@@ -75,6 +74,11 @@ WHERE qualified_id = ?;
 markUserAsDeleted:
 UPDATE User
 SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, user_type = ?, deleted = 1
+WHERE qualified_id = ?;
+
+markUserAsDefederated:
+UPDATE User
+SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, defederated = 1
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:
@@ -90,14 +94,17 @@ insertOrIgnoreUserIdWithConnectionStatus:
 INSERT OR IGNORE INTO User(qualified_id, connection_status)
 VALUES(?, ?);
 
-updateUserConnectionStatus:
-UPDATE User SET connection_status = ? WHERE qualified_id = ?;
+upsertUserConnectionStatus:
+INSERT INTO User(qualified_id, connection_status)
+VALUES(?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+connection_status = excluded.connection_status;
 
 selectAllUsers:
 SELECT * FROM User;
 
 selectAllUsersWithConnectionStatus:
-SELECT * FROM User WHERE connection_status = ?;
+SELECT * FROM User WHERE connection_status = ? AND defederated = 0;
 
 selectByQualifiedId:
 SELECT * FROM User WHERE qualified_id IN ?;
@@ -113,12 +120,14 @@ SELECT * FROM User
 WHERE (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
-AND connection_status IN :connectionStatuses;
+AND connection_status IN :connectionStatuses
+AND defederated = 0;
 
 selectByHandleAndConnectionState:
 SELECT * FROM User
 WHERE handle LIKE ('%' || :searchQuery || '%')
-AND connection_status IN :connectionStatuses;
+AND connection_status IN :connectionStatuses
+AND defederated = 0;
 
 selectUsersByTeam:
 SELECT * FROM User WHERE team = ?;
@@ -141,18 +150,21 @@ WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation ==
 AND  (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
-AND connection_status = "ACCEPTED";
+AND connection_status = "ACCEPTED"
+AND defederated = 0;
 
 getUsersNotInConversationByHandle:
 SELECT * FROM User AS user
 WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
 AND handle LIKE ('%' || :searchQuery || '%')
-AND connection_status = "ACCEPTED";
+AND connection_status = "ACCEPTED"
+AND defederated = 0;
 
 getUsersNotPartOfTheConversation:
 SELECT * FROM User AS user
  WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
- AND connection_status = "ACCEPTED";
+ AND connection_status = "ACCEPTED"
+ AND defederated = 0;
 
 updateUserDisplayName:
 UPDATE User SET name = ? WHERE qualified_id = ?;
@@ -160,3 +172,6 @@ UPDATE User SET name = ? WHERE qualified_id = ?;
 selectUsersWithoutMetadata:
 SELECT * FROM User AS user
 WHERE deleted = 0 AND incomplete_metadata = 1;
+
+userIdsWithoutSelf:
+SELECT qualified_id FROM User WHERE qualified_id != (SELECT id FROM SelfUser);

@@ -124,12 +124,13 @@ internal class UserMapperImpl(
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
-            expiresAt = expiresAt
+            expiresAt = expiresAt,
+            defederated = false
         )
     }
 
     override fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity = with(userDTO) {
-        return UserEntity(
+        UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
             handle = handle,
@@ -143,7 +144,8 @@ internal class UserMapperImpl(
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = userDTO.deleted ?: false,
-            expiresAt = expiresAt?.toInstant()
+            expiresAt = expiresAt?.toInstant(),
+            defederated = false
         )
     }
 
@@ -203,7 +205,8 @@ internal class UserMapperImpl(
             userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
             botService = null,
             deleted = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -227,7 +230,8 @@ internal class UserMapperImpl(
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
-        expiresAt = userProfile.expiresAt?.toInstant()
+        expiresAt = userProfile.expiresAt?.toInstant(),
+        defederated = false
     )
 
     override fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity {
@@ -266,7 +270,8 @@ internal class UserMapperImpl(
             botService = null,
             deleted = false,
             hasIncompleteMetadata = true,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
     }
 }

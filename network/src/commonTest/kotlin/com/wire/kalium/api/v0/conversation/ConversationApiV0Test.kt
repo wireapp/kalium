@@ -35,26 +35,24 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.JoinConversationRequest
+import com.wire.kalium.network.api.base.model.JoinConversationRequestV0
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ConversationApiV0Test : ApiTest() {
 
     @Test
@@ -309,7 +307,7 @@ internal class ConversationApiV0Test : ApiTest() {
 
     @Test
     fun whenJoiningConversationViaCode_whenResponseWith200_thenEventIsParsedCorrectly() = runTest {
-        val request = JoinConversationRequest("code", "key", null)
+        val request = JoinConversationRequestV0("code", "key", null)
 
         val networkClient = mockAuthenticatedNetworkClient(
             EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK,
@@ -319,7 +317,7 @@ internal class ConversationApiV0Test : ApiTest() {
             }
         )
         val conversationApi = ConversationApiV0(networkClient)
-        val response = conversationApi.joinConversation(request.code, request.key, request.uri)
+        val response = conversationApi.joinConversation(request.code, request.key, request.uri, null)
 
         assertIs<NetworkResponse.Success<ConversationMemberAddedResponse>>(response)
         assertIs<ConversationMemberAddedResponse.Changed>(response.value)
@@ -331,7 +329,7 @@ internal class ConversationApiV0Test : ApiTest() {
 
     @Test
     fun whenJoiningConversationViaCode_whenResponseWith204_thenEventIsParsedCorrectly() = runTest {
-        val request = JoinConversationRequest("code", "key", null)
+        val request = JoinConversationRequestV0("code", "key", null)
 
         val networkClient = mockAuthenticatedNetworkClient(
             "", statusCode = HttpStatusCode.NoContent,
@@ -341,7 +339,7 @@ internal class ConversationApiV0Test : ApiTest() {
             }
         )
         val conversationApi = ConversationApiV0(networkClient)
-        val response = conversationApi.joinConversation(request.code, request.key, request.uri)
+        val response = conversationApi.joinConversation(request.code, request.key, request.uri, null)
 
         assertIs<NetworkResponse.Success<ConversationMemberAddedResponse>>(response)
         assertIs<ConversationMemberAddedResponse.Unchanged>(response.value)
@@ -388,10 +386,10 @@ internal class ConversationApiV0Test : ApiTest() {
         val conversationApi = ConversationApiV0(networkClient)
 
         // when
-        val response = conversationApi.generateGuestRoomLink(conversationId)
+        val response = conversationApi.generateGuestRoomLink(conversationId, null)
 
         // then
-        assertIs<NetworkResponse.Success<GenerateGuestRoomLinkResponse>>(response)
+        assertIs<NetworkResponse.Success<EventContentDTO.Conversation.CodeUpdated>>(response)
     }
 
     @Test

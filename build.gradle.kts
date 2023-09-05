@@ -100,7 +100,7 @@ koverReport {
     }
 }
 
-subprojects {
+fun Project.configureKover() {
     pluginManager.apply("org.jetbrains.kotlinx.kover")
 
     kover {
@@ -115,6 +115,15 @@ subprojects {
     }
 }
 
+subprojects {
+    // We only want coverage reports of actual Kalium
+    // Samples and other side-projects can have their own rules
+    if (name in setOf("monkeys", "testservice", "cli", "android")) {
+        return@subprojects
+    }
+    configureKover()
+}
+
 rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
     // For unknown reasons, yarn.lock checks are failing on Github Actions
     // Considering JS support is quite experimental for us, we can live with this for now
@@ -127,6 +136,7 @@ dependencies {
     kover(project(":cryptography"))
     kover(project(":util"))
     kover(project(":network"))
+    kover(project(":network-util"))
     kover(project(":persistence"))
     kover(project(":logger"))
     kover(project(":calling"))

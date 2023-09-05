@@ -19,121 +19,116 @@
 package com.wire.kalium.cryptography
 
 @Suppress("TooManyFunctions")
-actual class MLSClientImpl actual constructor(
-    rootDir: String,
-    databaseKey: MlsDBSecret,
-    clientId: CryptoQualifiedClientId
-) : MLSClient {
-
-    override fun clearLocalFiles(): Boolean {
+class MLSClientImpl : MLSClient {
+    override suspend fun close() {
         TODO("Not yet implemented")
     }
 
-    override fun getPublicKey(): ByteArray {
+    override suspend fun getPublicKey(): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun generateKeyPackages(amount: Int): List<ByteArray> {
+    override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
         TODO("Not yet implemented")
     }
 
-    override fun validKeyPackageCount(): ULong {
+    override suspend fun validKeyPackageCount(): ULong {
         TODO("Not yet implemented")
     }
 
-    override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
+    override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
         TODO("Not yet implemented")
     }
 
-    override fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
+    override suspend fun joinConversation(groupId: MLSGroupId, epoch: ULong): HandshakeMessage {
         TODO("Not yet implemented")
     }
 
-    override fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
+    override suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
         TODO("Not yet implemented")
     }
 
-    override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
+    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
-    override fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
+    override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
-    override fun conversationExists(groupId: MLSGroupId): Boolean {
+    override suspend fun conversationExists(groupId: MLSGroupId): Boolean {
         TODO("Not yet implemented")
     }
 
-    override fun conversationEpoch(groupId: MLSGroupId): ULong {
+    override suspend fun conversationEpoch(groupId: MLSGroupId): ULong {
         TODO("Not yet implemented")
     }
 
-    override fun createConversation(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
+    override suspend fun createConversation(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
         TODO("Not yet implemented")
     }
 
-    override fun wipeConversation(groupId: MLSGroupId) {
+    override suspend fun wipeConversation(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
-    override fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
+    override suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
         TODO("Not yet implemented")
     }
 
-    override fun commitAccepted(groupId: MLSGroupId) {
+    override suspend fun commitAccepted(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
-    override fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
+    override suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
         TODO("Not yet implemented")
     }
 
-    override fun clearPendingCommit(groupId: MLSGroupId) {
+    override suspend fun clearPendingCommit(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
 
-    override fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
+    override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
         TODO("Not yet implemented")
     }
 
-    override fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
+    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
         TODO("Not yet implemented")
     }
 
-    override fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
+    override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
         TODO("Not yet implemented")
     }
 
-    override fun addMember(groupId: MLSGroupId, members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): CommitBundle? {
+    override suspend fun addMember(groupId: MLSGroupId, members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): CommitBundle? {
         TODO("Not yet implemented")
     }
 
-    override fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): CommitBundle {
+    override suspend fun removeMember(groupId: MLSGroupId, members: List<CryptoQualifiedClientId>): CommitBundle {
         TODO("Not yet implemented")
     }
 
-    override fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
+    override suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray {
         TODO("Not yet implemented")
     }
 
-    override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override suspend fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun e2eiNewActivationEnrollment(displayName: String, handle: String): E2EIClient {
+    override suspend fun e2eiNewActivationEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun e2eiNewRotateEnrollment(displayName: String?, handle: String?): E2EIClient {
+    override suspend fun e2eiNewRotateEnrollment(clientId: E2EIQualifiedClientId, displayName: String?, handle: String?): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
+    override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
         TODO("Not yet implemented")
     }
 
-    override fun e2eiRotateAll(
+    override suspend fun e2eiRotateAll(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt
@@ -141,7 +136,7 @@ actual class MLSClientImpl actual constructor(
         TODO("Not yet implemented")
     }
 
-    override fun isGroupVerified(groupId: MLSGroupId): Boolean {
+    override suspend fun isGroupVerified(groupId: MLSGroupId): Boolean {
         TODO("Not supported on js")
     }
 }

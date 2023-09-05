@@ -94,7 +94,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
             .wasInvoked(exactly = once)
     }
 
@@ -200,7 +200,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
             .wasInvoked(exactly = once)
     }
 
@@ -223,7 +223,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
             .wasInvoked(exactly = once)
     }
 
@@ -410,7 +410,7 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastKey)
+            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
             .wasInvoked(exactly = once)
     }
 
@@ -525,7 +525,7 @@ class RegisterClientUseCaseTest {
                 .then { _, _ -> Either.Right(PRE_KEYS) }
 
             given(preKeyRepository)
-                .suspendFunction(preKeyRepository::generateNewLastKey)
+                .suspendFunction(preKeyRepository::generateNewLastResortKey)
                 .whenInvoked()
                 .then { Either.Right(LAST_KEY) }
 
@@ -558,7 +558,7 @@ class RegisterClientUseCaseTest {
 
         fun withGetMLSPublicKey(result: ByteArray) = apply {
             given(MLS_CLIENT)
-                .function(MLS_CLIENT::getPublicKey)
+                .suspendFunction(MLS_CLIENT::getPublicKey)
                 .whenInvoked()
                 .thenReturn(result)
         }
@@ -586,7 +586,7 @@ class RegisterClientUseCaseTest {
 
         fun withGenerateNewLastKey(result: Either<ProteusFailure, PreKeyCrypto>) = apply {
             given(preKeyRepository)
-                .suspendFunction(preKeyRepository::generateNewLastKey)
+                .suspendFunction(preKeyRepository::generateNewLastResortKey)
                 .whenInvoked()
                 .then { result }
         }
@@ -600,7 +600,7 @@ class RegisterClientUseCaseTest {
 
         fun withUpdateOTRLastPreKeyId(result: Either<StorageFailure, Unit>) = apply {
             given(preKeyRepository)
-                .suspendFunction(preKeyRepository::updateOTRLastPreKeyId)
+                .suspendFunction(preKeyRepository::updateMostRecentPreKeyId)
                 .whenInvokedWith(any())
                 .then { result }
         }

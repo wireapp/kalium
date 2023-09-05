@@ -18,13 +18,12 @@
 
 package com.wire.kalium.logic
 
-import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isFederationDenied
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -33,18 +32,23 @@ import kotlinx.coroutines.flow.map
 
 sealed interface CoreFailure {
 
-    val isNotFoundFailure: Boolean
+    val isInvalidRequestError: Boolean
         get() = this is NetworkFailure.ServerMiscommunication
                 && this.kaliumException is KaliumException.InvalidRequestError
-                && this.kaliumException.errorResponse.code == HttpStatusCode.NotFound.value
 
     val hasUnreachableDomainsError: Boolean
         get() = this is NetworkFailure.FederatedBackendFailure.FailedDomains && this.domains.isNotEmpty()
 
+    val hasConflictingDomainsError: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure.ConflictingBackends && this.domains.isNotEmpty()
+
+    val isRetryable: Boolean
+        get() = this is NetworkFailure.FederatedBackendFailure.RetryableFailure
+
     /**
      * The attempted operation requires that this client is registered.
      */
-    object MissingClientRegistration : CoreFailure
+    data object MissingClientRegistration : CoreFailure
 
     /**
      * A user has no key packages available which prevents him/her from being added
@@ -56,7 +60,7 @@ sealed interface CoreFailure {
      * It's not allowed to run the application with development API enabled when
      * connecting to the production environment.
      */
-    object DevelopmentAPINotAllowedOnProduction : CoreFailure
+    data object DevelopmentAPINotAllowedOnProduction : CoreFailure
 
     data class Unknown(val rootCause: Throwable?) : CoreFailure
 
@@ -65,18 +69,34 @@ sealed interface CoreFailure {
     /**
      * It's only allowed to insert system messages as bulk for all conversations.
      */
-    object OnlySystemMessageAllowed : FeatureFailure()
+    data object OnlySystemMessageAllowed : FeatureFailure()
 
     /**
      * The sender ID of the event is invalid.
      * usually happens with events that alter a message state [ButtonActionConfirmation]
      * when the sender ID is not the same are the original message sender id
      */
-    object InvalidEventSenderID : FeatureFailure()
+    data object InvalidEventSenderID : FeatureFailure()
+
     /**
      * This operation is not supported by proteus conversations
      */
-    object NotSupportedByProteus : FeatureFailure()
+    data object NotSupportedByProteus : FeatureFailure()
+
+    /**
+     * The desired event was not found when fetching pending events.
+     * This can happen when this client has been offline for a long period of time,
+     * and the backend has deleted old events.
+     *
+     * This is a recoverable error, the client should:
+     * - Do a full slow sync
+     * - Try incremental sync again using the oldest event ID available in the backend
+     * - Warn the user that some events might have been missed.
+     *
+     * This could also mean that the client was deleted. In this case, SlowSync will fail.
+     * The client should identify this scenario through other means and logout.
+     */
+    data object SyncEventOrClientNotFound : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure {
@@ -117,11 +137,19 @@ sealed class NetworkFailure : CoreFailure {
      */
     sealed class FederatedBackendFailure : NetworkFailure() {
 
+        /**
+         * Failure due to a federated backend context that can be retried
+         */
+        interface RetryableFailure {
+            val domains: List<String>
+        }
+
         data class General(val label: String) : FederatedBackendFailure()
+        data class FederationDenied(val label: String) : FederatedBackendFailure()
 
-        data class ConflictingBackends(val domains: List<String>) : FederatedBackendFailure()
+        data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
 
-        data class FailedDomains(val domains: List<String> = emptyList()) : FederatedBackendFailure()
+        data class FailedDomains(override val domains: List<String> = emptyList()) : FederatedBackendFailure(), RetryableFailure
 
     }
 
@@ -130,6 +158,12 @@ sealed class NetworkFailure : CoreFailure {
 interface MLSFailure : CoreFailure {
 
     object WrongEpoch : MLSFailure
+
+    object DuplicateMessage : MLSFailure
+
+    object SelfCommitIgnored : MLSFailure
+
+    object UnmergedPendingGroup : MLSFailure
 
     object ConversationDoesNotSupportMLS : MLSFailure
 
@@ -169,12 +203,15 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
             val exception = result.kException
             when {
                 exception is KaliumException.FederationError -> {
-                    val cause = exception.errorResponse.cause
-                    if (exception.errorResponse.label == "federation-unreachable-domains-error") {
-                        Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(cause?.domains.orEmpty()))
+                    if (exception.isFederationDenied()) {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
                     }
+                }
+
+                exception is KaliumException.FederationUnreachableException -> {
+                    Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(exception.errorResponse.unreachableBackends))
                 }
 
                 exception is KaliumException.FederationConflictException -> {
@@ -186,12 +223,16 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
                     Either.Left(NetworkFailure.ProxyError(exception.cause))
                 }
 
+                exception is KaliumException.NoNetwork -> {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
+                exception is KaliumException.GenericError && exception.cause is IOException -> {
+                    Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
                 else -> {
-                    if (exception is KaliumException.GenericError && exception.cause is IOException) {
-                        Either.Left(NetworkFailure.NoNetworkConnection(exception))
-                    } else {
-                        Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
-                    }
+                    Either.Left(NetworkFailure.ServerMiscommunication(result.kException))
                 }
             }
         }
@@ -220,18 +261,9 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
 internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
-    } catch (cryptoException: CryptoException) {
-        kaliumLogger.e(cryptoException.stackTraceToString())
-        val mappedFailure = when (cryptoException) {
-            is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
-            // TODO: Handle all cases explicitly.
-            //       Blocked by https://github.com/wireapp/core-crypto/pull/214
-            else -> MLSFailure.Generic(cryptoException)
-        }
-        Either.Left(mappedFailure)
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(MLSFailure.Generic(e))
+        Either.Left(mapMLSException(e))
     }
 }
 
@@ -312,3 +344,7 @@ internal inline fun <T : Any> wrapNullableFlowStorageRequest(storageRequest: () 
         flowOf(Either.Left(StorageFailure.Generic(e)))
     }
 }
+
+// TODO: Handle all cases explicitly.
+//       Blocked by https://github.com/wireapp/core-crypto/pull/214
+expect fun mapMLSException(exception: Exception): MLSFailure

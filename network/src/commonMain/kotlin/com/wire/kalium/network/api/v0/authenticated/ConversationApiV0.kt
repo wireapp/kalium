@@ -37,15 +37,14 @@ import com.wire.kalium.network.api.base.authenticated.conversation.Subconversati
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.GenerateGuestRoomLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.LimitedConversationInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.AddServiceResponse
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.JoinConversationRequest
+import com.wire.kalium.network.api.base.model.JoinConversationRequestV0
 import com.wire.kalium.network.api.base.model.PaginationRequest
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
@@ -236,21 +235,28 @@ internal open class ConversationApiV0 internal constructor(
 
     override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
         NetworkResponse.Error(
-            APINotSupported("MLS: fetchGroupInfo api is only available on API V3")
+            APINotSupported("MLS: fetchGroupInfo api is only available on API V5")
         )
 
     override suspend fun joinConversation(
         code: String,
         key: String,
-        uri: String?
-    ): NetworkResponse<ConversationMemberAddedResponse> =
-        httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
-            setBody(JoinConversationRequest(code, key, uri))
+        uri: String?,
+        password: String?
+    ): NetworkResponse<ConversationMemberAddedResponse> {
+        if (password != null) {
+            return NetworkResponse.Error(
+                APINotSupported("V0->3: joinConversation with password api is only available on API V4")
+            )
+        }
+        return httpClient.preparePost("$PATH_CONVERSATIONS/$PATH_JOIN") {
+            setBody(JoinConversationRequestV0(code, key, uri))
         }.execute { httpResponse ->
             handleConversationMemberAddedResponse(httpResponse)
         }
+    }
 
-    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<LimitedConversationInfo> =
+    override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
         wrapKaliumResponse {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
@@ -263,7 +269,7 @@ internal open class ConversationApiV0 internal constructor(
         subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
         NetworkResponse.Error(
-            APINotSupported("MLS: fetchSubconversationDetails api is only available on API V3")
+            APINotSupported("MLS: fetchSubconversationDetails api is only available on API V5")
         )
 
     override suspend fun fetchSubconversationGroupInfo(
@@ -271,7 +277,7 @@ internal open class ConversationApiV0 internal constructor(
         subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
         NetworkResponse.Error(
-            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V3")
+            APINotSupported("MLS: fetchSubconversationGroupInfo api is only available on API V5")
         )
 
     override suspend fun deleteSubconversation(
@@ -280,7 +286,7 @@ internal open class ConversationApiV0 internal constructor(
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
         NetworkResponse.Error(
-            APINotSupported("MLS: deleteSubconversation api is only available on API V3")
+            APINotSupported("MLS: deleteSubconversation api is only available on API V5")
         )
 
     override suspend fun leaveSubconversation(
@@ -288,7 +294,7 @@ internal open class ConversationApiV0 internal constructor(
         subconversationId: SubconversationId
     ): NetworkResponse<Unit> =
         NetworkResponse.Error(
-            APINotSupported("MLS: leaveSubconversation api is only available on API V3")
+            APINotSupported("MLS: leaveSubconversation api is only available on API V5")
         )
 
     protected suspend fun handleConversationMemberAddedResponse(
@@ -350,9 +356,18 @@ internal open class ConversationApiV0 internal constructor(
         NetworkResponse.Error(KaliumException.GenericError(e))
     }
 
-    override suspend fun generateGuestRoomLink(conversationId: ConversationId): NetworkResponse<GenerateGuestRoomLinkResponse> =
-        wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+    override suspend fun generateGuestRoomLink(
+        conversationId: ConversationId,
+        password: String?
+    ): NetworkResponse<EventContentDTO.Conversation.CodeUpdated> =
+        if (password != null) {
+            NetworkResponse.Error(
+                APINotSupported("V0->3: generateGuestRoomLink with password api is only available on API V4")
+            )
+        } else {
+            wrapKaliumResponse {
+                httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+            }
         }
 
     override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> = wrapKaliumResponse {

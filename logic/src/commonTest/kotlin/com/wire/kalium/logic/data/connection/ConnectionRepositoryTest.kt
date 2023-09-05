@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -123,7 +124,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withSuccessfulCreateConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
-            .withFetchConversationSucceed()
+            .withFetchSentConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -158,7 +159,7 @@ class ConnectionRepositoryTest {
         arrangement
             .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
             .withErrorOnCreateConnectionResponse(userId)
-            .withFetchConversationSucceed()
+            .withFetchSentConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -190,7 +191,7 @@ class ConnectionRepositoryTest {
             .withSuccessfulGetConversationById(arrangement.stubConversationID1)
             .withErrorOnPersistingConnectionResponse(userId)
             .withSelfUserTeamId(Either.Right(TestUser.SELF.teamId))
-            .withFetchConversationSucceed()
+            .withFetchSentConversationSucceed()
 
         // when
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
@@ -305,6 +306,24 @@ class ConnectionRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenConversationId_WhenDeletingConnection_thenDeleteConnectionDataAndConversationShouldBeTriggered() = runTest {
+        // given
+        val conversationId = com.wire.kalium.logic.data.id.QualifiedID("conversation_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement.withDeleteConnectionDataAndConversation(conversationId.toDao())
+
+        // when
+        val result = connectionRepository.deleteConnection(conversationId)
+
+        // then
+        result.shouldSucceed()
+        verify(arrangement.connectionDAO)
+            .suspendFunction(arrangement.connectionDAO::deleteConnectionDataAndConversation)
+            .with(eq(conversationId.toDao()))
+            .wasInvoked(once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -394,7 +413,8 @@ class ConnectionRepositoryTest {
             botService = null,
             deleted = false,
             hasIncompleteMetadata = false,
-            expiresAt = null
+            expiresAt = null,
+            defederated = false
         )
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
@@ -408,9 +428,9 @@ class ConnectionRepositoryTest {
             return this
         }
 
-        fun withFetchConversationSucceed(): Arrangement {
+        fun withFetchSentConversationSucceed(): Arrangement {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversation)
+                .suspendFunction(conversationRepository::fetchSentConnectionConversation)
                 .whenInvokedWith(any())
                 .then { Either.Right(Unit) }
             return this
@@ -481,6 +501,13 @@ class ConnectionRepositoryTest {
                 .suspendFunction(connectionApi::updateConnection)
                 .whenInvokedWith(eq(userId), any())
                 .then { _, _ -> NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
+        }
+
+        fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
+            given(connectionDAO)
+                .suspendFunction(connectionDAO::deleteConnectionDataAndConversation)
+                .whenInvokedWith(eq(conversationId))
+                .thenReturn(Unit)
         }
 
         fun withSuccessfulFetchSelfUserConnectionsResponse(stubUserProfileDTO: UserProfileDTO): Arrangement {

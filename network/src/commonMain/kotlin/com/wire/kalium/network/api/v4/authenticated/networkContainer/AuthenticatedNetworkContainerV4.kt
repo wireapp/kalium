@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v4.authenticated.networkContainer
 
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -64,19 +65,24 @@ import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProvider
 import com.wire.kalium.network.networkContainer.AuthenticatedHttpClientProviderImpl
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
 
 internal class AuthenticatedNetworkContainerV4 internal constructor(
+    private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
+    certificatePinning: CertificatePinning,
     engine: HttpClientEngine = defaultHttpEngine(
-        sessionManager.serverConfig().links.apiProxy,
-        sessionManager.proxyCredentials()
+        serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
+        proxyCredentials = sessionManager.proxyCredentials(),
+        certificatePinning = certificatePinning
     )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
+        networkStateObserver,
         { httpClient -> AccessTokenApiV4(httpClient) },
         engine
     ) {
@@ -89,13 +95,13 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
 
     override val messageApi: MessageApi get() = MessageApiV4(networkClient, EnvelopeProtoMapperImpl())
 
-    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV4(networkClient)
+    override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV4()
 
-    override val e2eiApi: E2EIApi get() = E2EIApiV4(networkClient)
+    override val e2eiApi: E2EIApi get() = E2EIApiV4()
 
     override val conversationApi: ConversationApi get() = ConversationApiV4(networkClient)
 
-    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV4(networkClient)
+    override val keyPackageApi: KeyPackageApi get() = KeyPackageApiV4()
 
     override val preKeyApi: PreKeyApi get() = PreKeyApiV4(networkClient)
 
@@ -117,7 +123,7 @@ internal class AuthenticatedNetworkContainerV4 internal constructor(
 
     override val featureConfigApi: FeatureConfigApi get() = FeatureConfigApiV4(networkClient)
 
-    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV4(networkClient)
+    override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV4()
 
     override val propertiesApi: PropertiesApi get() = PropertiesApiV4(networkClient)
 }

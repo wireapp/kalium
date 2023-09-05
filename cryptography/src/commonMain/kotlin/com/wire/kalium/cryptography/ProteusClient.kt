@@ -55,22 +55,14 @@ data class PreKeyCrypto(
  */
 interface ProteusClient {
 
-    @Throws(ProteusException::class)
-    fun clearLocalFiles(): Boolean
-
-    fun needsMigration(): Boolean
-
     @Throws(ProteusException::class, CancellationException::class)
-    suspend fun openOrCreate()
-
-    @Throws(ProteusException::class, CancellationException::class)
-    suspend fun openOrError()
+    suspend fun close()
 
     @Throws(ProteusException::class, CancellationException::class)
     fun getIdentity(): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
-    fun getLocalFingerprint(): ByteArray
+    suspend fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray
@@ -78,7 +70,7 @@ interface ProteusClient {
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class, CancellationException::class)
-    suspend fun newLastPreKey(): PreKeyCrypto
+    suspend fun newLastResortPreKey(): PreKeyCrypto
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean
@@ -116,9 +108,8 @@ suspend fun ProteusClient.createSessions(preKeysCrypto: Map<String, Map<String, 
     }
 }
 
-expect class ProteusClientImpl(
+expect suspend fun cryptoboxProteusClient(
     rootDir: String,
-    databaseKey: ProteusDBSecret? = null,
     defaultContext: CoroutineContext,
     ioContext: CoroutineContext
-) : ProteusClient
+): ProteusClient

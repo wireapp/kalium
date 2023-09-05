@@ -23,14 +23,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TestData(
+    @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig> = mapOf(),
     @SerialName("testCases") val testCases: List<TestCase>,
-    @SerialName("backends") val backends: List<BackendConfig>
+    @SerialName("backends") val backends: List<BackendConfig>,
 )
 
 @Serializable
 data class TestCase(
     @SerialName("name") val name: String,
-    @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig> = mapOf(),
     @SerialName("setup") val setup: List<ActionConfig> = listOf(),
     @SerialName("actions") val actions: List<ActionConfig>
 )
@@ -44,6 +44,11 @@ sealed class UserCount {
     @Serializable
     @SerialName("FIXED_COUNT")
     data class FixedCount(@SerialName("value") val value: UInt) : UserCount()
+
+    companion object {
+        fun single() = FixedCount(1u)
+        fun fixed(value: UInt) = FixedCount(value)
+    }
 }
 
 @Serializable
@@ -57,7 +62,7 @@ data class GroupConfig(
 data class ActionConfig(
     @SerialName("description") val description: String,
     @SerialName("config") val type: ActionType,
-    @SerialName("count") val count: UserCount,
+    @SerialName("count") val count: UInt = 1u,
     @SerialName("repeatInterval") val repeatInterval: ULong = 0u
 )
 
@@ -65,15 +70,22 @@ data class ActionConfig(
 sealed class ActionType {
     @Serializable
     @SerialName("LOGIN")
-    data class Login(@SerialName("duration") val duration: UInt = 0u) : ActionType()
+    data class Login(
+        @SerialName("userCount") val userCount: UserCount,
+        @SerialName("duration") val duration: UInt = 0u
+    ) : ActionType()
 
     @Serializable
     @SerialName("RECONNECT")
-    data class Reconnect(@SerialName("durationOffline") val durationOffline: UInt) : ActionType()
+    data class Reconnect(
+        @SerialName("userCount") val userCount: UserCount,
+        @SerialName("durationOffline") val durationOffline: UInt
+    ) : ActionType()
 
     @Serializable
     @SerialName("SEND_MESSAGE")
     data class SendMessage(
+        @SerialName("userCount") val userCount: UserCount = UserCount.single(),
         @SerialName("count") val count: UInt,
         @SerialName("countGroups") val countGroups: UInt = 1u,
         @SerialName("targets") val targets: List<String> = listOf()
@@ -84,19 +96,22 @@ sealed class ActionType {
     data class CreateConversation(
         @SerialName("userCount") val userCount: UserCount,
         @SerialName("protocol") val protocol: ConversationOptions.Protocol = ConversationOptions.Protocol.MLS,
-        @SerialName("domainOwner") val domain: String?
+        @SerialName("teamOwner") val team: String?
     ) : ActionType()
 
     @Serializable
     @SerialName("ADD_USERS_TO_CONVERSATION")
     data class AddUsersToConversation(
+        @SerialName("countGroups") val countGroups: UInt = 1u,
         @SerialName("userCount") val userCount: UserCount,
-        @SerialName("domain") val domain: String?
     ) : ActionType()
 
     @Serializable
     @SerialName("LEAVE_CONVERSATION")
-    data class LeaveConversation(@SerialName("userCount") val userCount: UserCount) : ActionType()
+    data class LeaveConversation(
+        @SerialName("countGroups") val countGroups: UInt = 1u,
+        @SerialName("userCount") val userCount: UserCount
+    ) : ActionType()
 
     @Serializable
     @SerialName("DESTROY_CONVERSATION")
@@ -106,8 +121,9 @@ sealed class ActionType {
     @SerialName("SEND_REQUEST")
     data class SendRequest(
         @SerialName("userCount") val userCount: UserCount,
-        @SerialName("originDomain") val originDomain: String,
-        @SerialName("targetDomain") val targetDomain: String,
+        @SerialName("targetUserCount") val targetUserCount: UserCount,
+        @SerialName("originTeam") val originTeam: String,
+        @SerialName("targetTeam") val targetTeam: String,
         @SerialName("delayResponse") val delayResponse: ULong = 0u,
         @SerialName("shouldAccept") val shouldAccept: Boolean = true
     ) : ActionType()
@@ -124,7 +140,12 @@ data class BackendConfig(
     @SerialName("title") val title: String,
     @SerialName("passwordForUsers") val passwordForUsers: String,
     @SerialName("domain") val domain: String,
-    @SerialName("users") val users: List<UserAccount>
+    @SerialName("teamName") val teamName: String,
+    @SerialName("authUser") val authUser: String,
+    @SerialName("authPassword") val authPassword: String,
+    @SerialName("userCount") val userCount: ULong,
+    @SerialName("dumpUsers") val dumpUsers: Boolean = false,
+    @SerialName("users") val users: List<UserAccount> = listOf()
 )
 
 @Serializable

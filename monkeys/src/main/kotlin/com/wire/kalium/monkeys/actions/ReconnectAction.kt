@@ -19,10 +19,16 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.importer.UserCount
+import com.wire.kalium.monkeys.logger
+import com.wire.kalium.monkeys.pool.MonkeyPool
+import kotlinx.coroutines.delay
 
-class ReconnectAction(val userCount: UserCount, val config: ActionType.Reconnect) : Action() {
-    override suspend fun execute(coreLogic: CoreLogic) {
-        TODO("Not yet implemented")
+class ReconnectAction(val config: ActionType.Reconnect) : Action() {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+        val monkeys = monkeyPool.randomLoggedInMonkeys(this.config.userCount)
+        logger.i("Logging ${monkeys.count()} monkeys out")
+        monkeys.forEach { it.logout(monkeyPool::loggedOut) }
+        delay(config.durationOffline.toLong())
+        monkeys.forEach { it.login(coreLogic, monkeyPool::loggedOut) }
     }
 }

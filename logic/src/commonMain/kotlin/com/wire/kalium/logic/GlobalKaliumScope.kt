@@ -64,6 +64,7 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
@@ -81,38 +82,41 @@ import kotlin.coroutines.CoroutineContext
  * @see [com.wire.kalium.logic.feature.auth.AuthenticationScope]
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
-
+@Suppress("LongParameterList")
 class GlobalKaliumScope internal constructor(
     userAgent: String,
-    private val globalDatabase: Lazy<GlobalDatabaseProvider>,
-    private val globalPreferences: Lazy<GlobalPrefProvider>,
+    private val globalDatabase: GlobalDatabaseProvider,
+    private val globalPreferences: GlobalPrefProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
-    private val authenticationScopeProvider: AuthenticationScopeProvider
+    private val authenticationScopeProvider: AuthenticationScopeProvider,
+    private val networkStateObserver: NetworkStateObserver
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
     val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
+            networkStateObserver,
             kaliumConfigs.developmentApiEnabled,
             userAgent,
-            kaliumConfigs.ignoreSSLCertificatesForUnboundCalls
+            kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
+            kaliumConfigs.certPinningConfig
         )
     }
 
     internal val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
             unboundNetworkContainer.serverConfigApi,
-            globalDatabase.value.serverConfigurationDAO,
+            globalDatabase.serverConfigurationDAO,
             unboundNetworkContainer.remoteVersion,
             kaliumConfigs.developmentApiEnabled
         )
 
     val sessionRepository: SessionRepository
         get() = SessionDataSource(
-            globalDatabase.value.accountsDAO,
-            globalPreferences.value.authTokenStorage,
+            globalDatabase.accountsDAO,
+            globalPreferences.authTokenStorage,
             serverConfigRepository,
             kaliumConfigs
         )
@@ -122,7 +126,7 @@ class GlobalKaliumScope internal constructor(
 
     private val notificationTokenRepository: NotificationTokenRepository
         get() =
-            NotificationTokenDataSource(globalPreferences.value.tokenStorage)
+            NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -161,7 +165,9 @@ class GlobalKaliumScope internal constructor(
         get() = ObserveIfAppUpdateRequiredUseCaseImpl(
             serverConfigRepository,
             authenticationScopeProvider,
-            userSessionScopeProvider.value
+            userSessionScopeProvider.value,
+            networkStateObserver,
+            kaliumConfigs
         )
 
     val checkSystemIntegrity: CheckSystemIntegrityUseCase

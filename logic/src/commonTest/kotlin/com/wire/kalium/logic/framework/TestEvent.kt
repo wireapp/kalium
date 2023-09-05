@@ -27,8 +27,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 
@@ -40,6 +38,15 @@ object TestEvent {
         false,
         TestUser.USER_ID,
         members,
+        "2022-03-30T15:36:00.000Z"
+    )
+
+    fun memberLeave(eventId: String = "eventId", members: List<Member> = listOf()) = Event.Conversation.MemberLeave(
+        eventId,
+        TestConversation.ID,
+        false,
+        TestUser.USER_ID,
+        listOf(),
         "2022-03-30T15:36:00.000Z"
     )
 
@@ -187,5 +194,47 @@ object TestEvent {
         TestUser.USER_ID,
         timestamp.toIsoDateTimeString(),
         "content",
+    )
+
+    fun newConversationEvent() = Event.Conversation.NewConversation(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = false,
+        timestampIso = "timestamp",
+        conversation = TestConversation.CONVERSATION_RESPONSE,
+        senderUserId = TestUser.SELF.id
+    )
+
+    fun newMLSWelcomeEvent() = Event.Conversation.MLSWelcome(
+        "eventId",
+        TestConversation.ID,
+        false,
+        TestUser.USER_ID,
+        "dummy-message",
+        timestampIso = "2022-03-30T15:36:00.000Z"
+    )
+
+    fun newAccessUpdateEvent() = Event.Conversation.AccessUpdate(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        data = TestConversation.CONVERSATION_RESPONSE,
+        qualifiedFrom = TestUser.USER_ID,
+        transient = false
+    )
+
+    fun codeUpdated() = Event.Conversation.CodeUpdated(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = false,
+        code = "code",
+        key = "key",
+        uri = "uri",
+        isPasswordProtected = false
+    )
+
+    fun codeDeleted() = Event.Conversation.CodeDeleted(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = false,
     )
 }

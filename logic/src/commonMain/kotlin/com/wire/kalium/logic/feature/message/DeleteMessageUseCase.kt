@@ -73,7 +73,7 @@ class DeleteMessageUseCase internal constructor(
             when (message.status) {
                 // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
                 // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
-                Message.Status.FAILED -> messageRepository.deleteMessage(messageId, conversationId)
+                Message.Status.Failed -> messageRepository.deleteMessage(messageId, conversationId)
                 else -> {
                     return currentClientIdProvider().flatMap { currentClientId ->
                         selfConversationIdProvider().flatMap { selfConversationIds ->
@@ -89,7 +89,7 @@ class DeleteMessageUseCase internal constructor(
                                     date = DateTimeUtil.currentIsoDateTimeString(),
                                     senderUserId = selfUserId,
                                     senderClientId = currentClientId,
-                                    status = Message.Status.PENDING,
+                                    status = Message.Status.Pending,
                                     isSelfMessage = true,
                                     expirationData = null
                                 )

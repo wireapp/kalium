@@ -48,7 +48,6 @@ internal interface SlowSyncWorker {
     suspend fun performSlowSyncSteps(): Flow<SlowSyncStep>
 }
 
-// TODO(test): Make testable by converting internal usecases into interfaces
 @Suppress("LongParameterList")
 internal class SlowSyncWorkerImpl(
     private val syncSelfUser: SyncSelfUserUseCase,

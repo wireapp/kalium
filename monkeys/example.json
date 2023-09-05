@@ -3,40 +3,48 @@
         {
             "name": "Example Test Case",
             "conversationDistribution": {
-                "group1": {
+                "groupPROTEUS": {
                     "userCount": {
                         "type": "PERCENTAGE",
-                        "value": 100
+                        "value": 50
+                    },
+                    "protocol": "PROTEUS",
+                    "groupCount": 2
+                },
+                "groupMLS": {
+                    "userCount": {
+                        "type": "PERCENTAGE",
+                        "value": 50
                     },
                     "protocol": "MLS",
-                    "groupCount": 1
+                    "groupCount": 2
                 }
             },
             "setup": [
                 {
                     "description": "Log everyone in",
-                    "count": {
-                        "type": "PERCENTAGE",
-                        "value": 100
-                    },
                     "config": {
-                        "type": "LOGIN"
+                        "type": "LOGIN",
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        }
                     }
                 },
                 {
                     "description": "Connect teams",
-                    "count": {
-                        "type": "PERCENTAGE",
-                        "value": 100
-                    },
                     "config": {
                         "type": "SEND_REQUEST",
                         "userCount": {
                             "type": "PERCENTAGE",
                             "value": 100
                         },
-                        "originDomain": "anta.wire.link",
-                        "targetDomain": "bella.wire.link",
+                        "targetUserCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
+                        "originTeam": "Diya",
+                        "targetTeam": "Elna",
                         "delayResponse": 1000,
                         "shouldAccept": true
                     }
@@ -45,25 +53,66 @@
             "actions": [
                 {
                     "description": "Send messages",
-                    "count": {
-                        "type": "PERCENTAGE",
-                        "value": 100
-                    },
+                    "repeatInterval": 100,
+                    "config": {
+                        "type": "SEND_MESSAGE",
+                        "count": 3,
+                        "countGroups": 3,
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        }
+                    }
+                },
+                {
+                    "description": "Send messages",
+                    "count": 1,
                     "repeatInterval": 500,
                     "config": {
                         "type": "SEND_MESSAGE",
                         "count": 3,
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
                         "targets": [
-                            "group1"
+                            "groupMLS",
+                            "groupPROTEUS",
+                            "One21"
                         ]
                     }
                 },
                 {
                     "description": "Create groups",
-                    "count": {
-                        "type": "FIXED_COUNT",
-                        "value": 3
-                    },
+                    "count": 3,
+                    "repeatInterval": 10000,
+                    "config": {
+                        "type": "CREATE_CONVERSATION",
+                        "userCount": {
+                            "type": "FIXED_COUNT",
+                            "value": 4
+                        },
+                        "protocol": "PROTEUS",
+                        "teamOwner": "Diya"
+                    }
+                },
+                {
+                    "description": "Create groups",
+                    "count": 3,
+                    "repeatInterval": 10000,
+                    "config": {
+                        "type": "CREATE_CONVERSATION",
+                        "userCount": {
+                            "type": "FIXED_COUNT",
+                            "value": 4
+                        },
+                        "protocol": "MLS",
+                        "teamOwner": "Diya"
+                    }
+                },
+                {
+                    "description": "Create groups",
+                    "count": 3,
                     "repeatInterval": 10000,
                     "config": {
                         "type": "CREATE_CONVERSATION",
@@ -72,24 +121,7 @@
                             "value": 10
                         },
                         "protocol": "PROTEUS",
-                        "domainOwner": "anta.wire.link"
-                    }
-                },
-                {
-                    "description": "Create groups",
-                    "count": {
-                        "type": "FIXED_COUNT",
-                        "value": 3
-                    },
-                    "repeatInterval": 10000,
-                    "config": {
-                        "type": "CREATE_CONVERSATION",
-                        "userCount": {
-                            "type": "FIXED_COUNT",
-                            "value": 10
-                        },
-                        "protocol": "MLS",
-                        "domainOwner": "anta.wire.link"
+                        "teamOwner": "Elna"
                     }
                 }
             ]
@@ -97,75 +129,34 @@
     ],
     "backends": [
         {
-            "api": "https://nginz-https.anta.wire.link",
-            "accounts": "https://account.anta.wire.link/",
-            "webSocket": "https://nginz-ssl.anta.wire.link/",
+            "api": "https://nginz-https.diya.wire.link",
+            "webSocket": "https://nginz-ssl.diya.wire.link",
             "blackList": "https://clientblacklist.wire.com/staging",
-            "teams": "https://teams.anta.wire.link/",
-            "website": "https://example.org",
-            "title": "anta.wire.link",
+            "teams": "https://teams.diya.wire.link",
+            "accounts": "https://account.diya.wire.link",
+            "website": "https://wire.com",
+            "title": "diya.wire.link",
             "passwordForUsers": "Aqa123456!",
-            "domain": "anta.wire.link",
-            "users": [
-                {
-                    "email": "smoketester+65e02b3d42@wire.com",
-                    "id": "a2baeed1-53f3-4a22-a161-7d61abf4456f"
-                },
-                {
-                    "email": "smoketester+3cbe9db208@wire.com",
-                    "id": "33ec2e20-9bed-44b2-b891-a1dbaf3da158"
-                }
-            ]
+            "domain": "diya.wire.link",
+            "teamName": "Diya",
+            "authUser": "admin",
+            "authPassword": "admin",
+            "userCount": 10
         },
         {
-            "api": "https://nginz-https.bella.wire.link",
-            "webSocket": "https://nginz-ssl.bella.wire.link",
+            "api": "https://nginz-https.elna.wire.link",
+            "webSocket": "https://nginz-ssl.elna.wire.link",
             "blackList": "https://clientblacklist.wire.com/staging",
-            "teams": "https://teams.bella.wire.link",
-            "accounts": "https://account.bella.wire.link",
-            "website": "https://wire.com",
-            "title": "bella.wire.link",
-            "passwordForUsers": "Aqa123456!",
-            "domain": "bella.wire.link",
-            "users": [
-                {
-                    "id": "37a27c29-398b-44c6-9334-79cf84024f74",
-                    "email": "augusto.c.dias+test1@wire.com"
-                },
-                {
-                    "id": "56f06ac1-69cb-43ab-96f1-816f6ddd6edb",
-                    "email": "augusto.c.dias+test3@wire.com"
-                },
-                {
-                    "id": "691e3c09-45e1-4845-89f4-121fef480ec8",
-                    "email": "augusto.c.dias+test2@wire.com"
-                }
-            ]
-        },
-        {
-            "api": "https://nginz-https.chala.wire.link",
-            "webSocket": "https://nginz-ssl.chala.wire.link",
-            "blackList": "https://clientblacklist.wire.com/staging",
-            "teams": "https://teams.chala.wire.link",
-            "accounts": "https://account.chala.wire.link",
+            "teams": "https://teams.elna.wire.link",
+            "accounts": "https://account.elna.wire.link",
             "website": "https://wire.com",
             "passwordForUsers": "Aqa123456!",
-            "domain": "chala.wire.link",
-            "title": "chala.wire.link",
-            "users": [
-                {
-                    "email": "vitor.schwaab+chala_team1@wire.com",
-                    "id": "9f5a276d-f408-433e-81f6-812e69eb11bb"
-                },
-                {
-                    "email": "vitor.schwaab+chala_team2@wire.com",
-                    "id": "47fb193a-540f-4fec-969a-868377b02d8e"
-                },
-                {
-                    "email": "vitor.schwaab+chala_team3@wire.com",
-                    "id": "2342152d-3df8-4b50-81d8-950ca9105ab1"
-                }
-            ]
+            "domain": "elna.wire.link",
+            "title": "elna.wire.link",
+            "teamName": "Elna",
+            "authUser": "admin",
+            "authPassword": "admin",
+            "userCount": 10
         }
     ]
 }
