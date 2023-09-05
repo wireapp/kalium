@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -37,18 +38,18 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
+import com.wire.kalium.logic.util.computeIfAbsent
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
-import io.ktor.util.collections.ConcurrentMap
 
 class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
 ) {
 
-    private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>,
+    private val authenticationScopeStorage: ConcurrentMutableMap<Pair<ServerConfig, ProxyCredentials?>,
             AuthenticationScope> by lazy {
-        ConcurrentMap()
+        ConcurrentMutableMap()
     }
 
     internal fun provide(

@@ -18,10 +18,11 @@
 
 package com.wire.kalium.logic.feature
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import io.ktor.util.collections.ConcurrentMap
+import com.wire.kalium.logic.util.computeIfAbsent
 
 interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
@@ -35,12 +36,14 @@ abstract class UserSessionScopeProviderCommon(
     protected val userAgent: String
 ) : UserSessionScopeProvider {
 
-    private val userScopeStorage: ConcurrentMap<UserId, UserSessionScope> by lazy {
-        ConcurrentMap()
+    private val userScopeStorage: ConcurrentMutableMap<UserId, UserSessionScope> by lazy {
+        ConcurrentMutableMap()
     }
 
     override fun getOrCreate(userId: UserId): UserSessionScope =
-        userScopeStorage.computeIfAbsent(userId) { create(userId) }
+        userScopeStorage.computeIfAbsent(userId) {
+            create(userId)
+        }
 
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
 

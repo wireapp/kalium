@@ -57,6 +57,13 @@ kotlin {
 
                 // Okio
                 implementation(libs.okio.core)
+
+                // Concurrent collections
+                implementation(libs.concurrentCollections)
+                implementation(libs.statelyCommons)
+                configurations.all {
+                    exclude(group = "co.touchlab", module = "stately-strict-jvm")
+                }
             }
         }
         val commonTest by getting {
