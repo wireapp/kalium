@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic
 
-import com.wire.crypto.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -49,7 +48,7 @@ sealed interface CoreFailure {
     /**
      * The attempted operation requires that this client is registered.
      */
-    object MissingClientRegistration : CoreFailure
+    data object MissingClientRegistration : CoreFailure
 
     /**
      * A user has no key packages available which prevents him/her from being added
@@ -61,7 +60,7 @@ sealed interface CoreFailure {
      * It's not allowed to run the application with development API enabled when
      * connecting to the production environment.
      */
-    object DevelopmentAPINotAllowedOnProduction : CoreFailure
+    data object DevelopmentAPINotAllowedOnProduction : CoreFailure
 
     data class Unknown(val rootCause: Throwable?) : CoreFailure
 
@@ -70,19 +69,34 @@ sealed interface CoreFailure {
     /**
      * It's only allowed to insert system messages as bulk for all conversations.
      */
-    object OnlySystemMessageAllowed : FeatureFailure()
+    data object OnlySystemMessageAllowed : FeatureFailure()
 
     /**
      * The sender ID of the event is invalid.
      * usually happens with events that alter a message state [ButtonActionConfirmation]
      * when the sender ID is not the same are the original message sender id
      */
-    object InvalidEventSenderID : FeatureFailure()
+    data object InvalidEventSenderID : FeatureFailure()
 
     /**
      * This operation is not supported by proteus conversations
      */
-    object NotSupportedByProteus : FeatureFailure()
+    data object NotSupportedByProteus : FeatureFailure()
+
+    /**
+     * The desired event was not found when fetching pending events.
+     * This can happen when this client has been offline for a long period of time,
+     * and the backend has deleted old events.
+     *
+     * This is a recoverable error, the client should:
+     * - Do a full slow sync
+     * - Try incremental sync again using the oldest event ID available in the backend
+     * - Warn the user that some events might have been missed.
+     *
+     * This could also mean that the client was deleted. In this case, SlowSync will fail.
+     * The client should identify this scenario through other means and logout.
+     */
+    data object SyncEventOrClientNotFound : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure {
@@ -144,6 +158,12 @@ sealed class NetworkFailure : CoreFailure {
 interface MLSFailure : CoreFailure {
 
     object WrongEpoch : MLSFailure
+
+    object DuplicateMessage : MLSFailure
+
+    object SelfCommitIgnored : MLSFailure
+
+    object UnmergedPendingGroup : MLSFailure
 
     object ConversationDoesNotSupportMLS : MLSFailure
 
@@ -241,18 +261,9 @@ internal inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Eithe
 internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, T> {
     return try {
         Either.Right(mlsRequest())
-    } catch (cryptoException: CryptoException) {
-        kaliumLogger.e(cryptoException.stackTraceToString())
-        val mappedFailure = when (cryptoException) {
-            is CryptoException.WrongEpoch -> MLSFailure.WrongEpoch
-            // TODO: Handle all cases explicitly.
-            //       Blocked by https://github.com/wireapp/core-crypto/pull/214
-            else -> MLSFailure.Generic(cryptoException)
-        }
-        Either.Left(mappedFailure)
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(MLSFailure.Generic(e))
+        Either.Left(mapMLSException(e))
     }
 }
 
@@ -333,3 +344,7 @@ internal inline fun <T : Any> wrapNullableFlowStorageRequest(storageRequest: () 
         flowOf(Either.Left(StorageFailure.Generic(e)))
     }
 }
+
+// TODO: Handle all cases explicitly.
+//       Blocked by https://github.com/wireapp/core-crypto/pull/214
+expect fun mapMLSException(exception: Exception): MLSFailure

@@ -33,24 +33,14 @@ import org.khronos.webgl.Uint8Array
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
-actual class ProteusClientImpl actual constructor(
-    rootDir: String,
-    databaseKey: ProteusDBSecret?,
-    defaultContext: CoroutineContext,
-    ioContext: CoroutineContext
-) : ProteusClient {
+class ProteusClientCryptoBoxImpl : ProteusClient {
 
     private lateinit var box: Cryptobox
 
-    override fun clearLocalFiles(): Boolean {
-        TODO("Not yet implemented")
-    }
+    @Suppress("EmptyFunctionBlock")
+    override suspend fun close() {}
 
-    override fun needsMigration(): Boolean {
-        return false
-    }
-
-    override suspend fun openOrCreate() {
+    suspend fun openOrCreate() {
         val engine = MemoryEngine()
         engine.init("in-memory").await()
 
@@ -58,16 +48,12 @@ actual class ProteusClientImpl actual constructor(
         box.create().await()
     }
 
-    override suspend fun openOrError() {
-        openOrCreate() // JS cryptobox is in-memory only
-    }
-
     override fun getIdentity(): ByteArray {
         val encodedIdentity = box.getIdentity().serialise()
         return Int8Array(encodedIdentity).unsafeCast<ByteArray>()
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return box.identity.public_key.fingerprint().encodeToByteArray()
     }
 
@@ -92,6 +78,7 @@ actual class ProteusClientImpl actual constructor(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun doesSessionExist(sessionId: CryptoSessionId): Boolean = try {
         box.session_load(sessionId.value).await()
         true
@@ -162,4 +149,14 @@ actual class ProteusClientImpl actual constructor(
             return PreKeyCrypto(preKey.key_id.toInt(), encodedData)
         }
     }
+}
+
+actual suspend fun cryptoboxProteusClient(
+    rootDir: String,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+): ProteusClient {
+    val proteusClient = ProteusClientCryptoBoxImpl()
+    proteusClient.openOrCreate()
+    return proteusClient
 }

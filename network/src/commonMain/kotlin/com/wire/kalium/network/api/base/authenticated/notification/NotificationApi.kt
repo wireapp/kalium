@@ -47,9 +47,11 @@ sealed class WebSocketEvent<BinaryPayloadType> {
 }
 
 interface NotificationApi {
-    suspend fun lastNotification(queryClient: String): NetworkResponse<EventResponse>
+    suspend fun mostRecentNotification(queryClient: String): NetworkResponse<EventResponse>
 
     suspend fun notificationsByBatch(querySize: Int, queryClient: String, querySince: String): NetworkResponse<NotificationResponse>
+
+    suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponse>
 
     /**
      * request Notifications from the beginning of time

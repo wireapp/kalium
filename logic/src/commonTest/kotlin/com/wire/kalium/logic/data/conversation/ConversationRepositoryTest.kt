@@ -1132,7 +1132,7 @@ class ConversationRepositoryTest {
 
         fun withHasEstablishedMLSGroup(isClient: Boolean) = apply {
             given(mlsClient)
-                .function(mlsClient::conversationExists)
+                .suspendFunction(mlsClient::conversationExists)
                 .whenInvokedWith(anything())
                 .thenReturn(isClient)
         }

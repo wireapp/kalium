@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.logic.data.auth.verification
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
-import io.ktor.util.collections.ConcurrentMap
 
 interface SecondFactorVerificationRepository {
 
@@ -62,7 +62,7 @@ internal class SecondFactorVerificationRepositoryImpl(
     private val verificationCodeApi: VerificationCodeApi
 ) : SecondFactorVerificationRepository {
 
-    private val verificationCodeStorage = ConcurrentMap<Email, String>()
+    private val verificationCodeStorage = ConcurrentMutableMap<Email, String>()
 
     override suspend fun requestVerificationCode(
         email: String,

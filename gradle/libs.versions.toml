@@ -36,7 +36,7 @@ pbandk = "0.14.2"
 turbine = "1.0.0"
 avs = "9.4.10"
 jna = "5.6.0"
-core-crypto = "1.0.0-pre.6"
+core-crypto = "1.0.0-rc.12"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "1.1.5"
@@ -53,6 +53,7 @@ apache-tika = "2.8.0"
 mockk = "1.13.5"
 faker = "1.14.0"
 robolectric = "4.9"
+stately = "2.0.0-rc3"
 
 [plugins]
 # Home-made convention plugins
@@ -178,6 +179,8 @@ pbandk-runtime-common = { module = "pro.streem.pbandk:pbandk-runtime", version.r
 benAsherUUID = { module = "com.benasher44:uuid", version.ref = "benasher-uuid" }
 apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika" }
 faker = { module = "io.github.serpro69:kotlin-faker", version.ref = "faker" }
+concurrentCollections = { module = "co.touchlab:stately-concurrent-collections", version.ref = "stately" }
+statelyCommons = { module = "co.touchlab:stately-common", version.ref = "stately" }
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }
