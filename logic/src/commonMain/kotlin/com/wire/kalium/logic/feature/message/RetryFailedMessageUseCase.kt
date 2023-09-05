@@ -61,7 +61,7 @@ class RetryFailedMessageUseCase internal constructor(
      *
      * If it's an asset message, the asset may or may not be already uploaded. The asset will be uploaded if needed.
      *
-     * The resending and possible re-uploading of assets are scheduled but not awaited, so returning [Either.Right] doesn't mean that
+     * The resending and possible reuploading of assets are scheduled but not awaited, so returning [Either.Right] doesn't mean that
      * the message has been sent successfully.
      *
      * @param messageId the id of the failed message to be resent
