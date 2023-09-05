@@ -58,12 +58,12 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
-                // CoreCrypto
-                implementation(libs.coreCrypto)
-
                 // Concurrent collections
                 implementation(libs.concurrentCollections)
-                runtimeOnly(libs.statelyCommons)
+                implementation(libs.statelyCommons)
+                configurations.all {
+                    exclude(group = "co.touchlab", module = "stately-strict-jvm")
+                }
             }
         }
         val commonTest by getting {
