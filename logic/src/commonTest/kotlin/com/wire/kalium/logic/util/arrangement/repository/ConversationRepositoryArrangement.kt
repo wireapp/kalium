@@ -60,11 +60,34 @@ internal interface ConversationRepositoryArrangement {
     fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
     fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 
+    fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>)
+
     fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
     fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
     fun withGetConversationByIdReturning(result: Conversation?)
+
+    fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Left(coreFailure))
+    }
+
+    fun withFetchConversationIfUnknownSucceeding() {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+    }
+
+    fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationGroupState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -173,6 +196,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(result))
+    }
+
+    override fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(result))
     }
