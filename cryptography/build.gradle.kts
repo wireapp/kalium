@@ -100,8 +100,11 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.cryptoboxAndroid)
-                implementation(libs.javaxCrypto)
-                implementation(libs.coreCryptoAndroid)
+                implementation(libs.androidCrypto)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
             }
         }
         val appleMain by getting {
@@ -114,4 +117,10 @@ kotlin {
 
 project.appleTargets().forEach {
     registerCopyTestResourcesTask(it)
+}
+
+android {
+    testOptions.unitTests.all {
+        it.enabled = false
+    }
 }

@@ -35,6 +35,8 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlag
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.LocationResponse
 import com.wire.kalium.network.api.base.model.QualifiedID
@@ -351,4 +353,33 @@ object NotificationEventsResponseJson {
           ]
         }
     """.trimIndent()
+
+    val notificationResponsePageWithSingleEvent = ValidJsonProvider(
+        NotificationResponse(
+            time = "someTime",
+            hasMore = false,
+            notifications = listOf(
+                EventResponse(
+                    id = "eventId",
+                    payload = listOf(EventContentDTOJson.validUpdateReceiptMode.serializableData),
+                    transient = false
+                )
+            )
+        )
+    ) {
+        """
+        {
+          "time": "${it.time}",
+          "has_more": ${it.hasMore},
+          "notifications": [
+            {
+              "payload": [
+                ${EventContentDTOJson.validUpdateReceiptMode.rawJson}
+              ],
+              "id": "${it.notifications.first().id}"
+            }
+          ]
+        }
+        """.trimIndent()
+    }
 }

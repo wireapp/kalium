@@ -18,14 +18,10 @@
 
 package samples.cryptography
 
-import com.wire.kalium.cryptography.ProteusClientImpl
-import kotlinx.coroutines.Dispatchers
+import com.wire.kalium.cryptography.ProteusClientCryptoBoxImpl
 
 fun jvmInitialization() {
-    val proteusClient = ProteusClientImpl(
-        "rootDirectory",
-        null,
-        defaultContext = Dispatchers.Default,
-        ioContext = Dispatchers.IO
+    val proteusClient = ProteusClientCryptoBoxImpl(
+        "rootDirectory"
     )
 }

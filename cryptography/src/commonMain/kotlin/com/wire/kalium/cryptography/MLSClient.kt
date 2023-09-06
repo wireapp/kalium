@@ -67,33 +67,32 @@ value class Ed22519Key(
 interface MLSClient {
 
     /**
-     * Release any locks the C code have on the MLS resources and
-     * delete local MLS DB and files
+     * Free up any resources and shutdown the client.
      *
-     * @return true when delete is successful and false otherwise
+     * It's illegal to perform any operation after calling closing a client.
      */
-    fun clearLocalFiles(): Boolean
+    suspend fun close()
 
     /**
      * Public key of the client's identity.
      *
      * @return public key of the client
      */
-    fun getPublicKey(): ByteArray
+    suspend fun getPublicKey(): ByteArray
 
     /**
      * Generate a fresh set of key packages.
      *
      * @return list of generated key packages. NOTE: can be more than the requested amount.
      */
-    fun generateKeyPackages(amount: Int): List<ByteArray>
+    suspend fun generateKeyPackages(amount: Int): List<ByteArray>
 
     /**
      * Number of valid key packages which haven't been consumed
      *
      * @return valid key package count
      */
-    fun validKeyPackageCount(): ULong
+    suspend fun validKeyPackageCount(): ULong
 
     /**
      * Update your keying material for an existing conversation you're a member of.
@@ -102,7 +101,7 @@ interface MLSClient {
      *
      * @return commit bundle, which needs to be sent to the distribution service.
      */
-    fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
+    suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle
 
     /**
      * Request to join an existing conversation
@@ -112,7 +111,7 @@ interface MLSClient {
      *
      * @return proposal, which needs to be sent to the distribution service.
      */
-    fun joinConversation(
+    suspend fun joinConversation(
         groupId: MLSGroupId,
         epoch: ULong
     ): HandshakeMessage
@@ -124,7 +123,7 @@ interface MLSClient {
      *
      * @return commit bundle, which needs to be sent to the distribution service.
      */
-    fun joinByExternalCommit(
+    suspend fun joinByExternalCommit(
         publicGroupState: ByteArray
     ): CommitBundle
 
@@ -133,14 +132,14 @@ interface MLSClient {
      *
      * @param groupId MLS group ID provided by BE
      */
-    fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
+    suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId)
 
     /**
      * Clear pending external commits
      *
      * @param groupId MLS group ID provided by BE
      */
-    fun clearPendingGroupExternalCommit(groupId: MLSGroupId)
+    suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId)
 
     /**
      * Query if a conversation exists
@@ -149,26 +148,26 @@ interface MLSClient {
      *
      * @return true if conversation exists in store
      */
-    fun conversationExists(groupId: MLSGroupId): Boolean
+    suspend fun conversationExists(groupId: MLSGroupId): Boolean
 
     /**
      * Query the current epoch of a conversation
      *
      * @return conversation epoch
      */
-    fun conversationEpoch(groupId: MLSGroupId): ULong
+    suspend fun conversationEpoch(groupId: MLSGroupId): ULong
 
     /**
      * Create a new MLS conversation
      *
      * @param groupId MLS group ID provided by BE
      */
-    fun createConversation(
+    suspend fun createConversation(
         groupId: MLSGroupId,
         externalSenders: List<Ed22519Key> = emptyList()
     )
 
-    fun wipeConversation(groupId: MLSGroupId)
+    suspend fun wipeConversation(groupId: MLSGroupId)
 
     /**
      * Process an incoming welcome message
@@ -176,12 +175,12 @@ interface MLSClient {
      * @param message the incoming welcome message
      * @return MLS group ID
      */
-    fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
+    suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
 
     /**
      * Signal that last sent commit was accepted by the distribution service
      */
-    fun commitAccepted(groupId: MLSGroupId)
+    suspend fun commitAccepted(groupId: MLSGroupId)
 
     /**
      * Create a commit for any pending proposals
@@ -189,12 +188,12 @@ interface MLSClient {
      * @return commit bundle, which needs to be sent to the distribution service. If there are no
      * pending proposals null is returned.
      */
-    fun commitPendingProposals(groupId: MLSGroupId): CommitBundle?
+    suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle?
 
     /**
      * Clear a pending commit which has not yet been accepted by the distribution service
      */
-    fun clearPendingCommit(groupId: MLSGroupId)
+    suspend fun clearPendingCommit(groupId: MLSGroupId)
 
     /**
      * Encrypt a message for distribution in a group
@@ -204,7 +203,7 @@ interface MLSClient {
      *
      * @return encrypted ApplicationMessage
      */
-    fun encryptMessage(
+    suspend fun encryptMessage(
         groupId: MLSGroupId,
         message: PlainMessage
     ): ApplicationMessage
@@ -219,7 +218,7 @@ interface MLSClient {
      *
      * @return decrypted message bundle, which contains the decrypted message.
      */
-    fun decryptMessage(
+    suspend fun decryptMessage(
         groupId: MLSGroupId,
         message: ApplicationMessage
     ): DecryptedMessageBundle
@@ -231,7 +230,7 @@ interface MLSClient {
      *
      * @return list of client IDs for all current members.
      */
-    fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId>
+    suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId>
 
     /**
      * Add a user/client to an existing MLS group
@@ -241,7 +240,7 @@ interface MLSClient {
      *
      * @return commit bundle, which needs to be sent to the distribution service.
      */
-    fun addMember(
+    suspend fun addMember(
         groupId: MLSGroupId,
         members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
     ): CommitBundle?
@@ -254,7 +253,7 @@ interface MLSClient {
      *
      * @return commit bundle, which needs to be sent to the distribution service.
      */
-    fun removeMember(
+    suspend fun removeMember(
         groupId: MLSGroupId,
         members: List<CryptoQualifiedClientId>
     ): CommitBundle
@@ -267,14 +266,14 @@ interface MLSClient {
      *
      * @return secret key
      */
-    fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
+    suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
     /**
      * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
      *
      * @return wire end to end identity client
      */
-    fun newAcmeEnrollment(
+    suspend fun newAcmeEnrollment(
         clientId: E2EIQualifiedClientId,
         displayName: String,
         handle: String
@@ -285,7 +284,8 @@ interface MLSClient {
      *
      * @return wire end to end identity client
      */
-    fun e2eiNewActivationEnrollment(
+    suspend fun e2eiNewActivationEnrollment(
+        clientId: E2EIQualifiedClientId,
         displayName: String,
         handle: String
     ): E2EIClient
@@ -295,7 +295,8 @@ interface MLSClient {
      *
      * @return wire end to end identity client
      */
-    fun e2eiNewRotateEnrollment(
+    suspend fun e2eiNewRotateEnrollment(
+        clientId: E2EIQualifiedClientId,
         displayName: String?,
         handle: String?
     ): E2EIClient
@@ -303,19 +304,19 @@ interface MLSClient {
     /**
      * Init MLSClient after enrollment
      */
-    fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain)
+    suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain)
 
     /**
      * Generate new keypackages after E2EI certificate issued
      */
-    fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt)
+    suspend fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt)
 
     /**
      * Conversation E2EI Verification Status
      *
      * @return the conversation verification status
      */
-    fun isGroupVerified(groupId: MLSGroupId): Boolean
+    suspend fun isGroupVerified(groupId: MLSGroupId): Boolean
 }
 
-expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient
+// expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient

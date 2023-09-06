@@ -191,7 +191,7 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
-import com.wire.kalium.logic.feature.message.DeleteConversationNotificationsManagerImpl
+import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -206,6 +206,10 @@ import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefillerImpl
+import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
+import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -451,7 +455,8 @@ class UserSessionScope internal constructor(
         networkStateObserver,
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
-        userAgent
+        userAgent,
+        certificatePinning = kaliumConfigs.certPinningConfig
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
@@ -462,6 +467,7 @@ class UserSessionScope internal constructor(
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
         networkStateObserver,
+        kaliumConfigs::certPinningConfig,
         dataStore
     )
 
@@ -893,7 +899,10 @@ class UserSessionScope internal constructor(
         )
     }
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
-        get() = IncrementalSyncRecoveryHandlerImpl(restartSlowSyncProcessForRecoveryUseCase)
+        get() = IncrementalSyncRecoveryHandlerImpl(
+            restartSlowSyncProcessForRecoveryUseCase,
+            eventRepository,
+        )
 
     private val incrementalSyncManager by lazy {
         IncrementalSyncManager(
@@ -1058,7 +1067,7 @@ class UserSessionScope internal constructor(
             callManager,
             persistMessage,
             persistReaction,
-            MessageTextEditHandlerImpl(messageRepository),
+            MessageTextEditHandlerImpl(messageRepository, EphemeralEventsNotificationManagerImpl),
             LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
@@ -1066,7 +1075,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, EphemeralEventsNotificationManagerImpl, userId),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -1099,7 +1108,7 @@ class UserSessionScope internal constructor(
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
-            userRepository, conversationRepository, DeleteConversationNotificationsManagerImpl
+            userRepository, conversationRepository, EphemeralEventsNotificationManagerImpl
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
@@ -1191,8 +1200,20 @@ class UserSessionScope internal constructor(
             proteusClientProvider,
             clientIdProvider,
             userStorage.database.prekeyDAO,
-            userStorage.database.clientDAO
+            userStorage.database.clientDAO,
+            userStorage.database.metadataDAO,
         )
+
+    private val proteusPreKeyRefiller: ProteusPreKeyRefiller
+        get() = ProteusPreKeyRefillerImpl(preKeyRepository)
+
+    private val proteusSyncWorker: ProteusSyncWorker by lazy {
+        ProteusSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            proteusPreKeyRefiller = proteusPreKeyRefiller,
+            preKeyRepository = preKeyRepository
+        )
+    }
 
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
@@ -1511,6 +1532,10 @@ class UserSessionScope internal constructor(
 
         launch {
             messages.ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
+        }
+
+        launch {
+            proteusSyncWorker.execute()
         }
     }
 

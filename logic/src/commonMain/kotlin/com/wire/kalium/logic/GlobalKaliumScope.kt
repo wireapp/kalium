@@ -103,7 +103,8 @@ class GlobalKaliumScope internal constructor(
             networkStateObserver,
             kaliumConfigs.developmentApiEnabled,
             userAgent,
-            kaliumConfigs.ignoreSSLCertificatesForUnboundCalls
+            kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
+            kaliumConfigs.certPinningConfig
         )
     }
 
@@ -169,8 +170,9 @@ class GlobalKaliumScope internal constructor(
             authenticationScopeProvider,
             userSessionScopeProvider.value,
             networkStateObserver,
-            dataStore,
-        )
+            kaliumConfigs,
+            dataStore
+            )
 
     val checkSystemIntegrity: CheckSystemIntegrityUseCase
         get() = CheckSystemIntegrityUseCaseImpl(

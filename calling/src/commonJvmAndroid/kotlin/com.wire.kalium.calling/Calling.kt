@@ -37,6 +37,7 @@ import com.wire.kalium.calling.callbacks.ParticipantChangedHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
 import com.wire.kalium.calling.callbacks.RequestNewEpochHandler
 import com.wire.kalium.calling.callbacks.SFTRequestHandler
+import com.wire.kalium.calling.callbacks.SelfUserMuteHandler
 import com.wire.kalium.calling.callbacks.SendHandler
 import com.wire.kalium.calling.callbacks.VideoReceiveStateHandler
 import com.wire.kalium.calling.types.Handle
@@ -175,6 +176,13 @@ interface Calling : Library {
     fun wcall_set_req_new_epoch_handler(
         inst: Handle,
         requestNewEpochHandler: RequestNewEpochHandler
+    )
+
+    @Suppress("FunctionNaming")
+    fun wcall_set_mute_handler(
+        inst: Handle,
+        selfUserMuteHandler: SelfUserMuteHandler,
+        arg: Pointer?
     )
 
     companion object {

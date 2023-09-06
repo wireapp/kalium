@@ -26,7 +26,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileNotFoundException
 import kotlin.coroutines.CoroutineContext
 
 @Suppress("TooManyFunctions")
@@ -45,15 +44,10 @@ class ProteusClientCryptoBoxImpl constructor(
         path = rootDir
     }
 
-    override fun clearLocalFiles(): Boolean {
+    override suspend fun close() {
         if (::box.isInitialized) {
             box.close()
         }
-        return File(path).deleteRecursively()
-    }
-
-    override fun needsMigration(): Boolean {
-        return false
     }
 
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
@@ -64,7 +58,7 @@ class ProteusClientCryptoBoxImpl constructor(
      * Create the crypto files if missing and call box.open
      * this must be called only one time
      */
-    override suspend fun openOrCreate() {
+    fun openOrCreate() {
         if (!this::box.isInitialized) {
             val directory = File(path)
             box = wrapException {
@@ -74,31 +68,9 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    /**
-     * open the crypto box if and only if the local files are already created
-     * this must be called only one time
-     */
-    override suspend fun openOrError() = withContext(ioContext) {
-        if (!this@ProteusClientCryptoBoxImpl::box.isInitialized) {
-            val directory = File(path)
-            if (directory.exists()) {
-                box = wrapException {
-                    directory.mkdirs()
-                    CryptoBox.open(path)
-                }
-            } else {
-                throw ProteusException(
-                    "Local files were not found in: ${directory.absolutePath}",
-                    ProteusException.Code.LOCAL_FILES_NOT_FOUND,
-                    FileNotFoundException()
-                )
-            }
-        }
-    }
-
     override fun getIdentity(): ByteArray = wrapException { box.copyIdentity() }
 
-    override fun getLocalFingerprint(): ByteArray = wrapException { box.localFingerprint }
+    override suspend fun getLocalFingerprint(): ByteArray = wrapException { box.localFingerprint }
 
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> = lock.withLock {
         withContext(defaultContext) {
@@ -106,7 +78,7 @@ class ProteusClientCryptoBoxImpl constructor(
         }
     }
 
-    override suspend fun newLastPreKey(): PreKeyCrypto = lock.withLock {
+    override suspend fun newLastResortPreKey(): PreKeyCrypto = lock.withLock {
         withContext(defaultContext) {
             wrapException { toPreKey(box.newLastPreKey()) }
         }
@@ -236,4 +208,14 @@ class ProteusClientCryptoBoxImpl constructor(
         private fun toPreKey(preKey: com.wire.cryptobox.PreKey): PreKeyCrypto =
             PreKeyCrypto(preKey.id, Base64.encodeToString(preKey.data, Base64.NO_WRAP))
     }
+}
+
+actual suspend fun cryptoboxProteusClient(
+    rootDir: String,
+    defaultContext: CoroutineContext,
+    ioContext: CoroutineContext
+): ProteusClient {
+    val proteusClient = ProteusClientCryptoBoxImpl(rootDir, defaultContext, ioContext)
+    proteusClient.openOrCreate()
+    return proteusClient
 }

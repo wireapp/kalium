@@ -19,67 +19,67 @@ package com.wire.kalium.cryptography
 
 @Suppress("TooManyFunctions")
 class E2EIClientImpl : E2EIClient {
-    override fun directoryResponse(directory: JsonRawData): AcmeDirectory {
+    override suspend fun directoryResponse(directory: JsonRawData): AcmeDirectory {
         TODO("Not yet implemented")
     }
 
-    override fun getNewAccountRequest(previousNonce: String): JsonRawData {
+    override suspend fun getNewAccountRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun setAccountResponse(account: JsonRawData) {
+    override suspend fun setAccountResponse(account: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun getNewOrderRequest(previousNonce: String): JsonRawData {
+    override suspend fun getNewOrderRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun setOrderResponse(order: JsonRawData): NewAcmeOrder {
+    override suspend fun setOrderResponse(order: JsonRawData): NewAcmeOrder {
         TODO("Not yet implemented")
     }
 
-    override fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData {
+    override suspend fun getNewAuthzRequest(url: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
+    override suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz {
         TODO("Not yet implemented")
     }
 
-    override fun createDpopToken(backendNonce: String): DpopToken {
+    override suspend fun createDpopToken(backendNonce: String): DpopToken {
         TODO("Not yet implemented")
     }
 
-    override fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData {
+    override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData {
+    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun setChallengeResponse(challenge: JsonRawData) {
+    override suspend fun setChallengeResponse(challenge: JsonRawData) {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
+    override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun checkOrderResponse(order: JsonRawData): String {
+    override suspend fun checkOrderResponse(order: JsonRawData): String {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeRequest(previousNonce: String): JsonRawData {
+    override suspend fun finalizeRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override fun finalizeResponse(finalize: JsonRawData): String {
+    override suspend fun finalizeResponse(finalize: JsonRawData): String {
         TODO("Not yet implemented")
     }
 
-    override fun certificateRequest(previousNonce: String): JsonRawData {
+    override suspend fun certificateRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 }

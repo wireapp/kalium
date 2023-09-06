@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.notification.LocalNotificationConversation
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
@@ -42,9 +42,9 @@ import kotlinx.coroutines.flow.merge
 interface GetNotificationsUseCase {
     /**
      * Operation to get all notifications, the Flow emits everytime when the list is changed
-     * @return [Flow] of [List] of [LocalNotificationConversation] with the List that should be shown to the user.
+     * @return [Flow] of [List] of [LocalNotification] with the List that should be shown to the user.
      */
-    suspend operator fun invoke(): Flow<List<LocalNotificationConversation>>
+    suspend operator fun invoke(): Flow<List<LocalNotification>>
 }
 
 /**
@@ -57,14 +57,14 @@ interface GetNotificationsUseCase {
 internal class GetNotificationsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
     private val messageRepository: MessageRepository,
-    private val deleteConversationNotificationsManager: DeleteConversationNotificationsManager,
+    private val deleteConversationNotificationsManager: EphemeralEventsNotificationManager,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val localNotificationMessageMapper: LocalNotificationMessageMapper = MapperProvider.localNotificationMessageMapper()
 ) : GetNotificationsUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Suppress("LongMethod")
-    override suspend operator fun invoke(): Flow<List<LocalNotificationConversation>> {
+    override suspend operator fun invoke(): Flow<List<LocalNotification>> {
         return incrementalSyncRepository.incrementalSyncState
             .map { it != IncrementalSyncStatus.FetchingPendingEvents }
             .flatMapLatest { isLive ->
@@ -77,16 +77,18 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                 } else {
                     observeEphemeralNotifications()
                 }
-                    .map { list -> list.filter { it.messages.isNotEmpty() } }
+                    .map { list ->
+                        list.filter { it !is LocalNotification.Conversation || it.messages.isNotEmpty() }
+                    }
             }
             .distinctUntilChanged()
             .filter { it.isNotEmpty() }
     }
 
-    private suspend fun observeEphemeralNotifications(): Flow<List<LocalNotificationConversation>> =
+    private suspend fun observeEphemeralNotifications(): Flow<List<LocalNotification>> =
         deleteConversationNotificationsManager.observeEphemeralNotifications().map { listOf(it) }
 
-    private suspend fun observeConnectionRequests(): Flow<List<LocalNotificationConversation>> {
+    private suspend fun observeConnectionRequests(): Flow<List<LocalNotification>> {
         return connectionRepository.observeConnectionRequestsForNotification()
             .map { requests ->
                 requests

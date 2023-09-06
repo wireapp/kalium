@@ -23,8 +23,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.AddConversati
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ApiModelMapper
@@ -32,8 +30,6 @@ import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.GenerateGuestLinkRequest
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV4
-import com.wire.kalium.network.api.base.model.QualifiedID
-import com.wire.kalium.network.api.base.model.SubconversationId
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -41,7 +37,6 @@ import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -63,58 +58,6 @@ internal open class ConversationApiV4 internal constructor(
             }
         }.mapSuccess { conversationResponseV4 ->
             apiModelMapper.fromApiV3(conversationResponseV4)
-        }
-
-    override suspend fun fetchGroupInfo(conversationId: QualifiedID): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
-            httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_GROUP_INFO"
-            )
-        }
-
-    override suspend fun fetchSubconversationDetails(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): NetworkResponse<SubconversationResponse> =
-        wrapKaliumResponse {
-            httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}" +
-                        "/$PATH_SUBCONVERSATIONS/$subconversationId"
-            )
-        }
-
-    override suspend fun fetchSubconversationGroupInfo(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
-            httpClient.get(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/" +
-                        "$PATH_SUBCONVERSATIONS/$subconversationId/$PATH_GROUP_INFO"
-            )
-        }
-
-    override suspend fun deleteSubconversation(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId,
-        deleteRequest: SubconversationDeleteRequest
-    ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SUBCONVERSATIONS/$subconversationId"
-            ) {
-                setBody(deleteRequest)
-            }
-        }
-
-    override suspend fun leaveSubconversation(
-        conversationId: ConversationId,
-        subconversationId: SubconversationId
-    ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.delete(
-                "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SUBCONVERSATIONS/$subconversationId/self"
-            )
         }
 
     override suspend fun joinConversation(
