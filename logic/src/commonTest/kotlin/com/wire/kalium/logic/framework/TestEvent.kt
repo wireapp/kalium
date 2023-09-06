@@ -95,7 +95,7 @@ object TestEvent {
         false, eventId, TestClient.CLIENT
     )
 
-    fun newConnection(eventId: String = "eventId") = Event.User.NewConnection(
+    fun newConnection(eventId: String = "eventId", status:  ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
         false,
         eventId,
         Connection(
@@ -104,7 +104,7 @@ object TestEvent {
             lastUpdate = "lastUpdate",
             qualifiedConversationId = TestConversation.ID,
             qualifiedToId = TestUser.USER_ID,
-            status = ConnectionState.PENDING,
+            status = status,
             toId = "told?"
         )
     )
