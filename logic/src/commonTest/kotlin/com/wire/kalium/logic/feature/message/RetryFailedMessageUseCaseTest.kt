@@ -87,8 +87,8 @@ class RetryFailedMessageUseCaseTest {
         testResendingWithGivenMessageStatus(Message.Status.Failed, true)
 
     @Test
-    fun givenAFailedRemotelyMessage_whenRetryingFailedMessage_thenShouldReturnFailure() =
-        testResendingWithGivenMessageStatus(Message.Status.FailedRemotely, false)
+    fun givenAFailedRemotelyMessage_whenRetryingFailedMessage_thenShouldReturnSuccess() =
+        testResendingWithGivenMessageStatus(Message.Status.FailedRemotely, true)
 
     @Test
     fun givenASentMessage_whenRetryingFailedMessage_thenShouldReturnFailure() =
@@ -190,10 +190,10 @@ class RetryFailedMessageUseCaseTest {
             verify(arrangement.messageSender)
                 .suspendFunction(arrangement.messageSender::sendMessage)
                 .with(matching {
-                               it.id == message.id && it.content is MessageContent.Asset
-                                       && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
-                                       && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
-                                       && (it.content as MessageContent.Asset).value.remoteData.assetToken == uploadedAssetId.assetToken
+                    it.id == message.id && it.content is MessageContent.Asset
+                            && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
+                            && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
+                            && (it.content as MessageContent.Asset).value.remoteData.assetToken == uploadedAssetId.assetToken
                 }, anything())
                 .wasInvoked(exactly = once)
         }
@@ -236,6 +236,25 @@ class RetryFailedMessageUseCaseTest {
         runTest(testDispatcher.default) {
             // given
             val message = TEXT_MESSAGE.copy(status = Message.Status.Failed)
+            val (_, useCase) = Arrangement()
+                .withGetMessageById(Either.Right(message))
+                .withUpdateMessageStatus(Either.Right(Unit))
+                .withSendMessage(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+                .arrange()
+
+            // when
+            val result = useCase.invoke(message.id, message.conversationId)
+            advanceUntilIdle()
+
+            // then
+            assertIs<Either.Right<Unit>>(result)
+        }
+
+    @Test
+    fun givenSendingMessageReturnsFailure_whenRetryingFailedRemotelyMessage_thenShouldStillReturnSuccess() =
+        runTest(testDispatcher.default) {
+            // given
+            val message = TEXT_MESSAGE.copy(status = Message.Status.FailedRemotely)
             val (_, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))

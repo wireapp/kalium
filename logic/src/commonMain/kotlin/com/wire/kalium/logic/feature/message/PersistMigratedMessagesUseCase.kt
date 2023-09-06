@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageContent
@@ -33,7 +34,6 @@ import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -62,7 +62,7 @@ internal class PersistMigratedMessagesUseCaseImpl(
 
     @Suppress("ComplexMethod", "LongMethod", "TooGenericExceptionCaught")
     override suspend fun invoke(messages: List<MigratedMessage>, coroutineScope: CoroutineScope): Either<CoreFailure, Unit> {
-        val protoMessages: ConcurrentMap<MigratedMessage, ProtoContent> = ConcurrentMap()
+        val protoMessages: ConcurrentMutableMap<MigratedMessage, ProtoContent> = ConcurrentMutableMap()
 
         messages.filter { it.encryptedProto != null || it.unencryptedProto != null }.map { migratedMessage ->
             coroutineScope.launch(coroutineContext) {

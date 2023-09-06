@@ -236,7 +236,7 @@ WHERE
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
     )
     AND (protocol IS 'PROTEUS' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
-ORDER BY lastModifiedDate DESC, name COLLATE NOCASE ASC;
+ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectAllConversations:
 SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;

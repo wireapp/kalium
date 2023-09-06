@@ -29,6 +29,8 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.configure
 import io.mockative.given
@@ -371,6 +373,38 @@ class EventGathererTest {
 
             // Should not receive another item
             expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenPendingEventsFailWith404_whenGathering_thenShouldThrowExceptionWithEventNotFoundCause() = runTest {
+        val liveEventsChannel = Channel<WebSocketEvent<Event>>(capacity = Channel.UNLIMITED)
+
+        val failureCause = NetworkFailure.ServerMiscommunication(
+            KaliumException.InvalidRequestError(
+                ErrorResponse(
+                    code = 404,
+                    label = "Event not found",
+                    message = "Event not found"
+                )
+            )
+        )
+        val (_, eventGatherer) = Arrangement()
+            .withLastEventIdReturning(Either.Right("lastEventId"))
+            .withPendingEventsReturning(flowOf(Either.Left(failureCause)))
+            .withKeepAliveConnectionPolicy()
+            .withLiveEventsReturning(Either.Right(liveEventsChannel.consumeAsFlow()))
+            .arrange()
+
+        eventGatherer.gatherEvents().test {
+            // Open Websocket should trigger fetching pending events
+            liveEventsChannel.send(WebSocketEvent.Open())
+            advanceUntilIdle()
+
+            val error = awaitError()
+            assertIs<KaliumSyncException>(error)
+            assertIs<CoreFailure.SyncEventOrClientNotFound>(error.coreFailureCause)
             cancelAndIgnoreRemainingEvents()
         }
     }
