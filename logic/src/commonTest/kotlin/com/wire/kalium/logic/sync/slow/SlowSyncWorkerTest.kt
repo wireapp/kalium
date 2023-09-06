@@ -374,7 +374,7 @@ class SlowSyncWorkerTest {
     }
 
     @Test
-    fun givenFetchedEventIdAndSomethingFails_whenWorking_thenShouldNotLastProcessedEventId() = runTest {
+    fun givenFetchedEventIdAndSomethingFails_whenWorking_thenShouldNotUpdateLastProcessedEventId() = runTest {
         val (arrangement, slowSyncWorker) = Arrangement().apply {
             withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
             withFetchMostRecentEventReturning(Either.Right("mostRecentEventId"))
