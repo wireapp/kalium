@@ -31,6 +31,10 @@ import kotlinx.coroutines.flow.Flow
 internal interface UserRepositoryArrangement {
     val userRepository: UserRepository
 
+    fun withUpdateUserSuccess()
+
+    fun withRemoveUserSuccess()
+
     fun withSelfUserReturning(selfUser: SelfUser?)
 
     fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>)
@@ -46,6 +50,16 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
 
     @Mock
     override val userRepository: UserRepository = mock(UserRepository::class)
+
+    override fun withUpdateUserSuccess() {
+        given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+    }
+
+    override fun withRemoveUserSuccess() {
+        given(userRepository).suspendFunction(userRepository::removeUser)
+            .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+    }
 
     override fun withSelfUserReturning(selfUser: SelfUser?) {
         given(userRepository)
