@@ -63,9 +63,10 @@ class ProtocolInfoMapperTest {
             Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
             5UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
-            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+            Conversation.VerificationStatus.NOT_VERIFIED
         )
-        val CONVERSATION_PROTEUS_PROTOCOL_INFO = Conversation.ProtocolInfo.Proteus
+        val CONVERSATION_PROTEUS_PROTOCOL_INFO = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)
 
         val CONV_ENTITY_MLS_PROTOCOL_INFO =
             ConversationEntity.ProtocolInfo.MLS(
@@ -73,9 +74,10 @@ class ProtocolInfoMapperTest {
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 5UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
-        val CONV_ENTITY_PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
+        val CONV_ENTITY_PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED)
 
     }
 }

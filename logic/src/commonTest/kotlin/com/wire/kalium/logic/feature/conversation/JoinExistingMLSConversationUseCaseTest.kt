@@ -281,7 +281,8 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                    verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
                 )
             ).copy(id = ConversationId("id1", "domain"))
 
@@ -291,7 +292,8 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                    verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
                 )
             ).copy(id = ConversationId("id2", "domain"))
 
@@ -301,7 +303,8 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                    verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
                 )
             ).copy(id = ConversationId("id3", "domain"))
 
@@ -311,7 +314,8 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                    verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
                 )
             ).copy(id = ConversationId("self", "domain"))
         }

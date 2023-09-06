@@ -675,7 +675,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 name = overLappingName,
                 type = sanitizedConversationType,
                 teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+                protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
                 mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
                 mutedTime = 0,
                 removedBy = null,

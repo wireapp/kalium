@@ -26,6 +26,8 @@ interface ProtocolInfoMapper {
     fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo): Conversation.ProtocolInfo
     fun toEntity(protocolInfo: Conversation.ProtocolInfo): ConversationEntity.ProtocolInfo
     fun fromInfoToProtocol(protocolInfo: Conversation.ProtocolInfo): Conversation.Protocol
+    fun fromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
+    fun toEntity(verificationStatus: Conversation.VerificationStatus): ConversationEntity.VerificationStatus
 }
 
 class ProtocolInfoMapperImpl(
@@ -33,27 +35,35 @@ class ProtocolInfoMapperImpl(
 ) : ProtocolInfoMapper {
     override fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo) =
         when (protocolInfo) {
-            is ConversationEntity.ProtocolInfo.Proteus -> Conversation.ProtocolInfo.Proteus
+            is ConversationEntity.ProtocolInfo.Proteus -> Conversation.ProtocolInfo.Proteus(fromEntity(protocolInfo.verificationStatus))
             is ConversationEntity.ProtocolInfo.MLS -> Conversation.ProtocolInfo.MLS(
                 idMapper.fromGroupIDEntity(protocolInfo.groupId),
                 Conversation.ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
-                Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
+                Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag),
+                fromEntity(protocolInfo.verificationStatus)
             )
         }
 
     override fun toEntity(protocolInfo: Conversation.ProtocolInfo) =
         when (protocolInfo) {
-            is Conversation.ProtocolInfo.Proteus -> ConversationEntity.ProtocolInfo.Proteus
+            is Conversation.ProtocolInfo.Proteus -> ConversationEntity.ProtocolInfo.Proteus(toEntity(protocolInfo.verificationStatus))
             is Conversation.ProtocolInfo.MLS -> ConversationEntity.ProtocolInfo.MLS(
                 idMapper.toGroupIDEntity(protocolInfo.groupId),
                 ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
-                ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
+                ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag),
+                toEntity(protocolInfo.verificationStatus)
             )
         }
+
+    override fun fromEntity(verificationStatus: ConversationEntity.VerificationStatus) =
+        Conversation.VerificationStatus.valueOf(verificationStatus.name)
+
+    override fun toEntity(verificationStatus: Conversation.VerificationStatus) =
+        ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 
     override fun fromInfoToProtocol(protocolInfo: Conversation.ProtocolInfo): Conversation.Protocol =
         when (protocolInfo) {

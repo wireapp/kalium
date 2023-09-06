@@ -51,6 +51,7 @@ import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrang
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.any
 import io.mockative.given
@@ -514,7 +515,7 @@ class GetNotificationsUseCaseTest {
                 "told",
                 null
             ),
-            ProtocolInfo.Proteus,
+            ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )

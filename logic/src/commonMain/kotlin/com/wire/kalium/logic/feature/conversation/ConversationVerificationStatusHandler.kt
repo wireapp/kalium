@@ -18,45 +18,125 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.ConversationVerificationStatus
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
 
 /**
  * Notify user (by adding System message in conversation) if needed about changes of Conversation Verification status.
  */
 internal interface ConversationVerificationStatusHandler {
-    suspend operator fun invoke(conversation: Conversation, status: ConversationVerificationStatus)
+    suspend operator fun invoke(conversationId: ConversationId): Flow<Unit>
 }
 
 internal class ConversationVerificationStatusHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val selfUserId: UserId,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ConversationVerificationStatusHandler {
     private val dispatcher = kaliumDispatcher.io
 
-    override suspend fun invoke(conversation: Conversation, status: ConversationVerificationStatus): Unit = withContext(dispatcher) {
-        if (shouldNotifyUser(conversation, status)) {
-            val content = when (conversation.protocol) {
+    override suspend fun invoke(conversationId: ConversationId): Flow<Unit> = withContext(dispatcher) {
+        conversationRepository.getConversationProtocolInfo(conversationId)
+            .map { protocol ->
+                fetchVerificationStatusFlow(conversationId, protocol)
+                    .mapLatest { status -> notifyUserIfNeeded(conversationId, protocol, status) }
+            }
+            .getOrElse(emptyFlow())
+    }
+
+    /**
+     * Get conversation verification status and save it locally.
+     */
+    private suspend fun fetchVerificationStatusFlow(
+        conversationId: ConversationId,
+        protocol: Conversation.ProtocolInfo
+    ): Flow<VerificationStatus> =
+        observerVerificationStatus(protocol, conversationId)
+            .distinctUntilChanged()
+            .onlyRight()
+            .mapLatest { newStatus ->
+                val currentStatus = conversationRepository.getConversationProtocolInfo(conversationId)
+                    .map { it.verificationStatus }
+                    .getOrElse(VerificationStatus.NOT_VERIFIED)
+
+                // Current CoreCrypto implementation returns only a boolean flag "if conversation is verified or not".
+                // So we need to calculate if status was degraded on our side by comparing it to the previous status.
+                if (newStatus == currentStatus) {
+                    currentStatus
+                } else if (newStatus == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.VERIFIED) {
+                    conversationRepository.updateVerificationStatus(VerificationStatus.DEGRADED, conversationId)
+                    VerificationStatus.DEGRADED
+                } else if (newStatus == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.DEGRADED) {
+                    currentStatus
+                } else {
+                    conversationRepository.updateVerificationStatus(newStatus, conversationId)
+                    newStatus
+                }
+            }
+
+    private suspend fun observerVerificationStatus(protocol: Conversation.ProtocolInfo, conversationId: ConversationId) =
+        if (protocol is Conversation.ProtocolInfo.MLS) {
+            observeMLSVerificationStatus(protocol)
+        } else {
+            observeProteusVerificationStatus(conversationId)
+        }
+
+    private suspend fun observeMLSVerificationStatus(
+        protocol: Conversation.ProtocolInfo.MLS
+    ): Flow<Either<CoreFailure, VerificationStatus>> =
+        mlsConversationRepository.observeEpochChanges()
+            .filter { it == protocol.groupId }
+            .mapLatest { mlsConversationRepository.getConversationVerificationStatus(protocol.groupId) }
+
+    private suspend fun observeProteusVerificationStatus(
+        conversationId: ConversationId
+    ): Flow<Either<CoreFailure, VerificationStatus>> {
+        // TODO needs to be handled for Proteus conversation that is not implemented yet
+        return flowOf(Either.Right(VerificationStatus.NOT_VERIFIED))
+    }
+
+    /**
+     * Add a SystemMessage into a conversation, to inform user when the conversation verification status becomes DEGRADED.
+     */
+    private suspend fun notifyUserIfNeeded(
+        conversationId: ConversationId,
+        protocol: Conversation.ProtocolInfo,
+        updatedStatus: VerificationStatus
+    ) {
+        if (shouldNotifyUser(conversationId, protocol, updatedStatus)) {
+            val content = when (protocol) {
                 is Conversation.ProtocolInfo.MLS -> MessageContent.ConversationDegradedMLS
-                Conversation.ProtocolInfo.Proteus -> MessageContent.ConversationDegradedProteus
+                is Conversation.ProtocolInfo.Proteus -> MessageContent.ConversationDegradedProteus
             }
             val conversationDegradedMessage = Message.System(
                 id = uuid4().toString(),
                 content = content,
-                conversationId = conversation.id,
+                conversationId = conversationId,
                 date = DateTimeUtil.currentIsoDateTimeString(),
                 senderUserId = selfUserId,
                 status = Message.Status.Sent,
@@ -65,16 +145,20 @@ internal class ConversationVerificationStatusHandlerImpl(
             )
 
             persistMessage(conversationDegradedMessage)
-                .flatMap { conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversation.id, true) }
-        } else if (status != ConversationVerificationStatus.DEGRADED) {
-            conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversation.id, false)
+                .flatMap { conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversationId, true) }
+        } else if (updatedStatus != VerificationStatus.DEGRADED) {
+            conversationRepository.setInformedAboutDegradedMLSVerificationFlag(conversationId, false)
         }
     }
 
-    private suspend fun shouldNotifyUser(conversation: Conversation, status: ConversationVerificationStatus): Boolean =
-        if (status == ConversationVerificationStatus.DEGRADED) {
-            if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-                !conversationRepository.isInformedAboutDegradedMLSVerification(conversation.id).getOrElse(true)
+    private suspend fun shouldNotifyUser(
+        conversationId: ConversationId,
+        protocol: Conversation.ProtocolInfo,
+        status: VerificationStatus
+    ): Boolean =
+        if (status == VerificationStatus.DEGRADED) {
+            if (protocol is Conversation.ProtocolInfo.MLS) {
+                !conversationRepository.isInformedAboutDegradedMLSVerification(conversationId).getOrElse(true)
             } else {
                 // TODO check flag for Proteus after implementing it.
                 false

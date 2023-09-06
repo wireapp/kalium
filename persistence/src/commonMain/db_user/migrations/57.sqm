@@ -1,0 +1,3 @@
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+
+ALTER TABLE Conversation ADD COLUMN verification_status TEXT AS ConversationEntity.VerificationStatus DEFAULT "NOT_VERIFIED" NOT NULL;

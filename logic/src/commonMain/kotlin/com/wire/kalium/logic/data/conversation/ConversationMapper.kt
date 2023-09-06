@@ -383,7 +383,7 @@ internal class ConversationMapperImpl(
         name = null,
         type = ConversationEntity.Type.GROUP,
         teamId = null,
-        protocolInfo = ProtocolInfo.Proteus,
+        protocolInfo = ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
         mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
         mutedTime = 0,
         removedBy = null,
@@ -406,10 +406,11 @@ internal class ConversationMapperImpl(
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
                 keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
+                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag),
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
-            ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
+            ConvProtocol.PROTEUS -> ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED)
         }
     }
 

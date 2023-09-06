@@ -186,6 +186,12 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
+    override suspend fun observeConversationProtocolInfo(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity.ProtocolInfo?> =
+        conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo)
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(coroutineContext)
+
     override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)
             .asFlow()
@@ -313,5 +319,12 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
+    }
+
+    override suspend fun updateVerificationStatus(
+        verificationStatus: ConversationEntity.VerificationStatus,
+        conversationId: QualifiedIDEntity
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateVerificationStatus(verificationStatus, conversationId)
     }
 }

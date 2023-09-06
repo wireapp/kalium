@@ -215,6 +215,12 @@ interface ConversationRepository {
     suspend fun getOneOnOneConversationsWithFederatedMembers(
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
+
+    suspend fun observeConversationProtocolInfo(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.ProtocolInfo>>
+    suspend fun updateVerificationStatus(
+        verificationStatus: Conversation.VerificationStatus,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -485,6 +491,11 @@ internal class ConversationDataSource internal constructor(
                 protocolInfoMapper.fromEntity(it)
             }
         }
+
+    override suspend fun observeConversationProtocolInfo(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.ProtocolInfo>> =
+            conversationDAO.observeConversationProtocolInfo(conversationId.toDao())
+                .wrapStorageRequest()
+                .mapRight { protocolInfoMapper.fromEntity(it) }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
         memberDAO.observeConversationMembers(conversationID.toDao()).map { members ->
@@ -802,6 +813,11 @@ internal class ConversationDataSource internal constructor(
             .mapKeys { it.key.toModel() }
             .mapValues { it.value.toModel() }
     }
+
+    override suspend fun updateVerificationStatus(verificationStatus: Conversation.VerificationStatus, conversationID: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateVerificationStatus(protocolInfoMapper.toEntity(verificationStatus), conversationID.toDao())
+        }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>

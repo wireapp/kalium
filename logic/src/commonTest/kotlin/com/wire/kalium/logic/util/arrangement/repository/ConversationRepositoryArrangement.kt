@@ -48,6 +48,10 @@ internal interface ConversationRepositoryArrangement {
     fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = any())
     fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = any())
     fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION)
+    fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
+    fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangementImpl
+    fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
+    fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -94,5 +98,33 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .suspendFunction(conversationRepository::getConversationById)
             .whenInvokedWith(any())
             .thenReturn(conversation)
+    }
+
+    override fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::isInformedAboutDegradedMLSVerification)
+            .whenInvokedWith(any())
+            .thenReturn(isInformed)
+    }
+
+    override fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateVerificationStatus)
+            .whenInvokedWith(any())
+            .thenReturn(result)
     }
 }

@@ -175,6 +175,8 @@ data class Conversation(
 
     enum class ReceiptMode { DISABLED, ENABLED }
 
+    enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
+
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {
         UNKNOWN(0),
@@ -194,8 +196,8 @@ data class Conversation(
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
-    sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo() {
+    sealed class ProtocolInfo(open val verificationStatus: VerificationStatus) {
+        data class Proteus(override val verificationStatus: VerificationStatus) : ProtocolInfo(verificationStatus) {
             override fun name() = "Proteus"
         }
 
@@ -204,8 +206,9 @@ data class Conversation(
             val groupState: GroupState,
             val epoch: ULong,
             val keyingMaterialLastUpdate: Instant,
-            val cipherSuite: CipherSuite
-        ) : ProtocolInfo() {
+            val cipherSuite: CipherSuite,
+            override val verificationStatus: VerificationStatus
+        ) : ProtocolInfo(verificationStatus) {
             enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
             override fun name() = "MLS"

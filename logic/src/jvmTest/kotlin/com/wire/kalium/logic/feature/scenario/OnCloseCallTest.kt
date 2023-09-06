@@ -255,7 +255,8 @@ class OnCloseCallTest {
                 groupState = Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
                 epoch = ULong.MAX_VALUE,
                 keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
-                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+                verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
             )
         )
 
@@ -297,7 +298,7 @@ class OnCloseCallTest {
             callerTeamName = null,
             establishedTime = null,
             callStatus = CallStatus.INCOMING,
-            protocol = Conversation.ProtocolInfo.Proteus
+            protocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)
         )
     }
 }

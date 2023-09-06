@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.connection
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.IdMapper
@@ -79,7 +80,7 @@ internal class ConnectionMapperImpl(
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
             lastModifiedDate = lastUpdateDate.toIsoDateTimeString(),
             connection = fromDaoToModel(this),
-            protocolInfo = ProtocolInfo.Proteus,
+            protocolInfo = ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
             // TODO(qol): need to be refactored
             access = emptyList(),
             accessRole = emptyList()

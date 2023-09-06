@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -137,7 +138,7 @@ class EndCallOnConversationChangeUseCaseTest {
             name = "Conv Name",
             type = Conversation.Type.ONE_ON_ONE,
             teamId = TeamId("team_id"),
-            protocol = Conversation.ProtocolInfo.Proteus,
+            protocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
             mutedStatus = MutedConversationStatus.AllAllowed,
             removedBy = null,
             lastNotificationDate = null,

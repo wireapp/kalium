@@ -149,7 +149,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             name = name,
             type = it,
             teamId = teamId?.let { teamId -> TeamId(teamId) },
-            protocol = Conversation.ProtocolInfo.Proteus,
+            protocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
             mutedStatus = mapMutedStatus(mutedState),
             access = mapAccess(access),
             accessRole = listOf(

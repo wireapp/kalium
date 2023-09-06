@@ -28,6 +28,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.thenReturnSequentially
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -227,7 +228,7 @@ class MLSWrongEpochHandlerTest {
 
     private companion object {
         val conversationId = TestConversation.CONVERSATION.id
-        val proteusProtocol = Conversation.ProtocolInfo.Proteus
+        val proteusProtocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)
 
         val mlsProtocol = TestConversation.MLS_CONVERSATION.protocol as Conversation.ProtocolInfo.MLS
         val mlsProtocolWithUpdatedEpoch = mlsProtocol.copy(epoch = mlsProtocol.epoch + 1U)

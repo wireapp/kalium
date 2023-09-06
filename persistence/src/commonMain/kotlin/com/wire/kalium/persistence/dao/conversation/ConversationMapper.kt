@@ -34,7 +34,8 @@ internal class ConversationMapper {
                 mls_group_state,
                 mls_epoch,
                 mls_last_keying_material_update_date,
-                mls_cipher_suite
+                mls_cipher_suite,
+                verification_status
             ),
             isCreator = isCreator,
             mutedStatus = mutedStatus,
@@ -92,6 +93,7 @@ internal class ConversationMapper {
         receiptMode: ConversationEntity.ReceiptMode,
         messageTimer: Long?,
         userMessageTimer: Long?,
+        verificationStatus: ConversationEntity.VerificationStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -103,7 +105,8 @@ internal class ConversationMapper {
             mlsGroupState,
             mlsEpoch,
             mlsLastKeyingMaterialUpdateDate,
-            mlsCipherSuite
+            mlsCipherSuite,
+            verificationStatus
         ),
         mutedStatus = mutedStatus,
         mutedTime = mutedTime,
@@ -131,7 +134,8 @@ internal class ConversationMapper {
                     mls_group_state,
                     mls_epoch,
                     mls_last_keying_material_update_date,
-                    mls_cipher_suite
+                    mls_cipher_suite,
+                    verification_status
                 ),
                 isCreator = isCreator,
                 mutedStatus = mutedStatus,
@@ -174,6 +178,7 @@ internal class ConversationMapper {
         mlsEpoch: Long,
         mlsLastKeyingMaterialUpdate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite,
+        verificationStatus: ConversationEntity.VerificationStatus
     ): ConversationEntity.ProtocolInfo {
         return when (protocol) {
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
@@ -181,10 +186,11 @@ internal class ConversationMapper {
                 mlsGroupState,
                 mlsEpoch.toULong(),
                 mlsLastKeyingMaterialUpdate,
-                mlsCipherSuite
+                mlsCipherSuite,
+                verificationStatus
             )
 
-            ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
+            ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus(verificationStatus)
         }
     }
 }

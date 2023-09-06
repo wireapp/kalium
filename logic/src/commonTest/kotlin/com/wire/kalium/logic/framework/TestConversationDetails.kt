@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
 object TestConversationDetails {
 
@@ -32,7 +33,7 @@ object TestConversationDetails {
         UserType.EXTERNAL,
         "2022-03-30T15:36:00.000Z",
         TestConnection.CONNECTION,
-        protocolInfo = ProtocolInfo.Proteus,
+        protocolInfo = ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
     )

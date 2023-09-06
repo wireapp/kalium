@@ -37,7 +37,8 @@ CREATE TABLE Conversation (
     user_message_timer INTEGER DEFAULT(NULL),
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
     mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0,
-    is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL
+    is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
+    verification_status TEXT AS ConversationEntity.VerificationStatus DEFAULT "NOT_VERIFIED" NOT NULL
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -208,7 +209,8 @@ Conversation.last_modified_date,
 Conversation.receipt_mode,
 Conversation.message_timer,
 Conversation.user_message_timer,
-Conversation.incomplete_metadata
+Conversation.incomplete_metadata,
+Conversation.verification_status
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
@@ -243,11 +245,11 @@ selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationByQualifiedId:
-SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer FROM Conversation WHERE qualified_id = ?;
+SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, verification_status FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
-mls_last_keying_material_update_date, mls_cipher_suite FROM Conversation WHERE qualified_id = ?;
+mls_last_keying_material_update_date, mls_cipher_suite, verification_status FROM Conversation WHERE qualified_id = ?;
 
 selectReceiptModeFromGroupConversationByQualifiedId:
 SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
@@ -330,6 +332,11 @@ selectConversationIdsWithoutMetadata:
 SELECT qualified_id
 FROM Conversation
 WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
+
+updateVerificationStatus:
+UPDATE Conversation
+SET verification_status = ?
+WHERE qualified_id = ?;
 
 clearContent {
 DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);

@@ -51,6 +51,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
@@ -918,7 +919,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
-        fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
+        fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getConversationProtocolInfo)
                 .whenInvokedWith(anything())
@@ -1101,7 +1102,8 @@ class MessageSenderTest {
                 Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
                 0UL,
                 Instant.DISTANT_PAST,
-                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                Conversation.VerificationStatus.NOT_VERIFIED
             )
             val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(

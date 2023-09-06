@@ -356,7 +356,7 @@ class ClientDAOTest : BaseDatabaseTest() {
             "conversation1",
             ConversationEntity.Type.ONE_ON_ONE,
             teamId,
-            ConversationEntity.ProtocolInfo.Proteus,
+            ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
             creatorId = "someValue",
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),

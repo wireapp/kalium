@@ -73,7 +73,7 @@ object TestCall {
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
         callStatus = CallStatus.ESTABLISHED,
-        protocol = Conversation.ProtocolInfo.Proteus
+        protocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)
     )
 
     fun oneOnOneEstablishedCall() = Call(

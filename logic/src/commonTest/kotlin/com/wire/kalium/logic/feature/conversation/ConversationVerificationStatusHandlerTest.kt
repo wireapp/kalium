@@ -17,34 +17,41 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.ConversationVerificationStatus
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class ConversationVerificationStatusHandlerTest {
 
     @Test
-    fun given_whenInvokingWithVerifiedStatus_thenInformedFlagSetFalse() = runTest {
+    fun givenVerifiedStatus_whenInvoking_thenInformedFlagSetFalse() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .arrange()
+        val (arrangement, handler) = arrange {
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.VERIFIED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
@@ -53,12 +60,20 @@ class ConversationVerificationStatusHandlerTest {
     }
 
     @Test
-    fun given_whenInvokingWithNotVerifiedStatus_thenInformedFlagSetFalse() = runTest {
+    fun givenNotVerifiedStatus_whenInvoking_thenInformedFlagSetFalse() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .arrange()
+        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED)
+        val (arrangement, handler) = arrange {
+            withConversationProtocolInfo(Either.Right(protocolInfo))
+            withInformedAboutDegradedMLSVerification(Either.Right(false))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.NOT_VERIFIED)
+        handler(conversation.id).test {
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
@@ -67,27 +82,37 @@ class ConversationVerificationStatusHandlerTest {
     }
 
     @Test
-    fun givenProteusConversation_whenInvokingWithDegradedStatus_thenInformedFlagNotSetFalse() = runTest {
+    fun givenProteusConversation_whenInvokingWithNotVerifiedStatus_thenInformedFlagSetFalse() = runTest {
         val conversation = TestConversation.CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .arrange()
+        val (arrangement, handler) = arrange {
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+        }
 
-        handler(conversation, ConversationVerificationStatus.DEGRADED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
             .with(eq(conversation.id), eq(false))
-            .wasNotInvoked()
+            .wasInvoked(once)
     }
 
     @Test
-    fun givenMLSConversation_whenInvokingWithDegradedStatus_thenInformedFlagNotSetFalse() = runTest {
-        val conversation = TestConversation.CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .withInformedAboutDegradedMLSVerification(Either.Right(true))
-            .arrange()
+    fun givenMLSConversationWithNotVerifiedStatus_whenInvokingWithNotVerifiedStatus_thenInformedFlagNotSetFalse() = runTest {
+        val conversation = TestConversation.MLS_CONVERSATION
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(true))
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.DEGRADED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
@@ -98,11 +123,17 @@ class ConversationVerificationStatusHandlerTest {
     @Test
     fun givenMLSConversationAndInformedAboutDegraded_whenInvokingWithVerifiedStatus_thenInformedFlagSetTrue() = runTest {
         val conversation = TestConversation.CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .withInformedAboutDegradedMLSVerification(Either.Right(true))
-            .arrange()
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(true))
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.VERIFIED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
@@ -111,13 +142,20 @@ class ConversationVerificationStatusHandlerTest {
     }
 
     @Test
-    fun givenUserInformedAboutDegradedStatus_whenInvokingWithDegradedStatus_thenInformedFlagSetFalse() = runTest {
+    fun givenUserInformedAboutDegradedStatus_whenInvokingWithNotVerifiedStatus_thenInformedFlagSetFalse() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .withInformedAboutDegradedMLSVerification(Either.Right(true))
-            .arrange()
+        val protocol = TestConversation.MLS_PROTOCOL_INFO.copy(verificationStatus = Conversation.VerificationStatus.DEGRADED)
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(true))
+            withConversationProtocolInfo(Either.Right(protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.DEGRADED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
@@ -128,11 +166,17 @@ class ConversationVerificationStatusHandlerTest {
     @Test
     fun givenFailureWhileGettingUserInformedAboutDegradedStatus_whenInvokingWithDegradedStatus_thenInformedFlagNotSetFalse() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .withInformedAboutDegradedMLSVerification(Either.Left(StorageFailure.DataNotFound))
-            .arrange()
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Left(StorageFailure.DataNotFound))
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.DEGRADED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
@@ -143,18 +187,24 @@ class ConversationVerificationStatusHandlerTest {
     @Test
     fun givenUserIsNotInformedAboutDegradedStatus_whenInvokingWithDegradedStatus_thenInformedFlagSetTrueAndAddMessage() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .withInformedAboutDegradedMLSVerification(Either.Right(false))
-            .withPersistMessageResult(Either.Right(Unit))
-            .arrange()
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(false))
+            withPersistingMessage(Either.Right(Unit))
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.DEGRADED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
             .with(eq(conversation.id), eq(true))
             .wasInvoked(once)
-        
+
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(any())
@@ -164,12 +214,18 @@ class ConversationVerificationStatusHandlerTest {
     @Test
     fun givenUserIsNotInformedAboutDegradedStatus_whenFailureWhilePersistMessage_thenInformedFlagNotSetTrue() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val (arrangement, handler) = Arrangement()
-            .withInformedAboutDegradedMLSVerification(Either.Right(false))
-            .withPersistMessageResult(Either.Left(StorageFailure.DataNotFound))
-            .arrange()
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(false))
+            withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
 
-        handler(conversation, ConversationVerificationStatus.DEGRADED)
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
@@ -182,39 +238,94 @@ class ConversationVerificationStatusHandlerTest {
             .wasInvoked(once)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenCurrentVerificationStatusIsVerified_whenNewNotVerifiedStatusComes_thenDegradedStatusSaved() = runTest {
+        val conversation = TestConversation.MLS_CONVERSATION
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(false))
+            withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
 
-        @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
 
-        @Mock
-        val persistMessageUseCase = mock(classOf<PersistMessageUseCase>())
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .with(eq(Conversation.VerificationStatus.DEGRADED), eq(conversation.id))
+            .wasInvoked(once)
+    }
 
-        fun arrange() = this to ConversationVerificationStatusHandlerImpl(
-            conversationRepository,
-            persistMessageUseCase,
-            TestUser.USER_ID
-        )
+    @Test
+    fun givenCurrentVerificationStatusIsVerified_whenNewVerifiedStatusComes_thenNothingUpdated() = runTest {
+        val conversation = TestConversation.MLS_CONVERSATION
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(false))
+            withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
+            withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+        }
+
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .with(any(), eq(conversation.id))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenCurrentVerificationStatusIsDegraded_whenNewNotVerifiedStatusComes_thenDegradedStatusSaved() = runTest {
+        val conversation = TestConversation.MLS_CONVERSATION
+        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(verificationStatus = Conversation.VerificationStatus.DEGRADED)
+        val (arrangement, handler) = arrange {
+            withInformedAboutDegradedMLSVerification(Either.Right(false))
+            withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
+            withConversationProtocolInfo(Either.Right(protocolInfo))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+        }
+
+        handler(conversation.id).test { 
+            awaitItem()
+            awaitComplete()
+        }
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .with(any(), eq(conversation.id))
+            .wasNotInvoked()
+    }
+
+    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+
+    private class Arrangement(
+        private val block: Arrangement.() -> Unit
+    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
+        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
+
 
         init {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+            withSetInformedAboutDegradedMLSVerificationFlagResult()
+            withUpdateVerificationStatus(Either.Right(Unit))
         }
 
-        fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::isInformedAboutDegradedMLSVerification)
-                .whenInvokedWith(any())
-                .thenReturn(isInformed)
-        }
-
-        fun withPersistMessageResult(result: Either<StorageFailure, Unit>) = apply {
-            given(persistMessageUseCase)
-                .suspendFunction(persistMessageUseCase::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        fun arrange() = block().run {
+            this@Arrangement to ConversationVerificationStatusHandlerImpl(
+                conversationRepository = conversationRepository,
+                persistMessage = persistMessageUseCase,
+                mlsConversationRepository = mlsConversationRepository,
+                selfUserId = TestUser.USER_ID
+            )
         }
     }
 }

@@ -1476,7 +1476,7 @@ class CallRepositoryTest {
         callerName = null,
         callerTeamName = null,
         callStatus = CallStatus.ESTABLISHED,
-        protocol = Conversation.ProtocolInfo.Proteus
+        protocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)
     )
 
     private class Arrangement {
@@ -1755,7 +1755,8 @@ class CallRepositoryTest {
                 Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
                 1UL,
                 Clock.System.now(),
-                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                Conversation.VerificationStatus.NOT_VERIFIED
             )
 
             val qualifiedClientID = QualifiedClientID(

@@ -62,7 +62,7 @@ object TestConversation {
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus,
+        ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -76,7 +76,7 @@ object TestConversation {
         userMessageTimer = null
     )
 
-    fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
+    fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
         Conversation.Type.SELF,
@@ -95,7 +95,7 @@ object TestConversation {
         userMessageTimer = null
     )
 
-    fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
+    fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)) = Conversation(
         ID,
         "GROUP Name",
         Conversation.Type.GROUP,
@@ -114,7 +114,7 @@ object TestConversation {
         userMessageTimer = null
     )
 
-    fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
+    fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED)) = ConversationViewEntity(
         id = ENTITY_ID.copy(
             value = if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"
         ),
@@ -159,7 +159,7 @@ object TestConversation {
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus,
+        ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -249,7 +249,7 @@ object TestConversation {
         "convo name",
         ConversationEntity.Type.SELF,
         "teamId",
-        ConversationEntity.ProtocolInfo.Proteus,
+        ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
         creatorId = "someValue",
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
@@ -278,7 +278,7 @@ object TestConversation {
         otherUserId = null,
         isCreator = 0L,
         lastNotificationDate = null,
-        protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+        protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRoleList = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -303,7 +303,7 @@ object TestConversation {
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus,
+        ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -317,18 +317,20 @@ object TestConversation {
         userMessageTimer = null
     )
 
+    val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
+        GROUP_ID,
+        ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+        0UL,
+        Instant.parse("2021-03-30T15:36:00.000Z"),
+        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+        Conversation.VerificationStatus.VERIFIED
+    )
     val MLS_CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "MLS Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.MLS(
-            GROUP_ID,
-            ProtocolInfo.MLS.GroupState.PENDING_JOIN,
-            0UL,
-            Instant.parse("2021-03-30T15:36:00.000Z"),
-            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-        ),
+        MLS_PROTOCOL_INFO,
         MutedConversationStatus.AllAllowed,
         null,
         null,

@@ -971,7 +971,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             "conversation1",
             ConversationEntity.Type.ONE_ON_ONE,
             teamId,
-            ConversationEntity.ProtocolInfo.Proteus,
+            ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
             creatorId = "someValue",
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
@@ -993,7 +993,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             ),
             creatorId = "someValue",
             lastNotificationDate = null,
@@ -1017,7 +1018,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 ConversationEntity.GroupState.PENDING_JOIN,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it
@@ -1043,7 +1045,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
                 ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             ),
             creatorId = "someValue",
             // This conversation was modified after the last time the user was notified about it

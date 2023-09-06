@@ -158,8 +158,8 @@ import com.wire.kalium.logic.feature.conversation.ConversationVerificationStatus
 import com.wire.kalium.logic.feature.conversation.ConversationVerificationStatusHandlerImpl
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCase
-import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.ObserveConversationProtocolInfoUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveConversationProtocolInfoUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -1146,6 +1146,12 @@ class UserSessionScope internal constructor(
             conversationDAO = userStorage.database.conversationDAO
         )
 
+    private val checkConversationVerificationStatus: ObserveConversationProtocolInfoUseCase
+        get() = ObserveConversationProtocolInfoUseCaseImpl(
+            conversationRepository,
+            conversationVerificationStatusHandler
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1178,8 +1184,10 @@ class UserSessionScope internal constructor(
         get() = UserPropertiesEventReceiverImpl(userConfigRepository)
 
     private val federationEventReceiver: FederationEventReceiver
-        get() = FederationEventReceiverImpl(conversationRepository, connectionRepository, userRepository,
-            userStorage.database.memberDAO, persistMessage, userId)
+        get() = FederationEventReceiverImpl(
+            conversationRepository, connectionRepository, userRepository,
+            userStorage.database.memberDAO, persistMessage, userId
+        )
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
@@ -1479,14 +1487,8 @@ class UserSessionScope internal constructor(
         get() = ConversationVerificationStatusHandlerImpl(
             conversationRepository,
             persistMessage,
-            userId
-        )
-
-    val getConversationVerificationStatus: GetConversationVerificationStatusUseCase
-        get() = GetConversationVerificationStatusUseCaseImpl(
-            conversationRepository,
             mlsConversationRepository,
-            conversationVerificationStatusHandler
+            userId
         )
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase

@@ -910,7 +910,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            Either.Right(ConversationVerificationStatus.VERIFIED),
+            Either.Right(Conversation.VerificationStatus.VERIFIED),
             mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
         )
 
@@ -928,7 +928,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            Either.Right(ConversationVerificationStatus.NOT_VERIFIED),
+            Either.Right(Conversation.VerificationStatus.NOT_VERIFIED),
             mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
         )
 

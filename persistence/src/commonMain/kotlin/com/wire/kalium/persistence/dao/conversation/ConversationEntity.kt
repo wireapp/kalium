@@ -53,6 +53,7 @@ data class ConversationEntity(
 
     enum class Protocol { PROTEUS, MLS }
     enum class ReceiptMode { DISABLED, ENABLED }
+    enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {
@@ -73,14 +74,15 @@ data class ConversationEntity(
 
     enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_AND_REPLIES_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
-    sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo()
+    sealed class ProtocolInfo(open val verificationStatus: VerificationStatus) {
+        data class Proteus(override val verificationStatus: VerificationStatus) : ProtocolInfo(verificationStatus)
         data class MLS(
             val groupId: String,
             val groupState: GroupState,
             val epoch: ULong,
             val keyingMaterialLastUpdate: Instant,
-            val cipherSuite: CipherSuite
-        ) : ProtocolInfo()
+            val cipherSuite: CipherSuite,
+            override val verificationStatus: VerificationStatus
+        ) : ProtocolInfo(verificationStatus)
     }
 }

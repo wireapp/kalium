@@ -1359,14 +1359,15 @@ class ConversationGroupRepositoryTest {
     companion object {
         private const val RAW_GROUP_ID = "mlsGroupId"
         val GROUP_ID = GroupID(RAW_GROUP_ID)
-        val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
+        val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED)
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
             .MLS(
                 RAW_GROUP_ID,
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
         const val GROUP_NAME = "Group Name"
