@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.functional.Either
@@ -31,6 +32,7 @@ import io.mockative.any
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal interface ConversationRepositoryArrangement {
@@ -53,11 +55,34 @@ internal interface ConversationRepositoryArrangement {
     fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
     fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 
+    fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>)
+
     fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
     fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
     fun withGetConversationByIdReturning(result: Conversation?)
+
+    fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Left(coreFailure))
+    }
+
+    fun withFetchConversationIfUnknownSucceeding() {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+    }
+
+    fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationGroupState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -124,6 +149,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(result))
+    }
+
+    override fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(result))
     }

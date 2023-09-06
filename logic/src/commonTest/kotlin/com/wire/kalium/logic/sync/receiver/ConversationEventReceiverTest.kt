@@ -172,12 +172,14 @@ class ConversationEventReceiverTest {
     fun givenMLSWelcomeEvent_whenOnEventInvoked_thenMlsWelcomeHandlerShouldBeCalled() = runTest {
         val mlsWelcomeEvent = TestEvent.newMLSWelcomeEvent()
 
-        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMLSWelcomeEventSucceeded()
+            .arrange()
 
         val result = featureConfigEventReceiver.onEvent(mlsWelcomeEvent)
 
-        verify(arrangement.mLSWelcomeEventHandler)
-            .suspendFunction(arrangement.mLSWelcomeEventHandler::handle)
+        verify(arrangement.mlsWelcomeEventHandler)
+            .suspendFunction(arrangement.mlsWelcomeEventHandler::handle)
             .with(eq(mlsWelcomeEvent))
             .wasInvoked(once)
         result.shouldSucceed()
@@ -336,7 +338,7 @@ class ConversationEventReceiverTest {
         val renamedConversationEventHandler = mock(classOf<RenamedConversationEventHandler>())
 
         @Mock
-        val mLSWelcomeEventHandler = mock(classOf<MLSWelcomeEventHandler>())
+        val mlsWelcomeEventHandler = mock(classOf<MLSWelcomeEventHandler>())
 
         @Mock
         val memberChangeEventHandler = mock(classOf<MemberChangeEventHandler>())
@@ -366,7 +368,7 @@ class ConversationEventReceiverTest {
             memberJoinHandler = memberJoinEventHandler,
             memberLeaveHandler = memberLeaveEventHandler,
             memberChangeHandler = memberChangeEventHandler,
-            mlsWelcomeHandler = mLSWelcomeEventHandler,
+            mlsWelcomeHandler = mlsWelcomeEventHandler,
             renamedConversationHandler = renamedConversationEventHandler,
             receiptModeUpdateEventHandler = receiptModeUpdateEventHandler,
             conversationMessageTimerEventHandler = conversationMessageTimerEventHandler,
@@ -399,6 +401,14 @@ class ConversationEventReceiverTest {
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(failure))
         }
+
+        fun withMLSWelcomeEventSucceeded() = apply {
+            given(mlsWelcomeEventHandler)
+                .suspendFunction(mlsWelcomeEventHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
     }
 
     companion object {
