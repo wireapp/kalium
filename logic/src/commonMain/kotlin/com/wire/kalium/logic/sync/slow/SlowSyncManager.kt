@@ -145,7 +145,7 @@ internal class SlowSyncManager(
     }
 
     private suspend fun performSlowSync() {
-        slowSyncWorker.performSlowSyncSteps().cancellable().collect { step ->
+        slowSyncWorker.slowSyncStepsFlow().cancellable().collect { step ->
             logger.i("Performing SlowSyncStep $step")
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(step))
         }

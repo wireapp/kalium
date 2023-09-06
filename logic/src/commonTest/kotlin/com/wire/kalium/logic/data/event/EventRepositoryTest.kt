@@ -78,30 +78,6 @@ class EventRepositoryTest {
     }
 
     @Test
-    fun givenNoSavedLastProcessedId_whenGettingLastProcessedEventId_thenShouldAskFromAPI() = runTest {
-        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            TestConversation.NETWORK_ID,
-            UserId("value", "domain"),
-            "eventTime",
-            MessageEventData("text", "senderId", "recipient")
-        )
-        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
-
-        val (arrangement, eventRepository) = Arrangement()
-            .withLastStoredEventId(null)
-            .withLastNotificationRemote(NetworkResponse.Success(pendingEvent, mapOf(), 200))
-            .arrange()
-
-        val result = eventRepository.lastEventId()
-        result.shouldSucceed { assertEquals(pendingEvent.id, it) }
-
-        verify(arrangement.notificationApi)
-            .suspendFunction(arrangement.notificationApi::mostRecentNotification)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
     fun givenASavedLastProcessedId_whenGettingLastEventId_thenShouldReturnIt() = runTest {
         val eventId = "dh817h2e"
 
@@ -109,35 +85,8 @@ class EventRepositoryTest {
             .withLastStoredEventId(eventId)
             .arrange()
 
-        val result = eventRepository.lastEventId()
+        val result = eventRepository.lastProcessedEventId()
         result.shouldSucceed { assertEquals(eventId, it) }
-    }
-
-    @Test
-    fun givenNoLastProcessedEventIdIsStored_thenLastEventIsFetchedFromRemoteAndStored() = runTest {
-
-        val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
-            TestConversation.NETWORK_ID,
-            UserId("value", "domain"),
-            "eventTime",
-            MessageEventData("text", "senderId", "recipient")
-        )
-        val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))
-
-        val expected = pendingEvent.id
-        val (arrangement, eventRepository) = Arrangement()
-            .withLastStoredEventId(null)
-            .withLastNotificationRemote(NetworkResponse.Success(pendingEvent, mapOf(), 200))
-            .withUpdateLastProcessedEventId()
-            .arrange()
-
-        eventRepository.lastEventId().shouldSucceed {
-            assertEquals(expected, it)
-        }
-
-        verify(arrangement.metaDAO)
-            .coroutine { arrangement.metaDAO.insertValue(key = LAST_PROCESSED_EVENT_ID_KEY, value = expected) }
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -204,6 +153,13 @@ class EventRepositoryTest {
 
         init {
             withCurrentClientIdReturning(TestClient.CLIENT_ID)
+        }
+
+        fun withDeleteMetadataSucceeding() = apply {
+            given(metaDAO)
+                .suspendFunction(metaDAO::deleteValue)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         suspend fun withLastStoredEventId(value: String?) = apply {
