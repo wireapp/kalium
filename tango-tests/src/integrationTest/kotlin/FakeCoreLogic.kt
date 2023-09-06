@@ -25,6 +25,7 @@ import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -38,7 +39,7 @@ class FakeCoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
-    private val networkClient: UnboundNetworkClient
+    private val networkClient: UnauthenticatedNetworkClient
 ) : CoreLogic(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
@@ -52,16 +53,16 @@ class FakeCoreLogic(
             userSessionScopeProvider,
             authenticationScopeProvider,
             networkStateObserver,
-            unboundNetworkContainer = lazy {
-                FakeUnboundNetworkContainer(
-                    networkStateObserver,
-                    kaliumConfigs.developmentApiEnabled,
-                    userAgent,
-                    kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
-                    kaliumConfigs.certPinningConfig,
-                    networkClient
-                )
-            }
+//             unboundNetworkContainer = lazy {
+//                 FakeUnboundNetworkContainer(
+//                     networkStateObserver,
+//                     kaliumConfigs.developmentApiEnabled,
+//                     userAgent,
+//                     kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
+//                     kaliumConfigs.certPinningConfig,
+//                     networkClient
+//                 )
+//             }
         )
 
 

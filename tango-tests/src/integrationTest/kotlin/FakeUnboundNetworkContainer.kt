@@ -17,7 +17,14 @@
  */
 
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
+import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
@@ -26,6 +33,8 @@ import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
+import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProvider
+import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkClientProvider
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
@@ -56,6 +65,26 @@ internal class FakeUnboundNetworkClientProviderImpl(
 //     }
 }
 
+internal class FakeUnauthenticatedUnboundNetworkClientProviderImpl(
+    networkStateObserver: NetworkStateObserver,
+    userAgent: String,
+    engine: HttpClientEngine,
+    networkClient: UnauthenticatedNetworkClient
+) : UnauthenticatedNetworkClientProvider { // } UnboundNetworkClientProvider {
+
+    init {
+        KaliumUserAgentProvider.setUserAgent(userAgent)
+    }
+
+    override val unauthenticatedNetworkClient  = networkClient
+
+    // override val unboundNetworkClient = networkClient
+//     override val unboundNetworkClient by lazy {
+//         // UnboundNetworkClient(networkStateObserver, engine)
+//         networkClient
+//     }
+}
+
 class FakeUnboundNetworkContainer(
     networkStateObserver: NetworkStateObserver,
     private val developmentApiEnabled: Boolean,
@@ -76,4 +105,38 @@ class FakeUnboundNetworkContainer(
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
     override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
+}
+
+class FakeUnauthenticatedUnboundNetworkContainer(
+    networkStateObserver: NetworkStateObserver,
+    private val developmentApiEnabled: Boolean,
+    userAgent: String,
+    private val ignoreSSLCertificates: Boolean,
+    certificatePinning: CertificatePinning,
+    networkClient: UnauthenticatedNetworkClient
+) : UnauthenticatedNetworkClientProvider by FakeUnauthenticatedUnboundNetworkClientProviderImpl(
+        networkStateObserver = networkStateObserver,
+        userAgent = userAgent,
+        engine = defaultHttpEngine(
+            ignoreSSLCertificates = ignoreSSLCertificates,
+            certificatePinning = certificatePinning
+        ),
+        networkClient = networkClient
+    ) {
+//     override val loginApi: LoginApi
+//         get() = TODO("Not yet implemented")
+//     override val registerApi: RegisterApi
+//         get() = TODO("Not yet implemented")
+//     override val sso: SSOLoginApi
+//         get() = TODO("Not yet implemented")
+//     override val appVersioningApi: AppVersioningApi
+//         get() = TODO("Not yet implemented")
+//     override val verificationCodeApi: VerificationCodeApi
+//         get() = TODO("Not yet implemented")
+//     override val domainLookupApi: DomainLookupApi
+//         get() = TODO("Not yet implemented")
+
+    // override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unauthenticatedNetworkClient)
+    // override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
+    // override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
 }

@@ -40,7 +40,7 @@ import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
-class UnauthenticatedNetworkContainerV0 internal constructor(
+class UnauthenticatedNetworkContainerV0(
     networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,

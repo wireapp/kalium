@@ -19,8 +19,12 @@ package util
 
 import TestNetworkStateObserver
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
+import com.wire.kalium.network.tools.ApiVersionDTO
+import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
@@ -78,6 +82,42 @@ object MockUnboundNetworkClient {
         )
     }
 
+    /**
+     * creates an unauthenticated mock Ktor Http client
+     * @param responseBody the response body as Json string
+     * @param statusCode the response http status code
+     * @param assertion lambda function to apply assertions to the request
+     * @return mock Ktor http client
+     */
+    fun mockUnauthenticatedNetworkClient(
+        responseBody: String,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>? = null,
+
+        networkStateObserver: NetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
+    ): UnauthenticatedNetworkClient =
+        mockUnauthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers, networkStateObserver)
+
+    private fun mockUnauthenticatedNetworkClient(
+        responseBody: ByteReadChannel,
+        statusCode: HttpStatusCode,
+        assertion: (HttpRequestData.() -> Unit) = {},
+        headers: Map<String, String>?,
+        networkStateObserver: NetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
+    ): UnauthenticatedNetworkClient {
+
+        val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
+
+        return UnauthenticatedNetworkContainerV0(
+            backendLinks = TEST_BACKEND,
+            engine = mockEngine,
+            proxyCredentials = null,
+            networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap()
+        ).unauthenticatedNetworkClient
+    }
+
     private fun createMockEngine(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
@@ -99,4 +139,49 @@ object MockUnboundNetworkClient {
             )
         }
     }
+
+    val TEST_BACKEND_CONFIG =
+        ServerConfigDTO(
+            id = "id",
+            ServerConfigDTO.Links(
+                "https://test.api.com",
+                "https://test.account.com",
+                "https://test.ws.com",
+                "https://test.blacklist",
+                "https://test.teams.com",
+                "https://test.wire.com",
+                "Test Title",
+                false,
+                null
+            ),
+            ServerConfigDTO.MetaData(
+                false,
+                ApiVersionDTO.Valid(1),
+                null
+            )
+        )
+
+    val TEST_BACKEND_LINKS =
+        ServerConfigDTO.Links(
+            "https://test.api.com",
+            "https://test.account.com",
+            "https://test.ws.com",
+            "https://test.blacklist",
+            "https://test.teams.com",
+            "https://test.wire.com",
+            "Test Title",
+            false,
+            null
+        )
+
+    val TEST_BACKEND =
+        ServerConfigDTO(
+            id = "id",
+            links = TEST_BACKEND_LINKS,
+            metaData = ServerConfigDTO.MetaData(
+                false,
+                ApiVersionDTO.Valid(0),
+                domain = null
+            )
+        )
 }

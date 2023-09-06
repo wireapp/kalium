@@ -71,7 +71,7 @@ internal class AuthenticatedNetworkClient(
  * needed configurations to talk with a Wire backend, like
  * Serialization, and Content Negotiation.
  */
-internal class UnauthenticatedNetworkClient(
+class UnauthenticatedNetworkClient(
     networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine,
     backendLinks: ServerConfigDTO

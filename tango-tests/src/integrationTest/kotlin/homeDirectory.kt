@@ -18,6 +18,7 @@
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
 
 fun homeDirectory(): String {
@@ -27,7 +28,7 @@ fun homeDirectory(): String {
 fun coreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
-    networkClient: UnboundNetworkClient
+    networkClient: UnauthenticatedNetworkClient// UnboundNetworkClient
 ): FakeCoreLogic = FakeCoreLogic(
     rootPath,
     kaliumConfigs,
