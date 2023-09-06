@@ -47,5 +47,5 @@ data class FederationConflictResponse(
 
 @Serializable
 data class FederationUnreachableResponse(
-    @SerialName("unreachable_backends") val unreachableBackends: List<String>
+    @SerialName("unreachable_backends") val unreachableBackends: List<String> = emptyList()
 )
