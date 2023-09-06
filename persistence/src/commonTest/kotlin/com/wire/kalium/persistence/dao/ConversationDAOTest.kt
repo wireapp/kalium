@@ -1097,7 +1097,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity1.id)
         memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity2.id)
 
-        conversationDAO.getAllConversationDetails().first().let {
+        conversationDAO.getAllConversationDetails(includeArchived = false).first().let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
