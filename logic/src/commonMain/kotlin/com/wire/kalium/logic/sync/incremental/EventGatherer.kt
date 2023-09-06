@@ -87,7 +87,7 @@ internal class EventGathererImpl(
     override suspend fun gatherEvents(): Flow<Event> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
-        eventRepository.lastEventId().flatMap {
+        eventRepository.lastProcessedEventId().flatMap {
             eventRepository.liveEvents()
         }.onSuccess { webSocketEventFlow ->
             handleWebSocketEventsWhilePolicyAllows(webSocketEventFlow)

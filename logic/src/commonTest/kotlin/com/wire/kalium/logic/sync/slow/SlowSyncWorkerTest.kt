@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -29,6 +30,8 @@ import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
@@ -39,6 +42,7 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
@@ -56,7 +60,7 @@ class SlowSyncWorkerTest {
             .withJoinMLSConversationsSuccess()
             .arrange()
 
-        worker.performSlowSyncSteps().collect()
+        worker.slowSyncStepsFlow().collect()
 
         assertAllUseCasesSuccessfulRun(arrangement)
     }
@@ -69,7 +73,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.performSlowSyncSteps().collect {
+            worker.slowSyncStepsFlow().collect {
                 assertTrue {
                     it in steps
                 }
@@ -94,7 +98,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.performSlowSyncSteps().collect {
+            worker.slowSyncStepsFlow().collect {
                 assertTrue {
                     it in steps
                 }
@@ -124,7 +128,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.performSlowSyncSteps().collect {
+            worker.slowSyncStepsFlow().collect {
                 assertTrue {
                     it in steps
                 }
@@ -164,7 +168,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.performSlowSyncSteps().collect {
+            worker.slowSyncStepsFlow().collect {
                 assertTrue {
                     it in steps
                 }
@@ -210,7 +214,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.performSlowSyncSteps().collect {
+            worker.slowSyncStepsFlow().collect {
                 assertTrue {
                     it in steps
                 }
@@ -262,7 +266,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.performSlowSyncSteps().collect {
+            worker.slowSyncStepsFlow().collect {
                 assertTrue {
                     it in steps
                 }
@@ -321,7 +325,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.performSlowSyncSteps().collect {
+            worker.slowSyncStepsFlow().collect {
                 assertTrue {
                     it in steps
                 }
@@ -329,6 +333,86 @@ class SlowSyncWorkerTest {
         }
 
         assertAllUseCasesSuccessfulRun(arrangement)
+    }
+
+    @Test
+    fun givenNoExistingLastProcessedId_whenWorking_thenShouldFetchMostRecentEvent() = runTest {
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withFetchMostRecentEventReturning(Either.Right("mostRecentEventId"))
+        }.withSyncSelfUserFailure()
+            .arrange()
+
+        assertFails {
+            slowSyncWorker.slowSyncStepsFlow().collect()
+        }
+
+        verify(arrangement.eventRepository)
+            .suspendFunction(arrangement.eventRepository::fetchMostRecentEventId)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAlreadyExistingLastProcessedId_whenWorking_thenShouldNotFetchMostRecentEvent() = runTest {
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+        }.withSyncSelfUserFailure()
+            .arrange()
+
+        assertFails {
+            slowSyncWorker.slowSyncStepsFlow().collect()
+        }
+
+        verify(arrangement.eventRepository)
+            .suspendFunction(arrangement.eventRepository::fetchMostRecentEventId)
+            .wasNotInvoked()
+
+        verify(arrangement.eventRepository)
+            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenFetchedEventIdAndSomethingFails_whenWorking_thenShouldNotLastProcessedEventId() = runTest {
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withFetchMostRecentEventReturning(Either.Right("mostRecentEventId"))
+        }.withSyncSelfUserFailure()
+            .arrange()
+
+        assertFails {
+            slowSyncWorker.slowSyncStepsFlow().collect()
+        }
+
+        verify(arrangement.eventRepository)
+            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenFetchedEventIdAndEverythingSucceeds_whenWorking_thenShouldUpdateLastProcessedEventId() = runTest {
+        val fetchedEventId = "aTestEventId"
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withLastProcessedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withFetchMostRecentEventReturning(Either.Right(fetchedEventId))
+            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+        }.withSyncSelfUserSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess()
+            .arrange()
+
+        slowSyncWorker.slowSyncStepsFlow().collect()
+
+        verify(arrangement.eventRepository)
+            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
+            .with(eq(fetchedEventId))
+            .wasInvoked(exactly = once)
     }
 
     private fun assertAllUseCasesSuccessfulRun(arrangement: Arrangement) {
@@ -362,7 +446,7 @@ class SlowSyncWorkerTest {
             .wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl() {
 
         @Mock
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
@@ -385,7 +469,12 @@ class SlowSyncWorkerTest {
         @Mock
         val joinMLSConversations: JoinExistingMLSConversationsUseCase = mock(JoinExistingMLSConversationsUseCase::class)
 
+        init {
+            withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+        }
+
         fun arrange() = this to SlowSyncWorkerImpl(
+            eventRepository = eventRepository,
             syncSelfUser = syncSelfUser,
             syncFeatureConfigs = syncFeatureConfigs,
             syncConversations = syncConversations,
