@@ -1259,6 +1259,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             logout,
+            oneOnOneResolver,
             userId,
             clientIdProvider
         )
