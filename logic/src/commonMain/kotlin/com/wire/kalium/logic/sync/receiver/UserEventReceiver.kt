@@ -27,16 +27,21 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.user.Connection
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.first
 
 internal interface UserEventReceiver : EventReceiver<Event.User>
 
@@ -47,6 +52,7 @@ internal class UserEventReceiverImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val logout: LogoutUseCase,
+    private val oneOnOneResolver: OneOnOneResolver,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
 ) : UserEventReceiver {
@@ -90,6 +96,9 @@ internal class UserEventReceiverImpl internal constructor(
 
     private suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
         connectionRepository.insertConnectionFromEvent(event)
+            .flatMap {
+                resolveOneOnOneConversationUponConnectionAccepted(event.connection)
+            }
             .onSuccess {
                 kaliumLogger
                     .logEventProcessing(
@@ -105,6 +114,15 @@ internal class UserEventReceiverImpl internal constructor(
                         Pair("errorInfo", "$it")
                     )
             }
+
+    private suspend fun resolveOneOnOneConversationUponConnectionAccepted(connection: Connection): Either<CoreFailure, Unit> =
+        if (connection.status == ConnectionState.ACCEPTED) {
+            userRepository.getKnownUser(connection.qualifiedToId).first()?.let {
+                oneOnOneResolver.resolveOneOnOneConversationWithUser(it).map { }
+            } ?: Either.Right(Unit)
+        } else {
+            Either.Right(Unit)
+        }
 
     private suspend fun handleClientRemove(event: Event.User.ClientRemove): Either<CoreFailure, Unit> =
         currentClientIdProvider().map { currentClientId ->
