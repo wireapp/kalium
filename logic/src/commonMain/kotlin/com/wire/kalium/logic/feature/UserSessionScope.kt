@@ -1204,7 +1204,7 @@ class UserSessionScope internal constructor(
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-            mlsClientProvider, userStorage.database.conversationDAO, conversationRepository
+            mlsClientProvider, conversationRepository, oneOnOneResolver
         )
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(

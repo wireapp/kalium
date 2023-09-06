@@ -22,6 +22,7 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIO
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -172,9 +173,10 @@ interface ConversationRepository {
     ): Either<NetworkFailure, Unit>
 
     suspend fun getConversationsByGroupState(
-        groupState: Conversation.ProtocolInfo.MLSCapable.GroupState
+        groupState: GroupState
     ): Either<StorageFailure, List<Conversation>>
 
+    suspend fun updateConversationGroupState(groupID: GroupID, groupState: GroupState): Either<StorageFailure, Unit>
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
@@ -253,7 +255,7 @@ interface ConversationRepository {
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 }
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class ConversationDataSource internal constructor(
     private val selfUserId: UserId,
     private val mlsClientProvider: MLSClientProvider,
@@ -612,11 +614,19 @@ internal class ConversationDataSource internal constructor(
         }
 
     override suspend fun getConversationsByGroupState(
-        groupState: Conversation.ProtocolInfo.MLSCapable.GroupState
+        groupState: GroupState
     ): Either<StorageFailure, List<Conversation>> =
         wrapStorageRequest {
             conversationDAO.getConversationsByGroupState(conversationMapper.toDAOGroupState(groupState))
                 .map(conversationMapper::fromDaoModel)
+        }
+
+    override suspend fun updateConversationGroupState(
+        groupID: GroupID,
+        groupState: GroupState
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateConversationGroupState(groupState.toDao(), groupID.value)
         }
 
     override suspend fun updateConversationNotificationDate(
