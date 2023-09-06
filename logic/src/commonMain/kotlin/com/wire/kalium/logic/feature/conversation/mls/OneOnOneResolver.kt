@@ -18,9 +18,11 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.functional.Either
@@ -29,9 +31,11 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.first
 
 interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(): Either<CoreFailure, Unit>
+    suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId>
     suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId>
 }
 
@@ -48,6 +52,11 @@ internal class OneOnOneResolverImpl(
             resolveOneOnOneConversationWithUser(item).map { }
         }
     }
+
+    override suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId> =
+        userRepository.getKnownUser(userId).first()?.let {
+            resolveOneOnOneConversationWithUser(it)
+        } ?: Either.Left(StorageFailure.DataNotFound)
 
     override suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId> =
         oneOnOneProtocolSelector.getProtocolForUser(user.id).flatMap { supportedProtocol ->

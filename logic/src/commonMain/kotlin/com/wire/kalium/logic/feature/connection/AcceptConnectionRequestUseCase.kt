@@ -23,8 +23,10 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
@@ -44,6 +46,7 @@ fun interface AcceptConnectionRequestUseCase {
 internal class AcceptConnectionRequestUseCaseImpl(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
+    private val oneOnOneResolver: OneOnOneResolver
 ) : AcceptConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
@@ -51,6 +54,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
             .flatMap {
                 conversationRepository.fetchConversation(it.qualifiedConversationId)
                 conversationRepository.updateConversationModifiedDate(it.qualifiedConversationId, DateTimeUtil.currentInstant())
+                oneOnOneResolver.resolveOneOnOneConversationWithUserId(it.qualifiedToId).map { }
             }
             .fold({
                 kaliumLogger.e("An error occurred when accepting the connection request from $userId")

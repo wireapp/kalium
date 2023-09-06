@@ -1547,7 +1547,12 @@ class UserSessionScope internal constructor(
             kaliumConfigs
         )
 
-    val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
+    val connection: ConnectionScope
+        get() = ConnectionScope(
+            connectionRepository,
+            conversationRepository,
+            oneOnOneResolver
+        )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
         get() = ObserveSecurityClassificationLabelUseCaseImpl(

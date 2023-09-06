@@ -29,7 +29,7 @@ import io.mockative.mock
 interface OneOnOneResolverArrangement {
 
     val oneOnOneResolver: OneOnOneResolver
-
+    fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>)
     fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>)
     fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>)
 
@@ -39,6 +39,12 @@ class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
     @Mock
     override val oneOnOneResolver = mock(OneOnOneResolver::class)
+    override fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
+        given(oneOnOneResolver)
+            .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUserId)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
 
     override fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>) {
         given(oneOnOneResolver)
