@@ -24,9 +24,7 @@ import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -37,11 +35,12 @@ import kotlin.test.assertTrue
 class IncrementalSyncRecoveryHandlerTest {
 
     @Test
-    fun givenClientOrEventNotFoundFailure_whenRecovering_thenUpdateLastEventIdAndRestartSlowSync() = runTest {
+    fun givenClientOrEventNotFoundFailure_whenRecovering_thenClearLastEventIdAndRestartSlowSync() = runTest {
         val oldestEventId = "oldestEventId"
         // given
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right(oldestEventId))
+            withClearLastEventIdReturning(Either.Right(Unit))
             withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
         }
 
@@ -54,8 +53,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // then
         with(arrangement) {
             verify(eventRepository)
-                .function(eventRepository::updateLastProcessedEventId)
-                .with(eq(oldestEventId))
+                .suspendFunction(eventRepository::clearLastProcessedEventId)
                 .wasInvoked(exactly = once)
 
             verify(restartSlowSyncProcessForRecoveryUseCase)
@@ -92,10 +90,11 @@ class IncrementalSyncRecoveryHandlerTest {
     }
 
     @Test
-    fun givenUnknownFailure_whenRecovering_thenShouldNotUpdateLastProcessedEventId() = runTest {
+    fun givenUnknownFailure_whenRecovering_thenShouldNotClearLastProcessedEventId() = runTest {
         // given
         val (arrangement, recoveryHandler) = arrange {
             withOldestEventIdReturning(Either.Right("oldestEventId"))
+            withClearLastEventIdReturning(Either.Right(Unit))
             withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
         }
 
@@ -105,8 +104,7 @@ class IncrementalSyncRecoveryHandlerTest {
         // then
         with(arrangement) {
             verify(eventRepository)
-                .suspendFunction(eventRepository::updateLastProcessedEventId)
-                .with(any())
+                .suspendFunction(eventRepository::clearLastProcessedEventId)
                 .wasNotInvoked()
         }
     }

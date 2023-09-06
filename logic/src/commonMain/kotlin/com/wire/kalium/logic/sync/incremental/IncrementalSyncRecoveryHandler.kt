@@ -20,11 +20,15 @@ package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 
+/**
+ * Represents a handler for recovering from incremental sync.
+ *
+ * @see IncrementalSyncRecoveryHandlerImpl
+ */
 internal interface IncrementalSyncRecoveryHandler {
     suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback)
 }
@@ -33,6 +37,15 @@ internal fun interface OnIncrementalSyncRetryCallback {
     suspend fun retry()
 }
 
+/**
+ * Implementation of the [IncrementalSyncRecoveryHandler] interface.
+ *
+ * It checks if the failure allows for recovery by checking if failure is a [CoreFailure.SyncEventOrClientNotFound].
+ * If recovery is possible, it clears the last processed event ID and restarts the slow sync process.
+ *
+ * @property restartSlowSyncProcessForRecoveryUseCase The use case for restarting the slow sync process.
+ * @property eventRepository The repository for accessing events.
+ */
 internal class IncrementalSyncRecoveryHandlerImpl(
     private val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase,
     private val eventRepository: EventRepository
@@ -40,10 +53,9 @@ internal class IncrementalSyncRecoveryHandlerImpl(
 
     override suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback) {
         kaliumLogger.i("$TAG Checking if we can recover from the failure: $failure")
-        if (shouldRestartSlowSyncProcess(failure)) {
-            eventRepository.fetchOldestAvailableEventId().flatMap { oldestEventId ->
-                eventRepository.updateLastProcessedEventId(oldestEventId)
-            }.onSuccess {
+        if (shouldDiscardEventsAndRestartSlowSync(failure)) {
+            kaliumLogger.i("$TAG Discarding all events and restarting the slow sync process")
+            eventRepository.clearLastProcessedEventId().onSuccess {
                 restartSlowSyncProcessForRecoveryUseCase()
             }
         }
@@ -51,7 +63,7 @@ internal class IncrementalSyncRecoveryHandlerImpl(
         onIncrementalSyncRetryCallback.retry()
     }
 
-    private fun shouldRestartSlowSyncProcess(failure: CoreFailure): Boolean =
+    private fun shouldDiscardEventsAndRestartSlowSync(failure: CoreFailure): Boolean =
         failure is CoreFailure.SyncEventOrClientNotFound
 
     private companion object {
