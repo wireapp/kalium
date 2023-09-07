@@ -85,7 +85,6 @@ class EventDataSource(
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
-
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
