@@ -26,9 +26,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.feature.connection.AcceptConnectionRequestUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
@@ -58,6 +60,7 @@ internal interface ConversationRepositoryArrangement {
     fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
     fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
     fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
+    fun withFetchConversation(result: Either<CoreFailure, Unit>)
     fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 
     fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>)
@@ -85,6 +88,13 @@ internal interface ConversationRepositoryArrangement {
     fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::updateConversationGroupState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
+
+    fun withUpdateConversationModifiedDate(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationModifiedDate)
             .whenInvokedWith(any(), any())
             .thenReturn(result)
     }
@@ -189,6 +199,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::fetchMlsOneToOneConversation)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withFetchConversation(result: Either<CoreFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversation)
             .whenInvokedWith(any())
             .thenReturn(result)
     }

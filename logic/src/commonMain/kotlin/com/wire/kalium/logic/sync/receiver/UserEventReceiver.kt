@@ -41,7 +41,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.first
 
 internal interface UserEventReceiver : EventReceiver<Event.User>
 
@@ -97,7 +96,7 @@ internal class UserEventReceiverImpl internal constructor(
     private suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
         connectionRepository.insertConnectionFromEvent(event)
             .flatMap {
-                resolveOneOnOneConversationUponConnectionAccepted(event.connection)
+                resolveActiveOneOnOneConversationUponConnectionAccepted(event.connection)
             }
             .onSuccess {
                 kaliumLogger
@@ -115,11 +114,9 @@ internal class UserEventReceiverImpl internal constructor(
                     )
             }
 
-    private suspend fun resolveOneOnOneConversationUponConnectionAccepted(connection: Connection): Either<CoreFailure, Unit> =
+    private suspend fun resolveActiveOneOnOneConversationUponConnectionAccepted(connection: Connection): Either<CoreFailure, Unit> =
         if (connection.status == ConnectionState.ACCEPTED) {
-            userRepository.getKnownUser(connection.qualifiedToId).first()?.let {
-                oneOnOneResolver.resolveOneOnOneConversationWithUser(it).map { }
-            } ?: Either.Right(Unit)
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(connection.qualifiedToId).map { }
         } else {
             Either.Right(Unit)
         }

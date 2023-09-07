@@ -27,6 +27,7 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUse
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * Attempts to find an existing MLS-capable one-on-one conversation,
@@ -62,8 +63,10 @@ internal class MLSOneOnOneConversationResolverImpl(
             }
 
             if (initializedMLSOneOnOne != null) {
+                kaliumLogger.d("Already established mls group for one-on-one with ${userId.toLogString()}, skipping.")
                 Either.Right(initializedMLSOneOnOne.id)
             } else {
+                kaliumLogger.d("Establishing mls group for one-on-one with ${userId.toLogString()}")
                 conversationRepository.fetchMlsOneToOneConversation(userId).flatMap { conversation ->
                     joinExistingMLSConversationUseCase(conversation.id).map { conversation.id }
                 }
