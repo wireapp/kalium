@@ -15,20 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.feature.session
+package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.AccessRepository
-import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.feature.IsUserLoggedInUseCaseImpl
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
-class SessionScope(
-    private val sessionRepository: SessionRepository,
-    private val accessRepository: AccessRepository
-) {
-    val allSessions get() = GetSessionsUseCase(sessionRepository)
-    val currentSession get() = CurrentSessionUseCase(sessionRepository)
-    val currentSessionFlow get() = CurrentSessionFlowUseCase(sessionRepository)
-    val updateCurrentSession get() = UpdateCurrentSessionUseCase(sessionRepository)
-    val isUserLoggedInUseCase get() = IsUserLoggedInUseCaseImpl(accessRepository)
+interface IsUserLoggedInUseCase {
+    suspend operator fun invoke(): Boolean?
 }
+
+class IsUserLoggedInUseCaseImpl(
+    private val accessRepository: AccessRepository
+) : IsUserLoggedInUseCase {
+    override suspend fun invoke(): Boolean? {
+        accessRepository.loggedInUsers().fold({
+            return null
+        }, {
+            return it?.let {
+                kaliumLogger.i("User is logged in: $it")
+                it > 0
+            }
+        })
+    }
+}
+

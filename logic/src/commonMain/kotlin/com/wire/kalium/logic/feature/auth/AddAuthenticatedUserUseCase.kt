@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
@@ -33,7 +34,8 @@ import com.wire.kalium.logic.functional.onSuccess
  */
 class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
-    private val serverConfigRepository: ServerConfigRepository
+    private val serverConfigRepository: ServerConfigRepository,
+    private val accessRepository: AccessRepository
 ) {
     sealed class Result {
         data class Success(val userId: UserId) : Result()
@@ -81,8 +83,7 @@ class AddAuthenticatedUserUseCase internal constructor(
         newAuthTokens: AuthTokens,
         proxyCredentials: ProxyCredentials?,
         replace: Boolean
-    ): Result =
-        when (replace) {
+    ): Result = when (replace) {
             true -> {
                 sessionRepository.fullAccountInfo(newAuthTokens.userId).fold(
                     { Result.Failure.Generic(it) },
@@ -96,11 +97,17 @@ class AddAuthenticatedUserUseCase internal constructor(
                                 authTokens = newAuthTokens,
                                 proxyCredentials = proxyCredentials
                             )
-                        } else Result.Failure.UserAlreadyExists
+                        } else {
+                            accessRepository.markUserAsLoggedOut()
+                            Result.Failure.UserAlreadyExists
+                        }
                     }
                 )
             }
 
-            false -> Result.Failure.UserAlreadyExists
+            false -> {
+                accessRepository.markUserAsLoggedOut()
+                Result.Failure.UserAlreadyExists
+            }
         }
 }

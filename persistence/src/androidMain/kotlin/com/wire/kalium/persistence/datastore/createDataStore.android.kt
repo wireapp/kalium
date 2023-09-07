@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.persistence.datastore
 
 import android.content.Context
 import androidx.datastore.core.DataStore

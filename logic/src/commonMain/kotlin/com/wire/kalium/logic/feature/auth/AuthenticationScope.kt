@@ -19,12 +19,11 @@
 package com.wire.kalium.logic.feature.auth
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
@@ -35,6 +34,8 @@ import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepo
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.IsUserLoggedInUseCase
+import com.wire.kalium.logic.feature.IsUserLoggedInUseCaseImpl
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
@@ -60,7 +61,7 @@ class AuthenticationScopeProvider internal constructor(
         serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
         certConfig: () -> CertificatePinning,
-        dataStore: DataStore<Preferences>
+        accessRepository: AccessRepository
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
@@ -70,7 +71,7 @@ class AuthenticationScopeProvider internal constructor(
                 serverConfigRepository,
                 networkStateObserver,
                 certConfig,
-                dataStore
+                accessRepository
             )
         }
 }
@@ -82,7 +83,7 @@ class AuthenticationScope internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val networkStateObserver: NetworkStateObserver,
     certConfig: () -> CertificatePinning,
-    private val dataStore: DataStore<Preferences>
+    private val accessRepository: AccessRepository
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
@@ -93,6 +94,7 @@ class AuthenticationScope internal constructor(
             certificatePinning = certConfig()
         )
     }
+
     private val loginRepository: LoginRepository
         get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi)
 
@@ -120,8 +122,12 @@ class AuthenticationScope internal constructor(
             serverConfig,
             proxyCredentials,
             secondFactorVerificationRepository,
-            dataStore
+            accessRepository
         )
+
+    val isUserLoggedInUseCase: IsUserLoggedInUseCase
+        get() = IsUserLoggedInUseCaseImpl(accessRepository)
+
     val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
     val registerScope: RegisterScope

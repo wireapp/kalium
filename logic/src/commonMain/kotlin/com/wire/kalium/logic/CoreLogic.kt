@@ -21,6 +21,8 @@ package com.wire.kalium.logic
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.AccessRepository
+import com.wire.kalium.logic.data.AccessRepositoryDataSource
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -54,10 +56,13 @@ abstract class CoreLogicCommon internal constructor(
     protected abstract val globalDatabase: GlobalDatabaseProvider
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
+    protected abstract val dataStore: DataStore<Preferences>
 
     val rootPathsProvider: RootPathsProvider = PlatformRootPathsProvider(rootPath)
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
+
+    private val accessRepository: AccessRepository get() = AccessRepositoryDataSource(dataStore)
 
     fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(
@@ -68,7 +73,7 @@ abstract class CoreLogicCommon internal constructor(
             userSessionScopeProvider,
             authenticationScopeProvider,
             networkStateObserver,
-            dataStore
+            accessRepository
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
@@ -82,7 +87,7 @@ abstract class CoreLogicCommon internal constructor(
             getGlobalScope().serverConfigRepository,
             networkStateObserver,
             kaliumConfigs::certPinningConfig,
-            dataStore
+            accessRepository
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
@@ -111,7 +116,6 @@ abstract class CoreLogicCommon internal constructor(
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
     abstract val networkStateObserver: NetworkStateObserver
-    abstract val dataStore: DataStore<Preferences>
 }
 
 expect val clientPlatform: String

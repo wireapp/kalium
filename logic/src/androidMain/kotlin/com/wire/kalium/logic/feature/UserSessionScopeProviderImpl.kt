@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.feature
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
@@ -31,8 +33,8 @@ import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 
@@ -47,7 +49,8 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
-    userAgent: String
+    userAgent: String,
+    private val dataStore: DataStore<Preferences>
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -72,6 +75,7 @@ internal actual class UserSessionScopeProviderImpl(
             userStorageProvider = userStorageProvider,
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,
+            dataStore = dataStore
         )
     }
 }

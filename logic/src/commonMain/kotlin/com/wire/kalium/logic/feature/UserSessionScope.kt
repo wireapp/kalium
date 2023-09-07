@@ -32,6 +32,8 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
+import com.wire.kalium.logic.data.AccessRepository
+import com.wire.kalium.logic.data.AccessRepositoryDataSource
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -462,13 +464,16 @@ class UserSessionScope internal constructor(
         kaliumConfigs,
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
+
+    private val accessRepository: AccessRepository = AccessRepositoryDataSource(dataStore)
+
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
         networkStateObserver,
         kaliumConfigs::certPinningConfig,
-        dataStore
+        accessRepository
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -1375,7 +1380,7 @@ class UserSessionScope internal constructor(
             calls.establishedCall,
             calls.endCall,
             kaliumConfigs,
-            dataStore = dataStore
+            accessRepository
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)

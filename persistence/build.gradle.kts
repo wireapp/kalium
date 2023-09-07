@@ -69,6 +69,7 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
+                implementation(libs.androidx.dataStore)
 
                 implementation(project(":util"))
                 api(project(":logger"))

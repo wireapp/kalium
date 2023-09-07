@@ -18,16 +18,19 @@
 
 package com.wire.kalium.logic
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
+import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.persistence.datastore.getDataStore
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
@@ -44,6 +47,8 @@ actual class CoreLogic(
             rootPath = rootPath,
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
+
+    override val dataStore: DataStore<Preferences> get() = getDataStore()
 
     override val globalDatabase: GlobalDatabaseProvider =
         GlobalDatabaseProvider("$rootPath/global-storage")
@@ -71,10 +76,8 @@ actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager
-            = GlobalCallManager()
-    override val globalWorkScheduler: GlobalWorkScheduler
-            = GlobalWorkSchedulerImpl(this)
+    override val globalCallManager: GlobalCallManager = GlobalCallManager()
+    override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
 
 }
 

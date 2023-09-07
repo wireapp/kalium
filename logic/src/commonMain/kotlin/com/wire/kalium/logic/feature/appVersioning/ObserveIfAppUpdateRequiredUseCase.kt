@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.appVersioning
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -60,7 +61,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val networkStateObserver: NetworkStateObserver,
-    private val dataStore: DataStore<Preferences>,
+    private val accessRepository: AccessRepository,
     private val kaliumConfigs: KaliumConfigs
 ) : ObserveIfAppUpdateRequiredUseCase {
 
@@ -109,7 +110,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                         serverConfigRepository,
                                         networkStateObserver,
                                         kaliumConfigs::certPinningConfig,
-                                        dataStore
+                                        accessRepository
                                     )
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
                                 serverConfig.id to isUpdateRequired

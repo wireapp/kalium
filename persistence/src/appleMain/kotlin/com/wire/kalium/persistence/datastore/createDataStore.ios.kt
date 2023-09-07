@@ -15,30 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.persistence.datastore
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import kotlinx.atomicfu.locks.SynchronizedObject
-import kotlinx.atomicfu.locks.synchronized
-import okio.Path.Companion.toPath
+import platform.Foundation.NSDocumentDirectory
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
+import platform.Foundation.NSUserDomainMask
 
-private lateinit var dataStore: DataStore<Preferences>
-
-private val lock = SynchronizedObject()
-
-/**
- * Gets the singleton DataStore instance, creating it if necessary.
- */
-fun getDataStore(producePath: () -> String): DataStore<Preferences> =
-    synchronized(lock) {
-        if (::dataStore.isInitialized) {
-            dataStore
-        } else {
-            PreferenceDataStoreFactory.createWithPath(produceFile = { producePath().toPath() })
-                .also { dataStore = it }
-        }
+fun getDataStore(): DataStore<Preferences> = getDataStore(
+    producePath = {
+        val documentDirectory: NSURL? = NSFileManager.defaultManager.URLForDirectory(
+            directory = NSDocumentDirectory,
+            inDomain = NSUserDomainMask,
+            appropriateForURL = null,
+            create = false,
+            error = null,
+        )
+        requireNotNull(documentDirectory).path + "/$dataStoreFileName"
     }
-
-const val dataStoreFileName = "global_data.preferences_pb"
+)

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSou
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
 import com.wire.kalium.logic.data.client.UserClientRepositoryProviderImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
@@ -93,7 +94,7 @@ class GlobalKaliumScope internal constructor(
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val networkStateObserver: NetworkStateObserver,
-    private val dataStore: DataStore<Preferences>
+    private val accessRepository: AccessRepository
 ) : CoroutineScope {
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
@@ -136,14 +137,13 @@ class GlobalKaliumScope internal constructor(
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
-        get() =
-            AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
+        get() = AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository, accessRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
-    val session: SessionScope get() = SessionScope(sessionRepository)
+    val session: SessionScope get() = SessionScope(sessionRepository, accessRepository)
     val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val fetchApiVersion: FetchApiVersionUseCase get() = FetchApiVersionUseCaseImpl(serverConfigRepository)
     val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository)
@@ -170,7 +170,7 @@ class GlobalKaliumScope internal constructor(
             authenticationScopeProvider,
             userSessionScopeProvider.value,
             networkStateObserver,
-            dataStore,
+            accessRepository,
             kaliumConfigs,
         )
 
