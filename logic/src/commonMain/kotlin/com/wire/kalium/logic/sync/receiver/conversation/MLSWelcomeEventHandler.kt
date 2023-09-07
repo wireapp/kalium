@@ -57,29 +57,26 @@ internal class MLSWelcomeEventHandlerImpl(
                     client.processWelcomeMessage(event.message.decodeBase64Bytes())
                 }
             }.flatMap { groupID ->
-                val groupIdLogPair = Pair("groupId", groupID.obfuscateId())
-
                 conversationRepository.fetchConversationIfUnknown(event.conversationId)
                     .flatMap {
                         markConversationAsEstablished(GroupID(groupID))
                     }.flatMap {
                         resolveConversationIfOneOnOne(event.conversationId)
-                    }.onSuccess {
-                        kaliumLogger
-                            .logEventProcessing(
-                                EventLoggingStatus.SUCCESS,
-                                event,
-                                Pair("info", "Established mls conversation from welcome message"),
-                                groupIdLogPair
-                            )
-                    }.onFailure {
-                        kaliumLogger
-                            .logEventProcessing(
-                                EventLoggingStatus.FAILURE,
-                                event,
-                                groupIdLogPair
-                        )
-                }
+                    }
+            }.onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event,
+                        Pair("info", "Established mls conversation from welcome message")
+                    )
+            }.onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("failure", it)
+                    )
             }
 
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
