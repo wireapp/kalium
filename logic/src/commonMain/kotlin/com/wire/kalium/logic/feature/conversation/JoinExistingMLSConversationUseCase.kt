@@ -87,7 +87,13 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                     if (failure.kaliumException.isMlsStaleMessage()) {
                         kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
                         // Re-fetch current epoch and try again
-                        conversationRepository.fetchConversation(conversation.id).flatMap {
+                        if (conversation.type == Conversation.Type.ONE_ON_ONE) {
+                            conversationRepository.getConversationMembers(conversation.id).flatMap {
+                                conversationRepository.fetchMlsOneToOneConversation(it.first())
+                            }
+                        } else {
+                            conversationRepository.fetchConversation(conversation.id)
+                        }.flatMap {
                             conversationRepository.baseInfoById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(conversation)
                             }
@@ -131,6 +137,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
 
             type == Conversation.Type.ONE_ON_ONE -> {
+                kaliumLogger.i("Establish group for ${conversation.type}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
