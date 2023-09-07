@@ -31,7 +31,6 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 
 interface OneOnOneResolver {

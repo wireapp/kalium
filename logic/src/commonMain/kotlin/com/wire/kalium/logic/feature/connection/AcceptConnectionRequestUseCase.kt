@@ -54,9 +54,14 @@ internal class AcceptConnectionRequestUseCaseImpl(
             .flatMap { connection ->
                 conversationRepository.fetchConversation(connection.qualifiedConversationId)
                     .flatMap {
-                        conversationRepository.updateConversationModifiedDate(connection.qualifiedConversationId, DateTimeUtil.currentInstant())
+                        conversationRepository.updateConversationModifiedDate(
+                            connection.qualifiedConversationId,
+                            DateTimeUtil.currentInstant()
+                        )
                     }.flatMap {
-                        oneOnOneResolver.resolveOneOnOneConversationWithUserId(connection.qualifiedToId).map { }
+                        oneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                            connection.qualifiedToId
+                        ).map { }
                     }
             }
             .fold({
