@@ -32,6 +32,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 
 interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(): Either<CoreFailure, Unit>
@@ -54,12 +55,13 @@ internal class OneOnOneResolverImpl(
     }
 
     override suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId> =
-        userRepository.getKnownUser(userId).first()?.let {
+        userRepository.getKnownUser(userId).firstOrNull()?.let {
             resolveOneOnOneConversationWithUser(it)
         } ?: Either.Left(StorageFailure.DataNotFound)
 
-    override suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId> =
-        oneOnOneProtocolSelector.getProtocolForUser(user.id).flatMap { supportedProtocol ->
+    override suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId> {
+        kaliumLogger.i("Resolving one-on-one protocol for ${user.id.toLogString()}")
+        return oneOnOneProtocolSelector.getProtocolForUser(user.id).flatMap { supportedProtocol ->
             when (supportedProtocol) {
                 SupportedProtocol.PROTEUS -> oneOnOneMigrator.migrateToProteus(user)
                 SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(user)
@@ -71,4 +73,5 @@ internal class OneOnOneResolverImpl(
             }
             Either.Left(it)
         }
+    }
 }
