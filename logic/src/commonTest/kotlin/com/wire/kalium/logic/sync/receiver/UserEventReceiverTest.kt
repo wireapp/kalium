@@ -209,15 +209,14 @@ class UserEventReceiverTest {
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
         val (arrangement, eventReceiver) = arrange {
             withInsertConnectionFromEventSucceeding()
-            withGetKnownUserReturning(flowOf(TestUser.OTHER))
-            withResolveOneOnOneConversationWithUserReturning(Either.Right(TestConversation.ID))
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
         }
 
         eventReceiver.onEvent(event)
 
         verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .with(eq(TestUser.OTHER))
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
+            .with(eq(event.connection.qualifiedToId))
             .wasInvoked(exactly = once)
     }
 
