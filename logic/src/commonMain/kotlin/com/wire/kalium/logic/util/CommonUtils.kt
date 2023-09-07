@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.util
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.wire.kalium.logic.kaliumLogger
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.time.Duration
