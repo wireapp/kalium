@@ -20,17 +20,20 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 
 class ConnectionScope(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
+    private val oneOnOneResolver: OneOnOneResolver
 ) {
     val sendConnectionRequest: SendConnectionRequestUseCase get() = SendConnectionRequestUseCaseImpl(connectionRepository)
 
     val acceptConnectionRequest: AcceptConnectionRequestUseCase
         get() = AcceptConnectionRequestUseCaseImpl(
             connectionRepository,
-            conversationRepository
+            conversationRepository,
+            oneOnOneResolver
         )
 
     val cancelConnectionRequest: CancelConnectionRequestUseCase get() = CancelConnectionRequestUseCaseImpl(connectionRepository)

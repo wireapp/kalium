@@ -32,6 +32,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 
 interface OneOnOneMigrator {
     suspend fun migrateToProteus(user: OtherUser): Either<CoreFailure, ConversationId>
@@ -64,6 +65,7 @@ internal class OneOnOneMigratorImpl(
             Either.Right(it)
         }).flatMap { conversationId ->
             if (user.activeOneOnOneConversationId != conversationId) {
+                kaliumLogger.d("resolved one-on-one to proteus, user = ${user.id.toLogString()}")
                 userRepository.updateActiveOneOnOneConversation(user.id, conversationId)
             }
             Either.Right(conversationId)
@@ -75,6 +77,9 @@ internal class OneOnOneMigratorImpl(
                 if (user.activeOneOnOneConversationId == mlsConversation) {
                     return@flatMap Either.Right(mlsConversation)
                 }
+
+                kaliumLogger.d("resolved one-on-one to MLS, user = ${user.id.toLogString()}")
+
                 migrateOneOnOneHistory(user, mlsConversation)
                     .flatMap {
                         userRepository.updateActiveOneOnOneConversation(
