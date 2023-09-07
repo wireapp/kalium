@@ -35,6 +35,7 @@ object MetricsCollector {
         this.registry.counter(key, tags).increment()
     }
 
+    @Suppress("MagicNumber")
     suspend fun <T> time(key: String, tags: List<Tag>, func: suspend () -> T): T {
         val timer: Timer = Timer
             .builder(key)
@@ -55,6 +56,7 @@ object MetricsCollector {
         this.registry.gaugeMapSize(key, tags, collection)
     }
 
+    @Suppress("MagicNumber")
     fun distribution(key: String, tags: List<Tag>, amount: Double) {
         val distribution = DistributionSummary
             .builder(key)

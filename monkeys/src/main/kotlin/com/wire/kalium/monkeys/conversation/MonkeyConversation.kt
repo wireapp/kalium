@@ -37,7 +37,6 @@ class MonkeyConversation(val creator: Monkey, val conversation: Conversation, va
         MetricsCollector.gaugeCollection("g_conversationMembers", listOf(Tag.of("id", conversation.id.toString())), this.participants)
     }
 
-
     /**
      * Return a [count] number of random [Monkey] from the conversation.
      * It returns only logged-in users, if there are none an empty list will be returned
