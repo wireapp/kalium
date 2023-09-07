@@ -51,11 +51,23 @@ interface EventRepository {
     suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
 
     /**
-     * Gets the last processed event ID, if it exists.
-     * Otherwise, it attempts to fetch the last event stored
-     * in remote.
+     * Retrieves the last processed event ID from the storage.
+     *
+     * @return an [Either] object representing either a [StorageFailure] or a [String].
+     *         - If the retrieval is successful, returns [Either.Right] with the last processed event ID as a [String].
+     *         - If there is a failure during retrieval, returns [Either.Left] with a [StorageFailure] object.
      */
-    suspend fun lastEventId(): Either<CoreFailure, String>
+    suspend fun lastProcessedEventId(): Either<StorageFailure, String>
+
+    /**
+     * Clears the last processed event ID.
+     *
+     * @return An [Either] object representing the result of the operation.
+     * The [Either] object contains either a [StorageFailure] if the operation fails, or [Unit] if the operation succeeds.
+     */
+    suspend fun clearLastProcessedEventId(): Either<StorageFailure, Unit>
+
+    suspend fun fetchMostRecentEventId(): Either<CoreFailure, String>
 
     /**
      * Fetches the oldest available event ID from remote.
@@ -73,7 +85,6 @@ class EventDataSource(
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
-
     override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
@@ -130,19 +141,20 @@ class EventDataSource(
         }
     }
 
-    override suspend fun lastEventId(): Either<CoreFailure, String> = wrapStorageRequest {
+    override suspend fun lastProcessedEventId(): Either<StorageFailure, String> = wrapStorageRequest {
         metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
-    }.fold({
+    }
+
+    override suspend fun clearLastProcessedEventId(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        metadataDAO.deleteValue(LAST_PROCESSED_EVENT_ID_KEY)
+    }
+
+    override suspend fun fetchMostRecentEventId(): Either<CoreFailure, String> =
         currentClientId()
             .flatMap { currentClientId ->
                 wrapApiRequest { notificationApi.mostRecentNotification(currentClientId.value) }
-                    .flatMap { lastEvent ->
-                        updateLastProcessedEventId(lastEvent.id).map { lastEvent.id }
-                    }
+                    .map { it.id }
             }
-    }, {
-        Either.Right(it)
-    })
 
     override suspend fun updateLastProcessedEventId(eventId: String) =
         wrapStorageRequest { metadataDAO.insertValue(eventId, LAST_PROCESSED_EVENT_ID_KEY) }
