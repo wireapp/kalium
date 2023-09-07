@@ -21,6 +21,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.importer.ActionConfig
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -33,20 +34,28 @@ import kotlinx.serialization.serializer
 object ActionScheduler {
     @Suppress("TooGenericExceptionCaught")
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
-    suspend fun start(actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    suspend fun start(testCase: String, actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         actions.forEach { actionConfig ->
             CoroutineScope(Dispatchers.Default).launch {
                 while (this.isActive) {
+                    val actionName = actionConfig.type::class.serializer().descriptor.serialName
+                    val tags = listOf(Tag.of("testCase", testCase))
                     try {
-                        val actionName = actionConfig.type::class.serializer().descriptor.serialName
                         logger.i("Running action $actionName: ${actionConfig.description} ${actionConfig.count} times")
                         repeat(actionConfig.count.toInt()) {
                             val startTime = System.currentTimeMillis()
-                            Action.fromConfig(actionConfig).execute(coreLogic, monkeyPool)
+                            MetricsCollector.time("t_$actionName", tags) {
+                                Action.fromConfig(actionConfig).execute(coreLogic, monkeyPool)
+                            }
+                            MetricsCollector.count("c_$actionName", tags)
                             logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
                         }
                     } catch (e: Exception) {
-                        logger.e("Error in action ${actionConfig.description}", e)
+                        logger.e("Error in action ${actionConfig.description}:", e)
+                        if (e.cause != null) {
+                            logger.e("Cause for error in ${actionConfig.description}:", e.cause)
+                        }
+                        MetricsCollector.count("c_errors", tags.plusElement(Tag.of("action", actionName)))
                     }
                     delay(actionConfig.repeatInterval.toLong())
                 }
