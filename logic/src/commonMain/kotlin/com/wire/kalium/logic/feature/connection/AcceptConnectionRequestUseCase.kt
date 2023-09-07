@@ -51,13 +51,16 @@ internal class AcceptConnectionRequestUseCaseImpl(
 
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
         return connectionRepository.updateConnectionStatus(userId, ConnectionState.ACCEPTED)
-            .flatMap {
-                conversationRepository.fetchConversation(it.qualifiedConversationId)
-                conversationRepository.updateConversationModifiedDate(it.qualifiedConversationId, DateTimeUtil.currentInstant())
-                oneOnOneResolver.resolveOneOnOneConversationWithUserId(it.qualifiedToId).map { }
+            .flatMap { connection ->
+                conversationRepository.fetchConversation(connection.qualifiedConversationId)
+                    .flatMap {
+                        conversationRepository.updateConversationModifiedDate(connection.qualifiedConversationId, DateTimeUtil.currentInstant())
+                    }.flatMap {
+                        oneOnOneResolver.resolveOneOnOneConversationWithUserId(connection.qualifiedToId).map { }
+                    }
             }
             .fold({
-                kaliumLogger.e("An error occurred when accepting the connection request from $userId")
+                kaliumLogger.e("An error occurred when accepting the connection request from ${userId.toLogString()}: $it")
                 AcceptConnectionRequestUseCaseResult.Failure(it)
             }, {
                 AcceptConnectionRequestUseCaseResult.Success
