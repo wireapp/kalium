@@ -54,6 +54,7 @@ mockk = "1.13.5"
 faker = "1.14.0"
 robolectric = "4.9"
 stately = "2.0.0-rc3"
+micrometer = "1.11.3"
 
 [plugins]
 # Home-made convention plugins
@@ -140,6 +141,8 @@ ktor-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
 ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
+ktor-server = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-serverNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 
 # okio
 okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
@@ -188,3 +191,4 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }

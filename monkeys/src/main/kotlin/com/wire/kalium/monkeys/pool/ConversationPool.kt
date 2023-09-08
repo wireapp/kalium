@@ -20,6 +20,7 @@ package com.wire.kalium.monkeys.pool
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
 import com.wire.kalium.monkeys.importer.UserCount
@@ -32,6 +33,10 @@ object ConversationPool {
 
     // since this is created in the setup, there's no need to be thread safe
     private val prefixedConversations: MutableMap<String, MutableList<ConversationId>> = mutableMapOf()
+
+    init {
+        MetricsCollector.gaugeMap("g_conversations", listOf(), this.pool)
+    }
 
     fun get(conversationId: ConversationId): MonkeyConversation? {
         return this.pool[conversationId]
@@ -122,6 +127,4 @@ object ConversationPool {
             this.pool[it] ?: error("Inconsistent state. Conversation $it is in the prefixed pool but not on the general")
         } ?: error("Conversation from target $target not found in the pool")
     }
-
-    fun size(): UInt = this.pool.size.toUInt()
 }
