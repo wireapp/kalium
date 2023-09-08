@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.util.suffixIfNot
+
 /*
  * Wire
  * Copyright (C) 2023 Wire Swiss GmbH
@@ -56,8 +58,12 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
-                // CoreCrypto
-                implementation(libs.coreCrypto)
+                // Concurrent collections
+                implementation(libs.concurrentCollections)
+                implementation(libs.statelyCommons)
+                configurations.all {
+                    exclude(group = "co.touchlab", module = "stately-strict-jvm")
+                }
             }
         }
         val commonTest by getting {
@@ -79,10 +85,17 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
+        val appleMain by getting {
+            dependencies {
+                implementation(libs.coreCrypto)
+            }
+        }
+
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
+                implementation(libs.coreCryptoJvm)
             }
         }
         val jvmTest by getting
@@ -91,9 +104,23 @@ kotlin {
             dependencies {
                 implementation(libs.paging3)
                 implementation(libs.work)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
+            }
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.robolectric)
+                implementation(libs.core.ktx)
             }
         }
     }
+}
+
+android {
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
@@ -106,4 +133,21 @@ dependencies {
 
 ksp {
     arg("mockative.stubsUnitByDefault", "true")
+}
+
+android {
+    testOptions.unitTests.all { test ->
+        // only run tests that are different for the android platform, the rest is covered by the jvm tests
+        file("src/androidUnitTest/kotlin").let { dir ->
+            if (dir.exists() && dir.isDirectory) {
+                dir.walk().forEach {
+                    if (it.isFile && it.extension == "kt") {
+                        it.relativeToOrNull(dir)?.let {
+                            test.include(it.path.removeSuffix(".kt").suffixIfNot("*"))
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

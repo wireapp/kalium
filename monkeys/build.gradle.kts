@@ -68,7 +68,10 @@ sourceSets {
             implementation(libs.ktor.contentNegotiation)
             implementation(libs.ktor.json)
             implementation(libs.ktor.authClient)
+            implementation(libs.ktor.server)
+            implementation(libs.ktor.serverNetty)
             implementation(libs.okhttp.loggingInterceptor)
+            implementation(libs.micrometer)
 
             implementation(libs.faker)
         }

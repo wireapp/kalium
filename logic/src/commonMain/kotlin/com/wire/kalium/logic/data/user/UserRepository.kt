@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.user
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
@@ -64,7 +65,6 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -74,7 +74,6 @@ import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.Instant
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.minutes
@@ -156,7 +155,7 @@ internal class UserDataSource internal constructor(
      *
      * This is an in-memory cache, to help avoid unnecessary requests in a time window.
      */
-    private val federatedUsersExpirationCache = ConcurrentMap<UserId, Instant>()
+    private val federatedUsersExpirationCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { userDTO ->

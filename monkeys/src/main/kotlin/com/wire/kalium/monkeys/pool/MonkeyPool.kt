@@ -18,13 +18,15 @@
 package com.wire.kalium.monkeys.pool
 
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.importer.UserData
+import io.micrometer.core.instrument.Tag
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
-object MonkeyPool {
+class MonkeyPool(users: List<UserData>, testCase: String) {
     // a map of monkeys per domain
     private val pool: ConcurrentHashMap<String, MutableList<Monkey>> = ConcurrentHashMap()
 
@@ -37,12 +39,28 @@ object MonkeyPool {
     // a map of logged out monkeys per domain
     private val poolLoggedOut: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
-    fun init(users: List<UserData>) {
+    init {
         users.forEach {
             val monkey = Monkey(it)
             this.pool.getOrPut(it.backend.teamName) { mutableListOf() }.add(monkey)
             this.poolLoggedOut.getOrPut(it.backend.teamName) { ConcurrentHashMap() }[it.userId] = monkey
             this.poolById[it.userId] = monkey
+        }
+        this.poolLoggedOut.forEach { (domain, usersById) ->
+            MetricsCollector.gaugeMap(
+                "g_loggedOutUsers",
+                listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)),
+                usersById
+            )
+            // init so we can have metrics for it
+            this.poolLoggedIn[domain] = ConcurrentHashMap()
+        }
+        this.poolLoggedIn.forEach { (domain, usersById) ->
+            MetricsCollector.gaugeMap(
+                "g_loggedInUsers",
+                listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)),
+                usersById
+            )
         }
     }
 

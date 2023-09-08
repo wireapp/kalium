@@ -19,9 +19,10 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.mock
@@ -29,72 +30,105 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class IncrementalSyncRecoveryHandlerTest {
 
     @Test
-    fun givenClientOrEventNotFoundFailure_whenRecovering_thenRestartSlowSyncProcess() = runTest {
+    fun givenClientOrEventNotFoundFailure_whenRecovering_thenClearLastEventIdAndRestartSlowSync() = runTest {
+        val oldestEventId = "oldestEventId"
         // given
-        val arrangement = Arrangement().arrange()
+        val (arrangement, recoveryHandler) = arrange {
+            withOldestEventIdReturning(Either.Right(oldestEventId))
+            withClearLastEventIdReturning(Either.Right(Unit))
+            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+        }
 
+        var wasInvoked = false
         // when
-        arrangement.recoverWithFailure(NetworkFailure.ServerMiscommunication(TestNetworkException.notFound))
+        recoveryHandler.recover(CoreFailure.SyncEventOrClientNotFound) {
+            wasInvoked = true
+        }
 
         // then
         with(arrangement) {
+            verify(eventRepository)
+                .suspendFunction(eventRepository::clearLastProcessedEventId)
+                .wasInvoked(exactly = once)
+
             verify(restartSlowSyncProcessForRecoveryUseCase)
                 .function(restartSlowSyncProcessForRecoveryUseCase::invoke)
                 .with()
                 .wasInvoked(exactly = once)
-
-            verify(onIncrementalSyncRetryCallback)
-                .function(onIncrementalSyncRetryCallback::retry)
-                .with()
-                .wasInvoked(exactly = once)
         }
+        assertTrue(wasInvoked)
     }
 
     @Test
     fun givenUnknownFailure_whenRecovering_thenRetryIncrementalSync() = runTest {
         // given
-        val arrangement = Arrangement().arrange()
+        val (arrangement, recoveryHandler) = arrange {
+            withOldestEventIdReturning(Either.Right("oldestEventId"))
+            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+        }
+
+        var wasInvoked = false
 
         // when
-        arrangement.recoverWithFailure(
-            CoreFailure.Unknown(IllegalStateException("Some illegal state exception"))
-        )
+        recoveryHandler.recover(CoreFailure.Unknown(IllegalStateException("Some illegal state exception"))) {
+            wasInvoked = true
+        }
 
         // then
         with(arrangement) {
-            verify(onIncrementalSyncRetryCallback)
-                .function(onIncrementalSyncRetryCallback::retry)
-                .with()
-                .wasInvoked(exactly = once)
-
             verify(restartSlowSyncProcessForRecoveryUseCase)
                 .function(restartSlowSyncProcessForRecoveryUseCase::invoke)
                 .with()
                 .wasNotInvoked()
         }
+        assertTrue(wasInvoked)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenUnknownFailure_whenRecovering_thenShouldNotClearLastProcessedEventId() = runTest {
+        // given
+        val (arrangement, recoveryHandler) = arrange {
+            withOldestEventIdReturning(Either.Right("oldestEventId"))
+            withClearLastEventIdReturning(Either.Right(Unit))
+            withUpdateLastProcessedEventIdReturning(Either.Right(Unit))
+        }
 
-        @Mock
-        val onIncrementalSyncRetryCallback = mock(classOf<OnIncrementalSyncRetryCallback>())
+        // when
+        recoveryHandler.recover(CoreFailure.Unknown(IllegalStateException("Some illegal state exception"))) {}
+
+        // then
+        with(arrangement) {
+            verify(eventRepository)
+                .suspendFunction(eventRepository::clearLastProcessedEventId)
+                .wasNotInvoked()
+        }
+    }
+
+    private class Arrangement(private val configure: Arrangement.() -> Unit) :
+        EventRepositoryArrangement by EventRepositoryArrangementImpl() {
 
         @Mock
         val restartSlowSyncProcessForRecoveryUseCase = mock(classOf<RestartSlowSyncProcessForRecoveryUseCase>())
 
         private val incrementalSyncRecoveryHandler by lazy {
-            IncrementalSyncRecoveryHandlerImpl(restartSlowSyncProcessForRecoveryUseCase)
+            IncrementalSyncRecoveryHandlerImpl(
+                restartSlowSyncProcessForRecoveryUseCase,
+                eventRepository
+            )
         }
 
-        suspend fun recoverWithFailure(failure: CoreFailure) {
-            incrementalSyncRecoveryHandler.recover(failure, onIncrementalSyncRetryCallback)
+        fun arrange(): Pair<Arrangement, IncrementalSyncRecoveryHandler> = run {
+            configure()
+            this@Arrangement to incrementalSyncRecoveryHandler
         }
-
-        fun arrange() = this
     }
 
+    private companion object {
+        fun arrange(configure: Arrangement.() -> Unit = {}) = Arrangement(configure).arrange()
+    }
 }

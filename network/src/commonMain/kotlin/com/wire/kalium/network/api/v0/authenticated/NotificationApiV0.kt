@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
+import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.MINIMUM_QUERY_SIZE
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_AWAIT
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_LAST
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_NOTIFICATIONS
@@ -64,13 +65,19 @@ internal open class NotificationApiV0 internal constructor(
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
-    override suspend fun lastNotification(
+    override suspend fun mostRecentNotification(
         queryClient: String
     ): NetworkResponse<EventResponse> = wrapKaliumResponse {
         httpClient.get("$PATH_NOTIFICATIONS/$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }
     }
+
+    override suspend fun oldestNotification(queryClient: String): NetworkResponse<EventResponse> =
+        getAllNotifications(
+            querySize = MINIMUM_QUERY_SIZE,
+            queryClient = queryClient
+        ).mapSuccess { it.notifications.first() }
 
     override suspend fun notificationsByBatch(
         querySize: Int,
@@ -104,7 +111,7 @@ internal open class NotificationApiV0 internal constructor(
     }
 
     override suspend fun listenToLiveEvents(clientId: String): NetworkResponse<Flow<WebSocketEvent<EventResponse>>> =
-        lastNotification(clientId).mapSuccess {
+        mostRecentNotification(clientId).mapSuccess {
             flow {
                 // TODO: Delete this once we can intercept and handle token refresh when connecting WebSocket
                 //       WebSocket requests are not intercept-able, and they throw
@@ -163,6 +170,12 @@ internal open class NotificationApiV0 internal constructor(
         const val SIZE_QUERY_KEY = "size"
         const val CLIENT_QUERY_KEY = "client"
         const val SINCE_QUERY_KEY = "since"
+
+        /**
+         * The backend doesn't allow queries smaller than a minimum
+         * value.
+         */
+        const val MINIMUM_QUERY_SIZE = 100
     }
 
     internal object Hardcoded {

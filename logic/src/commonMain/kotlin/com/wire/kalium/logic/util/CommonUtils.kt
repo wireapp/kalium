@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.util
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.time.Duration
@@ -82,4 +83,14 @@ fun Int?.isGreaterThan(other: Int?): Boolean {
         returns(true) implies (other != null)
     }
     return this is Int && other is Int && this > other
+}
+
+// Convenience method to compute a value if absent in a "Stately" concurrent map
+fun <K, V> ConcurrentMutableMap<K, V>.safeComputeIfAbsent(key: K, f: () -> V): V {
+    return this.block {
+        if (this.containsKey(key)) return@block this[key]!!
+        val value = f()
+        this[key] = value
+        return@block value
+    }
 }

@@ -18,12 +18,16 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
@@ -40,6 +44,10 @@ internal interface ConversationRepositoryArrangement {
         result: Either<CoreFailure, Map<ConversationId, UserId>>,
         domain: Matcher<String> = any()
     )
+
+    fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = any())
+    fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = any())
+    fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -65,5 +73,26 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .suspendFunction(conversationRepository::getOneOnOneConversationsWithFederatedMembers)
             .whenInvokedWith(domain)
             .thenReturn(result)
+    }
+
+    override fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::deleteConversation)
+            .whenInvokedWith(conversationId)
+            .thenReturn(Either.Right(Unit))
+    }
+
+    override fun withDeletingConversationFailing(conversationId: Matcher<ConversationId>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::deleteConversation)
+            .whenInvokedWith(conversationId)
+            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+    }
+
+    override fun withGetConversation(conversation: Conversation?) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationById)
+            .whenInvokedWith(any())
+            .thenReturn(conversation)
     }
 }

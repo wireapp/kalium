@@ -45,7 +45,7 @@ internal interface EventProcessor {
      * is not transient.
      * If the processing fails, the last processed event ID will not be updated.
      * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
-     * @see EventRepository.lastEventId
+     * @see EventRepository.lastProcessedEventId
      * @see EventRepository.updateLastProcessedEventId
      */
     suspend fun processEvent(event: Event): Either<CoreFailure, Unit>

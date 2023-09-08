@@ -54,7 +54,7 @@ fun LibraryExtension.commonAndroidLibConfig(
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    packagingOptions {
+    packaging {
         resources.pickFirsts.add("google/protobuf/*.proto")
         jniLibs.pickFirsts.add("**/libsodium.so")
     }

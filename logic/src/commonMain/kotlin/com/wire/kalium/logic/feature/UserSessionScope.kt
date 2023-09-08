@@ -189,7 +189,7 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
-import com.wire.kalium.logic.feature.message.DeleteConversationNotificationsManagerImpl
+import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -848,6 +848,7 @@ class UserSessionScope internal constructor(
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
+            eventRepository,
             syncSelfUser,
             syncFeatureConfigsUseCase,
             syncConversations,
@@ -895,7 +896,10 @@ class UserSessionScope internal constructor(
         )
     }
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
-        get() = IncrementalSyncRecoveryHandlerImpl(restartSlowSyncProcessForRecoveryUseCase)
+        get() = IncrementalSyncRecoveryHandlerImpl(
+            restartSlowSyncProcessForRecoveryUseCase,
+            eventRepository,
+        )
 
     private val incrementalSyncManager by lazy {
         IncrementalSyncManager(
@@ -1060,7 +1064,7 @@ class UserSessionScope internal constructor(
             callManager,
             persistMessage,
             persistReaction,
-            MessageTextEditHandlerImpl(messageRepository),
+            MessageTextEditHandlerImpl(messageRepository, EphemeralEventsNotificationManagerImpl),
             LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
@@ -1068,7 +1072,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, EphemeralEventsNotificationManagerImpl, userId),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -1101,7 +1105,7 @@ class UserSessionScope internal constructor(
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
-            userRepository, conversationRepository, DeleteConversationNotificationsManagerImpl
+            userRepository, conversationRepository, EphemeralEventsNotificationManagerImpl
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
