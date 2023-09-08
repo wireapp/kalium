@@ -28,14 +28,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
+/**
+ * This use case will observe and return the conversation details for a specific conversation.
+ * Also it will observe conversation verification status and update it when needed.
+ * @see ConversationDetails
+ */
 interface ObserveConversationDetailsUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Flow<ObserveConversationDetailsResult>
 }
 
-/**
- * This use case will observe and return the conversation details for a specific conversation.
- * @see ConversationDetails
- */
 internal class ObserveConversationDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val verificationStatusHandler: ConversationVerificationStatusHandler,
