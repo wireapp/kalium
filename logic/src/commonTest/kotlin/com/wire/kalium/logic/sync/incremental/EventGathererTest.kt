@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.incremental
 import app.cash.turbine.test
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
@@ -433,9 +434,9 @@ class EventGathererTest {
                 .thenReturn(either)
         }
 
-        fun withLastEventIdReturning(either: Either<CoreFailure, String>) = apply {
+        fun withLastEventIdReturning(either: Either<StorageFailure, String>) = apply {
             given(eventRepository)
-                .suspendFunction(eventRepository::lastEventId)
+                .suspendFunction(eventRepository::lastProcessedEventId)
                 .whenInvoked()
                 .thenReturn(either)
         }
