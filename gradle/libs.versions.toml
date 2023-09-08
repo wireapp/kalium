@@ -30,7 +30,7 @@ kover = "0.7.1"
 multiplatform-settings = "1.0.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the work around in the dev.mk file
-sqldelight = "2.0.0-alpha05"
+sqldelight = "2.0.0"
 sqlcipher-android = "4.5.3"
 pbandk = "0.14.2"
 turbine = "1.0.0"
