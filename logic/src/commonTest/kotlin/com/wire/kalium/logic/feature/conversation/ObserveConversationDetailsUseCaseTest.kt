@@ -27,7 +27,9 @@ import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
+import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -46,11 +48,19 @@ class ObserveConversationDetailsUseCaseTest {
     @Mock
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
+    @Mock
+    private val verificationStatusHandler = mock(classOf<ConversationVerificationStatusHandler>())
+
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationDetailsUseCase(conversationRepository)
+        observeConversationsUseCase = ObserveConversationDetailsUseCaseImpl(conversationRepository, verificationStatusHandler)
+
+        given(verificationStatusHandler)
+            .suspendFunction(verificationStatusHandler::invoke)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf())
     }
 
     @Test
@@ -105,11 +115,11 @@ class ObserveConversationDetailsUseCaseTest {
 
         observeConversationsUseCase(TestConversation.ID).test {
             awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
+                assertIs<ObserveConversationDetailsResult.Success>(item)
                 assertEquals(conversationDetailsValues[0].value, item.conversationDetails)
             }
             awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
+                assertIs<ObserveConversationDetailsResult.Success>(item)
                 assertEquals(conversationDetailsValues[1].value, item.conversationDetails)
             }
             awaitComplete()
@@ -127,7 +137,7 @@ class ObserveConversationDetailsUseCaseTest {
 
         observeConversationsUseCase(TestConversation.ID).test {
             awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsUseCase.Result.Failure>(item)
+                assertIs<ObserveConversationDetailsResult.Failure>(item)
                 assertEquals(failure, item.storageFailure)
             }
             awaitComplete()

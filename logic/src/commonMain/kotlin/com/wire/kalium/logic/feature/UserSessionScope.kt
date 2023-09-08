@@ -154,12 +154,8 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.conversation.ConversationVerificationStatusHandler
-import com.wire.kalium.logic.feature.conversation.ConversationVerificationStatusHandlerImpl
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.ObserveConversationProtocolInfoUseCase
-import com.wire.kalium.logic.feature.conversation.ObserveConversationProtocolInfoUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
@@ -1150,12 +1146,6 @@ class UserSessionScope internal constructor(
             conversationDAO = userStorage.database.conversationDAO
         )
 
-    private val checkConversationVerificationStatus: ObserveConversationProtocolInfoUseCase
-        get() = ObserveConversationProtocolInfoUseCaseImpl(
-            conversationRepository,
-            conversationVerificationStatusHandler
-        )
-
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1486,14 +1476,6 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
-
-    private val conversationVerificationStatusHandler: ConversationVerificationStatusHandler
-        get() = ConversationVerificationStatusHandlerImpl(
-            conversationRepository,
-            persistMessage,
-            mlsConversationRepository,
-            userId
-        )
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
