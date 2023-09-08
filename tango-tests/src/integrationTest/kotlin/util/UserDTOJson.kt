@@ -18,7 +18,6 @@
 
 package util
 
-import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.json.addJsonObject

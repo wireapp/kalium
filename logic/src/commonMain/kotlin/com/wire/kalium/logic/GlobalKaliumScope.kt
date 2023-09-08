@@ -97,7 +97,9 @@ class GlobalKaliumScope constructor(
             kaliumConfigs.developmentApiEnabled,
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
-            kaliumConfigs.certPinningConfig
+            kaliumConfigs.certPinningConfig,
+            kaliumConfigs.useMockEngine,
+            kaliumConfigs.mockEngine
         )
     }
 ) : CoroutineScope {

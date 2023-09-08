@@ -111,7 +111,9 @@ interface AuthenticatedNetworkContainer {
             sessionManager: SessionManager,
             selfUserId: UserId,
             userAgent: String,
-            certificatePinning: CertificatePinning
+            certificatePinning: CertificatePinning,
+            useMockEngine: Boolean,
+            mockEngine: HttpClientEngine?
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -120,13 +122,17 @@ interface AuthenticatedNetworkContainer {
                 0 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
-                    certificatePinning
+                    certificatePinning,
+                    useMockEngine,
+                    mockEngine
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
-                    certificatePinning
+                    certificatePinning,
+                    useMockEngine,
+                    mockEngine
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(

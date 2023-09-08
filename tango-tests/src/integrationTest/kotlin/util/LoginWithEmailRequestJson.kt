@@ -18,8 +18,6 @@
 
 package util
 
-import com.wire.kalium.api.json.FaultyJsonProvider
-import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import kotlinx.serialization.json.buildJsonObject
 

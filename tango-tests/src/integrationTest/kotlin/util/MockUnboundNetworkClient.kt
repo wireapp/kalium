@@ -32,6 +32,7 @@ import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
+import kotlin.test.fail
 
 /*
  * Wire
@@ -62,68 +63,41 @@ object MockUnboundNetworkClient {
      * @param assertion lambda function to apply assertions to the request
      * @return mock Ktor http client
      */
-    fun mockUnboundNetworkClient(
-        responseBody: String,
-        statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {},
-        headers: Map<String, String>? = null,
+    class TestRequestHandler(
+        val path: String,
+        val responseBody: String,
+        val statusCode: HttpStatusCode,
+        val assertion: (HttpRequestData.() -> Unit) = {},
+        val headers: Map<String, String>? = null
+    )
 
-        networkStateObserver: NetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-    ): UnboundNetworkClient {
-        val mockEngine = createMockEngine(
-            ByteReadChannel(responseBody),
-            statusCode,
-            assertion,
-            headers
-        )
-        return UnboundNetworkClient(
-            engine = mockEngine,
-            networkStateObserver = networkStateObserver
-        )
+    fun createMockEngine(
+        expectedRequests: List<TestRequestHandler>
+    ): MockEngine = MockEngine { currentRequest ->
+        expectedRequests.forEach { request ->
+            val head: Map<String, List<String>> = (request.headers?.let {
+                mutableMapOf(HttpHeaders.ContentType to "application/json").plus(request.headers).mapValues { listOf(it.value) }
+            } ?: run {
+                mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
+            })
+            if (request.path == currentRequest.url.toString()) {
+                return@MockEngine respond(
+                    content = ByteReadChannel(request.responseBody),
+                    status = request.statusCode,
+                    headers = HeadersImpl(head)
+                )
+            }
+        }
+        fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
     }
 
-    /**
-     * creates an unauthenticated mock Ktor Http client
-     * @param responseBody the response body as Json string
-     * @param statusCode the response http status code
-     * @param assertion lambda function to apply assertions to the request
-     * @return mock Ktor http client
-     */
-    fun mockUnauthenticatedNetworkClient(
+    fun createMockEngine2(
         responseBody: String,
-        statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {},
-        headers: Map<String, String>? = null,
-
-        networkStateObserver: NetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-    ): UnauthenticatedNetworkClient =
-        mockUnauthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers, networkStateObserver)
-
-    private fun mockUnauthenticatedNetworkClient(
-        responseBody: ByteReadChannel,
-        statusCode: HttpStatusCode,
-        assertion: (HttpRequestData.() -> Unit) = {},
-        headers: Map<String, String>?,
-        networkStateObserver: NetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-    ): UnauthenticatedNetworkClient {
-
-        val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
-
-        return UnauthenticatedNetworkContainerV0(
-            backendLinks = TEST_BACKEND,
-            engine = mockEngine,
-            proxyCredentials = null,
-            networkStateObserver = networkStateObserver,
-            certificatePinning = emptyMap()
-        ).unauthenticatedNetworkClient
-    }
-
-    private fun createMockEngine(
-        responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null
     ): MockEngine {
+
         val newHeaders: Map<String, List<String>> = (headers?.let {
             headers.mapValues { listOf(it.value) }
         } ?: run {
@@ -133,7 +107,7 @@ object MockUnboundNetworkClient {
         return MockEngine { request ->
             request.assertion()
             respond(
-                content = responseBody,
+                content = ByteReadChannel(responseBody),
                 status = statusCode,
                 headers = HeadersImpl(newHeaders)
             )

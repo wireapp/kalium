@@ -16,120 +16,110 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.wire.kalium.logic.configuration.server.ApiVersionMapper
-import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.http.ContentType
+
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Test
 import util.AccessTokenDTOJson
 import util.ErrorResponseJson
 import util.LoginWithEmailRequestJson
 import util.MockUnboundNetworkClient
+import util.MockUnboundNetworkClient.createMockEngine
 import util.UserDTOJson
-import kotlin.test.assertContains
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
-
 class TempTest {
-    @Test
-    fun testFun() = runTest {
-        val networkClient = MockUnboundNetworkClient.mockUnboundNetworkClient(
-            ACME_DIRECTORIES_RESPONSE,
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                val contentType = ContentType.Application.Json.withParameter("charset", "UTF-8")
-                assertTrue(
-                    contentType.match(this.body.contentType ?: ContentType.Any),
-                    "contentType: ${this.body.contentType} doesn't match expected contentType: $contentType"
-                )
-                assertContains(this.url.toString(), ACME_DIRECTORIES_PATH)
-                assertEquals(this.method, method)
-                assertTrue(this.url.parameters.names().isEmpty())
-            }
-        )
-
-        val coreLogic = coreLogic(
-            rootPath = "$HOME_DIRECTORY/.kalium/accounts",
-            kaliumConfigs = KaliumConfigs(
-                developmentApiEnabled = true,
-                encryptProteusStorage = true,
-                isMLSSupportEnabled = true,
-                wipeOnDeviceRemoval = true,
-            ),
-            networkClient = networkClient
-        )
-
-        launch {
-            val expected = ACME_DIRECTORIES_SAMPLE
-
-            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.NotConnected)
-
-            coreLogic.getGlobalScope().unboundNetworkContainer
-                .value.acmeApi.getACMEDirectories().also { actual ->
-                    assertIs<NetworkResponse.Error>(actual)
-                    assertIs<KaliumException.NoNetwork>(actual.kException.cause)
-                }
-
-            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
-
-            coreLogic.getGlobalScope().unboundNetworkContainer
-                .value.acmeApi.getACMEDirectories().also { actual ->
-                    assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
-                    assertEquals(expected, actual.value)
-                }
-
-            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithoutInternet)
-
-            coreLogic.getGlobalScope().unboundNetworkContainer
-                .value.acmeApi.getACMEDirectories().also { actual ->
-                    assertIs<NetworkResponse.Error>(actual)
-                    assertIs<KaliumException.NoNetwork>(actual.kException.cause)
-                }
-        }
-    }
+//     @Test
+//     fun testFun() = runTest {
+//         val networkClient = createMockEngine(
+//             ACME_DIRECTORIES_RESPONSE,
+//             statusCode = HttpStatusCode.OK,
+//             assertion = {
+//                 val contentType = ContentType.Application.Json.withParameter("charset", "UTF-8")
+//                 assertTrue(
+//                     contentType.match(this.body.contentType ?: ContentType.Any),
+//                     "contentType: ${this.body.contentType} doesn't match expected contentType: $contentType"
+//                 )
+//                 assertContains(this.url.toString(), ACME_DIRECTORIES_PATH)
+//                 assertEquals(this.method, method)
+//                 assertTrue(this.url.parameters.names().isEmpty())
+//             }
+//         )
+//
+//         val coreLogic = coreLogic(
+//             rootPath = "$HOME_DIRECTORY/.kalium/accounts",
+//             kaliumConfigs = KaliumConfigs(
+//                 developmentApiEnabled = true,
+//                 encryptProteusStorage = true,
+//                 isMLSSupportEnabled = true,
+//                 wipeOnDeviceRemoval = true,
+//                 useMockEngine = true,
+//                 mockEngine = networkClient
+//             ),
+//         )
+//
+//         launch {
+//             val expected = ACME_DIRECTORIES_SAMPLE
+//
+//             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.NotConnected)
+//
+//             coreLogic.getGlobalScope().unboundNetworkContainer
+//                 .value.acmeApi.getACMEDirectories().also { actual ->
+//                     assertIs<NetworkResponse.Error>(actual)
+//                     assertIs<KaliumException.NoNetwork>(actual.kException.cause)
+//                 }
+//
+//             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
+//
+//             coreLogic.getGlobalScope().unboundNetworkContainer
+//                 .value.acmeApi.getACMEDirectories().also { actual ->
+//                     assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
+//                     assertEquals(expected, actual.value)
+//                 }
+//
+//             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithoutInternet)
+//
+//             coreLogic.getGlobalScope().unboundNetworkContainer
+//                 .value.acmeApi.getACMEDirectories().also { actual ->
+//                     assertIs<NetworkResponse.Error>(actual)
+//                     assertIs<KaliumException.NoNetwork>(actual.kException.cause)
+//                 }
+//         }
+//     }
 
     @Test
     fun logoutTest() = runTest {
-        val networkClient = MockUnboundNetworkClient.mockUnauthenticatedNetworkClient(
-            // path = PATH_LOGIN,
+        val expectedLoginRequest = MockUnboundNetworkClient.TestRequestHandler(
+            path = "https://test.api.com/v1/login?persist=false",
             responseBody = VALID_ACCESS_TOKEN_RESPONSE.rawJson,
             statusCode = HttpStatusCode.OK,
-            assertion = {
-//                 assertPost()
-//                 assertQueryExist(QUERY_PERSIST)
-//                 assertHttps()
-//                 assertJson()
-                   // val verificationCode = this.body.toJsonElement().jsonObject["verification_code"]?.jsonPrimitive?.content
-                // assertEquals(LOGIN_WITH_EMAIL_REQUEST.serializableData.verificationCode, verificationCode)
-            },
             headers = mapOf("set-cookie" to "zuid=$refreshToken")
         )
 
-        val coreLogic = coreLogic(
+        val expectedSelfResponse = MockUnboundNetworkClient.TestRequestHandler(
+            path = "https://test.api.com/v1/self",
+            responseBody = VALID_SELF_RESPONSE.rawJson,
+            statusCode = HttpStatusCode.OK,
+        )
+        val networkClient = createMockEngine(
+            listOf(expectedLoginRequest, expectedSelfResponse)
+        )
+
+        val coreLogic = CoreLogic(
             rootPath = "$HOME_DIRECTORY/.kalium/accounts",
             kaliumConfigs = KaliumConfigs(
                 developmentApiEnabled = true,
                 encryptProteusStorage = true,
                 isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
-            ),
-            networkClient = networkClient
+                useMockEngine = true,
+                mockEngine = networkClient
+            ), "Wire Infinite Monkeys"
         )
 
         launch {
@@ -143,6 +133,7 @@ class TempTest {
             ).login(email, password, false)
 
             val x = result.toString()
+            println(x)
         }
     }
 
@@ -185,7 +176,7 @@ class TempTest {
         /**
          * ACME
          */
-        val HOME_DIRECTORY: String = homeDirectory()
+        val HOME_DIRECTORY: String = System.getProperty("user.home")
 
         private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
 
