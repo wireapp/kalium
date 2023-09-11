@@ -11,7 +11,7 @@ compose-material = "1.3.1"
 cryptobox4j = "1.3.0"
 cryptobox-android = "1.1.5"
 android-security = "1.1.0-alpha06"
-ktor = "2.3.1"
+ktor = "2.3.4"
 okio = "3.2.0"
 ok-http = "4.10.0"
 mockative = "1.4.1"
@@ -39,10 +39,10 @@ jna = "5.6.0"
 core-crypto = "1.0.0-rc.12"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
-desugar-jdk = "1.1.5"
+desugar-jdk = "2.0.3"
 kermit = "1.2.2"
 detekt = "1.19.0"
-agp = "8.1.0"
+agp = "8.1.1"
 dokka = "1.8.20"
 carthage = "0.0.1"
 libsodiumBindings = "0.8.6"
@@ -54,6 +54,7 @@ mockk = "1.13.5"
 faker = "1.14.0"
 robolectric = "4.9"
 stately = "2.0.0-rc3"
+micrometer = "1.11.3"
 
 [plugins]
 # Home-made convention plugins
@@ -140,6 +141,8 @@ ktor-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-okHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
 ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
+ktor-server = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-serverNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 
 # okio
 okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
@@ -188,3 +191,4 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }

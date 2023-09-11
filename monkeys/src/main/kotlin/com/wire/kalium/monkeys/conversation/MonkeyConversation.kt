@@ -19,20 +19,23 @@ package com.wire.kalium.monkeys.conversation
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
+import io.micrometer.core.instrument.Tag
 
 /**
  * This is a shallow wrapper over the conversation (it contains only details), since the operations need to be done on the
  * user scope, they're done inside the [Monkey] class.
  */
-class MonkeyConversation(
-    val creator: Monkey,
-    val conversation: Conversation,
-    val isDestroyable: Boolean = true
-) {
-    private var participants: MutableSet<Monkey> = mutableSetOf(creator)
+class MonkeyConversation(val creator: Monkey, val conversation: Conversation, val isDestroyable: Boolean = true, monkeyList: List<Monkey>) {
+    private var participants: MutableSet<Monkey>
+
+    init {
+        this.participants = mutableSetOf(creator).also { it.addAll(monkeyList) }
+        MetricsCollector.gaugeCollection("g_conversationMembers", listOf(Tag.of("id", conversation.id.toString())), this.participants)
+    }
 
     /**
      * Return a [count] number of random [Monkey] from the conversation.
