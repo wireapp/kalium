@@ -40,7 +40,6 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import okhttp3.internal.concurrent.TaskRunner
 import org.junit.Test
 import util.AccessTokenDTOJson
 import util.ClientResponseJson
@@ -184,7 +183,7 @@ class TempTest {
                 wipeOnDeviceRemoval = true,
                 useMockEngine = true,
                 mockEngine = networkClient
-            ), "Wire Infinite Monkeys"
+            ), "Wire Integration Tests"
         )
 
         launch {
@@ -222,13 +221,8 @@ class TempTest {
 
             val x = userSession.client.selfClients()
             println(x.toString())
-//             val userSession = coreLogic.getSessionScope(UserId(QualifiedIDSamples.one.value, QualifiedIDSamples.one.domain))
-//
-//             println(userSession.client.selfClients())
-//             userSession.logout.invoke(LogoutReason.SELF_SOFT_LOGOUT)
-//
-//             val x = result.toString()
-//             println(x)
+
+            userSession.logout.invoke(LogoutReason.SELF_SOFT_LOGOUT)
         }
     }
 
