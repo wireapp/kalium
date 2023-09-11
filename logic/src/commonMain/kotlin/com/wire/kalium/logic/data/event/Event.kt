@@ -44,7 +44,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.serialization.json.JsonNull
 
-sealed class Event(open val id: String, open val transient: Boolean) {
+sealed class Event(open val id: String, open val transient: Boolean, open val live: Boolean) {
 
     private companion object {
         const val typeKey = "type"
@@ -69,15 +69,17 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     sealed class Conversation(
         id: String,
         override val transient: Boolean,
+        override val live: Boolean,
         open val conversationId: ConversationId
-    ) : Event(id, transient) {
+    ) : Event(id, transient, live) {
         data class AccessUpdate(
             override val id: String,
             override val conversationId: ConversationId,
             val data: ConversationResponse,
             val qualifiedFrom: UserId,
-            override val transient: Boolean
-        ) : Conversation(id, transient, conversationId) {
+            override val transient: Boolean,
+            override val live: Boolean
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.AccessUpdate",
@@ -91,12 +93,13 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val senderUserId: UserId,
             val senderClientId: ClientId,
             val timestampIso: String,
             val content: String,
             val encryptedExternalContent: EncryptedData?
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.NewMessage",
@@ -112,11 +115,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val subconversationId: SubconversationId?,
             val senderUserId: UserId,
             val timestampIso: String,
             val content: String
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.NewMLSMessage",
@@ -131,10 +135,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val senderUserId: UserId,
             val timestampIso: String,
             val conversation: ConversationResponse
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.NewConversation",
@@ -148,10 +153,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val addedBy: UserId,
             val members: List<Member>,
             val timestampIso: String
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.MemberJoin",
@@ -167,10 +173,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val removedBy: UserId,
             val removedList: List<UserId>,
             val timestampIso: String
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.MemberLeave",
@@ -185,15 +192,17 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             open val timestampIso: String,
-            transient: Boolean,
-        ) : Conversation(id, transient, conversationId) {
+            override val transient: Boolean,
+            override val live: Boolean,
+        ) : Conversation(id, transient, live, conversationId) {
             class MemberChangedRole(
                 override val id: String,
                 override val conversationId: ConversationId,
                 override val timestampIso: String,
                 override val transient: Boolean,
+                override val live: Boolean,
                 val member: Member?,
-            ) : MemberChanged(id, conversationId, timestampIso, transient) {
+            ) : MemberChanged(id, conversationId, timestampIso, transient, live) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
                     typeKey to "Conversation.MemberChangedRole",
@@ -209,9 +218,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 override val conversationId: ConversationId,
                 override val timestampIso: String,
                 override val transient: Boolean,
+                override val live: Boolean,
                 val mutedConversationStatus: MutedConversationStatus,
                 val mutedConversationChangedTime: String
-            ) : MemberChanged(id, conversationId, timestampIso, transient) {
+            ) : MemberChanged(id, conversationId, timestampIso, transient, live) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
                     typeKey to "Conversation.MemberMutedStatusChanged",
@@ -226,8 +236,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             data class IgnoredMemberChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
-                override val transient: Boolean
-            ) : MemberChanged(id, conversationId, "", transient) {
+                override val transient: Boolean,
+                override val live: Boolean,
+            ) : MemberChanged(id, conversationId, "", transient, live) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
                     typeKey to "Conversation.IgnoredMemberChanged",
@@ -241,10 +252,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val senderUserId: UserId,
             val message: String,
             val timestampIso: String = DateTimeUtil.currentIsoDateTimeString()
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.MLSWelcome",
                 idKey to id.obfuscateId(),
@@ -258,9 +270,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val senderUserId: UserId,
             val timestampIso: String,
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.DeletedConversation",
@@ -275,10 +288,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val conversationName: String,
             val senderUserId: UserId,
             val timestampIso: String,
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.RenamedConversation",
                 idKey to id.obfuscateId(),
@@ -293,9 +307,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val receiptMode: ReceiptMode,
             val senderUserId: UserId
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ConversationReceiptMode",
@@ -310,10 +325,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val messageTimer: Long?,
             val senderUserId: UserId,
             val timestampIso: String
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ConversationMessageTimer",
@@ -329,11 +345,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val key: String,
             val code: String,
             val uri: String,
             val isPasswordProtected: Boolean,
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeUpdated")
         }
 
@@ -341,7 +358,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
-        ) : Conversation(id, transient, conversationId) {
+            override val live: Boolean,
+        ) : Conversation(id, transient, live, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeDeleted")
         }
 
@@ -349,9 +367,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val conversationId: ConversationId,
             override val transient: Boolean,
+            override val live: Boolean,
             val protocol: Protocol,
             val senderUserId: UserId
-        ) : Conversation(id, transient, conversationId) {
+        ) : Conversation(id, transient, live, conversationId) {
             override fun toLogMap() = mapOf(
                 typeKey to "Conversation.ConversationProtocol",
                 idKey to id.obfuscateId(),
@@ -366,14 +385,16 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         id: String,
         open val teamId: String,
         transient: Boolean,
-    ) : Event(id, transient) {
+        live: Boolean,
+    ) : Event(id, transient, live) {
         data class Update(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             override val teamId: String,
             val icon: String,
             val name: String,
-        ) : Team(id, teamId, transient) {
+        ) : Team(id, teamId, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Team.Update",
                 idKey to id.obfuscateId(),
@@ -387,8 +408,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val teamId: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val memberId: String,
-        ) : Team(id, teamId, transient) {
+        ) : Team(id, teamId, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Team.MemberJoin",
                 idKey to id.obfuscateId(),
@@ -400,10 +422,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class MemberLeave(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             override val teamId: String,
             val memberId: String,
             val timestampIso: String,
-        ) : Team(id, teamId, transient) {
+        ) : Team(id, teamId, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Team.MemberLeave",
                 idKey to id.obfuscateId(),
@@ -417,9 +440,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val id: String,
             override val teamId: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val memberId: String,
             val permissionCode: Int?,
-        ) : Team(id, teamId, transient) {
+        ) : Team(id, teamId, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Team.MemberUpdate",
                 idKey to id.obfuscateId(),
@@ -434,12 +458,14 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     sealed class FeatureConfig(
         id: String,
         transient: Boolean,
-    ) : Event(id, transient) {
+        live: Boolean,
+    ) : Event(id, transient, live) {
         data class FileSharingUpdated(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val model: ConfigsStatusModel
-        ) : FeatureConfig(id, transient) {
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.FileSharingUpdated",
                 idKey to id.obfuscateId(),
@@ -450,8 +476,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class MLSUpdated(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val model: MLSModel
-        ) : FeatureConfig(id, transient) {
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSUpdated",
                 idKey to id.obfuscateId(),
@@ -463,8 +490,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class ClassifiedDomainsUpdated(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val model: ClassifiedDomainsModel,
-        ) : FeatureConfig(id, transient) {
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.ClassifiedDomainsUpdated",
                 idKey to id.obfuscateId(),
@@ -476,8 +504,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class ConferenceCallingUpdated(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val model: ConferenceCallingModel,
-        ) : FeatureConfig(id, transient) {
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap() = mapOf(
                 typeKey to "FeatureConfig.ConferenceCallingUpdated",
                 idKey to id.obfuscateId(),
@@ -488,8 +517,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class GuestRoomLinkUpdated(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val model: ConfigsStatusModel,
-        ) : FeatureConfig(id, transient) {
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.GuestRoomLinkUpdated",
                 idKey to id.obfuscateId(),
@@ -500,8 +530,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class SelfDeletingMessagesConfig(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val model: SelfDeletingMessagesModel,
-        ) : FeatureConfig(id, transient) {
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.SelfDeletingMessagesConfig",
                 idKey to id.obfuscateId(),
@@ -513,8 +544,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class MLSE2EIUpdated(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val model: E2EIModel
-        ) : FeatureConfig(id, transient) {
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSE2EIUpdated",
                 idKey to id.obfuscateId(),
@@ -526,7 +558,8 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class UnknownFeatureUpdated(
             override val id: String,
             override val transient: Boolean,
-        ) : FeatureConfig(id, transient) {
+            override val live: Boolean,
+        ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.UnknownFeatureUpdated",
                 idKey to id.obfuscateId(),
@@ -536,12 +569,14 @@ sealed class Event(open val id: String, open val transient: Boolean) {
 
     sealed class User(
         id: String,
-        transient: Boolean
-    ) : Event(id, transient) {
+        transient: Boolean,
+        live: Boolean,
+    ) : Event(id, transient, live) {
 
         data class Update(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val userId: String,
             val accentId: Int?,
             val ssoIdDeleted: Boolean?,
@@ -551,7 +586,7 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val previewAssetId: String?,
             val completeAssetId: String?,
             val supportedProtocols: Set<SupportedProtocol>?
-        ) : User(id, transient) {
+        ) : User(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.Update",
                 idKey to id.obfuscateId(),
@@ -561,9 +596,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
 
         data class NewConnection(
             override val transient: Boolean,
+            override val live: Boolean,
             override val id: String,
             val connection: Connection
-        ) : User(id, transient) {
+        ) : User(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.NewConnection",
                 idKey to id.obfuscateId(),
@@ -573,9 +609,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
 
         data class ClientRemove(
             override val transient: Boolean,
+            override val live: Boolean,
             override val id: String,
             val clientId: ClientId
-        ) : User(id, transient) {
+        ) : User(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.ClientRemove",
                 idKey to id.obfuscateId(),
@@ -585,10 +622,11 @@ sealed class Event(open val id: String, open val transient: Boolean) {
 
         data class UserDelete(
             override val transient: Boolean,
+            override val live: Boolean,
             override val id: String,
             val userId: UserId,
             val timestampIso: String = DateTimeUtil.currentIsoDateTimeString() // TODO we are not receiving it from API
-        ) : User(id, transient) {
+        ) : User(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserDelete",
                 idKey to id.obfuscateId(),
@@ -599,9 +637,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
 
         data class NewClient(
             override val transient: Boolean,
+            override val live: Boolean,
             override val id: String,
             val client: Client,
-        ) : User(id, transient) {
+        ) : User(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.NewClient",
                 idKey to id.obfuscateId(),
@@ -618,14 +657,16 @@ sealed class Event(open val id: String, open val transient: Boolean) {
 
     sealed class UserProperty(
         id: String,
-        transient: Boolean
-    ) : Event(id, transient) {
+        transient: Boolean,
+        live: Boolean,
+    ) : Event(id, transient, live) {
 
         data class ReadReceiptModeSet(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val value: Boolean,
-        ) : UserProperty(id, transient) {
+        ) : UserProperty(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.UserProperty",
                 idKey to id.obfuscateId(),
@@ -638,9 +679,10 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     data class Unknown(
         override val id: String,
         override val transient: Boolean,
+        override val live: Boolean,
         val unknownType: String,
         val cause: String? = null
-    ) : Event(id, transient) {
+    ) : Event(id, transient, live) {
         override fun toLogMap(): Map<String, Any?> = mapOf(
             typeKey to "User.UnknownEvent",
             idKey to id.obfuscateId(),
@@ -652,13 +694,15 @@ sealed class Event(open val id: String, open val transient: Boolean) {
     sealed class Federation(
         id: String,
         override val transient: Boolean,
-    ) : Event(id, transient) {
+        override val live: Boolean,
+    ) : Event(id, transient, live) {
 
         data class Delete(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val domain: String,
-        ) : Federation(id, transient) {
+        ) : Federation(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Federation.Delete",
                 idKey to id.obfuscateId(),
@@ -670,8 +714,9 @@ sealed class Event(open val id: String, open val transient: Boolean) {
         data class ConnectionRemoved(
             override val id: String,
             override val transient: Boolean,
+            override val live: Boolean,
             val domains: List<String>,
-        ) : Federation(id, transient) {
+        ) : Federation(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Federation.ConnectionRemoved",
                 idKey to id.obfuscateId(),

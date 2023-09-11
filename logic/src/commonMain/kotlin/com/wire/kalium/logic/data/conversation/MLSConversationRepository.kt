@@ -285,7 +285,7 @@ internal class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper().fromEventContentDTO("", eventContentDTO, true)
+            val event = MapperProvider.eventMapper().fromEventContentDTO("", eventContentDTO, true, false)
             if (event is Event.Conversation) {
                 commitBundleEventReceiver.onEvent(event)
             }

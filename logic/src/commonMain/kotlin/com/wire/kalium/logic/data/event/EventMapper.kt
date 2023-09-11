@@ -57,59 +57,61 @@ class EventMapper(
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) {
-    fun fromDTO(eventResponse: EventResponse): List<Event> {
+    fun fromDTO(eventResponse: EventResponse, live: Boolean = false): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
         val id = eventResponse.id
         return eventResponse.payload?.map { eventContentDTO ->
-            fromEventContentDTO(id, eventContentDTO, eventResponse.transient)
+            fromEventContentDTO(id, eventContentDTO, eventResponse.transient, live)
         } ?: listOf()
     }
 
     @Suppress("ComplexMethod")
-    fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO, transient: Boolean): Event =
+    fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO, transient: Boolean, live: Boolean): Event =
         when (eventContentDTO) {
-            is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.MemberJoinDTO -> conversationMemberJoin(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO, transient)
-            is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO, transient)
-            is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO, transient)
-            is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO, transient)
-            is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient)
-            is EventContentDTO.Unknown -> unknown(id, transient, eventContentDTO)
-            is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, eventContentDTO)
-            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient)
-            is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient)
-            is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient)
-            is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient)
-            is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
-            is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.MemberJoinDTO -> conversationMemberJoin(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.MemberLeaveDTO -> conversationMemberLeave(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.MemberUpdateDTO -> memberUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.MLSWelcomeDTO -> welcomeMessage(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.NewMLSMessageDTO -> newMLSMessage(id, eventContentDTO, transient, live)
+            is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO, transient, live)
+            is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO, transient, live)
+            is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO, transient, live)
+            is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient, live)
+            is EventContentDTO.Unknown -> unknown(id, transient, live, eventContentDTO)
+            is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, live, eventContentDTO)
+            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient, live)
+            is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient, live)
+            is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient, live)
+            is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient, live)
+            is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient, live)
+            is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient, live)
+            is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO, transient, live)
         }
 
-    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
+    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean, live: Boolean): Event =
         when (eventContentDTO) {
             is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
                 id,
                 transient,
+                live,
                 eventContentDTO.domains
             )
 
             is EventContentDTO.Federation.FederationDeleteDTO -> Event.Federation.Delete(
                 id,
                 transient,
+                live,
                 eventContentDTO.domain
             )
         }
@@ -117,17 +119,20 @@ class EventMapper(
     private fun conversationCodeDeleted(
         id: String,
         event: EventContentDTO.Conversation.CodeDeleted,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event.Conversation.CodeDeleted = Event.Conversation.CodeDeleted(
         id = id,
         transient = transient,
+        live = live,
         conversationId = event.qualifiedConversation.toModel()
     )
 
     private fun conversationCodeUpdated(
         id: String,
         event: EventContentDTO.Conversation.CodeUpdated,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event.Conversation.CodeUpdated = Event.Conversation.CodeUpdated(
         id = id,
         key = event.data.key,
@@ -135,18 +140,21 @@ class EventMapper(
         uri = event.data.uri,
         isPasswordProtected = event.data.hasPassword,
         conversationId = event.qualifiedConversation.toModel(),
-        transient = transient
+        transient = transient,
+        live = live,
     )
 
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     fun unknown(
         id: String,
         transient: Boolean,
+        live: Boolean,
         eventContentDTO: EventContentDTO,
         cause: String? = null
     ): Event.Unknown = Event.Unknown(
         id = id,
         transient = transient,
+        live = live,
         unknownType = when (eventContentDTO) {
             is EventContentDTO.Unknown -> eventContentDTO.type
             else -> try {
@@ -161,11 +169,13 @@ class EventMapper(
     private fun conversationProtocolUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ProtocolUpdate,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event = Event.Conversation.ConversationProtocol(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         transient = transient,
+        live = live,
         protocol = eventContentDTO.data.protocol.toModel(),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
@@ -173,11 +183,13 @@ class EventMapper(
     fun conversationMessageTimerUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MessageTimerUpdate,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.ConversationMessageTimer(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         transient = transient,
+        live = live,
         messageTimer = eventContentDTO.data.messageTimer,
         senderUserId = eventContentDTO.qualifiedFrom.toModel(),
         timestampIso = eventContentDTO.time
@@ -186,11 +198,13 @@ class EventMapper(
     private fun conversationReceiptModeUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.ReceiptModeUpdate,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event = Event.Conversation.ConversationReceiptMode(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         transient = transient,
+        live = live,
         receiptMode = receiptModeMapper.fromApiToModel(eventContentDTO.data.receiptMode),
         senderUserId = eventContentDTO.qualifiedFrom.toModel()
     )
@@ -198,13 +212,15 @@ class EventMapper(
     private fun updateUserProperties(
         id: String,
         eventContentDTO: EventContentDTO.UserProperty.PropertiesSetDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event {
         return when (val fieldKeyValue = eventContentDTO.value) {
-            is EventContentDTO.FieldKeyNumberValue -> ReadReceiptModeSet(id, transient, fieldKeyValue.value == 1)
+            is EventContentDTO.FieldKeyNumberValue -> ReadReceiptModeSet(id, transient, live, fieldKeyValue.value == 1)
             is EventContentDTO.FieldUnknownValue -> unknown(
                 id = id,
                 transient = transient,
+                live = live,
                 eventContentDTO = eventContentDTO,
                 cause = "Unknown value type for key: ${eventContentDTO.key} "
             )
@@ -214,14 +230,16 @@ class EventMapper(
     private fun deleteUserProperties(
         id: String,
         eventContentDTO: EventContentDTO.UserProperty.PropertiesDeleteDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event {
         return if (PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE.key == eventContentDTO.key) {
-            ReadReceiptModeSet(id, transient, false)
+            ReadReceiptModeSet(id, transient, live, false)
         } else {
             unknown(
                 id = id,
                 transient = transient,
+                live = live,
                 eventContentDTO = eventContentDTO,
                 cause = "Unknown key: ${eventContentDTO.key} "
             )
@@ -231,11 +249,13 @@ class EventMapper(
     private fun welcomeMessage(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MLSWelcomeDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.MLSWelcome(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        live,
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.message,
     )
@@ -243,11 +263,13 @@ class EventMapper(
     private fun newMessage(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.NewMessageDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.NewMessage(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        live,
         eventContentDTO.qualifiedFrom.toModel(),
         ClientId(eventContentDTO.data.sender),
         eventContentDTO.time,
@@ -260,11 +282,13 @@ class EventMapper(
     private fun newMLSMessage(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.NewMLSMessageDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.NewMLSMessage(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        live,
         eventContentDTO.subconversation?.let { SubconversationId(it) },
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
@@ -274,32 +298,37 @@ class EventMapper(
     private fun connectionUpdate(
         id: String,
         eventConnectionDTO: EventContentDTO.User.NewConnectionDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.User.NewConnection(
         transient,
+        live,
         id,
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
-    private fun userDelete(id: String, eventUserDelete: EventContentDTO.User.UserDeleteDTO, transient: Boolean): Event.User.UserDelete {
-        return Event.User.UserDelete(transient, id, eventUserDelete.userId.toModel())
+    private fun userDelete(id: String, eventUserDelete: EventContentDTO.User.UserDeleteDTO, transient: Boolean, live: Boolean): Event.User.UserDelete {
+        return Event.User.UserDelete(transient, live, id, eventUserDelete.userId.toModel())
     }
 
     private fun clientRemove(
         id: String,
         eventClientRemove: EventContentDTO.User.ClientRemoveDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event.User.ClientRemove {
-        return Event.User.ClientRemove(transient, id, ClientId(eventClientRemove.client.clientId))
+        return Event.User.ClientRemove(transient, live, id, ClientId(eventClientRemove.client.clientId))
     }
 
     private fun newClient(
         id: String,
         eventNewClient: EventContentDTO.User.NewClientDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event.User.NewClient {
         return Event.User.NewClient(
             transient = transient,
+            live = live,
             id = id,
             client = clientMapper.fromClientDto(eventNewClient.client)
         )
@@ -308,11 +337,13 @@ class EventMapper(
     private fun newConversation(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.NewConversationDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.NewConversation(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
         transient,
+        live,
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.time,
         eventContentDTO.data
@@ -321,33 +352,38 @@ class EventMapper(
     fun conversationMemberJoin(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberJoinDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.MemberJoin(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         addedBy = eventContentDTO.qualifiedFrom.toModel(),
         members = eventContentDTO.members.users.map { memberMapper.fromApiModel(it) },
         timestampIso = eventContentDTO.time,
-        transient = transient
+        transient = transient,
+        live = live,
     )
 
     fun conversationMemberLeave(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberLeaveDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.MemberLeave(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         removedBy = eventContentDTO.qualifiedFrom.toModel(),
         removedList = eventContentDTO.members.qualifiedUserIds.map { it.toModel() },
         timestampIso = eventContentDTO.time,
-        transient = transient
+        transient = transient,
+        live = live,
     )
 
     private fun memberUpdate(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.MemberUpdateDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ): Event.Conversation.MemberChanged {
         return when {
             eventContentDTO.roleChange.role?.isNotEmpty() == true -> {
@@ -356,6 +392,7 @@ class EventMapper(
                     conversationId = eventContentDTO.qualifiedConversation.toModel(),
                     timestampIso = eventContentDTO.time,
                     transient = transient,
+                    live = live,
                     member = Conversation.Member(
                         id = eventContentDTO.roleChange.qualifiedUserId.toModel(),
                         role = roleMapper.fromApi(eventContentDTO.roleChange.role.orEmpty())
@@ -370,6 +407,7 @@ class EventMapper(
                     timestampIso = eventContentDTO.time,
                     mutedConversationChangedTime = eventContentDTO.roleChange.mutedRef.orEmpty(),
                     transient = transient,
+                    live = live,
                     mutedConversationStatus = mapConversationMutedStatus(eventContentDTO.roleChange.mutedStatus)
                 )
             }
@@ -378,7 +416,8 @@ class EventMapper(
                 Event.Conversation.MemberChanged.IgnoredMemberChanged(
                     id,
                     eventContentDTO.qualifiedConversation.toModel(),
-                    transient
+                    transient,
+                    live
                 )
             }
         }
@@ -395,129 +434,150 @@ class EventMapper(
     private fun featureConfig(
         id: String,
         featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = when (featureConfigUpdatedDTO.data) {
         is FeatureConfigData.FileSharing -> Event.FeatureConfig.FileSharingUpdated(
             id,
             transient,
+            live,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.FileSharing)
         )
 
         is FeatureConfigData.SelfDeletingMessages -> Event.FeatureConfig.SelfDeletingMessagesConfig(
             id,
             transient,
+            live,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.SelfDeletingMessages)
         )
 
         is FeatureConfigData.MLS -> Event.FeatureConfig.MLSUpdated(
             id,
             transient,
+            live,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLS)
         )
 
         is FeatureConfigData.ClassifiedDomains -> Event.FeatureConfig.ClassifiedDomainsUpdated(
             id,
             transient,
+            live,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ClassifiedDomains)
         )
 
         is FeatureConfigData.ConferenceCalling -> Event.FeatureConfig.ConferenceCallingUpdated(
             id,
             transient,
+            live,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConferenceCalling)
         )
 
         is FeatureConfigData.ConversationGuestLinks -> Event.FeatureConfig.GuestRoomLinkUpdated(
             id,
             transient,
+            live,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.ConversationGuestLinks)
         )
 
         is FeatureConfigData.E2EI -> Event.FeatureConfig.MLSE2EIUpdated(
             id,
             transient,
+            live,
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.E2EI)
         )
 
-        else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient)
+        else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient, live)
     }
 
     private fun conversationDeleted(
         id: String,
         deletedConversationDTO: EventContentDTO.Conversation.DeletedConversationDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.DeletedConversation(
         id = id,
         conversationId = deletedConversationDTO.qualifiedConversation.toModel(),
         senderUserId = deletedConversationDTO.qualifiedFrom.toModel(),
         transient = transient,
+        live = live,
         timestampIso = deletedConversationDTO.time
     )
 
     fun conversationRenamed(
         id: String,
         event: EventContentDTO.Conversation.ConversationRenameDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Conversation.RenamedConversation(
         id = id,
         conversationId = event.qualifiedConversation.toModel(),
         senderUserId = event.qualifiedFrom.toModel(),
         conversationName = event.updateNameData.conversationName,
         transient = transient,
+        live = live,
         timestampIso = event.time,
     )
 
     private fun teamMemberJoined(
         id: String,
         event: EventContentDTO.Team.MemberJoin,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Team.MemberJoin(
         id = id,
         teamId = event.teamId,
         transient = transient,
+        live = live,
         memberId = event.teamMember.nonQualifiedUserId
     )
 
     private fun teamMemberLeft(
         id: String,
         event: EventContentDTO.Team.MemberLeave,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Team.MemberLeave(
         id = id,
         teamId = event.teamId,
         memberId = event.teamMember.nonQualifiedUserId,
         transient = transient,
+        live = live,
         timestampIso = event.time
     )
 
     private fun teamMemberUpdate(
         id: String,
         event: EventContentDTO.Team.MemberUpdate,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Team.MemberUpdate(
         id = id,
         teamId = event.teamId,
         memberId = event.permissionsResponse.nonQualifiedUserId,
         transient = transient,
+        live = live,
         permissionCode = event.permissionsResponse.permissions.own
     )
 
     private fun teamUpdate(
         id: String,
         event: EventContentDTO.Team.Update,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.Team.Update(
         id = id,
         teamId = event.teamId,
         icon = event.teamUpdate.icon,
         transient = transient,
+        live = live,
         name = event.teamUpdate.name
     )
 
     private fun userUpdate(
         id: String,
         event: EventContentDTO.User.UpdateDTO,
-        transient: Boolean
+        transient: Boolean,
+        live: Boolean
     ) = Event.User.Update(
         id = id,
         userId = event.userData.nonQualifiedUserId,
@@ -528,6 +588,7 @@ class EventMapper(
         email = event.userData.email,
         previewAssetId = event.userData.assets?.getPreviewAssetOrNull()?.key,
         transient = transient,
+        live = live,
         completeAssetId = event.userData.assets?.getCompleteAssetOrNull()?.key,
         supportedProtocols = event.userData.supportedProtocols?.toModel()
     )
