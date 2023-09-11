@@ -30,6 +30,7 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.ByteReadChannel
 import kotlin.test.fail
@@ -68,7 +69,8 @@ object MockUnboundNetworkClient {
         val responseBody: String,
         val statusCode: HttpStatusCode,
         val assertion: (HttpRequestData.() -> Unit) = {},
-        val headers: Map<String, String>? = null
+        val headers: Map<String, String>? = null,
+        val httpMethod: HttpMethod? = null
     )
 
     fun createMockEngine(
@@ -80,7 +82,7 @@ object MockUnboundNetworkClient {
             } ?: run {
                 mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
             })
-            if (request.path == currentRequest.url.toString()) {
+            if (request.path == currentRequest.url.toString() && request.httpMethod == currentRequest.method) {
                 return@MockEngine respond(
                     content = ByteReadChannel(request.responseBody),
                     status = request.statusCode,
