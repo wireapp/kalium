@@ -122,6 +122,7 @@ class ConversationRepositoryTest {
             "id",
             TestConversation.ID,
             false,
+            false,
             TestUser.SELF.id,
             "time",
             CONVERSATION_RESPONSE
@@ -151,6 +152,7 @@ class ConversationRepositoryTest {
             val event = Event.Conversation.NewConversation(
                 "id",
                 TestConversation.ID,
+                false,
                 false,
                 TestUser.SELF.id,
                 "time",
@@ -183,6 +185,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 false,
+                false,
                 TestUser.SELF.id,
                 "time",
                 CONVERSATION_RESPONSE
@@ -213,6 +216,7 @@ class ConversationRepositoryTest {
             val event = Event.Conversation.NewConversation(
                 "id",
                 TestConversation.ID,
+                false,
                 false,
                 TestUser.SELF.id,
                 "time",

@@ -30,8 +30,8 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
@@ -44,7 +44,8 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -193,6 +194,24 @@ class UserEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenLiveNewConnectionEventWithStatusAccepted_thenActiveOneOnOneConversationIsResolved() = runTest(TestKaliumDispatcher.default) {
+        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy(live = true)
+        val (arrangement, eventReceiver) = arrange {
+            withInsertConnectionFromEventSucceeding()
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+        }
+
+        eventReceiver.onEvent(event)
+        advanceUntilIdle()
+
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
+            .with(eq(event.connection.qualifiedToId))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl()
@@ -220,7 +239,8 @@ class UserEventReceiverTest {
             logoutUseCase,
             oneOnOneResolver,
             SELF_USER_ID,
-            currentClientIdProvider
+            currentClientIdProvider,
+            TestKaliumDispatcher
         )
 
         init {
