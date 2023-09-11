@@ -307,7 +307,12 @@ class EventMapper(
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
-    private fun userDelete(id: String, eventUserDelete: EventContentDTO.User.UserDeleteDTO, transient: Boolean, live: Boolean): Event.User.UserDelete {
+    private fun userDelete(
+        id: String,
+        eventUserDelete: EventContentDTO.User.UserDeleteDTO,
+        transient: Boolean,
+        live: Boolean
+    ): Event.User.UserDelete {
         return Event.User.UserDelete(transient, live, id, eventUserDelete.userId.toModel())
     }
 
