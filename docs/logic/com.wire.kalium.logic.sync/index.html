@@ -62,7 +62,37 @@
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
         <h2 class="">Types</h2>
-        <div class="table"><a data-name="-1663852785%2FClasslikes%2F867774983" anchor-label="DefaultWorker" id="-1663852785%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="-699815397%2FClasslikes%2F867774983" anchor-label="AvsSyncStateReporter" id="-699815397%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-avs-sync-state-reporter/index.html"><span>Avs</span><wbr><span>Sync</span><wbr><span>State</span><wbr><span><span>Reporter</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-699815397%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-avs-sync-state-reporter/index.html">AvsSyncStateReporter</a></div><div class="brief "><p class="paragraph">This class is responsible for reporting the current sync state to AVS. It is used to report the start and end of the incremental sync. Main reason for it is to let AVS know that the app is syncing and it should not send incoming call callbacks for those pending events</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1496864475%2FClasslikes%2F867774983" anchor-label="AvsSyncStateReporterImpl" id="1496864475%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-avs-sync-state-reporter-impl/index.html"><span>Avs</span><wbr><span>Sync</span><wbr><span>State</span><wbr><span>Reporter</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1496864475%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-avs-sync-state-reporter-impl/index.html">AvsSyncStateReporterImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>callManager<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><span class="token keyword"></span><a href="../com.wire.kalium.logic.feature.call/-call-manager/index.html">CallManager</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>observeSyncStateUseCase<span class="token operator">: </span><a href="-observe-sync-state-use-case/index.html">ObserveSyncStateUseCase</a></span></span><span class="token punctuation">)</span> : <a href="-avs-sync-state-reporter/index.html">AvsSyncStateReporter</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1663852785%2FClasslikes%2F867774983" anchor-label="DefaultWorker" id="-1663852785%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -181,7 +211,22 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-observe-sync-state-use-case/index.html">ObserveSyncStateUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">incrementalSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Allows observing of <a href="../com.wire.kalium.logic.data.sync/-sync-state/index.html">SyncState</a>. A value is always available immediately for new observers. Assumes that old SyncStates are not relevant anymore, so the available Flow has a limited buffer size and will drop the oldest values as there's no point in waiting for slow collectors. In case a slow collector is interested in receiving all values, it should add a buffer of its own.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-sync-state-use-case/index.html">ObserveSyncStateUseCase</a></div><div class="brief "><p class="paragraph">Allows observing of <a href="../com.wire.kalium.logic.data.sync/-sync-state/index.html">SyncState</a>. A value is always available immediately for new observers. Assumes that old SyncStates are not relevant anymore, so the available Flow has a limited buffer size and will drop the oldest values as there's no point in waiting for slow collectors. In case a slow collector is interested in receiving all values, it should add a buffer of its own.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1775883377%2FClasslikes%2F867774983" anchor-label="ObserveSyncStateUseCaseImpl" id="1775883377%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-observe-sync-state-use-case-impl/index.html"><span>Observe</span><wbr><span>Sync</span><wbr><span>State</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1775883377%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-sync-state-use-case-impl/index.html">ObserveSyncStateUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">slowSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-slow-sync-repository/index.html">SlowSyncRepository</a><span class="token punctuation">, </span></span><span class="parameter ">incrementalSyncRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.sync/-incremental-sync-repository/index.html">IncrementalSyncRepository</a></span></span><span class="token punctuation">)</span> : <a href="-observe-sync-state-use-case/index.html">ObserveSyncStateUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
