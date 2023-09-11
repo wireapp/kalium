@@ -45,4 +45,5 @@ interface CallManager {
     suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList)
     suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
     suspend fun updateConversationClients(conversationId: ConversationId, clients: String)
+    suspend fun reportProcessNotifications(isStarted: Boolean)
 }
