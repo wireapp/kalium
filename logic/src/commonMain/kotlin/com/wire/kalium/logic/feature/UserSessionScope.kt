@@ -857,6 +857,7 @@ class UserSessionScope internal constructor(
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
+            eventRepository,
             syncSelfUser,
             syncFeatureConfigsUseCase,
             syncConversations,

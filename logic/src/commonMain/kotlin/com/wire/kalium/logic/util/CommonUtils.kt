@@ -86,7 +86,7 @@ fun Int?.isGreaterThan(other: Int?): Boolean {
 }
 
 // Convenience method to compute a value if absent in a "Stately" concurrent map
-fun <K, V> ConcurrentMutableMap<K, V>.computeIfAbsent(key: K, f: () -> V): V {
+fun <K, V> ConcurrentMutableMap<K, V>.safeComputeIfAbsent(key: K, f: () -> V): V {
     return this.block {
         if (this.containsKey(key)) return@block this[key]!!
         val value = f()

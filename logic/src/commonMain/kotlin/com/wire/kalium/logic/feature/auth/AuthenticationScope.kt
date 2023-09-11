@@ -41,7 +41,7 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.util.computeIfAbsent
+import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
@@ -63,7 +63,7 @@ class AuthenticationScopeProvider internal constructor(
         certConfig: () -> CertificatePinning,
         accessRepository: AccessRepository
     ): AuthenticationScope =
-        authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
+        authenticationScopeStorage.safeComputeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,

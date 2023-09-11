@@ -32,6 +32,12 @@ internal interface EventRepositoryArrangement {
 
     fun withOldestEventIdReturning(result: Either<CoreFailure, String>)
 
+    fun withClearLastEventIdReturning(result: Either<StorageFailure, Unit>)
+
+    fun withFetchMostRecentEventReturning(result: Either<CoreFailure, String>)
+
+    fun withLastProcessedEventIdReturning(result: Either<StorageFailure, String>)
+
     fun withUpdateLastProcessedEventIdReturning(result: Either<StorageFailure, Unit>)
 }
 
@@ -42,6 +48,27 @@ internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {
     override fun withOldestEventIdReturning(result: Either<CoreFailure, String>) {
         given(eventRepository)
             .suspendFunction(eventRepository::fetchOldestAvailableEventId)
+            .whenInvoked()
+            .thenReturn(result)
+    }
+
+    override fun withClearLastEventIdReturning(result: Either<StorageFailure, Unit>) {
+        given(eventRepository)
+            .suspendFunction(eventRepository::clearLastProcessedEventId)
+            .whenInvoked()
+            .thenReturn(result)
+    }
+
+    override fun withFetchMostRecentEventReturning(result: Either<CoreFailure, String>) {
+        given(eventRepository)
+            .suspendFunction(eventRepository::fetchMostRecentEventId)
+            .whenInvoked()
+            .thenReturn(result)
+    }
+
+    override fun withLastProcessedEventIdReturning(result: Either<StorageFailure, String>) {
+        given(eventRepository)
+            .suspendFunction(eventRepository::lastProcessedEventId)
             .whenInvoked()
             .thenReturn(result)
     }
