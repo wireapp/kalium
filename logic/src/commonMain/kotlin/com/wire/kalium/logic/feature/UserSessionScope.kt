@@ -147,9 +147,6 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
-import com.wire.kalium.logic.feature.client.MLSClientManager
-import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
-import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
@@ -262,8 +259,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.SessionManagerImpl
-import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
-import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
@@ -417,8 +412,7 @@ class UserSessionScope internal constructor(
             conversationRepository
         )
     }
-    private val selfConversationIdProvider: SelfConversationIdProvider by
-    lazy {
+    private val selfConversationIdProvider: SelfConversationIdProvider by lazy {
         SelfConversationIdProviderImpl(
             clientRepository,
             mlsSelfConversationIdProvider,
@@ -808,13 +802,6 @@ class UserSessionScope internal constructor(
         )
     }
 
-//     internal val missingMetadataUpdateManager: MissingMetadataUpdateManager = MissingMetadataUpdateManagerImpl(
-//         incrementalSyncRepository,
-//         lazy { users.refreshUsersWithoutMetadata },
-//         lazy { conversations.refreshConversationsWithoutMetadata },
-//         lazy { users.timestampKeyRepository }
-//     )
-
     private val syncConversations: SyncConversationsUseCase by lazy {
         SyncConversationsUseCaseImpl(conversationRepository)
     }
@@ -979,29 +966,6 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider
         )
     }
-
-//     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
-//         incrementalSyncRepository,
-//         lazy { clientRepository },
-//         lazy { client.refillKeyPackages },
-//         lazy { client.mlsKeyPackageCountUseCase },
-//         lazy { users.timestampKeyRepository })
-//     internal val keyingMaterialsManager: KeyingMaterialsManager = KeyingMaterialsManagerImpl(featureSupport,
-//         incrementalSyncRepository,
-//         lazy { clientRepository },
-//         lazy { conversations.updateMLSGroupsKeyingMaterials },
-//         lazy { users.timestampKeyRepository })
-//
-//     internal val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
-//         isMLSEnabled,
-//         incrementalSyncRepository,
-//         lazy { slowSyncRepository },
-//         lazy { clientRepository },
-//         lazy {
-//             RegisterMLSClientUseCaseImpl(
-//                 mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider
-//             )
-//         })
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository by lazy {
         MLSPublicKeysRepositoryImpl(
