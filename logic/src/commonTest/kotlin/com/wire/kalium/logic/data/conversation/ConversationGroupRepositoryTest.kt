@@ -964,7 +964,6 @@ class ConversationGroupRepositoryTest {
     @Test
     fun givenAConversationFailsWithUnreachableAndNotFromUsersInRequest_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
         runTest {
-            val failedDomain = "unstableDomain1.com"
             // given
             val (arrangement, conversationGroupRepository) = Arrangement()
                 .withConversationDetailsById(TestConversation.CONVERSATION)
@@ -978,8 +977,8 @@ class ConversationGroupRepositoryTest {
                 .arrange()
 
             // when
-            val expectedInitialUsers = listOf(TestConversation.USER_1)
-            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+            val expectedInitialUsersNotFromUnreachableInformed = listOf(TestConversation.USER_1)
+            conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, TestConversation.ID).shouldFail()
 
             // then
             verify(arrangement.conversationApi)
@@ -995,7 +994,7 @@ class ConversationGroupRepositoryTest {
             verify(arrangement.newGroupConversationSystemMessagesCreator)
                 .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
                 .with(anything(), matching {
-                    it.containsAll(expectedInitialUsers)
+                    it.containsAll(expectedInitialUsersNotFromUnreachableInformed)
                 })
                 .wasInvoked(once)
         }
