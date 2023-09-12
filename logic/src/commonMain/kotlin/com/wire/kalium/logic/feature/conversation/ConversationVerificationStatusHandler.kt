@@ -42,6 +42,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
 /**
@@ -111,6 +114,7 @@ internal class ConversationVerificationStatusHandlerImpl(
     ): Flow<Either<CoreFailure, VerificationStatus>> =
         mlsConversationRepository.observeEpochChanges()
             .filter { it == protocol.groupId }
+            .onStart { emit(protocol.groupId) }
             .mapLatest { mlsConversationRepository.getConversationVerificationStatus(protocol.groupId) }
 
     private suspend fun observeProteusVerificationStatus(
