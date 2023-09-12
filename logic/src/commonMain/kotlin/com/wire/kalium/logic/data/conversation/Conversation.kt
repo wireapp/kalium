@@ -196,7 +196,8 @@ data class Conversation(
         MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
         MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
         MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
-        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7),
+        MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519(61489);
 
         companion object {
             fun fromTag(tag: Int): CipherSuite = values().first { type -> type.tag == tag }
