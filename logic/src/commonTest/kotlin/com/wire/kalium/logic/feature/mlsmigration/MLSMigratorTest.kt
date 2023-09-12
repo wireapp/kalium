@@ -72,7 +72,7 @@ class MLSMigratorTest {
         migrator.migrateProteusConversations()
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateProtocol)
+            .suspendFunction(arrangement.conversationRepository::updateProtocolRemotely)
             .with(eq(conversation.id), eq(Conversation.Protocol.MIXED))
             .wasInvoked(once)
 
@@ -126,7 +126,7 @@ class MLSMigratorTest {
             .wasInvoked(once)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateProtocol)
+            .suspendFunction(arrangement.conversationRepository::updateProtocolRemotely)
             .with(eq(conversation.id), eq(Conversation.Protocol.MLS))
             .wasInvoked(once)
     }
@@ -208,7 +208,7 @@ class MLSMigratorTest {
         }
         fun withUpdateProtocolReturns(result: Either<CoreFailure, Boolean> = Either.Right(true)) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::updateProtocol)
+                .suspendFunction(conversationRepository::updateProtocolRemotely)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }

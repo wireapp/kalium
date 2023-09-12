@@ -116,7 +116,6 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.ConversationProtocol -> {
                 protocolUpdateEventHandler.handle(event)
-                Either.Right(Unit)
             }
         }
     }
