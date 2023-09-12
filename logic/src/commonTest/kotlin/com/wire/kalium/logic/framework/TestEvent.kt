@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
 
 object TestEvent {
@@ -193,7 +194,7 @@ object TestEvent {
         null,
         TestUser.USER_ID,
         timestamp.toIsoDateTimeString(),
-        "content",
+        "content".encodeBase64(),
     )
 
     fun newConversationEvent() = Event.Conversation.NewConversation(

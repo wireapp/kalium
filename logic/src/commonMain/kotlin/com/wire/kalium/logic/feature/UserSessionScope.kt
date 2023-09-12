@@ -1025,11 +1025,10 @@ class UserSessionScope internal constructor(
 
     private val mlsUnpacker: MLSMessageUnpacker
         get() = MLSMessageUnpackerImpl(
-            mlsClientProvider = mlsClientProvider,
             conversationRepository = conversationRepository,
             subconversationRepository = subconversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
-            epochsFlow = epochsFlow,
             selfUserId = userId
         )
 

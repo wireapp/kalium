@@ -33,7 +33,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
@@ -46,7 +45,6 @@ import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -36,9 +37,11 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerTest
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -83,6 +86,23 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MLSConversationRepositoryTest {
+
+    @Test
+    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withDecryptMLSMessageSuccessful(Arrangement.DECRYPTED_MESSAGE_BUNDLE)
+            .arrange()
+
+        val epochChange = async(TestKaliumDispatcher.default) {
+            arrangement.epochsFlow.first()
+        }
+        yield()
+
+        mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+        assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()

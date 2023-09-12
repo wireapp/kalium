@@ -21,16 +21,14 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
-import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -42,10 +40,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.ktor.util.decodeBase64Bytes
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.seconds
@@ -57,14 +53,12 @@ internal interface MLSMessageUnpacker {
 
 @Suppress("LongParameterList")
 internal class MLSMessageUnpackerImpl(
-    private val mlsClientProvider: MLSClientProvider,
     private val conversationRepository: ConversationRepository,
     private val subconversationRepository: SubconversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val pendingProposalScheduler: PendingProposalScheduler,
-    private val epochsFlow: MutableSharedFlow<GroupID>,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : MLSMessageUnpacker {
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
@@ -125,7 +119,7 @@ internal class MLSMessageUnpackerImpl(
                             "subconversationId = $subconversationId " +
                             "groupID = ${groupID.value.obfuscateId()}"
                 )
-                decryptMessageContent(messageEvent.content.decodeBase64Bytes(), groupID)
+                mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLS) {
@@ -134,25 +128,9 @@ internal class MLSMessageUnpackerImpl(
                             "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
                             "groupID = ${protocolInfo.groupId.value.obfuscateId()}"
                 )
-                decryptMessageContent(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
+                mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {
                 Either.Right(emptyList())
-            }
-        }
-
-    private suspend fun decryptMessageContent(encryptedContent: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>> =
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.decryptMessage(
-                    idMapper.toCryptoModel(groupID),
-                    encryptedContent
-                ).let { messages ->
-                    if (messages.any { it.hasEpochChanged }) {
-                        logger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
-                        epochsFlow.emit(groupID)
-                    }
-                    messages.map { it.toModel(groupID) }
-                }
             }
         }
 }

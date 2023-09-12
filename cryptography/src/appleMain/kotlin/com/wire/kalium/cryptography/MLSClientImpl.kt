@@ -84,10 +84,9 @@ class MLSClientImpl(
         return toCommitBundle(coreCrypto.joinByExternalCommit(toUByteList(publicGroupState), defaultGroupConfiguration))
     }
 
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessageBundle>? {
+    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
         coreCrypto.mergePendingGroupFromExternalCommit(groupIdAsBytes)
-        return null
     }
 
     override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
@@ -123,8 +122,8 @@ class MLSClientImpl(
         return toByteArray(applicationMessage)
     }
 
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
-        return toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)))
+    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
+        return listOf(toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))))
     }
 
     override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {
