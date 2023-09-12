@@ -171,26 +171,6 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
-    fun givenBufferedMessages_whenInvokingUseCase_ThenUnpackMessages() = runTest {
-        val conversation = Arrangement.MLS_CONVERSATION1
-        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-            .withIsMLSSupported(true)
-            .withHasRegisteredMLSClient(true)
-            .withGetConversationsByIdSuccessful(conversation)
-            .withFetchingGroupInfoSuccessful()
-            .withJoinByExternalCommitSuccessful(listOf(Arrangement.DECRYPTED_MESSAGE_BUNDLE))
-            .withUnpackMlsBundleSuccessful()
-            .arrange()
-
-        joinExistingMLSConversationsUseCase(conversation.id).shouldSucceed()
-
-        verify(arrangement.mlsMessageUnpacker)
-            .suspendFunction(arrangement.mlsMessageUnpacker::unpackMlsBundle)
-            .with(eq(Arrangement.DECRYPTED_MESSAGE_BUNDLE))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
         val (_, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
@@ -255,11 +235,11 @@ class JoinExistingMLSConversationUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withJoinByExternalCommitSuccessful(result: List<DecryptedMessageBundle>? = null) = apply {
+        fun withJoinByExternalCommitSuccessful() = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(result))
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
@@ -324,13 +304,6 @@ class JoinExistingMLSConversationUseCaseTest {
             val GROUP_ID2 = GroupID("group2")
             val GROUP_ID3 = GroupID("group3")
             val GROUP_ID_SELF = GroupID("group-self")
-
-            val DECRYPTED_MESSAGE_BUNDLE = DecryptedMessageBundle(
-                groupID = GROUP_ID1,
-                applicationMessage = null,
-                commitDelay = 1L,
-                identity = null
-            )
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(

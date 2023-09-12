@@ -96,16 +96,10 @@ internal class JoinSubconversationUseCaseImpl(
 
                     ).flatMapLeft {
                         if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
-                            Either.Right(null)
+                            Either.Right(Unit)
                         } else {
                             Either.Left(it)
                         }
-                    }.map { messageBundles ->
-                        // Process any buffered message which arrived before the pending group was merged. We only
-                        // expect to receive proposals which the backend re-creates upon external commits.
-                        messageBundles?.forEach { bundle ->
-                            mlsMessageUnpacker.unpackMlsBundle(bundle, subconversationDetails.parentId.toModel(), Clock.System.now())
-                        } ?: Unit
                     }
                 }
             }

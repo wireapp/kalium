@@ -92,7 +92,7 @@ interface MLSConversationRepository {
     suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<QualifiedClientID>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit>
-    suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, List<DecryptedMessageBundle>?>
+    suspend fun joinGroupByExternalCommit(groupID: GroupID, groupInfo: ByteArray): Either<CoreFailure, Unit>
     suspend fun isGroupOutOfSync(groupID: GroupID, currentEpoch: ULong): Either<CoreFailure, Boolean>
     suspend fun clearJoinViaExternalCommit(groupID: GroupID)
     suspend fun getMLSGroupsRequiringKeyingMaterialUpdate(threshold: Duration): Either<CoreFailure, List<GroupID>>
@@ -195,7 +195,7 @@ internal class MLSConversationDataSource(
     override suspend fun joinGroupByExternalCommit(
         groupID: GroupID,
         groupInfo: ByteArray
-    ): Either<CoreFailure, List<DecryptedMessageBundle>?> {
+    ): Either<CoreFailure, Unit> {
         kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
@@ -268,7 +268,7 @@ internal class MLSConversationDataSource(
     private suspend fun sendCommitBundleForExternalCommit(
         groupID: GroupID,
         bundle: CommitBundle
-    ): Either<CoreFailure, List<DecryptedMessageBundle>?> =
+    ): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
@@ -278,7 +278,7 @@ internal class MLSConversationDataSource(
                 }
             }.flatMap {
                 wrapMLSRequest {
-                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))?.map { it.toModel(groupID) }
+                    mlsClient.mergePendingGroupFromExternalCommit(idMapper.toCryptoModel(groupID))
                 }
             }
         }.onSuccess {

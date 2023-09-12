@@ -185,7 +185,7 @@ class JoinSubconversationUseCaseTest {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::joinGroupByExternalCommit)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(null))
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {

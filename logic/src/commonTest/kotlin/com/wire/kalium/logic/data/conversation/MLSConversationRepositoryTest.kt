@@ -902,22 +902,6 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenBufferedMessages_whenSendingExternalCommitBundle_thenReturnMessages() = runTest(TestKaliumDispatcher.default) {
-        val (_, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withJoinConversationSuccessful()
-            .withSendMLSMessageSuccessful()
-            .withSendCommitBundleSuccessful()
-            .withJoinByExternalCommitSuccessful()
-            .withMergePendingGroupFromExternalCommitSuccessful(listOf(Arrangement.DECRYPTED_MESSAGE_BUNDLE))
-            .arrange()
-
-        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, ByteArray(0)).shouldSucceed { bundles ->
-            assertEquals(Arrangement.DECRYPTED_MESSAGE_BUNDLE.toModel(Arrangement.GROUP_ID), bundles?.first())
-        }
-    }
-
-    @Test
     fun givenVerifiedConversation_whenGetGroupVerify_thenVerifiedReturned() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
@@ -1093,11 +1077,11 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT_BUNDLE)
         }
 
-        fun withMergePendingGroupFromExternalCommitSuccessful(result: List<com.wire.kalium.cryptography.DecryptedMessageBundle>? = null) = apply {
+        fun withMergePendingGroupFromExternalCommitSuccessful() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::mergePendingGroupFromExternalCommit)
                 .whenInvokedWith(anything())
-                .thenReturn(result)
+                .thenReturn(Unit)
         }
 
         fun withProcessWelcomeMessageSuccessful() = apply {
@@ -1157,7 +1141,7 @@ class MLSConversationRepositoryTest {
             given(mlsClient)
                 .suspendFunction(mlsClient::decryptMessage)
                 .whenInvokedWith(any(), any())
-                .thenReturn(decryptedMessage)
+                .thenReturn(listOf(decryptedMessage))
         }
 
         fun withRemoveMemberSuccessful() = apply {

@@ -51,7 +51,7 @@ import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.seconds
 
 internal interface MLSMessageUnpacker {
-    suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, MessageUnpackResult>
+    suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>>
     suspend fun unpackMlsBundle(bundle: DecryptedMessageBundle, conversationId: ConversationId, timestamp: Instant): MessageUnpackResult
 }
 
@@ -69,11 +69,13 @@ internal class MLSMessageUnpackerImpl(
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
 
-    override suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, MessageUnpackResult> =
-        messageFromMLSMessage(event).map { bundle ->
-            if (bundle == null) return@map MessageUnpackResult.HandshakeMessage
+    override suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>> =
+        messageFromMLSMessage(event).map { bundles ->
+            if (bundles.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
 
-            unpackMlsBundle(bundle, event.conversationId, event.timestampIso.toInstant())
+            bundles.map { bundle ->
+                unpackMlsBundle(bundle, event.conversationId, event.timestampIso.toInstant())
+            }
         }
 
     override suspend fun unpackMlsBundle(
@@ -114,7 +116,7 @@ internal class MLSMessageUnpackerImpl(
 
     private suspend fun messageFromMLSMessage(
         messageEvent: Event.Conversation.NewMLSMessage
-    ): Either<CoreFailure, DecryptedMessageBundle?> =
+    ): Either<CoreFailure, List<DecryptedMessageBundle>> =
         messageEvent.subconversationId?.let { subconversationId ->
             subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subconversationId)?.let { groupID ->
                 logger.d(
@@ -134,22 +136,22 @@ internal class MLSMessageUnpackerImpl(
                 )
                 decryptMessageContent(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {
-                Either.Right(null)
+                Either.Right(emptyList())
             }
         }
 
-    private suspend fun decryptMessageContent(encryptedContent: ByteArray, groupID: GroupID): Either<CoreFailure, DecryptedMessageBundle?> =
+    private suspend fun decryptMessageContent(encryptedContent: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.decryptMessage(
                     idMapper.toCryptoModel(groupID),
                     encryptedContent
-                ).let { it ->
-                    if (it.hasEpochChanged) {
+                ).let { messages ->
+                    if (messages.any { it.hasEpochChanged }) {
                         logger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                         epochsFlow.emit(groupID)
                     }
-                    it.toModel(groupID)
+                    messages.map { it.toModel(groupID) }
                 }
             }
         }

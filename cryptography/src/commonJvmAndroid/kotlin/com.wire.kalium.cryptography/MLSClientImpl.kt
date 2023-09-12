@@ -94,10 +94,9 @@ class MLSClientImpl(
         )
     }
 
-    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId): List<DecryptedMessageBundle>?  =
-        coreCrypto.mergePendingGroupFromExternalCommit(groupId.decodeBase64Bytes())?.let { messages ->
-            messages.map { toDecryptedMessageBundle(it) }
-        }
+    override suspend fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
+        coreCrypto.mergePendingGroupFromExternalCommit(groupId.decodeBase64Bytes())
+    }
 
     override suspend fun clearPendingGroupExternalCommit(groupId: MLSGroupId) {
         coreCrypto.clearPendingGroupFromExternalCommit(groupId.decodeBase64Bytes())
@@ -132,13 +131,20 @@ class MLSClientImpl(
         return applicationMessage
     }
 
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
-        return toDecryptedMessageBundle(
-            coreCrypto.decryptMessage(
-                groupId.decodeBase64Bytes(),
-                message
-            )
+    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
+        val decryptedMessage = coreCrypto.decryptMessage(
+            groupId.decodeBase64Bytes(),
+            message
         )
+
+        val messageBundle = listOf(toDecryptedMessageBundle(
+            decryptedMessage
+        ))
+        val bufferedMessages = decryptedMessage.bufferedMessages?.map {
+            toDecryptedMessageBundle(it)
+        } ?: emptyList()
+
+        return messageBundle + bufferedMessages
     }
 
     override suspend fun commitAccepted(groupId: MLSGroupId) {

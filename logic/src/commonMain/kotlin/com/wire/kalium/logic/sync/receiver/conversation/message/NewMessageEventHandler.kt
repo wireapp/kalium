@@ -124,9 +124,11 @@ internal class NewMessageEventHandlerImpl(
                     }
                 }
             }.onSuccess {
-                if (it is MessageUnpackResult.ApplicationMessage) {
-                    handleSuccessfulResult(it)
-                    onMessageInserted(it)
+                it.forEach {
+                    if (it is MessageUnpackResult.ApplicationMessage) {
+                        handleSuccessfulResult(it)
+                        onMessageInserted(it)
+                    }
                 }
                 kaliumLogger
                     .logEventProcessing(
