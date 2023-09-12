@@ -185,6 +185,12 @@ interface Calling : Library {
         arg: Pointer?
     )
 
+    @Suppress("FunctionNaming")
+    fun wcall_process_notifications(
+        inst: Handle,
+        isStarted: Boolean,
+    )
+
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
     }
