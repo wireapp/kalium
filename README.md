@@ -25,7 +25,7 @@ Alternatively the credentials are also read from your environment if `GITHUB_USE
 
 ### Dependencies
 
-- JDK 11 (ex: openjdk-11-jdk on Ubuntu)
+- JDK 17 (ex: openjdk-17-jdk on Ubuntu)
 - [libsodium](https://github.com/jedisct1/libsodium)
 - [cryptobox-c](https://github.com/wireapp/cryptobox-c)
 - [cryptobox4j](https://github.com/wireapp/cryptobox4j)
