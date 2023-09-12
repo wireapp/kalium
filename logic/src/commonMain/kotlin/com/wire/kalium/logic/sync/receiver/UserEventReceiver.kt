@@ -125,7 +125,6 @@ internal class UserEventReceiverImpl internal constructor(
         } else {
             userRepository.removeUser(event.userId)
                 .onSuccess {
-                    // TODO cyka check here
                     conversationRepository.deleteUserFromConversations(event.userId)
                         .onSuccess {
                             kaliumLogger
