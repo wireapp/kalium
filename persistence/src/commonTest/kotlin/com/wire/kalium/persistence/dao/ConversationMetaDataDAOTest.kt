@@ -83,7 +83,9 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = 5000L,
-            userMessageTimer = null
+            userMessageTimer = null,
+            otrArchived = false,
+            otrArchivedRef = ""
         )
     }
 }

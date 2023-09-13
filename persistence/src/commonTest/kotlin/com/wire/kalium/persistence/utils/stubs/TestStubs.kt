@@ -50,7 +50,9 @@ internal object TestStubs {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = messageTimer,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
     val conversationEntity2 = ConversationEntity(
         QualifiedIDEntity("2", "wire.com"),
@@ -73,7 +75,9 @@ internal object TestStubs {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = messageTimer,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     val conversationEntity3 = ConversationEntity(
@@ -99,7 +103,9 @@ internal object TestStubs {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = messageTimer,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     val conversationEntity4 = ConversationEntity(
@@ -125,7 +131,9 @@ internal object TestStubs {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = messageTimer,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

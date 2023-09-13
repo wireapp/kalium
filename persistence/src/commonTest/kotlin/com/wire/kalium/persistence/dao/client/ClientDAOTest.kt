@@ -366,7 +366,9 @@ class ClientDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            otrArchived = false,
+            otrArchivedRef = ""
         )
     }
 }

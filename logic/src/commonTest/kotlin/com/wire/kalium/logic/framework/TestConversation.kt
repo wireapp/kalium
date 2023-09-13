@@ -73,7 +73,9 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -92,7 +94,9 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -111,7 +115,9 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -151,7 +157,9 @@ object TestConversation {
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        userDefederated = null
+        userDefederated = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -170,7 +178,9 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -258,7 +268,9 @@ object TestConversation {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -295,7 +307,9 @@ object TestConversation {
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        userDefederated = null
+        userDefederated = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     val CONVERSATION = Conversation(
@@ -314,7 +328,9 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -339,7 +355,9 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        otrArchived = false,
+        otrArchivedRef = ""
     )
 
     val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")

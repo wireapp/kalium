@@ -983,7 +983,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null,
-            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null
+            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
+            otrArchived = false,
+            otrArchivedRef = ""
         )
     }
 
@@ -1012,7 +1014,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            otrArchived = false,
+            otrArchivedRef = ""
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1035,7 +1039,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            otrArchived = false,
+            otrArchivedRef = ""
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1061,7 +1067,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            otrArchived = false,
+            otrArchivedRef = ""
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1087,7 +1095,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            otrArchived = false,
+            otrArchivedRef = ""
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
