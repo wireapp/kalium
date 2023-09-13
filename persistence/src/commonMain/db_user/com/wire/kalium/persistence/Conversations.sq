@@ -39,7 +39,7 @@ CREATE TABLE Conversation (
     mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0,
     is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
     otr_archived INTEGER AS Boolean NOT NULL DEFAULT 0,
-    otr_archived_ref TEXT
+    otr_archived_ref TEXT NOT NULL DEFAULT ""
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -249,7 +249,7 @@ selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationByQualifiedId:
-SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer FROM Conversation WHERE qualified_id = ?;
+SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, otr_archived, otr_archived_ref FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
