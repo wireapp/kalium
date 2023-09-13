@@ -23,6 +23,7 @@ import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
+import co.touchlab.sqliter.DatabaseManager
 import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
@@ -48,17 +49,16 @@ actual class GlobalDatabaseProvider(
 
     init {
         NSFileManager.defaultManager.createDirectoryAtPath(storePath, true, null, null)
-
         val schema = GlobalDatabase.Schema
         val driver = NativeSqliteDriver(
             DatabaseConfiguration(
                 name = dbName,
-                version = schema.version,
+                version = schema.version.toInt(),
                 create = { connection ->
                     wrapConnection(connection) { schema.create(it) }
                 },
                 upgrade = { connection, oldVersion, newVersion ->
-                    wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+                    wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
                 },
                 extendedConfig = DatabaseConfiguration.Extended(
                     basePath = storePath
