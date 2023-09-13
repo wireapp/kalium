@@ -115,7 +115,7 @@ class ConversationScope internal constructor(
         get() = ObserveUserListByIdUseCase(userRepository)
 
     private val conversationVerificationStatusHandler: ConversationVerificationStatusHandler
-        get() = ConversationVerificationStatusHandlerImpl(
+        = ConversationVerificationStatusHandlerImpl(
             conversationRepository,
             persistMessage,
             mlsConversationRepository,

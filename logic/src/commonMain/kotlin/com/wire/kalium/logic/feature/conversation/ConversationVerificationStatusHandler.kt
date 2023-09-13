@@ -37,6 +37,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
@@ -44,7 +45,9 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -63,13 +66,27 @@ internal class ConversationVerificationStatusHandlerImpl(
 ) : ConversationVerificationStatusHandler {
     private val dispatcher = kaliumDispatcher.io
 
+    private val lock = Mutex()
+    private val observeFlows = hashMapOf<ConversationId, Flow<Unit>>()
+
     override suspend fun invoke(conversationId: ConversationId): Flow<Unit> = withContext(dispatcher) {
-        conversationRepository.getConversationProtocolInfo(conversationId)
+        lock.withLock {
+            val currentFlow = observeFlows[conversationId]
+            if (currentFlow != null) return@withContext currentFlow
+        }
+
+        val flow = conversationRepository.getConversationProtocolInfo(conversationId)
             .map { protocol ->
                 fetchVerificationStatusFlow(conversationId, protocol)
                     .mapLatest { status -> notifyUserIfNeeded(conversationId, protocol, status) }
+                    .onCompletion { observeFlows.remove(conversationId) }
             }
             .getOrElse(emptyFlow())
+            .shareIn(this, SharingStarted.WhileSubscribed(1))
+
+        lock.withLock { observeFlows[conversationId] = flow }
+
+        flow
     }
 
     /**

@@ -1269,8 +1269,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             cachedClientIdClearer
         )
-    val conversations: ConversationScope
-        get() = ConversationScope(
+    val conversations: ConversationScope by lazy {
+        ConversationScope(
             conversationRepository,
             conversationGroupRepository,
             connectionRepository,
@@ -1293,6 +1293,7 @@ class UserSessionScope internal constructor(
             userStorage,
             this
         )
+    }
 
     val migration get() = MigrationScope(userStorage.database)
     val debug: DebugScope
