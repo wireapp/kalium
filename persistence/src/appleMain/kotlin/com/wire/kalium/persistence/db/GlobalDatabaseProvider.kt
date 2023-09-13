@@ -23,7 +23,6 @@ import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.cash.sqldelight.driver.native.wrapConnection
 import co.touchlab.sqliter.DatabaseConfiguration
-import co.touchlab.sqliter.DatabaseManager
 import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
