@@ -74,8 +74,8 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -95,8 +95,8 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -116,8 +116,8 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -158,8 +158,8 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         userDefederated = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -179,8 +179,8 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -269,8 +269,8 @@ object TestConversation {
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -308,8 +308,8 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         userDefederated = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     val CONVERSATION = Conversation(
@@ -329,8 +329,8 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -356,8 +356,8 @@ object TestConversation {
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")

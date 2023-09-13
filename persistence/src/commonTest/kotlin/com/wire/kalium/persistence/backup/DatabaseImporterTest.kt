@@ -652,8 +652,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 receiptMode = receiptMode,
                 messageTimer = null,
                 userMessageTimer = null,
-                otrArchived = false,
-                otrArchivedRef = ""
+                archived = false,
+                archivedRef = ""
             )
         }
     }
@@ -690,8 +690,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 receiptMode = ConversationEntity.ReceiptMode.DISABLED,
                 messageTimer = null,
                 userMessageTimer = null,
-                otrArchived = false,
-                otrArchivedRef = ""
+                archived = false,
+                archivedRef = ""
             )
 
             conversationAdded.add(overlappingConversation)

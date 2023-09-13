@@ -84,8 +84,8 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = 5000L,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
     }
 }

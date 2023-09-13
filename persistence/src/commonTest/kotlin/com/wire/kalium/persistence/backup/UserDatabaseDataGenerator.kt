@@ -278,8 +278,8 @@ class UserDatabaseDataGenerator(
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
                     userMessageTimer = null,
-                    otrArchived = false,
-                    otrArchivedRef = ""
+                    archived = false,
+                    archivedRef = ""
                 )
             )
 
@@ -322,8 +322,8 @@ class UserDatabaseDataGenerator(
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = null,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -390,8 +390,8 @@ class UserDatabaseDataGenerator(
                 receiptMode = DEFAULT_RECEIPT_MODE,
                 messageTimer = null,
                 userMessageTimer = null,
-                otrArchived = false,
-                otrArchivedRef = ""
+                archived = false,
+                archivedRef = ""
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -457,8 +457,8 @@ class UserDatabaseDataGenerator(
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
                     userMessageTimer = null,
-                    otrArchived = false,
-                    otrArchivedRef = ""
+                    archived = false,
+                    archivedRef = ""
                 )
             )
 
@@ -502,8 +502,8 @@ class UserDatabaseDataGenerator(
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
                     userMessageTimer = null,
-                    otrArchived = false,
-                    otrArchivedRef = ""
+                    archived = false,
+                    archivedRef = ""
                 )
             )
 
@@ -616,8 +616,8 @@ class UserDatabaseDataGenerator(
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
                     userMessageTimer = null,
-                    otrArchived = false,
-                    otrArchivedRef = ""
+                    archived = false,
+                    archivedRef = ""
                 )
             )
 

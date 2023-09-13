@@ -407,8 +407,8 @@ class UpdateConversationAccessUseCaseTest {
             receiptMode = Conversation.ReceiptMode.DISABLED,
             messageTimer = null,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
     }
 

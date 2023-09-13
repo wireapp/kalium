@@ -38,8 +38,8 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     receiptMode = ConversationEntity.ReceiptMode.DISABLED,
     messageTimer = null,
     userMessageTimer = null,
-    otrArchived = false,
-    otrArchivedRef = ""
+    archived = false,
+    archivedRef = ""
 )
 
 fun newConversationEntity(
@@ -61,6 +61,6 @@ fun newConversationEntity(
     receiptMode = ConversationEntity.ReceiptMode.DISABLED,
     messageTimer = null,
     userMessageTimer = null,
-    otrArchived = false,
-    otrArchivedRef = ""
+    archived = false,
+    archivedRef = ""
 )

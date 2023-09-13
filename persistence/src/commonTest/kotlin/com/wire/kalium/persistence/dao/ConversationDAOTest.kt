@@ -984,8 +984,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
     }
 
@@ -1015,8 +1015,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1040,8 +1040,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1068,8 +1068,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1096,8 +1096,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

@@ -149,8 +149,8 @@ class EndCallOnConversationChangeUseCaseTest {
             receiptMode = Conversation.ReceiptMode.ENABLED,
             messageTimer = null,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
 
         val otherUser = OtherUser(
