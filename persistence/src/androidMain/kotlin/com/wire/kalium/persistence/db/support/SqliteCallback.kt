@@ -20,10 +20,11 @@ package com.wire.kalium.persistence.db.support
 
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 
-internal class SqliteCallback(schema: SqlSchema, private val enableWAL: Boolean) : SupportSQLiteOpenHelper.Callback(schema.version) {
+internal class SqliteCallback(schema: SqlSchema<QueryResult.Value<Unit>>, private val enableWAL: Boolean) : SupportSQLiteOpenHelper.Callback(schema.version.toInt()) {
     private val baseCallback = AndroidSqliteDriver.Callback(schema)
     override fun onCreate(db: SupportSQLiteDatabase) = baseCallback.onCreate(db)
 

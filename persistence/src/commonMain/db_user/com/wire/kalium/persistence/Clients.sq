@@ -2,6 +2,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity;
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
 import kotlin.Boolean;
+import kotlin.String;
 import kotlin.collections.Map;
 import kotlinx.datetime.Instant;
 

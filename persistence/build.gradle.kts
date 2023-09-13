@@ -41,7 +41,7 @@ sqldelight {
             dialect(libs.sqldelight.dialect.get().toString())
             packageName.set("com.wire.kalium.persistence")
             val sourceFolderName = "db_user"
-            srcDirs.setFrom(listOf(sourceFolderName))
+            srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
         }
 
@@ -49,7 +49,7 @@ sqldelight {
             dialect(libs.sqldelight.dialect.get().toString())
             packageName.set("com.wire.kalium.persistence")
             val sourceFolderName = "db_global"
-            srcDirs.setFrom(listOf(sourceFolderName))
+            srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
         }
     }
