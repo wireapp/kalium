@@ -533,6 +533,12 @@ class CallManagerImpl internal constructor(
         }
     }
 
+    override suspend fun reportProcessNotifications(isStarted: Boolean) {
+        withCalling {
+            wcall_process_notifications(it, isStarted)
+        }
+    }
+
     companion object {
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
         const val TAG = "CallManager"
