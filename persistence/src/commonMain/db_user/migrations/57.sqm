@@ -1,5 +1,5 @@
-ALTER TABLE Conversation ADD COLUMN otr_archived INTEGER AS Boolean NOT NULL DEFAULT 0;
-ALTER TABLE Conversation ADD COLUMN otr_archived_ref TEXT NOT NULL DEFAULT "";
+ALTER TABLE Conversation ADD COLUMN archived INTEGER AS Boolean NOT NULL DEFAULT 0;
+ALTER TABLE Conversation ADD COLUMN archived_ref TEXT NOT NULL DEFAULT "";
 
 DROP VIEW IF EXISTS ConversationDetails;
 
@@ -78,8 +78,8 @@ Conversation.receipt_mode,
 Conversation.message_timer,
 Conversation.user_message_timer,
 Conversation.incomplete_metadata,
-Conversation.otr_archived,
-Conversation.otr_archived_ref
+Conversation.archived,
+Conversation.archived_ref
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
