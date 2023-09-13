@@ -98,7 +98,9 @@ internal class ConversationDAOImpl internal constructor(
                 receiptMode,
                 messageTimer,
                 userMessageTimer,
-                hasIncompleteMetadata
+                hasIncompleteMetadata,
+                otrArchived,
+                otrArchivedRef
             )
         }
     }

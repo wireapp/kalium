@@ -63,7 +63,9 @@ data class ConversationViewEntity(
     val removedBy: UserIDEntity? = null, // TODO how to calculate?,
     val receiptMode: ConversationEntity.ReceiptMode,
     val messageTimer: Long?,
-    val userMessageTimer: Long?
+    val userMessageTimer: Long?,
+    val otrArchived: Boolean,
+    val otrArchivedRef: String
 ) {
     val isMember: Boolean get() = selfRole != null
 
