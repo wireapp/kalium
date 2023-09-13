@@ -164,7 +164,9 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             creatorId = creator,
             receiptMode = fromScalaReceiptMode(receiptMode),
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
-            userMessageTimer = null
+            userMessageTimer = null,
+            otrArchived = archivedState ?: false,
+            otrArchivedRef = archivedTimestamp?.toDuration(DurationUnit.MILLISECONDS)?.toString() ?: ""
         )
     }
 }
