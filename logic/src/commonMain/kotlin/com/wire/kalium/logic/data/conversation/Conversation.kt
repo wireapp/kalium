@@ -69,8 +69,8 @@ data class Conversation(
     val receiptMode: ReceiptMode,
     val messageTimer: Duration?,
     val userMessageTimer: Duration?,
-    val otrArchived: Boolean,
-    val otrArchivedRef: String
+    val archived: Boolean,
+    val archivedRef: String
 ) {
 
     companion object {
@@ -298,8 +298,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             receiptMode = Conversation.ReceiptMode.DISABLED,
             messageTimer = null,
             userMessageTimer = null,
-            otrArchived = false,
-            otrArchivedRef = ""
+            archived = false,
+            archivedRef = ""
         )
     )
 }

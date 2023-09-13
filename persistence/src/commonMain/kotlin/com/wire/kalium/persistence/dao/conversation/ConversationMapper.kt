@@ -65,8 +65,8 @@ internal class ConversationMapper {
             messageTimer = message_timer,
             userMessageTimer = user_message_timer,
             userDefederated = userDefederated,
-            otrArchived = otr_archived,
-            otrArchivedRef = otr_archived_ref
+            archived = archived,
+            archivedRef = archived_ref
         )
     }
 
@@ -94,8 +94,8 @@ internal class ConversationMapper {
         receiptMode: ConversationEntity.ReceiptMode,
         messageTimer: Long?,
         userMessageTimer: Long?,
-        otrArchived: Boolean,
-        otrArchivedRef: String
+        archived: Boolean,
+        archivedRef: String
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -120,8 +120,8 @@ internal class ConversationMapper {
         receiptMode = receiptMode,
         messageTimer = messageTimer,
         userMessageTimer = userMessageTimer,
-        otrArchived = otrArchived,
-        otrArchivedRef = otrArchivedRef
+        archived = archived,
+        archivedRef = archivedRef
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -168,8 +168,8 @@ internal class ConversationMapper {
                 messageTimer = message_timer,
                 userMessageTimer = user_message_timer,
                 userDefederated = userDefederated,
-                otrArchived = otr_archived,
-                otrArchivedRef = otr_archived_ref
+                archived = archived,
+                archivedRef = archived_ref
             )
         }
     }

@@ -257,8 +257,8 @@ internal class ConnectionDataSource(
                         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
                         messageTimer = null,
                         userMessageTimer = null,
-                        otrArchived = false,
-                        otrArchivedRef = ""
+                        archived = false,
+                        archivedRef = ""
                     )
                 )
             }

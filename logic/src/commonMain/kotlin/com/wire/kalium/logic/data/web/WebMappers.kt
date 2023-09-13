@@ -165,8 +165,8 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             receiptMode = fromScalaReceiptMode(receiptMode),
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = null,
-            otrArchived = archivedState ?: false,
-            otrArchivedRef = archivedTimestamp?.toDuration(DurationUnit.MILLISECONDS)?.toString() ?: ""
+            archived = archivedState ?: false,
+            archivedRef = archivedTimestamp?.toDuration(DurationUnit.MILLISECONDS)?.toString() ?: ""
         )
     }
 }

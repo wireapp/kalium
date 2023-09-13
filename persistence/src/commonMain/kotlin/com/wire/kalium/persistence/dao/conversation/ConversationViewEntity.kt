@@ -64,8 +64,8 @@ data class ConversationViewEntity(
     val receiptMode: ConversationEntity.ReceiptMode,
     val messageTimer: Long?,
     val userMessageTimer: Long?,
-    val otrArchived: Boolean,
-    val otrArchivedRef: String
+    val archived: Boolean,
+    val archivedRef: String
 ) {
     val isMember: Boolean get() = selfRole != null
 

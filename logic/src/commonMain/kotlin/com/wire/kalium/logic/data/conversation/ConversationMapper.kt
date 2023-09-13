@@ -118,8 +118,8 @@ internal class ConversationMapperImpl(
         messageTimer = apiModel.messageTimer,
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
         hasIncompleteMetadata = false,
-        otrArchived = apiModel.members.self.otrArchived ?: false,
-        otrArchivedRef = apiModel.members.self.otrArchivedRef ?: ""
+        archived = apiModel.members.self.otrArchived ?: false,
+        archivedRef = apiModel.members.self.otrArchivedRef ?: ""
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -160,8 +160,8 @@ internal class ConversationMapperImpl(
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
-            otrArchived = otrArchived,
-            otrArchivedRef = otrArchivedRef
+            archived = archived,
+            archivedRef = archivedRef
         )
     }
 
@@ -185,8 +185,8 @@ internal class ConversationMapperImpl(
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
-            otrArchived = otrArchived,
-            otrArchivedRef = otrArchivedRef
+            archived = archived,
+            archivedRef = archivedRef
         )
     }
 
@@ -377,8 +377,8 @@ internal class ConversationMapperImpl(
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
             messageTimer = messageTimer?.inWholeMilliseconds,
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
-            otrArchived = otrArchived,
-            otrArchivedRef = otrArchivedRef
+            archived = archived,
+            archivedRef = archivedRef
         )
     }
 
@@ -405,8 +405,8 @@ internal class ConversationMapperImpl(
         messageTimer = null,
         userMessageTimer = null,
         hasIncompleteMetadata = true,
-        otrArchived = false,
-        otrArchivedRef = ""
+        archived = false,
+        archivedRef = ""
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
