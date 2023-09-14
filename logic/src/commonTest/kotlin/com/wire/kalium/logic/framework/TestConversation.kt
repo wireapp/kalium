@@ -75,7 +75,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -96,7 +96,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -117,7 +117,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -159,7 +159,7 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -180,7 +180,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -270,7 +270,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -309,7 +309,7 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     val CONVERSATION = Conversation(
@@ -330,7 +330,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -357,7 +357,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")

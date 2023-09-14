@@ -150,7 +150,7 @@ class EndCallOnConversationChangeUseCaseTest {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedRef = ""
+            archivedDateTime = null
         )
 
         val otherUser = OtherUser(

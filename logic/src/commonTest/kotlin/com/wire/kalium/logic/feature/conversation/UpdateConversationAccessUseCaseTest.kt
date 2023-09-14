@@ -408,7 +408,7 @@ class UpdateConversationAccessUseCaseTest {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedRef = ""
+            archivedDateTime = null
         )
     }
 

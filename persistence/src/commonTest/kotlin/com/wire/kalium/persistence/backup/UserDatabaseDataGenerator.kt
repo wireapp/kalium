@@ -279,7 +279,7 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedRef = ""
+                    archivedDateTime = null
                 )
             )
 
@@ -323,7 +323,7 @@ class UserDatabaseDataGenerator(
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedRef = ""
+            archivedDateTime = null
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -391,7 +391,7 @@ class UserDatabaseDataGenerator(
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedRef = ""
+                archivedDateTime = null
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -458,7 +458,7 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedRef = ""
+                    archivedDateTime = null
                 )
             )
 
@@ -503,7 +503,7 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedRef = ""
+                    archivedDateTime = null
                 )
             )
 
@@ -617,7 +617,7 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedRef = ""
+                    archivedDateTime = null
                 )
             )
 

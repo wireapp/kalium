@@ -129,7 +129,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedRef = ""
+            archivedDateTime = null
         )
     }
 }

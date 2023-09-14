@@ -85,7 +85,7 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             messageTimer = 5000L,
             userMessageTimer = null,
             archived = false,
-            archivedRef = ""
+            archivedDateTime = null
         )
     }
 }

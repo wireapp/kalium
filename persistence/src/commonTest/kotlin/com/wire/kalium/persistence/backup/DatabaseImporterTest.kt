@@ -653,7 +653,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedRef = ""
+                archivedDateTime = null
             )
         }
     }
@@ -691,7 +691,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedRef = ""
+                archivedDateTime = null
             )
 
             conversationAdded.add(overlappingConversation)

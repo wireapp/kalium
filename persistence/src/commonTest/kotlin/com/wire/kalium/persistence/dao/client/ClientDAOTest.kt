@@ -368,7 +368,7 @@ class ClientDAOTest : BaseDatabaseTest() {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedRef = ""
+            archivedDateTime = null
         )
     }
 }
