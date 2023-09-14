@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
@@ -425,6 +426,12 @@ internal class MLSConversationDataSource(
                         idMapper.toCryptoModel(groupID),
                         publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
                     )
+                }.flatMapLeft {
+                    if (it is MLSFailure.ConversationAlreadyExists) {
+                        Either.Right(Unit)
+                    } else {
+                        Either.Left(it)
+                    }
                 }
             }.flatMap {
                 internalAddMemberToMLSGroup(groupID, members, retryOnStaleMessage = false).onFailure {
@@ -511,9 +518,12 @@ internal class MLSConversationDataSource(
         kaliumLogger.w("Discarding the failed commit.")
 
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
+            try {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+            } catch (error: Throwable) {
+                kaliumLogger.e("Discarding pending commit failed: $error")
             }
+            Either.Right(Unit)
         }
     }
 }
