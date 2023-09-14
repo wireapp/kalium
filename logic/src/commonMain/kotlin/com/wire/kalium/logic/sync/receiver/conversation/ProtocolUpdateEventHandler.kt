@@ -19,31 +19,31 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.conversation.toDao
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.SystemMessageInserter
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 
 interface ProtocolUpdateEventHandler {
-    suspend fun handle(event: Event.Conversation.ConversationProtocol)
+    suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit>
 }
 
 internal class ProtocolUpdateEventHandlerImpl(
-    private val conversationDAO: ConversationDAO,
+    private val conversationRepository: ConversationRepository,
     private val systemMessageInserter: SystemMessageInserter
 ) : ProtocolUpdateEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(event: Event.Conversation.ConversationProtocol) {
-        updateProtocol(event)
+    override suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit> =
+        conversationRepository.updateProtocolLocally(event.conversationId, event.protocol)
             .onSuccess { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
@@ -65,14 +65,5 @@ internal class ProtocolUpdateEventHandlerImpl(
                         event,
                         Pair("errorInfo", "$coreFailure")
                     )
-            }
-    }
-
-    private suspend fun updateProtocol(event: Event.Conversation.ConversationProtocol) = wrapStorageRequest {
-        conversationDAO.updateConversationProtocol(
-            event.conversationId.toDao(),
-            event.protocol.toDao()
-        )
-    }
-
+            }.map { }
 }
