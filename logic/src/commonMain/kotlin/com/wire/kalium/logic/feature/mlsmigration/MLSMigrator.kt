@@ -90,7 +90,7 @@ internal class MLSMigratorImpl(
 
     private suspend fun migrate(conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("migrating ${conversationId.toLogString()} to mixed")
-        return conversationRepository.updateProtocol(conversationId, Protocol.MIXED)
+        return conversationRepository.updateProtocolRemotely(conversationId, Protocol.MIXED)
             .flatMap { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
@@ -106,7 +106,7 @@ internal class MLSMigratorImpl(
 
     private suspend fun finalise(conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("finalising ${conversationId.toLogString()} to mls")
-        return conversationRepository.updateProtocol(conversationId, Protocol.MLS)
+        return conversationRepository.updateProtocolRemotely(conversationId, Protocol.MLS)
             .fold({ failure ->
                 kaliumLogger.w("failed to finalise ${conversationId.toLogString()} to mls: $failure")
                 Either.Right(Unit)

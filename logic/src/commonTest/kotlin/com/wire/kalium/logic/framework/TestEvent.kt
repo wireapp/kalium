@@ -257,4 +257,12 @@ object TestEvent {
         timestampIso = "2022-03-30T15:36:00.000Z",
         typingIndicatorMode = typingIndicatorMode
     )
+
+    fun newConversationProtocolEvent() = Event.Conversation.ConversationProtocol(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = false,
+        protocol = Conversation.Protocol.MIXED,
+        senderUserId = TestUser.OTHER_USER_ID
+    )
 }
