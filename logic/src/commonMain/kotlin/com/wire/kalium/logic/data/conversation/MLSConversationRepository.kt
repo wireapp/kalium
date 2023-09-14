@@ -518,6 +518,7 @@ internal class MLSConversationDataSource(
         kaliumLogger.w("Discarding the failed commit.")
 
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            @Suppress("TooGenericExceptionCaught")
             try {
                 mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
             } catch (error: Throwable) {

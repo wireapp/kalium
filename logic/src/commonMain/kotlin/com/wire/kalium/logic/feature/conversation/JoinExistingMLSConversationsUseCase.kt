@@ -60,7 +60,10 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                     joinExistingMLSConversationUseCase(conversation.id)
                         .flatMapLeft {
                             if (it is CoreFailure.NoKeyPackagesAvailable) {
-                                kaliumLogger.w("Failed to establish mls group for ${conversation.id.toLogString()} since some participants are out of key packages, skipping.")
+                                kaliumLogger.w(
+                                    "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                             "since some participants are out of key packages, skipping."
+                                )
                                 Either.Right(Unit)
                             } else {
                                 Either.Left(it)
