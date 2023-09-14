@@ -407,7 +407,9 @@ class UpdateConversationAccessUseCaseTest {
             creatorId = "someCreatorId",
             receiptMode = Conversation.ReceiptMode.DISABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedDateTime = null
         )
     }
 

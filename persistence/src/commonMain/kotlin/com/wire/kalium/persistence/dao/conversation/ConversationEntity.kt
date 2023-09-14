@@ -41,7 +41,9 @@ data class ConversationEntity(
     val guestRoomLink: String? = null,
     val messageTimer: Long?,
     val userMessageTimer: Long?,
-    val hasIncompleteMetadata: Boolean = false
+    val hasIncompleteMetadata: Boolean = false,
+    val archived: Boolean = false,
+    val archivedInstant: Instant?
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 

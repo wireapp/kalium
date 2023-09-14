@@ -30,7 +30,7 @@ kover = "0.7.1"
 multiplatform-settings = "1.0.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the work around in the dev.mk file
-sqldelight = "2.0.0-alpha05"
+sqldelight = "2.0.0"
 sqlcipher-android = "4.5.5"
 pbandk = "0.14.2"
 turbine = "1.0.0"
@@ -157,7 +157,7 @@ sqldelight-androidDriver = { module = "app.cash.sqldelight:android-driver", vers
 sqldelight-androidxPaging = { module = "app.cash.sqldelight:androidx-paging3-extensions", version.ref = "sqldelight" }
 sqldelight-nativeDriver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-jvmDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
-sqldelight-jsDriver = { module = "app.cash.sqldelight:sqljs-driver", version.ref = "sqldelight" }
+sqldelight-jsDriver = { module = "app.cash.sqldelight:web-worker-driver", version.ref = "sqldelight" }
 sqldelight-primitiveAdapters = { module = "app.cash.sqldelight:primitive-adapters", version.ref = "sqldelight" }
 sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-33-dialect", version.ref = "sqldelight" }
 

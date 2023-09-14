@@ -21,7 +21,6 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
@@ -83,7 +82,9 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = 5000L,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null
         )
     }
 }

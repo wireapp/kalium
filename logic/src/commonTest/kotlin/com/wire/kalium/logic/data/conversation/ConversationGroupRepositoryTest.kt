@@ -961,6 +961,44 @@ class ConversationGroupRepositoryTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenAConversationFailsWithUnreachableAndNotFromUsersInRequest_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
+        runTest {
+            // given
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                    arrayOf(FEDERATION_ERROR_UNREACHABLE_DOMAINS, FEDERATION_ERROR_UNREACHABLE_DOMAINS)
+                )
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .arrange()
+
+            // when
+            val expectedInitialUsersNotFromUnreachableInformed = listOf(TestConversation.USER_1)
+            conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, TestConversation.ID).shouldFail()
+
+            // then
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(anything())
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.memberJoinEventHandler)
+                .suspendFunction(arrangement.memberJoinEventHandler::handle)
+                .with(anything())
+                .wasNotInvoked()
+
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), matching {
+                    it.containsAll(expectedInitialUsersNotFromUnreachableInformed)
+                })
+                .wasInvoked(once)
+        }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
