@@ -238,4 +238,12 @@ object TestEvent {
         conversationId = TestConversation.ID,
         transient = false,
     )
+
+    fun newConversationProtocolEvent() = Event.Conversation.ConversationProtocol(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = false,
+        protocol = Conversation.Protocol.MIXED,
+        senderUserId = TestUser.OTHER_USER_ID
+    )
 }

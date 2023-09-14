@@ -48,6 +48,7 @@ internal interface ConversationRepositoryArrangement {
     fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = any())
     fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = any())
     fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION)
+    fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -94,5 +95,12 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .suspendFunction(conversationRepository::getConversationById)
             .whenInvokedWith(any())
             .thenReturn(conversation)
+    }
+
+    override fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateProtocolLocally)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
     }
 }

@@ -1204,7 +1204,7 @@ class UserSessionScope internal constructor(
 
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
         get() = ProtocolUpdateEventHandlerImpl(
-            conversationDAO = userStorage.database.conversationDAO,
+            conversationRepository = conversationRepository,
             systemMessageInserter = systemMessageBuilder
         )
 
