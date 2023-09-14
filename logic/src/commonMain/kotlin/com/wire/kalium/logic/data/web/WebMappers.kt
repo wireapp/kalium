@@ -143,6 +143,9 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
         } else {
             DateTimeUtil.fromEpochMillisToIsoDateTimeString(lastReadTimestamp)
         }
+        val conversationArchivedTimestamp: Instant? = archivedTimestamp?.let { timestamp ->
+            Instant.fromEpochMilliseconds(timestamp)
+        }
 
         Conversation(
             id = toQualifiedId(id, domain, selfUserId),
@@ -164,7 +167,9 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             creatorId = creator,
             receiptMode = fromScalaReceiptMode(receiptMode),
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = archivedState ?: false,
+            archivedDateTime = conversationArchivedTimestamp
         )
     }
 }
