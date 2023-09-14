@@ -70,7 +70,7 @@ data class Conversation(
     val messageTimer: Duration?,
     val userMessageTimer: Duration?,
     val archived: Boolean,
-    val archivedDateTime: String?
+    val archivedDateTime: Instant?
 ) {
 
     companion object {

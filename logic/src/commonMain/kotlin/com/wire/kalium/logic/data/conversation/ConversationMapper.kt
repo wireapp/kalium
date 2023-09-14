@@ -161,7 +161,7 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
-            archivedDateTime = archivedDateTime?.toIsoDateTimeString()
+            archivedDateTime = archivedDateTime
         )
     }
 
@@ -186,7 +186,7 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
-            archivedDateTime = archivedInstant?.toIsoDateTimeString()
+            archivedDateTime = archivedInstant
         )
     }
 
@@ -378,7 +378,7 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.inWholeMilliseconds,
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
             archived = archived,
-            archivedInstant = archivedDateTime?.toInstant()
+            archivedInstant = archivedDateTime
         )
     }
 

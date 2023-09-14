@@ -143,8 +143,8 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
         } else {
             DateTimeUtil.fromEpochMillisToIsoDateTimeString(lastReadTimestamp)
         }
-        val conversationArchivedTimestamp = archivedTimestamp?.let { timestamp ->
-            DateTimeUtil.fromEpochMillisToIsoDateTimeString(timestamp)
+        val conversationArchivedTimestamp: Instant? = archivedTimestamp?.let { timestamp ->
+            Instant.fromEpochMilliseconds(timestamp)
         }
 
         Conversation(
