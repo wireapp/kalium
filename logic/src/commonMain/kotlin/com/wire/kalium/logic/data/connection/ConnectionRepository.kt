@@ -258,7 +258,7 @@ internal class ConnectionDataSource(
                         messageTimer = null,
                         userMessageTimer = null,
                         archived = false,
-                        archivedRef = ""
+                        archivedDateTime = null
                     )
                 )
             }

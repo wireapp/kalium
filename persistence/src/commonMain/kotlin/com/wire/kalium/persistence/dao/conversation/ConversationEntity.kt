@@ -43,7 +43,7 @@ data class ConversationEntity(
     val userMessageTimer: Long?,
     val hasIncompleteMetadata: Boolean = false,
     val archived: Boolean = false,
-    val archivedRef: String
+    val archivedDateTime: String?
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 

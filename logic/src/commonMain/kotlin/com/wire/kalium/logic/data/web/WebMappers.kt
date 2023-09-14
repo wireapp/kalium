@@ -166,7 +166,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = null,
             archived = archivedState ?: false,
-            archivedRef = archivedTimestamp?.toDuration(DurationUnit.MILLISECONDS)?.toString() ?: ""
+            archivedDateTime = archivedTimestamp?.toDuration(DurationUnit.MILLISECONDS)?.toString()
         )
     }
 }

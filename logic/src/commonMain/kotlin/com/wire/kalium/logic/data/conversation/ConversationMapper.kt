@@ -119,7 +119,7 @@ internal class ConversationMapperImpl(
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
         hasIncompleteMetadata = false,
         archived = apiModel.members.self.otrArchived ?: false,
-        archivedRef = apiModel.members.self.otrArchivedRef ?: ""
+        archivedDateTime = apiModel.members.self.otrArchivedRef
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -161,7 +161,7 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
-            archivedRef = archivedRef
+            archivedDateTime = archivedDateTime
         )
     }
 
@@ -186,7 +186,7 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
-            archivedRef = archivedRef
+            archivedDateTime = archivedDateTime
         )
     }
 
@@ -378,7 +378,7 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.inWholeMilliseconds,
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
             archived = archived,
-            archivedRef = archivedRef
+            archivedDateTime = archivedDateTime
         )
     }
 
@@ -406,7 +406,7 @@ internal class ConversationMapperImpl(
         userMessageTimer = null,
         hasIncompleteMetadata = true,
         archived = false,
-        archivedRef = ""
+        archivedDateTime = null
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {

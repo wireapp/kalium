@@ -70,7 +70,7 @@ data class Conversation(
     val messageTimer: Duration?,
     val userMessageTimer: Duration?,
     val archived: Boolean,
-    val archivedRef: String
+    val archivedDateTime: String?
 ) {
 
     companion object {
@@ -299,7 +299,7 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedRef = ""
+            archivedDateTime = null
         )
     )
 }
