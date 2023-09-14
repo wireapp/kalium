@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -983,7 +982,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null,
-            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null
+            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
+            archived = false,
+            archivedDateTime = null
         )
     }
 
@@ -1012,7 +1013,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1035,7 +1038,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1061,7 +1066,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1087,7 +1094,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
