@@ -507,6 +507,6 @@ INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recip
 VALUES(?, ?, ?, ?);
 
 moveMessages:
-UPDATE Message
+UPDATE OR REPLACE Message
 SET conversation_id = :to
 WHERE conversation_id = :from;
