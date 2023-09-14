@@ -141,7 +141,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
-                        listOf(members.first())
+                        members
                     )
                 }
             }
