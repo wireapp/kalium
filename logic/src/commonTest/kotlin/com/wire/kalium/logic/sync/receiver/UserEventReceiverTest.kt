@@ -48,6 +48,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.Duration.Companion.seconds
 
 class UserEventReceiverTest {
 
@@ -179,36 +181,36 @@ class UserEventReceiverTest {
     }
 
     @Test
-    fun givenNewConnectionEventWithStatusAccepted_thenActiveOneOnOneConversationIsResolved() = runTest {
+    fun givenNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduled() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
         val (arrangement, eventReceiver) = arrange {
             withInsertConnectionFromEventSucceeding()
-            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+            withScheduleResolveOneOnOneConversationWithUserId()
         }
 
         eventReceiver.onEvent(event)
 
         verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-            .with(eq(event.connection.qualifiedToId))
+            .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
+            .with(eq(event.connection.qualifiedToId), eq(ZERO))
             .wasInvoked(exactly = once)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenLiveNewConnectionEventWithStatusAccepted_thenActiveOneOnOneConversationIsResolved() = runTest(TestKaliumDispatcher.default) {
+    fun givenLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduledWithDelay() = runTest(TestKaliumDispatcher.default) {
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy(live = true)
         val (arrangement, eventReceiver) = arrange {
             withInsertConnectionFromEventSucceeding()
-            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+            withScheduleResolveOneOnOneConversationWithUserId()
         }
 
         eventReceiver.onEvent(event)
         advanceUntilIdle()
 
         verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-            .with(eq(event.connection.qualifiedToId))
+            .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
+            .with(eq(event.connection.qualifiedToId), eq(3.seconds))
             .wasInvoked(exactly = once)
     }
 
@@ -239,8 +241,7 @@ class UserEventReceiverTest {
             logoutUseCase,
             oneOnOneResolver,
             SELF_USER_ID,
-            currentClientIdProvider,
-            TestKaliumDispatcher
+            currentClientIdProvider
         )
 
         init {

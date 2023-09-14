@@ -38,12 +38,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
 internal interface UserEventReceiver : EventReceiver<Event.User>
@@ -57,13 +52,8 @@ internal class UserEventReceiverImpl internal constructor(
     private val logout: LogoutUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val selfUserId: UserId,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val currentClientIdProvider: CurrentClientIdProvider
 ) : UserEventReceiver {
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
-    private val resolveActiveOneOnOneScope = CoroutineScope(dispatcher)
 
     override suspend fun onEvent(event: Event.User): Either<CoreFailure, Unit> {
         return when (event) {
@@ -100,16 +90,11 @@ internal class UserEventReceiverImpl internal constructor(
                     return@flatMap Either.Right(Unit)
                 }
 
-                if (event.live) {
-                    resolveActiveOneOnOneScope.launch {
-                        kaliumLogger.d("Delay resolving active one-on-one since we are live to avoid race conditions")
-                        delay(3.seconds)
-                        oneOnOneResolver.resolveOneOnOneConversationWithUserId(event.connection.qualifiedToId).map { }
-                    }
-                    Either.Right(Unit)
-                } else {
-                    oneOnOneResolver.resolveOneOnOneConversationWithUserId(event.connection.qualifiedToId).map { }
-                }
+                oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                    event.connection.qualifiedToId,
+                    delay = if (event.live) 3.seconds else ZERO
+                )
+                Either.Right(Unit)
             }
             .onSuccess {
                 kaliumLogger

@@ -25,10 +25,13 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.Job
 
 interface OneOnOneResolverArrangement {
 
     val oneOnOneResolver: OneOnOneResolver
+
+    fun withScheduleResolveOneOnOneConversationWithUserId()
     fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>)
     fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>)
     fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>)
@@ -39,6 +42,13 @@ class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
     @Mock
     override val oneOnOneResolver = mock(OneOnOneResolver::class)
+    override fun withScheduleResolveOneOnOneConversationWithUserId() {
+        given(oneOnOneResolver)
+            .suspendFunction(oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
+            .whenInvokedWith(any(), any())
+            .thenReturn(Job())
+    }
+
     override fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
         given(oneOnOneResolver)
             .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUserId)
