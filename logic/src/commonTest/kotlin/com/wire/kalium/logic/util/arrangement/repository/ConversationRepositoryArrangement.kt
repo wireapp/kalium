@@ -54,6 +54,7 @@ internal interface ConversationRepositoryArrangement {
     fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
     fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
     fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
+    fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -134,6 +135,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationDetailsByMLSGroupId)
             .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateProtocolLocally)
+            .whenInvokedWith(any(), any())
             .thenReturn(result)
     }
 }
