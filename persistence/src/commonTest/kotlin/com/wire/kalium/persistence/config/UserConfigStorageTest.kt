@@ -79,7 +79,7 @@ class UserConfigStorageTest {
     @Test
     fun givenAReadReceiptsSetValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
         userConfigStorage.persistReadReceipts(true)
-        assertTrue(userConfigStorage.isReadReceiptsEnabled().first())
+        assertTrue(userConfigStorage.areReadReceiptsEnabled().first())
     }
 
     @Test
