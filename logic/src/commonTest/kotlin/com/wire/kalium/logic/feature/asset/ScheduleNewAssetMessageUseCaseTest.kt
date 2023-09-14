@@ -244,7 +244,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             val expectedAssetId = dummyUploadedAssetId
             val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
             val (arrangement, sendAssetUseCase) = Arrangement(this)
-                .withUnSuccessfulSendMessageResponse(expectedAssetId, expectedAssetSha256)
+                .withUnsuccessfulSendMessageResponse(expectedAssetId, expectedAssetSha256)
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
@@ -646,7 +646,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .thenReturn(UpdateUploadStatusResult.Success)
         }
 
-        fun withUnSuccessfulSendMessageResponse(
+        fun withUnsuccessfulSendMessageResponse(
             expectedAssetId: UploadedAssetId,
             assetSHA256Key: SHA256Key,
             temporaryAssetId: String = "temporary_id"
