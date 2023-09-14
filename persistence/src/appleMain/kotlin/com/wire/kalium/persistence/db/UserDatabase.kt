@@ -53,13 +53,13 @@ actual fun userDatabaseBuilder(
     val driver = NativeSqliteDriver(
         DatabaseConfiguration(
             name = FileNameUtil.userDBName(userId),
-            version = schema.version,
+            version = schema.version.toInt(),
             journalMode = if (enableWAL) JournalMode.WAL else JournalMode.DELETE,
             create = { connection ->
                 wrapConnection(connection) { schema.create(it) }
             },
             upgrade = { connection, oldVersion, newVersion ->
-                wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+                wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
             },
             extendedConfig = DatabaseConfiguration.Extended(
                 basePath = platformDatabaseData.storePath
@@ -96,13 +96,13 @@ fun inMemoryDatabase(
     val driver = NativeSqliteDriver(
         DatabaseConfiguration(
             name = FileNameUtil.userDBName(userId),
-            version = schema.version,
+            version = schema.version.toInt(),
             inMemory = true,
             create = { connection ->
                 wrapConnection(connection) { schema.create(it) }
             },
             upgrade = { connection, oldVersion, newVersion ->
-                wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+                wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
             }
         )
     )
