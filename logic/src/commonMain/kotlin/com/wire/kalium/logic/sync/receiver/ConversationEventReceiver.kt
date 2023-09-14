@@ -118,7 +118,6 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.TypingIndicator -> typingIndicatorHandler.handle(event)
             is Event.Conversation.ConversationProtocol -> {
                 protocolUpdateEventHandler.handle(event)
-                Either.Right(Unit)
             }
         }
     }
