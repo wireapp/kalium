@@ -57,12 +57,12 @@ object TestConversation {
     val ID = ConversationId(conversationValue, conversationDomain)
     fun id(suffix: Int = 0) = ConversationId("${conversationValue}_$suffix", conversationDomain)
 
-    val ONE_ON_ONE = Conversation(
+    fun ONE_ON_ONE(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "1O1 ID"),
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus,
+        protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
         null,
