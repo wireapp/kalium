@@ -37,9 +37,6 @@ actual fun defaultHttpEngine(
     if (proxyCredentials != null) {
         throw IllegalArgumentException("Proxy is not supported on iOS")
     }
-    if (ignoreSSLCertificates) {
-        throw IllegalArgumentException("Ignore SSL Certificates is not supported on iOS")
-    }
 
     return Darwin.create {
         pipelining = true
