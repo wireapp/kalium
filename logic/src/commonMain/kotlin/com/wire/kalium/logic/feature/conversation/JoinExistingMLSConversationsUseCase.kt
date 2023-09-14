@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
@@ -57,6 +58,15 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
 
                 return pendingConversations.map { conversation ->
                     joinExistingMLSConversationUseCase(conversation.id)
+                        .flatMapLeft {
+                            if (it is CoreFailure.NoKeyPackagesAvailable) {
+                                kaliumLogger.w("Failed to establish mls group for ${conversation.id.toLogString()} since some participants are out of key packages, skipping.")
+                                Either.Right(Unit)
+                            } else {
+                                Either.Left(it)
+                            }
+
+                        }
                 }.foldToEitherWhileRight(Unit) { value, _ ->
                     value
                 }
