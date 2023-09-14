@@ -237,11 +237,24 @@ interface ConversationRepository {
     ): Either<CoreFailure, OneOnOneMembers>
 
     /**
-     * Update a conversation's protocol.
+     * Update a conversation's protocol remotely.
+     *
+     *  This also fetches the newly assigned `groupID` from the backend, if this operation fails the whole
+     *  operation is cancelled and protocol change is not persisted.
      *
      * @return **true** if the protocol was changed or **false** if the protocol was unchanged.
      */
-    suspend fun updateProtocol(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
+    suspend fun updateProtocolRemotely(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
+
+    /**
+     * Update a conversation's protocol locally.
+     *
+     * This also fetches the newly assigned `groupID` from the backend, if this operation fails the whole
+     * operation is cancelled and protocol change is not persisted.
+     *
+     * @return **true** if the protocol was changed or **false** if the protocol was unchanged.
+     */
+    suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -880,7 +893,7 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun updateProtocol(
+    override suspend fun updateProtocolRemotely(
         conversationId: ConversationId,
         protocol: Conversation.Protocol
     ): Either<CoreFailure, Boolean> =
@@ -894,18 +907,31 @@ internal class ConversationDataSource internal constructor(
                 }
 
                 is UpdateConversationProtocolResponse.ProtocolUpdated -> {
-                    when (protocol) {
-                        Conversation.Protocol.PROTEUS -> Either.Right(Unit)
-                        Conversation.Protocol.MIXED -> fetchConversation(conversationId)
-                        Conversation.Protocol.MLS -> {
-                            wrapStorageRequest {
-                                conversationDAO.updateConversationProtocol(
-                                    conversationId = conversationId.toDao(),
-                                    protocol = protocol.toDao()
-                                )
-                            }.map {}
-                        }
-                    }.map { true }
+                    updateProtocolLocally(conversationId, protocol)
+                }
+            }
+        }
+
+    override suspend fun updateProtocolLocally(
+        conversationId: ConversationId,
+        protocol: Conversation.Protocol
+    ): Either<CoreFailure, Boolean> =
+        wrapApiRequest {
+            conversationApi.fetchConversationDetails(conversationId.toApi())
+        }.flatMap { conversationResponse ->
+            wrapStorageRequest {
+                conversationDAO.updateConversationProtocol(
+                    conversationId = conversationId.toDao(),
+                    protocol = protocol.toDao()
+                )
+            }.flatMap { updated ->
+                if (updated) {
+                    val selfUserTeamId = selfTeamIdProvider().getOrNull()
+                    persistConversations(listOf(conversationResponse), selfUserTeamId?.value, invalidateMembers = true)
+                } else {
+                    Either.Right(Unit)
+                }.map {
+                    updated
                 }
             }
         }

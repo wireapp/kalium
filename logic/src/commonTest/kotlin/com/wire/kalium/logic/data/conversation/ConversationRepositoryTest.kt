@@ -45,6 +45,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -69,6 +70,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -1087,29 +1089,6 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversation_whenUpdatingProtocolToMls_thenShouldUpdateLocally() = runTest {
-        // given
-        val protocol = Conversation.Protocol.MLS
-
-        val (arrange, conversationRepository) = Arrangement()
-            .withUpdateProtocolResponse(UPDATE_PROTOCOL_SUCCESS)
-            .withDaoUpdateProtocolSuccess()
-            .arrange()
-
-        // when
-        val result = conversationRepository.updateProtocol(CONVERSATION_ID, protocol)
-
-        // then
-        with(result) {
-            shouldSucceed()
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationProtocol)
-                .with(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
     fun givenNoChange_whenUpdatingProtocolToMls_thenShouldNotUpdateLocally() = runTest {
         // given
         val protocol = Conversation.Protocol.MLS
@@ -1119,7 +1098,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         // when
-        val result = conversationRepository.updateProtocol(CONVERSATION_ID, protocol)
+        val result = conversationRepository.updateProtocolRemotely(CONVERSATION_ID, protocol)
 
         // then
         with(result) {
@@ -1132,7 +1111,7 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversation_whenUpdatingProtocolToMixed_thenShouldFetchConversation() = runTest {
+    fun givenChange_whenUpdatingProtocol_thenShouldFetchConversationDetails() = runTest {
         // given
         val protocol = Conversation.Protocol.MIXED
         val conversationResponse = NetworkResponse.Success(
@@ -1144,10 +1123,11 @@ class ConversationRepositoryTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withUpdateProtocolResponse(UPDATE_PROTOCOL_SUCCESS)
             .withFetchConversationsDetails(conversationResponse)
+            .withDaoUpdateProtocolSuccess()
             .arrange()
 
         // when
-        val result = conversationRepository.updateProtocol(CONVERSATION_ID, protocol)
+        val result = conversationRepository.updateProtocolRemotely(CONVERSATION_ID, protocol)
 
         // then
         with(result) {
@@ -1156,6 +1136,85 @@ class ConversationRepositoryTest {
                 .suspendFunction(arrangement.conversationApi::fetchConversationDetails)
                 .with(eq(CONVERSATION_ID.toApi()))
                 .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenChange_whenUpdatingProtocol_thenShouldUpdateLocally() = runTest {
+        // given
+        val protocol = Conversation.Protocol.MLS
+        val conversationResponse = NetworkResponse.Success(
+            TestConversation.CONVERSATION_RESPONSE,
+            emptyMap(),
+            HttpStatusCode.OK.value
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateProtocolResponse(UPDATE_PROTOCOL_SUCCESS)
+            .withFetchConversationsDetails(conversationResponse)
+            .withDaoUpdateProtocolSuccess()
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateProtocolRemotely(CONVERSATION_ID, protocol)
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationProtocol)
+                .with(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenSuccessFetchingConversationDetails_whenUpdatingProtocolLocally_thenShouldUpdateLocally() = runTest {
+        // given
+        val protocol = Conversation.Protocol.MLS
+        val conversationResponse = NetworkResponse.Success(
+            TestConversation.CONVERSATION_RESPONSE,
+            emptyMap(),
+            HttpStatusCode.OK.value
+        )
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withFetchConversationsDetails(conversationResponse)
+            .withDaoUpdateProtocolSuccess()
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateProtocolLocally(CONVERSATION_ID, protocol)
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationProtocol)
+                .with(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenFailureFetchingConversationDetails_whenUpdatingProtocolLocally_thenShouldNotUpdateLocally() = runTest {
+        // given
+        val protocol = Conversation.Protocol.MLS
+        val (arrange, conversationRepository) = Arrangement()
+            .withFetchConversationsDetails(NetworkResponse.Error(KaliumException.NoNetwork()))
+            .withDaoUpdateProtocolSuccess()
+            .arrange()
+
+        // when
+        val result = conversationRepository.updateProtocolLocally(CONVERSATION_ID, protocol)
+
+        // then
+        with(result) {
+            shouldFail()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateConversationProtocol)
+                .with(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                .wasNotInvoked()
         }
     }
 
