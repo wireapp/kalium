@@ -85,22 +85,22 @@ actual class GlobalCallManager(
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         kaliumConfigs: KaliumConfigs
     ): CallManager {
-        return callManagerHolder[userId] ?: CallManagerImpl(
-            calling = calling,
-            callRepository = callRepository,
-            userRepository = userRepository,
-            currentClientIdProvider = currentClientIdProvider,
-            selfConversationIdProvider = selfConversationIdProvider,
-            callMapper = callMapper,
-            messageSender = messageSender,
-            conversationRepository = conversationRepository,
-            federatedIdMapper = federatedIdMapper,
-            qualifiedIdMapper = qualifiedIdMapper,
-            videoStateChecker = videoStateChecker,
-            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
-            kaliumConfigs = kaliumConfigs
-        ).also {
-            callManagerHolder[userId] = it
+        return callManagerHolder.computeIfAbsent(userId) {
+            CallManagerImpl(
+                calling = calling,
+                callRepository = callRepository,
+                userRepository = userRepository,
+                currentClientIdProvider = currentClientIdProvider,
+                selfConversationIdProvider = selfConversationIdProvider,
+                callMapper = callMapper,
+                messageSender = messageSender,
+                conversationRepository = conversationRepository,
+                federatedIdMapper = federatedIdMapper,
+                qualifiedIdMapper = qualifiedIdMapper,
+                videoStateChecker = videoStateChecker,
+                conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+                kaliumConfigs = kaliumConfigs
+            )
         }
     }
 
