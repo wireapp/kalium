@@ -270,7 +270,7 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedInstant = null
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,

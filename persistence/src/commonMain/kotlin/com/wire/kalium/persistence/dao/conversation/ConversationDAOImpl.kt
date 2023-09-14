@@ -100,7 +100,7 @@ internal class ConversationDAOImpl internal constructor(
                 userMessageTimer,
                 hasIncompleteMetadata,
                 archived,
-                archivedDateTime
+                archivedInstant
             )
         }
     }

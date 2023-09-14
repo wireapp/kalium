@@ -95,7 +95,7 @@ internal class ConversationMapper {
         messageTimer: Long?,
         userMessageTimer: Long?,
         archived: Boolean,
-        archivedDateTime: String?
+        archivedDateTime: Instant?
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -121,7 +121,7 @@ internal class ConversationMapper {
         messageTimer = messageTimer,
         userMessageTimer = userMessageTimer,
         archived = archived,
-        archivedDateTime = archivedDateTime
+        archivedInstant = archivedDateTime
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {

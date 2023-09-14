@@ -143,6 +143,9 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
         } else {
             DateTimeUtil.fromEpochMillisToIsoDateTimeString(lastReadTimestamp)
         }
+        val conversationArchivedTimestamp = archivedTimestamp?.let { timestamp ->
+            DateTimeUtil.fromEpochMillisToIsoDateTimeString(timestamp)
+        }
 
         Conversation(
             id = toQualifiedId(id, domain, selfUserId),
@@ -166,7 +169,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = null,
             archived = archivedState ?: false,
-            archivedDateTime = archivedTimestamp?.toDuration(DurationUnit.MILLISECONDS)?.toString()
+            archivedDateTime = conversationArchivedTimestamp
         )
     }
 }

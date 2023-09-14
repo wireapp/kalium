@@ -21,7 +21,6 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
-import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
 import kotlin.test.BeforeTest
@@ -85,7 +84,7 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             messageTimer = 5000L,
             userMessageTimer = null,
             archived = false,
-            archivedDateTime = null
+            archivedInstant = null
         )
     }
 }

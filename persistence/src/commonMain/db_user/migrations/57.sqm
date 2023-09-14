@@ -1,5 +1,5 @@
 ALTER TABLE Conversation ADD COLUMN archived INTEGER AS Boolean NOT NULL DEFAULT 0;
-ALTER TABLE Conversation ADD COLUMN archived_date_time TEXT;
+ALTER TABLE Conversation ADD COLUMN archived_date_time INTEGER AS Instant;
 
 DROP VIEW IF EXISTS ConversationDetails;
 

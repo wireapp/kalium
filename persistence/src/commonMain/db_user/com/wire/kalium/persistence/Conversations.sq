@@ -39,7 +39,7 @@ CREATE TABLE Conversation (
     mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0,
     is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
     archived INTEGER AS Boolean NOT NULL DEFAULT 0,
-    archived_date_time TEXT
+    archived_date_time INTEGER AS Instant
 );
 
 -- Optimise comparisons and sorting by dates:

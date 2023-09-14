@@ -39,7 +39,7 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     messageTimer = null,
     userMessageTimer = null,
     archived = false,
-    archivedDateTime = null
+    archivedInstant = null
 )
 
 fun newConversationEntity(
@@ -62,5 +62,5 @@ fun newConversationEntity(
     messageTimer = null,
     userMessageTimer = null,
     archived = false,
-    archivedDateTime = null
+    archivedInstant = null
 )
