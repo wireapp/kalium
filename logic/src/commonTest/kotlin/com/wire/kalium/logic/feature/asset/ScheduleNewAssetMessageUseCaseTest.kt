@@ -227,6 +227,10 @@ class ScheduleNewAssetMessageUseCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any())
             .wasInvoked(exactly = once)
+        verify(arrangement.messageSendFailureHandler)
+            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
+            .with(any(), any(), any(), any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -273,7 +277,6 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(arrangement.messageSender::sendMessage)
                 .with(any())
                 .wasInvoked(exactly = once)
-
             verify(arrangement.messageSendFailureHandler)
                 .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
                 .with(any(), any(), any(), any(), any())
