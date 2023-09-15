@@ -337,6 +337,8 @@ import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -1075,7 +1077,12 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, EphemeralEventsNotificationManagerImpl, userId),
+            DeleteMessageHandlerImpl(
+                messageRepository,
+                assetRepository,
+                EphemeralEventsNotificationManagerImpl,
+                userId
+            ),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -1153,6 +1160,11 @@ class UserSessionScope internal constructor(
             conversationDAO = userStorage.database.conversationDAO
         )
 
+    private val typingIndicatorHandler: TypingIndicatorHandler
+        get() = TypingIndicatorHandlerImpl(
+
+        )
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1166,7 +1178,8 @@ class UserSessionScope internal constructor(
             receiptModeUpdateEventHandler,
             conversationMessageTimerEventHandler,
             conversationCodeUpdateHandler,
-            conversationCodeDeletedHandler
+            conversationCodeDeletedHandler,
+            typingIndicatorHandler
         )
     }
 

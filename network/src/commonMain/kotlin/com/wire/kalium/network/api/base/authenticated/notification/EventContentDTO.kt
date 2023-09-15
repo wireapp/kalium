@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationN
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRoleChange
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
@@ -189,7 +190,14 @@ sealed class EventContentDTO {
             @SerialName("data") val roleChange: ConversationRoleChange
         ) : Conversation()
 
-        // TODO conversation.typing
+        @SerialName("conversation.typing")
+        data class ConversationTypingDTO(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
+            val time: String,
+            @SerialName("from") val from: String,
+            @SerialName("data") val status: TypingIndicatorStatusDTO,
+        ) : Conversation()
 
         @Serializable
         @SerialName("conversation.otr-message-add")

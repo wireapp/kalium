@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
@@ -80,7 +81,12 @@ class EventMapper(
             is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient)
             is EventContentDTO.Unknown -> unknown(id, transient, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, eventContentDTO)
-            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(
+                id,
+                eventContentDTO,
+                transient
+            )
+
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient)
@@ -89,14 +95,46 @@ class EventMapper(
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(
+                id,
+                eventContentDTO,
+                transient
+            )
+
+            is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(
+                id,
+                eventContentDTO,
+                transient
+            )
+
             is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO, transient)
         }
 
-    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
+    private fun conversationTyping(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ConversationTypingDTO,
+        transient: Boolean
+    ): Event =
+        Event.Conversation.TypingIndicator(
+            id,
+            eventContentDTO.qualifiedConversation.toModel(),
+            transient,
+            eventContentDTO.qualifiedFrom.toModel(),
+            eventContentDTO.time,
+            when (eventContentDTO.status) {
+                TypingIndicatorStatusDTO.STARTED -> Conversation.TypingIndicatorMode.STARTED
+                TypingIndicatorStatusDTO.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
+            }
+        )
+
+    private fun federationTerminated(
+        id: String,
+        eventContentDTO: EventContentDTO.Federation,
+        transient: Boolean
+    ): Event =
         when (eventContentDTO) {
             is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
                 id,
@@ -266,7 +304,11 @@ class EventMapper(
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
-    private fun userDelete(id: String, eventUserDelete: EventContentDTO.User.UserDeleteDTO, transient: Boolean): Event.User.UserDelete {
+    private fun userDelete(
+        id: String,
+        eventUserDelete: EventContentDTO.User.UserDeleteDTO,
+        transient: Boolean
+    ): Event.User.UserDelete {
         return Event.User.UserDelete(transient, id, eventUserDelete.userId.toModel())
     }
 
