@@ -227,7 +227,61 @@ class ScheduleNewAssetMessageUseCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any())
             .wasInvoked(exactly = once)
+        verify(arrangement.messageSendFailureHandler)
+            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
+            .with(any(), any(), any(), any(), any())
+            .wasNotInvoked()
     }
+
+    @Test
+    fun givenASuccessfulSendAssetMessageRequest_whenSendingTheAssetAndMessageFails_thenTheMessageStatusIsUpdatedToFailed() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val expectedAssetId = dummyUploadedAssetId
+            val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
+                .withUnsuccessfulSendMessageResponse(expectedAssetId, expectedAssetSha256)
+                .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
+                .arrange()
+
+            // When
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                audioLengthInMs = 0
+            )
+
+            advanceUntilIdle()
+
+            // Then
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(any())
+                .wasInvoked(exactly = twice)
+            verify(arrangement.assetDataSource)
+                .suspendFunction(arrangement.assetDataSource::uploadAndPersistPrivateAsset)
+                .with(any(), any(), any(), any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.messageSender)
+                .suspendFunction(arrangement.messageSender::sendMessage)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.messageSendFailureHandler)
+                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
+                .with(any(), any(), any(), any(), any())
+                .wasInvoked(exactly = once)
+        }
 
     @Test
     fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
@@ -590,6 +644,41 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(updateUploadStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(UpdateUploadStatusResult.Success)
+        }
+
+        fun withUnsuccessfulSendMessageResponse(
+            expectedAssetId: UploadedAssetId,
+            assetSHA256Key: SHA256Key,
+            temporaryAssetId: String = "temporary_id"
+        ): Arrangement = apply {
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::persistAsset)
+                .whenInvokedWith(any(), any(), any(), any(), any())
+                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
+            given(assetDataSource)
+                .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
+                .whenInvokedWith(any(), any(), any(), any())
+                .thenReturn(Either.Right(expectedAssetId to assetSHA256Key))
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(someClientId))
+            given(slowSyncRepository)
+                .getter(slowSyncRepository::slowSyncStatus)
+                .whenInvoked()
+                .thenReturn(completeStateFlow)
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+            given(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+            given(messageSendFailureHandler)
+                .suspendFunction(messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
+                .whenInvokedWith(any(), any(), any(), any(), any())
+                .thenReturn(Unit)
         }
 
         fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement = apply {
