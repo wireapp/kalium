@@ -892,7 +892,8 @@ class UserSessionScope internal constructor(
         get() = OneOnOneResolverImpl(
             userRepository,
             oneOnOneProtocolSelector,
-            oneOnOneMigrator
+            oneOnOneMigrator,
+            incrementalSyncRepository
         )
 
     private val slowSyncWorker: SlowSyncWorker by lazy {

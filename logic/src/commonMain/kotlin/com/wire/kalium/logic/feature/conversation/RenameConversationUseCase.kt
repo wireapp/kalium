@@ -54,7 +54,7 @@ internal class RenameConversationUseCaseImpl(
             .onSuccess { response ->
                 if (response is ConversationRenameResponse.Changed)
                     renamedConversationEventHandler.handle(
-                        eventMapper.conversationRenamed(LocalId.generate(), response.event, true)
+                        eventMapper.conversationRenamed(LocalId.generate(), response.event, true, false)
                     )
             }
             .fold({
