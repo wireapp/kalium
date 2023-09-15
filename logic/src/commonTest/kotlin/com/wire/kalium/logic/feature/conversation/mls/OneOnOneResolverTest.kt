@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneMigratorArrangement
@@ -119,14 +121,16 @@ class OneOnOneResolverTest {
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
-        OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl()
+        OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
+        IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl()
     {
         fun arrange() = run {
             block()
             this@Arrangement to OneOnOneResolverImpl(
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
-                oneOnOneMigrator = oneOnOneMigrator
+                oneOnOneMigrator = oneOnOneMigrator,
+                incrementalSyncRepository = incrementalSyncRepository
             )
         }
     }

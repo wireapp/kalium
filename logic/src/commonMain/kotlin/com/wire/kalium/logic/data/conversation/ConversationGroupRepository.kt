@@ -205,7 +205,8 @@ internal class ConversationGroupRepositoryImpl(
                                     eventMapper.conversationMemberJoin(
                                         LocalId.generate(),
                                         response.event,
-                                        true
+                                        true,
+                                        false
                                     )
                                 )
                             }
@@ -244,7 +245,7 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId
     ) = if (apiResult.value is ConversationMemberAddedResponse.Changed) {
         memberJoinEventHandler.handle(
-            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true)
+            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true, false)
         ).flatMap {
             if (failedUsersList.isNotEmpty()) {
                 newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(conversationId, failedUsersList)
@@ -319,7 +320,7 @@ internal class ConversationGroupRepositoryImpl(
         if (response is ConversationMemberAddedResponse.Changed) {
             val conversationId = response.event.qualifiedConversation.toModel()
 
-            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true))
+            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true, false))
                 .flatMap {
                     wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
                         .flatMap { protocol ->
@@ -367,6 +368,7 @@ internal class ConversationGroupRepositoryImpl(
                     eventMapper.conversationMemberLeave(
                         LocalId.generate(),
                         response.event,
+                        false,
                         false
                     )
                 )
@@ -406,7 +408,8 @@ internal class ConversationGroupRepositoryImpl(
                     eventMapper.conversationMessageTimerUpdate(
                         LocalId.generate(),
                         it,
-                        true
+                        true,
+                        false
                     )
                 )
             }
