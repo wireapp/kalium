@@ -71,13 +71,13 @@ internal class UserPropertyDataSource(
         userConfigRepository.isTypingIndicatorEnabled()
 
     override suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
-        propertiesApi.setProperty(PropertiesApi.PropertyKey.WIRE_TYPING_MODE, 1)
+        propertiesApi.deleteProperty(PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE)
     }.flatMap {
         userConfigRepository.setTypingIndicatorStatus(true)
     }
 
     override suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
-        propertiesApi.deleteProperty(PropertiesApi.PropertyKey.WIRE_TYPING_MODE)
+        propertiesApi.setProperty(PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE, 0)
     }.flatMap {
         userConfigRepository.setTypingIndicatorStatus(false)
     }
