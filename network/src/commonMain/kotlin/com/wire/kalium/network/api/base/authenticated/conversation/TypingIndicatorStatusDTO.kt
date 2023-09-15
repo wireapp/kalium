@@ -17,10 +17,17 @@
  */
 package com.wire.kalium.network.api.base.authenticated.conversation
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class TypingIndicatorStatusDTO(val value: String) {
+data class TypingIndicatorStatusDTO(@SerialName("status") val status: TypingIndicatorStatus)
+
+@Serializable
+enum class TypingIndicatorStatus(val value: String) {
+    @SerialName("started")
     STARTED("started"),
-    STOPPED("stopped");
+
+    @SerialName("stopped")
+    STOPPED("stopped")
 }

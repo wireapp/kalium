@@ -33,7 +33,7 @@ import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
@@ -124,9 +124,9 @@ class EventMapper(
             transient,
             eventContentDTO.qualifiedFrom.toModel(),
             eventContentDTO.time,
-            when (eventContentDTO.status) {
-                TypingIndicatorStatusDTO.STARTED -> Conversation.TypingIndicatorMode.STARTED
-                TypingIndicatorStatusDTO.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
+            when (eventContentDTO.status.status) {
+                TypingIndicatorStatus.STARTED -> Conversation.TypingIndicatorMode.STARTED
+                TypingIndicatorStatus.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
             }
         )
 

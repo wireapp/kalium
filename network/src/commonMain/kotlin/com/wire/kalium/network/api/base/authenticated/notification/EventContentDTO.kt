@@ -190,6 +190,7 @@ sealed class EventContentDTO {
             @SerialName("data") val roleChange: ConversationRoleChange
         ) : Conversation()
 
+        @Serializable
         @SerialName("conversation.typing")
         data class ConversationTypingDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
