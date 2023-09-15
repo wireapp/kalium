@@ -87,6 +87,10 @@ class ConversationScope internal constructor(
     private val scope: CoroutineScope
 ) {
 
+    init {
+        println("cyka INIT conversations")
+    }
+
     val getSelfTeamUseCase: GetSelfTeamUseCase
         get() = GetSelfTeamUseCaseImpl(
             userRepository = userRepository,

@@ -88,24 +88,25 @@ class AuthenticationScope internal constructor(
             certificatePinning = certConfig()
         )
     }
-    private val loginRepository: LoginRepository
-        get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi)
+    private val loginRepository: LoginRepository by lazy { LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi) }
 
-    private val registerAccountRepository: RegisterAccountRepository
-        get() = RegisterAccountDataSource(
-            unauthenticatedNetworkContainer.registerApi
-        )
-    internal val ssoLoginRepository: SSOLoginRepository
-        get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
+    private val registerAccountRepository: RegisterAccountRepository by lazy {
+        RegisterAccountDataSource(unauthenticatedNetworkContainer.registerApi)
+    }
+    internal val ssoLoginRepository: SSOLoginRepository by lazy {
+        SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
+    }
 
-    internal val secondFactorVerificationRepository: SecondFactorVerificationRepository =
+    internal val secondFactorVerificationRepository: SecondFactorVerificationRepository by lazy {
         SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
+    }
 
-    private val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
-    private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
+    private val validateEmailUseCase: ValidateEmailUseCase by lazy { ValidateEmailUseCaseImpl() }
+    private val validateUserHandleUseCase: ValidateUserHandleUseCase by lazy { ValidateUserHandleUseCaseImpl() }
 
-    private val appVersionRepository: AppVersionRepository
-        get() = AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
+    private val appVersionRepository: AppVersionRepository by lazy {
+        AppVersionRepositoryImpl(unauthenticatedNetworkContainer.appVersioningApi)
+    }
 
     val login: LoginUseCase
         get() = LoginUseCaseImpl(
@@ -118,10 +119,8 @@ class AuthenticationScope internal constructor(
         )
     val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
-    val registerScope: RegisterScope
-        get() = RegisterScope(registerAccountRepository, serverConfig, proxyCredentials)
-    val ssoLoginScope: SSOLoginScope
-        get() = SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials)
+    val registerScope: RegisterScope by lazy { RegisterScope(registerAccountRepository, serverConfig, proxyCredentials) }
+    val ssoLoginScope: SSOLoginScope by lazy { SSOLoginScope(ssoLoginRepository, serverConfig, proxyCredentials) }
     val checkIfUpdateRequired: CheckIfUpdateRequiredUseCase
         get() = CheckIfUpdateRequiredUseCaseImpl(appVersionRepository)
 

@@ -105,28 +105,30 @@ class GlobalKaliumScope internal constructor(
         )
     }
 
-    internal val serverConfigRepository: ServerConfigRepository
-        get() = ServerConfigDataSource(
+    internal val serverConfigRepository: ServerConfigRepository by lazy {
+        ServerConfigDataSource(
             unboundNetworkContainer.serverConfigApi,
             globalDatabase.serverConfigurationDAO,
             unboundNetworkContainer.remoteVersion,
             kaliumConfigs.developmentApiEnabled
         )
+    }
 
-    val sessionRepository: SessionRepository
-        get() = SessionDataSource(
+    val sessionRepository: SessionRepository by lazy {
+        SessionDataSource(
             globalDatabase.accountsDAO,
             globalPreferences.authTokenStorage,
             serverConfigRepository,
             kaliumConfigs
         )
+    }
 
     val observePersistentWebSocketConnectionStatus: ObservePersistentWebSocketConnectionStatusUseCase
         get() = ObservePersistentWebSocketConnectionStatusUseCaseImpl(sessionRepository)
 
-    private val notificationTokenRepository: NotificationTokenRepository
-        get() =
-            NotificationTokenDataSource(globalPreferences.tokenStorage)
+    private val notificationTokenRepository: NotificationTokenRepository by lazy {
+        NotificationTokenDataSource(globalPreferences.tokenStorage)
+    }
 
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -140,7 +142,7 @@ class GlobalKaliumScope internal constructor(
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
-    val session: SessionScope get() = SessionScope(sessionRepository)
+    val session: SessionScope by lazy { SessionScope(sessionRepository) }
     val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
     val fetchApiVersion: FetchApiVersionUseCase get() = FetchApiVersionUseCaseImpl(serverConfigRepository)
     val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository)
@@ -177,8 +179,9 @@ class GlobalKaliumScope internal constructor(
             sessionRepository
         )
 
-    private val userClientRepositoryProvider: UserClientRepositoryProvider
-        get() = UserClientRepositoryProviderImpl(userSessionScopeProvider.value)
+    private val userClientRepositoryProvider: UserClientRepositoryProvider by lazy {
+        UserClientRepositoryProviderImpl(userSessionScopeProvider.value)
+    }
 
     val observeNewClientsUseCase: ObserveNewClientsUseCase
         get() = ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userClientRepositoryProvider)

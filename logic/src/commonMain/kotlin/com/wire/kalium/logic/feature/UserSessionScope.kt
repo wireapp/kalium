@@ -470,18 +470,20 @@ class UserSessionScope internal constructor(
         kaliumConfigs::certPinningConfig
     )
 
-    private val userConfigRepository: UserConfigRepository
-        get() = UserConfigDataSource(
+    private val userConfigRepository: UserConfigRepository by lazy {
+        UserConfigDataSource(
             userStorage.preferences.userConfigStorage,
             userStorage.database.userConfigDAO,
             kaliumConfigs
         )
+    }
 
-    private val userPropertyRepository: UserPropertyRepository
-        get() = UserPropertyDataSource(
+    private val userPropertyRepository: UserPropertyRepository by lazy {
+        UserPropertyDataSource(
             authenticatedNetworkContainer.propertiesApi,
             userConfigRepository
         )
+    }
 
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider
         get() = KeyPackageLimitsProviderImpl(kaliumConfigs)
@@ -512,8 +514,8 @@ class UserSessionScope internal constructor(
             memberJoinHandler, memberLeaveHandler
         )
 
-    private val mlsConversationRepository: MLSConversationRepository
-        get() = MLSConversationDataSource(
+    private val mlsConversationRepository: MLSConversationRepository by lazy {
+        MLSConversationDataSource(
             keyPackageRepository,
             mlsClientProvider,
             authenticatedNetworkContainer.mlsMessageApi,
@@ -525,15 +527,17 @@ class UserSessionScope internal constructor(
             epochsFlow,
             proposalTimersFlow
         )
+    }
 
-    private val e2eiRepository: E2EIRepository
-        get() = E2EIRepositoryImpl(
+    private val e2eiRepository: E2EIRepository by lazy {
+        E2EIRepositoryImpl(
             authenticatedNetworkContainer.e2eiApi,
             globalScope.unboundNetworkContainer.acmeApi,
             e2EIClientProvider,
             mlsClientProvider,
             clientIdProvider
         )
+    }
 
     private val e2EIClientProvider: E2EClientProvider by lazy {
         E2EIClientProviderImpl(
@@ -550,8 +554,8 @@ class UserSessionScope internal constructor(
 
     private val subconversationRepository = SubconversationRepositoryImpl()
 
-    private val conversationRepository: ConversationRepository
-        get() = ConversationDataSource(
+    private val conversationRepository: ConversationRepository by lazy {
+        ConversationDataSource(
             userId,
             mlsClientProvider,
             selfTeamId,
@@ -563,9 +567,10 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO
         )
+    }
 
-    private val conversationGroupRepository: ConversationGroupRepository
-        get() = ConversationGroupRepositoryImpl(
+    private val conversationGroupRepository: ConversationGroupRepository by lazy {
+        ConversationGroupRepositoryImpl(
             mlsConversationRepository,
             joinExistingMLSConversationUseCase,
             memberJoinHandler,
@@ -578,51 +583,60 @@ class UserSessionScope internal constructor(
             userId,
             selfTeamId
         )
+    }
 
-    private val newConversationMembersRepository: NewConversationMembersRepository
-        get() = NewConversationMembersRepositoryImpl(
+    private val newConversationMembersRepository: NewConversationMembersRepository by lazy {
+        NewConversationMembersRepositoryImpl(
             userStorage.database.memberDAO,
             lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
+    }
 
-    private val messageRepository: MessageRepository
-        get() = MessageDataSource(
+    private val messageRepository: MessageRepository by lazy {
+        MessageDataSource(
             messageApi = authenticatedNetworkContainer.messageApi,
             mlsMessageApi = authenticatedNetworkContainer.mlsMessageApi,
             messageDAO = userStorage.database.messageDAO,
             selfUserId = userId
         )
+    }
 
-    private val messageMetadataRepository: MessageMetadataRepository
-        get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
+    private val messageMetadataRepository: MessageMetadataRepository by lazy {
+        MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
+    }
 
-    private val compositeMessageRepository: CompositeMessageRepository
-        get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
+    private val compositeMessageRepository: CompositeMessageRepository by lazy {
+        CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
+    }
 
-    private val userRepository: UserRepository = UserDataSource(
-        userStorage.database.userDAO,
-        userStorage.database.metadataDAO,
-        userStorage.database.clientDAO,
-        authenticatedNetworkContainer.selfApi,
-        authenticatedNetworkContainer.userDetailsApi,
-        globalScope.sessionRepository,
-        userId,
-        qualifiedIdMapper,
-        selfTeamId
-    )
+    private val userRepository: UserRepository by lazy {
+        UserDataSource(
+            userStorage.database.userDAO,
+            userStorage.database.metadataDAO,
+            userStorage.database.clientDAO,
+            authenticatedNetworkContainer.selfApi,
+            authenticatedNetworkContainer.userDetailsApi,
+            globalScope.sessionRepository,
+            userId,
+            qualifiedIdMapper,
+            selfTeamId
+        )
+    }
 
-    private val accountRepository: AccountRepository
-        get() = AccountRepositoryImpl(
+    private val accountRepository: AccountRepository by lazy {
+        AccountRepositoryImpl(
             userDAO = userStorage.database.userDAO,
             selfUserId = userId,
             selfApi = authenticatedNetworkContainer.selfApi
         )
+    }
 
-    internal val pushTokenRepository: PushTokenRepository
-        get() = PushTokenDataSource(userStorage.database.metadataDAO)
+    internal val pushTokenRepository: PushTokenRepository by lazy {
+        PushTokenDataSource(userStorage.database.metadataDAO)
+    }
 
-    private val teamRepository: TeamRepository
-        get() = TeamDataSource(
+    private val teamRepository: TeamRepository by lazy {
+        TeamDataSource(
             userStorage.database.userDAO,
             userStorage.database.teamDAO,
             authenticatedNetworkContainer.teamsApi,
@@ -630,14 +644,16 @@ class UserSessionScope internal constructor(
             userId,
             userStorage.database.serviceDAO
         )
+    }
 
-    private val serviceRepository: ServiceRepository
-        get() = ServiceDataSource(
+    private val serviceRepository: ServiceRepository by lazy {
+        ServiceDataSource(
             serviceDAO = userStorage.database.serviceDAO
         )
+    }
 
-    private val connectionRepository: ConnectionRepository
-        get() = ConnectionDataSource(
+    private val connectionRepository: ConnectionRepository by lazy {
+        ConnectionDataSource(
             userStorage.database.conversationDAO,
             userStorage.database.memberDAO,
             userStorage.database.connectionDAO,
@@ -648,6 +664,7 @@ class UserSessionScope internal constructor(
             selfTeamId,
             conversationRepository
         )
+    }
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedNetworkContainer.userSearchApi,
@@ -657,16 +674,17 @@ class UserSessionScope internal constructor(
         userStorage.database.metadataDAO
     )
 
-    private val publicUserRepository: SearchUserRepository
-        get() = SearchUserRepositoryImpl(
+    private val publicUserRepository: SearchUserRepository by lazy {
+        SearchUserRepositoryImpl(
             userStorage.database.userDAO,
             userStorage.database.metadataDAO,
             authenticatedNetworkContainer.userDetailsApi,
             userSearchApiWrapper
         )
+    }
 
-    val backup: BackupScope
-        get() = BackupScope(
+    val backup: BackupScope by lazy {
+        BackupScope(
             userId,
             clientIdProvider,
             userRepository,
@@ -676,6 +694,7 @@ class UserSessionScope internal constructor(
             restartSlowSyncProcessForRecoveryUseCase,
             globalPreferences,
         )
+    }
 
     @Deprecated("UseCases should be in their respective scopes", ReplaceWith("backup.create"))
     val createBackup: CreateBackupUseCase get() = backup.create
@@ -714,17 +733,18 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val clientRemoteRepository: ClientRemoteRepository
-        get() = ClientRemoteDataSource(
+    private val clientRemoteRepository: ClientRemoteRepository by lazy {
+        ClientRemoteDataSource(
             authenticatedNetworkContainer.clientApi,
             clientConfig
         )
+    }
 
     private val clientRegistrationStorage: ClientRegistrationStorage
         get() = ClientRegistrationStorageImpl(userStorage.database.metadataDAO)
 
-    internal val clientRepository: ClientRepository
-        get() = ClientDataSource(
+    internal val clientRepository: ClientRepository by lazy {
+        ClientDataSource(
             clientRemoteRepository,
             clientRegistrationStorage,
             userStorage.database.clientDAO,
@@ -732,6 +752,7 @@ class UserSessionScope internal constructor(
             userId,
             authenticatedNetworkContainer.clientApi,
         )
+    }
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
@@ -749,12 +770,13 @@ class UserSessionScope internal constructor(
     private val messageSendingScheduler: MessageSendingScheduler
         get() = userSessionWorkScheduler
 
-    private val assetRepository: AssetRepository
-        get() = AssetDataSource(
+    private val assetRepository: AssetRepository by lazy {
+        AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
             kaliumFileSystem = kaliumFileSystem
         )
+    }
 
     private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
         InMemoryIncrementalSyncRepository()
@@ -934,10 +956,11 @@ class UserSessionScope internal constructor(
             apiMigrations
         )
 
-    private val eventRepository: EventRepository
-        get() = EventDataSource(
+    private val eventRepository: EventRepository by lazy {
+        EventDataSource(
             authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider
         )
+    }
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
         incrementalSyncRepository,
@@ -962,10 +985,11 @@ class UserSessionScope internal constructor(
             )
         })
 
-    private val mlsPublicKeysRepository: MLSPublicKeysRepository
-        get() = MLSPublicKeysRepositoryImpl(
+    private val mlsPublicKeysRepository: MLSPublicKeysRepository by lazy {
+        MLSPublicKeysRepositoryImpl(
             authenticatedNetworkContainer.mlsPublicKeyApi,
         )
+    }
 
     private val videoStateChecker: VideoStateChecker get() = VideoStateCheckerImpl()
 
@@ -1196,8 +1220,8 @@ class UserSessionScope internal constructor(
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs, userId)
 
-    private val preKeyRepository: PreKeyRepository
-        get() = PreKeyDataSource(
+    private val preKeyRepository: PreKeyRepository by lazy {
+        PreKeyDataSource(
             authenticatedNetworkContainer.preKeyApi,
             proteusClientProvider,
             clientIdProvider,
@@ -1205,6 +1229,7 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             userStorage.database.metadataDAO,
         )
+    }
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
         get() = ProteusPreKeyRefillerImpl(preKeyRepository)
@@ -1217,15 +1242,18 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val keyPackageRepository: KeyPackageRepository
-        get() = KeyPackageDataSource(
+    private val keyPackageRepository: KeyPackageRepository by lazy {
+        KeyPackageDataSource(
             clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
         )
+    }
 
-    private val logoutRepository: LogoutRepository = LogoutDataSource(
-        authenticatedNetworkContainer.logoutApi,
-        userStorage.database.metadataDAO
-    )
+    private val logoutRepository: LogoutRepository by lazy {
+        LogoutDataSource(
+            authenticatedNetworkContainer.logoutApi,
+            userStorage.database.metadataDAO
+        )
+    }
 
     val observeSyncState: ObserveSyncStateUseCase
         get() = ObserveSyncStateUseCaseImpl(slowSyncRepository, incrementalSyncRepository)
@@ -1251,8 +1279,8 @@ class UserSessionScope internal constructor(
         )
 
     @OptIn(DelicateKaliumApi::class)
-    val client: ClientScope
-        get() = ClientScope(
+    val client: ClientScope by lazy {
+        ClientScope(
             clientRepository,
             pushTokenRepository,
             logoutRepository,
@@ -1273,8 +1301,9 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             cachedClientIdClearer
         )
-    val conversations: ConversationScope
-        get() = ConversationScope(
+    }
+    val conversations: ConversationScope by lazy {
+        ConversationScope(
             conversationRepository,
             conversationGroupRepository,
             connectionRepository,
@@ -1297,10 +1326,11 @@ class UserSessionScope internal constructor(
             userStorage,
             this
         )
+    }
 
-    val migration get() = MigrationScope(userStorage.database)
-    val debug: DebugScope
-        get() = DebugScope(
+    val migration by lazy { MigrationScope(userStorage.database) }
+    val debug: DebugScope by lazy {
+        DebugScope(
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -1318,8 +1348,9 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             this
         )
-    val messages: MessageScope
-        get() = MessageScope(
+    }
+    val messages: MessageScope by lazy {
+        MessageScope(
             connectionRepository,
             userId,
             clientIdProvider,
@@ -1345,8 +1376,9 @@ class UserSessionScope internal constructor(
             messageMetadataRepository,
             this
         )
-    val users: UserScope
-        get() = UserScope(
+    }
+    val users: UserScope by lazy {
+        UserScope(
             userRepository,
             accountRepository,
             publicUserRepository,
@@ -1365,6 +1397,7 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             e2eiRepository
         )
+    }
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
     val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
@@ -1391,10 +1424,11 @@ class UserSessionScope internal constructor(
     val getPersistentWebSocketStatus: GetPersistentWebSocketStatus
         get() = GetPersistentWebSocketStatusImpl(userId, globalScope.sessionRepository)
 
-    private val featureConfigRepository: FeatureConfigRepository
-        get() = FeatureConfigDataSource(
+    private val featureConfigRepository: FeatureConfigRepository by lazy {
+        FeatureConfigDataSource(
             featureConfigApi = authenticatedNetworkContainer.featureConfigApi
         )
+    }
     val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
@@ -1440,17 +1474,18 @@ class UserSessionScope internal constructor(
             userConfigRepository, featureConfigRepository, getGuestRoomLinkFeature, kaliumConfigs, userId
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
+    val team: TeamScope by lazy { TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId) }
 
-    val service: ServiceScope
-        get() = ServiceScope(
+    val service: ServiceScope by lazy {
+        ServiceScope(
             serviceRepository,
             teamRepository,
             selfTeamId
         )
+    }
 
-    val calls: CallsScope
-        get() = CallsScope(
+    val calls: CallsScope by lazy {
+        CallsScope(
             callManager,
             callRepository,
             conversationRepository,
@@ -1464,8 +1499,9 @@ class UserSessionScope internal constructor(
             conversationClientsInCallUpdater,
             kaliumConfigs
         )
+    }
 
-    val connection: ConnectionScope get() = ConnectionScope(connectionRepository, conversationRepository)
+    val connection: ConnectionScope by lazy { ConnectionScope(connectionRepository, conversationRepository) }
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
         get() = ObserveSecurityClassificationLabelUseCaseImpl(

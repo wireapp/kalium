@@ -239,6 +239,10 @@ internal class ConversationDataSource internal constructor(
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ConversationRepository {
 
+    init {
+        println("cyka init convRepo")
+    }
+
     // TODO:I would suggest preparing another suspend func getSelfUser to get nullable self user,
     // this will help avoid some functions getting stuck when observeSelfUser will filter nullable values
     override suspend fun fetchConversations(): Either<CoreFailure, Unit> {
