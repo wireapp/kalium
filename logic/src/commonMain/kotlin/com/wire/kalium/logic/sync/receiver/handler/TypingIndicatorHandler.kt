@@ -18,17 +18,39 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.firstOrNull
 
 internal interface TypingIndicatorHandler {
     suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
 }
 
-internal class TypingIndicatorHandlerImpl : TypingIndicatorHandler {
+internal class TypingIndicatorHandlerImpl(
+    private val typingIndicatorRepository: TypingIndicatorRepository
+) : TypingIndicatorHandler {
     override suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit> {
-        kaliumLogger.d("TypingIndicatorHandlerImpl: $event")
+        when (event.typingIndicatorMode) {
+            Conversation.TypingIndicatorMode.STARTED -> typingIndicatorRepository.addTypingUserTypingInConversation(
+                event.conversationId,
+                event.senderUserId
+            )
+
+            Conversation.TypingIndicatorMode.STOPPED -> typingIndicatorRepository.removeTypingUserInConversation(
+                event.conversationId,
+                event.senderUserId
+            )
+        }.also {
+            kaliumLogger.d(
+                "Typing indicator event handled, current state in Conversation[${event.conversationId}]: ${
+                    typingIndicatorRepository.observeUsersTyping(event.conversationId).firstOrNull()
+                }"
+            )
+        }
+
         return Either.Right(Unit)
     }
 }
