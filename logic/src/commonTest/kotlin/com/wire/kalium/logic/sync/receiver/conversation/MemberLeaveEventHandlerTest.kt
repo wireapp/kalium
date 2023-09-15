@@ -129,6 +129,7 @@ class MemberLeaveEventHandlerTest {
             id = "id",
             conversationId = conversationId,
             transient = false,
+            live = false,
             removedBy = userId,
             removedList = listOf(userId),
             timestampIso = "timestampIso"

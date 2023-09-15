@@ -37,6 +37,7 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         false,
+        false,
         TestUser.USER_ID,
         members,
         "2022-03-30T15:36:00.000Z"
@@ -45,6 +46,7 @@ object TestEvent {
     fun memberLeave(eventId: String = "eventId", members: List<Member> = listOf()) = Event.Conversation.MemberLeave(
         eventId,
         TestConversation.ID,
+        false,
         false,
         TestUser.USER_ID,
         listOf(),
@@ -56,6 +58,7 @@ object TestEvent {
         TestConversation.ID,
         "2022-03-30T15:36:00.000Z",
         false,
+        false,
         member
     )
 
@@ -63,6 +66,7 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         "2022-03-30T15:36:00.000Z",
+        false,
         false,
         MutedConversationStatus.AllAllowed,
         "2022-03-30T15:36:00.000Zp"
@@ -72,20 +76,22 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         false,
+        false
     )
 
-    fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(false, eventId, clientId)
-    fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(false, eventId, userId)
+    fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(false, false, eventId, clientId)
+    fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(false, false, eventId, userId)
     fun updateUser(eventId: String = "eventId", userId: UserId) = Event.User.Update(
         eventId,
-        false, userId.toString(), null, false, "newName", null, null, null, null, null
+        false, false, userId.toString(), null, false, "newName", null, null, null, null, null
     )
 
     fun newClient(eventId: String = "eventId", clientId: ClientId = ClientId("client")) = Event.User.NewClient(
-        false, eventId, TestClient.CLIENT
+        false, false, eventId, TestClient.CLIENT
     )
 
     fun newConnection(eventId: String = "eventId", status:  ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
+        false,
         false,
         eventId,
         Connection(
@@ -103,6 +109,7 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         false,
+        false,
         TestUser.USER_ID,
         "2022-03-30T15:36:00.000Z"
     )
@@ -110,6 +117,7 @@ object TestEvent {
     fun renamedConversation(eventId: String = "eventId") = Event.Conversation.RenamedConversation(
         eventId,
         TestConversation.ID,
+        false,
         false,
         "newName",
         TestUser.USER_ID,
@@ -120,6 +128,7 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         false,
+        false,
         receiptMode = Conversation.ReceiptMode.ENABLED,
         senderUserId = TestUser.USER_ID
     )
@@ -129,13 +138,15 @@ object TestEvent {
         teamId = "teamId",
         name = "teamName",
         transient = false,
+        live = false,
         icon = "icon",
     )
 
     fun teamMemberJoin(eventId: String = "eventId") = Event.Team.MemberJoin(
         eventId,
         teamId = "teamId",
-        false,
+        transient = false,
+        live = false,
         memberId = "memberId"
     )
 
@@ -144,7 +155,8 @@ object TestEvent {
         teamId = "teamId",
         memberId = "memberId",
         timestampIso = "2022-03-30T15:36:00.000Z",
-        transient = false
+        transient = false,
+        live = false
     )
 
     fun teamMemberUpdate(eventId: String = "eventId", permissionCode: Int) = Event.Team.MemberUpdate(
@@ -152,13 +164,15 @@ object TestEvent {
         teamId = "teamId",
         memberId = "memberId",
         permissionCode = permissionCode,
-        transient = false
+        transient = false,
+        live = false
     )
 
     fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
         id = eventId,
         conversationId = TestConversation.ID,
         transient = false,
+        live = false,
         messageTimer = 3000,
         senderUserId = TestUser.USER_ID,
         timestampIso = "2022-03-30T15:36:00.000Z"
@@ -167,6 +181,7 @@ object TestEvent {
     fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(
         id = eventId,
         transient = false,
+        live = false,
         value = true
     )
 
@@ -177,6 +192,7 @@ object TestEvent {
     ) = Event.Conversation.NewMessage(
         "eventId",
         TestConversation.ID,
+        false,
         false,
         senderUserId,
         TestClient.CLIENT_ID,
@@ -191,6 +207,7 @@ object TestEvent {
         "eventId",
         TestConversation.ID,
         false,
+        false,
         null,
         TestUser.USER_ID,
         timestamp.toIsoDateTimeString(),
@@ -201,6 +218,7 @@ object TestEvent {
         id = "eventId",
         conversationId = TestConversation.ID,
         transient = false,
+        live = false,
         timestampIso = "timestamp",
         conversation = TestConversation.CONVERSATION_RESPONSE,
         senderUserId = TestUser.SELF.id
@@ -209,6 +227,7 @@ object TestEvent {
     fun newMLSWelcomeEvent() = Event.Conversation.MLSWelcome(
         "eventId",
         TestConversation.ID,
+        false,
         false,
         TestUser.USER_ID,
         "dummy-message",
@@ -220,13 +239,15 @@ object TestEvent {
         conversationId = TestConversation.ID,
         data = TestConversation.CONVERSATION_RESPONSE,
         qualifiedFrom = TestUser.USER_ID,
-        transient = false
+        transient = false,
+        live = false
     )
 
     fun codeUpdated() = Event.Conversation.CodeUpdated(
         id = "eventId",
         conversationId = TestConversation.ID,
         transient = false,
+        live = false,
         code = "code",
         key = "key",
         uri = "uri",
@@ -237,6 +258,7 @@ object TestEvent {
         id = "eventId",
         conversationId = TestConversation.ID,
         transient = false,
+        live = false
     )
 
     fun newConversationProtocolEvent() = Event.Conversation.ConversationProtocol(
