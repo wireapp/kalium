@@ -108,7 +108,7 @@ class EventDataSource(
                     }
 
                     is WebSocketEvent.BinaryPayloadReceived -> {
-                        eventMapper.fromDTO(webSocketEvent.payload).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                        eventMapper.fromDTO(webSocketEvent.payload, true).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
                     }
                 }
             }.flattenConcat()

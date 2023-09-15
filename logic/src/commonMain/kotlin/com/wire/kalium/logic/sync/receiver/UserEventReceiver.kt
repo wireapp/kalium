@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.logout.LogoutReason
-import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -41,6 +40,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.Duration.Companion.seconds
 
 internal interface UserEventReceiver : EventReceiver<Event.User>
 
@@ -53,7 +54,7 @@ internal class UserEventReceiverImpl internal constructor(
     private val logout: LogoutUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val selfUserId: UserId,
-    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val currentClientIdProvider: CurrentClientIdProvider
 ) : UserEventReceiver {
 
     override suspend fun onEvent(event: Event.User): Either<CoreFailure, Unit> {
@@ -96,7 +97,15 @@ internal class UserEventReceiverImpl internal constructor(
     private suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
         connectionRepository.insertConnectionFromEvent(event)
             .flatMap {
-                resolveActiveOneOnOneConversationUponConnectionAccepted(event.connection)
+                if (event.connection.status != ConnectionState.ACCEPTED) {
+                    return@flatMap Either.Right(Unit)
+                }
+
+                oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                    event.connection.qualifiedToId,
+                    delay = if (event.live) 3.seconds else ZERO
+                )
+                Either.Right(Unit)
             }
             .onSuccess {
                 kaliumLogger
@@ -113,13 +122,6 @@ internal class UserEventReceiverImpl internal constructor(
                         Pair("errorInfo", "$it")
                     )
             }
-
-    private suspend fun resolveActiveOneOnOneConversationUponConnectionAccepted(connection: Connection): Either<CoreFailure, Unit> =
-        if (connection.status == ConnectionState.ACCEPTED) {
-            oneOnOneResolver.resolveOneOnOneConversationWithUserId(connection.qualifiedToId).map { }
-        } else {
-            Either.Right(Unit)
-        }
 
     private suspend fun handleClientRemove(event: Event.User.ClientRemove): Either<CoreFailure, Unit> =
         currentClientIdProvider().map { currentClientId ->

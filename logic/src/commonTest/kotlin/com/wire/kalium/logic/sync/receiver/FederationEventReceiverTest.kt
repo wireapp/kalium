@@ -100,6 +100,7 @@ class FederationEventReceiverTest {
         val event = Event.Federation.Delete(
             "id",
             true,
+            false,
             defederatedDomain
         )
 
@@ -170,6 +171,7 @@ class FederationEventReceiverTest {
             val event = Event.Federation.ConnectionRemoved(
                 "id",
                 true,
+                false,
                 listOf(defederatedDomain, defederatedDomainTwo)
             )
 
