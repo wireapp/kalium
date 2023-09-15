@@ -62,6 +62,7 @@ class NewConversationEventHandlerTest {
             id = "eventId",
             conversationId = TestConversation.ID,
             transient = false,
+            live = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
             senderUserId = TestUser.SELF.id
@@ -103,7 +104,8 @@ class NewConversationEventHandlerTest {
         val event = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
-            false,
+            transient =false,
+            live = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
             senderUserId = TestUser.SELF.id
@@ -142,6 +144,7 @@ class NewConversationEventHandlerTest {
             id = "eventId",
             conversationId = TestConversation.ID,
             transient = false,
+            live = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE.copy(
                 creator = "creatorId@creatorDomain",
@@ -202,6 +205,7 @@ class NewConversationEventHandlerTest {
                 id = "eventId",
                 conversationId = TestConversation.ID,
                 transient = false,
+                live = false,
                 timestampIso = "timestamp",
                 conversation = TestConversation.CONVERSATION_RESPONSE.copy(
                     creator = "creatorId@creatorDomain",

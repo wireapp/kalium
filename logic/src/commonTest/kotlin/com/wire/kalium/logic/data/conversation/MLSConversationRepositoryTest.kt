@@ -1286,6 +1286,7 @@ class MLSConversationRepositoryTest {
                 "eventId",
                 TestConversation.ID,
                 false,
+                false,
                 TestUser.USER_ID,
                 WELCOME.encodeBase64(),
                 timestampIso = "2022-03-30T15:36:00.000Z"

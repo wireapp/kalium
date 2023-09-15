@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.conversation.mls
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
@@ -31,10 +33,20 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import kotlin.time.Duration
 
 interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(): Either<CoreFailure, Unit>
+    suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration = Duration.ZERO): Job
     suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId>
     suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId>
 }
@@ -43,7 +55,13 @@ internal class OneOnOneResolverImpl(
     private val userRepository: UserRepository,
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val oneOnOneMigrator: OneOnOneMigrator,
+    private val incrementalSyncRepository: IncrementalSyncRepository,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : OneOnOneResolver {
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
+    private val resolveActiveOneOnOneScope = CoroutineScope(dispatcher)
 
     override suspend fun resolveAllOneOnOneConversations(): Either<CoreFailure, Unit> {
         val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
@@ -52,6 +70,14 @@ internal class OneOnOneResolverImpl(
             resolveOneOnOneConversationWithUser(item).map { }
         }
     }
+
+    override suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration) =
+        resolveActiveOneOnOneScope.launch {
+            kaliumLogger.d("Schedule resolving active one-on-one")
+            incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
+            delay(delay)
+            resolveOneOnOneConversationWithUserId(userId)
+        }
 
     override suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId> =
         userRepository.getKnownUser(userId).firstOrNull()?.let {
