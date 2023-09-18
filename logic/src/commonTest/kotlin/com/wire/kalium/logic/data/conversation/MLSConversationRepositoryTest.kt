@@ -420,6 +420,27 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenRetryLimitIsReached_whenCallingAddMemberToMLSGroup_thenClearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
+            .withCommitPendingProposalsSuccessful()
+            .withClearProposalTimerSuccessful()
+            .withWaitUntilLiveSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenSuccessfulResponses_whenCallingRequestToJoinGroup_ThenGroupStateIsUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
@@ -567,6 +588,24 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenRetryLimitIsReached_whenCallingCommitPendingProposals_thenClearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withCommitPendingProposalsSuccessful()
+            .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
+            .withWaitUntilLiveSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.commitPendingProposals(Arrangement.GROUP_ID)
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
@@ -639,6 +678,27 @@ class MLSConversationRepositoryTest {
             .withFetchClientsOfUsersSuccessful()
             .withRemoveMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .arrange()
+
+        val users = listOf(TestUser.USER_ID)
+        val result = mlsConversationRepository.removeMembersFromMLSGroup(Arrangement.GROUP_ID, users)
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenRetryLimitIsReached_whenCallingRemoveMemberFromGroup_thenClearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsSuccessful()
+            .withGetMLSClientSuccessful()
+            .withFetchClientsOfUsersSuccessful()
+            .withRemoveMemberSuccessful()
+            .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
+            .withWaitUntilLiveSuccessful()
             .arrange()
 
         val users = listOf(TestUser.USER_ID)
@@ -877,6 +937,25 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .withSendCommitBundleFailing(Arrangement.INVALID_REQUEST_ERROR)
+            .arrange()
+
+        val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
+        result.shouldFail()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::clearPendingCommit)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenRetryLimitIsReached_whenCallingUpdateKeyMaterial_clearCommitAndFail() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withCommitPendingProposalsSuccessful()
+            .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR, times = Int.MAX_VALUE)
+            .withWaitUntilLiveSuccessful()
             .arrange()
 
         val result = mlsConversationRepository.updateKeyingMaterial(Arrangement.GROUP_ID)
