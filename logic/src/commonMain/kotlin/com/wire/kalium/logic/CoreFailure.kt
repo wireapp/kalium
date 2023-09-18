@@ -177,6 +177,8 @@ interface MLSFailure : CoreFailure {
 
     object UnmergedPendingGroup : MLSFailure
 
+    object ConversationAlreadyExists : MLSFailure
+
     object ConversationDoesNotSupportMLS : MLSFailure
 
     class Generic(internal val exception: Exception) : MLSFailure {

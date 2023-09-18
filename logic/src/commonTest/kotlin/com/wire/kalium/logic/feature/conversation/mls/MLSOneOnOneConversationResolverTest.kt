@@ -152,7 +152,7 @@ class MLSOneOnOneConversationResolverTest {
     private companion object {
         private val userId = TestUser.USER_ID
 
-        private val CONVERSATION_ONE_ON_ONE_PROTEUS = TestConversation.ONE_ON_ONE.copy(
+        private val CONVERSATION_ONE_ON_ONE_PROTEUS = TestConversation.ONE_ON_ONE().copy(
             id = ConversationId("one-on-one-proteus", "test"),
             protocol = Conversation.ProtocolInfo.Proteus,
         )

@@ -27,6 +27,7 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
                 is CryptoError.DuplicateMessage -> MLSFailure.DuplicateMessage
                 is CryptoError.SelfCommitIgnored -> MLSFailure.SelfCommitIgnored
                 is CryptoError.UnmergedPendingGroup -> MLSFailure.UnmergedPendingGroup
+                is CryptoError.ConversationAlreadyExists -> MLSFailure.ConversationAlreadyExists
                 else -> MLSFailure.Generic(exception)
             }
         } else {
