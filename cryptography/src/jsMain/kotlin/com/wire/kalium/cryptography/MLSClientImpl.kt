@@ -92,7 +92,7 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
+    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
         TODO("Not yet implemented")
     }
 

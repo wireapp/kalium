@@ -26,9 +26,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -36,6 +34,9 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.exceptions.KaliumException
@@ -54,13 +55,13 @@ interface JoinExistingMLSConversationUseCase {
 }
 
 @Suppress("LongParameterList")
-class JoinExistingMLSConversationUseCaseImpl(
+internal class JoinExistingMLSConversationUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val conversationApi: ConversationApi,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val mlsMessageUnpacker: MLSMessageUnpacker,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : JoinExistingMLSConversationUseCase {
     private val dispatcher = kaliumDispatcher.io
@@ -125,7 +126,13 @@ class JoinExistingMLSConversationUseCaseImpl(
                     mlsConversationRepository.joinGroupByExternalCommit(
                         conversation.protocol.groupId,
                         groupInfo
-                    )
+                    ).flatMapLeft {
+                        if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
+                            Either.Right(Unit)
+                        } else {
+                            Either.Left(it)
+                        }
+                    }
                 }
             }
         } else {

@@ -60,7 +60,7 @@ enum class AttachmentType {
 }
 
 fun isDisplayableImageMimeType(mimeType: String): Boolean = mimeType in setOf(
-    "image/jpg", "image/jpeg", "image/png", "image/heic", "image/gif", "image/webp"
+    "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
 )
 
 fun isAudioMimeType(mimeType: String): Boolean = mimeType in setOf(
