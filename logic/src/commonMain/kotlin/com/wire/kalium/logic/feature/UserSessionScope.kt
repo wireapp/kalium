@@ -1077,12 +1077,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(
-                messageRepository,
-                assetRepository,
-                EphemeralEventsNotificationManagerImpl,
-                userId
-            ),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, EphemeralEventsNotificationManagerImpl, userId),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,

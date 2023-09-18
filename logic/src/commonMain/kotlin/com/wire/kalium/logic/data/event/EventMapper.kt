@@ -81,11 +81,7 @@ class EventMapper(
             is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient)
             is EventContentDTO.Unknown -> unknown(id, transient, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, eventContentDTO)
-            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(
-                id,
-                eventContentDTO,
-                transient
-            )
+            is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient)
 
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient)
@@ -95,17 +91,9 @@ class EventMapper(
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
-            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(
-                id,
-                eventContentDTO,
-                transient
-            )
+            is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
 
-            is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(
-                id,
-                eventContentDTO,
-                transient
-            )
+            is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
 
             is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
@@ -130,11 +118,7 @@ class EventMapper(
             }
         )
 
-    private fun federationTerminated(
-        id: String,
-        eventContentDTO: EventContentDTO.Federation,
-        transient: Boolean
-    ): Event =
+    private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
         when (eventContentDTO) {
             is EventContentDTO.Federation.FederationConnectionRemovedDTO -> Event.Federation.ConnectionRemoved(
                 id,
@@ -304,11 +288,7 @@ class EventMapper(
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
-    private fun userDelete(
-        id: String,
-        eventUserDelete: EventContentDTO.User.UserDeleteDTO,
-        transient: Boolean
-    ): Event.User.UserDelete {
+    private fun userDelete(id: String, eventUserDelete: EventContentDTO.User.UserDeleteDTO, transient: Boolean): Event.User.UserDelete {
         return Event.User.UserDelete(transient, id, eventUserDelete.userId.toModel())
     }
 
