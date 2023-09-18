@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
+import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
@@ -36,7 +37,8 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
-import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import io.ktor.utils.io.charsets.Charsets
@@ -185,9 +187,32 @@ class EventMapper(
         eventContentDTO: EventContentDTO.UserProperty.PropertiesSetDTO,
         transient: Boolean
     ): Event {
-        return when (val fieldKeyValue = eventContentDTO.value) {
-            is EventContentDTO.FieldKeyNumberValue -> ReadReceiptModeSet(id, transient, fieldKeyValue.value == 1)
-            is EventContentDTO.FieldUnknownValue -> unknown(
+        val fieldKeyValue = eventContentDTO.value
+        val key = eventContentDTO.key
+        return when {
+            fieldKeyValue is EventContentDTO.FieldKeyNumberValue -> {
+                when (key) {
+                    WIRE_RECEIPT_MODE.key -> ReadReceiptModeSet(
+                        id,
+                        transient,
+                        fieldKeyValue.value == 1
+                    )
+
+                    WIRE_TYPING_INDICATOR_MODE.key -> TypingIndicatorModeSet(
+                        id,
+                        transient,
+                        false
+                    )
+
+                    else -> unknown(
+                        id = id,
+                        transient = transient,
+                        eventContentDTO = eventContentDTO,
+                        cause = "Unknown key: $key "
+                    )
+                }
+            }
+            else -> unknown(
                 id = id,
                 transient = transient,
                 eventContentDTO = eventContentDTO,
@@ -201,10 +226,10 @@ class EventMapper(
         eventContentDTO: EventContentDTO.UserProperty.PropertiesDeleteDTO,
         transient: Boolean
     ): Event {
-        return if (PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE.key == eventContentDTO.key) {
-            ReadReceiptModeSet(id, transient, false)
-        } else {
-            unknown(
+        return when (eventContentDTO.key) {
+            WIRE_RECEIPT_MODE.key -> ReadReceiptModeSet(id, transient, false)
+            WIRE_TYPING_INDICATOR_MODE.key -> TypingIndicatorModeSet(id, transient, true)
+            else -> unknown(
                 id = id,
                 transient = transient,
                 eventContentDTO = eventContentDTO,

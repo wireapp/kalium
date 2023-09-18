@@ -607,7 +607,20 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val value: Boolean,
         ) : UserProperty(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "User.UserProperty",
+                typeKey to "User.UserProperty.ReadReceiptModeSet",
+                idKey to id.obfuscateId(),
+                "transient" to "$transient",
+                "value" to "$value"
+            )
+        }
+
+        data class TypingIndicatorModeSet(
+            override val id: String,
+            override val transient: Boolean,
+            val value: Boolean,
+        ) : UserProperty(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.TypingIndicatorModeSet",
                 idKey to id.obfuscateId(),
                 "transient" to "$transient",
                 "value" to "$value"
