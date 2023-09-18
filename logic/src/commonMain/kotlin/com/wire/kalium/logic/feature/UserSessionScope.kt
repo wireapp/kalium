@@ -815,7 +815,8 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             clientRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            mlsUnpacker
         )
 
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
@@ -839,7 +840,8 @@ class UserSessionScope internal constructor(
         get() = JoinSubconversationUseCaseImpl(
             authenticatedNetworkContainer.conversationApi,
             mlsConversationRepository,
-            subconversationRepository
+            subconversationRepository,
+            mlsUnpacker
         )
 
     private val leaveSubconversationUseCase: LeaveSubconversationUseCase
@@ -1025,11 +1027,10 @@ class UserSessionScope internal constructor(
 
     private val mlsUnpacker: MLSMessageUnpacker
         get() = MLSMessageUnpackerImpl(
-            mlsClientProvider = mlsClientProvider,
             conversationRepository = conversationRepository,
             subconversationRepository = subconversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
-            epochsFlow = epochsFlow,
             selfUserId = userId
         )
 
