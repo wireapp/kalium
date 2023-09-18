@@ -65,7 +65,7 @@ internal class UserPropertyDataSource(
     override suspend fun getTypingIndicatorStatus(): Boolean =
         userConfigRepository.isTypingIndicatorEnabled()
             .firstOrNull()
-            ?.fold({ false }, { it }) ?: false
+            ?.fold({ false }, { it }) ?: true
 
     override suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>> =
         userConfigRepository.isTypingIndicatorEnabled()

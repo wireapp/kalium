@@ -60,7 +60,7 @@ interface UserConfigRepository {
     fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
     fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>>
-    fun setTypingIndicatorStatus(isTyping: Boolean): Either<StorageFailure, Unit>
+    fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit>
     fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
@@ -212,8 +212,8 @@ class UserConfigDataSource(
     override fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isTypingIndicatorEnabled().wrapStorageRequest()
 
-    override fun setTypingIndicatorStatus(isTyping: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigStorage.persistTypingIndicator(isTyping)
+    override fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigStorage.persistTypingIndicator(enabled)
     }
 
     override fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit> =

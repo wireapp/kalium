@@ -201,7 +201,7 @@ class EventMapper(
                     WIRE_TYPING_INDICATOR_MODE.key -> TypingIndicatorModeSet(
                         id,
                         transient,
-                        false
+                        fieldKeyValue.value != 0
                     )
 
                     else -> unknown(
