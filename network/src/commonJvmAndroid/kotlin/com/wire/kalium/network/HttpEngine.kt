@@ -39,6 +39,10 @@ import javax.net.ssl.X509TrustManager
 
 private object OkHttpSingleton {
     private val sharedClient = OkHttpClient.Builder().apply {
+
+        // OkHttp doesn't support configuring ping intervals dynamically,
+        // so they must be set when creating the Engine
+        // See https://youtrack.jetbrains.com/issue/KTOR-4752
         pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
             .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
@@ -70,9 +74,6 @@ actual fun defaultHttpEngine(
 
         if (ignoreSSLCertificates) ignoreAllSSLErrors()
 
-        // OkHttp doesn't support configuring ping intervals dynamically,
-        // so they must be set when creating the Engine
-        // See https://youtrack.jetbrains.com/issue/KTOR-4752
         if (isProxyRequired(serverConfigDTOApiProxy)) {
             if (serverConfigDTOApiProxy?.needsAuthentication == true) {
                 if (proxyCredentials == null) error("Credentials does not exist")
