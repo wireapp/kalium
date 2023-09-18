@@ -22,8 +22,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.firstOrNull
 
 internal interface TypingIndicatorHandler {
     suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
@@ -42,12 +40,6 @@ internal class TypingIndicatorHandlerImpl(
             Conversation.TypingIndicatorMode.STOPPED -> typingIndicatorRepository.removeTypingUserInConversation(
                 event.conversationId,
                 event.senderUserId
-            )
-        }.also {
-            kaliumLogger.d(
-                "Typing indicator event handled[${event.typingIndicatorMode}], current state in Conversation[${event.conversationId}]: ${
-                    typingIndicatorRepository.observeUsersTyping(event.conversationId).firstOrNull()
-                }"
             )
         }
 
