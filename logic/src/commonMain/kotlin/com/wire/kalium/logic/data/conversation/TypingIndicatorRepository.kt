@@ -64,8 +64,9 @@ class TypingIndicatorRepositoryImpl : TypingIndicatorRepository {
     }
 }
 
-private fun ConcurrentMutableMap<ConversationId, Set<ExpiringUserTyping>>.filterUsersIdTypingInConversation(conversationId: ConversationId) =
-    this[conversationId]?.map { it.userId }?.toSet().orEmpty()
+private fun ConcurrentMutableMap<ConversationId, Set<ExpiringUserTyping>>.filterUsersIdTypingInConversation(
+    conversationId: ConversationId
+) = this[conversationId]?.map { it.userId }?.toSet().orEmpty()
 
 // todo expire by worker
 class ExpiringUserTyping(
