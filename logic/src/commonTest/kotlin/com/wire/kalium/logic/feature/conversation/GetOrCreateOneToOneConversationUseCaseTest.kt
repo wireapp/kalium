@@ -123,6 +123,6 @@ class GetOrCreateOneToOneConversationUseCaseTest {
     private companion object {
         val OTHER_USER = TestUser.OTHER
         val OTHER_USER_ID = OTHER_USER.id
-        val CONVERSATION = TestConversation.ONE_ON_ONE
+        val CONVERSATION = TestConversation.ONE_ON_ONE()
     }
 }

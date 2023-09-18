@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -67,7 +68,23 @@ internal class OneOnOneResolverImpl(
         val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
         kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
         return usersWithOneOnOne.foldToEitherWhileRight(Unit) { item, _ ->
-            resolveOneOnOneConversationWithUser(item).map { }
+            resolveOneOnOneConversationWithUser(item).flatMapLeft {
+                when (it) {
+                    is CoreFailure.NoKeyPackagesAvailable,
+                    is NetworkFailure.ServerMiscommunication,
+                    is NetworkFailure.FederatedBackendFailure,
+                    is CoreFailure.NoCommonProtocolFound
+                    -> {
+                        kaliumLogger.e("Resolving one-on-one failed $it, skipping")
+                        Either.Right(Unit)
+                    }
+
+                    else -> {
+                        kaliumLogger.e("Resolving one-on-one failed $it, retrying")
+                        Either.Left(it)
+                    }
+                }
+            }.map { }
         }
     }
 
@@ -91,12 +108,6 @@ internal class OneOnOneResolverImpl(
                 SupportedProtocol.PROTEUS -> oneOnOneMigrator.migrateToProteus(user)
                 SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(user)
             }
-        }.flatMapLeft {
-            if (it is CoreFailure.NoCommonProtocolFound) {
-                // TODO mark conversation as read only
-                Either.Right(Unit)
-            }
-            Either.Left(it)
         }
     }
 }
