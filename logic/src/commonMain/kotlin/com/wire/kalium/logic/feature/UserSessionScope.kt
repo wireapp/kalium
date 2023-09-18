@@ -62,7 +62,6 @@ import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
@@ -552,8 +551,6 @@ class UserSessionScope internal constructor(
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     private val subconversationRepository = SubconversationRepositoryImpl()
-
-    private val typingIndicatorRepository = TypingIndicatorRepositoryImpl()
 
     private val conversationRepository: ConversationRepository
         get() = ConversationDataSource(
@@ -1164,7 +1161,7 @@ class UserSessionScope internal constructor(
         )
 
     private val typingIndicatorHandler: TypingIndicatorHandler
-        get() = TypingIndicatorHandlerImpl(typingIndicatorRepository)
+        get() = TypingIndicatorHandlerImpl(conversations.typingIndicatorRepository)
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
