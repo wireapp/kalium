@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.BufferedDecryptedMessage
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CustomConfiguration
@@ -130,13 +131,20 @@ class MLSClientImpl(
         return applicationMessage
     }
 
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
-        return toDecryptedMessageBundle(
-            coreCrypto.decryptMessage(
-                groupId.decodeBase64Bytes(),
-                message
-            )
+    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
+        val decryptedMessage = coreCrypto.decryptMessage(
+            groupId.decodeBase64Bytes(),
+            message
         )
+
+        val messageBundle = listOf(toDecryptedMessageBundle(
+            decryptedMessage
+        ))
+        val bufferedMessages = decryptedMessage.bufferedMessages?.map {
+            toDecryptedMessageBundle(it)
+        } ?: emptyList()
+
+        return messageBundle + bufferedMessages
     }
 
     override suspend fun commitAccepted(groupId: MLSGroupId) {
@@ -296,6 +304,16 @@ class MLSClientImpl(
         }
 
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
+            value.message,
+            value.commitDelay?.toLong(),
+            value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
+            value.hasEpochChanged,
+            value.identity?.let {
+                E2EIdentity(it.clientId, it.handle, it.displayName, it.domain)
+            }
+        )
+
+        fun toDecryptedMessageBundle(value: BufferedDecryptedMessage) = DecryptedMessageBundle(
             value.message,
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
