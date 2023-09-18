@@ -325,6 +325,38 @@ class ConversationEventReceiverTest {
         result.shouldFail()
     }
 
+    @Test
+    fun givenTypingEventAndHandlingSucceeds_whenOnEventInvoked_thenSuccessHandlerResult() = runTest {
+        val typingStarted = TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED)
+        val (arrangement, handler) = Arrangement()
+            .withConversationTypingEventSucceeded(Either.Right(Unit))
+            .arrange()
+
+        val result = handler.onEvent(typingStarted)
+
+        verify(arrangement.typingIndicatorHandler)
+            .suspendFunction(arrangement.typingIndicatorHandler::handle)
+            .with(eq(typingStarted))
+            .wasInvoked(once)
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenTypingEventAndHandlingFails_whenOnEventInvoked_thenSuccessHandlerPropagateFails() = runTest {
+        val typingStarted = TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED)
+        val (arrangement, handler) = Arrangement()
+            .withConversationTypingEventSucceeded(Either.Left(StorageFailure.Generic(RuntimeException("some error"))))
+            .arrange()
+
+        val result = handler.onEvent(typingStarted)
+
+        verify(arrangement.typingIndicatorHandler)
+            .suspendFunction(arrangement.typingIndicatorHandler::handle)
+            .with(eq(typingStarted))
+            .wasInvoked(once)
+        result.shouldFail()
+    }
+
     private class Arrangement :
         CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
         CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl() {
@@ -401,6 +433,13 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationMessageTimerEventHandler::handle)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(failure))
+        }
+
+        fun withConversationTypingEventSucceeded(result: Either<StorageFailure, Unit>) = apply {
+            given(typingIndicatorHandler)
+                .suspendFunction(typingIndicatorHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
     }
 

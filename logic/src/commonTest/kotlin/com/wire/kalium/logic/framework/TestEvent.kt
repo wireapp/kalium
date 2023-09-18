@@ -238,4 +238,13 @@ object TestEvent {
         conversationId = TestConversation.ID,
         transient = false,
     )
+
+    fun typingIndicator(typingIndicatorMode: Conversation.TypingIndicatorMode) = Event.Conversation.TypingIndicator(
+        id = "eventId",
+        conversationId = TestConversation.ID,
+        transient = true,
+        senderUserId = TestUser.USER_ID,
+        timestampIso = "2022-03-30T15:36:00.000Z",
+        typingIndicatorMode = typingIndicatorMode
+    )
 }
