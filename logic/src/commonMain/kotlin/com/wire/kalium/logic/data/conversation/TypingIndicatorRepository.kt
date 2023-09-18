@@ -30,7 +30,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface TypingIndicatorRepository {
-    fun addTypingUserTypingInConversation(conversationId: ConversationId, userId: UserId)
+    fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>>
 }
@@ -40,7 +40,7 @@ class TypingIndicatorRepositoryImpl : TypingIndicatorRepository {
     private val userTypingDataSourceFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val userTypingCache = ConcurrentMutableMap<ConversationId, Set<ExpiringUserTyping>>()
 
-    override fun addTypingUserTypingInConversation(conversationId: ConversationId, userId: UserId) {
+    override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         val newTypingUser = ExpiringUserTyping(userId, Clock.System.now())
         val newTypingUsers = userTypingCache[conversationId]?.toMutableSet() ?: mutableSetOf()
         newTypingUsers.add(newTypingUser)

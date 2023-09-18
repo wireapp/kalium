@@ -34,7 +34,7 @@ internal class TypingIndicatorHandlerImpl(
 ) : TypingIndicatorHandler {
     override suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit> {
         when (event.typingIndicatorMode) {
-            Conversation.TypingIndicatorMode.STARTED -> typingIndicatorRepository.addTypingUserTypingInConversation(
+            Conversation.TypingIndicatorMode.STARTED -> typingIndicatorRepository.addTypingUserInConversation(
                 event.conversationId,
                 event.senderUserId
             )
@@ -45,7 +45,7 @@ internal class TypingIndicatorHandlerImpl(
             )
         }.also {
             kaliumLogger.d(
-                "Typing indicator event handled, current state in Conversation[${event.conversationId}]: ${
+                "Typing indicator event handled[${event.typingIndicatorMode}], current state in Conversation[${event.conversationId}]: ${
                     typingIndicatorRepository.observeUsersTyping(event.conversationId).firstOrNull()
                 }"
             )
