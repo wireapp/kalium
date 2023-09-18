@@ -437,6 +437,7 @@ com.wire.kalium.logic.feature.user
 com.wire.kalium.logic.feature.user.guestroomlink
 com.wire.kalium.logic.feature.user.readReceipts
 com.wire.kalium.logic.feature.user.screenshotCensoring
+com.wire.kalium.logic.feature.user.typingIndicator
 com.wire.kalium.logic.feature.user.webSocketStatus
 com.wire.kalium.logic.featureFlags
 com.wire.kalium.logic.functional
