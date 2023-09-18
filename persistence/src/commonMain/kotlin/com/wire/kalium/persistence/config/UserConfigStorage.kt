@@ -33,30 +33,30 @@ import kotlin.time.Duration
 interface UserConfigStorage {
 
     /**
-     * save flag from the file sharing api, and if the status changes
+     * Save flag from the file sharing api, and if the status changes
      */
     fun persistFileSharingStatus(status: Boolean, isStatusChanged: Boolean?)
 
     /**
-     * get the saved flag that been saved to know if the file sharing is enabled or not with the flag
+     * Get the saved flag that been saved to know if the file sharing is enabled or not with the flag
      * to know if there was a status change
      */
     fun isFileSharingEnabled(): IsFileSharingEnabledEntity?
 
     /**
-     * returns the Flow of file sharing status
+     * Returns the Flow of file sharing status
      */
     fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?>
 
     fun setFileSharingAsNotified()
 
     /**
-     * returns a Flow containing the status and list of classified domains
+     * Returns a Flow containing the status and list of classified domains
      */
     fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity>
 
     /**
-     * save the flag and list of trusted domains
+     *Save the flag and list of trusted domains
      */
     fun persistClassifiedDomainsStatus(status: Boolean, classifiedDomains: List<String>)
 
@@ -77,49 +77,59 @@ interface UserConfigStorage {
     fun isSecondFactorPasswordChallengeRequired(): Boolean
 
     /**
-     * save flag from the user settings to enable and disable MLS
+     * Save flag from the user settings to enable and disable MLS
      */
     fun enableMLS(enabled: Boolean)
 
     /**
-     * get the saved flag to know if MLS enabled or not
+     * Get the saved flag to know if MLS enabled or not
      */
     fun isMLSEnabled(): Boolean
 
     /**
-     * save MLSE2EISetting
+     * Save MLSE2EISetting
      */
     fun setE2EISettings(settingEntity: E2EISettingsEntity)
 
     /**
-     * get MLSE2EISetting
+     * Get MLSE2EISetting
      */
     fun getE2EISettings(): E2EISettingsEntity?
 
     /**
-     * get Flow of the saved MLSE2EISetting
+     * Get Flow of the saved MLSE2EISetting
      */
     fun e2EISettingsFlow(): Flow<E2EISettingsEntity?>
 
     /**
-     * save flag from user settings to enable or disable Conference Calling
+     * Save flag from user settings to enable or disable Conference Calling
      */
     fun persistConferenceCalling(enabled: Boolean)
 
     /**
-     * get the saved flag to know if Conference Calling is enabled or not
+     * Get the saved flag to know if Conference Calling is enabled or not
      */
     fun isConferenceCallingEnabled(): Boolean
 
     /**
-     * get the saved flag to know if user's Read Receipts are enabled or not
+     * Get the saved flag to know whether user's Read Receipts are currently enabled or not
      */
-    fun isReadReceiptsEnabled(): Flow<Boolean>
+    fun areReadReceiptsEnabled(): Flow<Boolean>
 
     /**
-     * save the flag to know if user's Read Receipts are enabled or not
+     * Persist the flag to indicate if user's Read Receipts are enabled or not.
      */
     fun persistReadReceipts(enabled: Boolean)
+
+    /**
+     * Get the saved global flag to know whether user's typing indicator is currently enabled or not.
+     */
+    fun isTypingIndicatorEnabled(): Flow<Boolean>
+
+    /**
+     * Persist the flag to indicate whether user's typing indicator global flag is enabled or not.
+     */
+    fun persistTypingIndicator(enabled: Boolean)
 
     fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
@@ -183,7 +193,10 @@ class UserConfigStorageImpl(
     private val kaliumPreferences: KaliumPreferences
 ) : UserConfigStorage {
 
-    private val isReadReceiptsEnabledFlow =
+    private val areReadReceiptsEnabledFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val isTypingIndicatorEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private val isFileSharingEnabledFlow =
@@ -319,14 +332,25 @@ class UserConfigStorageImpl(
     override fun isConferenceCallingEnabled(): Boolean =
         kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
 
-    override fun isReadReceiptsEnabled(): Flow<Boolean> = isReadReceiptsEnabledFlow
+    override fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
         .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true) }
         .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true)) }
         .distinctUntilChanged()
 
     override fun persistReadReceipts(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_READ_RECEIPTS, enabled).also {
-            isReadReceiptsEnabledFlow.tryEmit(Unit)
+            areReadReceiptsEnabledFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun isTypingIndicatorEnabled(): Flow<Boolean> = isTypingIndicatorEnabledFlow
+        .map { kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR, true) }
+        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR, true)) }
+        .distinctUntilChanged()
+
+    override fun persistTypingIndicator(enabled: Boolean) {
+        kaliumPreferences.putBoolean(ENABLE_TYPING_INDICATOR, enabled).also {
+            isTypingIndicatorEnabledFlow.tryEmit(Unit)
         }
     }
 
@@ -375,5 +399,6 @@ class UserConfigStorageImpl(
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
         const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE = "require_second_factor_password_challenge"
         const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"
+        const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
     }
 }
