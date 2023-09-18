@@ -127,7 +127,7 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenSomeConversationsDetailsAreUpdated_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         // Given
-        val oneOnOneConversation = TestConversation.ONE_ON_ONE
+        val oneOnOneConversation = TestConversation.ONE_ON_ONE()
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
 
@@ -286,9 +286,9 @@ class ObserveConversationListDetailsUseCaseTest {
     @Test
     fun givenConversationDetailsFailure_whenObservingDetailsList_thenIgnoreConversationWithFailure() = runTest {
         // Given
-        val successConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("successId", "domain"))
+        val successConversation = TestConversation.ONE_ON_ONE().copy(id = ConversationId("successId", "domain"))
         val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
-        val failureConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("failedId", "domain"))
+        val failureConversation = TestConversation.ONE_ON_ONE().copy(id = ConversationId("failedId", "domain"))
 
         val (_, observeConversationsUseCase) = Arrangement()
             .withConversationsList(listOf(successConversation, failureConversation))

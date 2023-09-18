@@ -124,7 +124,7 @@ internal class ConversationMapper {
         archived = archived,
         archivedInstant = archivedDateTime
     )
-    
+
     @Suppress("LongParameterList")
     fun mapProtocolInfo(
         protocol: ConversationEntity.Protocol,

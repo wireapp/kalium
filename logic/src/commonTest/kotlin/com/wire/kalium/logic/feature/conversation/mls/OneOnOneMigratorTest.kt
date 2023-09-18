@@ -93,7 +93,7 @@ class OneOnOneMigratorTest {
 
         val (arrangement, oneOneMigrator) = arrange {
             withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(emptyList()))
-            withCreateGroupConversationReturning(Either.Right(TestConversation.ONE_ON_ONE))
+            withCreateGroupConversationReturning(Either.Right(TestConversation.ONE_ON_ONE()))
             withUpdateOneOnOneConversationReturning(Either.Right(Unit))
         }
 
@@ -107,7 +107,7 @@ class OneOnOneMigratorTest {
 
         verify(arrangement.userRepository)
             .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
-            .with(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE.id))
+            .with(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
             .wasInvoked()
     }
 
