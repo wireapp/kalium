@@ -72,7 +72,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val commit = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID).commit
         val result = aliceClient.decryptMessage(conversationId, commit)
 
-        assertNull(result.message)
+        assertNull(result.first().message)
     }
 
     @Test
@@ -124,7 +124,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         val applicationMessage = aliceClient.encryptMessage(conversationId, PLAIN_TEXT.encodeToByteArray())
-        val plainMessage = bobClient.decryptMessage(conversationId, applicationMessage).message
+        val plainMessage = bobClient.decryptMessage(conversationId, applicationMessage).first().message
 
         assertEquals(PLAIN_TEXT, plainMessage?.decodeToString())
     }
@@ -165,7 +165,7 @@ class MLSClientTest : BaseMLSClientTest() {
             listOf(Pair(CAROL1.qualifiedClientId, carolClient.generateKeyPackages(1).first()))
         )?.commit!!
 
-        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).message)
+        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).first().message)
     }
 
     @Test
@@ -186,7 +186,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientRemovalList = listOf(CAROL1.qualifiedClientId)
         val commit = bobClient.removeMember(conversationId, clientRemovalList).commit
 
-        assertNull(aliceClient.decryptMessage(conversationId, commit).message)
+        assertNull(aliceClient.decryptMessage(conversationId, commit).first().message)
     }
 
     companion object {
