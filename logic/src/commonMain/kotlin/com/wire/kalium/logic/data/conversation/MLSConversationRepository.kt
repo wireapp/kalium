@@ -117,10 +117,15 @@ private enum class CommitStrategy {
 }
 
 private fun CoreFailure.getStrategy(
+    remainingAttempts: Int,
     retryOnClientMismatch: Boolean = true,
     retryOnStaleMessage: Boolean = true
 ): CommitStrategy {
-    return if (this is NetworkFailure.ServerMiscommunication && this.kaliumException is KaliumException.InvalidRequestError) {
+    return if (
+        remainingAttempts > 0 &&
+        this is NetworkFailure.ServerMiscommunication &&
+        kaliumException is KaliumException.InvalidRequestError
+    ) {
         if (this.kaliumException.isMlsClientMismatch() && retryOnClientMismatch) {
             CommitStrategy.DISCARD_AND_RETRY
         } else if (
@@ -520,18 +525,27 @@ internal class MLSConversationDataSource(
     ) =
         operation()
             .flatMapLeft {
-                handleCommitFailure(it, groupID, retryOnClientMismatch, retryOnStaleMessage, operation)
+                handleCommitFailure(
+                    failure = it,
+                    groupID = groupID,
+                    remainingAttempts = 2,
+                    retryOnClientMismatch = retryOnClientMismatch,
+                    retryOnStaleMessage = retryOnStaleMessage,
+                    retryOperation = operation
+                )
             }
 
     private suspend fun handleCommitFailure(
         failure: CoreFailure,
         groupID: GroupID,
+        remainingAttempts: Int,
         retryOnClientMismatch: Boolean,
         retryOnStaleMessage: Boolean,
         retryOperation: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Unit> {
         return when (
             failure.getStrategy(
+                remainingAttempts = remainingAttempts,
                 retryOnClientMismatch = retryOnClientMismatch,
                 retryOnStaleMessage = retryOnStaleMessage
             )
@@ -540,7 +554,14 @@ internal class MLSConversationDataSource(
             CommitStrategy.DISCARD_AND_RETRY -> discardCommitAndRetry(groupID, retryOperation)
             CommitStrategy.ABORT -> return discardCommit(groupID).flatMap { Either.Left(failure) }
         }.flatMapLeft {
-            handleCommitFailure(it, groupID, retryOnClientMismatch, retryOnStaleMessage, retryOperation)
+            handleCommitFailure(
+                failure = it,
+                groupID = groupID,
+                remainingAttempts = remainingAttempts - 1,
+                retryOnClientMismatch = retryOnClientMismatch,
+                retryOnStaleMessage = retryOnStaleMessage,
+                retryOperation = retryOperation
+            )
         }
     }
 
