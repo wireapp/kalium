@@ -111,12 +111,12 @@ private enum class CommitStrategy {
 }
 
 private fun CoreFailure.getStrategy(
-    retryCount: Int,
+    remainingAttempts: Int,
     retryOnClientMismatch: Boolean = true,
     retryOnStaleMessage: Boolean = true
 ): CommitStrategy {
     return if (
-        retryCount > 0 &&
+        remainingAttempts > 0 &&
         this is NetworkFailure.ServerMiscommunication &&
         kaliumException is KaliumException.InvalidRequestError
     ) {
@@ -466,7 +466,7 @@ internal class MLSConversationDataSource(
                 handleCommitFailure(
                     failure = it,
                     groupID = groupID,
-                    retryCount = 2,
+                    remainingAttempts = 2,
                     retryOnClientMismatch = retryOnClientMismatch,
                     retryOnStaleMessage = retryOnStaleMessage,
                     retryOperation = operation
@@ -476,14 +476,14 @@ internal class MLSConversationDataSource(
     private suspend fun handleCommitFailure(
         failure: CoreFailure,
         groupID: GroupID,
-        retryCount: Int,
+        remainingAttempts: Int,
         retryOnClientMismatch: Boolean,
         retryOnStaleMessage: Boolean,
         retryOperation: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Unit> {
         return when (
             failure.getStrategy(
-                retryCount = retryCount,
+                remainingAttempts = remainingAttempts,
                 retryOnClientMismatch = retryOnClientMismatch,
                 retryOnStaleMessage = retryOnStaleMessage
             )
@@ -495,7 +495,7 @@ internal class MLSConversationDataSource(
             handleCommitFailure(
                 failure = it,
                 groupID = groupID,
-                retryCount = retryCount - 1,
+                remainingAttempts = remainingAttempts - 1,
                 retryOnClientMismatch = retryOnClientMismatch,
                 retryOnStaleMessage = retryOnStaleMessage,
                 retryOperation = retryOperation
