@@ -163,7 +163,10 @@ internal object TestStubs {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = messageTimer,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedInstant = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

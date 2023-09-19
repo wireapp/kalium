@@ -246,7 +246,7 @@ interface ConversationRepository {
     suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
 
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
-    
+
     /**
      * Update a conversation's protocol remotely.
      *
@@ -268,7 +268,7 @@ interface ConversationRepository {
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 }
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class ConversationDataSource internal constructor(
     private val selfUserId: UserId,
     private val mlsClientProvider: MLSClientProvider,
