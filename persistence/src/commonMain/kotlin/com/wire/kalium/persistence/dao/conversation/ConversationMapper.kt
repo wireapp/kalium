@@ -33,6 +33,7 @@ internal class ConversationMapper {
                 mls_group_id,
                 mls_group_state,
                 mls_epoch,
+                mls_epoch_timestamp,
                 mls_last_keying_material_update_date,
                 mls_cipher_suite
             ),
@@ -96,7 +97,8 @@ internal class ConversationMapper {
         messageTimer: Long?,
         userMessageTimer: Long?,
         archived: Boolean,
-        archivedDateTime: Instant?
+        archivedDateTime: Instant?,
+        mlsEpochTimestamp: Instant?,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -107,6 +109,7 @@ internal class ConversationMapper {
             mlsGroupId,
             mlsGroupState,
             mlsEpoch,
+            mlsEpochTimestamp,
             mlsLastKeyingMaterialUpdateDate,
             mlsCipherSuite
         ),
@@ -131,6 +134,7 @@ internal class ConversationMapper {
         mlsGroupId: String?,
         mlsGroupState: ConversationEntity.GroupState,
         mlsEpoch: Long,
+        mlsEpochTimestamp: Instant?,
         mlsLastKeyingMaterialUpdate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite,
     ): ConversationEntity.ProtocolInfo {
@@ -139,6 +143,7 @@ internal class ConversationMapper {
                 mlsGroupId ?: "",
                 mlsGroupState,
                 mlsEpoch.toULong(),
+                mlsEpochTimestamp,
                 mlsLastKeyingMaterialUpdate,
                 mlsCipherSuite
             )
@@ -147,6 +152,7 @@ internal class ConversationMapper {
                 mlsGroupId ?: "",
                 mlsGroupState,
                 mlsEpoch.toULong(),
+                mlsEpochTimestamp,
                 mlsLastKeyingMaterialUpdate,
                 mlsCipherSuite
             )

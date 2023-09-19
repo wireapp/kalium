@@ -50,7 +50,8 @@ SELECT
     message_timer,
     user_message_timer,
     archived,
-    archived_date_time
+    archived_date_time,
+    mls_epoch_timestamp
 FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;

@@ -37,6 +37,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 
 internal const val MLS_DEFAULT_EPOCH = 0L
+internal const val MLS_DEFAULT_EPOCH_TIMESTAMP_MILLI = 0L
 internal const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI = 0L
 internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 
@@ -103,7 +104,9 @@ internal class ConversationDAOImpl internal constructor(
                 userMessageTimer,
                 hasIncompleteMetadata,
                 archived,
-                archivedInstant
+                archivedInstant,
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epochTimestamp
+                else Instant.fromEpochMilliseconds(MLS_DEFAULT_EPOCH_TIMESTAMP_MILLI)
             )
         }
     }
