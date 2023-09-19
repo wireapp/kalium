@@ -130,7 +130,7 @@ internal class MLSMessageUnpackerImpl(
                 )
                 mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {
-                Either.Right(emptyList())
+                Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
 }
