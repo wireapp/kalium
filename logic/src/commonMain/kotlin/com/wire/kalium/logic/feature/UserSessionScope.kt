@@ -1213,7 +1213,7 @@ class UserSessionScope internal constructor(
 
     private val typingIndicatorHandler: TypingIndicatorHandler
         get() = TypingIndicatorHandlerImpl(userId, conversations.typingIndicatorRepository)
-    
+
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
         get() = ProtocolUpdateEventHandlerImpl(
             conversationRepository = conversationRepository,
