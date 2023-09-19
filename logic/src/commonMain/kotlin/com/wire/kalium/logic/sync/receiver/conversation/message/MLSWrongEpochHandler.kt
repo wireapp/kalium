@@ -17,17 +17,13 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -35,6 +31,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 
 interface MLSWrongEpochHandler {
+
     suspend fun onMLSWrongEpoch(
         conversationId: ConversationId,
         dateIso: String,
@@ -42,8 +39,7 @@ interface MLSWrongEpochHandler {
 }
 
 internal class MLSWrongEpochHandlerImpl(
-    private val selfUserId: UserId,
-    private val persistMessage: PersistMessageUseCase,
+    private val systemMessageInserter: SystemMessageInserter,
     private val conversationRepository: ConversationRepository,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
 ) : MLSWrongEpochHandler {
@@ -67,33 +63,26 @@ internal class MLSWrongEpochHandlerImpl(
             }
         }.flatMap { isRejoinNeeded ->
             if (isRejoinNeeded) {
+                logger.w("Epoch out of date due to missing commits, re-joining")
                 joinExistingMLSConversation(conversationId)
             } else Either.Right(Unit)
         }.flatMap {
-            insertInfoMessage(conversationId, dateIso)
+            systemMessageInserter.insertLostCommitSystemMessage(
+                conversationId,
+                dateIso
+            )
         }
     }
 
     private suspend fun getUpdatedConversationEpoch(conversationId: ConversationId): Either<CoreFailure, ULong?> {
-        return conversationRepository.fetchConversation(conversationId).flatMap {
-            conversationRepository.getConversationProtocolInfo(conversationId)
-        }.map { updatedProtocol ->
+        return getUpdatedConversationProtocolInfo(conversationId).map { updatedProtocol ->
             (updatedProtocol as? Conversation.ProtocolInfo.MLS)?.epoch
         }
     }
 
-    private suspend fun insertInfoMessage(conversationId: ConversationId, dateIso: String): Either<CoreFailure, Unit> {
-        val mlsEpochWarningMessage = Message.System(
-            id = uuid4().toString(),
-            content = MessageContent.MLSWrongEpochWarning,
-            conversationId = conversationId,
-            date = dateIso,
-            senderUserId = selfUserId,
-            status = Message.Status.Read(0),
-            visibility = Message.Visibility.VISIBLE,
-            senderUserName = null,
-            expirationData = null
-        )
-        return persistMessage(mlsEpochWarningMessage)
+    private suspend fun getUpdatedConversationProtocolInfo(conversationId: ConversationId): Either<CoreFailure, Conversation.ProtocolInfo> {
+        return conversationRepository.fetchConversation(conversationId).flatMap {
+            conversationRepository.getConversationProtocolInfo(conversationId)
+        }
     }
 }

@@ -210,6 +210,8 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.message.StaleEpochHandler
+import com.wire.kalium.logic.feature.message.StaleEpochHandlerImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
@@ -812,7 +814,7 @@ class UserSessionScope internal constructor(
     private val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCaseImpl(
             conversationRepository,
-            systemMessageBuilder
+            systemMessageInserter
         )
 
     private val syncConnections: SyncConnectionsUseCase
@@ -992,7 +994,7 @@ class UserSessionScope internal constructor(
             userRepository,
             conversationRepository,
             mlsConversationRepository,
-            systemMessageBuilder
+            systemMessageInserter
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
@@ -1116,7 +1118,7 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
-    private val systemMessageBuilder get() = SystemMessageInserterImpl(userId, persistMessage)
+    private val systemMessageInserter get() = SystemMessageInserterImpl(userId, persistMessage)
 
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
@@ -1162,10 +1164,17 @@ class UserSessionScope internal constructor(
             userId
         )
 
+    private val staleEpochHandler: StaleEpochHandler
+        get() = StaleEpochHandlerImpl(
+            systemMessageInserter = systemMessageInserter,
+            conversationRepository = conversationRepository,
+            eventRepository = eventRepository,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase
+        )
+
     private val mlsWrongEpochHandler: MLSWrongEpochHandler
         get() = MLSWrongEpochHandlerImpl(
-            selfUserId = userId,
-            persistMessage = persistMessage,
+            systemMessageInserter = systemMessageInserter,
             conversationRepository = conversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase
         )
@@ -1236,7 +1245,7 @@ class UserSessionScope internal constructor(
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
         get() = ProtocolUpdateEventHandlerImpl(
             conversationRepository = conversationRepository,
-            systemMessageInserter = systemMessageBuilder
+            systemMessageInserter = systemMessageInserter
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
@@ -1412,6 +1421,7 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             selfConversationIdProvider,
+            staleEpochHandler,
             this
         )
     val messages: MessageScope
@@ -1439,6 +1449,7 @@ class UserSessionScope internal constructor(
             protoContentMapper,
             observeSelfDeletingMessages,
             messageMetadataRepository,
+            staleEpochHandler,
             this
         )
     val users: UserScope

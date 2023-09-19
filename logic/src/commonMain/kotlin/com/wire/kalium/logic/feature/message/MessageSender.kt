@@ -136,6 +136,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
+    private val staleEpochHandler: StaleEpochHandler,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
@@ -317,7 +318,8 @@ internal class MessageSenderImpl internal constructor(
                 messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         if (it.kaliumException.isMlsStaleMessage()) {
-                            logger.w("Encrypted MLS message for outdated epoch '${message.id}', re-trying..")
+                            logger.w("Encrypted MLS message for stale epoch '${message.id}', re-trying..")
+                            staleEpochHandler.verifyEpoch(message.conversationId)
                             return syncManager.waitUntilLiveOrFailure().flatMap {
                                 attemptToSend(message)
                             }
