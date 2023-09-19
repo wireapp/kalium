@@ -44,7 +44,7 @@ interface UserConfigStorage {
     /**
      * get the saved flag to know if App Lock is enforced or not
      */
-    fun isAppLockEnabled(): AppLockConfigEntity?
+    fun appLockStatus(): AppLockConfigEntity?
 
     /**
      * returns a Flow of the saved App Lock status
@@ -258,14 +258,14 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun isAppLockEnabled(): AppLockConfigEntity? =
+    override fun appLockStatus(): AppLockConfigEntity? =
         kaliumPreferences.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())
 
     override fun appLockFlow(): Flow<AppLockConfigEntity?> = appLockFlow.map {
-        isAppLockEnabled()
+        appLockStatus()
     }.onStart {
-        emit(isAppLockEnabled())
-    }.distinctUntilChanged()
+        emit(appLockStatus())
+    }
 
     override fun persistFileSharingStatus(
         status: Boolean,
