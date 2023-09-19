@@ -216,6 +216,7 @@ class ConversationMapperTest {
             ORIGINAL_CONVERSATION_ID,
             null,
             0UL,
+            null,
             ConversationResponse.Type.GROUP,
             null,
             null,

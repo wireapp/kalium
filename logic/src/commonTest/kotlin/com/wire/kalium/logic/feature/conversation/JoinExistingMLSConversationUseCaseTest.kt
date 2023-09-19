@@ -50,6 +50,7 @@ import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class JoinExistingMLSConversationUseCaseTest {
@@ -327,6 +328,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
+                    Instant.DISTANT_PAST,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -337,6 +339,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
+                    Instant.DISTANT_PAST,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -347,6 +350,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     GROUP_ID3,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
+                    null,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -357,6 +361,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     GROUP_ID_SELF,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
+                    null,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -367,6 +372,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     GROUP_ID_ONE_ON_ONE,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
+                    epochTimestamp = null,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )

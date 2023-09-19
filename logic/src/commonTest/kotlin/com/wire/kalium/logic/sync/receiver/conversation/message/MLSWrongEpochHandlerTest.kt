@@ -21,11 +21,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.event.EventRepository
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.thenReturnSequentially
 import io.mockative.Mock
@@ -33,7 +32,6 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
-import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -52,9 +50,9 @@ class MLSWrongEpochHandlerTest {
 
         mlsWrongEpochHandler.onMLSWrongEpoch(conversationId, "date")
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(any())
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertLostCommitSystemMessage)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -129,9 +127,9 @@ class MLSWrongEpochHandlerTest {
 
         mlsWrongEpochHandler.onMLSWrongEpoch(conversationId, "date")
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(any())
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertLostCommitSystemMessage)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -147,32 +145,29 @@ class MLSWrongEpochHandlerTest {
 
         mlsWrongEpochHandler.onMLSWrongEpoch(conversationId, date)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(
-                matching {
-                    it.conversationId == conversationId &&
-                            it.content == MessageContent.MLSWrongEpochWarning &&
-                            it.date == date
-                }
-            )
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertLostCommitSystemMessage)
+            .with(eq(conversationId), eq(date))
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
 
         @Mock
-        val persistMessageUseCase = mock(classOf<PersistMessageUseCase>())
+        val systemMessageInserter = mock(classOf<SystemMessageInserter>())
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
+
+        @Mock
+        val eventRepository = mock(classOf<EventRepository>())
 
         @Mock
         val joinExistingMLSConversationUseCase = mock(classOf<JoinExistingMLSConversationUseCase>())
 
         init {
             withFetchByIdSucceeding()
-            withPersistMessageSucceeding()
+            withInsertLostCommitSystemMessageSucceeding()
             withJoinExistingConversationSucceeding()
         }
 
@@ -199,14 +194,14 @@ class MLSWrongEpochHandlerTest {
                 .thenReturnSequentially(*results)
         }
 
-        fun withPersistMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(persistMessageUseCase)
-                .suspendFunction(persistMessageUseCase::invoke)
+        fun withInsertLostCommitSystemMessageReturning(result: Either<CoreFailure, Unit>) = apply {
+            given(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertLostCommitSystemMessage)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
-        fun withPersistMessageSucceeding() = withPersistMessageReturning(Either.Right(Unit))
+        fun withInsertLostCommitSystemMessageSucceeding() = withInsertLostCommitSystemMessageReturning(Either.Right(Unit))
 
         fun withJoinExistingConversationReturning(result: Either<CoreFailure, Unit>) = apply {
             given(joinExistingMLSConversationUseCase)
@@ -218,8 +213,7 @@ class MLSWrongEpochHandlerTest {
         fun withJoinExistingConversationSucceeding() = withJoinExistingConversationReturning(Either.Right(Unit))
 
         fun arrange() = this to MLSWrongEpochHandlerImpl(
-            TestUser.SELF.id,
-            persistMessageUseCase,
+            systemMessageInserter,
             conversationRepository,
             joinExistingMLSConversationUseCase
         )

@@ -113,6 +113,7 @@ class NewConversationMembersRepositoryTest {
             TestConversation.NETWORK_ID,
             null,
             0UL,
+            null,
             ConversationResponse.Type.GROUP,
             0,
             null,

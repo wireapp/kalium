@@ -41,11 +41,16 @@ import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Compa
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_MEMBER_2
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_PROTOCOL_INFO_FAILURE
+import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.arrange
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.util.arrangement.mls.MLSWrongEpochHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.mls.MLSWrongEpochHandlerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.StaleEpochHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.mls.StaleEpochHandlerArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -64,7 +69,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -72,15 +76,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageSenderTest {
     @Test
     fun givenAllStepsSucceed_WhenSendingOutgoingMessage_ThenReturnSuccess() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -94,9 +97,9 @@ class MessageSenderTest {
     @Test
     fun givenGettingConversationProtocolFails_WhenSendingOutgoingMessage_ThenReturnFailureAndHandleFailureProperly() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(getConversationProtocolFailing = true)
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(getConversationProtocolFailing = true)
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -114,9 +117,9 @@ class MessageSenderTest {
     @Test
     fun givenGettingConversationRecipientsFails_WhenSendingOutgoingMessage_ThenReturnFailureAndHandleFailureProperly() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(getConversationsRecipientFailing = true)
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(getConversationsRecipientFailing = true)
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -134,9 +137,9 @@ class MessageSenderTest {
     @Test
     fun givenPreparingRecipientsForNewOutgoingMessageFails_WhenSendingOutgoingMessage_ThenReturnFailureAndHandleFailureProperly() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(prepareRecipientsForNewOutGoingMessageFailing = true)
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(prepareRecipientsForNewOutGoingMessageFailing = true)
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -154,9 +157,9 @@ class MessageSenderTest {
     @Test
     fun givenCreatingOutgoingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndHandleFailureProperly() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(createOutgoingEnvelopeFailing = true)
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(createOutgoingEnvelopeFailing = true)
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -175,9 +178,9 @@ class MessageSenderTest {
     fun givenSendingEnvelopeFails_WhenSendingOutgoingMessage_ThenReturnFailureAndHandleFailureProperly() {
         // given
         val failure = CoreFailure.Unknown(Throwable("some exception"))
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -197,10 +200,10 @@ class MessageSenderTest {
 
         // given
         val failure = CoreFailure.Unknown(Throwable("some exception"))
-        val (arrangement, messageSender) = Arrangement()
-            .withCommitPendingProposals()
-            .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(failure))
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withCommitPendingProposals()
+            withSendMlsMessage(sendMlsMessageWithResult = Either.Left(failure))
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -219,10 +222,10 @@ class MessageSenderTest {
     @Test
     fun givenUpdatingMessageStatusToSuccessFails_WhenSendingOutgoingMessage_ThenReturnSuccess() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(updateMessageStatusFailing = true)
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(updateMessageStatusFailing = true)
+            withPromoteMessageToSentUpdatingServerTime()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -241,9 +244,9 @@ class MessageSenderTest {
     fun givenSendingOfEnvelopeFailsDueToLackOfConnection_whenSendingOutgoingMessage_thenFailureShouldBeHandledProperly() {
         // given
         val failure = NetworkFailure.NoNetworkConnection(null)
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -261,9 +264,9 @@ class MessageSenderTest {
     fun givenSendingOfEnvelopeFailsDueToLackOfConnection_whenSendingOutgoingMessage_thenFailureShouldBePropagated() {
         // given
         val failure = Either.Left(NetworkFailure.NoNetworkConnection(null))
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(sendEnvelopeWithResult = failure)
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(sendEnvelopeWithResult = failure)
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -275,15 +278,41 @@ class MessageSenderTest {
     }
 
     @Test
+    fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenVerifyStaleEpoch() {
+        // given
+        val (arrangement, messageSender) = arrange {
+            withCommitPendingProposals()
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
+            withWaitUntilLiveOrFailure()
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
+
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
+
+            // then
+            result.shouldSucceed()
+            verify(arrangement.staleEpochHandler)
+                .suspendFunction(arrangement.staleEpochHandler::verifyEpoch)
+                .with(eq(Arrangement.TEST_CONVERSATION_ID))
+                .wasInvoked(once)
+        }
+    }
+
+    @Test
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenRetryAfterSyncIsLive() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withCommitPendingProposals()
-            .withSendMlsMessage()
-            .withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
-            .withWaitUntilLiveOrFailure()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withCommitPendingProposals()
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage(Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE), times = 1)
+            withWaitUntilLiveOrFailure()
+            withPromoteMessageToSentUpdatingServerTime()
+            withVerifyEpoch(Either.Right(Unit))
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -301,12 +330,12 @@ class MessageSenderTest {
     @Test
     fun givenPendingProposals_whenSendingMlsMessage_thenProposalsAreCommitted() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withCommitPendingProposals()
-            .withSendMlsMessage()
-            .withSendOutgoingMlsMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withCommitPendingProposals()
+            withSendMlsMessage()
+            withSendOutgoingMlsMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -324,11 +353,12 @@ class MessageSenderTest {
     @Test
     fun givenReceivingStaleMessageError_whenSendingMlsMessage_thenGiveUpIfSyncIsPending() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withCommitPendingProposals()
-            .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
-            .withWaitUntilLiveOrFailure(failing = true)
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withCommitPendingProposals()
+            withSendMlsMessage(sendMlsMessageWithResult = Either.Left(Arrangement.MLS_STALE_MESSAGE_FAILURE))
+            withWaitUntilLiveOrFailure(failing = true)
+            withVerifyEpoch(Either.Right(Unit))
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -346,10 +376,10 @@ class MessageSenderTest {
     @Test
     fun givenClientTargets_WhenSendingOutgoingMessage_ThenCallSendEnvelopeWithCorrectTargets() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
 
         val message = Message.Signaling(
             id = Arrangement.TEST_MESSAGE_UUID,
@@ -399,10 +429,10 @@ class MessageSenderTest {
     @Test
     fun givenConversationTarget_WhenSendingOutgoingMessage_ThenCallSendEnvelopeWithCorrectTargets() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
 
         val message = Message.Signaling(
             id = Arrangement.TEST_MESSAGE_UUID,
@@ -448,9 +478,9 @@ class MessageSenderTest {
     fun givenARemoteProteusConversationFails_WhenSendingOutgoingMessage_ThenReturnFailureAndHandleFailureProperly() {
         // given
         val failure = FEDERATION_MESSAGE_FAILURE
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(sendEnvelopeWithResult = Either.Left(failure))
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -469,11 +499,11 @@ class MessageSenderTest {
     fun givenARemoteMLSConversationFails_WhenSendingOutgoingMessage_ThenReturnFailureAndHandleFailureProperly() {
         // given
         val failure = FEDERATION_MESSAGE_FAILURE
-        val (arrangement, messageSender) = Arrangement()
-            .withCommitPendingProposals()
-            .withWaitUntilLiveOrFailure()
-            .withSendMlsMessage(sendMlsMessageWithResult = Either.Left(failure))
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withCommitPendingProposals()
+            withWaitUntilLiveOrFailure()
+            withSendMlsMessage(sendMlsMessageWithResult = Either.Left(failure))
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -491,8 +521,8 @@ class MessageSenderTest {
     @Test
     fun givenARemoteProteusConversationPartiallyFails_WhenSendingOutgoingMessage_ThenReturnSuccessAndPersistFailedRecipients() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(
                 sendEnvelopeWithResult = Either.Right(
                     MessageSent(
                         time = MESSAGE_SENT_TIME,
@@ -500,10 +530,10 @@ class MessageSenderTest {
                     )
                 )
             )
-            .withFailedClientsPartialSuccess()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withSendMessagePartialSuccess()
-            .arrange()
+            withFailedClientsPartialSuccess()
+            withPromoteMessageToSentUpdatingServerTime()
+            withSendMessagePartialSuccess()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -522,8 +552,8 @@ class MessageSenderTest {
     fun givenARemoteProteusConversationPartiallyFails_WithNoClientsWhenSendingAMessage_ThenReturnSuccessAndPersistFailedClientsAndFailedToSend() {
         // given
         val failedRecipient = UsersWithoutSessions(listOf(TEST_MEMBER_2))
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(
                 sendEnvelopeWithResult = Either.Right(
                     MessageSent(
                         time = MESSAGE_SENT_TIME,
@@ -531,11 +561,11 @@ class MessageSenderTest {
                     )
                 )
             )
-            .withFailedClientsPartialSuccess()
-            .withPrepareRecipientsForNewOutgoingMessage(false, failedRecipient)
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withSendMessagePartialSuccess()
-            .arrange()
+            withFailedClientsPartialSuccess()
+            withPrepareRecipientsForNewOutgoingMessage(false, failedRecipient)
+            withPromoteMessageToSentUpdatingServerTime()
+            withSendMessagePartialSuccess()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -561,13 +591,13 @@ class MessageSenderTest {
             Arrangement.TEST_RECIPIENT_1,
             Arrangement.TEST_RECIPIENT_2
         )
-        val (arrangement, messageSender) = Arrangement()
-            .withPrepareRecipientsForNewOutgoingMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withCreateOutgoingBroadcastEnvelope()
-            .withAllRecipients(recipients to listOf())
-            .withBroadcastEnvelope()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withPrepareRecipientsForNewOutgoingMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            withCreateOutgoingBroadcastEnvelope()
+            withAllRecipients(recipients to listOf())
+            withBroadcastEnvelope()
+        }
 
         val message = BroadcastMessage(
             id = Arrangement.TEST_MESSAGE_UUID,
@@ -614,13 +644,13 @@ class MessageSenderTest {
             Arrangement.TEST_RECIPIENT_1,
             Recipient(senderUserId, listOf(senderClientId, ClientId("mySecondClientId")))
         )
-        val (arrangement, messageSender) = Arrangement()
-            .withPrepareRecipientsForNewOutgoingMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withCreateOutgoingBroadcastEnvelope()
-            .withAllRecipients(recipients to listOf())
-            .withBroadcastEnvelope()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withPrepareRecipientsForNewOutgoingMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            withCreateOutgoingBroadcastEnvelope()
+            withAllRecipients(recipients to listOf())
+            withBroadcastEnvelope()
+        }
 
         val message = BroadcastMessage(
             id = Arrangement.TEST_MESSAGE_UUID,
@@ -667,13 +697,13 @@ class MessageSenderTest {
             Arrangement.TEST_RECIPIENT_1,
             Arrangement.TEST_RECIPIENT_3,
         )
-        val (arrangement, messageSender) = Arrangement()
-            .withPrepareRecipientsForNewOutgoingMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withCreateOutgoingBroadcastEnvelope()
-            .withAllRecipients(teamRecipients to otherRecipients)
-            .withBroadcastEnvelope()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withPrepareRecipientsForNewOutgoingMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            withCreateOutgoingBroadcastEnvelope()
+            withAllRecipients(teamRecipients to otherRecipients)
+            withBroadcastEnvelope()
+        }
 
         val message = BroadcastMessage(
             id = Arrangement.TEST_MESSAGE_UUID,
@@ -710,11 +740,11 @@ class MessageSenderTest {
     @Test
     fun givenASuccess_WhenSendingEditMessage_ThenUpdateMessageIdButDoNotUpdateCreationDate() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withUpdateTextMessage()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+            withUpdateTextMessage()
+        }
 
         val originalMessageId = "original_id"
         val editedMessageId = "edited_id"
@@ -751,10 +781,10 @@ class MessageSenderTest {
     @Test
     fun givenASuccess_WhenSendingRegularMessage_ThenDoNotUpdateMessageIdButUpdateCreationDateToServerDate() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
         val message = TestMessage.TEXT_MESSAGE
 
         arrangement.testScope.runTest {
@@ -782,10 +812,10 @@ class MessageSenderTest {
         )
 
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withPromoteMessageToSentUpdatingServerTime()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -808,10 +838,10 @@ class MessageSenderTest {
         )
 
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withSendProteusMessage(true, true)
-            .withPromoteMessageToSentUpdatingServerTime()
-            .arrange()
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage(true, true)
+            withPromoteMessageToSentUpdatingServerTime()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -829,15 +859,15 @@ class MessageSenderTest {
     @Test
     fun givenARemoteMlsConversationPartiallyFails_whenSendingAMessage_ThenReturnSuccessAndPersistFailedToSendUsers() {
         // given
-        val (arrangement, messageSender) = Arrangement()
-            .withCommitPendingProposals()
-            .withSendMlsMessage(
+        val (arrangement, messageSender) = arrange {
+            withCommitPendingProposals()
+            withSendMlsMessage(
                 sendMlsMessageWithResult = Either.Right(MessageSent(MESSAGE_SENT_TIME, listOf(TEST_MEMBER_2))),
             )
-            .withWaitUntilLiveOrFailure()
-            .withPromoteMessageToSentUpdatingServerTime()
-            .withSendMessagePartialSuccess()
-            .arrange()
+            withWaitUntilLiveOrFailure()
+            withPromoteMessageToSentUpdatingServerTime()
+            withSendMessagePartialSuccess()
+        }
 
         arrangement.testScope.runTest {
             // when
@@ -852,7 +882,9 @@ class MessageSenderTest {
         }
     }
 
-    private class Arrangement {
+    private class Arrangement(private val block: Arrangement.() -> Unit):
+        StaleEpochHandlerArrangement by StaleEpochHandlerArrangementImpl()
+    {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
 
@@ -891,25 +923,29 @@ class MessageSenderTest {
             }
         }
 
-        fun arrange() = this to MessageSenderImpl(
-            messageRepository = messageRepository,
-            conversationRepository = conversationRepository,
-            mlsConversationRepository = mlsConversationRepository,
-            syncManager = syncManager,
-            messageSendFailureHandler = messageSendFailureHandler,
-            sessionEstablisher = sessionEstablisher,
-            messageEnvelopeCreator = messageEnvelopeCreator,
-            mlsMessageCreator = mlsMessageCreator,
-            messageSendingInterceptor = messageSendingInterceptor,
-            userRepository = userRepository,
-            enqueueSelfDeletion = { message, expirationData ->
-                selfDeleteMessageSenderHandler.enqueueSelfDeletion(
-                    message,
-                    expirationData
-                )
-            },
-            scope = testScope
-        )
+        fun arrange() = run {
+            block()
+            this@Arrangement to MessageSenderImpl(
+                messageRepository = messageRepository,
+                conversationRepository = conversationRepository,
+                mlsConversationRepository = mlsConversationRepository,
+                syncManager = syncManager,
+                messageSendFailureHandler = messageSendFailureHandler,
+                sessionEstablisher = sessionEstablisher,
+                messageEnvelopeCreator = messageEnvelopeCreator,
+                mlsMessageCreator = mlsMessageCreator,
+                messageSendingInterceptor = messageSendingInterceptor,
+                userRepository = userRepository,
+                enqueueSelfDeletion = { message, expirationData ->
+                    selfDeleteMessageSenderHandler.enqueueSelfDeletion(
+                        message,
+                        expirationData
+                    )
+                },
+                staleEpochHandler = staleEpochHandler,
+                scope = testScope
+            )
+        }
 
         fun withGetMessageById(failing: Boolean = false) = apply {
             given(messageRepository)
@@ -1089,6 +1125,8 @@ class MessageSenderTest {
         }
 
         companion object {
+            fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
             val MESSAGE_SENT_TIME = DateTimeUtil.currentIsoDateTimeString()
@@ -1100,6 +1138,7 @@ class MessageSenderTest {
                 GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 0UL,
+                Instant.DISTANT_PAST,
                 Instant.DISTANT_PAST,
                 Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
