@@ -284,6 +284,7 @@ object TestEvent {
         id = "eventId",
         conversationId = TestConversation.ID,
         transient = false,
+        live = false,
         protocol = Conversation.Protocol.MIXED,
         senderUserId = TestUser.OTHER_USER_ID
     )
