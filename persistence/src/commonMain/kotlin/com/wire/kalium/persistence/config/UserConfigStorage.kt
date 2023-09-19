@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.config
 
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
+import com.wire.kalium.util.time.Second
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -31,6 +32,24 @@ import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 interface UserConfigStorage {
+
+    /**
+     * save flag from the user settings to enforce and disable App Lock
+     */
+    fun persistAppLockStatus(
+        isEnforced: Boolean,
+        inactivityTimeoutSecs: Second
+    )
+
+    /**
+     * get the saved flag to know if App Lock is enforced or not
+     */
+    fun isAppLockEnabled(): AppLockConfigEntity?
+
+    /**
+     * returns a Flow of the saved App Lock status
+     */
+    fun appLockFlow(): Flow<AppLockConfigEntity?>
 
     /**
      * Save flag from the file sharing api, and if the status changes
@@ -173,6 +192,12 @@ data class E2EISettingsEntity(
 )
 
 @Serializable
+data class AppLockConfigEntity(
+    @SerialName("inactivityTimeoutSecs") val inactivityTimeoutSecs: Second,
+    @SerialName("enforceAppLock") val enforceAppLock: Boolean
+)
+
+@Serializable
 sealed class SelfDeletionTimerEntity {
 
     @Serializable
@@ -216,6 +241,31 @@ class UserConfigStorageImpl(
 
     private val isScreenshotCensoringEnabledFlow =
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    private val appLockFlow =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    override fun persistAppLockStatus(
+        isEnforced: Boolean,
+        inactivityTimeoutSecs: Second
+    ) {
+        kaliumPreferences.putSerializable(
+            APP_LOCK,
+            AppLockConfigEntity(inactivityTimeoutSecs, isEnforced),
+            AppLockConfigEntity.serializer()
+        ).also {
+            appLockFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun isAppLockEnabled(): AppLockConfigEntity? =
+        kaliumPreferences.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())
+
+    override fun appLockFlow(): Flow<AppLockConfigEntity?> = appLockFlow.map {
+        isAppLockEnabled()
+    }.onStart {
+        emit(isAppLockEnabled())
+    }.distinctUntilChanged()
 
     override fun persistFileSharingStatus(
         status: Boolean,
@@ -400,5 +450,6 @@ class UserConfigStorageImpl(
         const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE = "require_second_factor_password_challenge"
         const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
+        const val APP_LOCK = "app_lock"
     }
 }
