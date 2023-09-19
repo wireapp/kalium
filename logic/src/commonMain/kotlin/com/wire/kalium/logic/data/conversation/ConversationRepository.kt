@@ -273,7 +273,7 @@ interface ConversationRepository {
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 }
 
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class ConversationDataSource internal constructor(
     private val selfUserId: UserId,
     private val mlsClientProvider: MLSClientProvider,

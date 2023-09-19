@@ -86,7 +86,8 @@ object LoginActions {
         locale = "",
         managedByDTO = null,
         phone = null,
-        ssoID = null
+        ssoID = null,
+        supportedProtocols = null
     )
     private val VALID_SELF_RESPONSE = UserDTOJson.createValid(selfUserDTO)
 
