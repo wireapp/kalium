@@ -115,8 +115,8 @@ class TempTest {
     @Test
     fun logoutTest() = runTest {
         val expectedLoginRequest = MockUnboundNetworkClient.TestRequestHandler(
-            path = "https://test.api.com/v1/login?persist=true",
-            responseBody = VALID_ACCESS_TOKEN_RESPONSE.rawJson,
+            path = "https://test.api.com/v1/login?persist=true", //todo: remove hardcoded paths!
+            responseBody = VALID_ACCESS_TOKEN_RESPONSE.rawJson, //todo: use the data mocked/sampled in the api test of network module
             statusCode = HttpStatusCode.OK,
             httpMethod = HttpMethod.Post,
             headers = mapOf("set-cookie" to "zuid=$refreshToken")
@@ -191,6 +191,9 @@ class TempTest {
             val password = "password"
 
             val authScope = getAuthScope(coreLogic, MockUnboundNetworkClient.TEST_BACKEND_CONFIG.links)
+            //todo: modularized/extract functions from this code, e.g.: login, register device, logout, prepare, before test, after test and...
+            //todo: for instance take a look on monkeys app!
+
             val loginResult = authScope.login(email, password, true)
             if (loginResult !is AuthenticationResult.Success) {
                 error("User creds didn't work ($email, $password)")
