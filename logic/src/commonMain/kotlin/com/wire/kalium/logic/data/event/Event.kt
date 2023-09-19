@@ -231,12 +231,12 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             ) : MemberChanged(id, conversationId, timestampIso, transient) {
 
                 override fun toLogMap(): Map<String, Any?> = mapOf(
-                    typeKey to "Conversation.MemberMutedStatusChanged",
+                    typeKey to "Conversation.MemberArchivedStatusChanged",
                     idKey to id.obfuscateId(),
                     conversationIdKey to conversationId.toLogString(),
                     timestampIsoKey to timestampIso,
                     "isArchiving" to isArchiving,
-                    "mutedConversationChangedTime" to archivedConversationChangedTime
+                    "archivedConversationChangedTime" to archivedConversationChangedTime
                 )
             }
 

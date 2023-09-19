@@ -410,7 +410,7 @@ class ConversationRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
+            .suspendFunction(arrangement.conversationDAO::updateConversationArchivedStatus)
             .with(any(), any(), any())
             .wasNotInvoked()
     }
