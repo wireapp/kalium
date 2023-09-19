@@ -54,6 +54,9 @@ data class ConversationResponse(
     @SerialName("epoch")
     val epoch: ULong?,
 
+    @SerialName("epoch_timestamp")
+    val epochTimestamp: String?,
+
     @Serializable(with = ConversationTypeSerializer::class)
     val type: Type,
 
@@ -116,6 +119,9 @@ data class ConversationResponseV3(
 
     @SerialName("epoch")
     val epoch: ULong?,
+
+    @SerialName("epoch_timestamp")
+    val epochTimestamp: String?,
 
     @Serializable(with = ConversationTypeSerializer::class)
     val type: ConversationResponse.Type,
