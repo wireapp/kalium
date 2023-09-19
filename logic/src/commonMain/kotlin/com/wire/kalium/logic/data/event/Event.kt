@@ -221,6 +221,25 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 )
             }
 
+            data class MemberArchivedStatusChanged(
+                override val id: String,
+                override val conversationId: ConversationId,
+                override val timestampIso: String,
+                override val transient: Boolean,
+                val archivedConversationChangedTime: String,
+                val isArchiving: Boolean
+            ) : MemberChanged(id, conversationId, timestampIso, transient) {
+
+                override fun toLogMap(): Map<String, Any?> = mapOf(
+                    typeKey to "Conversation.MemberMutedStatusChanged",
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to conversationId.toLogString(),
+                    timestampIsoKey to timestampIso,
+                    "isArchiving" to isArchiving,
+                    "mutedConversationChangedTime" to archivedConversationChangedTime
+                )
+            }
+
             data class IgnoredMemberChanged(
                 override val id: String,
                 override val conversationId: ConversationId,

@@ -155,6 +155,18 @@ interface ConversationRepository {
         mutedStatusTimestamp: Long
     ): Either<NetworkFailure, Unit>
 
+    suspend fun updateArchivedStatusLocally(
+        conversationId: ConversationId,
+        isArchived: Boolean,
+        archivedStatusTimestamp: Long
+    ): Either<StorageFailure, Unit>
+
+    suspend fun updateArchivedStatusRemotely(
+        conversationId: ConversationId,
+        isArchived: Boolean,
+        archivedStatusTimestamp: Long
+    ): Either<NetworkFailure, Unit>
+
     suspend fun getConversationsByGroupState(
         groupState: Conversation.ProtocolInfo.MLS.GroupState
     ): Either<StorageFailure, List<Conversation>>
@@ -629,6 +641,29 @@ internal class ConversationDataSource internal constructor(
     ): Either<NetworkFailure, Unit> = wrapApiRequest {
         conversationApi.updateConversationMemberState(
             memberUpdateRequest = conversationStatusMapper.toMutedStatusApiModel(mutedStatus, mutedStatusTimestamp),
+            conversationId = conversationId.toApi()
+        )
+    }
+
+    override suspend fun updateArchivedStatusLocally(
+        conversationId: ConversationId,
+        isArchived: Boolean,
+        archivedStatusTimestamp: Long
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        conversationDAO.updateConversationArchivedStatus(
+            conversationId = conversationId.toDao(),
+            isArchived = isArchived,
+            archivedStatusTimestamp = archivedStatusTimestamp
+        )
+    }
+
+    override suspend fun updateArchivedStatusRemotely(
+        conversationId: ConversationId,
+        isArchived: Boolean,
+        archivedStatusTimestamp: Long
+    ): Either<NetworkFailure, Unit> = wrapApiRequest {
+        conversationApi.updateConversationMemberState(
+            memberUpdateRequest = conversationStatusMapper.toArchivedStatusApiModel(isArchived, archivedStatusTimestamp),
             conversationId = conversationId.toApi()
         )
     }

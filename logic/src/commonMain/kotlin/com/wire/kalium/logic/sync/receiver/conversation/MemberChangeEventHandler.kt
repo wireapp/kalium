@@ -53,6 +53,18 @@ internal class MemberChangeEventHandlerImpl(
                     )
             }
 
+            is Event.Conversation.MemberChanged.MemberArchivedStatusChanged -> {
+                conversationRepository.updateArchivedStatusLocally(
+                    event.conversationId,
+                    event.isArchiving,
+                    DateTimeUtil.currentInstant().toEpochMilliseconds()
+                )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
+            }
+
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
                 // Attempt to fetch conversation details if needed, as this might be an unknown conversation
                 conversationRepository.fetchConversationIfUnknown(event.conversationId)

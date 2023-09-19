@@ -384,6 +384,17 @@ class EventMapper(
                 )
             }
 
+            eventContentDTO.roleChange.isArchiving != null -> {
+                Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
+                    id = id,
+                    conversationId = eventContentDTO.qualifiedConversation.toModel(),
+                    timestampIso = eventContentDTO.time,
+                    transient = transient,
+                    archivedConversationChangedTime = eventContentDTO.roleChange.archivedRef.orEmpty(),
+                    isArchiving = eventContentDTO.roleChange.isArchiving ?: false
+                )
+            }
+
             else -> {
                 Event.Conversation.MemberChanged.IgnoredMemberChanged(
                     id,

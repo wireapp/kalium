@@ -58,6 +58,12 @@ interface ConversationDAO {
         mutedStatusTimestamp: Long
     )
 
+    suspend fun updateConversationArchivedStatus(
+        conversationId: QualifiedIDEntity,
+        isArchived:Boolean,
+        archivedStatusTimestamp: Long
+    )
+
     suspend fun updateAccess(
         conversationID: QualifiedIDEntity,
         accessList: List<ConversationEntity.Access>,
