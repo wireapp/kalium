@@ -48,7 +48,9 @@ SELECT
     mls_cipher_suite,
     receipt_mode,
     message_timer,
-    user_message_timer
+    user_message_timer,
+    archived,
+    archived_date_time
 FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;
