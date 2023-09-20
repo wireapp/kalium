@@ -1168,7 +1168,7 @@ class UserSessionScope internal constructor(
         get() = StaleEpochHandlerImpl(
             systemMessageInserter = systemMessageInserter,
             conversationRepository = conversationRepository,
-            eventRepository = eventRepository,
+            mlsConversationRepository = mlsConversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase
         )
 
