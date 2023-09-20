@@ -91,7 +91,7 @@ class GlobalKaliumScope constructor(
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val networkStateObserver: NetworkStateObserver,
-    val unboundNetworkContainer: Lazy<UnboundNetworkContainer> =  lazy {
+    val unboundNetworkContainer: Lazy<UnboundNetworkContainer> = lazy {
         UnboundNetworkContainerCommon(
             networkStateObserver,
             kaliumConfigs.developmentApiEnabled,

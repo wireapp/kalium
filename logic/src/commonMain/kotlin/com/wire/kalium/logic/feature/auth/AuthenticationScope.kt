@@ -38,7 +38,6 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
@@ -54,6 +53,7 @@ class AuthenticationScopeProvider internal constructor(
         ConcurrentMutableMap()
     }
 
+    @Suppress("LongParameterList")
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
@@ -75,6 +75,7 @@ class AuthenticationScopeProvider internal constructor(
         }
 }
 
+@Suppress("LongParameterList")
 class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,

@@ -16,8 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.wire.kalium.plugins.commonDokkaConfig
-
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     kotlin("jvm")

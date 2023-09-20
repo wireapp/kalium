@@ -40,8 +40,8 @@ data class KaliumConfigs(
     val isWebSocketEnabledByDefault: Boolean = false,
     val certPinningConfig: Map<String, List<String>> = emptyMap(),
     val mockEngine: HttpClientEngine? = null,
-    val mockNetworkStateObserver: NetworkStateObserver? =null
-    )
+    val mockNetworkStateObserver: NetworkStateObserver? = null
+)
 
 sealed interface BuildFileRestrictionState {
     object NoRestriction : BuildFileRestrictionState

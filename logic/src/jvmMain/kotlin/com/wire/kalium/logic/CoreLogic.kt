@@ -37,7 +37,7 @@ import java.io.File
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
  */
-open actual class CoreLogic(
+actual open class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String

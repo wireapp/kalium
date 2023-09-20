@@ -106,6 +106,8 @@ interface AuthenticatedNetworkContainer {
     val propertiesApi: PropertiesApi
 
     companion object {
+        
+        @Suppress("LongParameterList")
         fun create(
             networkStateObserver: NetworkStateObserver,
             sessionManager: SessionManager,

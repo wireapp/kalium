@@ -61,6 +61,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs
 ) : ObserveIfAppUpdateRequiredUseCase {
 
+    @Suppress("ComplexMethod", "LongMethod")
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
         val currentDate = DateTimeUtil.currentIsoDateTimeString()

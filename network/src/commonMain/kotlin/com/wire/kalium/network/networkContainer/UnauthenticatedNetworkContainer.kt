@@ -36,7 +36,7 @@ import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "LongParameterList")
 interface UnauthenticatedNetworkContainer {
     val loginApi: LoginApi
     val registerApi: RegisterApi
