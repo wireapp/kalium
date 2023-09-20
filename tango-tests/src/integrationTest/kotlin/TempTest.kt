@@ -94,6 +94,8 @@ class TempTest {
 
         val coreLogic = createCoreLogic(mockEngine)
 
+        TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
+
         launch {
             val authScope = getAuthScope(coreLogic, MockUnboundNetworkClient.TEST_BACKEND_CONFIG.links)
 
