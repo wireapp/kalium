@@ -274,6 +274,11 @@ UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
+updateConversationArchivingStatus:
+UPDATE Conversation
+SET archived = ?, archived_date_time = ?
+WHERE qualified_id = ?;
+
 updateAccess:
 UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
 

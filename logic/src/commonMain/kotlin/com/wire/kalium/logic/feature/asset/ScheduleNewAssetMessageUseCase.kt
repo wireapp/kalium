@@ -294,7 +294,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         expirationData = updatedMessage.expirationData,
                         isSelfMessage = updatedMessage.isSelfMessage
                     )
-                    messageSender.sendMessage(finalMessage)
+                    messageSender.sendMessage(finalMessage).onFailure {
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, message.id, TYPE)
+                    }
                 }
         }
 

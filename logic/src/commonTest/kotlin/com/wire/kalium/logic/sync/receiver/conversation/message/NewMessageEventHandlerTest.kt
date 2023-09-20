@@ -128,7 +128,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenMLSEvent_whenHandling_shouldAskMLSUnpackerToDecrypt() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withMLSUnpackerReturning(Either.Right(MessageUnpackResult.HandshakeMessage))
+            .withMLSUnpackerReturning(Either.Right(listOf(MessageUnpackResult.HandshakeMessage)))
             .arrange()
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
@@ -347,7 +347,7 @@ class NewMessageEventHandlerTest {
                 .thenReturn(result)
         }
 
-        fun withMLSUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult>) = apply {
+        fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) = apply {
             given(mlsMessageUnpacker)
                 .suspendFunction(mlsMessageUnpacker::unpackMlsMessage)
                 .whenInvokedWith(any())

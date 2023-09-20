@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
@@ -101,44 +100,35 @@ internal class NewMessageEventHandlerImpl(
                     "protocol" to "MLS"
                 )
 
-                logger.e("Failed to decrypt event: ${logMap.toJsonElement()}")
-
-                if (it is MLSFailure.WrongEpoch) {
-                    mlsWrongEpochHandler.onMLSWrongEpoch(event.conversationId, event.timestampIso)
-                    return@onFailure
+                when (MLSMessageFailureHandler.handleFailure(it)) {
+                    is MLSMessageFailureResolution.Ignore -> {
+                        logger.i("Ignoring event: ${logMap.toJsonElement()}")
+                    }
+                    is MLSMessageFailureResolution.InformUser -> {
+                        logger.i("Informing users about decryption error: ${logMap.toJsonElement()}")
+                        applicationMessageHandler.handleDecryptionError(
+                            eventId = event.id,
+                            conversationId = event.conversationId,
+                            timestampIso = event.timestampIso,
+                            senderUserId = event.senderUserId,
+                            senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
+                            content = MessageContent.FailedDecryption(
+                                isDecryptionResolved = false,
+                                senderUserId = event.senderUserId
+                            )
+                        )
+                    }
+                    is MLSMessageFailureResolution.OutOfSync -> {
+                        logger.i("Epoch out of sync error: ${logMap.toJsonElement()}")
+                        mlsWrongEpochHandler.onMLSWrongEpoch(event.conversationId, event.timestampIso)
+                    }
                 }
-
-                if (it is MLSFailure.DuplicateMessage) {
-                    logger.i("Ignoring duplicate event: ${logMap.toJsonElement()}")
-                    return@onFailure
-                }
-
-                if (it is MLSFailure.SelfCommitIgnored) {
-                    logger.i("Ignoring replayed self commit: ${logMap.toJsonElement()}")
-                    return@onFailure
-                }
-
-                if (it is MLSFailure.UnmergedPendingGroup) {
-                    logger.i("Message arrive in an unmerged group, " +
-                            "it has been buffered and will be consumed later: ${logMap.toJsonElement()}")
-                    return@onFailure
-                }
-
-                applicationMessageHandler.handleDecryptionError(
-                    eventId = event.id,
-                    conversationId = event.conversationId,
-                    timestampIso = event.timestampIso,
-                    senderUserId = event.senderUserId,
-                    senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
-                    content = MessageContent.FailedDecryption(
-                        isDecryptionResolved = false,
-                        senderUserId = event.senderUserId
-                    )
-                )
             }.onSuccess {
-                if (it is MessageUnpackResult.ApplicationMessage) {
-                    handleSuccessfulResult(it)
-                    onMessageInserted(it)
+                it.forEach {
+                    if (it is MessageUnpackResult.ApplicationMessage) {
+                        handleSuccessfulResult(it)
+                        onMessageInserted(it)
+                    }
                 }
                 kaliumLogger
                     .logEventProcessing(

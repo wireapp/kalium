@@ -39,6 +39,9 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
             is Event.UserProperty.ReadReceiptModeSet -> {
                 handleReadReceiptMode(event)
             }
+            is Event.UserProperty.TypingIndicatorModeSet -> {
+                handleTypingIndicatorMode(event)
+            }
         }
     }
 
@@ -47,6 +50,27 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
     ): Either<CoreFailure, Unit> =
         userConfigRepository
             .setReadReceiptsStatus(event.value)
+            .onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }
+            .onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }
+
+    private fun handleTypingIndicatorMode(
+        event: Event.UserProperty.TypingIndicatorModeSet
+    ): Either<CoreFailure, Unit> =
+        userConfigRepository
+            .setTypingIndicatorStatus(event.value)
             .onSuccess {
                 kaliumLogger
                     .logEventProcessing(

@@ -122,8 +122,8 @@ class MLSClientImpl(
         return toByteArray(applicationMessage)
     }
 
-    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): DecryptedMessageBundle {
-        return toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)))
+    override suspend fun decryptMessage(groupId: MLSGroupId, message: ApplicationMessage): List<DecryptedMessageBundle> {
+        return listOf(toDecryptedMessageBundle(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message))))
     }
 
     override suspend fun members(groupId: MLSGroupId): List<CryptoQualifiedClientId> {

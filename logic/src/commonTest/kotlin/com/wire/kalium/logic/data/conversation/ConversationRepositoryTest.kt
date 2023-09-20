@@ -370,7 +370,7 @@ class ConversationRepositoryTest {
         }
 
     @Test
-    fun whenCallingUpdateMutedStatusRemotly_thenShouldDelegateCallToConversationApi() = runTest {
+    fun whenCallingUpdateMutedStatusRemotely_thenShouldDelegateCallToConversationApi() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
             .arrange()
@@ -388,6 +388,30 @@ class ConversationRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateConversationMutedStatus)
+            .with(any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun whenCallingUpdateArchivedStatusRemotely_thenShouldDelegateCallToConversationApi() = runTest {
+        val isArchived = false
+        val (arrangement, conversationRepository) = Arrangement()
+            .withUpdateConversationMemberStateResult(NetworkResponse.Success(Unit, mapOf(), HttpStatusCode.OK.value))
+            .arrange()
+
+        conversationRepository.updateArchivedStatusRemotely(
+            TestConversation.ID,
+            isArchived,
+            DateTimeUtil.currentInstant().toEpochMilliseconds()
+        )
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::updateConversationMemberState)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateConversationArchivedStatus)
             .with(any(), any(), any())
             .wasNotInvoked()
     }

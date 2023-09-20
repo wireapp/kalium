@@ -18,40 +18,33 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
-import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
-import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.message.PlainMessageBlob
-import com.wire.kalium.logic.data.message.ProtoContent
-import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
+import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
-import io.mockative.matchers.Matcher
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.yield
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
 class MLSMessageUnpackerTest {
@@ -64,7 +57,7 @@ class MLSMessageUnpackerTest {
         val (arrangement, mlsUnpacker) = Arrangement()
             .withMLSClientProviderReturningClient()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
-            .withDecryptMessageReturningProposal(commitDelay = commitDelay)
+            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
             .withScheduleCommitSucceeding()
             .arrange()
 
@@ -78,24 +71,21 @@ class MLSMessageUnpackerTest {
     }
 
     @Test
-    fun givenNewMLSMessageEventWithCommit_whenUnpacking_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+    fun givenNewMLSMessageEvent_whenUnpacking_thenDecryptMessage() = runTest {
         val eventTimestamp = DateTimeUtil.currentInstant()
-
         val (arrangement, mlsUnpacker) = Arrangement()
             .withMLSClientProviderReturningClient()
             .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
-            .withDecryptMessageReturningProposal(hasEpochChanged = true)
+            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE)))
             .arrange()
-
-        val epochChange = async(TestKaliumDispatcher.default) {
-            arrangement.epochsFlow.first()
-        }
-        yield()
 
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
         mlsUnpacker.unpackMlsMessage(messageEvent)
 
-        assertEquals(TestConversation.GROUP_ID, epochChange.await())
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::decryptMessage)
+            .with(matching { it.contentEquals(messageEvent.content.decodeBase64Bytes()) }, eq(TestConversation.GROUP_ID))
+            .wasInvoked(once)
     }
 
     private class Arrangement {
@@ -110,24 +100,20 @@ class MLSMessageUnpackerTest {
         val conversationRepository = mock(classOf<ConversationRepository>())
 
         @Mock
+        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+
+        @Mock
         val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
 
         @Mock
         val subconversationRepository = mock(classOf<SubconversationRepository>())
 
-        @Mock
-        val protoContentMapper = mock(classOf<ProtoContentMapper>())
-
-        val epochsFlow = MutableSharedFlow<GroupID>()
-
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(
-            mlsClientProvider,
             conversationRepository,
             subconversationRepository,
+            mlsConversationRepository,
             pendingProposalScheduler,
-            epochsFlow,
-            SELF_USER_ID,
-            protoContentMapper
+            SELF_USER_ID
         )
 
         fun withMLSClientProviderReturningClient() = apply {
@@ -137,11 +123,11 @@ class MLSMessageUnpackerTest {
                 .then { Either.Right(mlsClient) }
         }
 
-        fun withDecryptMessageReturningProposal(commitDelay: Long? = null, hasEpochChanged: Boolean = false) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::decryptMessage)
+        fun withDecryptMessageReturning(result: Either<CoreFailure, List<DecryptedMessageBundle>>) = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::decryptMessage)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(DecryptedMessageBundle(null, commitDelay, null, hasEpochChanged, null))
+                .thenReturn(result)
         }
 
         fun withScheduleCommitSucceeding() = apply {
@@ -149,13 +135,6 @@ class MLSMessageUnpackerTest {
                 .suspendFunction(pendingProposalScheduler::scheduleCommit)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
-        }
-
-        fun withProtoContentMapperReturning(plainBlobMatcher: Matcher<PlainMessageBlob>, protoContent: ProtoContent) = apply {
-            given(protoContentMapper)
-                .function(protoContentMapper::decodeFromProtobuf)
-                .whenInvokedWith(plainBlobMatcher)
-                .thenReturn(protoContent)
         }
 
         fun withGetConversationProtocolInfoSuccessful(protocolInfo: Conversation.ProtocolInfo) = apply {
@@ -170,5 +149,11 @@ class MLSMessageUnpackerTest {
     }
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
+        val DECRYPTED_MESSAGE_BUNDLE = DecryptedMessageBundle(
+            groupID = TestConversation.GROUP_ID,
+            applicationMessage = null,
+            commitDelay = null,
+            identity = null
+        )
     }
 }

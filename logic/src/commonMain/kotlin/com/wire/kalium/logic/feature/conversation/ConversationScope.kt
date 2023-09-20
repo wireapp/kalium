@@ -163,6 +163,9 @@ class ConversationScope internal constructor(
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
         get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
 
+    val updateConversationArchivedStatus: UpdateConversationArchivedStatusUseCase
+        get() = UpdateConversationArchivedStatusUseCaseImpl(conversationRepository)
+
     val observeConnectionList: ObserveConnectionListUseCase
         get() = ObserveConnectionListUseCaseImpl(connectionRepository)
 

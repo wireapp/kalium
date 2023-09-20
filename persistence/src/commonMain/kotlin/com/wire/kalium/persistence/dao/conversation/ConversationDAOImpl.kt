@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -223,6 +224,18 @@ internal class ConversationDAOImpl internal constructor(
         mutedStatusTimestamp: Long
     ) = withContext(coroutineContext) {
         conversationQueries.updateConversationMutingStatus(mutedStatus, mutedStatusTimestamp, conversationId)
+    }
+
+    override suspend fun updateConversationArchivedStatus(
+        conversationId: QualifiedIDEntity,
+        isArchived: Boolean,
+        archivedStatusTimestamp: Long
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateConversationArchivingStatus(
+            isArchived,
+            archivedStatusTimestamp.toIsoDateTimeString().toInstant(),
+            conversationId
+        )
     }
 
     override suspend fun updateAccess(

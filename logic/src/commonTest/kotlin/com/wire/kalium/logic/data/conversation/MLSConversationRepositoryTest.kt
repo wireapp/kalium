@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -28,8 +29,6 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
@@ -38,16 +37,17 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerTest
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
@@ -86,6 +86,23 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MLSConversationRepositoryTest {
+
+    @Test
+    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withDecryptMLSMessageSuccessful(Arrangement.DECRYPTED_MESSAGE_BUNDLE)
+            .arrange()
+
+        val epochChange = async(TestKaliumDispatcher.default) {
+            arrangement.epochsFlow.first()
+        }
+        yield()
+
+        mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+        assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -406,6 +423,7 @@ class MLSConversationRepositoryTest {
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
+            .withMergePendingGroupFromExternalCommitSuccessful()
             .arrange()
 
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
@@ -890,6 +908,7 @@ class MLSConversationRepositoryTest {
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
+            .withMergePendingGroupFromExternalCommitSuccessful()
             .arrange()
 
         val epochChange = async(TestKaliumDispatcher.default) {
@@ -1078,6 +1097,13 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT_BUNDLE)
         }
 
+        fun withMergePendingGroupFromExternalCommitSuccessful() = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::mergePendingGroupFromExternalCommit)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
+        }
+
         fun withProcessWelcomeMessageSuccessful() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::processWelcomeMessage)
@@ -1135,7 +1161,7 @@ class MLSConversationRepositoryTest {
             given(mlsClient)
                 .suspendFunction(mlsClient::decryptMessage)
                 .whenInvokedWith(any(), any())
-                .thenReturn(decryptedMessage)
+                .thenReturn(listOf(decryptedMessage))
         }
 
         fun withRemoveMemberSuccessful() = apply {
@@ -1184,7 +1210,6 @@ class MLSConversationRepositoryTest {
             const val RAW_GROUP_ID = "groupId"
             val TIME = DateTimeUtil.currentIsoDateTimeString()
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val CONVERSATION_ID = ConversationId("ConvId", "Domain")
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
@@ -1209,6 +1234,13 @@ class MLSConversationRepositoryTest {
                 PUBLIC_GROUP_STATE
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
+            val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
+                message = null,
+                commitDelay = null,
+                senderClientId = null,
+                hasEpochChanged = true,
+                identity = null
+            )
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,

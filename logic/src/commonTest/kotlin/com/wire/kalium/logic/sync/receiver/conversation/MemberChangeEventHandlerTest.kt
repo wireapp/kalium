@@ -32,6 +32,7 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -74,6 +75,25 @@ class MemberChangeEventHandlerTest {
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateMutedStatusLocally)
             .with(eq(event.conversationId), any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMemberChangeEventArchivedStatus_whenHandlingIt_thenShouldUpdateConversation() = runTest {
+        val isNewEventArchiving = true
+        val event = TestEvent.memberChangeArchivedStatus(isArchiving = isNewEventArchiving)
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateArchivedStatusLocally(Either.Right(Unit))
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .arrange()
+
+        eventHandler.handle(event)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateArchivedStatusLocally)
+            .with(eq(event.conversationId), matching { it == isNewEventArchiving }, any())
             .wasInvoked(exactly = once)
     }
 
@@ -170,6 +190,13 @@ class MemberChangeEventHandlerTest {
         fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateMutedStatusLocally)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(result)
+        }
+
+        fun withUpdateArchivedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::updateArchivedStatusLocally)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(result)
         }
