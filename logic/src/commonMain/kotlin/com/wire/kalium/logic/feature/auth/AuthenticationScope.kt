@@ -60,7 +60,6 @@ class AuthenticationScopeProvider internal constructor(
         serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
         certConfig: () -> CertificatePinning,
-        useMockEngine: Boolean,
         mockEngine: HttpClientEngine?
     ): AuthenticationScope =
         authenticationScopeStorage.safeComputeIfAbsent(serverConfig to proxyCredentials) {
@@ -71,7 +70,6 @@ class AuthenticationScopeProvider internal constructor(
                 serverConfigRepository,
                 networkStateObserver,
                 certConfig,
-                useMockEngine,
                 mockEngine
             )
         }
@@ -84,7 +82,6 @@ class AuthenticationScope internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val networkStateObserver: NetworkStateObserver,
     certConfig: () -> CertificatePinning,
-    useMockEngine: Boolean,
     mockEngine: HttpClientEngine?
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
@@ -94,7 +91,6 @@ class AuthenticationScope internal constructor(
             proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
             userAgent,
             certificatePinning = certConfig(),
-            useMockEngine,
             mockEngine
         )
     }

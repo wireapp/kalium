@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.featureFlags
 
+import com.wire.kalium.logic.network.NetworkStateObserverImpl
+import com.wire.kalium.network.NetworkStateObserver
 import io.ktor.client.engine.HttpClientEngine
 
 data class KaliumConfigs(
@@ -38,8 +40,8 @@ data class KaliumConfigs(
     val wipeOnRootedDevice: Boolean = false,
     val isWebSocketEnabledByDefault: Boolean = false,
     val certPinningConfig: Map<String, List<String>> = emptyMap(),
-    val useMockEngine: Boolean = false,
-    val mockEngine: HttpClientEngine? = null
+    val mockEngine: HttpClientEngine? = null,
+    val networkStateObserverImpl: NetworkStateObserver? =null
     )
 
 sealed interface BuildFileRestrictionState {

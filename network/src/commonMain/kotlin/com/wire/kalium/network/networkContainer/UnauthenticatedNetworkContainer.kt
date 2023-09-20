@@ -52,7 +52,6 @@ interface UnauthenticatedNetworkContainer {
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,
             certificatePinning: CertificatePinning,
-            useMockEngine: Boolean,
             mockEngine: HttpClientEngine?
         ): UnauthenticatedNetworkContainer {
 
@@ -64,7 +63,6 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 
@@ -73,7 +71,6 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 
@@ -82,7 +79,6 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 
@@ -91,7 +87,6 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 
@@ -100,7 +95,6 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 
@@ -109,7 +103,6 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 

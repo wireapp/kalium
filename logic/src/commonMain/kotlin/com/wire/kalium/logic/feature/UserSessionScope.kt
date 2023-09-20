@@ -454,7 +454,6 @@ class UserSessionScope internal constructor(
         UserIdDTO(userId.value, userId.domain),
         userAgent,
         certificatePinning = kaliumConfigs.certPinningConfig,
-        useMockEngine = kaliumConfigs.useMockEngine,
         mockEngine = kaliumConfigs.mockEngine
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
@@ -467,7 +466,6 @@ class UserSessionScope internal constructor(
         globalScope.serverConfigRepository,
         networkStateObserver,
         kaliumConfigs::certPinningConfig,
-        useMockEngine = kaliumConfigs.useMockEngine,
         mockEngine = kaliumConfigs.mockEngine
     )
 

@@ -79,7 +79,6 @@ abstract class CoreLogicCommon constructor(
             getGlobalScope().serverConfigRepository,
             networkStateObserver,
             kaliumConfigs::certPinningConfig,
-            kaliumConfigs.useMockEngine,
             kaliumConfigs.mockEngine
         )
 

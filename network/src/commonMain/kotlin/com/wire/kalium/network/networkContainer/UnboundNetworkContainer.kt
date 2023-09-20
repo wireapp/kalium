@@ -61,20 +61,15 @@ class UnboundNetworkContainerCommon(
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
-    useMockEngine: Boolean,
     mockEngine: HttpClientEngine?
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
         networkStateObserver = networkStateObserver,
         userAgent = userAgent,
-        engine = if (useMockEngine) {
-            mockEngine!!
-        } else {
-            defaultHttpEngine(
-                ignoreSSLCertificates = ignoreSSLCertificates,
-                certificatePinning = certificatePinning
-            )
-        }
+        engine = mockEngine ?: defaultHttpEngine(
+            ignoreSSLCertificates = ignoreSSLCertificates,
+            certificatePinning = certificatePinning
+        )
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)

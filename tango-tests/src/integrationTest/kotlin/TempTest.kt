@@ -143,7 +143,6 @@ class TempTest {
                 encryptProteusStorage = true,
                 isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
-                useMockEngine = true,
                 mockEngine = mockEngine
             ), "Wire Integration Tests"
         )

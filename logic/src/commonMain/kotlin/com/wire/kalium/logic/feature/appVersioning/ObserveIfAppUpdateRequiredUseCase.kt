@@ -106,7 +106,6 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                         serverConfigRepository,
                                         networkStateObserver,
                                         kaliumConfigs::certPinningConfig,
-                                        kaliumConfigs.useMockEngine,
                                         kaliumConfigs.mockEngine
                                     )
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)

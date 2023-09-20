@@ -112,7 +112,6 @@ interface AuthenticatedNetworkContainer {
             selfUserId: UserId,
             userAgent: String,
             certificatePinning: CertificatePinning,
-            useMockEngine: Boolean,
             mockEngine: HttpClientEngine?
         ): AuthenticatedNetworkContainer {
 
@@ -123,7 +122,6 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 
@@ -131,7 +129,6 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     certificatePinning,
-                    useMockEngine,
                     mockEngine
                 )
 
