@@ -24,7 +24,11 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.utils.NetworkResponse
 import data.ResponseData
 import io.ktor.client.engine.mock.MockEngine
 import kotlinx.coroutines.launch
@@ -32,45 +36,47 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import util.MockUnboundNetworkClient
 import util.MockUnboundNetworkClient.createMockEngine
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class TempTest {
 
-//     @Test
-//     fun givenApiWhenGettingACMEDirectoriesThenReturnAsExpectedBasedOnNetworkState() = runTest {
-//         val mockEngine = createMockEngine(
-//             listOf(ResponseData.acmeGetDirectoriesRequestSuccess)
-//         )
-//
-//         val coreLogic = createCoreLogic(mockEngine)
-//
-//         launch {
-//             val expected = ResponseData.ACME_DIRECTORIES_SAMPLE
-//
-//             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.NotConnected)
-//
-//             coreLogic.getGlobalScope().unboundNetworkContainer
-//                 .value.acmeApi.getACMEDirectories().also { actual ->
-//                     assertIs<NetworkResponse.Error>(actual)
-//                     assertIs<KaliumException.NoNetwork>(actual.kException.cause)
-//                 }
-//
-//             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
-//
-//             coreLogic.getGlobalScope().unboundNetworkContainer
-//                 .value.acmeApi.getACMEDirectories().also { actual ->
-//                     assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
-//                     assertEquals(expected, actual.value)
-//                 }
-//
-//             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithoutInternet)
-//
-//             coreLogic.getGlobalScope().unboundNetworkContainer
-//                 .value.acmeApi.getACMEDirectories().also { actual ->
-//                     assertIs<NetworkResponse.Error>(actual)
-//                     assertIs<KaliumException.NoNetwork>(actual.kException.cause)
-//                 }
-//         }
-//     }
+    @Test
+    fun givenApiWhenGettingACMEDirectoriesThenReturnAsExpectedBasedOnNetworkState() = runTest {
+        val mockEngine = createMockEngine(
+            listOf(ResponseData.acmeGetDirectoriesRequestSuccess)
+        )
+
+        val coreLogic = createCoreLogic(mockEngine)
+
+        launch {
+            val expected = ResponseData.ACME_DIRECTORIES_SAMPLE
+
+            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.NotConnected)
+
+            coreLogic.getGlobalScope().unboundNetworkContainer
+                .value.acmeApi.getACMEDirectories().also { actual ->
+                    assertIs<NetworkResponse.Error>(actual)
+                    assertIs<KaliumException.NoNetwork>(actual.kException.cause)
+                }
+
+            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
+
+            coreLogic.getGlobalScope().unboundNetworkContainer
+                .value.acmeApi.getACMEDirectories().also { actual ->
+                    assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
+                    assertEquals(expected, actual.value)
+                }
+
+            TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithoutInternet)
+
+            coreLogic.getGlobalScope().unboundNetworkContainer
+                .value.acmeApi.getACMEDirectories().also { actual ->
+                    assertIs<NetworkResponse.Error>(actual)
+                    assertIs<KaliumException.NoNetwork>(actual.kException.cause)
+                }
+        }
+    }
 
     @Test
     fun givenEmailAndPasswordWhenLoggingInThenRegisterClientAndLogout() = runTest {
@@ -143,7 +149,8 @@ class TempTest {
                 encryptProteusStorage = true,
                 isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
-                mockEngine = mockEngine
+                mockEngine = mockEngine,
+                mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER
             ), "Wire Integration Tests"
         )
     }
