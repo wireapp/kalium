@@ -34,7 +34,7 @@ import org.junit.Test
 import util.MockUnboundNetworkClient
 import util.MockUnboundNetworkClient.createMockEngine
 
-class TempTest {
+class PocIntegrationTest {
 
     @Test
     fun givenApiWhenGettingACMEDirectoriesThenReturnAsExpectedBasedOnNetworkState() = runTest {
