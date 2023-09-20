@@ -60,7 +60,7 @@ interface ConversationDAO {
 
     suspend fun updateConversationArchivedStatus(
         conversationId: QualifiedIDEntity,
-        isArchived:Boolean,
+        isArchived: Boolean,
         archivedStatusTimestamp: Long
     )
 

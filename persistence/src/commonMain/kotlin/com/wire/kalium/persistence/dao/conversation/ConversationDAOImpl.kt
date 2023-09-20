@@ -224,8 +224,12 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         isArchived: Boolean,
         archivedStatusTimestamp: Long
-    ) = withContext(coroutineContext){
-        conversationQueries.updateConversationArchivingStatus(isArchived, archivedStatusTimestamp.toIsoDateTimeString().toInstant(), conversationId)
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateConversationArchivingStatus(
+            isArchived,
+            archivedStatusTimestamp.toIsoDateTimeString().toInstant(),
+            conversationId
+        )
     }
 
     override suspend fun updateAccess(
