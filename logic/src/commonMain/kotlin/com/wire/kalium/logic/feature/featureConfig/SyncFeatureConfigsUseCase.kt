@@ -93,7 +93,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
         }
 
     private fun handleAppLock(appLockModel: AppLockModel) {
-        TODO("Not yet implemented")
+        userConfigRepository.setAppLockStatus(appLockModel.config)
     }
 
     private fun handleConferenceCalling(model: ConferenceCallingModel) {
