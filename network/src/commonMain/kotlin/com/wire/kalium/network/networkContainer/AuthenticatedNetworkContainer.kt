@@ -136,28 +136,32 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning
+                    certificatePinning,
+                    mockEngine
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning
+                    certificatePinning,
+                    mockEngine
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning
+                    certificatePinning,
+                    mockEngine
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning
+                    certificatePinning,
+                    mockEngine
                 )
 
                 else -> error("Unsupported version: $version")
