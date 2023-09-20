@@ -23,6 +23,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import util.ClientResponseJson
+import util.ListOfClientsResponseJson
+import util.MockUnboundNetworkClient
 
 object ClientActions {
 
@@ -44,4 +49,39 @@ object ClientActions {
 
         return userSession
     }
+
+    /**
+     * URL Paths
+     */
+    private const val PATH_CLIENTS = "${CommonResponses.BASE_PATH}clients"
+    private const val PATH_ACCESS = "${CommonResponses.BASE_PATH}access"
+
+    /**
+     * Request / Responses
+     */
+    private val registerClientsRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+        path = PATH_CLIENTS,
+        httpMethod = HttpMethod.Post,
+        responseBody = ClientResponseJson.valid.rawJson,
+        statusCode = HttpStatusCode.OK,
+    )
+    private val getClientsRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+        path = PATH_CLIENTS,
+        httpMethod = HttpMethod.Get,
+        responseBody = ListOfClientsResponseJson.valid.rawJson,
+        statusCode = HttpStatusCode.OK,
+    )
+    private val accessApiRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+        path = PATH_ACCESS,
+        httpMethod = HttpMethod.Post,
+        responseBody = CommonResponses.VALID_ACCESS_TOKEN_RESPONSE.rawJson,
+        statusCode = HttpStatusCode.OK,
+    )
+
+    val clientRequestResponseSuccess = listOf(
+        registerClientsRequestSuccess,
+        getClientsRequestSuccess,
+        accessApiRequestSuccess
+    )
+
 }
