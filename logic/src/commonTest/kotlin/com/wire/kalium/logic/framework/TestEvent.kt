@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
 
 object TestEvent {
@@ -65,6 +66,15 @@ object TestEvent {
         false,
         MutedConversationStatus.AllAllowed,
         "2022-03-30T15:36:00.000Zp"
+    )
+
+    fun memberChangeArchivedStatus(eventId: String = "eventId", isArchiving: Boolean = true) = Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
+        eventId,
+        TestConversation.ID,
+        "2022-03-30T15:36:00.000Z",
+        false,
+        "2022-03-31T16:36:00.000Zp",
+        isArchiving,
     )
 
     fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.MemberChanged.IgnoredMemberChanged(
@@ -193,7 +203,7 @@ object TestEvent {
         null,
         TestUser.USER_ID,
         timestamp.toIsoDateTimeString(),
-        "content",
+        "content".encodeBase64(),
     )
 
     fun newConversationEvent() = Event.Conversation.NewConversation(

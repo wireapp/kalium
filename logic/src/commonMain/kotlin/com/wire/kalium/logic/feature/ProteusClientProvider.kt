@@ -97,7 +97,7 @@ class ProteusClientProviderImpl(
     private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
             val central = coreCryptoCentral(
-                rootDir = "$rootProteusPath/$KEYSTORE_NAME",
+                rootDir = rootProteusPath,
                 databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
             )
             central.proteusClient()
@@ -108,9 +108,5 @@ class ProteusClientProviderImpl(
                 ioContext = dispatcher.io
             )
         }
-    }
-
-    private companion object {
-        const val KEYSTORE_NAME = "keystore"
     }
 }

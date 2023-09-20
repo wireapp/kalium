@@ -33,6 +33,7 @@ interface ConversationStatusMapper {
     fun fromMutedStatusDaoModel(mutedStatus: ConversationEntity.MutedStatus): MutedConversationStatus
     fun fromMutedStatusApiToDaoModel(mutedStatus: MutedStatus?): ConversationEntity.MutedStatus
     fun fromRemovedByToLogicModel(removedBy: UserIDEntity): UserId
+    fun toArchivedStatusApiModel(isArchived: Boolean, archivedStatusTimestamp: Long): MemberUpdateDTO
 }
 
 class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusMapper {
@@ -70,5 +71,11 @@ class ConversationStatusMapperImpl(val idMapper: IdMapper) : ConversationStatusM
     }
 
     override fun fromRemovedByToLogicModel(removedBy: UserIDEntity): UserId = removedBy.toModel()
-
+    override fun toArchivedStatusApiModel(
+        isArchived: Boolean,
+        archivedStatusTimestamp: Long
+    ): MemberUpdateDTO = MemberUpdateDTO(
+        otrArchived = isArchived,
+        otrArchivedRef = archivedStatusTimestamp.toIsoDateTimeString()
+    )
 }
