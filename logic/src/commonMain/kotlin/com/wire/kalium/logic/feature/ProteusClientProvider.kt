@@ -80,15 +80,17 @@ class ProteusClientProviderImpl(
 
     override suspend fun getOrError(): Either<CoreFailure, ProteusClient> {
         return mutex.withLock {
-            _proteusClient?.let { Either.Right(it) } ?: run {
-                if (FileUtil.isDirectoryNonEmpty(rootProteusPath)) {
-                    wrapProteusRequest {
-                        createProteusClient().also {
-                            _proteusClient = it
+            withContext(dispatcher.io) {
+                _proteusClient?.let { Either.Right(it) } ?: run {
+                    if (FileUtil.isDirectoryNonEmpty(rootProteusPath)) {
+                        wrapProteusRequest {
+                            createProteusClient().also {
+                                _proteusClient = it
+                            }
                         }
+                    } else {
+                        Either.Left(CoreFailure.MissingClientRegistration)
                     }
-                } else {
-                    Either.Left(CoreFailure.MissingClientRegistration)
                 }
             }
         }
