@@ -60,7 +60,7 @@ internal class SearchKnownUsersUseCaseImpl(
         val sanitizedSearchQuery = searchQuery.lowercase()
         return if (isUserLookingForHandle(sanitizedSearchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
-                handle = sanitizedSearchQuery.substringAfter('@').substringBeforeLast('@'),
+                handle = sanitizedSearchQuery.substringAfter("@").substringBeforeLast("@"),
                 searchUsersOptions = searchUsersOptions
             )
         } else {
