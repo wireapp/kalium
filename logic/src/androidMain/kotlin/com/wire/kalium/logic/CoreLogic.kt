@@ -39,7 +39,7 @@ import kotlinx.coroutines.cancel
  * This class is only for platform specific variables,
  * and it should only override functions/variables from CoreLogicCommon
  */
-actual class CoreLogic(
+actual open class CoreLogic(
     userAgent: String,
     private val appContext: Context,
     rootPath: String,

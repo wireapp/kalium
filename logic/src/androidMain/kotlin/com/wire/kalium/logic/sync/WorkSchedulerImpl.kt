@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit
 
 private val workerClass = WrapperWorker::class.java
 
-internal actual class GlobalWorkSchedulerImpl(
+actual class GlobalWorkSchedulerImpl(
     private val appContext: Context,
     private val coreLogic: CoreLogic
 ) : GlobalWorkScheduler {

@@ -36,7 +36,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
-internal actual class NetworkStateObserverImpl(
+actual class NetworkStateObserverImpl(
     connectivityManager: ConnectivityManager,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : NetworkStateObserver {
