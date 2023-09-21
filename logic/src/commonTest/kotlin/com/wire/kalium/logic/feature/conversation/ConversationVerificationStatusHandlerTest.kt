@@ -33,7 +33,6 @@ import io.mockative.any
 import io.mockative.eq
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
