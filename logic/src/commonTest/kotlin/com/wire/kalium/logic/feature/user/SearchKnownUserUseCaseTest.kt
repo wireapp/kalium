@@ -251,6 +251,32 @@ class SearchKnownUserUseCaseTest {
 
     }
 
+    @Test
+    fun givenAnInputStartingWithAtSymbolAndDomainPresent_whenSearchingUsers_thenSearchBySanitizedHandle() = runTest {
+        // given
+        val handlePartOfQuery = "somehandle"
+        val handleSearchQuery = "@$handlePartOfQuery@bella.wire.link"
+        val (arrangement, searchKnownUsersUseCase) = Arrangement()
+            .withSuccessFullSelfUserRetrieve()
+            .withSearchByHandle(handleSearchQuery)
+            .arrange()
+
+        // when
+        searchKnownUsersUseCase(handleSearchQuery)
+
+        // then
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
+            .with(eq(handlePartOfQuery), anything())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+            .with(anything(), anything())
+            .wasNotInvoked()
+    }
+
+
     private class Arrangement {
 
         @Mock
@@ -292,7 +318,7 @@ class SearchKnownUserUseCaseTest {
             given(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
                 .whenInvokedWith(
-                    if (searchQuery == null) any() else eq(searchQuery.removePrefix("@")),
+                    if (searchQuery == null) any() else eq(searchQuery.substringAfter("@").substringBeforeLast("@")),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(
