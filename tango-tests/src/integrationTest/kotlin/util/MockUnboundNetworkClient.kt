@@ -17,11 +17,6 @@
  */
 package util
 
-import TestNetworkStateObserver
-import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.UnboundNetworkClient
-import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO

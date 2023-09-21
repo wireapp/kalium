@@ -38,7 +38,7 @@ interface ServerConfigApi {
     suspend fun fetchServerConfig(serverConfigUrl: String): NetworkResponse<ServerConfigDTO.Links>
 }
 
-class ServerConfigApiImpl(
+class ServerConfigApiImpl internal constructor(
     private val unboundNetworkClient: UnboundNetworkClient
 ) : ServerConfigApi {
 

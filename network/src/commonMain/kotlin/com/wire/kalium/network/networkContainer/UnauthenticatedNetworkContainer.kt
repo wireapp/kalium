@@ -112,7 +112,7 @@ interface UnauthenticatedNetworkContainer {
     }
 }
 
- interface UnauthenticatedNetworkClientProvider {
+ internal interface UnauthenticatedNetworkClientProvider {
     val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
 }
 

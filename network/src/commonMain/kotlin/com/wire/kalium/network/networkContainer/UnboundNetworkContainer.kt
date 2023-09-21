@@ -36,7 +36,7 @@ interface UnboundNetworkContainer {
     val acmeApi: ACMEApi
 }
 
-interface UnboundNetworkClientProvider {
+private interface UnboundNetworkClientProvider {
     val unboundNetworkClient: UnboundNetworkClient
 }
 

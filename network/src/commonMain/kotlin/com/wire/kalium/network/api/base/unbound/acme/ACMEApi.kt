@@ -43,7 +43,7 @@ interface ACMEApi {
 
 }
 
-class ACMEApiImpl(
+class ACMEApiImpl internal constructor(
     private val unboundNetworkClient: UnboundNetworkClient
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
