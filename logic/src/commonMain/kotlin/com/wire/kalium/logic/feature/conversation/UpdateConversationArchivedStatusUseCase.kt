@@ -19,52 +19,49 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 
-interface UpdateConversationMutedStatusUseCase {
+interface UpdateConversationArchivedStatusUseCase {
     /**
-     * Use case that allows a conversation to change its muted status to:
-     * [MutedConversationStatus.AllMuted], [MutedConversationStatus.AllAllowed] or [MutedConversationStatus.OnlyMentionsAndRepliesAllowed]
+     * Use case that allows a conversation to mark a conversation as archived or not.
      *
      * @param conversationId the id of the conversation where status wants to be changed
-     * @param mutedConversationStatus new status to set the given conversation
+     * @param isConversationArchived new archived status to be updated on the given conversation
      * @return an [ConversationUpdateStatusResult] containing Success or Failure cases
      */
     suspend operator fun invoke(
         conversationId: ConversationId,
-        mutedConversationStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
-    ): ConversationUpdateStatusResult
+        isConversationArchived: Boolean,
+        archivedStatusTimestamp: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
+    ): ArchiveStatusUpdateResult
 }
 
-internal class UpdateConversationMutedStatusUseCaseImpl(
+internal class UpdateConversationArchivedStatusUseCaseImpl(
     private val conversationRepository: ConversationRepository
-) : UpdateConversationMutedStatusUseCase {
+) : UpdateConversationArchivedStatusUseCase {
 
     override suspend operator fun invoke(
         conversationId: ConversationId,
-        mutedConversationStatus: MutedConversationStatus,
-        mutedStatusTimestamp: Long
-    ): ConversationUpdateStatusResult =
-        conversationRepository.updateMutedStatusRemotely(conversationId, mutedConversationStatus, mutedStatusTimestamp)
+        isConversationArchived: Boolean,
+        archivedStatusTimestamp: Long
+    ): ArchiveStatusUpdateResult =
+        conversationRepository.updateArchivedStatusRemotely(conversationId, isConversationArchived, archivedStatusTimestamp)
             .flatMap {
-                conversationRepository.updateMutedStatusLocally(conversationId, mutedConversationStatus, mutedStatusTimestamp)
+                conversationRepository.updateArchivedStatusLocally(conversationId, isConversationArchived, archivedStatusTimestamp)
             }.fold({
-                kaliumLogger.e("Something went wrong when updating the convId: " +
-                        "(${conversationId.toLogString()}) to (${mutedConversationStatus.status}")
-                ConversationUpdateStatusResult.Failure
+                kaliumLogger.e("Something went wrong when updating convId (${conversationId.toLogString()}) to ($isConversationArchived")
+                ArchiveStatusUpdateResult.Failure
             }, {
-                ConversationUpdateStatusResult.Success
+                ArchiveStatusUpdateResult.Success
             })
 
 }
 
-sealed class ConversationUpdateStatusResult {
-    object Success : ConversationUpdateStatusResult()
-    object Failure : ConversationUpdateStatusResult()
+sealed class ArchiveStatusUpdateResult {
+    object Success : ArchiveStatusUpdateResult()
+    object Failure : ArchiveStatusUpdateResult()
 }

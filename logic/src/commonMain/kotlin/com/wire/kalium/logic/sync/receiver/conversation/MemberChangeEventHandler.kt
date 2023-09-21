@@ -53,38 +53,20 @@ internal class MemberChangeEventHandlerImpl(
                     )
             }
 
+            is Event.Conversation.MemberChanged.MemberArchivedStatusChanged -> {
+                conversationRepository.updateArchivedStatusLocally(
+                    event.conversationId,
+                    event.isArchiving,
+                    DateTimeUtil.currentInstant().toEpochMilliseconds()
+                )
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
+            }
+
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
-                // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-                conversationRepository.fetchConversationIfUnknown(event.conversationId)
-                    .run {
-                        onSuccess {
-                            val logMap = mapOf(
-                                "event" to event.toLogMap(),
-                            )
-                            logger.v("Succeeded fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
-                        }
-                        onFailure {
-                            val logMap = mapOf(
-                                "event" to event.toLogMap(),
-                                "errorInfo" to "$it"
-                            )
-                            logger.w("Failure fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
-                        }
-                        // Even if unable to fetch conversation details, at least attempt updating the member
-                        conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
-                    }.onFailure {
-                        val logMap = mapOf(
-                            "event" to event.toLogMap(),
-                            "errorInfo" to "$it"
-                        )
-                        logger.e("Error Handling Event: ${logMap.toJsonElement()}")
-                    }.onSuccess {
-                        kaliumLogger
-                            .logEventProcessing(
-                                EventLoggingStatus.SUCCESS,
-                                event
-                            )
-                    }
+                handleMemberChangedRoleEvent(event)
             }
 
             else -> {
@@ -96,5 +78,39 @@ internal class MemberChangeEventHandlerImpl(
                     )
             }
         }
+    }
+
+    private suspend fun handleMemberChangedRoleEvent(event: Event.Conversation.MemberChanged.MemberChangedRole) {
+        // Attempt to fetch conversation details if needed, as this might be an unknown conversation
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .run {
+                onSuccess {
+                    val logMap = mapOf(
+                        "event" to event.toLogMap(),
+                    )
+                    logger.v("Succeeded fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
+                }
+                onFailure {
+                    val logMap = mapOf(
+                        "event" to event.toLogMap(),
+                        "errorInfo" to "$it"
+                    )
+                    logger.w("Failure fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
+                }
+                // Even if unable to fetch conversation details, at least attempt updating the member
+                conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
+            }.onFailure {
+                val logMap = mapOf(
+                    "event" to event.toLogMap(),
+                    "errorInfo" to "$it"
+                )
+                logger.e("Error Handling Event: ${logMap.toJsonElement()}")
+            }.onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }
     }
 }

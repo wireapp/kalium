@@ -46,6 +46,8 @@ data class ConversationRoleChange(
     @SerialName("conversation_role") val role: String?,
     @SerialName("otr_muted_ref") val mutedRef: String?,
     @SerialName("otr_muted_status") val mutedStatus: Int?,
+    @SerialName("otr_archived") val isArchiving: Boolean?,
+    @SerialName("otr_archived_ref") val archivedRef: String?,
 )
 
 @Serializable
