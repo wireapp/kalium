@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -42,6 +44,7 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserEventReceiverTest {
@@ -121,12 +124,37 @@ class UserEventReceiverTest {
             .withUpdateUserSuccess()
             .arrange()
 
-        eventReceiver.onEvent(event)
+        val result = eventReceiver.onEvent(event)
 
+        assertIs<Either.Right<Unit>>(result)
         verify(arrangement.userRepository)
             .suspendFunction(arrangement.userRepository::updateUserFromEvent)
             .with(any())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUserUpdateEvent_whenUserIsNotFoundInLocalDB_thenShouldIgnoreThisEventFailure() = runTest {
+        val event = TestEvent.updateUser(userId = OTHER_USER_ID)
+        val (_, eventReceiver) = Arrangement()
+            .withUpdateUserFailure(StorageFailure.DataNotFound)
+            .arrange()
+
+        val result = eventReceiver.onEvent(event)
+
+        assertIs<Either.Right<Unit>>(result)
+    }
+
+    @Test
+    fun givenUserUpdateEvent_whenFailsWitOtherError_thenShouldFail() = runTest {
+        val event = TestEvent.updateUser(userId = OTHER_USER_ID)
+        val (_, eventReceiver) = Arrangement()
+            .withUpdateUserFailure(StorageFailure.Generic(Throwable("error")))
+            .arrange()
+
+        val result = eventReceiver.onEvent(event)
+
+        assertIs<Either.Left<StorageFailure.Generic>>(result)
     }
 
     @Test
@@ -196,6 +224,11 @@ class UserEventReceiverTest {
 
         fun withUpdateUserSuccess() = apply {
             given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+        }
+
+        fun withUpdateUserFailure(coreFailure: CoreFailure) = apply {
+            given(userRepository).suspendFunction(userRepository::updateUserFromEvent)
+                .whenInvokedWith(any()).thenReturn(Either.Left(coreFailure))
         }
 
         fun withUserDeleteSuccess() = apply {
