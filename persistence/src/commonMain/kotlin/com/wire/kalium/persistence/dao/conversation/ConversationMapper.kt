@@ -34,8 +34,7 @@ internal class ConversationMapper {
                 mls_group_state,
                 mls_epoch,
                 mls_last_keying_material_update_date,
-                mls_cipher_suite,
-                verification_status
+                mls_cipher_suite
             ),
             isCreator = isCreator,
             mutedStatus = mutedStatus,
@@ -67,7 +66,8 @@ internal class ConversationMapper {
             userMessageTimer = user_message_timer,
             userDefederated = userDefederated,
             archived = archived,
-            archivedDateTime = archived_date_time
+            archivedDateTime = archived_date_time,
+            verificationStatus = verification_status
         )
     }
 
@@ -109,8 +109,7 @@ internal class ConversationMapper {
             mlsGroupState,
             mlsEpoch,
             mlsLastKeyingMaterialUpdateDate,
-            mlsCipherSuite,
-            verificationStatus
+            mlsCipherSuite
         ),
         mutedStatus = mutedStatus,
         mutedTime = mutedTime,
@@ -124,7 +123,8 @@ internal class ConversationMapper {
         messageTimer = messageTimer,
         userMessageTimer = userMessageTimer,
         archived = archived,
-        archivedInstant = archivedDateTime
+        archivedInstant = archivedDateTime,
+        verificationStatus = verificationStatus
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -140,8 +140,7 @@ internal class ConversationMapper {
                     mls_group_state,
                     mls_epoch,
                     mls_last_keying_material_update_date,
-                    mls_cipher_suite,
-                    verification_status
+                    mls_cipher_suite
                 ),
                 isCreator = isCreator,
                 mutedStatus = mutedStatus,
@@ -173,7 +172,8 @@ internal class ConversationMapper {
                 userMessageTimer = user_message_timer,
                 userDefederated = userDefederated,
                 archived = archived,
-                archivedDateTime = archived_date_time
+                archivedDateTime = archived_date_time,
+                verificationStatus = verification_status
             )
         }
     }
@@ -185,8 +185,7 @@ internal class ConversationMapper {
         mlsGroupState: ConversationEntity.GroupState,
         mlsEpoch: Long,
         mlsLastKeyingMaterialUpdate: Instant,
-        mlsCipherSuite: ConversationEntity.CipherSuite,
-        verificationStatus: ConversationEntity.VerificationStatus
+        mlsCipherSuite: ConversationEntity.CipherSuite
     ): ConversationEntity.ProtocolInfo {
         return when (protocol) {
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
@@ -194,11 +193,10 @@ internal class ConversationMapper {
                 mlsGroupState,
                 mlsEpoch.toULong(),
                 mlsLastKeyingMaterialUpdate,
-                mlsCipherSuite,
-                verificationStatus
+                mlsCipherSuite
             )
 
-            ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus(verificationStatus)
+            ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
         }
     }
 }

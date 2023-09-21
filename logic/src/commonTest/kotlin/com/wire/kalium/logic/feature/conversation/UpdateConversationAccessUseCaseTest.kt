@@ -389,7 +389,7 @@ class UpdateConversationAccessUseCaseTest {
             "GROUP Conversation",
             Conversation.Type.GROUP,
             TeamId("someTeam"),
-            ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+            ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,
             null,
             null,
@@ -409,7 +409,8 @@ class UpdateConversationAccessUseCaseTest {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedDateTime = null
+            archivedDateTime = null,
+            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     }
 

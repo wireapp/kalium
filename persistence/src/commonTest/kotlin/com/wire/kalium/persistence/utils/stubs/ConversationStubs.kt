@@ -28,7 +28,7 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     name = "conversation1",
     type = ConversationEntity.Type.ONE_ON_ONE,
     teamId = "teamID",
-    protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
     creatorId = "someValue",
     lastNotificationDate = null,
     lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
@@ -39,7 +39,8 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     messageTimer = null,
     userMessageTimer = null,
     archived = false,
-    archivedInstant = null
+    archivedInstant = null,
+    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
 )
 
 fun newConversationEntity(
@@ -51,7 +52,7 @@ fun newConversationEntity(
     name = "conversation1",
     type = ConversationEntity.Type.ONE_ON_ONE,
     teamId = "teamID",
-    protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
     creatorId = "someValue",
     lastNotificationDate = null,
     lastReadDate = lastReadDate,
@@ -62,5 +63,6 @@ fun newConversationEntity(
     messageTimer = null,
     userMessageTimer = null,
     archived = false,
-    archivedInstant = null
+    archivedInstant = null,
+    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
 )

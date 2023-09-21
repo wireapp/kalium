@@ -72,7 +72,7 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             "conversation1",
             ConversationEntity.Type.ONE_ON_ONE,
             "teamId",
-            ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+            ConversationEntity.ProtocolInfo.Proteus,
             creatorId = "someValue",
             lastNotificationDate = null,
             lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
@@ -84,7 +84,8 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             messageTimer = 5000L,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 }

@@ -52,6 +52,7 @@ internal interface ConversationRepositoryArrangement {
     fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangementImpl
     fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
     fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
+    fun withConversationVerificationStatus(result: Either<StorageFailure, Conversation.VerificationStatus>): ConversationRepositoryArrangementImpl
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -124,6 +125,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
         given(conversationRepository)
             .suspendFunction(conversationRepository::updateVerificationStatus)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withConversationVerificationStatus(result: Either<StorageFailure, Conversation.VerificationStatus>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationVerificationStatus)
             .whenInvokedWith(any())
             .thenReturn(result)
     }

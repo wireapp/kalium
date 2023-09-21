@@ -138,7 +138,7 @@ class EndCallOnConversationChangeUseCaseTest {
             name = "Conv Name",
             type = Conversation.Type.ONE_ON_ONE,
             teamId = TeamId("team_id"),
-            protocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+            protocol = Conversation.ProtocolInfo.Proteus,
             mutedStatus = MutedConversationStatus.AllAllowed,
             removedBy = null,
             lastNotificationDate = null,
@@ -151,7 +151,8 @@ class EndCallOnConversationChangeUseCaseTest {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedDateTime = null
+            archivedDateTime = null,
+            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
 
         val otherUser = OtherUser(

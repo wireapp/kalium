@@ -81,6 +81,8 @@ interface ConversationMapper {
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
     fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
+    fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus): ConversationEntity.VerificationStatus
+    fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -119,7 +121,8 @@ internal class ConversationMapperImpl(
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
         hasIncompleteMetadata = false,
         archived = apiModel.members.self.otrArchived ?: false,
-        archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant()
+        archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -161,7 +164,8 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
-            archivedDateTime = archivedDateTime
+            archivedDateTime = archivedDateTime,
+            verificationStatus = verificationStatusFromEntity(verificationStatus)
         )
     }
 
@@ -186,7 +190,8 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
-            archivedDateTime = archivedInstant
+            archivedDateTime = archivedInstant,
+            verificationStatus = verificationStatusFromEntity(verificationStatus)
         )
     }
 
@@ -378,7 +383,8 @@ internal class ConversationMapperImpl(
             messageTimer = messageTimer?.inWholeMilliseconds,
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
             archived = archived,
-            archivedInstant = archivedDateTime
+            archivedInstant = archivedDateTime,
+            verificationStatus = verificationStatusToEntity(verificationStatus)
         )
     }
 
@@ -391,7 +397,7 @@ internal class ConversationMapperImpl(
         name = null,
         type = ConversationEntity.Type.GROUP,
         teamId = null,
-        protocolInfo = ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+        protocolInfo = ProtocolInfo.Proteus,
         mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
         mutedTime = 0,
         removedBy = null,
@@ -406,7 +412,8 @@ internal class ConversationMapperImpl(
         userMessageTimer = null,
         hasIncompleteMetadata = true,
         archived = false,
-        archivedInstant = null
+        archivedInstant = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -416,11 +423,10 @@ internal class ConversationMapperImpl(
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
                 keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag),
-                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
-            ConvProtocol.PROTEUS -> ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED)
+            ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }
 
@@ -444,6 +450,12 @@ internal class ConversationMapperImpl(
             ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
         }
     }
+
+    override fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus) =
+        Conversation.VerificationStatus.valueOf(verificationStatus.name)
+
+    override fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus) =
+        ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 }
 
 private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {

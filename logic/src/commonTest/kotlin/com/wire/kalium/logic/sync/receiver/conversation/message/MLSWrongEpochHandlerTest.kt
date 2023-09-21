@@ -228,7 +228,7 @@ class MLSWrongEpochHandlerTest {
 
     private companion object {
         val conversationId = TestConversation.CONVERSATION.id
-        val proteusProtocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)
+        val proteusProtocol = Conversation.ProtocolInfo.Proteus
 
         val mlsProtocol = TestConversation.MLS_CONVERSATION.protocol as Conversation.ProtocolInfo.MLS
         val mlsProtocolWithUpdatedEpoch = mlsProtocol.copy(epoch = mlsProtocol.epoch + 1U)

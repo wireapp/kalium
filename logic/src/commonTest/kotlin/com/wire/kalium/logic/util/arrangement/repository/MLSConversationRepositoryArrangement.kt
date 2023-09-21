@@ -32,7 +32,7 @@ internal interface MLSConversationRepositoryArrangement {
     val mlsConversationRepository: MLSConversationRepository
 
     fun withObserveEpochChanges(result: Flow<GroupID>)
-    fun withConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>)
+    fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>)
 }
 
 internal open class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
@@ -46,7 +46,7 @@ internal open class MLSConversationRepositoryArrangementImpl : MLSConversationRe
             .thenReturn(result)
     }
 
-    override fun withConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>) {
+    override fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>) {
         given(mlsConversationRepository)
             .suspendFunction(mlsConversationRepository::getConversationVerificationStatus)
             .whenInvokedWith(any())

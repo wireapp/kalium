@@ -117,7 +117,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             name = null,
             type = Conversation.Type.ONE_ON_ONE,
             teamId = null,
-            ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+            ProtocolInfo.Proteus,
             MutedConversationStatus.AllAllowed,
             null,
             null,
@@ -130,7 +130,8 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedDateTime = null
+            archivedDateTime = null,
+            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     }
 }

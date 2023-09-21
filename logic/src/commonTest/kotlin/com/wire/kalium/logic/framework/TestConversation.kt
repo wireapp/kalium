@@ -62,7 +62,7 @@ object TestConversation {
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+        ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -75,10 +75,11 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
-    fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)) = Conversation(
+    fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "SELF ID"),
         "SELF Name",
         Conversation.Type.SELF,
@@ -96,10 +97,11 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
-    fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)) = Conversation(
+    fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID,
         "GROUP Name",
         Conversation.Type.GROUP,
@@ -117,10 +119,11 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
-    fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED)) = ConversationViewEntity(
+    fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
         id = ENTITY_ID.copy(
             value = if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId else "GROUP ID"
         ),
@@ -159,7 +162,8 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -167,7 +171,7 @@ object TestConversation {
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+        ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -180,7 +184,8 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -259,7 +264,7 @@ object TestConversation {
         "convo name",
         ConversationEntity.Type.SELF,
         "teamId",
-        ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+        ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         lastNotificationDate = null,
         lastModifiedDate = "2022-03-30T15:36:00.000Z".toInstant(),
@@ -270,7 +275,8 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedInstant = null
+        archivedInstant = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -290,7 +296,7 @@ object TestConversation {
         otherUserId = null,
         isCreator = 0L,
         lastNotificationDate = null,
-        protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+        protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
         creatorId = "someValue",
         accessList = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
         accessRoleList = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
@@ -309,7 +315,8 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     val CONVERSATION = Conversation(
@@ -317,7 +324,7 @@ object TestConversation {
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+        ProtocolInfo.Proteus,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -330,7 +337,8 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
@@ -338,8 +346,7 @@ object TestConversation {
         ProtocolInfo.MLS.GroupState.PENDING_JOIN,
         0UL,
         Instant.parse("2021-03-30T15:36:00.000Z"),
-        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-        Conversation.VerificationStatus.VERIFIED
+        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )
     val MLS_CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
@@ -359,7 +366,8 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")

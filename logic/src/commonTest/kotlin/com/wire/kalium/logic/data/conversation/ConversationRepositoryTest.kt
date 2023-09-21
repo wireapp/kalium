@@ -201,8 +201,7 @@ class ConversationRepositoryTest {
             ConversationEntity.GroupState.ESTABLISHED,
             0UL,
             Instant.parse("2021-03-30T15:36:00.000Z"),
-            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-            ConversationEntity.VerificationStatus.NOT_VERIFIED
+            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
 
         val (arrangement, conversationRepository) = Arrangement()
@@ -1473,14 +1472,13 @@ class ConversationRepositoryTest {
         private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")
         val OTHER_USER_ID = UserId("otherValue", "domain")
 
-        val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED)
+        val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
         val MLS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.MLS(
             RAW_GROUP_ID,
             ConversationEntity.GroupState.ESTABLISHED,
             0UL,
             Clock.System.now(),
-            ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-            ConversationEntity.VerificationStatus.NOT_VERIFIED
+            ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
 
         private val CONVERSATION_RENAME_RESPONSE = ConversationRenameResponse.Changed(

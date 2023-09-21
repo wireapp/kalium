@@ -80,7 +80,7 @@ internal class ConnectionMapperImpl(
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
             lastModifiedDate = lastUpdateDate.toIsoDateTimeString(),
             connection = fromDaoToModel(this),
-            protocolInfo = ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+            protocolInfo = ProtocolInfo.Proteus,
             // TODO(qol): need to be refactored
             access = emptyList(),
             accessRole = emptyList()

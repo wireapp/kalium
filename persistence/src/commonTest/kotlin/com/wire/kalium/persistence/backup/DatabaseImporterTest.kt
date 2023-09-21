@@ -653,7 +653,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedInstant = null
+                archivedInstant = null,
+                verificationStatus = verificationStatus
             )
         }
     }
@@ -677,7 +678,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 name = overLappingName,
                 type = sanitizedConversationType,
                 teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                 mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
                 mutedTime = 0,
                 removedBy = null,
@@ -691,7 +692,8 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedInstant = null
+                archivedInstant = null,
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
             conversationAdded.add(overlappingConversation)

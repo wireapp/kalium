@@ -265,7 +265,7 @@ class UserDatabaseDataGenerator(
                     name = "${conversationPrefix}Name$index",
                     type = sanitizedConversationType,
                     teamId = null,
-                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                     mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
                     mutedTime = 0,
                     removedBy = null,
@@ -279,7 +279,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -309,7 +310,7 @@ class UserDatabaseDataGenerator(
             name = "name-$index",
             type = type,
             teamId = null,
-            protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+            protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             mutedTime = 0,
             removedBy = null,
@@ -323,7 +324,8 @@ class UserDatabaseDataGenerator(
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -377,7 +379,7 @@ class UserDatabaseDataGenerator(
                 name = "${groupConversationPrefix}Name$index",
                 type = ConversationEntity.Type.GROUP,
                 teamId = null,
-                protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+                protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                 mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
                 mutedTime = 0,
                 removedBy = null,
@@ -391,7 +393,8 @@ class UserDatabaseDataGenerator(
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedInstant = null
+                archivedInstant = null,
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -444,7 +447,7 @@ class UserDatabaseDataGenerator(
                     name = "${groupConversationPrefix}Name$index",
                     type = ConversationEntity.Type.GROUP,
                     teamId = null,
-                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                     mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
                     mutedTime = 0,
                     removedBy = null,
@@ -458,7 +461,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -489,7 +493,7 @@ class UserDatabaseDataGenerator(
                     name = "${groupConversationPrefix}Name$index",
                     type = ConversationEntity.Type.GROUP,
                     teamId = null,
-                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                     mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
                     mutedTime = 0,
                     removedBy = null,
@@ -503,7 +507,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -603,7 +608,7 @@ class UserDatabaseDataGenerator(
                     name = "${conversationPrefix}Name$index",
                     type = sanitizedConversationType,
                     teamId = null,
-                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                     mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
                     mutedTime = 0,
                     removedBy = null,
@@ -617,7 +622,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 

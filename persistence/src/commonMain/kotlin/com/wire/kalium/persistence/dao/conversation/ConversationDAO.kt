@@ -94,4 +94,5 @@ interface ConversationDAO {
     suspend fun clearContent(conversationId: QualifiedIDEntity)
     suspend fun observeConversationProtocolInfo(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity.ProtocolInfo?>
     suspend fun updateVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
+    suspend fun getVerificationStatusByQualifiedId(qualifiedID: QualifiedIDEntity): ConversationEntity.VerificationStatus?
 }

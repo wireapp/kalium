@@ -919,7 +919,7 @@ class MessageSenderTest {
                 .thenReturn(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
-        fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED)) = apply {
+        fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getConversationProtocolInfo)
                 .whenInvokedWith(anything())
@@ -1102,8 +1102,7 @@ class MessageSenderTest {
                 Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
                 0UL,
                 Instant.DISTANT_PAST,
-                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-                Conversation.VerificationStatus.NOT_VERIFIED
+                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
             val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(

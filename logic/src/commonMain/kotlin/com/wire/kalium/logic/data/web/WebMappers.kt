@@ -152,7 +152,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             name = name,
             type = it,
             teamId = teamId?.let { teamId -> TeamId(teamId) },
-            protocol = Conversation.ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+            protocol = Conversation.ProtocolInfo.Proteus,
             mutedStatus = mapMutedStatus(mutedState),
             access = mapAccess(access),
             accessRole = listOf(
@@ -169,7 +169,8 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
             userMessageTimer = null,
             archived = archivedState ?: false,
-            archivedDateTime = conversationArchivedTimestamp
+            archivedDateTime = conversationArchivedTimestamp,
+            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     }
 }

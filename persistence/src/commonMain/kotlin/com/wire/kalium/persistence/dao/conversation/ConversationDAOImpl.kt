@@ -189,6 +189,11 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
+    override suspend fun getVerificationStatusByQualifiedId(qualifiedID: QualifiedIDEntity): ConversationEntity.VerificationStatus? =
+        withContext(coroutineContext) {
+            conversationQueries.selectVerificationStatusByQualifiedId(qualifiedID).executeAsOneOrNull()
+        }
+
     override suspend fun observeConversationProtocolInfo(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity.ProtocolInfo?> =
         conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo)
             .asFlow()

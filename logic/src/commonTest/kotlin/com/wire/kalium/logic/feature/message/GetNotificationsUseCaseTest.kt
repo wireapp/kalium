@@ -515,7 +515,7 @@ class GetNotificationsUseCaseTest {
                 "told",
                 null
             ),
-            ProtocolInfo.Proteus(Conversation.VerificationStatus.NOT_VERIFIED),
+            ProtocolInfo.Proteus,
             access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
             accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST)
         )

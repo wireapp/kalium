@@ -247,7 +247,7 @@ internal class ConnectionDataSource(
                         name = null,
                         type = ConversationEntity.Type.CONNECTION_PENDING,
                         teamId = null,
-                        protocolInfo = ConversationEntity.ProtocolInfo.Proteus(ConversationEntity.VerificationStatus.NOT_VERIFIED),
+                        protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                         creatorId = connection.from,
                         lastNotificationDate = null,
                         lastModifiedDate = connection.lastUpdate.toInstant(),
@@ -258,7 +258,8 @@ internal class ConnectionDataSource(
                         messageTimer = null,
                         userMessageTimer = null,
                         archived = false,
-                        archivedInstant = null
+                        archivedInstant = null,
+                        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                     )
                 )
             }

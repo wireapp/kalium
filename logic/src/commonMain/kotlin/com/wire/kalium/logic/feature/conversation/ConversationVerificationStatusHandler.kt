@@ -100,8 +100,7 @@ internal class ConversationVerificationStatusHandlerImpl(
             .distinctUntilChanged()
             .onlyRight()
             .mapLatest { newStatus ->
-                val currentStatus = conversationRepository.getConversationProtocolInfo(conversationId)
-                    .map { it.verificationStatus }
+                val currentStatus = conversationRepository.getConversationVerificationStatus(conversationId)
                     .getOrElse(VerificationStatus.NOT_VERIFIED)
 
                 // Current CoreCrypto implementation returns only a boolean flag "if conversation is verified or not".

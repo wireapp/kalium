@@ -233,6 +233,8 @@ interface ConversationRepository {
         verificationStatus: Conversation.VerificationStatus,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
+
+    suspend fun getConversationVerificationStatus(conversationId: ConversationId): Either<StorageFailure, Conversation.VerificationStatus>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -501,6 +503,15 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest {
             conversationDAO.getConversationProtocolInfo(conversationId.toDao())?.let {
                 protocolInfoMapper.fromEntity(it)
+            }
+        }
+
+    override suspend fun getConversationVerificationStatus(
+        conversationId: ConversationId
+    ): Either<StorageFailure, Conversation.VerificationStatus> =
+        wrapStorageRequest {
+            conversationDAO.getVerificationStatusByQualifiedId(conversationId.toDao())?.let {
+                conversationMapper.verificationStatusFromEntity(it)
             }
         }
 
@@ -856,7 +867,10 @@ internal class ConversationDataSource internal constructor(
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.updateVerificationStatus(protocolInfoMapper.toEntity(verificationStatus), conversationID.toDao())
+            conversationDAO.updateVerificationStatus(
+                conversationMapper.verificationStatusToEntity(verificationStatus),
+                conversationID.toDao()
+            )
         }
 
     private suspend fun persistIncompleteConversations(

@@ -70,7 +70,8 @@ data class Conversation(
     val messageTimer: Duration?,
     val userMessageTimer: Duration?,
     val archived: Boolean,
-    val archivedDateTime: Instant?
+    val archivedDateTime: Instant?,
+    val verificationStatus: VerificationStatus
 ) {
 
     companion object {
@@ -198,8 +199,8 @@ data class Conversation(
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
-    sealed class ProtocolInfo(open val verificationStatus: VerificationStatus) {
-        data class Proteus(override val verificationStatus: VerificationStatus) : ProtocolInfo(verificationStatus) {
+    sealed class ProtocolInfo {
+        data object Proteus : ProtocolInfo() {
             override fun name() = "Proteus"
         }
 
@@ -208,9 +209,8 @@ data class Conversation(
             val groupState: GroupState,
             val epoch: ULong,
             val keyingMaterialLastUpdate: Instant,
-            val cipherSuite: CipherSuite,
-            override val verificationStatus: VerificationStatus
-        ) : ProtocolInfo(verificationStatus) {
+            val cipherSuite: CipherSuite
+        ) : ProtocolInfo() {
             enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
             override fun name() = "MLS"
@@ -302,7 +302,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedDateTime = null
+            archivedDateTime = null,
+            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     )
 }

@@ -43,7 +43,8 @@ data class ConversationEntity(
     val userMessageTimer: Long?,
     val hasIncompleteMetadata: Boolean = false,
     val archived: Boolean = false,
-    val archivedInstant: Instant?
+    val archivedInstant: Instant?,
+    val verificationStatus: VerificationStatus
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -76,15 +77,14 @@ data class ConversationEntity(
 
     enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_AND_REPLIES_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
-    sealed class ProtocolInfo(open val verificationStatus: VerificationStatus) {
-        data class Proteus(override val verificationStatus: VerificationStatus) : ProtocolInfo(verificationStatus)
+    sealed class ProtocolInfo {
+        data object Proteus : ProtocolInfo()
         data class MLS(
             val groupId: String,
             val groupState: GroupState,
             val epoch: ULong,
             val keyingMaterialLastUpdate: Instant,
-            val cipherSuite: CipherSuite,
-            override val verificationStatus: VerificationStatus
-        ) : ProtocolInfo(verificationStatus)
+            val cipherSuite: CipherSuite
+        ) : ProtocolInfo()
     }
 }

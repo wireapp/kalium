@@ -44,8 +44,9 @@ class ConversationVerificationStatusHandlerTest {
         val conversation = TestConversation.MLS_CONVERSATION
         val (arrangement, handler) = arrange {
             withConversationProtocolInfo(Either.Right(conversation.protocol))
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -62,12 +63,13 @@ class ConversationVerificationStatusHandlerTest {
     @Test
     fun givenNotVerifiedStatus_whenInvoking_thenInformedFlagSetFalse() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED)
+        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO
         val (arrangement, handler) = arrange {
             withConversationProtocolInfo(Either.Right(protocolInfo))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
             withInformedAboutDegradedMLSVerification(Either.Right(false))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test {
@@ -86,6 +88,7 @@ class ConversationVerificationStatusHandlerTest {
         val conversation = TestConversation.CONVERSATION
         val (arrangement, handler) = arrange {
             withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -105,8 +108,9 @@ class ConversationVerificationStatusHandlerTest {
         val (arrangement, handler) = arrange {
             withInformedAboutDegradedMLSVerification(Either.Right(true))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -126,8 +130,9 @@ class ConversationVerificationStatusHandlerTest {
         val (arrangement, handler) = arrange {
             withInformedAboutDegradedMLSVerification(Either.Right(true))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -144,12 +149,13 @@ class ConversationVerificationStatusHandlerTest {
     @Test
     fun givenUserInformedAboutDegradedStatus_whenInvokingWithNotVerifiedStatus_thenInformedFlagSetFalse() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val protocol = TestConversation.MLS_PROTOCOL_INFO.copy(verificationStatus = Conversation.VerificationStatus.DEGRADED)
+        val protocol = TestConversation.MLS_PROTOCOL_INFO
         val (arrangement, handler) = arrange {
             withInformedAboutDegradedMLSVerification(Either.Right(true))
             withConversationProtocolInfo(Either.Right(protocol))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.DEGRADED))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -169,8 +175,9 @@ class ConversationVerificationStatusHandlerTest {
         val (arrangement, handler) = arrange {
             withInformedAboutDegradedMLSVerification(Either.Left(StorageFailure.DataNotFound))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -191,8 +198,9 @@ class ConversationVerificationStatusHandlerTest {
             withInformedAboutDegradedMLSVerification(Either.Right(false))
             withPersistingMessage(Either.Right(Unit))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -218,8 +226,9 @@ class ConversationVerificationStatusHandlerTest {
             withInformedAboutDegradedMLSVerification(Either.Right(false))
             withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -245,8 +254,9 @@ class ConversationVerificationStatusHandlerTest {
             withInformedAboutDegradedMLSVerification(Either.Right(false))
             withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -267,8 +277,9 @@ class ConversationVerificationStatusHandlerTest {
             withInformedAboutDegradedMLSVerification(Either.Right(false))
             withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -285,13 +296,14 @@ class ConversationVerificationStatusHandlerTest {
     @Test
     fun givenCurrentVerificationStatusIsDegraded_whenNewNotVerifiedStatusComes_thenDegradedStatusSaved() = runTest {
         val conversation = TestConversation.MLS_CONVERSATION
-        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(verificationStatus = Conversation.VerificationStatus.DEGRADED)
+        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO
         val (arrangement, handler) = arrange {
             withInformedAboutDegradedMLSVerification(Either.Right(false))
             withPersistingMessage(Either.Left(StorageFailure.DataNotFound))
             withConversationProtocolInfo(Either.Right(protocolInfo))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.DEGRADED))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
+            withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
