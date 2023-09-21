@@ -49,6 +49,15 @@ class ConversationStatusMapperTest {
     }
 
     @Test
+    fun givenAConversationModelWithArchivedField_whenMappingToApiModel_thenTheMappingStatusesShouldBeOk() {
+        val isArchived = true
+        val result = conversationStatusMapper.toArchivedStatusApiModel(isArchived = isArchived, 1649708697237L)
+
+        assertEquals(isArchived, result.otrArchived)
+        assertEquals("2022-04-11T20:24:57.237Z", result.otrArchivedRef)
+    }
+
+    @Test
     fun givenAConversationModel_whenMappingToDaoModel_thenTheMappingStatusesShouldBeOk() {
         val result = conversationStatusMapper.toMutedStatusDaoModel(MutedConversationStatus.OnlyMentionsAndRepliesAllowed)
 

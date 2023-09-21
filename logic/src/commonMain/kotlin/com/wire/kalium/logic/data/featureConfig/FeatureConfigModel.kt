@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.util.time.Second
 
 data class FeatureConfigModel(
     val appLockModel: AppLockModel,
@@ -50,7 +51,7 @@ data class AppLockModel(
 
 data class AppLockConfigModel(
     val enforceAppLock: Boolean,
-    val inactivityTimeoutSecs: Int
+    val inactivityTimeoutSecs: Second
 )
 
 data class ClassifiedDomainsModel(
