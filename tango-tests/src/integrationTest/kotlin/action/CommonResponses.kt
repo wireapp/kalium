@@ -43,7 +43,8 @@ object CommonResponses {
     /**
      * URL Paths
      */
-    const val BASE_PATH = "https://test.api.com/v1/"
+    const val BASE_PATH = "https://test.api.com/"
+    const val BASE_PATH_V1 = "${BASE_PATH}v1/"
 
     /**
      * DTO

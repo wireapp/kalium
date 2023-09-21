@@ -53,8 +53,8 @@ object ClientActions {
     /**
      * URL Paths
      */
-    private const val PATH_CLIENTS = "${CommonResponses.BASE_PATH}clients"
-    private const val PATH_ACCESS = "${CommonResponses.BASE_PATH}access"
+    private const val PATH_CLIENTS = "${CommonResponses.BASE_PATH_V1}clients"
+    private const val PATH_ACCESS = "${CommonResponses.BASE_PATH_V1}access"
 
     /**
      * Request / Responses

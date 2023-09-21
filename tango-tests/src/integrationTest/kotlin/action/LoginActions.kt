@@ -62,9 +62,9 @@ object LoginActions {
     /**
      * URL Paths
      */
-    private const val PATH_LOGIN = "${CommonResponses.BASE_PATH}login?persist=true"
-    private const val PATH_SELF = "${CommonResponses.BASE_PATH}self"
-    private const val PATH_LOGOUT = "${CommonResponses.BASE_PATH}logout"
+    private const val PATH_LOGIN = "${CommonResponses.BASE_PATH_V1}login?persist=true"
+    private const val PATH_SELF = "${CommonResponses.BASE_PATH_V1}self"
+    private const val PATH_LOGOUT = "${CommonResponses.BASE_PATH_V1}logout"
     private const val PATH_API_VERSION = "${CommonResponses.BASE_PATH}api-version"
 
     /**
