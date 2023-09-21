@@ -20,15 +20,15 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.E2EISettings
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.E2EIModel
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -43,6 +43,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.DurationUnit
@@ -74,6 +75,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             handlePasswordChallengeStatus(it.secondFactorPasswordChallengeModel)
             handleSelfDeletingMessagesStatus(it.selfDeletingMessagesModel)
             handleE2EISettings(it.e2EIModel)
+            handleAppLock(it.appLockModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (
@@ -89,6 +91,10 @@ internal class SyncFeatureConfigsUseCaseImpl(
                 kaliumLogger.d("$networkFailure")
             }
         }
+
+    private fun handleAppLock(appLockModel: AppLockModel) {
+        userConfigRepository.setAppLockStatus(appLockModel.config)
+    }
 
     private fun handleConferenceCalling(model: ConferenceCallingModel) {
         val conferenceCallingEnabled = model.status == Status.ENABLED
