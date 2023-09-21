@@ -27,5 +27,5 @@ interface UserSessionWorkScheduler : MessageSendingScheduler {
     val userId: UserId
 }
 
-expect class GlobalWorkSchedulerImpl : GlobalWorkScheduler
+internal expect class GlobalWorkSchedulerImpl : GlobalWorkScheduler
 internal expect class UserSessionWorkSchedulerImpl : UserSessionWorkScheduler
