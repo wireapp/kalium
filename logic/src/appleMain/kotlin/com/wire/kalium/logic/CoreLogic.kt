@@ -32,7 +32,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.cancel
 
-actual open class CoreLogic(
+actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String

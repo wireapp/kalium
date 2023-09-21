@@ -40,7 +40,7 @@ import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
-expect open class CoreLogic : CoreLogicCommon
+expect class CoreLogic : CoreLogicCommon
 
 abstract class CoreLogicCommon constructor(
     protected val rootPath: String,
