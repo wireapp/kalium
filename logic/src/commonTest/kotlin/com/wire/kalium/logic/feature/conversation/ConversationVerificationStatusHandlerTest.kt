@@ -33,6 +33,7 @@ import io.mockative.any
 import io.mockative.eq
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -88,7 +89,7 @@ class ConversationVerificationStatusHandlerTest {
         val conversation = TestConversation.CONVERSATION
         val (arrangement, handler) = arrange {
             withConversationProtocolInfo(Either.Right(conversation.protocol))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
         handler(conversation.id).test { 
@@ -126,11 +127,11 @@ class ConversationVerificationStatusHandlerTest {
 
     @Test
     fun givenMLSConversationAndInformedAboutDegraded_whenInvokingWithVerifiedStatus_thenInformedFlagSetTrue() = runTest {
-        val conversation = TestConversation.CONVERSATION
+        val conversation = TestConversation.MLS_CONVERSATION.copy(verificationStatus = Conversation.VerificationStatus.VERIFIED)
         val (arrangement, handler) = arrange {
             withInformedAboutDegradedMLSVerification(Either.Right(true))
             withConversationProtocolInfo(Either.Right(conversation.protocol))
-            withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
+            withConversationVerificationStatus(Either.Right(conversation.verificationStatus))
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
