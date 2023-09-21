@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.featureConfig.AppLockConfigModel
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
+import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
@@ -41,6 +43,8 @@ import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 interface UserConfigRepository {
+    fun setAppLockStatus(status: AppLockConfigModel): Either<StorageFailure, Unit>
+    fun observeAppLockStatus(): Flow<Either<StorageFailure, AppLockConfigModel>>
     fun setFileSharingStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     fun setFileSharingAsNotified(): Either<StorageFailure, Unit>
     fun isFileSharingEnabled(): Either<StorageFailure, FileSharingStatus>
@@ -275,4 +279,24 @@ class UserConfigDataSource(
 
     override suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isScreenshotCensoringEnabledFlow().wrapStorageRequest()
+
+    override fun setAppLockStatus(status: AppLockConfigModel): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigStorage.persistAppLockStatus(
+                status.enforceAppLock,
+                status.inactivityTimeoutSecs
+            )
+        }
+
+    override fun observeAppLockStatus(): Flow<Either<StorageFailure, AppLockConfigModel>> =
+        wrapFlowStorageRequest {
+            userConfigStorage.appLockFlow().map {
+                it?.let { config ->
+                    AppLockConfigModel(
+                        config.enforceAppLock,
+                        config.inactivityTimeoutSecs
+                    )
+                }
+            }
+        }
 }
