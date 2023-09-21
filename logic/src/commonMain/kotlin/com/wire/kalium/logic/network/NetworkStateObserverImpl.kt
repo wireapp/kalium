@@ -19,4 +19,4 @@ package com.wire.kalium.logic.network
 
 import com.wire.kalium.network.NetworkStateObserver
 
-expect class NetworkStateObserverImpl : NetworkStateObserver
+internal expect class NetworkStateObserverImpl : NetworkStateObserver

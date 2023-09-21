@@ -22,7 +22,7 @@ import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-actual class NetworkStateObserverImpl : NetworkStateObserver {
+internal actual class NetworkStateObserverImpl : NetworkStateObserver {
 
     override fun observeNetworkState(): StateFlow<NetworkState> =
         MutableStateFlow(NetworkState.ConnectedWithInternet) // TODO: for now we treat it as always connected
