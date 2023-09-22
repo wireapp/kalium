@@ -90,8 +90,12 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val networkStateObserver: NetworkStateObserver,
-    val unboundNetworkContainer: Lazy<UnboundNetworkContainer> = lazy {
+    private val networkStateObserver: NetworkStateObserver
+) : CoroutineScope {
+
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
             networkStateObserver,
             kaliumConfigs.developmentApiEnabled,
@@ -101,15 +105,12 @@ class GlobalKaliumScope internal constructor(
             kaliumConfigs.mockEngine
         )
     }
-) : CoroutineScope {
-
-    override val coroutineContext: CoroutineContext = SupervisorJob()
 
     internal val serverConfigRepository: ServerConfigRepository
         get() = ServerConfigDataSource(
-            unboundNetworkContainer.value.serverConfigApi,
+            unboundNetworkContainer.serverConfigApi,
             globalDatabase.serverConfigurationDAO,
-            unboundNetworkContainer.value.remoteVersion,
+            unboundNetworkContainer.remoteVersion,
             kaliumConfigs.developmentApiEnabled
         )
 
