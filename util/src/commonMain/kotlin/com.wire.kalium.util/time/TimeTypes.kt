@@ -16,16 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("Filename")
 
-object Android {
-    const val testRunner = "androidx.test.runner.AndroidJUnitRunner"
-    object Sdk {
-        const val min = 26
-        const val compile = 34
-        const val target = compile
-    }
-    object Ndk {
-        const val version = "25.1.8937393"
-        const val cMakeVersion = "3.18.1"
-    }
-}
+package com.wire.kalium.util.time
+
+typealias Second = Int

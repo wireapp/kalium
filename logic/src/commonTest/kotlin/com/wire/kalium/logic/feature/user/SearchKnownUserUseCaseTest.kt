@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
 import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.search.SearchUsersResult
+import com.wire.kalium.logic.feature.publicuser.search.sanitizeHandleSearchPattern
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
 import io.mockative.any
@@ -251,6 +252,31 @@ class SearchKnownUserUseCaseTest {
 
     }
 
+    @Test
+    fun givenAnInputStartingWithAtSymbolAndDomainPresent_whenSearchingUsers_thenSearchBySanitizedHandle() = runTest {
+        // given
+        val handlePartOfQuery = "somehandle"
+        val handleSearchQuery = "@$handlePartOfQuery@bella.wire.link"
+        val (arrangement, searchKnownUsersUseCase) = Arrangement()
+            .withSuccessFullSelfUserRetrieve()
+            .withSearchByHandle(handleSearchQuery)
+            .arrange()
+
+        // when
+        searchKnownUsersUseCase(handleSearchQuery)
+
+        // then
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByHandle)
+            .with(eq(handlePartOfQuery), anything())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchKnownUsersByNameOrHandleOrEmail)
+            .with(anything(), anything())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -292,7 +318,7 @@ class SearchKnownUserUseCaseTest {
             given(searchUserRepository)
                 .suspendFunction(searchUserRepository::searchKnownUsersByHandle)
                 .whenInvokedWith(
-                    if (searchQuery == null) any() else eq(searchQuery.removePrefix("@")),
+                    if (searchQuery == null) any() else eq(searchQuery.sanitizeHandleSearchPattern()),
                     if (searchUsersOptions == null) any() else eq(searchUsersOptions)
                 )
                 .thenReturn(
