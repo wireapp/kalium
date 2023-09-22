@@ -89,7 +89,7 @@ class MessageScope internal constructor(
     private val protoContentMapper: ProtoContentMapper,
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val messageMetadataRepository: MessageMetadataRepository,
-    private val staleEpochHandler: StaleEpochHandler,
+    private val staleEpochVerifier: StaleEpochVerifier,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -146,7 +146,7 @@ class MessageScope internal constructor(
             mlsMessageCreator,
             messageSendingInterceptor,
             userRepository,
-            staleEpochHandler,
+            staleEpochVerifier,
             { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
             scope
         )

@@ -210,8 +210,8 @@ import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
-import com.wire.kalium.logic.feature.message.StaleEpochHandler
-import com.wire.kalium.logic.feature.message.StaleEpochHandlerImpl
+import com.wire.kalium.logic.feature.message.StaleEpochVerifier
+import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
@@ -338,8 +338,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessa
 import com.wire.kalium.logic.sync.receiver.conversation.message.ApplicationMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandler
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
@@ -1164,16 +1162,8 @@ class UserSessionScope internal constructor(
             userId
         )
 
-    private val staleEpochHandler: StaleEpochHandler
-        get() = StaleEpochHandlerImpl(
-            systemMessageInserter = systemMessageInserter,
-            conversationRepository = conversationRepository,
-            mlsConversationRepository = mlsConversationRepository,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase
-        )
-
-    private val mlsWrongEpochHandler: MLSWrongEpochHandler
-        get() = MLSWrongEpochHandlerImpl(
+    private val staleEpochVerifier: StaleEpochVerifier
+        get() = StaleEpochVerifierImpl(
             systemMessageInserter = systemMessageInserter,
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
@@ -1186,7 +1176,7 @@ class UserSessionScope internal constructor(
             { conversationId, messageId ->
                 messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
             }, userId,
-            mlsWrongEpochHandler
+            staleEpochVerifier
         )
 
     private val newConversationHandler: NewConversationEventHandler
@@ -1422,7 +1412,7 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             messageSendingScheduler,
             selfConversationIdProvider,
-            staleEpochHandler,
+            staleEpochVerifier,
             this
         )
     val messages: MessageScope
@@ -1450,7 +1440,7 @@ class UserSessionScope internal constructor(
             protoContentMapper,
             observeSelfDeletingMessages,
             messageMetadataRepository,
-            staleEpochHandler,
+            staleEpochVerifier,
             this
         )
     val users: UserScope

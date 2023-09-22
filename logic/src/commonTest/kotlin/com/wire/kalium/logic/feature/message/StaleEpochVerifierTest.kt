@@ -39,7 +39,7 @@ import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.minutes
 
-class StaleEpochHandlerTest {
+class StaleEpochVerifierTest {
 
     @Test
     fun givenConversationIsNotMLS_whenHandlingStaleEpoch_thenShouldNotInsertWarning() = runTest {
@@ -116,7 +116,7 @@ class StaleEpochHandlerTest {
             withIsGroupOutOfSync(Either.Right(true))
             withFetchConversation(Either.Right(Unit))
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(59.minutes)
+                epochTimestamp = Clock.System.now().minus(STALE_EPOCH_DURATION.minus(1.minutes))
             )))
         }
 
@@ -134,7 +134,7 @@ class StaleEpochHandlerTest {
             withIsGroupOutOfSync(Either.Right(true))
             withFetchConversation(Either.Right(Unit))
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(60.minutes)
+                epochTimestamp = Clock.System.now().minus(STALE_EPOCH_DURATION)
             )))
             withJoinExistingMLSConversationUseCaseReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
@@ -153,7 +153,7 @@ class StaleEpochHandlerTest {
             withIsGroupOutOfSync(Either.Right(true))
             withFetchConversation(Either.Right(Unit))
             withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(60.minutes)
+                epochTimestamp = Clock.System.now().minus(STALE_EPOCH_DURATION)
             )))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
@@ -176,7 +176,7 @@ class StaleEpochHandlerTest {
     {
         fun arrange() = run {
             block()
-            this@Arrangement to StaleEpochHandlerImpl(
+            this@Arrangement to StaleEpochVerifierImpl(
                 systemMessageInserter = systemMessageInserter,
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
@@ -189,5 +189,6 @@ class StaleEpochHandlerTest {
         fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val CONVERSATION_ID = TestConversation.ID
+        val STALE_EPOCH_DURATION = StaleEpochVerifierImpl.STALE_EPOCH_DURATION
     }
 }

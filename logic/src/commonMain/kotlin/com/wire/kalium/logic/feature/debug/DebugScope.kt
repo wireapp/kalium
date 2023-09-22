@@ -46,7 +46,7 @@ import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
-import com.wire.kalium.logic.feature.message.StaleEpochHandler
+import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
@@ -76,7 +76,7 @@ class DebugScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val selfConversationIdProvider: SelfConversationIdProvider,
-    private val staleEpochHandler: StaleEpochHandler,
+    private val staleEpochVerifier: StaleEpochVerifier,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -140,7 +140,7 @@ class DebugScope internal constructor(
             mlsMessageCreator,
             messageSendingInterceptor,
             userRepository,
-            staleEpochHandler,
+            staleEpochVerifier,
             { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
             scope
         )

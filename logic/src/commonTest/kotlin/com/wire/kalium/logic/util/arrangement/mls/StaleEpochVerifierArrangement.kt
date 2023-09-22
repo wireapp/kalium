@@ -17,29 +17,31 @@
  */
 package com.wire.kalium.logic.util.arrangement.mls
 
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSWrongEpochHandler
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.feature.message.StaleEpochVerifier
+import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 
-interface MLSWrongEpochHandlerArrangement {
+interface StaleEpochVerifierArrangement {
 
-    val wrongEpochHandler: MLSWrongEpochHandler
+    val staleEpochVerifier: StaleEpochVerifier
 
-    fun withOnWrongEpoch()
+    fun withVerifyEpoch(result: Either<CoreFailure, Unit>)
 
 }
 
-class MLSWrongEpochHandlerArrangementImpl : MLSWrongEpochHandlerArrangement {
+class StaleEpochVerifierArrangementImpl : StaleEpochVerifierArrangement {
 
     @Mock
-    override val wrongEpochHandler = mock(MLSWrongEpochHandler::class)
+    override val staleEpochVerifier = mock(StaleEpochVerifier::class)
 
-    override fun withOnWrongEpoch() {
-        given(wrongEpochHandler)
-            .suspendFunction(wrongEpochHandler::onMLSWrongEpoch)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Unit)
+    override fun withVerifyEpoch(result: Either<CoreFailure, Unit>) {
+        given(staleEpochVerifier)
+            .suspendFunction(staleEpochVerifier::verifyEpoch)
+            .whenInvokedWith(any())
+            .thenReturn(result)
     }
 }

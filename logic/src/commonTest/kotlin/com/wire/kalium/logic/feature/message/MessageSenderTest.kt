@@ -47,10 +47,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.util.arrangement.mls.MLSWrongEpochHandlerArrangement
-import com.wire.kalium.logic.util.arrangement.mls.MLSWrongEpochHandlerArrangementImpl
-import com.wire.kalium.logic.util.arrangement.mls.StaleEpochHandlerArrangement
-import com.wire.kalium.logic.util.arrangement.mls.StaleEpochHandlerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement
+import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -295,8 +293,8 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.staleEpochHandler)
-                .suspendFunction(arrangement.staleEpochHandler::verifyEpoch)
+            verify(arrangement.staleEpochVerifier)
+                .suspendFunction(arrangement.staleEpochVerifier::verifyEpoch)
                 .with(eq(Arrangement.TEST_CONVERSATION_ID))
                 .wasInvoked(once)
         }
@@ -883,7 +881,7 @@ class MessageSenderTest {
     }
 
     private class Arrangement(private val block: Arrangement.() -> Unit):
-        StaleEpochHandlerArrangement by StaleEpochHandlerArrangementImpl()
+        StaleEpochVerifierArrangement by StaleEpochVerifierArrangementImpl()
     {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -942,7 +940,7 @@ class MessageSenderTest {
                         expirationData
                     )
                 },
-                staleEpochHandler = staleEpochHandler,
+                staleEpochVerifier = staleEpochVerifier,
                 scope = testScope
             )
         }

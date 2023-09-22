@@ -35,19 +35,19 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.minutes
 
-interface StaleEpochHandler {
-    suspend fun verifyEpoch(conversationId: ConversationId): Either<CoreFailure, Unit>
+interface StaleEpochVerifier {
+    suspend fun verifyEpoch(conversationId: ConversationId, timestamp: Instant? = null): Either<CoreFailure, Unit>
 }
 
-internal class StaleEpochHandlerImpl(
+internal class StaleEpochVerifierImpl(
     private val systemMessageInserter: SystemMessageInserter,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
-) : StaleEpochHandler {
+) : StaleEpochVerifier {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
-    override suspend fun verifyEpoch(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun verifyEpoch(conversationId: ConversationId, timestamp: Instant?): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch")
         return getUpdatedConversationProtocolInfo(conversationId).flatMap { protocol ->
             if (protocol is Conversation.ProtocolInfo.MLS) {
@@ -68,7 +68,7 @@ internal class StaleEpochHandlerImpl(
                 joinExistingMLSConversation(conversationId).flatMap {
                     systemMessageInserter.insertLostCommitSystemMessage(
                         conversationId,
-                        Clock.System.now().toIsoDateTimeString()
+                        (timestamp ?: Clock.System.now()).toIsoDateTimeString()
                     )
                 }
             } else {
@@ -85,7 +85,7 @@ internal class StaleEpochHandlerImpl(
     }
 
     companion object {
-        val STALE_EPOCH_DURATION = 60.minutes
+        val STALE_EPOCH_DURATION = 5.minutes
     }
 
 }
