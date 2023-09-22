@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceEntity
 
-class ServiceMapper {
+internal class ServiceMapper {
     fun mapToServiceEntity(
         dto: ServiceDetailDTO,
         selfId: UserId

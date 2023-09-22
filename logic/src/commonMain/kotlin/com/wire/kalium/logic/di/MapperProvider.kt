@@ -98,7 +98,7 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 
-object MapperProvider {
+internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
     fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper(), idMapper())
