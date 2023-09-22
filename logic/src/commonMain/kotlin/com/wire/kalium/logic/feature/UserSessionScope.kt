@@ -531,7 +531,7 @@ class UserSessionScope internal constructor(
     private val e2eiRepository: E2EIRepository
         get() = E2EIRepositoryImpl(
             authenticatedNetworkContainer.e2eiApi,
-            globalScope.unboundNetworkContainer.value.acmeApi,
+            globalScope.unboundNetworkContainer.acmeApi,
             e2EIClientProvider,
             mlsClientProvider,
             clientIdProvider
