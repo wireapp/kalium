@@ -319,10 +319,12 @@ internal class MessageSenderImpl internal constructor(
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         if (it.kaliumException.isMlsStaleMessage()) {
                             logger.w("Encrypted MLS message for stale epoch '${message.id}', re-trying..")
-                            staleEpochVerifier.verifyEpoch(message.conversationId)
-                            return syncManager.waitUntilLiveOrFailure().flatMap {
-                                attemptToSend(message)
-                            }
+                            return staleEpochVerifier.verifyEpoch(message.conversationId)
+                                .flatMap {
+                                    syncManager.waitUntilLiveOrFailure().flatMap {
+                                        attemptToSend(message)
+                                    }
+                                }
                         }
                     }
                     Either.Left(it)
