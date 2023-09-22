@@ -667,6 +667,7 @@ class ConversationRepositoryTest {
         // given
         val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
         val conversationId = QualifiedID("some_value", "some_domain")
+        val shouldFetchArchivedConversations = false
 
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             id = conversationIdEntity,
@@ -686,7 +687,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         // when
-        conversationRepository.observeConversationListDetails().test {
+        conversationRepository.observeConversationListDetails(shouldFetchArchivedConversations).test {
             val result = awaitItem()
 
             assertContains(result.map { it.conversation.id }, conversationId)
@@ -751,6 +752,7 @@ class ConversationRepositoryTest {
         // given
         val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
         val conversationId = QualifiedID("some_value", "some_domain")
+        val shouldFetchArchivedConversations = false
 
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE,
@@ -770,7 +772,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         // when
-        conversationRepository.observeConversationListDetails().test {
+        conversationRepository.observeConversationListDetails(shouldFetchArchivedConversations).test {
             val result = awaitItem()
 
             assertContains(result.map { it.conversation.id }, conversationId)

@@ -59,6 +59,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversation = TestConversation.SELF()
         val conversations = listOf(selfConversation, groupConversation)
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
+        val fetchArchivedConversations = false
         val groupConversationDetails =
             ConversationDetails.Group(
                 groupConversation,
@@ -77,7 +78,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When
-        observeConversationsUseCase().collect()
+        observeConversationsUseCase(fetchArchivedConversations).collect()
 
         // Then
         with(arrangement) {
@@ -93,6 +94,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversation = TestConversation.SELF()
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(selfConversation, groupConversation)
+        val fetchArchivedConversations = false
 
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val groupConversationDetails = ConversationDetails.Group(
@@ -112,7 +114,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When
-        observeConversationsUseCase().collect()
+        observeConversationsUseCase(fetchArchivedConversations).collect()
 
         with(arrangement) {
             conversations.forEach { conversation ->
@@ -130,6 +132,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val oneOnOneConversation = TestConversation.ONE_ON_ONE
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
+        val fetchArchivedConversations = false
 
         val groupConversationUpdates = listOf(
             ConversationDetails.Group(
@@ -169,7 +172,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
 
             val conversationList = awaitItem()
@@ -188,6 +191,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
+        val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
@@ -212,7 +216,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertContentEquals(listOf(groupConversationDetails), awaitItem())
 
             conversationListUpdates.close()
@@ -225,6 +229,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
+        val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
@@ -246,7 +251,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertEquals(true, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
@@ -255,6 +260,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
+        val fetchArchivedConversations = false
 
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
@@ -277,7 +283,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
@@ -289,6 +295,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val successConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("successId", "domain"))
         val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
         val failureConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("failedId", "domain"))
+        val fetchArchivedConversations = false
 
         val (_, observeConversationsUseCase) = Arrangement()
             .withConversationsList(listOf(successConversation, failureConversation))
@@ -297,7 +304,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertEquals(awaitItem(), listOf(successConversationDetails))
             awaitComplete()
         }
