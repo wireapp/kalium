@@ -42,17 +42,16 @@ internal class TypingIndicatorRepositoryImpl : TypingIndicatorRepository {
 
     override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         val newTypingUser = ExpiringUserTyping(userId, Clock.System.now())
-        val newTypingUsers = userTypingCache[conversationId]?.toMutableSet() ?: mutableSetOf()
-        newTypingUsers.add(newTypingUser)
-        userTypingCache[conversationId] = newTypingUsers
+        userTypingCache.block { entry ->
+            entry[conversationId]?.toMutableSet()?.apply { this.add(newTypingUser) } ?: mutableSetOf(newTypingUser)
+        }
         userTypingDataSourceFlow.tryEmit(Unit)
     }
 
     override fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
-        userTypingCache[conversationId] =
-            userTypingCache[conversationId]?.toMutableSet()?.apply {
-                this.removeAll { it.userId == userId }
-            } ?: mutableSetOf()
+        userTypingCache.block { entry ->    // todo remove block
+            entry[conversationId]?.toMutableSet()?.apply { this.removeAll { it.userId == userId } }
+        }
         userTypingDataSourceFlow.tryEmit(Unit)
     }
 
