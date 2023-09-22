@@ -83,7 +83,7 @@ import kotlin.coroutines.CoroutineContext
  * @see [com.wire.kalium.logic.feature.UserSessionScope]
  */
 @Suppress("LongParameterList")
-class GlobalKaliumScope constructor(
+class GlobalKaliumScope internal constructor(
     userAgent: String,
     private val globalDatabase: GlobalDatabaseProvider,
     private val globalPreferences: GlobalPrefProvider,
