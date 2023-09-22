@@ -41,7 +41,7 @@ import kotlinx.datetime.Instant
  * Updates the supported protocols of the current user.
  */
 interface UpdateSupportedProtocolsUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, Unit>
+    suspend operator fun invoke(): Either<CoreFailure, Boolean>
 }
 
 internal class UpdateSupportedProtocolsUseCaseImpl(
@@ -50,7 +50,7 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
     private val featureConfigRepository: FeatureConfigRepository
 ) : UpdateSupportedProtocolsUseCase {
 
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> {
+    override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
         kaliumLogger.d("Updating supported protocols")
 
         return (userRepository.getSelfUser()?.let { selfUser ->
@@ -59,16 +59,16 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
                     "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
                 )
                 if (newSupportedProtocols != selfUser.supportedProtocols) {
-                    userRepository.updateSupportedProtocols(newSupportedProtocols)
+                    userRepository.updateSupportedProtocols(newSupportedProtocols).map { true }
                 } else {
-                    Either.Right(Unit)
+                    Either.Right(false)
                 }
             }.flatMapLeft {
                 if (it is NetworkFailure.FeatureNotSupported) {
                     kaliumLogger.w(
                         "Skip updating supported protocols since it's not supported by the backend API"
                     )
-                    Either.Right(Unit)
+                    Either.Right(false)
                 } else {
                     Either.Left(it)
                 }
