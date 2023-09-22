@@ -36,22 +36,24 @@ internal interface TypingIndicatorRepository {
 }
 
 internal class TypingIndicatorRepositoryImpl(
-    private val userTypingCache: ConcurrentMutableMap<ConversationId, Set<ExpiringUserTyping>>
+    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>,
+    private val userTypingDataSourceFlow: MutableSharedFlow<Unit> = MutableSharedFlow(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 ) : TypingIndicatorRepository {
-
-    private val userTypingDataSourceFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         val newTypingUser = ExpiringUserTyping(userId, Clock.System.now())
         userTypingCache.block { entry ->
-            entry[conversationId]?.toMutableSet()?.apply { this.add(newTypingUser) } ?: mutableSetOf(newTypingUser)
+            entry[conversationId]?.apply { this.add(newTypingUser) } ?: mutableSetOf(newTypingUser)
         }
         userTypingDataSourceFlow.tryEmit(Unit)
     }
 
     override fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         userTypingCache.block { entry ->
-            entry[conversationId]?.toMutableSet()?.apply { this.removeAll { it.userId == userId } }
+            entry[conversationId]?.apply { this.removeAll { it.userId == userId } }
         }
         userTypingDataSourceFlow.tryEmit(Unit)
     }
@@ -64,7 +66,7 @@ internal class TypingIndicatorRepositoryImpl(
     }
 }
 
-private fun ConcurrentMutableMap<ConversationId, Set<ExpiringUserTyping>>.filterUsersIdTypingInConversation(
+private fun ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>.filterUsersIdTypingInConversation(
     conversationId: ConversationId
 ) = this[conversationId]?.map { it.userId }?.toSet().orEmpty()
 
