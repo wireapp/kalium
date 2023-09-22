@@ -45,7 +45,7 @@ sealed class Command(
             }
 
         suspend fun prepare() {
-            conversations = userSession.conversations.observeConversationListDetails().first()
+            conversations = userSession.conversations.observeConversationListDetails(fetchArchivedConversations = true).first()
             updateFilter()
         }
 
