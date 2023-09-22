@@ -47,6 +47,8 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @Suppress("LongMethod")
 @Ignore // TODO
@@ -85,6 +87,54 @@ class ObserveConversationListDetailsUseCaseTest {
             verify(conversationRepository)
                 .suspendFunction(conversationRepository::observeConversationList)
                 .wasInvoked(exactly = once)
+        }
+    }
+    @Test
+    fun givenSomeConversationsWithArchivedValues_whenFetchingOnlyNonArchived_thenTheseConversationsShouldNotBeReturned() = runTest {
+        // Given
+        val groupConversation1 = TestConversation.GROUP().copy(archived = true)
+        val group2Id = ConversationId("OtherId","someDomain")
+        val groupConversation2 = TestConversation.GROUP().copy(id = group2Id, archived = false)
+        val selfConversation = TestConversation.SELF()
+        val conversations = listOf(selfConversation, groupConversation1, groupConversation2)
+        val selfConversationDetails = ConversationDetails.Self(selfConversation)
+        val fetchArchivedConversations = false
+        val groupConversationDetails1 =
+            ConversationDetails.Group(
+                groupConversation1,
+                LegalHoldStatus.DISABLED,
+                lastMessage = null,
+                isSelfUserMember = true,
+                isSelfUserCreator = true,
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
+            )
+        val groupConversationDetails2 =
+            ConversationDetails.Group(
+                groupConversation2,
+                LegalHoldStatus.DISABLED,
+                lastMessage = null,
+                isSelfUserMember = true,
+                isSelfUserCreator = true,
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
+            )
+
+        val (arrangement, observeConversationsUseCase) = Arrangement()
+            .withConversationsList(conversations)
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation1, listOf(groupConversationDetails1))
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation2, listOf(groupConversationDetails2))
+            .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
+            .arrange()
+
+        // When
+        observeConversationsUseCase(fetchArchivedConversations).test {
+            val conversationDetailsList = awaitItem()
+
+            // Then
+            assertFalse(conversationDetailsList.contains(groupConversationDetails2))
+            assertTrue(conversationDetailsList.contains(selfConversationDetails))
+            assertTrue(conversationDetailsList.contains(groupConversationDetails1))
         }
     }
 
