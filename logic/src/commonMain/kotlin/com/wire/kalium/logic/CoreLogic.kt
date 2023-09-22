@@ -42,7 +42,7 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 expect class CoreLogic : CoreLogicCommon
 
-abstract class CoreLogicCommon constructor(
+abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
     protected val userAgent: String,
     protected val kaliumConfigs: KaliumConfigs,
@@ -57,7 +57,7 @@ abstract class CoreLogicCommon constructor(
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
-    open fun getGlobalScope(): GlobalKaliumScope =
+    fun getGlobalScope(): GlobalKaliumScope =
         GlobalKaliumScope(
             userAgent,
             globalDatabase,
