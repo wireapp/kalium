@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -51,10 +52,14 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
- * Notify user (by adding System message in conversation) if needed about changes of Conversation Verification status.
+ * Observes Conversation Verification status.
+ * Notify user (by adding System message in conversation) if needed about changes.
+ * @param conversationId [ConversationId]
+ * @param shouldShareFlow [Boolean] flag if the resulted [Flow] should be shared in IO [CoroutineScope], or not.
+ * Basically needed only for unit-tests cause it fails if flow is shared (Flow never completes).
  */
 internal interface ConversationVerificationStatusHandler {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<Unit>
+    suspend operator fun invoke(conversationId: ConversationId, shouldShareFlow: Boolean = true): Flow<Unit>
 }
 
 internal class ConversationVerificationStatusHandlerImpl(
@@ -69,7 +74,7 @@ internal class ConversationVerificationStatusHandlerImpl(
     private val lock = Mutex()
     private val observeFlows = hashMapOf<ConversationId, Flow<Unit>>()
 
-    override suspend fun invoke(conversationId: ConversationId): Flow<Unit> = withContext(dispatcher) {
+    override suspend fun invoke(conversationId: ConversationId, shouldShareFlow: Boolean): Flow<Unit> = withContext(dispatcher) {
         lock.withLock {
             val currentFlow = observeFlows[conversationId]
             if (currentFlow != null) return@withContext currentFlow
@@ -82,7 +87,9 @@ internal class ConversationVerificationStatusHandlerImpl(
                     .onCompletion { observeFlows.remove(conversationId) }
             }
             .getOrElse(emptyFlow())
-            .shareIn(this, SharingStarted.WhileSubscribed(1))
+            .apply {
+                if (shouldShareFlow) shareIn(this@withContext, SharingStarted.WhileSubscribed(1))
+            }
 
         lock.withLock { observeFlows[conversationId] = flow }
 

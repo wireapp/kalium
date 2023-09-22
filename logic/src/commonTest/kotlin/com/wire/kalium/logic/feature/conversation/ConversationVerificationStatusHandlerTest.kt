@@ -49,7 +49,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -72,7 +72,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test {
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -91,7 +91,7 @@ class ConversationVerificationStatusHandlerTest {
             withConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -113,7 +113,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -135,7 +135,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -158,7 +158,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -180,7 +180,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -203,7 +203,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -231,7 +231,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -259,7 +259,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -282,7 +282,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
@@ -306,7 +306,7 @@ class ConversationVerificationStatusHandlerTest {
             withMLSConversationVerificationStatus(Either.Right(Conversation.VerificationStatus.NOT_VERIFIED))
         }
 
-        handler(conversation.id).test { 
+        handler(conversation.id, false).test {
             awaitItem()
             awaitComplete()
         }
