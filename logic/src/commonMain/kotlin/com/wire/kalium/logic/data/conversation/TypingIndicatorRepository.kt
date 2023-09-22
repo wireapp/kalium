@@ -35,10 +35,11 @@ internal interface TypingIndicatorRepository {
     suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>>
 }
 
-internal class TypingIndicatorRepositoryImpl : TypingIndicatorRepository {
+internal class TypingIndicatorRepositoryImpl(
+    private val userTypingCache: ConcurrentMutableMap<ConversationId, Set<ExpiringUserTyping>>
+) : TypingIndicatorRepository {
 
     private val userTypingDataSourceFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    private val userTypingCache = ConcurrentMutableMap<ConversationId, Set<ExpiringUserTyping>>()
 
     override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         val newTypingUser = ExpiringUserTyping(userId, Clock.System.now())

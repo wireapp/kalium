@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -32,7 +33,7 @@ class TypingIndicatorRepositoryTest {
 
     @BeforeTest
     fun setUp() {
-        typingIndicatorRepository = TypingIndicatorRepositoryImpl()
+        typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap())
     }
 
     @Test
