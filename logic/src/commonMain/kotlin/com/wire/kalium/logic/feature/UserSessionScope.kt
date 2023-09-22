@@ -1176,6 +1176,7 @@ class UserSessionScope internal constructor(
         get() = MLSWrongEpochHandlerImpl(
             systemMessageInserter = systemMessageInserter,
             conversationRepository = conversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase
         )
 

@@ -22,12 +22,12 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 
 interface MLSWrongEpochHandler {
@@ -41,6 +41,7 @@ interface MLSWrongEpochHandler {
 internal class MLSWrongEpochHandlerImpl(
     private val systemMessageInserter: SystemMessageInserter,
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
 ) : MLSWrongEpochHandler {
 
@@ -51,32 +52,24 @@ internal class MLSWrongEpochHandlerImpl(
         dateIso: String,
     ) {
         logger.i("Handling MLS WrongEpoch result")
-        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocol ->
+        getUpdatedConversationProtocolInfo(conversationId).flatMap { protocol ->
             if (protocol is Conversation.ProtocolInfo.MLS) {
                 Either.Right(protocol)
             } else {
                 Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
             }
-        }.flatMap { currentProtocol ->
-            getUpdatedConversationEpoch(conversationId).map { updatedEpoch ->
-                updatedEpoch != null && updatedEpoch != currentProtocol.epoch
-            }
+        }.flatMap { protocol ->
+            mlsConversationRepository.isGroupOutOfSync(protocol.groupId, protocol.epoch)
         }.flatMap { isRejoinNeeded ->
             if (isRejoinNeeded) {
                 logger.w("Epoch out of date due to missing commits, re-joining")
-                joinExistingMLSConversation(conversationId)
+                joinExistingMLSConversation(conversationId).flatMap {
+                    systemMessageInserter.insertLostCommitSystemMessage(
+                        conversationId,
+                        dateIso
+                    )
+                }
             } else Either.Right(Unit)
-        }.flatMap {
-            systemMessageInserter.insertLostCommitSystemMessage(
-                conversationId,
-                dateIso
-            )
-        }
-    }
-
-    private suspend fun getUpdatedConversationEpoch(conversationId: ConversationId): Either<CoreFailure, ULong?> {
-        return getUpdatedConversationProtocolInfo(conversationId).map { updatedProtocol ->
-            (updatedProtocol as? Conversation.ProtocolInfo.MLS)?.epoch
         }
     }
 
