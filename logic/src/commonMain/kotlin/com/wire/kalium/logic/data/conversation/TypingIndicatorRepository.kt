@@ -49,7 +49,7 @@ internal class TypingIndicatorRepositoryImpl : TypingIndicatorRepository {
     }
 
     override fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
-        userTypingCache.block { entry ->    // todo remove block
+        userTypingCache.block { entry ->
             entry[conversationId]?.toMutableSet()?.apply { this.removeAll { it.userId == userId } }
         }
         userTypingDataSourceFlow.tryEmit(Unit)
