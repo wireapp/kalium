@@ -37,7 +37,7 @@ internal interface TypingIndicatorRepository {
 }
 
 internal class TypingIndicatorRepositoryImpl(
-    private var userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>
+    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>
 ) : TypingIndicatorRepository {
 
     private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
