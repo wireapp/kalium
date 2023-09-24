@@ -44,8 +44,7 @@ internal class TypingIndicatorRepositoryImpl(
         MutableSharedFlow(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
-        val newTypingUser = ExpiringUserTyping(userId, Clock.System.now())
-        userTypingCache.safeComputeAndMutateSetValue(conversationId) { newTypingUser }
+        userTypingCache.safeComputeAndMutateSetValue(conversationId) { ExpiringUserTyping(userId, Clock.System.now()) }
         userTypingDataSourceFlow.tryEmit(Unit)
     }
 
