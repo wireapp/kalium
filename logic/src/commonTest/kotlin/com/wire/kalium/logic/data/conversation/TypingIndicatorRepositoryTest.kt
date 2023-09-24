@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import kotlinx.coroutines.flow.firstOrNull
@@ -49,14 +48,18 @@ class TypingIndicatorRepositoryTest {
         }
 
     @Test
-    fun givenUserAConversation_whenANewUserIsTypingAndStopped_thenShouldNotBePresentInTypingUsersInConversation() =
+    fun givenUsersOneAndTwoTypingInAConversation_whenOneStopped_thenShouldNotBePresentInTypingUsersInConversation() =
         runTest(TestKaliumDispatcher.default) {
-            val expectedUserTyping = emptySet<UserId>()
+            val expectedUserTyping = setOf(TestConversation.USER_2)
 
             typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_1)
+            typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_2)
             typingIndicatorRepository.removeTypingUserInConversation(conversationOne, TestConversation.USER_1)
 
-            assertEquals(expectedUserTyping, typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull())
+            assertEquals(
+                expectedUserTyping,
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()
+            )
         }
 
     @Test
@@ -65,10 +68,15 @@ class TypingIndicatorRepositoryTest {
             typingIndicatorRepository.addTypingUserInConversation(conversationOne, expectedUserTypingOne)
             typingIndicatorRepository.addTypingUserInConversation(conversationTwo, expectedUserTypingTwo)
 
-            assertEquals(setOf(expectedUserTypingOne), typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull())
-            assertEquals(setOf(expectedUserTypingTwo), typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull())
+            assertEquals(
+                setOf(expectedUserTypingOne),
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()
+            )
+            assertEquals(
+                setOf(expectedUserTypingTwo),
+                typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()
+            )
         }
-
 
     private companion object {
         val conversationOne = TestConversation.ID
@@ -77,5 +85,4 @@ class TypingIndicatorRepositoryTest {
         val expectedUserTypingOne = TestConversation.USER_1
         val expectedUserTypingTwo = TestConversation.USER_2
     }
-
 }

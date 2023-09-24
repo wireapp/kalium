@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.util.safeComputeAndMutateSetValue
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -36,18 +37,15 @@ internal interface TypingIndicatorRepository {
 }
 
 internal class TypingIndicatorRepositoryImpl(
-    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>,
-    private val userTypingDataSourceFlow: MutableSharedFlow<Unit> = MutableSharedFlow(
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
+    private var userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>
 ) : TypingIndicatorRepository {
+
+    private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
+        MutableSharedFlow(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         val newTypingUser = ExpiringUserTyping(userId, Clock.System.now())
-        userTypingCache.block { entry ->
-            entry[conversationId]?.apply { this.add(newTypingUser) } ?: mutableSetOf(newTypingUser)
-        }
+        userTypingCache.safeComputeAndMutateSetValue(conversationId) { newTypingUser }
         userTypingDataSourceFlow.tryEmit(Unit)
     }
 
