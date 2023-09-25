@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.ClientConfigImpl
@@ -48,7 +50,8 @@ internal fun UserSessionScope(
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
-    userAgent: String
+    dataStore: DataStore<Preferences>,
+    userAgent: String,
 ): UserSessionScope {
 
     val clientConfig: ClientConfig = ClientConfigImpl()
@@ -68,6 +71,7 @@ internal fun UserSessionScope(
         userStorageProvider,
         clientConfig,
         platformUserStorageProperties,
-        networkStateObserver
+        networkStateObserver,
+        dataStore
     )
 }
