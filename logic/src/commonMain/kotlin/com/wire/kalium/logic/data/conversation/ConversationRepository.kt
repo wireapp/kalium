@@ -402,7 +402,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun observeConversationListDetails(includeArchived: Boolean): Flow<List<ConversationDetails>> =
         combine(
-            conversationDAO.getAllConversationDetails(),
+            conversationDAO.getAllConversationDetails(includeArchived),
             messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
         ) { conversationList, lastMessageList, unreadEvents ->
@@ -420,8 +420,6 @@ internal class ConversationDataSource internal constructor(
                         }
                     }
                 )
-            }.filter {
-                includeArchived || !it.conversation.archived
             }
         }
 

@@ -1232,7 +1232,7 @@ class ConversationRepositoryTest {
         fun withConversations(conversations: List<ConversationViewEntity>) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getAllConversationDetails)
-                .whenInvoked()
+                .whenInvokedWith(any())
                 .thenReturn(flowOf(conversations))
         }
 

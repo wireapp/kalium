@@ -793,6 +793,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenConnectionRequestAndUserWithName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+        val includeArchived = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
         val connectionEntity = ConnectionEntity(
@@ -809,7 +810,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
-        conversationDAO.getAllConversationDetails().first().let {
+        conversationDAO.getAllConversationDetails(includeArchived).first().let {
             assertEquals(1, it.size)
             val result = it.first()
 
@@ -820,6 +821,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+        val includeArchived = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
         val connectionEntity = ConnectionEntity(
@@ -836,13 +838,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
-        conversationDAO.getAllConversationDetails().first().let {
+        conversationDAO.getAllConversationDetails(includeArchived).first().let {
             assertEquals(0, it.size)
         }
     }
 
     @Test
     fun givenLocalConversations_whenGettingAllConversations_thenShouldReturnsOnlyConversationsWithMetadata() = runTest {
+        val includeArchived = false
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
@@ -852,7 +855,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
 
-        conversationDAO.getAllConversationDetails().first().let {
+        conversationDAO.getAllConversationDetails(includeArchived).first().let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
@@ -861,12 +864,13 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenObserveConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
         // given
+        val includeArchived = false
         val conversation = conversationEntity1.copy(name = null, type = ConversationEntity.Type.GROUP, hasIncompleteMetadata = false)
         conversationDAO.insertConversation(conversation)
         insertTeamUserAndMember(team, user1, conversation.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails().first()
+        val result = conversationDAO.getAllConversationDetails(includeArchived).first()
 
         // then
         assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
@@ -875,20 +879,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenObserveConversationList_whenAConversationHaveIncompleteMetadata_thenItIsNotIncluded() = runTest {
         // given
+        val includeArchived = false
         val conversation = conversationEntity1.copy(hasIncompleteMetadata = true)
         conversationDAO.insertConversation(conversation)
         insertTeamUserAndMember(team, user1, conversation.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails().first()
+        val result = conversationDAO.getAllConversationDetails(includeArchived).first()
 
         // then
         assertNull(result.firstOrNull { it.id == conversation.id })
     }
 
     @Test
-    fun givenConversaions_whenObservingTheFullList_thenConvWithNullNameAreLast() = runTest {
+    fun givenConversations_whenObservingTheFullList_thenConvWithNullNameAreLast() = runTest {
         // given
+        val includeArchived = false
         val conversation1 = conversationEntity1.copy(
             id = ConversationIDEntity("convNullName", "domain"),
             name = null,
@@ -910,11 +916,46 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user1, conversation2.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails().first()
+        val result = conversationDAO.getAllConversationDetails(includeArchived).first()
 
         // then
         assertEquals(conversation2.id, result[0].id)
         assertEquals(conversation1.id, result[1].id)
+    }
+
+    @Test
+    fun givenArchivedConversations_whenObservingTheFullListWithNoArchived_thenReturnedConversationsShouldNotBeArchived() = runTest {
+        // given
+        val includeArchived = false
+        val conversation1 = conversationEntity1.copy(
+            id = ConversationIDEntity("convNullName", "domain"),
+            name = null,
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = true
+        )
+
+        val conversation2 = conversationEntity2.copy(
+            id = ConversationIDEntity("convWithName", "domain"),
+            name = "name",
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = false
+        )
+        conversationDAO.insertConversation(conversation1)
+        conversationDAO.insertConversation(conversation2)
+        insertTeamUserAndMember(team, user1, conversation1.id)
+        insertTeamUserAndMember(team, user1, conversation2.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails(includeArchived).first()
+
+        // then
+        assertTrue(result.size == 1)
+        assertTrue(!result[0].archived)
+        assertEquals(conversation2.id, result[0].id)
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
