@@ -21,7 +21,7 @@ folder, run:
 docker compose up
 ```
 
-By default, it will search for a config named `config.json` inside the config folder. To change
+By default, it will search for a config named `config.json` inside the `monkeys/docker/config` folder. To change
 which
 config file to load simply set the environment variable `CONFIG`:
 
