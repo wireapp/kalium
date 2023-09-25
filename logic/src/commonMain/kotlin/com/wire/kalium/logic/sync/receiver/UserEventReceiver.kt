@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -71,10 +73,19 @@ internal class UserEventReceiverImpl internal constructor(
             .onFailure {
                 kaliumLogger
                     .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
+                        if (it is StorageFailure.DataNotFound) EventLoggingStatus.SKIPPED else EventLoggingStatus.FAILURE,
                         event,
                         Pair("errorInfo", "$it")
                     )
+            }
+            .flatMapLeft {
+                if (it is StorageFailure.DataNotFound) {
+                    // not found in the local db, so this user is not in our team, not our contact nor a member of any of our groups,
+                    // so we can safely ignore this event failure
+                    Either.Right(Unit)
+                } else {
+                    Either.Left(it)
+                }
             }
 
     private suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> =

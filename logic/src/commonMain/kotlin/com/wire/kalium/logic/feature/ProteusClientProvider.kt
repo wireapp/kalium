@@ -80,15 +80,17 @@ class ProteusClientProviderImpl(
 
     override suspend fun getOrError(): Either<CoreFailure, ProteusClient> {
         return mutex.withLock {
-            _proteusClient?.let { Either.Right(it) } ?: run {
-                if (FileUtil.isDirectoryNonEmpty(rootProteusPath)) {
-                    wrapProteusRequest {
-                        createProteusClient().also {
-                            _proteusClient = it
+            withContext(dispatcher.io) {
+                _proteusClient?.let { Either.Right(it) } ?: run {
+                    if (FileUtil.isDirectoryNonEmpty(rootProteusPath)) {
+                        wrapProteusRequest {
+                            createProteusClient().also {
+                                _proteusClient = it
+                            }
                         }
+                    } else {
+                        Either.Left(CoreFailure.MissingClientRegistration)
                     }
-                } else {
-                    Either.Left(CoreFailure.MissingClientRegistration)
                 }
             }
         }
@@ -97,7 +99,7 @@ class ProteusClientProviderImpl(
     private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
             val central = coreCryptoCentral(
-                rootDir = "$rootProteusPath/$KEYSTORE_NAME",
+                rootDir = rootProteusPath,
                 databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
             )
             central.proteusClient()
@@ -108,9 +110,5 @@ class ProteusClientProviderImpl(
                 ioContext = dispatcher.io
             )
         }
-    }
-
-    private companion object {
-        const val KEYSTORE_NAME = "keystore"
     }
 }

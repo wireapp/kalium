@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import com.wire.kalium.persistence.UserDatabase
@@ -283,11 +284,11 @@ internal expect fun getDatabaseAbsoluteFileLocation(
 ): String?
 
 @Suppress("TooGenericExceptionCaught")
-fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
+fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
     val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
         it.next()
-        it.getLong(0)
-    }, 0).value?.toInt() ?: return false
+        it.getLong(0).let { QueryResult.Value<Long?>(it) }
+    }, 0).value ?: return false
 
     val newVersion = sqlSchema.version
     return try {
@@ -309,9 +310,10 @@ fun SqlDriver.checkFKViolations(): Boolean {
         // foreign_key_check returns the rows with the fk violations
         // if the cursor has a next, it means there are violations
         // and the backup is corrupted
-        if (it.next()) {
+        if (it.next().value) {
             result = true
         }
+        QueryResult.Unit
     }, 0, null)
 
     return result

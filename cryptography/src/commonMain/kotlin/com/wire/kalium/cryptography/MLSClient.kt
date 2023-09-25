@@ -221,7 +221,7 @@ interface MLSClient {
     suspend fun decryptMessage(
         groupId: MLSGroupId,
         message: ApplicationMessage
-    ): DecryptedMessageBundle
+    ): List<DecryptedMessageBundle>
 
     /**
      * Current members of the group.
@@ -318,5 +318,3 @@ interface MLSClient {
      */
     suspend fun isGroupVerified(groupId: MLSGroupId): Boolean
 }
-
-// expect class MLSClientImpl(rootDir: String, databaseKey: MlsDBSecret, clientId: CryptoQualifiedClientId) : MLSClient
