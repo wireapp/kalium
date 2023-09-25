@@ -32,6 +32,7 @@ interface UpdateConversationArchivedStatusUseCase {
      *
      * @param conversationId the id of the conversation where status wants to be changed
      * @param shouldArchiveConversation new archived status to be updated on the given conversation
+     * @param archivedStatusTimestamp the timestamp when the archiving event occurred
      * @return an [ConversationUpdateStatusResult] containing Success or Failure cases
      */
     suspend operator fun invoke(
@@ -53,18 +54,17 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
         conversationRepository.updateArchivedStatusRemotely(conversationId, shouldArchiveConversation, archivedStatusTimestamp).onFailure {
             kaliumLogger.e("Something went wrong when updating remotely convId (${conversationId.toLogString()}) archiving " +
                     "status to archived = ($shouldArchiveConversation)")
-        }
-            .flatMap {
-                conversationRepository.updateArchivedStatusLocally(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
-            }.fold({
-                kaliumLogger.e("Something went wrong when updating locally convId (${conversationId.toLogString()}) archiving " +
-                        "status to archived = ($shouldArchiveConversation)")
-                ArchiveStatusUpdateResult.Failure
-            }, {
-                kaliumLogger.d("Successfully updated remotely and locally convId (${conversationId.toLogString()}) archiving " +
-                        "status to archived = ($shouldArchiveConversation)")
-                ArchiveStatusUpdateResult.Success
-            })
+        }.flatMap {
+            conversationRepository.updateArchivedStatusLocally(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
+        }.fold({
+            kaliumLogger.e("Something went wrong when updating locally convId (${conversationId.toLogString()}) archiving " +
+                    "status to archived = ($shouldArchiveConversation)")
+            ArchiveStatusUpdateResult.Failure
+        }, {
+            kaliumLogger.d("Successfully updated remotely and locally convId (${conversationId.toLogString()}) archiving " +
+                    "status to archived = ($shouldArchiveConversation)")
+            ArchiveStatusUpdateResult.Success
+        })
 }
 
 sealed class ArchiveStatusUpdateResult {
