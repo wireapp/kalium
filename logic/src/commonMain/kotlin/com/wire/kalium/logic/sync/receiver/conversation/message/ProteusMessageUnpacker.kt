@@ -24,6 +24,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
 import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.event.Event
@@ -75,7 +76,20 @@ internal class ProteusMessageUnpackerImpl(
             .onFailure {
                 when (it) {
                     is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
-                    is ProteusFailure -> logger.e("ProteusFailure when processing message: ${it.proteusException.code.name}")
+
+                    is ProteusFailure -> {
+                        val loggableException = """{
+                            |"code": "${it.proteusException.code.name}",
+                            |"message": "${it.proteusException.message}",
+                            |"error": "${it.proteusException.stackTraceToString()}",
+                            |"cryptoClientId": "${cryptoSessionId.cryptoClientId.value}",
+                            |"cryptoUserId": "${cryptoSessionId.userId.value.obfuscateId()}"
+                            |}""".trimMargin()
+
+                        logger.e("ProteusFailure when processing message: ${it.proteusException.code.name}")
+                        logger.e("ProteusFailure when processing message detail: $loggableException")
+                    }
+
                     else -> logger.e("Failure when processing message: $it")
                 }
             }.map { readableContent ->
