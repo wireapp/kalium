@@ -195,10 +195,16 @@ class MessageMapperImpl(
             message.senderImage?.toModel()
         )
         if (message.isSelfDelete) {
-            return LocalNotificationMessage.SelfDeleteMessage(
-                message.id,
-                message.date
-            )
+            return when (message.contentType) {
+                MessageEntity.ContentType.KNOCK -> LocalNotificationMessage.SelfDeleteKnock(
+                    message.id,
+                    message.date
+                )
+                else -> LocalNotificationMessage.SelfDeleteMessage(
+                    message.id,
+                    message.date
+                )
+            }
         }
         return when (message.contentType) {
             MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
