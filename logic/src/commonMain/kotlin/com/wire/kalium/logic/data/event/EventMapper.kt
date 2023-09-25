@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
@@ -83,6 +84,7 @@ class EventMapper(
             is EventContentDTO.Unknown -> unknown(id, transient, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient)
+
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient)
@@ -92,11 +94,31 @@ class EventMapper(
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO, transient)
+
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO, transient)
+
             is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO, transient)
             is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, transient)
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient)
+            is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO, transient)
         }
+
+    private fun conversationTyping(
+        id: String,
+        eventContentDTO: EventContentDTO.Conversation.ConversationTypingDTO,
+        transient: Boolean
+    ): Event =
+        Event.Conversation.TypingIndicator(
+            id,
+            eventContentDTO.qualifiedConversation.toModel(),
+            transient,
+            eventContentDTO.qualifiedFrom.toModel(),
+            eventContentDTO.time,
+            when (eventContentDTO.status.status) {
+                TypingIndicatorStatus.STARTED -> Conversation.TypingIndicatorMode.STARTED
+                TypingIndicatorStatus.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
+            }
+        )
 
     private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
         when (eventContentDTO) {
