@@ -27,13 +27,13 @@ import kotlinx.coroutines.flow.Flow
  * @see ConversationDetails
  */
 fun interface ObserveConversationListDetailsUseCase {
-    suspend operator fun invoke(fetchArchivedConversations: Boolean): Flow<List<ConversationDetails>>
+    suspend operator fun invoke(includeArchived: Boolean): Flow<List<ConversationDetails>>
 }
 
 internal class ObserveConversationListDetailsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
 ) : ObserveConversationListDetailsUseCase {
 
-    override suspend operator fun invoke(fetchArchivedConversations: Boolean): Flow<List<ConversationDetails>> =
-        conversationRepository.observeConversationListDetails(fetchArchivedConversations)
+    override suspend operator fun invoke(includeArchived: Boolean): Flow<List<ConversationDetails>> =
+        conversationRepository.observeConversationListDetails(includeArchived)
 }
