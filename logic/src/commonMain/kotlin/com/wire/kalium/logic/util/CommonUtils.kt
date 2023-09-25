@@ -94,3 +94,16 @@ fun <K, V> ConcurrentMutableMap<K, V>.safeComputeIfAbsent(key: K, f: () -> V): V
         return@block value
     }
 }
+
+/**
+ * Convenience method to compute a {K, Set<V>} map mutating the collection with f() if the key is present.
+ */
+fun <K, V> ConcurrentMutableMap<K, MutableSet<V>>.safeComputeAndMutateSetValue(key: K, f: () -> V): MutableSet<V> {
+    return this.block {
+        val values = if (this.containsKey(key)) this[key]!! else mutableSetOf()
+
+        values.add(f())
+        this[key] = values
+        return@block values
+    }
+}
