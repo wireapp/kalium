@@ -33,6 +33,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEvent
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 
 internal interface ConversationEventReceiver : EventReceiver<Event.Conversation>
 
@@ -51,7 +52,8 @@ internal class ConversationEventReceiverImpl(
     private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler,
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
     private val codeUpdatedHandler: CodeUpdatedHandler,
-    private val codeDeletedHandler: CodeDeletedHandler
+    private val codeDeletedHandler: CodeDeletedHandler,
+    private val typingIndicatorHandler: TypingIndicatorHandler
 ) : ConversationEventReceiver {
     override suspend fun onEvent(event: Event.Conversation): Either<CoreFailure, Unit> {
         // TODO: Make sure errors are accounted for by each handler.
@@ -111,6 +113,7 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)
             is Event.Conversation.CodeDeleted -> codeDeletedHandler.handle(event)
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
+            is Event.Conversation.TypingIndicator -> typingIndicatorHandler.handle(event)
         }
     }
 }

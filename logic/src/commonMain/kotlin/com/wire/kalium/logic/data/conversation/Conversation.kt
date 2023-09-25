@@ -177,6 +177,7 @@ data class Conversation(
     }
 
     enum class ReceiptMode { DISABLED, ENABLED }
+    enum class TypingIndicatorMode { STARTED, STOPPED }
 
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
 

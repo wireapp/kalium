@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -26,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -266,4 +268,10 @@ class ConversationScope internal constructor(
             serverConfigRepository,
             selfUserId
         )
+
+    internal val typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap())
+
+    val observeUsersTyping: ObserveUsersTypingUseCase
+        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorRepository)
+
 }
