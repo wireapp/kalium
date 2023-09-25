@@ -200,7 +200,7 @@ data class Conversation(
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
     sealed class ProtocolInfo {
-        data object Proteus : ProtocolInfo() {
+        object Proteus : ProtocolInfo() {
             override fun name() = "Proteus"
         }
 
