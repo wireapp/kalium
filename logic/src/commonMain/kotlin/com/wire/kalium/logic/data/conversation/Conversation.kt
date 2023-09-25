@@ -176,6 +176,7 @@ data class Conversation(
     }
 
     enum class ReceiptMode { DISABLED, ENABLED }
+    enum class TypingIndicatorMode { STARTED, STOPPED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {

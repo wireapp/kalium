@@ -338,6 +338,8 @@ import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1197,6 +1199,9 @@ class UserSessionScope internal constructor(
             conversationDAO = userStorage.database.conversationDAO
         )
 
+    private val typingIndicatorHandler: TypingIndicatorHandler
+        get() = TypingIndicatorHandlerImpl(conversations.typingIndicatorRepository)
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1210,7 +1215,8 @@ class UserSessionScope internal constructor(
             receiptModeUpdateEventHandler,
             conversationMessageTimerEventHandler,
             conversationCodeUpdateHandler,
-            conversationCodeDeletedHandler
+            conversationCodeDeletedHandler,
+            typingIndicatorHandler
         )
     }
 

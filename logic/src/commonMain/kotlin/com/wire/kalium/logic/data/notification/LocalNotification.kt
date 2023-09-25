@@ -57,6 +57,11 @@ sealed class LocalNotificationMessage(
         override val time: Instant
     ) : LocalNotificationMessage(messageId, null, time)
 
+    data class SelfDeleteKnock(
+        override val messageId: String,
+        override val time: Instant
+    ) : LocalNotificationMessage(messageId, null, time)
+
     data class Text(
         override val messageId: String,
         override val author: LocalNotificationMessageAuthor,
