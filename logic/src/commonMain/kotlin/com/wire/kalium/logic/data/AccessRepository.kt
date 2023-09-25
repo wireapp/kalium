@@ -29,28 +29,20 @@ import kotlinx.coroutines.flow.map
 
 interface AccessRepository {
     suspend fun loggedInUsers(): Either<StorageFailure, Int?>
-
-    suspend fun markUserAsLoggedIn()
-
-    suspend fun markUserAsLoggedOut()
+    suspend fun updateLoggedInUsersCount(count: Int)
 }
 
 class AccessRepositoryDataSource(
     private val dataStore: DataStore<Preferences>
 ) : AccessRepository {
-    override suspend fun loggedInUsers(): Either<StorageFailure, Int?> = wrapStorageNullableRequest {
-        dataStore.data.map { it[USERS_LOGGED_IN] }.first()
-    }
-
-    override suspend fun markUserAsLoggedIn() {
-        dataStore.edit {
-            it[USERS_LOGGED_IN] = (it[USERS_LOGGED_IN] ?: 0) + 1
+    override suspend fun loggedInUsers(): Either<StorageFailure, Int?> =
+        wrapStorageNullableRequest {
+            dataStore.data.map { it[USERS_LOGGED_IN] }.first()
         }
-    }
 
-    override suspend fun markUserAsLoggedOut() {
+    override suspend fun updateLoggedInUsersCount(count: Int) {
         dataStore.edit {
-            it[USERS_LOGGED_IN] = (it[USERS_LOGGED_IN] ?: 0) - 1
+            it[USERS_LOGGED_IN] = count
         }
     }
 }

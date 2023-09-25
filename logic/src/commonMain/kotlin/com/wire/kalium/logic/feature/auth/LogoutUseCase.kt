@@ -18,10 +18,6 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -67,7 +63,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val getEstablishedCallsUseCase: ObserveEstablishedCallsUseCase,
     private val endCallUseCase: EndCallUseCase,
     private val kaliumConfigs: KaliumConfigs,
-    private val accessRepository: AccessRepository
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -95,6 +90,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                         wipeTokenAndMetadata()
                     }
                 }
+
                 LogoutReason.SESSION_EXPIRED -> {
                     if (kaliumConfigs.wipeOnCookieInvalid) {
                         wipeAllData()
@@ -102,12 +98,11 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                         clearCurrentClientIdAndFirebaseTokenFlag()
                     }
                 }
+
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
             }
-//             dataStore.edit { it[USER_LOGGED_IN] = false }
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
-            accessRepository.markUserAsLoggedOut()
         }
     }
 

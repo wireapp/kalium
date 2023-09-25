@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.session
 import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.IsUserLoggedInUseCaseImpl
+import com.wire.kalium.logic.feature.UpdateLoggedInUsersCountUseCaseImpl
 
 class SessionScope(
     private val sessionRepository: SessionRepository,
@@ -30,5 +31,6 @@ class SessionScope(
     val currentSession get() = CurrentSessionUseCase(sessionRepository)
     val currentSessionFlow get() = CurrentSessionFlowUseCase(sessionRepository)
     val updateCurrentSession get() = UpdateCurrentSessionUseCase(sessionRepository)
-    val isUserLoggedInUseCase get() = IsUserLoggedInUseCaseImpl(accessRepository)
+    val isUserLoggedIn get() = IsUserLoggedInUseCaseImpl(accessRepository)
+    val updateLoggedInUsersCount get() = UpdateLoggedInUsersCountUseCaseImpl(accessRepository)
 }

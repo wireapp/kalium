@@ -137,7 +137,7 @@ class GlobalKaliumScope internal constructor(
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
-        get() = AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository, accessRepository)
+        get() = AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase

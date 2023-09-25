@@ -18,21 +18,15 @@
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.AccessRepository
-import com.wire.kalium.logic.functional.fold
 
-interface IsUserLoggedInUseCase {
-    suspend operator fun invoke(): Boolean?
+interface UpdateLoggedInUsersCountUseCase {
+    suspend operator fun invoke(count: Int)
 }
 
-class IsUserLoggedInUseCaseImpl(
+class UpdateLoggedInUsersCountUseCaseImpl(
     private val accessRepository: AccessRepository
-) : IsUserLoggedInUseCase {
-    override suspend fun invoke(): Boolean? {
-        accessRepository.loggedInUsers().fold({
-            return null
-        }, {
-            return it?.let { it > 0 }
-        })
+) : UpdateLoggedInUsersCountUseCase {
+    override suspend fun invoke(count: Int) {
+        accessRepository.updateLoggedInUsersCount(count)
     }
 }
-

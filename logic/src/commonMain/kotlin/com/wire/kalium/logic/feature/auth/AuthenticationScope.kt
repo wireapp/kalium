@@ -89,7 +89,9 @@ class AuthenticationScope internal constructor(
         UnauthenticatedNetworkContainer.create(
             networkStateObserver,
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
-            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
+            proxyCredentials?.let {
+                MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it)
+            },
             userAgent,
             certificatePinning = certConfig()
         )
@@ -103,7 +105,10 @@ class AuthenticationScope internal constructor(
             unauthenticatedNetworkContainer.registerApi
         )
     internal val ssoLoginRepository: SSOLoginRepository
-        get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
+        get() = SSOLoginRepositoryImpl(
+            unauthenticatedNetworkContainer.sso,
+            unauthenticatedNetworkContainer.domainLookupApi
+        )
 
     internal val secondFactorVerificationRepository: SecondFactorVerificationRepository =
         SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
@@ -122,11 +127,7 @@ class AuthenticationScope internal constructor(
             serverConfig,
             proxyCredentials,
             secondFactorVerificationRepository,
-            accessRepository
         )
-
-    val isUserLoggedInUseCase: IsUserLoggedInUseCase
-        get() = IsUserLoggedInUseCaseImpl(accessRepository)
 
     val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)

@@ -18,12 +18,10 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
@@ -100,7 +98,6 @@ internal class LoginUseCaseImpl internal constructor(
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
-    private val accessRepository: AccessRepository
 ) : LoginUseCase {
     override suspend operator fun invoke(
         userIdentifier: String,
@@ -142,14 +139,11 @@ internal class LoginUseCaseImpl internal constructor(
                     is NetworkFailure.NoNetworkConnection -> AuthenticationResult.Failure.Generic(it)
                     is NetworkFailure.FederatedBackendFailure -> AuthenticationResult.Failure.Generic(it)
                 }
-            }, { success ->
-//                 dataStore.edit { it[USER_LOGGED_IN] = true }
-                accessRepository.markUserAsLoggedIn()
-
+            }, {
                 if (isEmail && clean2FACode != null) {
                     secondFactorVerificationRepository.storeVerificationCode(cleanUserIdentifier, clean2FACode)
                 }
-                success
+                it
             })
     }
 
@@ -184,5 +178,3 @@ internal class LoginUseCaseImpl internal constructor(
         }
     }
 }
-
-val USER_LOGGED_IN = booleanPreferencesKey("is_user_logged_in")
