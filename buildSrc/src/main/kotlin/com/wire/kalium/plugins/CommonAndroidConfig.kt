@@ -58,7 +58,6 @@ fun LibraryExtension.commonAndroidLibConfig(
         resources.pickFirsts.add("google/protobuf/*.proto")
         jniLibs.pickFirsts.add("**/libsodium.so")
     }
-    packagingOptions.resources.excludes += "META-INF/versions/9/previous-compilation-data.bin"
 
     // No Android Unit test. JVM does that. Android runs on emulator
     sourceSets.remove(sourceSets.getByName("test"))
