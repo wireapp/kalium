@@ -78,6 +78,8 @@ internal class ProteusMessageUnpackerImpl(
                     is CoreFailure.Unknown -> logger.e("UnknownFailure when processing message: $it", it.rootCause)
 
                     is ProteusFailure -> {
+                        logger.e("ProteusFailure when processing message: ${it.proteusException.code.name}")
+
                         val loggableException = """{
                             |"code": "${it.proteusException.code.name}",
                             |"message": "${it.proteusException.message}",
@@ -85,8 +87,6 @@ internal class ProteusMessageUnpackerImpl(
                             |"cryptoClientId": "${cryptoSessionId.cryptoClientId.value}",
                             |"cryptoUserId": "${cryptoSessionId.userId.value.obfuscateId()}"
                             |}""".trimMargin()
-
-                        logger.e("ProteusFailure when processing message: ${it.proteusException.code.name}")
                         logger.e("ProteusFailure when processing message detail: $loggableException")
                     }
 
