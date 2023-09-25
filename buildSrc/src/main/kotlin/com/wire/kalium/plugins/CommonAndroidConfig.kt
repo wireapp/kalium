@@ -39,7 +39,7 @@ fun LibraryExtension.commonAndroidLibConfig(
     includeNativeInterop: Boolean,
     namespaceSuffix: String
 ) {
-    val sanitizedSuffix = namespaceSuffix.replace('-','.')
+    val sanitizedSuffix = namespaceSuffix.replace('-', '.')
     namespace = "$BASE_NAMESPACE.$sanitizedSuffix"
     compileSdk = Android.Sdk.compile
     sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
