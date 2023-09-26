@@ -33,6 +33,9 @@ import com.wire.kalium.logic.feature.message.CryptoSessionMapper
 import com.wire.kalium.logic.feature.message.CryptoSessionMapperImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -151,7 +154,15 @@ class PreKeyDataSource(
         firstKeyId: Int,
         keysCount: Int
     ): Either<ProteusFailure, List<PreKeyCrypto>> =
-        wrapProteusRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }
+        wrapProteusRequest { proteusClientProvider.getOrCreate().newPreKeys(firstKeyId, keysCount) }.onSuccess {
+            kaliumLogger.i(
+                """Generating PreKeys: {"success":true,"firstKeyId":$firstKeyId,"$keysCount":$keysCount}"""
+            )
+        }.onFailure {
+            kaliumLogger.i(
+                """Generating PreKeys: {"success":false,"firstKeyId":$firstKeyId, "$keysCount":$keysCount}"""
+            )
+        }
 
     override suspend fun generateNewLastResortKey(): Either<ProteusFailure, PreKeyCrypto> =
         wrapProteusRequest {
