@@ -69,13 +69,13 @@ class InstanceLifecycle(
         // handles unresponsive instances
         ar.setTimeout(timeout, TimeUnit.SECONDS)
         ar.setTimeoutHandler { asyncResponse: AsyncResponse ->
-            log.error("Async create instance request timed out after $timeout seconds")
+            log.error("Instance $instanceId: Async create instance request timed out after $timeout seconds")
             asyncResponse.cancel()
             instanceService.deleteInstance(instanceId)
         }
         // handles client disconnect
         ar.register(ConnectionCallback { disconnected: AsyncResponse? ->
-            log.error("Client disconnected from async create instance request")
+            log.error("Instance $instanceId: Client disconnected from async create instance request")
             instanceService.deleteInstance(instanceId)
         })
 
@@ -86,7 +86,7 @@ class InstanceLifecycle(
         } catch (we: WebApplicationException) {
             throw we
         } catch (e: Exception) {
-            log.error("Could not create instance: " + e.message, e)
+            log.error("Instance $instanceId: Could not create instance: " + e.message, e)
             throw WebApplicationException("Could not create instance: " + e.message)
         }
 

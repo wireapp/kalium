@@ -134,7 +134,7 @@ class InstanceService(
         )
     }
 
-    @Suppress("LongMethod", "ThrowsCount")
+    @Suppress("LongMethod", "ThrowsCount", "ComplexMethod")
     suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance {
         val userAgent = "KaliumTestService/${System.getProperty("http.agent")}"
         val before = System.currentTimeMillis()
@@ -222,14 +222,23 @@ class InstanceService(
                             model = instanceRequest.deviceName
                         )
                     )) {
-                        is RegisterClientResult.Failure ->
-                            throw WebApplicationException("Instance $instanceId: Client registration failed")
-
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
                             log.info("Instance $instanceId: Device $clientId successfully registered")
                             syncManager.waitUntilLive()
                         }
+                        is RegisterClientResult.Failure.TooManyClients ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
+                        is RegisterClientResult.Failure.InvalidCredentials.Invalid2FA ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, invalid 2FA code")
+                        is RegisterClientResult.Failure.InvalidCredentials.InvalidPassword ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, invalid password")
+                        is RegisterClientResult.Failure.InvalidCredentials.Missing2FA ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, 2FA code needed for account")
+                        is RegisterClientResult.Failure.PasswordAuthRequired ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, missing password")
+                        is RegisterClientResult.Failure.Generic ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed")
                     }
                 }
             }
