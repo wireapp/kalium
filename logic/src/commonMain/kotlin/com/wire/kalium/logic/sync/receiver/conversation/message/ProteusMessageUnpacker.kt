@@ -83,7 +83,9 @@ internal class ProteusMessageUnpackerImpl(
                         val loggableException =
                             "{ \"code\": \"${it.proteusException.code.name}\", \"message\": \"${it.proteusException.message}\", " +
                                     "\"error\": \"${it.proteusException.stackTraceToString()}\"," +
-                                    "\"cryptoClientId\": \"${cryptoSessionId.cryptoClientId.value}\"," +
+                                    "\"senderClientId\": \"${event.senderClientId.value.obfuscateId()}\"," +
+                                    "\"senderUserId\": \"${event.senderUserId.value.obfuscateId()}\"," +
+                                    "\"cryptoClientId\": \"${cryptoSessionId.cryptoClientId.value.obfuscateId()}\"," +
                                     "\"cryptoUserId\": \"${cryptoSessionId.userId.value.obfuscateId()}\"}"
                         logger.e("ProteusFailure when processing message detail: $loggableException")
                     }
