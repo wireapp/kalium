@@ -34,6 +34,7 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
@@ -82,7 +83,7 @@ internal class SlowSyncWorkerImpl(
 
         performStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
             .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
-            .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS, updateSupportedProtocols::invoke)
+            .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().map { } }
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
             .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
             .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)

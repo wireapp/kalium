@@ -44,6 +44,8 @@ internal interface UserRepositoryArrangement {
     fun withGetKnownUserReturning(result: Flow<OtherUser?>)
 
     fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>)
+
+    fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>)
 }
 
 internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
@@ -95,4 +97,12 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
             .whenInvoked()
             .thenReturn(result)
     }
+
+    override fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>) {
+        given(userRepository)
+            .suspendFunction(userRepository::fetchAllOtherUsers)
+            .whenInvoked()
+            .thenReturn(result)
+    }
+
 }
