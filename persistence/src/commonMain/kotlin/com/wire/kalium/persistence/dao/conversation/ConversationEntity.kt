@@ -78,7 +78,7 @@ data class ConversationEntity(
     enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_AND_REPLIES_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
     sealed class ProtocolInfo {
-        data object Proteus : ProtocolInfo()
+        object Proteus : ProtocolInfo()
         data class MLS(
             val groupId: String,
             val groupState: GroupState,
