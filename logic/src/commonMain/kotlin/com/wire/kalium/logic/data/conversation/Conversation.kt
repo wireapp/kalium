@@ -212,7 +212,6 @@ data class Conversation(
             override val groupId: GroupID,
             override val groupState: MLSCapable.GroupState,
             override val epoch: ULong,
-            override val epochTimestamp: Instant?,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: CipherSuite
         ) : MLSCapable {
@@ -223,7 +222,6 @@ data class Conversation(
             override val groupId: GroupID,
             override val groupState: MLSCapable.GroupState,
             override val epoch: ULong,
-            override val epochTimestamp: Instant?,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: CipherSuite
         ) : MLSCapable {
@@ -234,7 +232,6 @@ data class Conversation(
             val groupId: GroupID
             val groupState: GroupState
             val epoch: ULong
-            val epochTimestamp: Instant?
             val keyingMaterialLastUpdate: Instant
             val cipherSuite: CipherSuite
 

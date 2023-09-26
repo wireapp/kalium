@@ -232,7 +232,6 @@ class ConversationRepositoryTest {
                 RAW_GROUP_ID,
                 ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
-                null,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
@@ -1626,7 +1625,6 @@ class ConversationRepositoryTest {
             TestConversation.NETWORK_ID,
             null,
             0UL,
-            null,
             ConversationResponse.Type.GROUP,
             0,
             null,
@@ -1657,7 +1655,6 @@ class ConversationRepositoryTest {
             RAW_GROUP_ID,
             ConversationEntity.GroupState.ESTABLISHED,
             0UL,
-            null,
             Clock.System.now(),
             ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )

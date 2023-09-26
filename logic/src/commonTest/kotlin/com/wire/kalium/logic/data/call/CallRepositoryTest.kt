@@ -1755,7 +1755,6 @@ class CallRepositoryTest {
                 groupId,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 1UL,
-                Instant.DISTANT_PAST,
                 Clock.System.now(),
                 Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )

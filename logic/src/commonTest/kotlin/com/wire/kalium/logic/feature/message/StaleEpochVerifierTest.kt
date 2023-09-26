@@ -77,9 +77,7 @@ class StaleEpochVerifierTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(false))
             withFetchConversation(Either.Right(Unit))
-            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(60.minutes)
-            )))
+            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
         }
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
@@ -91,13 +89,11 @@ class StaleEpochVerifierTest {
     }
 
     @Test
-    fun givenStaleEpochAndEpochTimestampIsOlderThanOneHour_whenHandlingStaleEpoch_thenShouldRejoinTheConversation() = runTest {
+    fun givenStaleEpoch_whenHandlingStaleEpoch_thenShouldRejoinTheConversation() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(true))
             withFetchConversation(Either.Right(Unit))
-            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(60.minutes)
-            )))
+            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
         }
@@ -111,31 +107,11 @@ class StaleEpochVerifierTest {
     }
 
     @Test
-    fun givenStaleEpochAndEpochTimestampIsNewerThanOneHour_whenHandlingEpochFailure_thenShouldNotRejoinTheConversation() = runTest {
-        val (arrangement, staleEpochHandler) = arrange {
-            withIsGroupOutOfSync(Either.Right(true))
-            withFetchConversation(Either.Right(Unit))
-            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(STALE_EPOCH_DURATION.minus(1.minutes))
-            )))
-        }
-
-        staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
-
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(eq(CONVERSATION_ID))
-            .wasNotInvoked()
-    }
-
-    @Test
     fun givenRejoiningFails_whenHandlingStaleEpoch_thenShouldNotInsertLostCommitSystemMessage() = runTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(true))
             withFetchConversation(Either.Right(Unit))
-            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(STALE_EPOCH_DURATION)
-            )))
+            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
@@ -152,9 +128,7 @@ class StaleEpochVerifierTest {
         val (arrangement, staleEpochHandler) = arrange {
             withIsGroupOutOfSync(Either.Right(true))
             withFetchConversation(Either.Right(Unit))
-            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO.copy(
-                epochTimestamp = Clock.System.now().minus(STALE_EPOCH_DURATION)
-            )))
+            withGetConversationProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
             withInsertLostCommitSystemMessage(Either.Right(Unit))
         }
@@ -189,6 +163,5 @@ class StaleEpochVerifierTest {
         fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val CONVERSATION_ID = TestConversation.ID
-        val STALE_EPOCH_DURATION = StaleEpochVerifierImpl.STALE_EPOCH_DURATION
     }
 }

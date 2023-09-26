@@ -205,7 +205,6 @@ object TestConversation {
         NETWORK_ID,
         null,
         0UL,
-        null,
         ConversationResponse.Type.GROUP,
         0,
         null,
@@ -319,7 +318,6 @@ object TestConversation {
         GROUP_ID,
         ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
         0UL,
-        null,
         Instant.parse("2021-03-30T15:36:00.000Z"),
         cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )
@@ -330,7 +328,6 @@ object TestConversation {
         GROUP_ID,
         ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
         0UL,
-        null,
         Instant.parse("2021-03-30T15:36:00.000Z"),
         cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )

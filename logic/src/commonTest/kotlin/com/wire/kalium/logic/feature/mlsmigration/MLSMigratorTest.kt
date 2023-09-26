@@ -259,7 +259,6 @@ class MLSMigratorTest {
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,
-                null,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
@@ -267,7 +266,6 @@ class MLSMigratorTest {
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,
-                null,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
                 cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )

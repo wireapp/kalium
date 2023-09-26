@@ -263,7 +263,6 @@ class RecoverMLSConversationsUseCaseTests {
                     GROUP_ID1,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    Instant.DISTANT_PAST,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
@@ -274,7 +273,6 @@ class RecoverMLSConversationsUseCaseTests {
                     GROUP_ID2,
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
-                    Instant.DISTANT_PAST,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )

@@ -399,7 +399,6 @@ internal class ConversationMapperImpl(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
-                epochTimestamp?.toInstant(),
                 keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
@@ -408,7 +407,6 @@ internal class ConversationMapperImpl(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
-                epochTimestamp?.toInstant(),
                 keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )

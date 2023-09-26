@@ -1137,7 +1137,6 @@ class MessageSenderTest {
                 Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 0UL,
                 Instant.DISTANT_PAST,
-                Instant.DISTANT_PAST,
                 Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
             val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(

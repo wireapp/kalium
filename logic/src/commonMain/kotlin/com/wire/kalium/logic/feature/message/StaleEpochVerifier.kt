@@ -33,7 +33,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.minutes
 
 interface StaleEpochVerifier {
     suspend fun verifyEpoch(conversationId: ConversationId, timestamp: Instant? = null): Either<CoreFailure, Unit>
@@ -58,9 +57,7 @@ internal class StaleEpochVerifierImpl(
         }.flatMap { protocolInfo ->
             mlsConversationRepository.isGroupOutOfSync(protocolInfo.groupId, protocolInfo.epoch)
                 .map { epochIsStale ->
-                    val epochTimestamp = protocolInfo.epochTimestamp ?: Instant.DISTANT_FUTURE
-                    val epochWasModifiedInThePast = Clock.System.now().minus(epochTimestamp) > STALE_EPOCH_DURATION
-                    epochIsStale && epochWasModifiedInThePast
+                    epochIsStale
                 }
         }.flatMap { hasMissedCommits ->
             if (hasMissedCommits) {
@@ -83,9 +80,4 @@ internal class StaleEpochVerifierImpl(
             conversationRepository.getConversationProtocolInfo(conversationId)
         }
     }
-
-    companion object {
-        val STALE_EPOCH_DURATION = 5.minutes
-    }
-
 }
