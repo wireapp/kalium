@@ -57,7 +57,7 @@ class AuthenticationScopeProvider internal constructor(
         proxyCredentials: ProxyCredentials?,
         serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
-        certConfig: () -> CertificatePinning,
+        certConfig: () -> CertificatePinning
     ): AuthenticationScope =
         authenticationScopeStorage.safeComputeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
@@ -66,7 +66,7 @@ class AuthenticationScopeProvider internal constructor(
                 proxyCredentials,
                 serverConfigRepository,
                 networkStateObserver,
-                certConfig,
+                certConfig
             )
         }
 }
@@ -77,20 +77,17 @@ class AuthenticationScope internal constructor(
     private val proxyCredentials: ProxyCredentials?,
     private val serverConfigRepository: ServerConfigRepository,
     private val networkStateObserver: NetworkStateObserver,
-    certConfig: () -> CertificatePinning,
+    certConfig: () -> CertificatePinning
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             networkStateObserver,
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
-            proxyCredentials?.let {
-                MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it)
-            },
+            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
             userAgent,
             certificatePinning = certConfig()
         )
     }
-
     private val loginRepository: LoginRepository
         get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi)
 
@@ -99,10 +96,7 @@ class AuthenticationScope internal constructor(
             unauthenticatedNetworkContainer.registerApi
         )
     internal val ssoLoginRepository: SSOLoginRepository
-        get() = SSOLoginRepositoryImpl(
-            unauthenticatedNetworkContainer.sso,
-            unauthenticatedNetworkContainer.domainLookupApi
-        )
+        get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
 
     internal val secondFactorVerificationRepository: SecondFactorVerificationRepository =
         SecondFactorVerificationRepositoryImpl(unauthenticatedNetworkContainer.verificationCodeApi)
@@ -120,9 +114,8 @@ class AuthenticationScope internal constructor(
             validateUserHandleUseCase,
             serverConfig,
             proxyCredentials,
-            secondFactorVerificationRepository,
+            secondFactorVerificationRepository
         )
-
     val requestSecondFactorVerificationCode: RequestSecondFactorVerificationCodeUseCase
         get() = RequestSecondFactorVerificationCodeUseCase(secondFactorVerificationRepository)
     val registerScope: RegisterScope

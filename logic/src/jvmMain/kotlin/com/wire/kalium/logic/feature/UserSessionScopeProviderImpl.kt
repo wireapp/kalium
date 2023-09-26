@@ -44,7 +44,7 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
-    userAgent: String,
+    userAgent: String
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
 
     override fun create(userId: UserId): UserSessionScope {
@@ -69,7 +69,7 @@ internal actual class UserSessionScopeProviderImpl(
             userStorageProvider,
             this,
             networkStateObserver,
-            userAgent,
+            userAgent
         )
     }
 }

@@ -62,7 +62,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val getEstablishedCallsUseCase: ObserveEstablishedCallsUseCase,
     private val endCallUseCase: EndCallUseCase,
-    private val kaliumConfigs: KaliumConfigs,
+    private val kaliumConfigs: KaliumConfigs
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -90,7 +90,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                         wipeTokenAndMetadata()
                     }
                 }
-
                 LogoutReason.SESSION_EXPIRED -> {
                     if (kaliumConfigs.wipeOnCookieInvalid) {
                         wipeAllData()
@@ -98,7 +97,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                         clearCurrentClientIdAndFirebaseTokenFlag()
                     }
                 }
-
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
             }
             userSessionScopeProvider.get(userId)?.cancel()

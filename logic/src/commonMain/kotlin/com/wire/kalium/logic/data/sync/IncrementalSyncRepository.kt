@@ -72,6 +72,7 @@ internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
 
     override val incrementalSyncState = _syncState
         .asSharedFlow()
+        .distinctUntilChanged()
 
     private val _connectionPolicy = MutableSharedFlow<ConnectionPolicy>(
         replay = 1,

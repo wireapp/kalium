@@ -80,7 +80,7 @@ actual class CoreLogic(
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
-            userAgent,
+            userAgent
         )
     }
 }

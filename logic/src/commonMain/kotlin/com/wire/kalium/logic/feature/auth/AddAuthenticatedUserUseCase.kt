@@ -33,7 +33,7 @@ import com.wire.kalium.logic.functional.onSuccess
  */
 class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
-    private val serverConfigRepository: ServerConfigRepository,
+    private val serverConfigRepository: ServerConfigRepository
 ) {
     sealed class Result {
         data class Success(val userId: UserId) : Result()
@@ -49,7 +49,8 @@ class AddAuthenticatedUserUseCase internal constructor(
         authTokens: AuthTokens,
         proxyCredentials: ProxyCredentials?,
         replace: Boolean = false
-    ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
+    ): Result =
+        sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, { doesValidSessionExist ->
@@ -81,7 +82,8 @@ class AddAuthenticatedUserUseCase internal constructor(
         newAuthTokens: AuthTokens,
         proxyCredentials: ProxyCredentials?,
         replace: Boolean
-    ): Result = when (replace) {
+    ): Result =
+        when (replace) {
             true -> {
                 sessionRepository.fullAccountInfo(newAuthTokens.userId).fold(
                     { Result.Failure.Generic(it) },
@@ -95,15 +97,11 @@ class AddAuthenticatedUserUseCase internal constructor(
                                 authTokens = newAuthTokens,
                                 proxyCredentials = proxyCredentials
                             )
-                        } else {
-                            Result.Failure.UserAlreadyExists
-                        }
+                        } else Result.Failure.UserAlreadyExists
                     }
                 )
             }
 
-            false -> {
-                Result.Failure.UserAlreadyExists
-            }
+            false -> Result.Failure.UserAlreadyExists
         }
 }

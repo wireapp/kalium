@@ -48,7 +48,7 @@ internal fun UserSessionScope(
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
-    userAgent: String,
+    userAgent: String
 ): UserSessionScope {
 
     val clientConfig: ClientConfig = ClientConfigImpl()
