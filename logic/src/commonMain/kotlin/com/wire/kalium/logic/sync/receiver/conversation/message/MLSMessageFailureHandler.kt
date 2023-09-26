@@ -29,11 +29,13 @@ sealed class MLSMessageFailureResolution {
 internal object MLSMessageFailureHandler {
     fun handleFailure(failure: CoreFailure): MLSMessageFailureResolution {
         return when (failure) {
-            // Received messages targeting a future epoch, we might have lost messages.
+            // Received messages targeting a future epoch (outside epoch bounds), we might have lost messages.
             is MLSFailure.WrongEpoch -> MLSMessageFailureResolution.OutOfSync
             // Received already sent or received message, can safely be ignored.
             is MLSFailure.DuplicateMessage -> MLSMessageFailureResolution.Ignore
-            // Received self commit, any unmerged group has know when merged by CoreCrypto.
+            // Received message was targeting a future epoch and been buffered, can safely be ignored.
+            is MLSFailure.BufferedFutureMessage -> MLSMessageFailureResolution.Ignore
+            // Received self commit, any unmerged group has know been when merged by CoreCrypto.
             is MLSFailure.SelfCommitIgnored -> MLSMessageFailureResolution.Ignore
             // Message arrive in an unmerged group, it has been buffered and will be consumed later.
             is MLSFailure.UnmergedPendingGroup -> MLSMessageFailureResolution.Ignore
