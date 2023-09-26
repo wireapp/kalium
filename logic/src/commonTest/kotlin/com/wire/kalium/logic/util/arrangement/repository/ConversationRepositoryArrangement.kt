@@ -53,7 +53,6 @@ internal interface ConversationRepositoryArrangement {
     fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangementImpl
     fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
     fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
-    fun withConversationVerificationStatus(result: Either<StorageFailure, Conversation.VerificationStatus>): ConversationRepositoryArrangementImpl
     fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
 }
 
