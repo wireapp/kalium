@@ -47,6 +47,8 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @Suppress("LongMethod")
 @Ignore // TODO
@@ -59,6 +61,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversation = TestConversation.SELF()
         val conversations = listOf(selfConversation, groupConversation)
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
+        val fetchArchivedConversations = false
         val groupConversationDetails =
             ConversationDetails.Group(
                 groupConversation,
@@ -77,13 +80,61 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When
-        observeConversationsUseCase().collect()
+        observeConversationsUseCase(fetchArchivedConversations).collect()
 
         // Then
         with(arrangement) {
             verify(conversationRepository)
                 .suspendFunction(conversationRepository::observeConversationList)
                 .wasInvoked(exactly = once)
+        }
+    }
+    @Test
+    fun givenSomeConversationsWithArchivedValues_whenFetchingOnlyNonArchived_thenTheseConversationsShouldNotBeReturned() = runTest {
+        // Given
+        val groupConversation1 = TestConversation.GROUP().copy(archived = true)
+        val group2Id = ConversationId("OtherId","someDomain")
+        val groupConversation2 = TestConversation.GROUP().copy(id = group2Id, archived = false)
+        val selfConversation = TestConversation.SELF()
+        val conversations = listOf(selfConversation, groupConversation1, groupConversation2)
+        val selfConversationDetails = ConversationDetails.Self(selfConversation)
+        val fetchArchivedConversations = false
+        val groupConversationDetails1 =
+            ConversationDetails.Group(
+                groupConversation1,
+                LegalHoldStatus.DISABLED,
+                lastMessage = null,
+                isSelfUserMember = true,
+                isSelfUserCreator = true,
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
+            )
+        val groupConversationDetails2 =
+            ConversationDetails.Group(
+                groupConversation2,
+                LegalHoldStatus.DISABLED,
+                lastMessage = null,
+                isSelfUserMember = true,
+                isSelfUserCreator = true,
+                unreadEventCount = emptyMap(),
+                selfRole = Conversation.Member.Role.Member
+            )
+
+        val (arrangement, observeConversationsUseCase) = Arrangement()
+            .withConversationsList(conversations)
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation1, listOf(groupConversationDetails1))
+            .withSuccessfulConversationsDetailsListUpdates(groupConversation2, listOf(groupConversationDetails2))
+            .withSuccessfulConversationsDetailsListUpdates(selfConversation, listOf(selfConversationDetails))
+            .arrange()
+
+        // When
+        observeConversationsUseCase(fetchArchivedConversations).test {
+            val conversationDetailsList = awaitItem()
+
+            // Then
+            assertFalse(conversationDetailsList.contains(groupConversationDetails2))
+            assertTrue(conversationDetailsList.contains(selfConversationDetails))
+            assertTrue(conversationDetailsList.contains(groupConversationDetails1))
         }
     }
 
@@ -93,6 +144,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversation = TestConversation.SELF()
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(selfConversation, groupConversation)
+        val fetchArchivedConversations = false
 
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val groupConversationDetails = ConversationDetails.Group(
@@ -112,7 +164,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When
-        observeConversationsUseCase().collect()
+        observeConversationsUseCase(fetchArchivedConversations).collect()
 
         with(arrangement) {
             conversations.forEach { conversation ->
@@ -130,6 +182,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val oneOnOneConversation = TestConversation.ONE_ON_ONE
         val groupConversation = TestConversation.GROUP()
         val conversations = listOf(groupConversation, oneOnOneConversation)
+        val fetchArchivedConversations = false
 
         val groupConversationUpdates = listOf(
             ConversationDetails.Group(
@@ -169,7 +222,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             oneOnOneDetailsChannel.send(firstOneOnOneDetails)
 
             val conversationList = awaitItem()
@@ -188,6 +241,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenAConversationIsAddedToTheList_whenObservingDetailsList_thenTheUpdateIsPropagatedThroughTheFlow() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
+        val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
@@ -212,7 +266,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertContentEquals(listOf(groupConversationDetails), awaitItem())
 
             conversationListUpdates.close()
@@ -225,6 +279,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
+        val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
             LegalHoldStatus.DISABLED,
@@ -246,7 +301,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertEquals(true, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
@@ -255,6 +310,7 @@ class ObserveConversationListDetailsUseCaseTest {
     fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
         // Given
         val groupConversation = TestConversation.GROUP()
+        val fetchArchivedConversations = false
 
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
@@ -277,7 +333,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
@@ -289,6 +345,7 @@ class ObserveConversationListDetailsUseCaseTest {
         val successConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("successId", "domain"))
         val successConversationDetails = TestConversationDetails.CONVERSATION_ONE_ONE.copy(conversation = successConversation)
         val failureConversation = TestConversation.ONE_ON_ONE.copy(id = ConversationId("failedId", "domain"))
+        val fetchArchivedConversations = false
 
         val (_, observeConversationsUseCase) = Arrangement()
             .withConversationsList(listOf(successConversation, failureConversation))
@@ -297,7 +354,7 @@ class ObserveConversationListDetailsUseCaseTest {
             .arrange()
 
         // When, Then
-        observeConversationsUseCase().test {
+        observeConversationsUseCase(fetchArchivedConversations).test {
             assertEquals(awaitItem(), listOf(successConversationDetails))
             awaitComplete()
         }

@@ -128,6 +128,21 @@ internal class UserEventReceiverImpl internal constructor(
 
     private suspend fun handleNewClient(event: Event.User.NewClient): Either<CoreFailure, Unit> =
         clientRepository.saveNewClientEvent(event)
+            .onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }
+            .onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> =
         if (selfUserId == event.userId) {
