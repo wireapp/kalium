@@ -168,8 +168,8 @@ import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
-import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
+import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandlerImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
@@ -1278,8 +1278,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             cachedClientIdClearer
         )
-    val conversations: ConversationScope by lazy {
-        ConversationScope(
+    val conversations: ConversationScope
+        get() = ConversationScope(
             conversationRepository,
             conversationGroupRepository,
             connectionRepository,
@@ -1302,7 +1302,6 @@ class UserSessionScope internal constructor(
             userStorage,
             this
         )
-    }
 
     val migration get() = MigrationScope(userStorage.database)
     val debug: DebugScope
@@ -1506,6 +1505,10 @@ class UserSessionScope internal constructor(
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
+    private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
+        MLSConversationsVerificationStatusesHandlerImpl(conversationRepository, persistMessage, mlsConversationRepository, userId)
+    }
+
     init {
         launch {
             apiMigrationManager.performMigrations()
@@ -1540,6 +1543,10 @@ class UserSessionScope internal constructor(
 
         launch {
             avsSyncStateReporter.execute()
+        }
+
+        launch {
+            mlsConversationsVerificationStatusesHandler.invoke()
         }
     }
 

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -53,6 +54,7 @@ internal interface ConversationRepositoryArrangement {
     fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
     fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
     fun withConversationVerificationStatus(result: Either<StorageFailure, Conversation.VerificationStatus>): ConversationRepositoryArrangementImpl
+    fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -129,9 +131,9 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .thenReturn(result)
     }
 
-    override fun withConversationVerificationStatus(result: Either<StorageFailure, Conversation.VerificationStatus>) = apply {
+    override fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>) = apply {
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationVerificationStatus)
+            .suspendFunction(conversationRepository::getConversationDetailsByMLSGroupId)
             .whenInvokedWith(any())
             .thenReturn(result)
     }

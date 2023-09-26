@@ -22,44 +22,28 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 
 /**
  * This use case will observe and return the conversation details for a specific conversation.
- * Also it will observe conversation verification status and update it when needed.
  * @see ConversationDetails
  */
-interface ObserveConversationDetailsUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Flow<ObserveConversationDetailsResult>
-}
-
-internal class ObserveConversationDetailsUseCaseImpl(
+class ObserveConversationDetailsUseCase(
     private val conversationRepository: ConversationRepository,
-    private val verificationStatusHandler: ConversationVerificationStatusHandler,
-) : ObserveConversationDetailsUseCase {
+) {
+    sealed class Result {
+        data class Success(val conversationDetails: ConversationDetails) : Result()
+        data class Failure(val storageFailure: StorageFailure) : Result()
+    }
 
     /**
      * @param conversationId the id of the conversation to observe
      * @return a flow of [Result] with the [ConversationDetails] of the conversation
      */
-    override suspend operator fun invoke(conversationId: ConversationId): Flow<ObserveConversationDetailsResult> {
+    suspend operator fun invoke(conversationId: ConversationId): Flow<Result> {
         return conversationRepository.observeConversationDetailsById(conversationId)
-            .flatMapRight { protocolInfo ->
-                // just observe a Flow from verificationStatusHandler, but ignore it,
-                // so handler fetch and save verification status.
-                verificationStatusHandler(conversationId)
-                    .map { protocolInfo }
-                    .onStart { emit(protocolInfo) }
-            }
-            .map { it.fold({ l -> ObserveConversationDetailsResult.Failure(l) }, { r -> ObserveConversationDetailsResult.Success(r) }) }
+            .map { it.fold({ Result.Failure(it) }, { Result.Success(it) }) }
     }
-}
-
-sealed class ObserveConversationDetailsResult {
-    data class Success(val conversationDetails: ConversationDetails) : ObserveConversationDetailsResult()
-    data class Failure(val storageFailure: StorageFailure) : ObserveConversationDetailsResult()
 }

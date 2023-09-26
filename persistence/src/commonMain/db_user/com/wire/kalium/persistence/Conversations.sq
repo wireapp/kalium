@@ -257,9 +257,6 @@ selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
 mls_last_keying_material_update_date, mls_cipher_suite FROM Conversation WHERE qualified_id = ?;
 
-selectVerificationStatusByQualifiedId:
-SELECT verification_status FROM Conversation WHERE qualified_id = ?;
-
 selectReceiptModeFromGroupConversationByQualifiedId:
 SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
 

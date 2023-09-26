@@ -51,7 +51,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock

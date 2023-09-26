@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
-import com.wire.kalium.cryptography.DecryptedMessageBundle
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -27,7 +26,6 @@ import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
@@ -37,11 +35,9 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerTest
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -1022,14 +1018,14 @@ class MLSConversationRepositoryTest {
 
         fun withGetConversationByGroupIdSuccessful() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByGroupID)
+                .suspendFunction(conversationDAO::observeConversationByGroupID)
                 .whenInvokedWith(anything())
                 .then { flowOf(TestConversation.VIEW_ENTITY) }
         }
 
         fun withGetConversationByGroupIdFailing() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByGroupID)
+                .suspendFunction(conversationDAO::observeConversationByGroupID)
                 .whenInvokedWith(anything())
                 .then { flowOf(null) }
         }

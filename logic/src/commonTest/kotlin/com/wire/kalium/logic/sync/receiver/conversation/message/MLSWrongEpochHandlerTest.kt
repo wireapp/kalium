@@ -28,7 +28,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.thenReturnSequentially
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -38,11 +37,9 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSWrongEpochHandlerTest {
 
     @Test

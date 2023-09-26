@@ -48,19 +48,11 @@ class ObserveConversationDetailsUseCaseTest {
     @Mock
     private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
-    @Mock
-    private val verificationStatusHandler = mock(classOf<ConversationVerificationStatusHandler>())
-
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationDetailsUseCaseImpl(conversationRepository, verificationStatusHandler)
-
-        given(verificationStatusHandler)
-            .suspendFunction(verificationStatusHandler::invoke)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf())
+        observeConversationsUseCase = ObserveConversationDetailsUseCase(conversationRepository)
     }
 
     @Test
@@ -115,11 +107,11 @@ class ObserveConversationDetailsUseCaseTest {
 
         observeConversationsUseCase(TestConversation.ID).test {
             awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsResult.Success>(item)
+                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
                 assertEquals(conversationDetailsValues[0].value, item.conversationDetails)
             }
             awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsResult.Success>(item)
+                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
                 assertEquals(conversationDetailsValues[1].value, item.conversationDetails)
             }
             awaitComplete()
@@ -137,7 +129,7 @@ class ObserveConversationDetailsUseCaseTest {
 
         observeConversationsUseCase(TestConversation.ID).test {
             awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsResult.Failure>(item)
+                assertIs<ObserveConversationDetailsUseCase.Result.Failure>(item)
                 assertEquals(failure, item.storageFailure)
             }
             awaitComplete()

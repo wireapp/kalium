@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
 object TestConversationDetails {
 

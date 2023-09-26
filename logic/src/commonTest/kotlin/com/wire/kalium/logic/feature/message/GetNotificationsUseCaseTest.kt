@@ -51,7 +51,6 @@ import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrang
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.any
 import io.mockative.given

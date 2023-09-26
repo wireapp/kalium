@@ -195,7 +195,7 @@ internal class MLSConversationDataSource(
                     kaliumLogger.i("Created conversation from welcome message (groupID = $groupID)")
 
                     wrapStorageRequest {
-                        if (conversationDAO.getConversationByGroupID(groupID).first() != null) {
+                        if (conversationDAO.observeConversationByGroupID(groupID).first() != null) {
                             // Welcome arrived after the conversation create event, updating existing conversation.
                             conversationDAO.updateConversationGroupState(
                                 ConversationEntity.GroupState.ESTABLISHED,

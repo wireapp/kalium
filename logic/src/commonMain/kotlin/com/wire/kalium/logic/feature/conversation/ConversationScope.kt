@@ -116,16 +116,8 @@ class ConversationScope internal constructor(
     val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)
 
-    private val conversationVerificationStatusHandler: ConversationVerificationStatusHandler
-        = ConversationVerificationStatusHandlerImpl(
-            conversationRepository,
-            persistMessage,
-            mlsConversationRepository,
-            selfUserId
-        )
-
     val observeConversationDetails: ObserveConversationDetailsUseCase
-        get() = ObserveConversationDetailsUseCaseImpl(conversationRepository, conversationVerificationStatusHandler)
+        get() = ObserveConversationDetailsUseCase(conversationRepository)
 
     val observeIsSelfUserMemberUseCase: ObserveIsSelfUserMemberUseCase
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)

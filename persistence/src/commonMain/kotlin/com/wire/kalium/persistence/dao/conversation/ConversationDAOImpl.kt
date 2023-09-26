@@ -189,23 +189,18 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
-    override suspend fun getVerificationStatusByQualifiedId(qualifiedID: QualifiedIDEntity): ConversationEntity.VerificationStatus? =
-        withContext(coroutineContext) {
-            conversationQueries.selectVerificationStatusByQualifiedId(qualifiedID).executeAsOneOrNull()
-        }
-
-    override suspend fun observeConversationProtocolInfo(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity.ProtocolInfo?> =
-        conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo)
-            .asFlow()
-            .mapToOneOrNull()
-            .flowOn(coroutineContext)
-
-    override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
+    override suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }
+    }
+
+    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity {
+        return conversationQueries.selectByGroupId(groupID)
+            .executeAsOne()
+            .let { it.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {

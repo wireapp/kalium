@@ -126,7 +126,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
-            conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+            conversationDAO.observeConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                 .first()
         assertEquals(conversationEntity2.toViewEntity(user2), result)
     }
@@ -331,7 +331,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // when
         conversationDAO.updateKeyingMaterial(conversationProtocolInfo.groupId, newUpdate)
         // then
-        assertEquals(expected, conversationDAO.getConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
+        assertEquals(expected, conversationDAO.observeConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
     }
 
     @Test

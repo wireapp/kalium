@@ -228,13 +228,12 @@ interface ConversationRepository {
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
 
-    suspend fun observeConversationProtocolInfo(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.ProtocolInfo>>
     suspend fun updateVerificationStatus(
         verificationStatus: Conversation.VerificationStatus,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun getConversationVerificationStatus(conversationId: ConversationId): Either<StorageFailure, Conversation.VerificationStatus>
+    suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -505,22 +504,6 @@ internal class ConversationDataSource internal constructor(
                 protocolInfoMapper.fromEntity(it)
             }
         }
-
-    override suspend fun getConversationVerificationStatus(
-        conversationId: ConversationId
-    ): Either<StorageFailure, Conversation.VerificationStatus> =
-        wrapStorageRequest {
-            conversationDAO.getVerificationStatusByQualifiedId(conversationId.toDao())?.let {
-                conversationMapper.verificationStatusFromEntity(it)
-            }
-        }
-
-    override suspend fun observeConversationProtocolInfo(
-        conversationId: ConversationId
-    ): Flow<Either<StorageFailure, Conversation.ProtocolInfo>> =
-        conversationDAO.observeConversationProtocolInfo(conversationId.toDao())
-            .wrapStorageRequest()
-            .mapRight { protocolInfoMapper.fromEntity(it) }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
         memberDAO.observeConversationMembers(conversationID.toDao()).map { members ->
@@ -872,6 +855,10 @@ internal class ConversationDataSource internal constructor(
                 conversationID.toDao()
             )
         }
+
+    override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
+        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
+            .map { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>
