@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.feature.IsUserLoggedInUseCaseImpl
-import com.wire.kalium.logic.feature.UpdateLoggedInUsersCountUseCaseImpl
+import com.wire.kalium.logic.feature.user.IsUserLoggedInUseCaseImpl
+import com.wire.kalium.logic.feature.user.UpdateLoggedInUsersCountUseCaseImpl
 
 class SessionScope(
     private val sessionRepository: SessionRepository,

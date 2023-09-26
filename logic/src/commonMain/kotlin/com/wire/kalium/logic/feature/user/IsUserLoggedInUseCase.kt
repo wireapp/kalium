@@ -15,21 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature
+package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.data.AccessRepository
+import com.wire.kalium.logic.functional.fold
 
 /**
- * This use case will update the number of logged in users
+ * This use case will return true if we have some user(s) logged in
+ * false otherwise
  */
-interface UpdateLoggedInUsersCountUseCase {
-    suspend operator fun invoke(count: Int)
+interface IsUserLoggedInUseCase {
+    suspend operator fun invoke(): Boolean
 }
 
-class UpdateLoggedInUsersCountUseCaseImpl(
+class IsUserLoggedInUseCaseImpl(
     private val accessRepository: AccessRepository
-) : UpdateLoggedInUsersCountUseCase {
-    override suspend fun invoke(count: Int) {
-        accessRepository.updateLoggedInUsersCount(count)
+) : IsUserLoggedInUseCase {
+    override suspend fun invoke(): Boolean {
+        accessRepository.loggedInUsers().fold({
+            return false
+        }, {
+            return it?.let { it > 0 } ?: run { false }
+        })
     }
 }
