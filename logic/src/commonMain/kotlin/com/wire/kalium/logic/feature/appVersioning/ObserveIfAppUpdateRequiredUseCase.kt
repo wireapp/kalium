@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.feature.appVersioning
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials

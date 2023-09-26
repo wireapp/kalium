@@ -20,6 +20,10 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * This use case will return true if we have some user(s) logged in
+ * false otherwise
+ */
 interface IsUserLoggedInUseCase {
     suspend operator fun invoke(): Boolean?
 }
@@ -35,4 +39,3 @@ class IsUserLoggedInUseCaseImpl(
         })
     }
 }
-

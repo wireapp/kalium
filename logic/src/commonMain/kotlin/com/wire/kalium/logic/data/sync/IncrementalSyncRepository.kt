@@ -24,7 +24,6 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -73,7 +72,6 @@ internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
 
     override val incrementalSyncState = _syncState
         .asSharedFlow()
-
 
     private val _connectionPolicy = MutableSharedFlow<ConnectionPolicy>(
         replay = 1,

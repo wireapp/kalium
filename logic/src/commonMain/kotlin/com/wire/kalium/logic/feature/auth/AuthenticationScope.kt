@@ -34,8 +34,6 @@ import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepo
 import com.wire.kalium.logic.data.register.RegisterAccountDataSource
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.IsUserLoggedInUseCase
-import com.wire.kalium.logic.feature.IsUserLoggedInUseCaseImpl
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope

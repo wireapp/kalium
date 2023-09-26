@@ -19,6 +19,9 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.AccessRepository
 
+/**
+ * This use case will update the number of logged in users
+ */
 interface UpdateLoggedInUsersCountUseCase {
     suspend operator fun invoke(count: Int)
 }
