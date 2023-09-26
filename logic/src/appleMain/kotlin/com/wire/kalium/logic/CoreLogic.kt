@@ -64,7 +64,6 @@ actual class CoreLogic(
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
-            dataStore,
             userAgent
         )
     }

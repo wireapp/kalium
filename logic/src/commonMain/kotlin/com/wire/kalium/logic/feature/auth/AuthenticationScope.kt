@@ -23,7 +23,6 @@ import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
-import com.wire.kalium.logic.data.AccessRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
@@ -59,7 +58,6 @@ class AuthenticationScopeProvider internal constructor(
         serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
         certConfig: () -> CertificatePinning,
-        accessRepository: AccessRepository
     ): AuthenticationScope =
         authenticationScopeStorage.safeComputeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
@@ -69,7 +67,6 @@ class AuthenticationScopeProvider internal constructor(
                 serverConfigRepository,
                 networkStateObserver,
                 certConfig,
-                accessRepository
             )
         }
 }
@@ -81,7 +78,6 @@ class AuthenticationScope internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val networkStateObserver: NetworkStateObserver,
     certConfig: () -> CertificatePinning,
-    private val accessRepository: AccessRepository
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(

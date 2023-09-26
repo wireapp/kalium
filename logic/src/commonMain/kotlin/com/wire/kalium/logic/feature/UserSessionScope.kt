@@ -32,8 +32,6 @@ import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
-import com.wire.kalium.logic.data.AccessRepository
-import com.wire.kalium.logic.data.AccessRepositoryDataSource
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -382,8 +380,7 @@ class UserSessionScope internal constructor(
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
     platformUserStorageProperties: PlatformUserStorageProperties,
-    networkStateObserver: NetworkStateObserver,
-    dataStore: DataStore<Preferences>
+    networkStateObserver: NetworkStateObserver
 ) : CoroutineScope {
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -473,15 +470,12 @@ class UserSessionScope internal constructor(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
 
-    private val accessRepository: AccessRepository = AccessRepositoryDataSource(dataStore)
-
     val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
         networkStateObserver,
         kaliumConfigs::certPinningConfig,
-        accessRepository
     )
 
     private val userConfigRepository: UserConfigRepository

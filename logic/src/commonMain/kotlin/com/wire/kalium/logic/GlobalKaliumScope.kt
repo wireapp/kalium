@@ -168,8 +168,7 @@ class GlobalKaliumScope internal constructor(
             authenticationScopeProvider,
             userSessionScopeProvider.value,
             networkStateObserver,
-            accessRepository,
-            kaliumConfigs,
+            kaliumConfigs
         )
 
     val checkSystemIntegrity: CheckSystemIntegrityUseCase

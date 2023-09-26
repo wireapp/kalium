@@ -49,7 +49,6 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
-    private val dataStore: DataStore<Preferences>,
     userAgent: String
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
 
@@ -75,7 +74,6 @@ internal actual class UserSessionScopeProviderImpl(
             userStorageProvider = userStorageProvider,
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,
-            dataStore = dataStore
         )
     }
 }

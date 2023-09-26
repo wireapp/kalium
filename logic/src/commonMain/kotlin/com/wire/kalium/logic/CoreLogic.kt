@@ -87,7 +87,6 @@ abstract class CoreLogicCommon internal constructor(
             getGlobalScope().serverConfigRepository,
             networkStateObserver,
             kaliumConfigs::certPinningConfig,
-            accessRepository
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS

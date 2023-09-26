@@ -50,7 +50,6 @@ internal fun UserSessionScope(
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
-    dataStore: DataStore<Preferences>,
     userAgent: String,
 ): UserSessionScope {
 
@@ -71,7 +70,6 @@ internal fun UserSessionScope(
         userStorageProvider,
         clientConfig,
         platformUserStorageProperties,
-        networkStateObserver,
-        dataStore
+        networkStateObserver
     )
 }
