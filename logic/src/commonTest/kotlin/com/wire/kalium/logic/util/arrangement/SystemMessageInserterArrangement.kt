@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.logic.util.arrangement
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.SystemMessageInserter
+import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -27,6 +29,8 @@ internal interface SystemMessageInserterArrangement {
     val systemMessageInserter: SystemMessageInserter
 
     fun withInsertProtocolChangedSystemMessage()
+
+    fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>)
 }
 
 internal class SystemMessageInserterArrangementImpl: SystemMessageInserterArrangement {
@@ -39,5 +43,12 @@ internal class SystemMessageInserterArrangementImpl: SystemMessageInserterArrang
             .suspendFunction(systemMessageInserter::insertProtocolChangedSystemMessage)
             .whenInvokedWith(any(), any(), any())
             .thenReturn(Unit)
+    }
+
+    override fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>) {
+        given(systemMessageInserter)
+            .suspendFunction(systemMessageInserter::insertLostCommitSystemMessage)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
     }
 }
