@@ -173,6 +173,8 @@ interface MLSFailure : CoreFailure {
 
     object DuplicateMessage : MLSFailure
 
+    object BufferedFutureMessage : MLSFailure
+
     object SelfCommitIgnored : MLSFailure
 
     object UnmergedPendingGroup : MLSFailure
