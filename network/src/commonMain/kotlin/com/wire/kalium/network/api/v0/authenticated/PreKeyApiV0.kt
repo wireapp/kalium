@@ -55,7 +55,7 @@ internal open class PreKeyApiV0 internal constructor(
 
     override suspend fun uploadNewPrekeys(clientId: String, preKeys: List<PreKeyDTO>): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.put("$PATH_CLIENTS/$clientId/$PATH_PRE_KEY") {
+            httpClient.put("$PATH_CLIENTS/$clientId") {
                 setBody(UploadPreKeysRequest(preKeys))
             }
         }
