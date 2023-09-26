@@ -22,7 +22,12 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -36,9 +41,24 @@ interface DeleteClientUseCase {
     suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult
 }
 
-class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : DeleteClientUseCase {
+internal class DeleteClientUseCaseImpl(
+    private val clientRepository: ClientRepository,
+    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase,
+    private val userRepository: UserRepository,
+    private val oneOnOneResolver: OneOnOneResolver
+) : DeleteClientUseCase {
     override suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult =
-        clientRepository.deleteClient(param).fold(
+        clientRepository.deleteClient(param)
+            .onSuccess {
+                updateSupportedProtocols().onSuccess { updated ->
+                    if (updated) {
+                        userRepository.fetchAllOtherUsers().flatMap {
+                            oneOnOneResolver.resolveAllOneOnOneConversations()
+                        }
+                    }
+                }
+            }
+            .fold(
             {
                 handleError(it)
             }, {

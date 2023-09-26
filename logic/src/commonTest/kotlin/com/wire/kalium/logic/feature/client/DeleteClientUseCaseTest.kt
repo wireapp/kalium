@@ -18,12 +18,18 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
@@ -35,35 +41,24 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 
 class DeleteClientUseCaseTest {
 
-    @Mock
-    private val clientRepository = mock(classOf<ClientRepository>())
-
-    private lateinit var deleteClient: DeleteClientUseCase
-
-    @BeforeTest
-    fun setup() {
-        deleteClient = DeleteClientUseCaseImpl(clientRepository)
-    }
-
     @Test
     fun givenDeleteClientParams_whenDeleting_thenTheRepositoryShouldBeCalledWithCorrectParameters() = runTest {
         val params = DELETE_CLIENT_PARAMETERS
-        given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(TEST_FAILURE) }
+
+        val (arrangement, deleteClient) = arrange {
+            withDeleteClient(Either.Left(TEST_FAILURE))
+        }
 
         deleteClient(params)
 
-        verify(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::deleteClient)
             .with(eq(params))
             .wasInvoked(once)
     }
@@ -71,10 +66,9 @@ class DeleteClientUseCaseTest {
     @Test
     fun givenRepositoryDeleteClientFailsDueToGenericError_whenDeleting_thenGenericErrorShouldBeReturned() = runTest {
         val genericFailure = TEST_FAILURE
-        given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(genericFailure) }
+        val (_, deleteClient) = arrange {
+            withDeleteClient(Either.Left(genericFailure))
+        }
 
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
@@ -85,10 +79,9 @@ class DeleteClientUseCaseTest {
     @Test
     fun givenRepositoryDeleteClientFailsDueToWrongPassword_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
         val wrongPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCredentials)
-        given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(wrongPasswordFailure) }
+        val (_, deleteClient) = arrange {
+            withDeleteClient(Either.Left(wrongPasswordFailure))
+        }
 
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
@@ -98,10 +91,9 @@ class DeleteClientUseCaseTest {
     @Test
     fun givenRepositoryDeleteClientFailsDueToMissingPassword_whenDeleting_thenPasswordAuthRequiredErrorShouldBeReturned() = runTest {
         val missingPasswordFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)
-        given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(missingPasswordFailure) }
+        val (_, deleteClient) = arrange {
+            withDeleteClient(Either.Left(missingPasswordFailure))
+        }
 
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
@@ -111,17 +103,85 @@ class DeleteClientUseCaseTest {
     @Test
     fun givenRepositoryDeleteClientFailsDueToBadRequest_whenDeleting_thenInvalidCredentialsErrorShouldBeReturned() = runTest {
         val badRequest = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
-        given(clientRepository)
-            .suspendFunction(clientRepository::deleteClient)
-            .whenInvokedWith(anything())
-            .then { Either.Left(badRequest) }
+        val (_, deleteClient) = arrange {
+            withDeleteClient(Either.Left(badRequest))
+        }
 
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
         assertIs<DeleteClientResult.Failure.InvalidCredentials>(result)
     }
 
+    @Test
+    fun givenRepositoryDeleteClientSucceeds_whenDeleting_thenUpdateSupportedProtocols() = runTest {
+        val (arrangement, deleteClient) = arrange {
+            withDeleteClient(Either.Right(Unit))
+            withUpdateSupportedProtocols(Either.Right(false))
+        }
+
+        val result = deleteClient(DELETE_CLIENT_PARAMETERS)
+
+        assertIs<DeleteClientResult.Success>(result)
+        verify(arrangement.updateSupportedProtocols)
+            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSupportedProtocolsAreUpdated_whenDeleting_thenResolveActiveOneOnOneConversations() = runTest {
+        val (arrangement, deleteClient) = arrange {
+            withDeleteClient(Either.Right(Unit))
+            withUpdateSupportedProtocols(Either.Right(true))
+            withFetchAllOtherUsersReturning(Either.Right(Unit))
+            withResolveAllOneOnOneConversationsReturning(Either.Right(Unit))
+        }
+
+        val result = deleteClient(DELETE_CLIENT_PARAMETERS)
+
+        assertIs<DeleteClientResult.Success>(result)
+        verify(arrangement.updateSupportedProtocols)
+            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
+            .wasInvoked(exactly = once)
+    }
+
+    private class Arrangement(private val block: Arrangement.() -> Unit) :
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl()
+    {
+        @Mock
+        val clientRepository = mock(classOf<ClientRepository>())
+
+        @Mock
+        val updateSupportedProtocols = mock(classOf<UpdateSupportedProtocolsUseCase>())
+
+        fun withDeleteClient(result: Either<NetworkFailure, Unit>) {
+            given(clientRepository)
+                .suspendFunction(clientRepository::deleteClient)
+                .whenInvokedWith(anything())
+                .then { result }
+        }
+
+        fun withUpdateSupportedProtocols(result: Either<CoreFailure, Boolean>) {
+            given(updateSupportedProtocols)
+                .suspendFunction(updateSupportedProtocols::invoke)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun arrange() = run {
+            block()
+            this@Arrangement to DeleteClientUseCaseImpl(
+                clientRepository = clientRepository,
+                updateSupportedProtocols = updateSupportedProtocols,
+                userRepository = userRepository,
+                oneOnOneResolver = oneOnOneResolver,
+            )
+        }
+    }
+
     private companion object {
+        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+
         val CLIENT = TestClient.CLIENT
         val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.id)
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
