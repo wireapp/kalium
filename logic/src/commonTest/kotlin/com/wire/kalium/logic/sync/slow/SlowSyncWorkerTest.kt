@@ -594,7 +594,7 @@ class SlowSyncWorkerTest {
             given(updateSupportedProtocols)
                 .suspendFunction(updateSupportedProtocols::invoke)
                 .whenInvoked()
-                .thenReturn(success)
+                .thenReturn(Either.Right(true))
         }
 
         fun withUpdateSupportedProtocolsFailure() = apply {
