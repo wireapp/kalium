@@ -18,9 +18,11 @@
 package com.wire.kalium.logic.data.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
 
 internal interface SystemMessageInserter {
@@ -32,6 +34,8 @@ internal interface SystemMessageInserter {
     suspend fun insertHistoryLostProtocolChangedSystemMessage(
         conversationId: ConversationId
     )
+
+    suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, dateIso: String): Either<CoreFailure, Unit>
 }
 
 internal class SystemMessageInserterImpl(
@@ -72,5 +76,20 @@ internal class SystemMessageInserterImpl(
         )
 
         persistMessage(message)
+    }
+
+    override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, dateIso: String): Either<CoreFailure, Unit> {
+        val mlsEpochWarningMessage = Message.System(
+            id = uuid4().toString(),
+            content = MessageContent.MLSWrongEpochWarning,
+            conversationId = conversationId,
+            date = dateIso,
+            senderUserId = selfUserId,
+            status = Message.Status.Read(0),
+            visibility = Message.Visibility.VISIBLE,
+            senderUserName = null,
+            expirationData = null
+        )
+        return persistMessage(mlsEpochWarningMessage)
     }
 }
