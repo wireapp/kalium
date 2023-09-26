@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -66,12 +67,12 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp})
+            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
             .wasInvoked(exactly = once)
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp})
+            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
             .wasInvoked(exactly = once)
     }
 
@@ -91,13 +92,42 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp})
+            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
             .wasInvoked(exactly = once)
 
         verify(conversationRepository)
             .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp})
+            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
             .wasNotInvoked()
 
+    }
+
+    @Test
+    fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsOnlyLocally_thenShouldReturnAFailureResult() = runTest {
+        val conversationId = TestConversation.ID
+        val isConversationArchived = true
+        val archivedStatusTimestamp = 123456789L
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(Either.Right(Unit))
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateArchivedStatusLocally)
+            .whenInvokedWith(any(), any(), any())
+            .thenReturn(Either.Left(StorageFailure.DataNotFound))
+
+        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, archivedStatusTimestamp)
+        assertEquals(ArchiveStatusUpdateResult.Failure::class, result::class)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
+            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
+            .wasInvoked(exactly = once)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::updateArchivedStatusLocally)
+            .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
+            .wasInvoked(exactly = once)
     }
 }
