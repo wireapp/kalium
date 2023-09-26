@@ -65,7 +65,6 @@ internal class ApiModelMapperImpl : ApiModelMapper {
             response.id,
             response.groupId,
             response.epoch,
-            response.epochTimestamp,
             response.type,
             response.messageTimer,
             response.teamId,

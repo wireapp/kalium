@@ -64,7 +64,6 @@ object ConversationResponseJson {
         QualifiedIDSamples.one,
         "groupID",
         0UL,
-        "2022-03-30T15:36:00.000Z",
         ConversationResponse.Type.GROUP,
         null,
         "teamID",
