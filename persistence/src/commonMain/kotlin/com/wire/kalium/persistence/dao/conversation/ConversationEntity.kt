@@ -82,7 +82,6 @@ data class ConversationEntity(
             override val groupId: String,
             override val groupState: ConversationEntity.GroupState,
             override val epoch: ULong,
-            override val epochTimestamp: Instant?,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: ConversationEntity.CipherSuite
         ) : MLSCapable
@@ -90,7 +89,6 @@ data class ConversationEntity(
             override val groupId: String,
             override val groupState: ConversationEntity.GroupState,
             override val epoch: ULong,
-            override val epochTimestamp: Instant?,
             override val keyingMaterialLastUpdate: Instant,
             override val cipherSuite: ConversationEntity.CipherSuite
         ) : MLSCapable
@@ -99,7 +97,6 @@ data class ConversationEntity(
             val groupId: String
             val groupState: ConversationEntity.GroupState
             val epoch: ULong
-            val epochTimestamp: Instant?
             val keyingMaterialLastUpdate: Instant
             val cipherSuite: ConversationEntity.CipherSuite
         }
