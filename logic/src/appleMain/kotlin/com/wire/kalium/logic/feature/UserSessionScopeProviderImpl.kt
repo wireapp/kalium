@@ -68,7 +68,7 @@ internal actual class UserSessionScopeProviderImpl(
             userStorageProvider,
             this,
             networkStateObserver,
-            userAgent,
+            userAgent
         )
     }
 

@@ -42,5 +42,5 @@ fun getDataStore(producePath: () -> String): DataStore<Preferences> =
         }
     }
 
-const val dataStoreFileName = "data.preferences_pb"
+const val DATA_STORE_FILENAME = "data.preferences_pb"
 val USERS_LOGGED_IN = intPreferencesKey("logged_in_users_count")

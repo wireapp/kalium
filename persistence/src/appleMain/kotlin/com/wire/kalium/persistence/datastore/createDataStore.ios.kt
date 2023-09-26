@@ -33,6 +33,6 @@ fun getDataStore(): DataStore<Preferences> = getDataStore(
             create = false,
             error = null,
         )
-        requireNotNull(documentDirectory).path + "/$dataStoreFileName"
+        requireNotNull(documentDirectory).path + "/$DATA_STORE_FILENAME"
     }
 )
