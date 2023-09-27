@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
@@ -50,11 +51,13 @@ internal class AuthenticatedNetworkClient(
     engine: HttpClientEngine,
     serverConfigDTO: ServerConfigDTO,
     bearerAuthProvider: BearerAuthProvider,
+    kaliumLogger: KaliumLogger,
     installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(
         networkStateObserver,
         engine,
+        kaliumLogger,
         installCompression
     ) {
         installWireDefaultRequest(serverConfigDTO)
@@ -76,7 +79,7 @@ internal class UnauthenticatedNetworkClient(
     engine: HttpClientEngine,
     backendLinks: ServerConfigDTO
 ) {
-    val httpClient: HttpClient = provideBaseHttpClient(networkStateObserver, engine) {
+    val httpClient: HttpClient = provideBaseHttpClient(networkStateObserver, engine, kaliumLogger) {
         installWireDefaultRequest(backendLinks)
     }
 }
@@ -91,7 +94,7 @@ internal class UnboundNetworkClient(
     networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine
 ) {
-    val httpClient: HttpClient = provideBaseHttpClient(networkStateObserver, engine)
+    val httpClient: HttpClient = provideBaseHttpClient(networkStateObserver, engine, kaliumLogger)
 }
 
 /**
@@ -104,6 +107,7 @@ internal class AuthenticatedWebSocketClient(
     private val engine: HttpClientEngine,
     private val bearerAuthProvider: BearerAuthProvider,
     private val serverConfigDTO: ServerConfigDTO,
+    private val kaliumLogger: KaliumLogger,
 ) {
     /**
      * Creates a disposable [HttpClient] for a single use.
@@ -112,7 +116,7 @@ internal class AuthenticatedWebSocketClient(
      * as the old one can be dead.
      */
     fun createDisposableHttpClient(): HttpClient =
-        provideBaseHttpClient(networkStateObserver, engine) {
+        provideBaseHttpClient(networkStateObserver, engine, kaliumLogger) {
             installWireDefaultRequest(serverConfigDTO)
             installAuth(bearerAuthProvider)
             install(ContentNegotiation) {
@@ -130,6 +134,7 @@ internal class AuthenticatedWebSocketClient(
 internal fun provideBaseHttpClient(
     networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine,
+    kaliumLogger: KaliumLogger,
     installCompression: Boolean = true,
     config: HttpClientConfig<*>.() -> Unit = {}
 ) = HttpClient(engine) {
@@ -139,7 +144,8 @@ internal fun provideBaseHttpClient(
 
     if (NetworkUtilLogger.isRequestLoggingEnabled) {
         install(KaliumKtorCustomLogging) {
-            level = LogLevel.ALL
+            this.level = LogLevel.ALL
+            this.kaliumLogger = kaliumLogger
         }
     }
 

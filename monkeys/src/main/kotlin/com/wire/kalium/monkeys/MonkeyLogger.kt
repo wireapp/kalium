@@ -17,20 +17,14 @@
  */
 package com.wire.kalium.monkeys
 
-import co.touchlab.kermit.LogWriter
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 
+private var loggerConfig = KaliumLogger.Config.disabled()
 internal var logger = KaliumLogger.disabled()
 
 object MonkeyLogger {
-    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = arrayOf()) {
-        logger = KaliumLogger(
-            config = KaliumLogger.Config(
-                severity = level,
-                tag = "InfiniteMonkeys"
-            ),
-            logWriters = logWriters
-        )
+    fun init(config: KaliumLogger.Config) {
+        loggerConfig = config
+        logger = KaliumLogger(config = loggerConfig, tag = "InfiniteMonkeys")
     }
 }
