@@ -24,7 +24,6 @@ import com.wire.kalium.logic.util.safeComputeAndMutateSetValue
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.Clock
@@ -41,7 +40,7 @@ internal class TypingIndicatorRepositoryImpl(
 ) : TypingIndicatorRepository {
 
     private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
-        MutableSharedFlow(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow(extraBufferCapacity = BUFFER_SIZE, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         userTypingCache.safeComputeAndMutateSetValue(conversationId) { ExpiringUserTyping(userId, Clock.System.now()) }
@@ -62,7 +61,10 @@ internal class TypingIndicatorRepositoryImpl(
         return userTypingDataSourceFlow
             .map { userTypingCache[conversationId] ?: emptySet() }
             .onStart { emit(userTypingCache[conversationId] ?: emptySet()) }
-            .distinctUntilChanged()
+    }
+
+    companion object {
+        const val BUFFER_SIZE = 32 // drop after this threshold
     }
 }
 
