@@ -72,7 +72,6 @@ kotlin {
 
                 implementation(project(":util"))
                 api(project(":logger"))
-                implementation(libs.androidx.dataStore.kmm)
             }
         }
         val commonTest by getting {
@@ -85,7 +84,14 @@ kotlin {
                 implementation(libs.settings.kmpTest)
             }
         }
+        val nonJsMain by creating {
+            dependsOn(commonMain)
+            dependencies {
+                implementation(libs.androidx.dataStore.kmm)
+            }
+        }
         val jvmMain by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
             }
@@ -100,6 +106,7 @@ kotlin {
         }
         val jsTest by getting
         val androidMain by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.androidCrypto)
                 implementation(libs.sqldelight.androidDriver)
@@ -110,6 +117,7 @@ kotlin {
             }
         }
         val appleMain by getting {
+            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
             }
