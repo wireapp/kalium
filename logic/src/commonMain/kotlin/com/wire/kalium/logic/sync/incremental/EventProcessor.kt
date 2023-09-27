@@ -40,6 +40,12 @@ import com.wire.kalium.util.serialization.toJsonElement
  * @see [Event]
  */
 internal interface EventProcessor {
+
+    /**
+     * When enabled events will be consumed but no event processing will occur.
+     */
+    var disableEventProcessing: Boolean
+
     /**
      * Process the [event], and persist the last processed event ID if the event
      * is not transient.
@@ -66,23 +72,31 @@ internal class EventProcessorImpl(
         kaliumLogger.withFeatureId(EVENT_RECEIVER)
     }
 
-    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> = when (event) {
-        is Event.Conversation -> conversationEventReceiver.onEvent(event)
-        is Event.User -> userEventReceiver.onEvent(event)
-        is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-        is Event.Unknown -> {
-            kaliumLogger
-                .logEventProcessing(
-                    EventLoggingStatus.SKIPPED,
-                    event
-                )
-            // Skipping event = success
-            Either.Right(Unit)
-        }
+    override var disableEventProcessing: Boolean = false
 
-        is Event.Team -> teamEventReceiver.onEvent(event)
-        is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
-        is Event.Federation -> federationEventReceiver.onEvent(event)
+    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> =
+        if (disableEventProcessing) {
+            logger.w("Skipping processing of $event due to debug option")
+            Either.Right(Unit)
+        } else {
+            when (event) {
+                is Event.Conversation -> conversationEventReceiver.onEvent(event)
+                is Event.User -> userEventReceiver.onEvent(event)
+                is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
+                is Event.Unknown -> {
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.SKIPPED,
+                            event
+                        )
+                    // Skipping event = success
+                    Either.Right(Unit)
+                }
+
+                is Event.Team -> teamEventReceiver.onEvent(event)
+                is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
+                is Event.Federation -> federationEventReceiver.onEvent(event)
+            }
     }.onSuccess {
         val logMap = mapOf<String, Any>(
             "event" to event.toLogMap()
