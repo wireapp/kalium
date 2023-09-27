@@ -792,8 +792,8 @@ class UserSessionScope internal constructor(
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
-    private val eventProcessor: EventProcessor
-        get() = EventProcessorImpl(
+    private val eventProcessor: EventProcessor by lazy {
+        EventProcessorImpl(
             eventRepository,
             conversationEventReceiver,
             userEventReceiver,
@@ -802,6 +802,7 @@ class UserSessionScope internal constructor(
             userPropertiesEventReceiver,
             federationEventReceiver
         )
+    }
 
     private val slowSyncCriteriaProvider: SlowSyncCriteriaProvider
         get() = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
@@ -1439,6 +1440,7 @@ class UserSessionScope internal constructor(
             messageSendingScheduler,
             selfConversationIdProvider,
             staleEpochVerifier,
+            eventProcessor,
             this
         )
     val messages: MessageScope
