@@ -69,7 +69,6 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
-                implementation(libs.androidx.dataStore)
 
                 implementation(project(":util"))
                 api(project(":logger"))
@@ -88,6 +87,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
+                implementation(libs.androidx.dataStore.kmm)
             }
         }
         val jvmTest by getting
@@ -107,11 +107,13 @@ kotlin {
                 implementation(libs.paging3)
                 implementation(libs.sqlite.androidx)
                 implementation(libs.sql.android.cipher)
+                implementation(libs.androidx.dataStore.kmm)
             }
         }
         val appleMain by getting {
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
+                implementation(libs.androidx.dataStore.kmm)
             }
         }
     }

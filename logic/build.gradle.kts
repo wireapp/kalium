@@ -66,7 +66,7 @@ kotlin {
                 }
 
                 // DataStore
-                implementation(libs.androidx.dataStore)
+                implementation(libs.androidx.dataStore.kmm)
             }
         }
         val commonTest by getting {

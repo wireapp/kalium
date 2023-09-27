@@ -97,7 +97,6 @@ ktor = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
 paging3 = { module = "androidx.paging:paging-runtime", version.ref = "android-paging3" }
 desugarJdkLibs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk" }
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
-androidx-dataStore = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-dataStore" }
 
 # kmp Settings (shared pref)
 settings-kmp = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
@@ -186,6 +185,7 @@ apacheTika = { module = "org.apache.tika:tika-core", version.ref = "apache-tika"
 faker = { module = "io.github.serpro69:kotlin-faker", version.ref = "faker" }
 concurrentCollections = { module = "co.touchlab:stately-concurrent-collections", version.ref = "stately" }
 statelyCommons = { module = "co.touchlab:stately-common", version.ref = "stately" }
+androidx-dataStore-kmm = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-dataStore" }
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }
