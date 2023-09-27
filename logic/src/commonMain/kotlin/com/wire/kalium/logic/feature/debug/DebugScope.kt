@@ -51,6 +51,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageFor
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -77,6 +78,7 @@ class DebugScope internal constructor(
     private val messageSendingScheduler: MessageSendingScheduler,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val staleEpochVerifier: StaleEpochVerifier,
+    private val eventProcessor: EventProcessor,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -99,6 +101,11 @@ class DebugScope internal constructor(
             currentClientIdProvider,
             slowSyncRepository,
             messageSender
+        )
+
+    val disableEventProcessing: DisableEventProcessingUseCase
+        get() = DisableEventProcessingUseCaseImpl(
+            eventProcessor = eventProcessor
         )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
