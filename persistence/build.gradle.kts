@@ -72,6 +72,7 @@ kotlin {
 
                 implementation(project(":util"))
                 api(project(":logger"))
+                implementation(libs.androidx.dataStore.kmm)
             }
         }
         val commonTest by getting {
@@ -87,7 +88,6 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
-                implementation(libs.androidx.dataStore.kmm)
             }
         }
         val jvmTest by getting
@@ -107,13 +107,11 @@ kotlin {
                 implementation(libs.paging3)
                 implementation(libs.sqlite.androidx)
                 implementation(libs.sql.android.cipher)
-                implementation(libs.androidx.dataStore.kmm)
             }
         }
         val appleMain by getting {
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
-                implementation(libs.androidx.dataStore.kmm)
             }
         }
     }
