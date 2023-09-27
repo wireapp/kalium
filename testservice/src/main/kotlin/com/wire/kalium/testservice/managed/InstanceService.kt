@@ -39,6 +39,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.testservice.KaliumLogWriter
 import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse
 import com.wire.kalium.testservice.models.Instance
@@ -145,7 +146,7 @@ class InstanceService(
             developmentApiEnabled = false
         )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
-        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
+        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE, KaliumLogWriter(instanceId))
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(
