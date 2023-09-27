@@ -225,7 +225,9 @@ class InstanceService(
                         is RegisterClientResult.Success -> {
                             clientId = result.client.id.value
                             log.info("Instance $instanceId: Device $clientId successfully registered")
-                            syncManager.waitUntilLive()
+                            syncManager.waitUntilLiveOrFailure().onFailure {
+                                log.error("Instance $instanceId: Sync failed with $it")
+                            }
                         }
                         is RegisterClientResult.Failure.TooManyClients ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
