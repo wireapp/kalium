@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ExpiringUserTyping
 import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -32,6 +33,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 
 class TypingIndicatorHandlerTest {
@@ -74,7 +76,7 @@ class TypingIndicatorHandlerTest {
             given(typingIndicatorRepository)
                 .suspendFunction(typingIndicatorRepository::observeUsersTyping)
                 .whenInvokedWith(eq(TestConversation.ID))
-                .thenReturn(flowOf(usersId))
+                .thenReturn(flowOf(usersId.map { ExpiringUserTyping(it, Clock.System.now()) }.toSet()))
         }
 
         fun arrange() = this to TypingIndicatorHandlerImpl(typingIndicatorRepository)
