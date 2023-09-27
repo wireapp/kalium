@@ -20,19 +20,27 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Use case for observing current users typing in a given conversation.
  */
 interface ObserveUsersTypingUseCase {
-    suspend fun invoke(conversationId: ConversationId): Flow<Set<UserId>>
+    suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserId>>
 }
 
 internal class ObserveUsersTypingUseCaseImpl(
-    private val typingIndicatorRepository: TypingIndicatorRepository
+    private val typingIndicatorRepository: TypingIndicatorRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveUsersTypingUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Flow<Set<UserId>> =
-        typingIndicatorRepository.observeUsersTyping(conversationId)
+    override suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserId>> = withContext(dispatcher.default) {
+        typingIndicatorRepository.observeUsersTyping(conversationId).map { usersEntries ->
+            usersEntries.map { it.userId }.toSet()
+        }
+    }
 
 }
