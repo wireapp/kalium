@@ -40,6 +40,7 @@ import javax.ws.rs.container.AsyncResponse
 import javax.ws.rs.container.ConnectionCallback
 import javax.ws.rs.container.Suspended
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
@@ -70,8 +71,13 @@ class InstanceLifecycle(
         ar.setTimeout(timeout, TimeUnit.SECONDS)
         ar.setTimeoutHandler { asyncResponse: AsyncResponse ->
             log.error("Instance $instanceId: Async create instance request timed out after $timeout seconds")
-            asyncResponse.cancel()
             instanceService.deleteInstance(instanceId)
+            asyncResponse.resume(
+                Response
+                    .status(Response.Status.GATEWAY_TIMEOUT)
+                    .entity("Instance $instanceId: Async create instance request timed out after $timeout seconds")
+                    .build()
+            )
         }
         // handles client disconnect
         ar.register(ConnectionCallback { disconnected: AsyncResponse? ->
