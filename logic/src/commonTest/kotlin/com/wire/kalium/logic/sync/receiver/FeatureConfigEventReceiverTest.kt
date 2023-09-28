@@ -28,6 +28,15 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -270,7 +279,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer !is TeamSelfDeleteTimer.Disabled
+                    it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer !is TeamSelfDeleteTimer.Disabled
                 })
                 .wasInvoked(once)
         }
@@ -291,7 +300,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching<TeamSettingsSelfDeletionStatus> {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
+                    it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
                 })
                 .wasInvoked(once)
         }
@@ -325,9 +334,15 @@ class FeatureConfigEventReceiverTest {
 
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {
             FeatureConfigEventReceiverImpl(
-                userConfigRepository,
-                kaliumConfigs,
-                TestUser.SELF.id
+                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+                FileSharingConfigHandler(userConfigRepository),
+                MLSConfigHandler(userConfigRepository, TestUser.SELF.id),
+                ClassifiedDomainsConfigHandler(userConfigRepository),
+                ConferenceCallingConfigHandler(userConfigRepository),
+                SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
+                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+                E2EIConfigHandler(userConfigRepository),
+                AppLockConfigHandler(userConfigRepository)
             )
         }
 
