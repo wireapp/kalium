@@ -71,18 +71,22 @@ class InstanceLifecycle(
         ar.setTimeout(timeout, TimeUnit.SECONDS)
         ar.setTimeoutHandler { asyncResponse: AsyncResponse ->
             log.error("Instance $instanceId: Async create instance request timed out after $timeout seconds")
-            instanceService.deleteInstance(instanceId)
             asyncResponse.resume(
                 Response
                     .status(Response.Status.GATEWAY_TIMEOUT)
                     .entity("Instance $instanceId: Async create instance request timed out after $timeout seconds")
                     .build()
             )
+            if (instanceService.getInstance(instanceId) != null) {
+                instanceService.deleteInstance(instanceId)
+            }
         }
         // handles client disconnect
         ar.register(ConnectionCallback { disconnected: AsyncResponse? ->
             log.error("Instance $instanceId: Client disconnected from async create instance request")
-            instanceService.deleteInstance(instanceId)
+            if (instanceService.getInstance(instanceId) != null) {
+                instanceService.deleteInstance(instanceId)
+            }
         })
 
         val createdInstance = try {
