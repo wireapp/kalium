@@ -821,7 +821,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldNotReturnConnectionRequest() = runTest {
         val includeArchived = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
