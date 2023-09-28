@@ -136,7 +136,7 @@ class InstanceService(
     }
 
     @Suppress("LongMethod", "ThrowsCount", "ComplexMethod")
-    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest) {
+    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Any {
         val userAgent = "KaliumTestService/${System.getProperty("http.agent")}"
         val before = System.currentTimeMillis()
         val instancePath = System.getProperty("user.home") +
@@ -210,7 +210,7 @@ class InstanceService(
         }
 
         log.info("Instance $instanceId: Register client device")
-        runBlocking {
+        val response = runBlocking {
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
                     when (val result = client.getOrRegister(
@@ -241,6 +241,8 @@ class InstanceService(
                             syncManager.waitUntilLiveOrFailure().onFailure {
                                 log.error("Instance $instanceId: Sync failed with $it")
                             }
+
+                            return@runBlocking instance
                         }
                         is RegisterClientResult.Failure.TooManyClients ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
@@ -258,6 +260,8 @@ class InstanceService(
                 }
             }
         }
+
+        return response
     }
 
     fun deleteInstance(id: String) {
