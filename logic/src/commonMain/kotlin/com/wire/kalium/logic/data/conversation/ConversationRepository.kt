@@ -229,6 +229,13 @@ interface ConversationRepository {
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
 
+    suspend fun updateVerificationStatus(
+        verificationStatus: Conversation.VerificationStatus,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit>
+
+    suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
+
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 }
 
@@ -840,6 +847,21 @@ internal class ConversationDataSource internal constructor(
             .mapKeys { it.key.toModel() }
             .mapValues { it.value.toModel() }
     }
+
+    override suspend fun updateVerificationStatus(
+        verificationStatus: Conversation.VerificationStatus,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateVerificationStatus(
+                conversationMapper.verificationStatusToEntity(verificationStatus),
+                conversationID.toDao()
+            )
+        }
+
+    override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
+        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
+            .map { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         conversationDAO.observeUnreadArchivedConversationsCount()

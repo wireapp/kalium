@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationMapper
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -126,7 +127,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
-            conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+            conversationDAO.observeConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                 .first()
         assertEquals(conversationEntity2.toViewEntity(user2), result)
     }
@@ -331,7 +332,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // when
         conversationDAO.updateKeyingMaterial(conversationProtocolInfo.groupId, newUpdate)
         // then
-        assertEquals(expected, conversationDAO.getConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
+        assertEquals(expected, conversationDAO.observeConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
     }
 
     @Test
@@ -820,7 +821,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldNotReturnConnectionRequest() = runTest {
         val includeArchived = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
@@ -859,6 +860,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
+    }
+
+    @Test
+    fun givenLocalConversations_whenGettingAllArchivedAndNotArchivedConversations_thenShouldReturnThemAll() = runTest {
+        val includeArchived = true
+        conversationDAO.insertConversation(conversationEntity1.copy(archived = true))
+        conversationDAO.insertConversation(conversationEntity2.copy(archived = false))
+
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+
+        memberDAO.insertMember(member1, conversationEntity1.id)
+        memberDAO.insertMember(member2, conversationEntity2.id)
+
+        val result = conversationDAO.getAllConversationDetails(includeArchived).first()
+
+        assertEquals(2, result.size)
+
     }
 
     @Test
@@ -1078,7 +1097,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
             archived = false,
-            archivedDateTime = null
+            archivedDateTime = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 
@@ -1109,7 +1129,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1134,7 +1155,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1162,7 +1184,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1190,7 +1213,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

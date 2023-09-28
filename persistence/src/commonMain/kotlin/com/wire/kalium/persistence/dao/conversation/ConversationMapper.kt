@@ -66,7 +66,8 @@ internal class ConversationMapper {
             userMessageTimer = user_message_timer,
             userDefederated = userDefederated,
             archived = archived,
-            archivedDateTime = archived_date_time
+            archivedDateTime = archived_date_time,
+            verificationStatus = verification_status
         )
     }
 
@@ -95,7 +96,8 @@ internal class ConversationMapper {
         messageTimer: Long?,
         userMessageTimer: Long?,
         archived: Boolean,
-        archivedDateTime: Instant?
+        archivedDateTime: Instant?,
+        verificationStatus: ConversationEntity.VerificationStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -121,7 +123,8 @@ internal class ConversationMapper {
         messageTimer = messageTimer,
         userMessageTimer = userMessageTimer,
         archived = archived,
-        archivedInstant = archivedDateTime
+        archivedInstant = archivedDateTime,
+        verificationStatus = verificationStatus
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -169,7 +172,8 @@ internal class ConversationMapper {
                 userMessageTimer = user_message_timer,
                 userDefederated = userDefederated,
                 archived = archived,
-                archivedDateTime = archived_date_time
+                archivedDateTime = archived_date_time,
+                verificationStatus = verification_status
             )
         }
     }
@@ -181,7 +185,7 @@ internal class ConversationMapper {
         mlsGroupState: ConversationEntity.GroupState,
         mlsEpoch: Long,
         mlsLastKeyingMaterialUpdate: Instant,
-        mlsCipherSuite: ConversationEntity.CipherSuite,
+        mlsCipherSuite: ConversationEntity.CipherSuite
     ): ConversationEntity.ProtocolInfo {
         return when (protocol) {
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
