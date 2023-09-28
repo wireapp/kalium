@@ -513,6 +513,31 @@ class UserRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenUserIds_WhenRequestingSummaries_thenShouldSucceed() = runTest {
+        // Given
+        val requestedUserIds = listOf(
+            UserId(value = "id1", domain = "domain1"),
+            UserId(value = "id2", domain = "domain2")
+        )
+        val knownUserEntities = listOf(
+            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
+            TestUser.ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
+        )
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
+            .arrange()
+
+        // When
+        userRepository.getUsersSummaryByIds(requestedUserIds).shouldSucceed()
+
+        // Then
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::getUsersByQualifiedIDList)
+            .with(any())
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
