@@ -279,7 +279,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -323,7 +324,8 @@ class UserDatabaseDataGenerator(
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -391,7 +393,8 @@ class UserDatabaseDataGenerator(
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedInstant = null
+                archivedInstant = null,
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -458,7 +461,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -503,7 +507,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -617,7 +622,8 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 

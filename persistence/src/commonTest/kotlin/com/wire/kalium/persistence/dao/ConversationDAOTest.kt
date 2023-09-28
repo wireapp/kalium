@@ -127,7 +127,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
-            conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+            conversationDAO.observeConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                 .first()
         assertEquals(conversationEntity2.toViewEntity(user2), result)
     }
@@ -332,7 +332,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // when
         conversationDAO.updateKeyingMaterial(conversationProtocolInfo.groupId, newUpdate)
         // then
-        assertEquals(expected, conversationDAO.getConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
+        assertEquals(expected, conversationDAO.observeConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
     }
 
     @Test
@@ -1044,7 +1044,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
             archived = false,
-            archivedDateTime = null
+            archivedDateTime = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 
@@ -1075,7 +1076,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1100,7 +1102,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1128,7 +1131,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1156,7 +1160,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             messageTimer = messageTimer,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
