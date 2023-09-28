@@ -109,7 +109,13 @@ class CallsScope internal constructor(
             callRepository = callRepository,
         )
 
-    val startCall: StartCallUseCase get() = StartCallUseCase(callManager, syncManager, kaliumConfigs)
+    val startCall: StartCallUseCase get() = StartCallUseCase(
+        callManager = callManager,
+        syncManager = syncManager,
+        callRepository = callRepository,
+        answerCall = answerCall,
+        kaliumConfigs = kaliumConfigs
+    )
 
     val answerCall: AnswerCallUseCase
         get() = AnswerCallUseCaseImpl(
