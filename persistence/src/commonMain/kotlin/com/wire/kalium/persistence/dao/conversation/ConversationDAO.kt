@@ -92,4 +92,5 @@ interface ConversationDAO {
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
+    suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 }

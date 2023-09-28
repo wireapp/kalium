@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -329,4 +330,7 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
     }
+
+    override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
+        unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
 }

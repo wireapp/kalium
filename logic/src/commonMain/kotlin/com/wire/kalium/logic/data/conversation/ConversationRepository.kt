@@ -46,6 +46,7 @@ import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
+import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -227,6 +228,8 @@ interface ConversationRepository {
     suspend fun getOneOnOneConversationsWithFederatedMembers(
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
+
+    suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -837,6 +840,11 @@ internal class ConversationDataSource internal constructor(
             .mapKeys { it.key.toModel() }
             .mapValues { it.value.toModel() }
     }
+
+    override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
+        conversationDAO.observeUnreadArchivedConversationsCount()
+            .wrapStorageRequest()
+            .mapToRightOr(0L)
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>
