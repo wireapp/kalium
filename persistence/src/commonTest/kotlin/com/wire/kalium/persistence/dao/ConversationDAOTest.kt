@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationMapper
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -820,7 +821,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldNotReturnConnectionRequest() = runTest {
         val includeArchived = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
@@ -859,6 +860,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
+    }
+
+    @Test
+    fun givenLocalConversations_whenGettingAllArchivedAndNotArchivedConversations_thenShouldReturnThemAll() = runTest {
+        val includeArchived = true
+        conversationDAO.insertConversation(conversationEntity1.copy(archived = true))
+        conversationDAO.insertConversation(conversationEntity2.copy(archived = false))
+
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+
+        memberDAO.insertMember(member1, conversationEntity1.id)
+        memberDAO.insertMember(member2, conversationEntity2.id)
+
+        val result = conversationDAO.getAllConversationDetails(includeArchived).first()
+
+        assertEquals(2, result.size)
+
     }
 
     @Test
