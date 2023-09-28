@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -52,26 +53,36 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
             .onlyRight()
             .collect { (groupId, newStatus) ->
                 conversationRepository.getConversationDetailsByMLSGroupId(groupId)
-                    .map { conversation ->
-                        val currentStatus = conversation.conversation.verificationStatus
-
-                        // Current CoreCrypto implementation returns only a boolean flag "if conversation is verified or not".
-                        // So we need to calculate if status was degraded on our side by comparing it to the previous status.
-
-                        if ((newStatus == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.DEGRADED) ||
-                            newStatus == currentStatus
-                        ) {
-                            return@collect
-                        }
-
-                        if (newStatus == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.VERIFIED) {
-                            conversationRepository.updateVerificationStatus(VerificationStatus.DEGRADED, conversation.conversation.id)
-                            notifyUserAboutStateChanges(conversation.conversation.id, VerificationStatus.DEGRADED)
-                        } else {
-                            conversationRepository.updateVerificationStatus(newStatus, conversation.conversation.id)
-                        }
-                    }
+                    .map { conversation -> updateStatusAndNotifyUserIfNeeded(newStatus, conversation) }
             }
+
+    private suspend fun updateStatusAndNotifyUserIfNeeded(newStatusFromCC: VerificationStatus, conversation: ConversationDetails) {
+        val currentStatus = conversation.conversation.verificationStatus
+        val newStatus = getActualNewStatus(newStatusFromCC, currentStatus)
+
+        if (newStatus == currentStatus) return
+
+        conversationRepository.updateVerificationStatus(newStatus, conversation.conversation.id)
+
+        if (newStatus == VerificationStatus.DEGRADED) {
+            notifyUserAboutStateChanges(conversation.conversation.id, VerificationStatus.DEGRADED)
+        }
+    }
+
+    /**
+     * Current CoreCrypto implementation returns only a boolean flag "if conversation is verified or not".
+     * So we need to calculate if status was degraded on our side by comparing it to the previous status.
+     * @param newStatusFromCC - [VerificationStatus] that CoreCrypto returns.
+     * @param currentStatus - [VerificationStatus] that conversation currently has.
+     * @return [VerificationStatus] that should be saved to DB.
+     */
+    private fun getActualNewStatus(newStatusFromCC: VerificationStatus, currentStatus: VerificationStatus): VerificationStatus =
+        if (newStatusFromCC == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.VERIFIED)
+            VerificationStatus.DEGRADED
+        else if (newStatusFromCC == VerificationStatus.NOT_VERIFIED && currentStatus == VerificationStatus.DEGRADED)
+            VerificationStatus.DEGRADED
+        else
+            newStatusFromCC
 
     /**
      * Add a SystemMessage into a conversation, to inform user when the conversation verification status becomes DEGRADED.
