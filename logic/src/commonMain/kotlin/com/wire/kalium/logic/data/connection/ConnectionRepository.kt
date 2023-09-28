@@ -258,7 +258,8 @@ internal class ConnectionDataSource(
                         messageTimer = null,
                         userMessageTimer = null,
                         archived = false,
-                        archivedInstant = null
+                        archivedInstant = null,
+                        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                     )
                 )
             }

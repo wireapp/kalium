@@ -47,7 +47,7 @@ interface ConversationDAO {
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
-    suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
+    suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
@@ -92,4 +92,6 @@ interface ConversationDAO {
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
+    suspend fun updateVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
+    suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity
 }
