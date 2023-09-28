@@ -136,7 +136,7 @@ class InstanceService(
     }
 
     @Suppress("LongMethod", "ThrowsCount", "ComplexMethod")
-    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance {
+    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest) {
         val userAgent = "KaliumTestService/${System.getProperty("http.agent")}"
         val before = System.currentTimeMillis()
         val instancePath = System.getProperty("user.home") +
@@ -209,8 +209,6 @@ class InstanceService(
             loginResult.authData.userId
         }
 
-        var clientId: String? = null
-
         log.info("Instance $instanceId: Register client device")
         runBlocking {
             coreLogic.sessionScope(userId) {
@@ -224,8 +222,22 @@ class InstanceService(
                         )
                     )) {
                         is RegisterClientResult.Success -> {
-                            clientId = result.client.id.value
+                            val clientId = result.client.id.value
                             log.info("Instance $instanceId: Device $clientId successfully registered")
+
+                            val instance = Instance(
+                                instanceRequest.backend,
+                                clientId,
+                                instanceId,
+                                instanceRequest.name,
+                                coreLogic,
+                                instancePath,
+                                instanceRequest.password,
+                                System.currentTimeMillis() - before,
+                                System.currentTimeMillis()
+                            )
+                            instances.put(instanceId, instance)
+
                             syncManager.waitUntilLiveOrFailure().onFailure {
                                 log.error("Instance $instanceId: Sync failed with $it")
                             }
@@ -246,21 +258,6 @@ class InstanceService(
                 }
             }
         }
-
-        val instance = Instance(
-            instanceRequest.backend,
-            clientId,
-            instanceId,
-            instanceRequest.name,
-            coreLogic,
-            instancePath,
-            instanceRequest.password,
-            System.currentTimeMillis() - before,
-            System.currentTimeMillis()
-        )
-        instances.put(instanceId, instance)
-
-        return instance
     }
 
     fun deleteInstance(id: String) {
