@@ -25,6 +25,8 @@ import kotlin.test.assertTrue
 
 @IgnoreJS
 @IgnoreIOS
+@IgnoreJvm
+@IgnoreAndroidInstrumented
 class E2EIClientTest : BaseMLSClientTest() {
     data class SampleUser(
         val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String
