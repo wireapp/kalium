@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -51,6 +52,8 @@ interface PublicUserMapper {
         // UserProfileDTO has no info about userType, we need to pass it explicitly
         userType: UserType
     ): OtherUser
+
+    fun fromEntityToUserSummary(userEntity: UserEntity): UserSummary
 }
 
 class PublicUserMapperImpl(
@@ -130,4 +133,17 @@ class PublicUserMapperImpl(
         expiresAt = userDetailResponse.expiresAt?.toInstant(),
         defederated = false
     )
+
+    override fun fromEntityToUserSummary(userEntity: UserEntity) = with(userEntity) {
+        UserSummary(
+            userId = UserId(id.value, id.domain),
+            userHandle = handle,
+            userName = name,
+            userPreviewAssetId = previewAssetId?.toModel(),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+            isUserDeleted = deleted,
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus)
+        )
+    }
 }

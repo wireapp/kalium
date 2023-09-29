@@ -19,20 +19,36 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.message.UserSummary
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * Use case for observing current users typing in a given conversation.
+ * This will get their info details from the local database.
  */
 interface ObserveUsersTypingUseCase {
-    suspend fun invoke(conversationId: ConversationId): Flow<Set<UserId>>
+    suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserSummary>>
 }
 
 internal class ObserveUsersTypingUseCaseImpl(
-    private val typingIndicatorRepository: TypingIndicatorRepository
+    private val typingIndicatorRepository: TypingIndicatorRepository,
+    private val userRepository: UserRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveUsersTypingUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Flow<Set<UserId>> =
-        typingIndicatorRepository.observeUsersTyping(conversationId)
+    override suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserSummary>> = withContext(dispatcher.io) {
+        typingIndicatorRepository.observeUsersTyping(conversationId).map { usersEntries ->
+            userRepository.getUsersSummaryByIds(usersEntries.map { it.userId }).fold({
+                kaliumLogger.w("Users not found locally, skipping... $it")
+                emptySet()
+            }, { it.toSet() })
+        }
+    }
 
 }

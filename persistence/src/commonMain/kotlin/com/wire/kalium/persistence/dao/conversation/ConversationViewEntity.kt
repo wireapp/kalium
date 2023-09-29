@@ -65,7 +65,8 @@ data class ConversationViewEntity(
     val messageTimer: Long?,
     val userMessageTimer: Long?,
     val archived: Boolean,
-    val archivedDateTime: Instant?
+    val archivedDateTime: Instant?,
+    val verificationStatus: ConversationEntity.VerificationStatus
 ) {
     val isMember: Boolean get() = selfRole != null
 
