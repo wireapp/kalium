@@ -79,7 +79,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
+import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -663,11 +665,12 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCount() = runTest {
+    fun givenAGroupConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCountAndLastMessage() = runTest {
         // given
         val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
         val conversationId = QualifiedID("some_value", "some_domain")
-        val shouldFetchArchivedConversations = false
+        val shouldFetchFromArchivedConversations = false
+        val messagePreviewEntity = MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)
 
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             id = conversationIdEntity,
@@ -682,12 +685,12 @@ class ConversationRepositoryTest {
 
         val (_, conversationRepository) = Arrangement()
             .withConversations(listOf(conversationEntity))
-            .withLastMessages(listOf())
+            .withLastMessages(listOf(messagePreviewEntity))
             .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
             .arrange()
 
         // when
-        conversationRepository.observeConversationListDetails(shouldFetchArchivedConversations).test {
+        conversationRepository.observeConversationListDetails(shouldFetchFromArchivedConversations).test {
             val result = awaitItem()
 
             assertContains(result.map { it.conversation.id }, conversationId)
@@ -695,10 +698,54 @@ class ConversationRepositoryTest {
 
             assertIs<ConversationDetails.Group>(conversation)
             assertEquals(conversation.unreadEventCount[UnreadEventType.MESSAGE], unreadMessagesCount)
+            assertEquals(
+                MapperProvider.messageMapper(TestUser.SELF.id).fromEntityToMessagePreview(messagePreviewEntity),
+                conversation.lastMessage
+            )
 
             awaitComplete()
         }
     }
+
+    @Test
+    fun givenArchivedConversationHasNewMessages_whenGettingConversationDetails_ThenCorrectlyGetUnreadMessageCountAndNullLastMessage() =
+        runTest {
+            // given
+            val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
+            val conversationId = QualifiedID("some_value", "some_domain")
+            val shouldFetchFromArchivedConversations = true
+
+            val conversationEntity = TestConversation.VIEW_ENTITY.copy(
+                id = conversationIdEntity,
+                type = ConversationEntity.Type.GROUP,
+            )
+
+            val unreadMessagesCount = 5
+            val conversationUnreadEventEntity = ConversationUnreadEventEntity(
+                conversationIdEntity,
+                mapOf(UnreadEventTypeEntity.MESSAGE to unreadMessagesCount)
+            )
+
+            val (_, conversationRepository) = Arrangement()
+                .withConversations(listOf(conversationEntity))
+                .withLastMessages(listOf(MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)))
+                .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
+                .arrange()
+
+            // when
+            conversationRepository.observeConversationListDetails(shouldFetchFromArchivedConversations).test {
+                val result = awaitItem()
+
+                assertContains(result.map { it.conversation.id }, conversationId)
+                val conversation = result.first { it.conversation.id == conversationId }
+
+                assertIs<ConversationDetails.Group>(conversation)
+                assertEquals(conversation.unreadEventCount[UnreadEventType.MESSAGE], unreadMessagesCount)
+                assertEquals(null, conversation.lastMessage)
+
+                awaitComplete()
+            }
+        }
 
     @Test
     fun givenAGroupConversationHasNotNewMessages_whenGettingConversationDetails_ThenReturnZeroUnreadMessageCount() = runTest {
@@ -752,7 +799,7 @@ class ConversationRepositoryTest {
         // given
         val conversationIdEntity = ConversationIDEntity("some_value", "some_domain")
         val conversationId = QualifiedID("some_value", "some_domain")
-        val shouldFetchArchivedConversations = false
+        val shouldFetchFromArchivedConversations = false
 
         val conversationEntity = TestConversation.VIEW_ENTITY.copy(
             id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE,
@@ -772,7 +819,7 @@ class ConversationRepositoryTest {
             .arrange()
 
         // when
-        conversationRepository.observeConversationListDetails(shouldFetchArchivedConversations).test {
+        conversationRepository.observeConversationListDetails(shouldFetchFromArchivedConversations).test {
             val result = awaitItem()
 
             assertContains(result.map { it.conversation.id }, conversationId)
@@ -1468,7 +1515,16 @@ class ConversationRepositoryTest {
             conversationsFound = listOf(CONVERSATION_RESPONSE),
             conversationsFailed = listOf(ConversationIdDTO("failedId", "someDomain")),
             conversationsNotFound = emptyList()
+        )
 
+        val MESSAGE_PREVIEW_ENTITY = MessagePreviewEntity(
+            id = "some_id",
+            conversationId = CONVERSATION_ENTITY_ID,
+            content = MessagePreviewEntityContent.Text("sender", "Hey"),
+            date = "2022-03-30T15:36:00.000Z",
+            visibility = MessageEntity.Visibility.VISIBLE,
+            isSelfMessage = false,
+            senderUserId = USER_ENTITY_ID
         )
 
         private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")

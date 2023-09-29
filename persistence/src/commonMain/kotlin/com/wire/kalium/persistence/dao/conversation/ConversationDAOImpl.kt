@@ -140,8 +140,8 @@ internal class ConversationDAOImpl internal constructor(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getAllConversationDetails(includeArchived: Boolean): Flow<List<ConversationViewEntity>> {
-        return conversationQueries.selectAllConversationDetails(includeArchived)
+    override suspend fun getAllConversationDetails(fromArchived: Boolean): Flow<List<ConversationViewEntity>> {
+        return conversationQueries.selectAllConversationDetails(fromArchived)
             .asFlow()
             .mapToList()
             .flowOn(coroutineContext)
