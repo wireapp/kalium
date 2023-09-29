@@ -321,8 +321,16 @@ sealed interface Message {
                     typeKey to "conversationDegradedMLS"
                 )
 
+                is MessageContent.ConversationVerifiedMLS -> mutableMapOf(
+                    typeKey to "conversationVerifiedMLS"
+                )
+
                 is MessageContent.ConversationDegradedProteus -> mutableMapOf(
                     typeKey to "conversationDegradedProteus"
+                )
+
+                is MessageContent.ConversationVerifiedProteus -> mutableMapOf(
+                    typeKey to "conversationVerifiedProteus"
                 )
 
                 is MessageContent.FederationStopped.ConnectionRemoved -> mutableMapOf(

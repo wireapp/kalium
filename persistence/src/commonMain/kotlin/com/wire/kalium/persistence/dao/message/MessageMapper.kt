@@ -202,6 +202,8 @@ object MessageMapper {
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -561,6 +563,8 @@ object MessageMapper {
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessageEntityContent.MLSWrongEpochWarning
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessageEntityContent.ConversationDegradedMLS
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessageEntityContent.ConversationDegradedProteus
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessageEntityContent.ConversationVerifiedMLS
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> MessageEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.FEDERATION -> MessageEntityContent.Federation(
                 domainList = federationDomainList.requireField("federationDomainList"),
                 type = federationType.requireField("federationType")
