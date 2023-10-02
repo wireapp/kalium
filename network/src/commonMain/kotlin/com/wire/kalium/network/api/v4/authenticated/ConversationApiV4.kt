@@ -121,6 +121,5 @@ internal open class ConversationApiV4 internal constructor(
     companion object {
         const val PATH_GROUP_INFO = "groupinfo"
         const val PATH_SUBCONVERSATIONS = "subconversations"
-        const val PATH_TYPING_NOTIFICATION = "typing"
     }
 }

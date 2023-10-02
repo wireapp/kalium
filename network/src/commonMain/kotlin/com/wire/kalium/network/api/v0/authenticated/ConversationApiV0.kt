@@ -388,9 +388,12 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun sendTypingIndicatorNotification(
         conversationId: ConversationId,
         typingIndicatorMode: TypingIndicatorStatusDTO
-    ): NetworkResponse<Unit> = NetworkResponse.Error(
-        APINotSupported("sendTypingIndicatorStatus api is only available on API V4")
-    )
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/${PATH_TYPING_NOTIFICATION}") {
+                setBody(typingIndicatorMode)
+            }
+        }
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
@@ -412,6 +415,7 @@ internal open class ConversationApiV0 internal constructor(
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_IDS = "qualified_ids"
+        const val PATH_TYPING_NOTIFICATION = "typing"
 
         const val MAX_CONVERSATION_DETAILS_COUNT = 1000
     }
