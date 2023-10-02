@@ -422,7 +422,7 @@ internal class ConversationApiV0Test : ApiTest() {
     fun givenTypingNotificationRequest_whenSendingStatus_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
         // given
         val conversationId = ConversationId("conversationId", "conversationDomain")
-        val request = TypingIndicatorStatusDTO(TypingIndicatorStatus.STARTED)
+        val request = TypingIndicatorStatusDTO(TypingIndicatorStatus.STOPPED)
 
         val networkClient = mockAuthenticatedNetworkClient(
             ByteArray(0),
@@ -430,7 +430,7 @@ internal class ConversationApiV0Test : ApiTest() {
             assertion = {
                 assertPost()
                 assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.value}/${PATH_TYPING_NOTIFICATION}")
-                assertJsonBodyContent(SendTypingStatusNotificationRequestJson.createValid(TypingIndicatorStatus.STARTED).rawJson)
+                assertJsonBodyContent(SendTypingStatusNotificationRequestJson.createValid(TypingIndicatorStatus.STOPPED).rawJson)
             }
         )
         val conversationApi = ConversationApiV0(networkClient)
