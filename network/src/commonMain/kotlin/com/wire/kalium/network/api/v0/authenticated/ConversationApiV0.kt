@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.CreateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
@@ -383,6 +384,13 @@ internal open class ConversationApiV0 internal constructor(
                 setBody(ConversationMessageTimerDTO(messageTimer))
             }
         }
+
+    override suspend fun sendTypingIndicatorNotification(
+        conversationId: ConversationId,
+        typingIndicatorMode: TypingIndicatorStatusDTO
+    ): NetworkResponse<Unit> = NetworkResponse.Error(
+        APINotSupported("sendTypingIndicatorStatus api is only available on API V4")
+    )
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"

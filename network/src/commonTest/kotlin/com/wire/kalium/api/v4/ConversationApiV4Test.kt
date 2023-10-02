@@ -22,12 +22,16 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
+import com.wire.kalium.model.conversation.SendTypingStatusNotificationRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConversationApiV4
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -35,6 +39,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 internal class ConversationApiV4Test : ApiTest() {
@@ -122,9 +127,30 @@ internal class ConversationApiV4Test : ApiTest() {
             )
         }
 
+    @Test
+    fun givenTypingNotificationRequest_whenSendingStatus_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val request = TypingIndicatorStatusDTO(TypingIndicatorStatus.STARTED)
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            ByteArray(0),
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.domain}/${conversationId.value}/${PATH_TYPING_NOTIFICATION}")
+                assertJsonBodyContent(SendTypingStatusNotificationRequestJson.createValid(TypingIndicatorStatus.STARTED).rawJson)
+            }
+        )
+        val conversationApi = ConversationApiV4(networkClient)
+        conversationApi.sendTypingIndicatorNotification(conversationId, request).also {
+            assertIs<NetworkResponse.Success<Unit>>(it)
+        }
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_MEMBERS = "members"
+        const val PATH_TYPING_NOTIFICATION = "typing"
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v3
     }
 }
