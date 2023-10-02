@@ -94,4 +94,5 @@ interface ConversationDAO {
     suspend fun clearContent(conversationId: QualifiedIDEntity)
     suspend fun updateVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
     suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity
+    suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 }
