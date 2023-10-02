@@ -54,12 +54,10 @@ internal class TypingIndicatorRepositoryImpl(
     }
 
     override suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
-        if (userPropertyRepository.getTypingIndicatorStatus()) {
-            userTypingCache.block { entry ->
-                entry[conversationId]?.apply { this.removeAll { it.userId == userId } }
-            }.also {
-                userTypingDataSourceFlow.tryEmit(Unit)
-            }
+        userTypingCache.block { entry ->
+            entry[conversationId]?.apply { this.removeAll { it.userId == userId } }
+        }.also {
+            userTypingDataSourceFlow.tryEmit(Unit)
         }
     }
 
