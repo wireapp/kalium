@@ -64,8 +64,8 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
 
         conversationRepository.updateVerificationStatus(newStatus, conversation.conversation.id)
 
-        if (newStatus == VerificationStatus.DEGRADED) {
-            notifyUserAboutStateChanges(conversation.conversation.id, VerificationStatus.DEGRADED)
+        if (newStatus == VerificationStatus.DEGRADED || newStatus == VerificationStatus.VERIFIED) {
+            notifyUserAboutStateChanges(conversation.conversation.id, newStatus)
         }
     }
 
@@ -91,8 +91,9 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
         conversationId: ConversationId,
         updatedStatus: VerificationStatus
     ) {
-        // TODO notify about verified too
-        val content = MessageContent.ConversationDegradedMLS
+        val content = if (updatedStatus == VerificationStatus.VERIFIED) MessageContent.ConversationVerifiedMLS
+        else MessageContent.ConversationDegradedMLS
+
         val conversationDegradedMessage = Message.System(
             id = uuid4().toString(),
             content = content,

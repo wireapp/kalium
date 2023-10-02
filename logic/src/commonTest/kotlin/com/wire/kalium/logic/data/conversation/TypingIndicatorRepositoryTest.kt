@@ -43,7 +43,7 @@ class TypingIndicatorRepositoryTest {
 
             assertEquals(
                 setOf(expectedUserTypingOne, expectedUserTypingTwo),
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
             )
         }
 
@@ -58,7 +58,7 @@ class TypingIndicatorRepositoryTest {
 
             assertEquals(
                 expectedUserTyping,
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
             )
         }
 
@@ -70,11 +70,11 @@ class TypingIndicatorRepositoryTest {
 
             assertEquals(
                 setOf(expectedUserTypingOne),
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
             )
             assertEquals(
                 setOf(expectedUserTypingTwo),
-                typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()
+                typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()?.map { it.userId }?.toSet()
             )
         }
 

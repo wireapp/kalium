@@ -291,8 +291,10 @@ sealed class MessageContent {
 
     object HistoryLost : System()
     object ConversationCreated : System()
-    object ConversationDegradedMLS : System()
-    object ConversationDegradedProteus : System()
+    data object ConversationDegradedMLS : System()
+    data object ConversationVerifiedMLS : System()
+    data object ConversationDegradedProteus : System()
+    data object ConversationVerifiedProteus : System()
     sealed class FederationStopped : System() {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
@@ -344,6 +346,8 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.FederationStopped.ConnectionRemoved -> "Federation.ConnectionRemoved"
     is MessageContent.FederationStopped.Removed -> "Federation.Removed"
     is MessageContent.Unknown -> "Unknown"
+    MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
+    MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     null -> "null"
 }
 
