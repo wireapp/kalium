@@ -113,7 +113,7 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationListDetails(fromArchived: Boolean): Flow<List<ConversationDetails>>
+    suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -411,10 +411,10 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun observeConversationListDetails(fromArchived: Boolean): Flow<List<ConversationDetails>> =
+    override suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>> =
         combine(
-            conversationDAO.getAllConversationDetails(fromArchived),
-            if (fromArchived) flowOf(listOf()) else messageDAO.observeLastMessages(),
+            conversationDAO.getAllConversationDetails(fromArchive),
+            if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
         ) { conversationList, lastMessageList, unreadEvents ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
