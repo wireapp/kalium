@@ -1155,7 +1155,7 @@ class UserSessionScope internal constructor(
         )
 
     private val typingIndicatorHandler: TypingIndicatorHandler
-        get() = TypingIndicatorHandlerImpl(conversations.typingIndicatorRepository)
+        get() = TypingIndicatorHandlerImpl(userId, conversations.typingIndicatorRepository)
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(

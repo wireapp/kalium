@@ -39,6 +39,21 @@ import kotlin.test.Test
 class TypingIndicatorHandlerTest {
 
     @Test
+    fun givenTypingEventStarted_whenIsSelfUser_thenSkipIt() = runTest {
+        val (arrangement, handler) = Arrangement()
+            .withTypingIndicatorObserve(setOf(TestUser.SELF.id))
+            .arrange()
+
+        val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED))
+
+        result.shouldSucceed()
+        verify(arrangement.typingIndicatorRepository)
+            .function(arrangement.typingIndicatorRepository::addTypingUserInConversation)
+            .with(eq(TestConversation.ID), eq(TestUser.USER_ID))
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenTypingEvent_whenIsModeStarted_thenHandleToAdd() = runTest {
         val (arrangement, handler) = Arrangement()
             .withTypingIndicatorObserve(setOf(TestUser.USER_ID))
@@ -68,6 +83,21 @@ class TypingIndicatorHandlerTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenTypingEventStopped_whenIsSelfUser_thenSkipIt() = runTest {
+        val (arrangement, handler) = Arrangement()
+            .withTypingIndicatorObserve(setOf(TestUser.USER_ID))
+            .arrange()
+
+        val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STOPPED))
+
+        result.shouldSucceed()
+        verify(arrangement.typingIndicatorRepository)
+            .function(arrangement.typingIndicatorRepository::removeTypingUserInConversation)
+            .with(eq(TestConversation.ID), eq(TestUser.USER_ID))
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
         @Mock
         val typingIndicatorRepository: TypingIndicatorRepository = mock(TypingIndicatorRepository::class)
@@ -79,7 +109,7 @@ class TypingIndicatorHandlerTest {
                 .thenReturn(flowOf(usersId.map { ExpiringUserTyping(it, Clock.System.now()) }.toSet()))
         }
 
-        fun arrange() = this to TypingIndicatorHandlerImpl(typingIndicatorRepository)
+        fun arrange() = this to TypingIndicatorHandlerImpl(TestUser.SELF.id, typingIndicatorRepository)
     }
 
 }
