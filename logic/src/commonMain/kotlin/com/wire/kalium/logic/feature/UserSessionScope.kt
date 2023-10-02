@@ -1300,6 +1300,7 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             globalScope.serverConfigRepository,
             userStorage,
+            userPropertyRepository,
             this
         )
     }
