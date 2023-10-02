@@ -49,14 +49,14 @@ class TypingIndicatorHandlerTest {
         result.shouldSucceed()
         verify(arrangement.typingIndicatorRepository)
             .function(arrangement.typingIndicatorRepository::addTypingUserInConversation)
-            .with(eq(TestConversation.ID), eq(TestUser.USER_ID))
+            .with(eq(TestConversation.ID), eq(TestUser.SELF.id))
             .wasNotInvoked()
     }
 
     @Test
     fun givenTypingEvent_whenIsModeStarted_thenHandleToAdd() = runTest {
         val (arrangement, handler) = Arrangement()
-            .withTypingIndicatorObserve(setOf(TestUser.USER_ID))
+            .withTypingIndicatorObserve(setOf(TestUser.OTHER_USER_ID))
             .arrange()
 
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED))
@@ -64,14 +64,14 @@ class TypingIndicatorHandlerTest {
         result.shouldSucceed()
         verify(arrangement.typingIndicatorRepository)
             .function(arrangement.typingIndicatorRepository::addTypingUserInConversation)
-            .with(eq(TestConversation.ID), eq(TestUser.USER_ID))
+            .with(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
             .wasInvoked(once)
     }
 
     @Test
     fun givenTypingEvent_whenIsModeStopped_thenHandleToRemove() = runTest {
         val (arrangement, handler) = Arrangement()
-            .withTypingIndicatorObserve(setOf(TestUser.USER_ID))
+            .withTypingIndicatorObserve(setOf(TestUser.OTHER_USER_ID))
             .arrange()
 
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STOPPED))
@@ -79,14 +79,14 @@ class TypingIndicatorHandlerTest {
         result.shouldSucceed()
         verify(arrangement.typingIndicatorRepository)
             .function(arrangement.typingIndicatorRepository::removeTypingUserInConversation)
-            .with(eq(TestConversation.ID), eq(TestUser.USER_ID))
+            .with(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
             .wasInvoked(once)
     }
 
     @Test
     fun givenTypingEventStopped_whenIsSelfUser_thenSkipIt() = runTest {
         val (arrangement, handler) = Arrangement()
-            .withTypingIndicatorObserve(setOf(TestUser.USER_ID))
+            .withTypingIndicatorObserve(setOf(TestUser.SELF.id))
             .arrange()
 
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STOPPED))
@@ -94,7 +94,7 @@ class TypingIndicatorHandlerTest {
         result.shouldSucceed()
         verify(arrangement.typingIndicatorRepository)
             .function(arrangement.typingIndicatorRepository::removeTypingUserInConversation)
-            .with(eq(TestConversation.ID), eq(TestUser.USER_ID))
+            .with(eq(TestConversation.ID), eq(TestUser.SELF.id))
             .wasNotInvoked()
     }
 
