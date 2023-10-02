@@ -99,6 +99,7 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -1130,6 +1131,17 @@ class ConversationRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenUnreadArchivedConversationsCount_WhenObserving_ThenShouldReturnSuccess() = runTest {
+        val unreadCount = 10L
+        val (arrange, conversationRepository) = Arrangement()
+            .withUnreadArchivedConversationsCount(unreadCount)
+            .arrange()
+
+        val result = conversationRepository.observeUnreadArchivedConversationsCount().first()
+        assertEquals(unreadCount, result)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -1267,6 +1279,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(messageDAO::observeConversationsUnreadEvents)
                 .whenInvoked()
                 .thenReturn(flowOf(unreadEvents))
+        }
+
+        fun withUnreadArchivedConversationsCount(unreadCount: Long) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeUnreadArchivedConversationsCount)
+                .whenInvoked()
+                .thenReturn(flowOf(unreadCount))
         }
 
         fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {

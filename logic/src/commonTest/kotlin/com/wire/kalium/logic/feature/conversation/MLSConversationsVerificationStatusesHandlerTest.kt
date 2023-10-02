@@ -168,7 +168,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(anyInstanceOf(Message.System::class))
-            .wasNotInvoked()
+            .wasInvoked(once)
     }
 
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()

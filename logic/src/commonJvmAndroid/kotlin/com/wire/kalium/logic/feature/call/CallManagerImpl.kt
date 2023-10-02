@@ -185,7 +185,7 @@ class CallManagerImpl internal constructor(
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
                     .keepingStrongReference(),
                 constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
-                videoReceiveStateHandler = OnParticipantsVideoStateChanged(),
+                videoReceiveStateHandler = OnParticipantsVideoStateChanged().keepingStrongReference(),
                 arg = null
             )
             callingLogger.d("$TAG - wcall_create() called")

@@ -24,7 +24,6 @@ import com.wire.kalium.logic.util.safeComputeAndMutateSetValue
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.Clock
@@ -33,7 +32,7 @@ import kotlinx.datetime.Instant
 internal interface TypingIndicatorRepository {
     fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
-    suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>>
+    suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<ExpiringUserTyping>>
 }
 
 internal class TypingIndicatorRepositoryImpl(
@@ -41,34 +40,47 @@ internal class TypingIndicatorRepositoryImpl(
 ) : TypingIndicatorRepository {
 
     private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
-        MutableSharedFlow(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow(extraBufferCapacity = BUFFER_SIZE, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         userTypingCache.safeComputeAndMutateSetValue(conversationId) { ExpiringUserTyping(userId, Clock.System.now()) }
-        userTypingDataSourceFlow.tryEmit(Unit)
+            .also {
+                userTypingDataSourceFlow.tryEmit(Unit)
+            }
     }
 
     override fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         userTypingCache.block { entry ->
             entry[conversationId]?.apply { this.removeAll { it.userId == userId } }
+        }.also {
+            userTypingDataSourceFlow.tryEmit(Unit)
         }
-        userTypingDataSourceFlow.tryEmit(Unit)
     }
 
-    override suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>> {
+    override suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<ExpiringUserTyping>> {
         return userTypingDataSourceFlow
-            .map { userTypingCache.filterUsersIdTypingInConversation(conversationId) }
-            .onStart { emit(userTypingCache.filterUsersIdTypingInConversation(conversationId)) }
-            .distinctUntilChanged()
+            .map { userTypingCache[conversationId] ?: emptySet() }
+            .onStart { emit(userTypingCache[conversationId] ?: emptySet()) }
+    }
+
+    companion object {
+        const val BUFFER_SIZE = 32 // drop after this threshold
     }
 }
 
-private fun ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>.filterUsersIdTypingInConversation(
-    conversationId: ConversationId
-) = this[conversationId]?.map { it.userId }?.toSet().orEmpty()
-
 // todo expire by worker
-class ExpiringUserTyping(
+data class ExpiringUserTyping(
     val userId: UserId,
     val date: Instant
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        return other != null && when (other) {
+            is ExpiringUserTyping -> other.userId == this.userId
+            else -> false
+        }
+    }
+
+    override fun hashCode(): Int {
+        return this.userId.hashCode()
+    }
+}

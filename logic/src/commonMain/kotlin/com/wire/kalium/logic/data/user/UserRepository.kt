@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
@@ -113,6 +114,7 @@ internal interface UserRepository {
      * when backends stops federating.
      */
     suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
+
     // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
@@ -126,6 +128,11 @@ internal interface UserRepository {
      * Removes broken user asset to avoid fetching it until next sync.
      */
     suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID): Either<CoreFailure, Unit>
+
+    /**
+     * Gets users summary by their ids.
+     */
+    suspend fun getUsersSummaryByIds(userIds: List<QualifiedID>): Either<StorageFailure, List<UserSummary>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -462,6 +469,13 @@ internal class UserDataSource internal constructor(
     override suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID) = wrapStorageRequest {
         userDAO.removeUserAsset(qualifiedID.toDao())
     }
+
+    override suspend fun getUsersSummaryByIds(userIds: List<QualifiedID>): Either<StorageFailure, List<UserSummary>> =
+        wrapStorageRequest {
+            userDAO.getUsersByQualifiedIDList(userIds.map { it.toDao() }).map {
+                publicUserMapper.fromEntityToUserSummary(it)
+            }
+        }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"

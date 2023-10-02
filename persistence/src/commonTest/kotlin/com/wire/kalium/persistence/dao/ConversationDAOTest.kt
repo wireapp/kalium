@@ -994,6 +994,59 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(conversation2.id, result[0].id)
     }
 
+    @Test
+    fun givenArchivedConversations_whenObservingUnreadConversationCount_thenReturnedCorrectCount() = runTest {
+        // given
+        val conversation1 = conversationEntity1.copy(
+            id = ConversationIDEntity("convNullName", "domain"),
+            name = null,
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = true
+        )
+
+        val conversation2 = conversationEntity2.copy(
+            id = ConversationIDEntity("convWithName", "domain"),
+            name = "name",
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = false
+        )
+
+        val instant = Clock.System.now()
+
+        conversationDAO.insertConversation(conversation1)
+        conversationDAO.insertConversation(conversation2)
+        insertTeamUserAndMember(team, user1, conversation1.id)
+        insertTeamUserAndMember(team, user1, conversation2.id)
+
+        repeat(5) {
+            newRegularMessageEntity(
+                id = Random.nextBytes(10).decodeToString(),
+                conversationId = conversation1.id,
+                senderUserId = user1.id,
+                date = instant
+            ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+            newRegularMessageEntity(
+                id = Random.nextBytes(10).decodeToString(),
+                conversationId = conversation2.id,
+                senderUserId = user1.id,
+                date = instant
+            ).also { messageDAO.insertOrIgnoreMessage(it) }
+        }
+
+        // when
+        val result = conversationDAO.observeUnreadArchivedConversationsCount().first()
+
+        // then
+        assertTrue(result == 1L)
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.insertUser(user)
