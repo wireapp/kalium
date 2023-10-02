@@ -414,7 +414,7 @@ internal class ConversationDataSource internal constructor(
     override suspend fun observeConversationListDetails(fromArchived: Boolean): Flow<List<ConversationDetails>> =
         combine(
             conversationDAO.getAllConversationDetails(fromArchived),
-            if(fromArchived) flowOf(listOf()) else messageDAO.observeLastMessages(),
+            if (fromArchived) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
         ) { conversationList, lastMessageList, unreadEvents ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
