@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.safeComputeAndMutateSetValue
 import kotlinx.coroutines.channels.BufferOverflow
@@ -30,26 +31,29 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 internal interface TypingIndicatorRepository {
-    fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
-    fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
+    suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
+    suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<ExpiringUserTyping>>
 }
 
 internal class TypingIndicatorRepositoryImpl(
-    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>
+    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>,
+    private val userPropertyRepository: UserPropertyRepository
 ) : TypingIndicatorRepository {
 
     private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
         MutableSharedFlow(extraBufferCapacity = BUFFER_SIZE, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    override fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
-        userTypingCache.safeComputeAndMutateSetValue(conversationId) { ExpiringUserTyping(userId, Clock.System.now()) }
-            .also {
-                userTypingDataSourceFlow.tryEmit(Unit)
-            }
+    override suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
+        if (userPropertyRepository.getTypingIndicatorStatus()) {
+            userTypingCache.safeComputeAndMutateSetValue(conversationId) { ExpiringUserTyping(userId, Clock.System.now()) }
+                .also {
+                    userTypingDataSourceFlow.tryEmit(Unit)
+                }
+        }
     }
 
-    override fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
+    override suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         userTypingCache.block { entry ->
             entry[conversationId]?.apply { this.removeAll { it.userId == userId } }
         }.also {
