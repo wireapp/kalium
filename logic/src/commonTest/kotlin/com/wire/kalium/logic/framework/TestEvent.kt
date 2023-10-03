@@ -68,14 +68,15 @@ object TestEvent {
         "2022-03-30T15:36:00.000Zp"
     )
 
-    fun memberChangeArchivedStatus(eventId: String = "eventId", isArchiving: Boolean = true) = Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
-        eventId,
-        TestConversation.ID,
-        "2022-03-30T15:36:00.000Z",
-        false,
-        "2022-03-31T16:36:00.000Zp",
-        isArchiving,
-    )
+    fun memberChangeArchivedStatus(eventId: String = "eventId", isArchiving: Boolean = true) =
+        Event.Conversation.MemberChanged.MemberArchivedStatusChanged(
+            eventId,
+            TestConversation.ID,
+            "2022-03-30T15:36:00.000Z",
+            false,
+            "2022-03-31T16:36:00.000Zp",
+            isArchiving,
+        )
 
     fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.MemberChanged.IgnoredMemberChanged(
         eventId,
@@ -252,7 +253,7 @@ object TestEvent {
         id = "eventId",
         conversationId = TestConversation.ID,
         transient = true,
-        senderUserId = TestUser.USER_ID,
+        senderUserId = TestUser.OTHER_USER_ID,
         timestampIso = "2022-03-30T15:36:00.000Z",
         typingIndicatorMode = typingIndicatorMode
     )
