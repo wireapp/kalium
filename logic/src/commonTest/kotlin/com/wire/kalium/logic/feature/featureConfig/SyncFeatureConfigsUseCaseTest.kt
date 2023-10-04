@@ -33,9 +33,17 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
@@ -52,7 +60,6 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -62,7 +69,6 @@ import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SyncFeatureConfigsUseCaseTest {
 
     @Test
@@ -74,7 +80,9 @@ class SyncFeatureConfigsUseCaseTest {
                         secondFactorPasswordChallengeModel = ConfigsStatusModel(Status.ENABLED)
                     )
                 )
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -92,7 +100,9 @@ class SyncFeatureConfigsUseCaseTest {
                         secondFactorPasswordChallengeModel = ConfigsStatusModel(Status.DISABLED)
                     )
                 )
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -106,7 +116,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(SELF_USER_ID.toPlainID()), Status.ENABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -120,7 +132,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.ENABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -134,7 +148,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(mlsModel = MLSModel(listOf(), Status.DISABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -148,7 +164,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.ENABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -162,7 +180,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.DISABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
 
         syncFeatureConfigsUseCase()
@@ -177,7 +197,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -196,6 +218,7 @@ class SyncFeatureConfigsUseCaseTest {
                 status = true,
                 isStatusChanged = false
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -210,7 +233,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
 
         syncFeatureConfigsUseCase()
@@ -230,6 +255,7 @@ class SyncFeatureConfigsUseCaseTest {
                 status = false,
                 isStatusChanged = false
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -249,6 +275,7 @@ class SyncFeatureConfigsUseCaseTest {
                 status = false,
                 isStatusChanged = false
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -272,6 +299,7 @@ class SyncFeatureConfigsUseCaseTest {
                 status = true,
                 isStatusChanged = false
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -294,6 +322,7 @@ class SyncFeatureConfigsUseCaseTest {
                     isStatusChanged = false
                 )
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -315,6 +344,7 @@ class SyncFeatureConfigsUseCaseTest {
                     isStatusChanged = false
                 )
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -336,6 +366,7 @@ class SyncFeatureConfigsUseCaseTest {
                     isStatusChanged = false
                 )
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -358,6 +389,7 @@ class SyncFeatureConfigsUseCaseTest {
                     isStatusChanged = false
                 )
             )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -413,6 +445,7 @@ class SyncFeatureConfigsUseCaseTest {
                 isStatusChanged = false
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.NoRestriction)
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -433,6 +466,7 @@ class SyncFeatureConfigsUseCaseTest {
                 isStatusChanged = false
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -449,6 +483,7 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -465,6 +500,7 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.NoRestriction)
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -479,7 +515,7 @@ class SyncFeatureConfigsUseCaseTest {
         // Given
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
             .withKaliumConfigs { it.copy(selfDeletingMessages = false) }
-            .withSuccessfulTeamSettingsSelfDeletionStatus()
+            .withSetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         // When
@@ -504,7 +540,8 @@ class SyncFeatureConfigsUseCaseTest {
             .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
-            .withSuccessfulTeamSettingsSelfDeletionStatus()
+            .withSetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         // When
@@ -529,7 +566,8 @@ class SyncFeatureConfigsUseCaseTest {
             .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
-            .withSuccessfulTeamSettingsSelfDeletionStatus()
+            .withSetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         // When
@@ -555,7 +593,8 @@ class SyncFeatureConfigsUseCaseTest {
             .withRemoteFeatureConfigsReturning(
                 Either.Right(FeatureConfigTest.newModel(selfDeletingMessagesModel = expectedSelfDeletingMessagesModel))
             )
-            .withSuccessfulTeamSettingsSelfDeletionStatus()
+            .withSetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
         // When
@@ -574,12 +613,14 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenE2EIIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
+    fun givenE2EIIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000_000_000L), Status.DISABLED)
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(e2EIModel = e2EIModel)
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -595,7 +636,9 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel()
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -622,9 +665,6 @@ class SyncFeatureConfigsUseCaseTest {
 
         @Mock
         val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
-
-        @Mock
-        val isGuestRoomLinkFeatureEnabled = mock(classOf<GetGuestRoomLinkFeatureStatusUseCase>())
 
 
         private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
@@ -674,13 +714,20 @@ class SyncFeatureConfigsUseCaseTest {
         }
 
         fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: GuestRoomLinkStatus) = apply {
-            given(isGuestRoomLinkFeatureEnabled)
-                .function(isGuestRoomLinkFeatureEnabled::invoke)
-                .whenInvoked()
-                .thenReturn(guestRoomLinkStatus)
+            inMemoryStorage.persistGuestRoomLinkFeatureFlag(
+                guestRoomLinkStatus.isGuestRoomLinkEnabled ?: false,
+                guestRoomLinkStatus.isStatusChanged
+            )
         }
 
-        fun withSuccessfulTeamSettingsSelfDeletionStatus() = apply {
+        fun withGetTeamSettingsSelfDeletionStatusSuccessful() = apply {
+            given(userConfigDAO)
+                .suspendFunction(userConfigDAO::getTeamSettingsSelfDeletionStatus)
+                .whenInvoked()
+                .thenReturn(null)
+        }
+
+        fun withSetTeamSettingsSelfDeletionStatusSuccessful() = apply {
             given(userConfigDAO)
                 .suspendFunction(userConfigDAO::setTeamSettingsSelfDeletionStatus)
                 .whenInvokedWith(any())
@@ -693,11 +740,16 @@ class SyncFeatureConfigsUseCaseTest {
 
         fun arrange(): Pair<Arrangement, SyncFeatureConfigsUseCase> {
             syncFeatureConfigsUseCase = SyncFeatureConfigsUseCaseImpl(
-                userConfigRepository,
                 featureConfigRepository,
-                isGuestRoomLinkFeatureEnabled,
-                kaliumConfigs,
-                SELF_USER_ID
+                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+                FileSharingConfigHandler(userConfigRepository),
+                MLSConfigHandler(userConfigRepository, TestUser.SELF.id),
+                ClassifiedDomainsConfigHandler(userConfigRepository),
+                ConferenceCallingConfigHandler(userConfigRepository),
+                SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
+                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+                E2EIConfigHandler(userConfigRepository),
+                AppLockConfigHandler(userConfigRepository)
             )
             return this to syncFeatureConfigsUseCase
         }
