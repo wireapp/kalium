@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 
 class MLSConfigHandler(
     private val userConfigRepository: UserConfigRepository,
@@ -32,7 +33,9 @@ class MLSConfigHandler(
     fun handle(mlsConfig: MLSModel): Either<CoreFailure, Unit> {
         val mlsEnabled = mlsConfig.status == Status.ENABLED
         val selfUserIsWhitelisted = mlsConfig.allowedUsers.contains(selfUserId.toPlainID())
-        userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
-        userConfigRepository.setDefaultProtocol(if (mlsEnabled) mlsConfig.defaultProtocol else SupportedProtocol.PROTEUS)
+        return userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
+            .flatMap {
+                userConfigRepository.setDefaultProtocol(if (mlsEnabled) mlsConfig.defaultProtocol else SupportedProtocol.PROTEUS)
+            }
     }
 }
