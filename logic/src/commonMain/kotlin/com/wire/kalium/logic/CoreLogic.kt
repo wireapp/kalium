@@ -78,7 +78,8 @@ abstract class CoreLogicCommon internal constructor(
             proxyCredentials,
             getGlobalScope().serverConfigRepository,
             networkStateObserver,
-            kaliumConfigs::certPinningConfig
+            kaliumConfigs::certPinningConfig,
+            kaliumConfigs.mockEngine
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
