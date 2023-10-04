@@ -102,7 +102,7 @@ class TypingIndicatorRepositoryTest {
         }
 
         fun arrange() = this to TypingIndicatorRepositoryImpl(
-            userTypingCache = ConcurrentMutableMap(),
+            incomingTypingEventsCache = ConcurrentMutableMap(),
             userPropertyRepository = userPropertyRepository
         )
     }

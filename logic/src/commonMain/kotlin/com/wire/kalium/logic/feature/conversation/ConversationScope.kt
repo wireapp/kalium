@@ -266,7 +266,8 @@ class ConversationScope internal constructor(
     val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
         get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
 
-    internal val typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap(), userPropertyRepository)
+    internal val typingIndicatorRepository =
+        TypingIndicatorRepositoryImpl(ConcurrentMutableMap(), ConcurrentMutableMap(), conversationRepository, userPropertyRepository)
 
     val observeUsersTyping: ObserveUsersTypingUseCase
         get() = ObserveUsersTypingUseCaseImpl(typingIndicatorRepository, userRepository)
