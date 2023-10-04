@@ -996,8 +996,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2.copy(archived = true))
         conversationDAO.insertConversation(conversationEntity3.copy(archived = false))
 
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
+        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id))
 
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)
@@ -1014,8 +1014,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1.copy(archived = false))
         conversationDAO.insertConversation(conversationEntity2.copy(archived = false))
 
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
+        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
+        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id))
 
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)

@@ -121,7 +121,9 @@ class SyncFeatureConfigsUseCaseTest {
                     defaultProtocol = SupportedProtocol.MLS,
                     supportedProtocols = emptySet(),
                     status = Status.ENABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -139,7 +141,9 @@ class SyncFeatureConfigsUseCaseTest {
                     defaultProtocol = SupportedProtocol.PROTEUS,
                     supportedProtocols = emptySet(),
                     status = Status.ENABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
@@ -157,7 +161,9 @@ class SyncFeatureConfigsUseCaseTest {
                     defaultProtocol = SupportedProtocol.MLS,
                     supportedProtocols = emptySet(),
                     status = Status.DISABLED))
-            ).arrange()
+            )
+            .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .arrange()
 
         syncFeatureConfigsUseCase()
 
