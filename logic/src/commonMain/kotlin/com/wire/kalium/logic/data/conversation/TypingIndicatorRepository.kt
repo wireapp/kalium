@@ -18,9 +18,11 @@
 package com.wire.kalium.logic.data.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.safeComputeAndMutateSetValue
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -34,10 +36,16 @@ internal interface TypingIndicatorRepository {
     suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<ExpiringUserTyping>>
+
+    suspend fun sendTypingIndicatorStatus(
+        conversationId: ConversationId,
+        typingStatus: Conversation.TypingIndicatorMode
+    ): Either<CoreFailure, Unit>
 }
 
 internal class TypingIndicatorRepositoryImpl(
     private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>,
+    private val conversationRepository: ConversationRepository,
     private val userPropertyRepository: UserPropertyRepository
 ) : TypingIndicatorRepository {
 
@@ -65,6 +73,13 @@ internal class TypingIndicatorRepositoryImpl(
         return userTypingDataSourceFlow
             .map { userTypingCache[conversationId] ?: emptySet() }
             .onStart { emit(userTypingCache[conversationId] ?: emptySet()) }
+    }
+
+    override suspend fun sendTypingIndicatorStatus(
+        conversationId: ConversationId,
+        typingStatus: Conversation.TypingIndicatorMode
+    ): Either<CoreFailure, Unit> {
+        return conversationRepository.sendTypingIndicatorStatus(conversationId, typingStatus)
     }
 
     companion object {

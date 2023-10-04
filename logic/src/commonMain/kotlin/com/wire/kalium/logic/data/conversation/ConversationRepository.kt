@@ -237,6 +237,10 @@ interface ConversationRepository {
     suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
 
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
+    suspend fun sendTypingIndicatorStatus(
+        conversationId: ConversationId,
+        typingStatus: Conversation.TypingIndicatorMode
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -867,6 +871,13 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.observeUnreadArchivedConversationsCount()
             .wrapStorageRequest()
             .mapToRightOr(0L)
+
+    override suspend fun sendTypingIndicatorStatus(
+        conversationId: ConversationId,
+        typingStatus: Conversation.TypingIndicatorMode
+    ): Either<CoreFailure, Unit> = wrapApiRequest {
+        conversationApi.sendTypingIndicatorNotification(conversationId.toApi(), typingStatus.toStatusDto())
+    }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>

@@ -1,0 +1,36 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.data.conversation
+
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
+
+fun TypingIndicatorStatus.toModel(): Conversation.TypingIndicatorMode = when (this) {
+    TypingIndicatorStatus.STARTED -> Conversation.TypingIndicatorMode.STARTED
+    TypingIndicatorStatus.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
+}
+
+fun Conversation.TypingIndicatorMode.toApi(): TypingIndicatorStatus = when (this) {
+    Conversation.TypingIndicatorMode.STARTED -> TypingIndicatorStatus.STARTED
+    Conversation.TypingIndicatorMode.STOPPED -> TypingIndicatorStatus.STOPPED
+}
+
+fun Conversation.TypingIndicatorMode.toStatusDto(): TypingIndicatorStatusDTO = when (this) {
+    Conversation.TypingIndicatorMode.STARTED,
+    Conversation.TypingIndicatorMode.STOPPED -> TypingIndicatorStatusDTO(this.toApi())
+}
