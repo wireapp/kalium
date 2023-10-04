@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 internal interface TypingIndicatorRepository {
     suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
@@ -82,12 +84,20 @@ internal class TypingIndicatorRepositoryImpl(
         return conversationRepository.sendTypingIndicatorStatus(conversationId, typingStatus)
     }
 
+    private fun cleanExpiredReceivedEvents(conversationId: ConversationId) {
+        userTypingCache.block { entry ->
+            entry[conversationId]?.apply {
+                this.removeAll { it.date < Clock.System.now().minus(TYPING_INDICATOR_TIMEOUT_IN_SECONDS) }
+            }
+        }
+    }
+
     companion object {
         const val BUFFER_SIZE = 32 // drop after this threshold
+        val TYPING_INDICATOR_TIMEOUT_IN_SECONDS = 5.toDuration(DurationUnit.SECONDS)
     }
 }
 
-// todo expire by worker
 data class ExpiringUserTyping(
     val userId: UserId,
     val date: Instant
