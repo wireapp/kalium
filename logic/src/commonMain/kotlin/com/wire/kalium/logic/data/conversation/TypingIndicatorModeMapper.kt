@@ -30,7 +30,5 @@ fun Conversation.TypingIndicatorMode.toApi(): TypingIndicatorStatus = when (this
     Conversation.TypingIndicatorMode.STOPPED -> TypingIndicatorStatus.STOPPED
 }
 
-fun Conversation.TypingIndicatorMode.toStatusDto(): TypingIndicatorStatusDTO = when (this) {
-    Conversation.TypingIndicatorMode.STARTED,
-    Conversation.TypingIndicatorMode.STOPPED -> TypingIndicatorStatusDTO(this.toApi())
-}
+fun Conversation.TypingIndicatorMode.toStatusDto(): TypingIndicatorStatusDTO = TypingIndicatorStatusDTO(this.toApi())
+
