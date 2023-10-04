@@ -31,4 +31,3 @@ fun Conversation.TypingIndicatorMode.toApi(): TypingIndicatorStatus = when (this
 }
 
 fun Conversation.TypingIndicatorMode.toStatusDto(): TypingIndicatorStatusDTO = TypingIndicatorStatusDTO(this.toApi())
-
