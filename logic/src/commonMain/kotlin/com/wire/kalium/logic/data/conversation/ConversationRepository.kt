@@ -46,6 +46,7 @@ import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
+import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -76,6 +77,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
@@ -111,7 +113,7 @@ interface ConversationRepository {
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>>
+    suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
@@ -227,6 +229,15 @@ interface ConversationRepository {
     suspend fun getOneOnOneConversationsWithFederatedMembers(
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
+
+    suspend fun updateVerificationStatus(
+        verificationStatus: Conversation.VerificationStatus,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit>
+
+    suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails>
+
+    suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -400,10 +411,10 @@ internal class ConversationDataSource internal constructor(
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun observeConversationListDetails(): Flow<List<ConversationDetails>> =
+    override suspend fun observeConversationListDetails(fromArchive: Boolean): Flow<List<ConversationDetails>> =
         combine(
-            conversationDAO.getAllConversationDetails(),
-            messageDAO.observeLastMessages(),
+            conversationDAO.getAllConversationDetails(fromArchive),
+            if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
         ) { conversationList, lastMessageList, unreadEvents ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
@@ -837,6 +848,26 @@ internal class ConversationDataSource internal constructor(
             .mapKeys { it.key.toModel() }
             .mapValues { it.value.toModel() }
     }
+
+    override suspend fun updateVerificationStatus(
+        verificationStatus: Conversation.VerificationStatus,
+        conversationID: ConversationId
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateVerificationStatus(
+                conversationMapper.verificationStatusToEntity(verificationStatus),
+                conversationID.toDao()
+            )
+        }
+
+    override suspend fun getConversationDetailsByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, ConversationDetails> =
+        wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
+            .map { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
+
+    override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
+        conversationDAO.observeUnreadArchivedConversationsCount()
+            .wrapStorageRequest()
+            .mapToRightOr(0L)
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>

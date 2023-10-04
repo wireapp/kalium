@@ -22,12 +22,15 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
 
 /**
  * This gets and observes the list of valid accounts, and it's associated team.
@@ -42,7 +45,8 @@ interface ObserveValidAccountsUseCase {
 
 internal class ObserveValidAccountsUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository,
-    private val userSessionScopeProvider: UserSessionScopeProvider
+    private val userSessionScopeProvider: UserSessionScopeProvider,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ObserveValidAccountsUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -58,5 +62,5 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
                 }
                 combine(flowsOfSelfUsers) { it.asList() }
             }
-        }
+        }.flowOn(ioDispatcher)
 }

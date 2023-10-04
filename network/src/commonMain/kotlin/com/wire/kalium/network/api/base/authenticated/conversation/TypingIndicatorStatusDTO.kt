@@ -15,8 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.conversation
+package com.wire.kalium.network.api.base.authenticated.conversation
 
-enum class ConversationVerificationStatus {
-    NOT_VERIFIED, VERIFIED, DEGRADED
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class TypingIndicatorStatusDTO(@SerialName("status") val status: TypingIndicatorStatus)
+
+@Serializable
+enum class TypingIndicatorStatus(val value: String) {
+    @SerialName("started")
+    STARTED("started"),
+
+    @SerialName("stopped")
+    STOPPED("stopped")
 }

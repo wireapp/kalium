@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -140,8 +141,8 @@ internal class ConversationDAOImpl internal constructor(
             .map { it.map(conversationMapper::toModel) }
     }
 
-    override suspend fun getAllConversationDetails(): Flow<List<ConversationViewEntity>> {
-        return conversationQueries.selectAllConversationDetails()
+    override suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>> {
+        return conversationQueries.selectAllConversationDetails(fromArchive)
             .asFlow()
             .mapToList()
             .flowOn(coroutineContext)
@@ -189,12 +190,18 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
         }
 
-    override suspend fun getConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
+    override suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByGroupId(groupID)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToOneOrNull()
             .map { it?.let { conversationMapper.toModel(it) } }
+    }
+
+    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity {
+        return conversationQueries.selectByGroupId(groupID)
+            .executeAsOne()
+            .let { it.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
@@ -329,4 +336,14 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
     }
+
+    override suspend fun updateVerificationStatus(
+        verificationStatus: ConversationEntity.VerificationStatus,
+        conversationId: QualifiedIDEntity
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateVerificationStatus(verificationStatus, conversationId)
+    }
+
+    override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
+        unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
 }

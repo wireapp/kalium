@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -26,9 +27,11 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -84,6 +87,7 @@ class ConversationScope internal constructor(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
+    private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope
 ) {
 
@@ -258,4 +262,13 @@ class ConversationScope internal constructor(
             serverConfigRepository,
             selfUserId
         )
+
+    val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
+        get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
+
+    internal val typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap(), userPropertyRepository)
+
+    val observeUsersTyping: ObserveUsersTypingUseCase
+        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorRepository, userRepository)
+
 }

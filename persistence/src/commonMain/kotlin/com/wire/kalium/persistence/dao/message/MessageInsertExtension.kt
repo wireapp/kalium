@@ -231,7 +231,15 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            is MessageEntityContent.ConversationVerifiedMLS -> {
+                /* no-op */
+            }
+
             is MessageEntityContent.ConversationDegradedProteus -> {
+                /* no-op */
+            }
+
+            is MessageEntityContent.ConversationVerifiedProteus -> {
                 /* no-op */
             }
 
@@ -292,12 +300,13 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.MemberChange,
                 is MessageEntityContent.NewConversationReceiptMode,
                 is MessageEntityContent.Federation,
+                MessageEntityContent.ConversationDegradedMLS,
+                MessageEntityContent.ConversationVerifiedMLS,
+                MessageEntityContent.ConversationDegradedProteus,
+                MessageEntityContent.ConversationVerifiedProteus,
                 is MessageEntityContent.TeamMemberRemoved -> {
                     /* no-op */
                 }
-
-                MessageEntityContent.ConversationDegradedMLS -> TODO()
-                MessageEntityContent.ConversationDegradedProteus -> TODO()
             }
         }
     }
@@ -383,5 +392,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS
         is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
         is MessageEntityContent.Federation -> MessageEntity.ContentType.FEDERATION
+        MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
+        MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS
     }
 }

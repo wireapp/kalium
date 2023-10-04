@@ -95,7 +95,8 @@ internal object TableMapper {
         last_modified_dateAdapter = InstantTypeAdapter,
         last_notified_dateAdapter = InstantTypeAdapter,
         mls_last_keying_material_update_dateAdapter = InstantTypeAdapter,
-        archived_date_timeAdapter = InstantTypeAdapter
+        archived_date_timeAdapter = InstantTypeAdapter,
+        verification_statusAdapter = EnumColumnAdapter()
     )
     val memberAdapter = Member.Adapter(
         userAdapter = QualifiedIDAdapter,

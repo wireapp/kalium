@@ -38,3 +38,8 @@ SELECT * FROM UnreadEvent LIMIT ? OFFSET ?;
 
 getConversationUnreadEventsCount:
 SELECT COUNT(*) FROM UnreadEvent WHERE  conversation_id = ?;
+
+getUnreadArchivedConversationsCount:
+SELECT COUNT(DISTINCT ue.conversation_id) FROM UnreadEvent ue
+INNER JOIN Conversation c ON ue.conversation_id = c.qualified_id
+WHERE c.archived = 1;
