@@ -77,7 +77,7 @@ class UserMapper {
         hasIncompleteMetadata: Boolean,
         expiresAt: Instant?,
         defederated: Boolean,
-        is_verified_proteus: Boolean,
+        isVerifiedProteus: Boolean,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -432,7 +432,8 @@ class UserDAOImpl internal constructor(
         userQueries.userIdsWithoutSelf().executeAsList()
     }
 
-    override suspend fun updateProteusVerificationStatus(userId: QualifiedIDEntity, isProteusVerified: Boolean) = withContext(queriesContext) {
-        userQueries.updateProteusVerification(isProteusVerified, userId)
-    }
+    override suspend fun updateProteusVerificationStatus(userId: QualifiedIDEntity, isProteusVerified: Boolean) =
+        withContext(queriesContext) {
+            userQueries.updateProteusVerification(isProteusVerified, userId)
+        }
 }
