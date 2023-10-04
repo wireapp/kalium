@@ -42,7 +42,8 @@ fun newUserEntity(id: String = "test") =
         deleted = false,
         hasIncompleteMetadata = false,
         expiresAt = null,
-        defederated = false
+        defederated = false,
+        isProteusVerified = false
     )
 
 fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
@@ -63,5 +64,6 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         deleted = false,
         hasIncompleteMetadata = false,
         expiresAt = null,
-        defederated = false
+        defederated = false,
+        isProteusVerified = false
     )
