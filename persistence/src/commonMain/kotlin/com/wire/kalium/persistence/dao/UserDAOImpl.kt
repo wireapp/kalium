@@ -100,7 +100,7 @@ class UserMapper {
             hasIncompleteMetadata = hasIncompleteMetadata,
             expiresAt = expiresAt,
             defederated = defederated,
-            isProteusVerified = is_verified_proteus
+            isProteusVerified = isVerifiedProteus
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
