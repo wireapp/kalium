@@ -18,26 +18,27 @@
 package com.wire.kalium.logic.data.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import io.mockative.Mock
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.verify
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class TypingIndicatorRepositoryTest {
 
-    private lateinit var typingIndicatorRepository: TypingIndicatorRepository
-
-    @BeforeTest
-    fun setUp() {
-        typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap())
-    }
-
     @Test
     fun givenUsersInOneConversation_whenTheyAreTyping_thenAddItToTheListOfUsersTypingInConversation() =
         runTest(TestKaliumDispatcher.default) {
+            val (arrangement, typingIndicatorRepository) = Arrangement()
+                .withTypingIndicatorStatus()
+                .arrange()
+
             typingIndicatorRepository.addTypingUserInConversation(conversationOne, expectedUserTypingOne)
             typingIndicatorRepository.addTypingUserInConversation(conversationOne, expectedUserTypingTwo)
 
@@ -45,12 +46,16 @@ class TypingIndicatorRepositoryTest {
                 setOf(expectedUserTypingOne, expectedUserTypingTwo),
                 typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
             )
+            verify(arrangement.userPropertyRepository)
+                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
+                .wasInvoked()
         }
 
     @Test
     fun givenUsersOneAndTwoTypingInAConversation_whenOneStopped_thenShouldNotBePresentInTypingUsersInConversation() =
         runTest(TestKaliumDispatcher.default) {
             val expectedUserTyping = setOf(TestConversation.USER_2)
+            val (arrangement, typingIndicatorRepository) = Arrangement().withTypingIndicatorStatus().arrange()
 
             typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_1)
             typingIndicatorRepository.addTypingUserInConversation(conversationOne, TestConversation.USER_2)
@@ -60,11 +65,15 @@ class TypingIndicatorRepositoryTest {
                 expectedUserTyping,
                 typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
             )
+            verify(arrangement.userPropertyRepository)
+                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
+                .wasInvoked()
         }
 
     @Test
     fun givenMultipleUsersInDifferentConversations_whenTheyAreTyping_thenShouldBePresentInTypingUsersInEachConversation() =
         runTest(TestKaliumDispatcher.default) {
+            val (arrangement, typingIndicatorRepository) = Arrangement().withTypingIndicatorStatus().arrange()
             typingIndicatorRepository.addTypingUserInConversation(conversationOne, expectedUserTypingOne)
             typingIndicatorRepository.addTypingUserInConversation(conversationTwo, expectedUserTypingTwo)
 
@@ -76,7 +85,27 @@ class TypingIndicatorRepositoryTest {
                 setOf(expectedUserTypingTwo),
                 typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()?.map { it.userId }?.toSet()
             )
+            verify(arrangement.userPropertyRepository)
+                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
+                .wasInvoked()
         }
+
+    private class Arrangement {
+        @Mock
+        val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
+
+        fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
+            given(userPropertyRepository)
+                .suspendFunction(userPropertyRepository::getTypingIndicatorStatus)
+                .whenInvoked()
+                .thenReturn(enabled)
+        }
+
+        fun arrange() = this to TypingIndicatorRepositoryImpl(
+            userTypingCache = ConcurrentMutableMap(),
+            userPropertyRepository = userPropertyRepository
+        )
+    }
 
     private companion object {
         val conversationOne = TestConversation.ID

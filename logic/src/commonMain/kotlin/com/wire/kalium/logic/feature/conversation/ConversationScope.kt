@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -86,6 +87,7 @@ class ConversationScope internal constructor(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
+    private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope
 ) {
 
@@ -264,7 +266,7 @@ class ConversationScope internal constructor(
     val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
         get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
 
-    internal val typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap())
+    internal val typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap(), userPropertyRepository)
 
     val observeUsersTyping: ObserveUsersTypingUseCase
         get() = ObserveUsersTypingUseCaseImpl(typingIndicatorRepository, userRepository)
