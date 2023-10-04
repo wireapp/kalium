@@ -71,7 +71,8 @@ data class UserEntity(
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
-    val defederated: Boolean
+    val defederated: Boolean,
+    val isProteusVerified: Boolean
 )
 
 data class UserEntityMinimized(
@@ -222,4 +223,5 @@ interface UserDAO {
      * the list does not contain self user ID
      */
     suspend fun allOtherUsersId(): List<UserIDEntity>
+    suspend fun updateProteusVerificationStatus(userId: QualifiedIDEntity, isProteusVerified: Boolean)
 }

@@ -414,7 +414,8 @@ class ConnectionRepositoryTest {
             deleted = false,
             hasIncompleteMetadata = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")

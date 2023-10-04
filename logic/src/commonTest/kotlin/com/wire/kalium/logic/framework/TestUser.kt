@@ -84,7 +84,8 @@ object TestUser {
         userType = UserType.EXTERNAL,
         botService = null,
         deleted = false,
-        defederated = false
+        defederated = false,
+        isProteusVerified = false
     )
 
     val ENTITY = UserEntity(
@@ -103,7 +104,8 @@ object TestUser {
         botService = null,
         deleted = false,
         expiresAt = null,
-        defederated = false
+        defederated = false,
+        isProteusVerified = false
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

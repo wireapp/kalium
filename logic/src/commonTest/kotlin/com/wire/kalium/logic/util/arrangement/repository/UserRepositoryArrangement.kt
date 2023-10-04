@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -35,6 +36,7 @@ internal interface UserRepositoryArrangement {
     val userRepository: UserRepository
     fun withDefederateUser(result: Either<CoreFailure, Unit>, userId: Matcher<UserId> = any())
     fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: Matcher<UserId> = any())
+    fun withUpdateProteusVerificationStatus(result: Either<StorageFailure, Unit>)
 }
 
 internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
@@ -55,6 +57,13 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
         given(userRepository)
             .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(userId)
+            .thenReturn(result)
+    }
+
+    override fun withUpdateProteusVerificationStatus(result: Either<StorageFailure, Unit>) {
+        given(userRepository)
+            .suspendFunction(userRepository::updateProteusVerificationStatus)
+            .whenInvokedWith(any())
             .thenReturn(result)
     }
 }

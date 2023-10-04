@@ -1,0 +1,5 @@
+ALTER TABLE Client
+RENAME COLUMN is_verified TO is_verified_proteus;
+
+ALTER TABLE User
+ADD COLUMN is_proteus_verified INTEGER AS Boolean NOT NULL DEFAULT 0;

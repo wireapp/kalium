@@ -170,7 +170,8 @@ class EndCallOnConversationChangeUseCaseTest {
             userType = UserType.INTERNAL,
             botService = null,
             deleted = true,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
 
         private val groupConversationDetail = ConversationDetails.Group(

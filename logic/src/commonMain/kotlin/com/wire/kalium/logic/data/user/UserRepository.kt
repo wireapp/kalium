@@ -133,6 +133,7 @@ internal interface UserRepository {
      * Gets users summary by their ids.
      */
     suspend fun getUsersSummaryByIds(userIds: List<QualifiedID>): Either<StorageFailure, List<UserSummary>>
+    suspend fun updateProteusVerificationStatus(userId: QualifiedID, isProteusVerified: Boolean): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -476,6 +477,10 @@ internal class UserDataSource internal constructor(
                 publicUserMapper.fromEntityToUserSummary(it)
             }
         }
+
+    override suspend fun updateProteusVerificationStatus(userId: QualifiedID, isProteusVerified: Boolean) = wrapStorageRequest {
+        userDAO.updateProteusVerificationStatus(userId.toDao(), isProteusVerified)
+    }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"

@@ -53,7 +53,8 @@ class UserMapper {
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
             expiresAt = user.expires_at,
-            defederated = user.defederated
+            defederated = user.defederated,
+            isProteusVerified = user.is_proteus_verified
         )
     }
 
@@ -76,6 +77,7 @@ class UserMapper {
         hasIncompleteMetadata: Boolean,
         expiresAt: Instant?,
         defederated: Boolean,
+        is_verified_proteus: Boolean,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -97,7 +99,8 @@ class UserMapper {
             deleted = deleted,
             hasIncompleteMetadata = hasIncompleteMetadata,
             expiresAt = expiresAt,
-            defederated = defederated
+            defederated = defederated,
+            isProteusVerified = is_verified_proteus
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -427,5 +430,9 @@ class UserDAOImpl internal constructor(
 
     override suspend fun allOtherUsersId(): List<UserIDEntity> = withContext(queriesContext) {
         userQueries.userIdsWithoutSelf().executeAsList()
+    }
+
+    override suspend fun updateProteusVerificationStatus(userId: QualifiedIDEntity, isProteusVerified: Boolean) = withContext(queriesContext) {
+        userQueries.updateProteusVerification(isProteusVerified, userId)
     }
 }

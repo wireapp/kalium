@@ -125,7 +125,8 @@ internal class UserMapperImpl(
             botService = null,
             deleted = false,
             expiresAt = expiresAt,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
     }
 
@@ -145,7 +146,8 @@ internal class UserMapperImpl(
             botService = null,
             deleted = userDTO.deleted ?: false,
             expiresAt = expiresAt?.toInstant(),
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
     }
 
@@ -206,7 +208,8 @@ internal class UserMapperImpl(
             botService = null,
             deleted = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -231,7 +234,8 @@ internal class UserMapperImpl(
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
         expiresAt = userProfile.expiresAt?.toInstant(),
-        defederated = false
+        defederated = false,
+        isProteusVerified = false
     )
 
     override fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity {
@@ -271,7 +275,8 @@ internal class UserMapperImpl(
             deleted = false,
             hasIncompleteMetadata = true,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
     }
 }

@@ -517,7 +517,8 @@ class SearchUserRepositoryTest {
             botService = null,
             deleted = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
 
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
@@ -574,7 +575,8 @@ class SearchUserRepositoryTest {
             botService = null,
             deleted = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
 
         val SELF_USER = SelfUser(

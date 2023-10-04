@@ -79,7 +79,8 @@ class PublicUserMapperImpl(
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
         expiresAt = userEntity.expiresAt,
-        defederated = userEntity.defederated
+        defederated = userEntity.defederated,
+        isProteusVerified = userEntity.isProteusVerified
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -100,7 +101,8 @@ class PublicUserMapperImpl(
             deleted = deleted,
             expiresAt = expiresAt,
             hasIncompleteMetadata = false,
-            defederated = defederated
+            defederated = defederated,
+            isProteusVerified = otherUser.isProteusVerified
         )
     }
 
@@ -131,7 +133,8 @@ class PublicUserMapperImpl(
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
         deleted = userDetailResponse.deleted ?: false,
         expiresAt = userDetailResponse.expiresAt?.toInstant(),
-        defederated = false
+        defederated = false,
+        isProteusVerified = false
     )
 
     override fun fromEntityToUserSummary(userEntity: UserEntity) = with(userEntity) {

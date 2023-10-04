@@ -18,25 +18,25 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.DeviceType
+import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.FileNotFoundException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateClientVerificationStatusUseCaseTest {
 
     @Test
@@ -44,15 +44,30 @@ class UpdateClientVerificationStatusUseCaseTest {
         val userId = UserId("userId", "domain")
         val clientID = ClientId("clientId")
 
-        val (arrangement, useCase) = Arrangement()
-            .withUpdateClientVerification(Either.Right(Unit))
-            .arrange()
+        val (arrangement, useCase) = arrange {
+            withUpdateClientProteusVerificationStatus(Either.Right(Unit))
+            withUpdateProteusVerificationStatus(Either.Right(Unit))
+            withClientsByUserId(
+                Either.Right(
+                    listOf(
+                        OTHER_USER_CLIENT,
+                        OTHER_USER_CLIENT.copy(id = "some_id_1"),
+                        OTHER_USER_CLIENT.copy(id = "some_id_2")
+                    )
+                )
+            )
+        }
 
         useCase(userId, clientID, true)
 
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::updateClientVerificationStatus)
+            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
+            .with(eq(userId), eq(true))
             .wasInvoked(exactly = once)
     }
 
@@ -61,17 +76,32 @@ class UpdateClientVerificationStatusUseCaseTest {
         val userId = UserId("userId", "domain")
         val clientID = ClientId("clientId")
 
-        val (arrangement, useCase) = Arrangement()
-            .withUpdateClientVerification(Either.Right(Unit))
-            .arrange()
+        val (arrangement, useCase) = arrange {
+            withUpdateClientProteusVerificationStatus(Either.Right(Unit))
+            withUpdateProteusVerificationStatus(Either.Right(Unit))
+            withClientsByUserId(
+                Either.Right(
+                    listOf(
+                        OTHER_USER_CLIENT,
+                        OTHER_USER_CLIENT.copy(id = "some_id_1"),
+                        OTHER_USER_CLIENT.copy(id = "some_id_2")
+                    )
+                )
+            )
+        }
 
         useCase(userId, clientID, true).also {
             assertIs<UpdateClientVerificationStatusUseCase.Result.Success>(it)
         }
 
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::updateClientVerificationStatus)
+            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
+            .with(eq(userId), eq(true))
             .wasInvoked(exactly = once)
     }
 
@@ -82,9 +112,9 @@ class UpdateClientVerificationStatusUseCaseTest {
 
         val expectedError = StorageFailure.Generic(FileNotFoundException())
 
-        val (arrangement, useCase) = Arrangement()
-            .withUpdateClientVerification(Either.Left(expectedError))
-            .arrange()
+        val (arrangement, useCase) = arrange {
+            withUpdateClientProteusVerificationStatus(Either.Left(expectedError))
+        }
 
         useCase(userId, clientID, true).also {
             assertIs<UpdateClientVerificationStatusUseCase.Result.Failure>(it)
@@ -92,24 +122,71 @@ class UpdateClientVerificationStatusUseCaseTest {
         }
 
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::updateClientVerificationStatus)
+            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
             .wasInvoked(exactly = once)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
+            .with(any(), any())
+            .wasNotInvoked()
     }
-    private class Arrangement {
 
-        @Mock
-        val clientRepository = mock(ClientRepository::class)
+    @Test
+    fun givenNotAllClientsVerified_whenUpdatingTheVerificationStatus_thenReturnSuccessAndSetUserNotVerified() = runTest {
+        val userId = UserId("userId", "domain")
+        val clientID = ClientId("clientId")
 
-        private val useCase = UpdateClientVerificationStatusUseCase(clientRepository)
-
-        fun withUpdateClientVerification(result: Either<StorageFailure, Unit>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::updateClientVerificationStatus)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(result)
+        val (arrangement, useCase) = arrange {
+            withUpdateClientProteusVerificationStatus(Either.Right(Unit))
+            withUpdateProteusVerificationStatus(Either.Right(Unit))
+            withClientsByUserId(
+                Either.Right(
+                    listOf(
+                        OTHER_USER_CLIENT,
+                        OTHER_USER_CLIENT.copy(id = "some_id_1"),
+                        OTHER_USER_CLIENT.copy(id = "some_id_2", isProteusVerified = false)
+                    )
+                )
+            )
         }
 
-        fun arrange() = this to useCase
+        useCase(userId, clientID, true).also {
+            assertIs<UpdateClientVerificationStatusUseCase.Result.Success>(it)
+        }
+
+        verify(arrangement.clientRepository)
+            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
+            .with(eq(userId), eq(clientID), eq(true))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
+            .with(eq(userId), eq(false))
+            .wasInvoked(exactly = once)
+    }
+
+    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+
+    private class Arrangement(
+        private val block: Arrangement.() -> Unit
+    ) : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
+
+        fun arrange() = block().run {
+            this@Arrangement to UpdateClientVerificationStatusUseCase(
+                clientRepository = clientRepository,
+                userRepository = userRepository
+            )
+        }
+    }
+
+    companion object {
+        private val OTHER_USER_CLIENT = OtherUserClient(
+            deviceType = DeviceType.Phone,
+            id = "some_id",
+            isValid = true,
+            isProteusVerified = true
+        )
     }
 }

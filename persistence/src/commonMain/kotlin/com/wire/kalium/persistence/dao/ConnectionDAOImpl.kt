@@ -70,7 +70,8 @@ private class ConnectionMapper {
         deleted: Boolean?,
         incomplete_metadata: Boolean?,
         expires_at: Instant?,
-        defederated: Boolean?
+        defederated: Boolean?,
+        is_verified_proteus: Boolean?
     ): ConnectionEntity = ConnectionEntity(
         conversationId = conversation_id,
         from = from_id,
@@ -97,7 +98,8 @@ private class ConnectionMapper {
             deleted = deleted.requireField("deleted"),
             hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata"),
             expiresAt = expires_at,
-            defederated = defederated.requireField("defederated")
+            defederated = defederated.requireField("defederated"),
+            isProteusVerified = is_verified_proteus ?: false
         ) else null
     )
 
