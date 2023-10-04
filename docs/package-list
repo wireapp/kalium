@@ -416,6 +416,7 @@ com.wire.kalium.logic.feature.conversation.messagetimer
 com.wire.kalium.logic.feature.debug
 com.wire.kalium.logic.feature.e2ei
 com.wire.kalium.logic.feature.featureConfig
+com.wire.kalium.logic.feature.featureConfig.handler
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.message.composite
