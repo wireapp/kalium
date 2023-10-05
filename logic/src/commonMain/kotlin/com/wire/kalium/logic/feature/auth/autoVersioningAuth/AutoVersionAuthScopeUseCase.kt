@@ -41,7 +41,7 @@ class AutoVersionAuthScopeUseCase(
     suspend operator fun invoke(
         proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None
     ): Result =
-        coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
+        coreLogic.getGlobalScope().value.serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->
             // Backend team doesn't want any clients using the development APIs in production, so

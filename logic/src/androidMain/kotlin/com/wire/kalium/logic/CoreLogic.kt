@@ -56,11 +56,13 @@ actual class CoreLogic(
 
     override val dataStore: DataStore<Preferences> get() = getDataStore(appContext)
 
-    override val globalDatabase: GlobalDatabaseProvider = GlobalDatabaseProvider(
-        appContext,
-        SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret(),
-        kaliumConfigs.shouldEncryptData
-    )
+    override val globalDatabase: GlobalDatabaseProvider by lazy {
+        GlobalDatabaseProvider(
+            appContext,
+            SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret(),
+            kaliumConfigs.shouldEncryptData
+        )
+    }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
@@ -87,7 +89,7 @@ actual class CoreLogic(
             authenticationScopeProvider,
             rootPathsProvider,
             appContext,
-            getGlobalScope(),
+            getGlobalScope().value,
             kaliumConfigs,
             globalPreferences,
             globalCallManager,

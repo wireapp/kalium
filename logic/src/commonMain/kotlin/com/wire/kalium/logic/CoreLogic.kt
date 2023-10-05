@@ -43,6 +43,8 @@ import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 expect class CoreLogic : CoreLogicCommon
 
@@ -62,19 +64,30 @@ abstract class CoreLogicCommon internal constructor(
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
+    private lateinit var globalScopeSingle: GlobalKaliumScope
     private val accessRepository: AccessRepository get() = AccessRepositoryDataSource(dataStore)
+    private val lock = SynchronizedObject()
+    fun getGlobalScope(): Lazy<GlobalKaliumScope> = lazy {
+        synchronized(lock) {
+            if (::globalScopeSingle.isInitialized) {
+                globalScopeSingle
+            } else {
+                GlobalKaliumScope(
+                    userAgent,
+                    globalDatabase,
+                    globalPreferences,
+                    kaliumConfigs,
+                    userSessionScopeProvider,
+                    authenticationScopeProvider,
+                    networkStateObserver,
+                    accessRepository
+                ).also {
+                    globalScopeSingle = it
+                }
+            }
+        }
+    }
 
-    fun getGlobalScope(): GlobalKaliumScope =
-        GlobalKaliumScope(
-            userAgent,
-            globalDatabase,
-            globalPreferences,
-            kaliumConfigs,
-            userSessionScopeProvider,
-            authenticationScopeProvider,
-            networkStateObserver,
-            accessRepository
-        )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(
@@ -84,7 +97,7 @@ abstract class CoreLogicCommon internal constructor(
         authenticationScopeProvider.provide(
             serverConfig,
             proxyCredentials,
-            getGlobalScope().serverConfigRepository,
+            getGlobalScope().value.serverConfigRepository,
             networkStateObserver,
             kaliumConfigs::certPinningConfig
         )
@@ -95,9 +108,13 @@ abstract class CoreLogicCommon internal constructor(
     abstract fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
     // TODO: make globalScope a singleton
-    inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
+    inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T =
+        getGlobalScope().value.action()
 
-    inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T): T =
+    inline fun <T> authenticationScope(
+        serverConfig: ServerConfig,
+        action: AuthenticationScope.() -> T
+    ): T =
         getAuthenticationScope(serverConfig).action()
 
     inline fun <T> sessionScope(

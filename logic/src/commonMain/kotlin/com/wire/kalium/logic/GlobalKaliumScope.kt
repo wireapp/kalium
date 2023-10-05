@@ -72,6 +72,9 @@ import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -186,4 +189,12 @@ class GlobalKaliumScope internal constructor(
 
     val clearNewClientsForUser: ClearNewClientsForUserUseCase
         get() = ClearNewClientsForUserUseCaseImpl(userSessionScopeProvider.value)
+
+    init {
+        launch {
+            observeValidAccounts().distinctUntilChanged().collectLatest {
+                kaliumLogger.d("observeValidAccounts ${it.size}")
+            }
+        }
+    }
 }
