@@ -20,7 +20,7 @@ package com.wire.kalium.plugins
 
 import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 
-fun KotlinJvmTarget.commonJvmConfig(includeNativeInterop: Boolean, enableIntegrationTests: Boolean = false) {
+fun KotlinJvmTarget.commonJvmConfig(includeNativeInterop: Boolean) {
     compilations.all {
         kotlinOptions.jvmTarget = "17"
         kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
@@ -33,11 +33,6 @@ fun KotlinJvmTarget.commonJvmConfig(includeNativeInterop: Boolean, enableIntegra
             if (System.getProperty("os.name").contains("Mac", true)) {
                 jvmArgs("-Djava.library.path=/usr/local/lib/:../native/libs")
             }
-        }
-    }
-    if (enableIntegrationTests) {
-        testRuns.getByName("integrationTest").executionTask.configure {
-            useJUnit()
         }
     }
 }

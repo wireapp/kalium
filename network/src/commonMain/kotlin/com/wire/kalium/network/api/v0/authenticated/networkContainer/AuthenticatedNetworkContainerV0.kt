@@ -72,8 +72,7 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
     private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
     certificatePinning: CertificatePinning,
-    mockEngine: HttpClientEngine?,
-    engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
+    engine: HttpClientEngine = defaultHttpEngine(
         serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
         proxyCredentials = sessionManager.proxyCredentials(),
         certificatePinning = certificatePinning

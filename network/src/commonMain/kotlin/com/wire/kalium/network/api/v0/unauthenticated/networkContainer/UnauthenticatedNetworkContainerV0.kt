@@ -45,8 +45,7 @@ class UnauthenticatedNetworkContainerV0 internal constructor(
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
     certificatePinning: CertificatePinning,
-    mockEngine: HttpClientEngine?,
-    engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
+    engine: HttpClientEngine = defaultHttpEngine(
         serverConfigDTOApiProxy = backendLinks.links.apiProxy,
         proxyCredentials = proxyCredentials,
         certificatePinning = certificatePinning

@@ -38,7 +38,6 @@ class LibraryPlugin : Plugin<Project> {
             val enableJs: Property<Boolean>
             val enableJsTests: Property<Boolean>
             val includeNativeInterop: Property<Boolean>
-            val enableIntegrationTests: Property<Boolean>
         }
 
         @get:Nested
@@ -54,8 +53,7 @@ class LibraryPlugin : Plugin<Project> {
                 enableApple = multiplatformConfiguration.enableApple.getOrElse(true),
                 enableJs = multiplatformConfiguration.enableJs.getOrElse(true),
                 enableJsTests = multiplatformConfiguration.enableJsTests.getOrElse(true),
-                includeNativeInterop = multiplatformConfiguration.includeNativeInterop.getOrElse(false),
-                enableIntegrationTests = multiplatformConfiguration.enableIntegrationTests.getOrElse(false)
+                includeNativeInterop = multiplatformConfiguration.includeNativeInterop.getOrElse(false)
             )
         }
     }

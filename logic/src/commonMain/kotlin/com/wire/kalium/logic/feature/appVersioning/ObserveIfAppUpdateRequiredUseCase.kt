@@ -61,7 +61,6 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs
 ) : ObserveIfAppUpdateRequiredUseCase {
 
-    @Suppress("ComplexMethod", "LongMethod")
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
         val currentDate = DateTimeUtil.currentIsoDateTimeString()
@@ -106,8 +105,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                         proxyCredentials,
                                         serverConfigRepository,
                                         networkStateObserver,
-                                        kaliumConfigs::certPinningConfig,
-                                        kaliumConfigs.mockEngine
+                                        kaliumConfigs::certPinningConfig
                                     )
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
                                 serverConfig.id to isUpdateRequired
