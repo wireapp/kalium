@@ -45,12 +45,11 @@ class UnauthenticatedNetworkContainerV3 internal constructor(
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
     certificatePinning: CertificatePinning,
-    mockEngine: HttpClientEngine?,
-    engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
-            serverConfigDTOApiProxy = backendLinks.links.apiProxy,
-            proxyCredentials = proxyCredentials,
-            certificatePinning = certificatePinning
-        )
+    engine: HttpClientEngine = defaultHttpEngine(
+        serverConfigDTOApiProxy = backendLinks.links.apiProxy,
+        proxyCredentials = proxyCredentials,
+        certificatePinning = certificatePinning
+    ),
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         networkStateObserver,

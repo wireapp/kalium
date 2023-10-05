@@ -64,7 +64,7 @@ actual class CoreLogic(
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(PlatformContext())
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
-    override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
+    override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,

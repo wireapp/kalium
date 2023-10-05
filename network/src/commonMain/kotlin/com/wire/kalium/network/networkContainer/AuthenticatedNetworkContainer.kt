@@ -106,15 +106,12 @@ interface AuthenticatedNetworkContainer {
     val propertiesApi: PropertiesApi
 
     companion object {
-
-        @Suppress("LongParameterList")
         fun create(
             networkStateObserver: NetworkStateObserver,
             sessionManager: SessionManager,
             selfUserId: UserId,
             userAgent: String,
-            certificatePinning: CertificatePinning,
-            mockEngine: HttpClientEngine?
+            certificatePinning: CertificatePinning
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -123,47 +120,41 @@ interface AuthenticatedNetworkContainer {
                 0 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
-                    certificatePinning,
-                    mockEngine
+                    certificatePinning
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
-                    certificatePinning,
-                    mockEngine
+                    certificatePinning
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning,
-                    mockEngine
+                    certificatePinning
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning,
-                    mockEngine
+                    certificatePinning
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning,
-                    mockEngine
+                    certificatePinning
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
-                    certificatePinning,
-                    mockEngine
+                    certificatePinning
                 )
 
                 else -> error("Unsupported version: $version")

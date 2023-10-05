@@ -42,7 +42,6 @@ import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
-import io.ktor.client.engine.HttpClientEngine
 
 class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
@@ -53,14 +52,12 @@ class AuthenticationScopeProvider internal constructor(
         ConcurrentMutableMap()
     }
 
-    @Suppress("LongParameterList")
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
         serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
-        certConfig: () -> CertificatePinning,
-        mockEngine: HttpClientEngine?
+        certConfig: () -> CertificatePinning
     ): AuthenticationScope =
         authenticationScopeStorage.safeComputeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
@@ -69,21 +66,18 @@ class AuthenticationScopeProvider internal constructor(
                 proxyCredentials,
                 serverConfigRepository,
                 networkStateObserver,
-                certConfig,
-                mockEngine
+                certConfig
             )
         }
 }
 
-@Suppress("LongParameterList")
 class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
     private val serverConfigRepository: ServerConfigRepository,
     private val networkStateObserver: NetworkStateObserver,
-    certConfig: () -> CertificatePinning,
-    mockEngine: HttpClientEngine?
+    certConfig: () -> CertificatePinning
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
@@ -91,8 +85,7 @@ class AuthenticationScope internal constructor(
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
             proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
             userAgent,
-            certificatePinning = certConfig(),
-            mockEngine
+            certificatePinning = certConfig()
         )
     }
     private val loginRepository: LoginRepository
