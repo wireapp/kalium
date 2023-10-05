@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * Updates the verification status of a client and user (if needed).
@@ -46,7 +47,10 @@ class UpdateClientVerificationStatusUseCase internal constructor(
                         userRepository.updateProteusVerificationStatus(userId, isUserVerified)
                     }
             }
-            .fold({ error -> Result.Failure(error) },
+            .fold({ error ->
+                kaliumLogger.e("Error updating clients Proteus verification status: $error")
+                Result.Failure(error)
+            },
                 { Result.Success }
             )
 
