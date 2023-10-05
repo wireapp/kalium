@@ -19,7 +19,6 @@ package com.wire.kalium.logic.data.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl.Companion.TYPING_INDICATOR_TIMEOUT_IN_SECONDS
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -57,49 +56,74 @@ internal interface TypingIndicatorRepository {
 }
 
 /**
- * Outgoing user typing sent events, cleanup manager
+ * Outgoing user typing sent events manager, will send started and stopped events and enqueue stopped events
+ * todo, move to separate file after testing
  */
 internal class OutgoingTypingIndicatorManager(
     userSessionCoroutineScope: CoroutineScope,
+    private val conversationRepository: ConversationRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 
     private val outgoingStoppedQueueTypingEventsMutex = Mutex()
-    private val outgoingStoppedQueueTypingEvents = mutableMapOf<ConversationId, Instant>()
+    private val outgoingStoppedQueueTypingEvents = mutableMapOf<ConversationId, Unit>()
+    private val TYPING_INDICATOR_TIMEOUT_IN_SECONDS = 10.toDuration(DurationUnit.SECONDS)
 
-    // todo. what if we pass the convo id and the callback so we can reuse it for sending and receiving?
-    // as an interface function and implement specific for incoming and outgoing.
-    // where incoming clears by [ExpiringUserTyping] and outgoing by [Instant]
-    suspend fun enqueueStoppedTypingTimeout(conversationId: ConversationId, callback: () -> Unit) {
 
-        delay(1L)
-        callback.invoke()
+    fun sendStoppingEvent(conversationId: ConversationId) {
+        launch {
+            outgoingStoppedQueueTypingEventsMutex.withLock {
+                if (!outgoingStoppedQueueTypingEvents.containsKey(conversationId)) {
+                    return@launch
+                }
+                outgoingStoppedQueueTypingEvents.remove(conversationId)
+                sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STOPPED)
+            }
+        }
     }
 
-    fun enqueueStoppingEventAndWait(conversationId: ConversationId) {
+    fun sendStartedAndEnqueueStoppingEvent(conversationId: ConversationId) {
         launch {
             outgoingStoppedQueueTypingEventsMutex.withLock {
                 if (outgoingStoppedQueueTypingEvents.containsKey(conversationId)) {
                     return@launch
                 }
+                val isSent = sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STARTED)
+                when (isSent) {
+                    true -> {
+                        outgoingStoppedQueueTypingEvents[conversationId] = Unit
+                        delay(TYPING_INDICATOR_TIMEOUT_IN_SECONDS)
+                        sendStoppingEvent(conversationId)
+                    }
 
-                outgoingStoppedQueueTypingEvents[conversationId] = Clock.System.now().plus(TYPING_INDICATOR_TIMEOUT_IN_SECONDS)
-                delay(TYPING_INDICATOR_TIMEOUT_IN_SECONDS)
-                outgoingStoppedQueueTypingEvents.remove(conversationId)
+                    false -> Unit // do nothing
+                }
             }
         }
+    }
+
+    private suspend fun sendTypingIndicatorStatus(
+        conversationId: ConversationId,
+        typingStatus: Conversation.TypingIndicatorMode
+    ): Boolean = conversationRepository.sendTypingIndicatorStatus(conversationId, typingStatus).fold({
+        kaliumLogger.w("Skipping failed to send typing indicator status: $typingStatus")
+        false
+    }) {
+        kaliumLogger.i("Successfully sent typing started indicator status: $typingStatus")
+        true
     }
 }
 
 /**
  * Incoming user typing received events, cleanup manager
+ * todo, replicate same as outgoing
  */
 internal class IncomingTypingIndicatorManager(
-    userSessionCoroutineScope: CoroutineScope,
+//     userSessionCoroutineScope: CoroutineScope,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : CoroutineScope by userSessionCoroutineScope {
+) : CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 
@@ -109,12 +133,9 @@ internal class IncomingTypingIndicatorManager(
 @Suppress("LongParameterList")
 internal class TypingIndicatorRepositoryImpl(
     private val incomingTypingEventsCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>,
-    private val outgoingStoppedQueueTypingEventsCache: ConcurrentMutableMap<ConversationId, Instant>,
-    private val conversationRepository: ConversationRepository,
     private val userPropertyRepository: UserPropertyRepository,
-    userSessionCoroutineScope: CoroutineScope,
-    private val outgoingTypingIndicatorManager: OutgoingTypingIndicatorManager = OutgoingTypingIndicatorManager(userSessionCoroutineScope),
-    private val incomingTypingIndicatorManager: IncomingTypingIndicatorManager = IncomingTypingIndicatorManager(userSessionCoroutineScope)
+    private val outgoingTypingIndicatorManager: OutgoingTypingIndicatorManager,
+    private val incomingTypingIndicatorManager: IncomingTypingIndicatorManager
 ) : TypingIndicatorRepository {
 
 
@@ -150,40 +171,17 @@ internal class TypingIndicatorRepositoryImpl(
     ): Either<CoreFailure, Unit> {
         if (userPropertyRepository.getTypingIndicatorStatus()) {
             when (typingStatus) {
-                Conversation.TypingIndicatorMode.STARTED -> {
-                    conversationRepository.sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STARTED)
-                        .fold({ kaliumLogger.w("Skipping failed to send typing indicator status: $it") }) {
-                            outgoingTypingIndicatorManager.enqueueStoppingEventAndWait(conversationId)
-                            conversationRepository.sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STOPPED)
-                                .fold({ kaliumLogger.w("Skipping failed to send typing indicator status: $it") }) {
-                                    kaliumLogger.i("Successfully sent typing stopped indicator status")
-                                }
-                        }
-                }
+                Conversation.TypingIndicatorMode.STARTED ->
+                    outgoingTypingIndicatorManager.sendStartedAndEnqueueStoppingEvent(conversationId)
 
-                Conversation.TypingIndicatorMode.STOPPED -> {
-                    outgoingTypingIndicatorManager.enqueueStoppingEventAndWait(conversationId)
-                }
+                Conversation.TypingIndicatorMode.STOPPED -> outgoingTypingIndicatorManager.sendStoppingEvent(conversationId)
             }
-
-            /*conversationRepository.sendTypingIndicatorStatus(conversationId, typingStatus)
-                .fold() {
-                    when (typingStatus) {
-                        Conversation.TypingIndicatorMode.STARTED -> outgoingTypingIndicatorManager.enqueueStoppingEventAndWait(
-                            conversationId
-                        )
-
-                        Conversation.TypingIndicatorMode.STOPPED -> outgoingStoppedQueueTypingEventsCache.remove(conversationId)
-                    }
-                    Either.Right(Unit)
-                }*/
         }
         return Either.Right(Unit)
     }
 
     companion object {
         const val BUFFER_SIZE = 32 // drop after this threshold
-        val TYPING_INDICATOR_TIMEOUT_IN_SECONDS = 5.toDuration(DurationUnit.SECONDS)
     }
 }
 
