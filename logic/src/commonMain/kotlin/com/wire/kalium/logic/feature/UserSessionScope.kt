@@ -97,7 +97,6 @@ import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SystemMessageInserterImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
-import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
@@ -200,6 +199,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordC
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
@@ -261,6 +261,10 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
@@ -901,12 +905,25 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository
         )
 
+    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase
+        get() = UpdateSupportedProtocolsUseCaseImpl(
+            clientRepository,
+            userRepository,
+            userConfigRepository
+        )
+
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+        get() = UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
+            updateSupportedProtocols,
+            oneOnOneResolver
+        )
+
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
             eventRepository,
             syncSelfUser,
             syncFeatureConfigsUseCase,
-            users.updateSupportedProtocols,
+            updateSupportedProtocols,
             syncConversations,
             syncConnections,
             syncSelfTeamUseCase,
@@ -1028,9 +1045,11 @@ class UserSessionScope internal constructor(
 
     internal val mlsMigrationWorker get() =
         MLSMigrationWorkerImpl(
-            mlsMigrationRepository,
+            userConfigRepository,
+            featureConfigRepository,
+            MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId),
+            MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
             mlsMigrator,
-            users.updateSupportedProtocols
         )
 
     internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
@@ -1039,15 +1058,8 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { users.timestampKeyRepository },
-            lazy { mlsMigrationWorker },
-            lazy { mlsMigrationRepository }
+            lazy { mlsMigrationWorker }
     )
-
-    internal val mlsMigrationRepository get() =
-        MLSMigrationRepositoryImpl(
-            authenticatedNetworkContainer.featureConfigApi,
-            userStorage.database.metadataDAO
-        )
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository
         get() = MLSPublicKeysRepositoryImpl(
@@ -1297,7 +1309,8 @@ class UserSessionScope internal constructor(
         get() = FeatureConfigEventReceiverImpl(
             GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
             FileSharingConfigHandler(userConfigRepository),
-            MLSConfigHandler(userConfigRepository, userId),
+            MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId),
+            MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
             ClassifiedDomainsConfigHandler(userConfigRepository),
             ConferenceCallingConfigHandler(userConfigRepository),
             SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
@@ -1387,8 +1400,7 @@ class UserSessionScope internal constructor(
             authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository,
             cachedClientIdClearer,
-            users.updateSupportedProtocols,
-            oneOnOneResolver
+            updateSupportedProtocolsAndResolveOneOnOnes
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(
@@ -1486,9 +1498,8 @@ class UserSessionScope internal constructor(
             messages.messageSender,
             clientIdProvider,
             e2eiRepository,
-            clientRepository,
-            featureConfigRepository,
             team.isSelfATeamMember,
+            updateSupportedProtocols
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
@@ -1560,7 +1571,8 @@ class UserSessionScope internal constructor(
             featureConfigRepository,
             GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
             FileSharingConfigHandler(userConfigRepository),
-            MLSConfigHandler(userConfigRepository, userId),
+            MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId),
+            MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
             ClassifiedDomainsConfigHandler(userConfigRepository),
             ConferenceCallingConfigHandler(userConfigRepository),
             SecondFactorPasswordChallengeConfigHandler(userConfigRepository),

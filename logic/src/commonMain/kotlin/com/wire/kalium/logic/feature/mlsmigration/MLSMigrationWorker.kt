@@ -17,35 +17,33 @@
  */
 package com.wire.kalium.logic.feature.mlsmigration
 
-import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepository
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 
 interface MLSMigrationWorker {
-    suspend fun runMigration()
+    suspend fun runMigration(): Either<CoreFailure, Unit>
 }
 
-class MLSMigrationWorkerImpl(
-    private val mlsMigrationRepository: MLSMigrationRepository,
+internal class MLSMigrationWorkerImpl(
+    private val userConfigRepository: UserConfigRepository,
+    private val featureConfigRepository: FeatureConfigRepository,
+    private val mlsConfigHandler: MLSConfigHandler,
+    private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
     private val mlsMigrator: MLSMigrator,
-    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase
 ) : MLSMigrationWorker {
 
-    override suspend fun runMigration() {
-        advanceMigration().onFailure {
-            kaliumLogger.e("Failed to advance migration: $it")
-        }
-    }
-
-    suspend fun advanceMigration() =
-        mlsMigrationRepository.getMigrationConfiguration().getOrNull()?.let { configuration ->
-            if (configuration.hasMigrationStarted()) {
-                kaliumLogger.i("Running proteus to MLS migration")
-                updateSupportedProtocols().flatMap {
+    override suspend fun runMigration() =
+        syncMigrationConfigurations().flatMap {
+            userConfigRepository.getMigrationConfiguration().getOrNull()?.let { configuration ->
+                if (configuration.hasMigrationStarted()) {
+                    kaliumLogger.i("Running proteus to MLS migration")
                     mlsMigrator.migrateProteusConversations().flatMap {
                         if (configuration.hasMigrationEnded()) {
                             mlsMigrator.finaliseAllProteusConversations()
@@ -53,10 +51,18 @@ class MLSMigrationWorkerImpl(
                             mlsMigrator.finaliseProteusConversations()
                         }
                     }
+                } else {
+                    kaliumLogger.i("MLS migration is not enabled")
+                    Either.Right(Unit)
                 }
-            } else {
-                kaliumLogger.i("MLS migration is not enabled")
-                Either.Right(Unit)
-            }
-        } ?: Either.Right(Unit)
+            } ?: Either.Right(Unit)
+        }
+
+    private suspend fun syncMigrationConfigurations(): Either<CoreFailure, Unit> =
+        featureConfigRepository.getFeatureConfigs().flatMap { configurations ->
+            mlsConfigHandler.handle(configurations.mlsModel, true)
+                .flatMap { configurations.mlsMigrationModel?.let {
+                    mlsMigrationConfigHandler.handle(configurations.mlsMigrationModel, true)
+                } ?: Either.Right(Unit) }
+        }
 }

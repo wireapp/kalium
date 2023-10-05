@@ -20,10 +20,8 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -85,9 +83,8 @@ class UserScope internal constructor(
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
     private val e2EIRepository: E2EIRepository,
-    private val clientRepository: ClientRepository,
-    private val featureConfigRepository: FeatureConfigRepository,
-    private val isSelfATeamMember: IsSelfATeamMemberUseCase
+    private val isSelfATeamMember: IsSelfATeamMemberUseCase,
+    private val updateSupportedProtocolsUseCase: UpdateSupportedProtocolsUseCase,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -118,12 +115,6 @@ class UserScope internal constructor(
         get() = UpdateSelfAvailabilityStatusUseCase(accountRepository, messageSender, clientIdProvider, selfUserId)
     val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
-    val updateSupportedProtocols: UpdateSupportedProtocolsUseCase
-        get() = UpdateSupportedProtocolsUseCaseImpl(
-            clientRepository,
-            userRepository,
-            featureConfigRepository
-        )
 
     val isPasswordRequired
         get() = IsPasswordRequiredUseCase(
@@ -165,4 +156,6 @@ class UserScope internal constructor(
     val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
 
     val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
+
+    val updateSupportedProtocols: UpdateSupportedProtocolsUseCase get() = updateSupportedProtocolsUseCase
 }

@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
@@ -53,10 +56,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenSupportedProtocolsHasNotChanged_whenInvokingUseCase_thenSupportedProtocolsAreNotUpdated() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful(supportedProtocols = setOf(SupportedProtocol.PROTEUS))
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.PROTEUS),
-                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
+            .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = emptyList())
             .withUpdateSupportedProtocolsSuccessful()
             .arrange()
@@ -73,10 +74,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenProteusAsSupportedProtocol_whenInvokingUseCase_thenProteusIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.PROTEUS),
-                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
+            .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = emptyList())
             .withUpdateSupportedProtocolsSuccessful()
             .arrange()
@@ -93,10 +92,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenProteusIsNotSupportedButMigrationHasNotEnded_whenInvokingUseCase_thenProteusIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.MLS),
-                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+            .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = emptyList())
             .withUpdateSupportedProtocolsSuccessful()
             .arrange()
@@ -113,10 +110,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenProteusIsNotSupported_whenInvokingUseCase_thenProteusIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.MLS),
-                migrationConfiguration = COMPLETED_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+            .withGetMigrationConfigurationSuccessful(COMPLETED_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = emptyList())
             .withUpdateSupportedProtocolsSuccessful()
             .arrange()
@@ -133,10 +128,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenMlsIsSupportedAndAllActiveClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.MLS),
-                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+            .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = listOf(
                 TestClient.CLIENT.copy(isMLSCapable = true, lastActive = Clock.System.now())
             ))
@@ -155,10 +148,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenMlsIsSupportedAndAnInactiveClientIsNotMlsCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.MLS),
-                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+            .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = listOf(
                 TestClient.CLIENT.copy(isMLSCapable = true, lastActive = Clock.System.now()),
                 TestClient.CLIENT.copy(isMLSCapable = false, lastActive = Instant.DISTANT_PAST)
@@ -178,10 +169,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenMlsIsSupportedAndAllActiveClientsAreNotCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.MLS),
-                migrationConfiguration = ONGOING_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+            .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = listOf(
                 TestClient.CLIENT.copy(isMLSCapable = true, lastActive = Clock.System.now()),
                 TestClient.CLIENT.copy(isMLSCapable = false, lastActive = Clock.System.now())
@@ -201,10 +190,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenMlsIsSupportedAndMigrationHasEnded_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.MLS),
-                migrationConfiguration = COMPLETED_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
+            .withGetMigrationConfigurationSuccessful(COMPLETED_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = listOf(
                 TestClient.CLIENT.copy(isMLSCapable = true),
                 TestClient.CLIENT.copy(isMLSCapable = false)
@@ -224,10 +211,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenMigrationIsMissingAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
-                migrationConfiguration = null
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS))
+            .withGetMigrationConfigurationFailing(StorageFailure.DataNotFound)
             .withGetSelfClientsSuccessful(clients = listOf(
                 TestClient.CLIENT.copy(isMLSCapable = true)
             ))
@@ -246,10 +231,8 @@ class UpdateSupportedProtocolsUseCaseTest {
     fun givenMlsIsNotSupportedAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withGetSelfUserSuccessful()
-            .withGetFeatureConfigurationSuccessful(
-                supportedProtocols = setOf(SupportedProtocol.PROTEUS),
-                migrationConfiguration = DISABLED_MIGRATION_CONFIGURATION
-            )
+            .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
+            .withGetMigrationConfigurationSuccessful(DISABLED_MIGRATION_CONFIGURATION)
             .withGetSelfClientsSuccessful(clients = listOf(
                 TestClient.CLIENT.copy(isMLSCapable = true)
             ))
@@ -270,7 +253,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         @Mock
         val userRepository = mock(UserRepository::class)
         @Mock
-        val featureConfigRepository = mock(FeatureConfigRepository::class)
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withGetSelfUserSuccessful(supportedProtocols: Set<SupportedProtocol>? = null) = apply {
             given(userRepository)
@@ -288,21 +271,25 @@ class UpdateSupportedProtocolsUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetFeatureConfigurationSuccessful(
-            supportedProtocols: Set<SupportedProtocol>,
-            migrationConfiguration: MLSMigrationModel?) = apply {
-            given(featureConfigRepository)
-                .suspendFunction(featureConfigRepository::getFeatureConfigs)
+        fun withGetMigrationConfigurationSuccessful(migrationConfiguration: MLSMigrationModel) = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::getMigrationConfiguration)
                 .whenInvoked()
-                .thenReturn(Either.Right(FeatureConfigTest.newModel(
-                    mlsModel = MLSModel(
-                        allowedUsers = emptyList(),
-                        defaultProtocol = SupportedProtocol.PROTEUS,
-                        supportedProtocols = supportedProtocols,
-                        status = Status.ENABLED
-                    ),
-                    mlsMigrationModel = migrationConfiguration
-                )))
+                .thenReturn(Either.Right(migrationConfiguration))
+        }
+
+        fun withGetMigrationConfigurationFailing(failure: StorageFailure) = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::getMigrationConfiguration)
+                .whenInvoked()
+                .thenReturn(Either.Left(failure))
+        }
+
+        fun withGetSupportedProtocolsSuccessful(supportedProtocols: Set<SupportedProtocol>) = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::getSupportedProtocols)
+                .whenInvoked()
+                .thenReturn(Either.Right(supportedProtocols))
         }
 
         fun withGetSelfClientsSuccessful(clients: List<Client>) = apply {
@@ -315,7 +302,7 @@ class UpdateSupportedProtocolsUseCaseTest {
         fun arrange() = this to UpdateSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
-            featureConfigRepository
+            userConfigRepository
         )
 
         companion object {

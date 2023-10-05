@@ -23,19 +23,36 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrElse
 
 class MLSConfigHandler(
     private val userConfigRepository: UserConfigRepository,
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val selfUserId: UserId
 ) {
-    fun handle(mlsConfig: MLSModel): Either<CoreFailure, Unit> {
+    suspend fun handle(mlsConfig: MLSModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
         val mlsEnabled = mlsConfig.status == Status.ENABLED
         val selfUserIsWhitelisted = mlsConfig.allowedUsers.contains(selfUserId.toPlainID())
+        val previousSupportedProtocols = userConfigRepository.getSupportedProtocols().getOrElse(setOf(SupportedProtocol.PROTEUS))
+        val supportedProtocolsHasChanged = !previousSupportedProtocols.equals(mlsConfig.supportedProtocols)
+
         return userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
             .flatMap {
+                if (supportedProtocolsHasChanged) {
+                    updateSupportedProtocolsAndResolveOneOnOnes(
+                        synchroniseUsers = !duringSlowSync
+                    )
+                } else {
+                    Either.Right(Unit)
+                }
+            }
+            .flatMap {
                 userConfigRepository.setDefaultProtocol(if (mlsEnabled) mlsConfig.defaultProtocol else SupportedProtocol.PROTEUS)
+            }.flatMap {
+                userConfigRepository.setSupportedProtocols(mlsConfig.supportedProtocols)
             }
     }
 }
