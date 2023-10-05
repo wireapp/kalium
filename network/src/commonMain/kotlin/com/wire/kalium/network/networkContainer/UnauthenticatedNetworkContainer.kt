@@ -36,7 +36,7 @@ import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "LongParameterList")
 interface UnauthenticatedNetworkContainer {
     val loginApi: LoginApi
     val registerApi: RegisterApi
@@ -51,7 +51,8 @@ interface UnauthenticatedNetworkContainer {
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,
-            certificatePinning: CertificatePinning
+            certificatePinning: CertificatePinning,
+            mockEngine: HttpClientEngine?
         ): UnauthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -62,6 +63,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mockEngine
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
@@ -69,6 +71,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mockEngine
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
@@ -76,6 +79,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mockEngine
                 )
 
                 3 -> UnauthenticatedNetworkContainerV3(
@@ -83,6 +87,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mockEngine
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
@@ -90,6 +95,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mockEngine
                 )
 
                 5 -> UnauthenticatedNetworkContainerV5(
@@ -97,6 +103,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
+                    mockEngine
                 )
 
                 else -> error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
