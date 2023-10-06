@@ -97,6 +97,8 @@ sealed interface CoreFailure {
      * The client should identify this scenario through other means and logout.
      */
     data object SyncEventOrClientNotFound : FeatureFailure()
+
+    data object FeatureNotImplemented : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure {
