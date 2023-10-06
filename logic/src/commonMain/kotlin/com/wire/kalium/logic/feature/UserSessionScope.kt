@@ -181,6 +181,15 @@ import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterial
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -236,8 +245,6 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
-import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
-import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
@@ -1199,7 +1206,17 @@ class UserSessionScope internal constructor(
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs, userId)
+        get() = FeatureConfigEventReceiverImpl(
+            GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+            FileSharingConfigHandler(userConfigRepository),
+            MLSConfigHandler(userConfigRepository, userId),
+            ClassifiedDomainsConfigHandler(userConfigRepository),
+            ConferenceCallingConfigHandler(userConfigRepository),
+            SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
+            SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+            E2EIConfigHandler(userConfigRepository),
+            AppLockConfigHandler(userConfigRepository)
+        )
 
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
@@ -1406,11 +1423,6 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase
-        get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(
-            userConfigRepository
-        )
-
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
@@ -1444,7 +1456,16 @@ class UserSessionScope internal constructor(
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
-            userConfigRepository, featureConfigRepository, getGuestRoomLinkFeature, kaliumConfigs, userId
+            featureConfigRepository,
+            GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+            FileSharingConfigHandler(userConfigRepository),
+            MLSConfigHandler(userConfigRepository, userId),
+            ClassifiedDomainsConfigHandler(userConfigRepository),
+            ConferenceCallingConfigHandler(userConfigRepository),
+            SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
+            SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+            E2EIConfigHandler(userConfigRepository),
+            AppLockConfigHandler(userConfigRepository)
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
