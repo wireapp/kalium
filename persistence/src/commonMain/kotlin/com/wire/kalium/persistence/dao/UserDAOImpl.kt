@@ -327,13 +327,14 @@ class UserDAOImpl internal constructor(
         .mapToList()
         .map { entryList -> entryList.map(mapper::toDetailsModel) }
 
-    override suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?> = userCache.get(qualifiedID) {
-        userQueries.selectDetailsByQualifiedId(listOf(qualifiedID))
-            .asFlow()
-            .mapToOneOrNull()
-            .map { it?.let { mapper.toDetailsModel(it) } }
-            .shareIn(databaseScope, Lazily, 1)
-    }
+    override suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?> =
+        userCache.get(qualifiedID) {
+            userQueries.selectDetailsByQualifiedId(listOf(qualifiedID))
+                .asFlow()
+                .mapToOneOrNull()
+                .map { it?.let { mapper.toDetailsModel(it) } }
+                .shareIn(databaseScope, Lazily, 1)
+        }
 
     override suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?> =
         userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
