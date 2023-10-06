@@ -1047,8 +1047,8 @@ class UserSessionScope internal constructor(
         MLSMigrationWorkerImpl(
             userConfigRepository,
             featureConfigRepository,
-            MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId),
-            MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
+            mlsConfigHandler,
+            mlsMigrationConfigHandler,
             mlsMigrator,
         )
 
@@ -1305,18 +1305,48 @@ class UserSessionScope internal constructor(
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
+    private val guestRoomConfigHandler
+        get() = GuestRoomConfigHandler(userConfigRepository, kaliumConfigs)
+
+    private val fileSharingConfigHandler
+        get() = FileSharingConfigHandler(userConfigRepository)
+
+    private val mlsConfigHandler
+        get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId)
+
+    private val mlsMigrationConfigHandler
+        get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
+
+    private val classifiedDomainsConfigHandler
+        get() = ClassifiedDomainsConfigHandler(userConfigRepository)
+
+    private val conferenceCallingConfigHandler
+        get() = ConferenceCallingConfigHandler(userConfigRepository)
+
+    private val secondFactorPasswordChallengeConfigHandler
+        get() = SecondFactorPasswordChallengeConfigHandler(userConfigRepository)
+
+    private val selfDeletingMessagesConfigHandler
+        get() = SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs)
+
+    private val e2eiConfigHandler
+        get() = E2EIConfigHandler(userConfigRepository)
+
+    private val appLockConfigHandler
+        get() = AppLockConfigHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
-            GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
-            FileSharingConfigHandler(userConfigRepository),
-            MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId),
-            MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
-            ClassifiedDomainsConfigHandler(userConfigRepository),
-            ConferenceCallingConfigHandler(userConfigRepository),
-            SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
-            SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
-            E2EIConfigHandler(userConfigRepository),
-            AppLockConfigHandler(userConfigRepository)
+            guestRoomConfigHandler,
+            fileSharingConfigHandler,
+            mlsConfigHandler,
+            mlsMigrationConfigHandler,
+            classifiedDomainsConfigHandler,
+            conferenceCallingConfigHandler,
+            secondFactorPasswordChallengeConfigHandler,
+            selfDeletingMessagesConfigHandler,
+            e2eiConfigHandler,
+            appLockConfigHandler
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -1569,16 +1599,16 @@ class UserSessionScope internal constructor(
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
             featureConfigRepository,
-            GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
-            FileSharingConfigHandler(userConfigRepository),
-            MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId),
-            MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
-            ClassifiedDomainsConfigHandler(userConfigRepository),
-            ConferenceCallingConfigHandler(userConfigRepository),
-            SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
-            SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
-            E2EIConfigHandler(userConfigRepository),
-            AppLockConfigHandler(userConfigRepository)
+            guestRoomConfigHandler,
+            fileSharingConfigHandler,
+            mlsConfigHandler,
+            mlsMigrationConfigHandler,
+            classifiedDomainsConfigHandler,
+            conferenceCallingConfigHandler,
+            secondFactorPasswordChallengeConfigHandler,
+            selfDeletingMessagesConfigHandler,
+            e2eiConfigHandler,
+            appLockConfigHandler
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
