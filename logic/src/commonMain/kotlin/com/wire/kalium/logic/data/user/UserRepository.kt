@@ -184,9 +184,9 @@ internal class UserDataSource internal constructor(
         sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
 
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
-        userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
+        userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
-                userEntity?.let { publicUserMapper.fromUserEntityToOtherUser(userEntity) }
+                userEntity?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
                 processFederatedUserRefresh(userId, otherUser)
             }
@@ -307,7 +307,7 @@ internal class UserDataSource internal constructor(
             }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserByQualifiedID(selfUserID)
+            userDAO.observeUserDetailsByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map(userMapper::fromUserEntityToSelfUser)
         }
@@ -364,13 +364,13 @@ internal class UserDataSource internal constructor(
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =
-        userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
+        userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
                 // TODO: cache SelfUserId so it's not fetched from DB every single time
                 if (userId == selfUserId) {
                     userEntity?.let { userMapper.fromUserEntityToSelfUser(userEntity) }
                 } else {
-                    userEntity?.let { publicUserMapper.fromUserEntityToOtherUser(userEntity) }
+                    userEntity?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(userEntity) }
                 }
             }
 
@@ -430,7 +430,7 @@ internal class UserDataSource internal constructor(
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
         val userId = qualifiedIdMapper.fromStringToQualifiedID(event.userId)
         val user =
-            userDAO.getUserByQualifiedID(userId.toDao()).firstOrNull() ?: return Either.Left(StorageFailure.DataNotFound)
+            userDAO.observeUserDetailsByQualifiedID(userId.toDao()).firstOrNull() ?: return Either.Left(StorageFailure.DataNotFound)
         userDAO.updateUser(userMapper.fromUserUpdateEventToUserEntity(event, user))
     }
 

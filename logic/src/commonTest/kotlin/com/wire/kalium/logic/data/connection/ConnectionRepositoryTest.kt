@@ -528,7 +528,7 @@ class ConnectionRepositoryTest {
 
             withUpdateOrInsertOneOnOneMemberWithConnectionStatusSuccess()
 
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(stubUserEntity) }
 
@@ -542,7 +542,7 @@ class ConnectionRepositoryTest {
 
         fun withSuccessfulGetUserById(id: QualifiedIDEntity): Arrangement {
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(eq(id))
                 .then { flowOf(stubUserEntity) }
 

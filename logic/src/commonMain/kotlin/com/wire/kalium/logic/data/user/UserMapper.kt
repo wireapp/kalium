@@ -44,6 +44,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.datetime.toInstant
 
+@Suppress("TooManyFunctions")
 interface UserMapper {
     fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity
     fun fromUserEntityToSelfUser(userEntity: UserEntity): SelfUser
@@ -75,6 +76,7 @@ interface UserMapper {
     ): UserEntity
 
     fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserEntity): UserEntity
+    fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserDetailsEntity): UserEntity
 
     fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
@@ -102,6 +104,7 @@ interface UserMapper {
     fun fromUserEntityToSelfUser(userEntity: UserDetailsEntity): SelfUser
 }
 
+@Suppress("TooManyFunctions")
 internal class UserMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
@@ -384,6 +387,31 @@ internal class UserMapperImpl(
             )
         }
     }
+
+    override fun fromUserUpdateEventToUserEntity(event: Event.User.Update, userEntity: UserDetailsEntity): UserEntity =
+        userEntity.let { persistedEntity ->
+            UserEntity(
+                id = persistedEntity.id,
+                name = event.name ?: persistedEntity.name,
+                handle = event.handle ?: persistedEntity.handle,
+                email = event.email ?: persistedEntity.email,
+                phone = persistedEntity.phone,
+                accentId = event.accentId ?: persistedEntity.accentId,
+                team = persistedEntity.team,
+                connectionStatus = persistedEntity.connectionStatus,
+                previewAssetId = event.previewAssetId?.let { QualifiedIDEntity(it, persistedEntity.id.domain) }
+                    ?: persistedEntity.previewAssetId,
+                completeAssetId = event.completeAssetId?.let { QualifiedIDEntity(it, persistedEntity.id.domain) }
+                    ?: persistedEntity.completeAssetId,
+                availabilityStatus = persistedEntity.availabilityStatus,
+                userType = persistedEntity.userType,
+                botService = persistedEntity.botService,
+                deleted = persistedEntity.deleted,
+                hasIncompleteMetadata = persistedEntity.hasIncompleteMetadata,
+                expiresAt = persistedEntity.expiresAt,
+                defederated = persistedEntity.defederated
+            )
+        }
 
     /**
      * Default values and marked as [UserEntity.hasIncompleteMetadata] = true.

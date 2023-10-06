@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapMerge
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.decodeFromString
 
 internal interface UserSearchApiWrapper {
     /*
@@ -138,7 +137,7 @@ internal class UserSearchApiWrapperImpl(
             .flatMapMerge { encodedValue ->
                 val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
 
-                userDAO.getUserByQualifiedID(selfUserID)
+                userDAO.observeUserDetailsByQualifiedID(selfUserID)
                     .filterNotNull()
                     .map(userMapper::fromUserEntityToSelfUser)
             }.firstOrNull() ?: throw IllegalStateException()

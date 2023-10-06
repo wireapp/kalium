@@ -267,7 +267,7 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { flowOf(JSON_QUALIFIED_ID) }
 
-        given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+        given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
             .whenInvokedWith(any())
             .then { flowOf(USER_ENTITY) }
 
@@ -318,7 +318,7 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(USER_ENTITY) }
 
@@ -367,7 +367,7 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(USER_ENTITY) }
 

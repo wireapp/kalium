@@ -55,16 +55,16 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenUser_ThenUserCanBeInserted() = runTest(dispatcher) {
         db.userDAO.insertUser(user1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result, user1)
     }
 
     @Test
     fun givenListOfUsers_ThenMultipleUsersCanBeInsertedAtOnce() = runTest(dispatcher) {
         db.userDAO.upsertUsers(listOf(user1, user2, user3))
-        val result1 = db.userDAO.getUserByQualifiedID(user1.id).first()
-        val result2 = db.userDAO.getUserByQualifiedID(user2.id).first()
-        val result3 = db.userDAO.getUserByQualifiedID(user3.id).first()
+        val result1 = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        val result2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id).first()
+        val result3 = db.userDAO.observeUserDetailsByQualifiedID(user3.id).first()
         assertEquals(result1, user1)
         assertEquals(result2, user2)
         assertEquals(result3, user3)
@@ -74,7 +74,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenExistingUser_ThenUserCanBeDeleted() = runTest(dispatcher) {
         db.userDAO.insertUser(user1)
         db.userDAO.deleteUserByQualifiedID(user1.id)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNull(result)
     }
 
@@ -101,7 +101,7 @@ class UserDAOTest : BaseDatabaseTest() {
             defederated = false
         )
         db.userDAO.updateUser(updatedUser1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1)
     }
 
@@ -131,7 +131,7 @@ class UserDAOTest : BaseDatabaseTest() {
             defederated = false
         )
 
-        db.userDAO.getUserByQualifiedID(user1.id).take(2).collect {
+        db.userDAO.observeUserDetailsByQualifiedID(user1.id).take(2).collect {
             collectedValues.add(it)
             if (collectedValues.size == 1) {
                 db.userDAO.updateUser(updatedUser1)
@@ -151,7 +151,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.updateUserHandle(user1.id, updatedHandle)
 
         // then
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(updatedHandle, result?.handle)
     }
 
@@ -165,7 +165,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.updateUserHandle(nonExistingQualifiedID, updatedHandle)
 
         // then
-        val result = db.userDAO.getUserByQualifiedID(nonExistingQualifiedID).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(nonExistingQualifiedID).first()
         assertNull(result)
     }
 
@@ -526,8 +526,8 @@ class UserDAOTest : BaseDatabaseTest() {
         val updatedUser3 = user3.copy(name = newNameB)
         db.userDAO.upsertUsers(listOf(updatedUser1, updatedUser3))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val updated3 = db.userDAO.getUserByQualifiedID(updatedUser3.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser1.id)
+        val updated3 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser3.id)
         assertEquals(newNameA, updated1.first()?.name)
         assertEquals(newNameB, updated3.first()?.name)
     }
@@ -541,8 +541,8 @@ class UserDAOTest : BaseDatabaseTest() {
         val updatedUser1 = user1.copy(name = newNameA)
         db.userDAO.upsertUsers(listOf(updatedUser1, user2))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id)
         assertEquals(newNameA, updated1.first()?.name)
         assertNotNull(inserted2)
     }
@@ -556,8 +556,8 @@ class UserDAOTest : BaseDatabaseTest() {
         val updatedUser1 = user1.copy(team = newTeamId)
         db.userDAO.upsertTeamMembersTypes(listOf(updatedUser1, user2))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id)
         assertEquals(newTeamId, updated1.first()?.team)
         assertNotNull(inserted2)
     }
@@ -570,7 +570,7 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         db.userDAO.upsertTeamMembers(listOf(user1))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(user1.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(user1.id)
         assertEquals(UserTypeEntity.EXTERNAL, updated1.first()?.userType)
     }
 
@@ -614,8 +614,8 @@ class UserDAOTest : BaseDatabaseTest() {
         val updatedUser1 = user1.copy(team = newTeamId)
         db.userDAO.upsertUsers(listOf(updatedUser1, user2))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id)
         assertEquals(newTeamId, updated1.first()?.team)
         assertEquals(ConnectionEntity.State.ACCEPTED, updated1.first()?.connectionStatus)
         assertNotNull(inserted2)
@@ -637,7 +637,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user)
         val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
         db.userDAO.markUserAsDeleted(user1.id)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result, deletedUser)
 
     }
@@ -678,7 +678,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.updateUserDisplayName(user1.id, expectedNewDisplayName)
 
         // then
-        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(expectedNewDisplayName, persistedUser?.name)
     }
 
@@ -706,7 +706,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.removeUserAsset(assetId)
 
         // then
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result, updatedUser1.copy(previewAssetId = null))
     }
 
@@ -719,7 +719,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.removeUserAsset(assetId)
 
         // when
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNull(result)
     }
 
@@ -747,7 +747,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenExistingUser_ThenUserCanBeDefederated() = runTest(dispatcher) {
         db.userDAO.insertUser(user1)
         db.userDAO.markUserAsDefederated(user1.id)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNotNull(result)
         assertEquals(true, result.defederated)
     }
@@ -757,7 +757,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.insertUser(user1)
         db.userDAO.markUserAsDefederated(user1.id)
         db.userDAO.insertUser(user1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNotNull(result)
         assertEquals(false, result.defederated)
     }

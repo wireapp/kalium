@@ -348,7 +348,7 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(USER_ENTITY) }
 
@@ -381,7 +381,7 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(USER_ENTITY) }
 

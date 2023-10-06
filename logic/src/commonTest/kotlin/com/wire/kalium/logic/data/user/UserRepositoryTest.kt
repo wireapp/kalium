@@ -138,7 +138,7 @@ class UserRepositoryTest {
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
+                .suspendFunction(arrangement.userDAO::observeUserDetailsByQualifiedID)
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
@@ -165,7 +165,7 @@ class UserRepositoryTest {
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
+                .suspendFunction(arrangement.userDAO::observeUserDetailsByQualifiedID)
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
@@ -581,7 +581,7 @@ class UserRepositoryTest {
 
         init {
             withSelfUserIdFlowMetadataReturning(flowOf(TestUser.JSON_QUALIFIED_ID))
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(TestUser.ENTITY) }
 
@@ -634,7 +634,7 @@ class UserRepositoryTest {
         }
 
         fun withUserDaoReturning(userEntity: UserEntity? = TestUser.ENTITY) = apply {
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(userEntity) }
         }

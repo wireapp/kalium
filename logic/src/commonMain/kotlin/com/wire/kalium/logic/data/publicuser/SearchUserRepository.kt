@@ -185,7 +185,7 @@ internal class SearchUserRepositoryImpl(
             .flatMapMerge { encodedValue ->
                 val selfUserID: QualifiedIDEntity = Json.decodeFromString(string = encodedValue)
 
-                userDAO.getUserByQualifiedID(selfUserID)
+                userDAO.observeUserDetailsByQualifiedID(selfUserID)
                     .filterNotNull()
                     .map(userMapper::fromUserEntityToSelfUser)
             }.firstOrNull() ?: throw IllegalStateException()

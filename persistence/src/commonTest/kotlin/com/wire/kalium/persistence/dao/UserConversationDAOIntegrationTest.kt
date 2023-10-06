@@ -64,7 +64,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(member1, conversationEntity1.id)
 
-        val result = userDAO.getUserByQualifiedID(user1.id).first()
+        val result = userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(user1, result)
     }
 

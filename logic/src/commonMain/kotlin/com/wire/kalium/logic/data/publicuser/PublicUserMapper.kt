@@ -55,8 +55,8 @@ interface PublicUserMapper {
     ): OtherUser
 
     fun fromEntityToUserSummary(userEntity: UserEntity): UserSummary
-    fun fromDetailsEntityToUserSummary(userEntity: UserDetailsEntity): UserSummary
-    fun fromUserDetailsEntityToOtherUser(userEntity: UserDetailsEntity): OtherUser
+    fun fromDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary
+    fun fromUserDetailsEntityToOtherUser(userDetailsEntity: UserDetailsEntity): OtherUser
     fun fromOtherToUserDetailsEntity(otherUser: OtherUser): UserDetailsEntity
 }
 
@@ -87,24 +87,24 @@ class PublicUserMapperImpl(
         isProteusVerified = false
     )
 
-    override fun fromUserDetailsEntityToOtherUser(userEntity: UserDetailsEntity) = OtherUser(
-        id = userEntity.id.toModel(),
-        name = userEntity.name,
-        handle = userEntity.handle,
-        email = userEntity.email,
-        phone = userEntity.phone,
-        accentId = userEntity.accentId,
-        teamId = userEntity.team?.let { TeamId(it) },
-        connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userEntity.connectionStatus),
-        previewPicture = userEntity.previewAssetId?.toModel(),
-        completePicture = userEntity.completeAssetId?.toModel(),
-        availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
-        userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
-        botService = userEntity.botService?.let { BotService(it.id, it.provider) },
-        deleted = userEntity.deleted,
-        expiresAt = userEntity.expiresAt,
-        defederated = userEntity.defederated,
-        isProteusVerified = userEntity.isProteusVerified
+    override fun fromUserDetailsEntityToOtherUser(userDetailsEntity: UserDetailsEntity) = OtherUser(
+        id = userDetailsEntity.id.toModel(),
+        name = userDetailsEntity.name,
+        handle = userDetailsEntity.handle,
+        email = userDetailsEntity.email,
+        phone = userDetailsEntity.phone,
+        accentId = userDetailsEntity.accentId,
+        teamId = userDetailsEntity.team?.let { TeamId(it) },
+        connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userDetailsEntity.connectionStatus),
+        previewPicture = userDetailsEntity.previewAssetId?.toModel(),
+        completePicture = userDetailsEntity.completeAssetId?.toModel(),
+        availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userDetailsEntity.availabilityStatus),
+        userType = domainUserTypeMapper.fromUserTypeEntity(userDetailsEntity.userType),
+        botService = userDetailsEntity.botService?.let { BotService(it.id, it.provider) },
+        deleted = userDetailsEntity.deleted,
+        expiresAt = userDetailsEntity.expiresAt,
+        defederated = userDetailsEntity.defederated,
+        isProteusVerified = userDetailsEntity.isProteusVerified
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -196,7 +196,7 @@ class PublicUserMapperImpl(
         )
     }
 
-    override fun fromDetailsEntityToUserSummary(userEntity: UserDetailsEntity): UserSummary = with(userEntity) {
+    override fun fromDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary = with(userDetailsEntity) {
         UserSummary(
             userId = UserId(id.value, id.domain),
             userHandle = handle,
