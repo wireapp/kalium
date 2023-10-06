@@ -27,8 +27,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
-import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingEventManager
-import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingEventManager
+import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
 import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
@@ -268,21 +267,17 @@ class ConversationScope internal constructor(
     val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
         get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
 
-    private val typingIndicatorOutgoingEventManager: TypingIndicatorOutgoingEventManager =
-        TypingIndicatorOutgoingEventManager(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
-
-
-    private val typingIndicatorIncomingEventManager: TypingIndicatorIncomingEventManager =
-        TypingIndicatorIncomingEventManager(userSessionCoroutineScope = scope)
+    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler =
+        TypingIndicatorSenderHandler(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
 
     internal val typingIndicatorRepository =
         TypingIndicatorRepositoryImpl(
             ConcurrentMutableMap(),
             userPropertyRepository,
-            typingIndicatorOutgoingEventManager
+            typingIndicatorSenderHandler
         )
 
-    val sendTypingEventUseCase: SendTypingEventUseCase
+    val sendTypingEvent: SendTypingEventUseCase
         get() = SendTypingEventUseCaseImpl(typingIndicatorRepository)
 
     val observeUsersTyping: ObserveUsersTypingUseCase

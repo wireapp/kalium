@@ -27,9 +27,12 @@ internal class TypingIndicatorSyncManager(
     private val typingIndicatorRepository: Lazy<TypingIndicatorRepository>,
     private val observeSyncStateUseCase: ObserveSyncStateUseCase
 ) {
+    /**
+     * Periodically clears and drop orphaned typing indicators, so we don't keep them forever.
+     */
     suspend fun execute() {
         observeSyncStateUseCase().distinctUntilChanged().collectLatest {
-            kaliumLogger.d("Periodically clearing expired typing indicators")
+            kaliumLogger.d("Starting clear of orphaned typing indicators...")
             typingIndicatorRepository.value.clearExpiredTypingIndicators()
         }
     }

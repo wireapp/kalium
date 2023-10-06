@@ -38,7 +38,7 @@ import kotlin.time.toDuration
  * - For each started sent event, will 'enqueue' a stopped event after a timeout.
  *
  */
-internal class TypingIndicatorOutgoingEventManager(
+internal class TypingIndicatorSenderHandler(
     private val conversationRepository: ConversationRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     userSessionCoroutineScope: CoroutineScope

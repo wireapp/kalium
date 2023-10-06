@@ -44,7 +44,7 @@ internal class ObserveUsersTypingUseCaseImpl(
 ) : ObserveUsersTypingUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserSummary>> = withContext(dispatcher.io) {
         typingIndicatorRepository.observeUsersTyping(conversationId).map { usersEntries ->
-            userRepository.getUsersSummaryByIds(usersEntries.map { it.userId }).fold({
+            userRepository.getUsersSummaryByIds(usersEntries.map { it }).fold({
                 kaliumLogger.w("Users not found locally, skipping... $it")
                 emptySet()
             }, { it.toSet() })
