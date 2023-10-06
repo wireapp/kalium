@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.E2EIModel
+import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
@@ -523,6 +524,21 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
                 "allowedUsers" to model.allowedUsers.map { it.value.obfuscateId() }
+            )
+        }
+
+        data class MLSMigrationUpdated(
+            override val id: String,
+            override val transient: Boolean,
+            override val live: Boolean,
+            val model: MLSMigrationModel
+        ) : FeatureConfig(id, transient, live) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.MLSUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+                "startTime" to model.startTime,
+                "endTime" to model.endTime
             )
         }
 

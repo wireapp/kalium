@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepository
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
@@ -51,8 +50,8 @@ class MLSMigrationManagerTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withLastMLSMigrationCheck(true)
-                .withFetchMigrationConfigurationSucceeds()
-                .withLastMLSMigrationChecResetSucceeds()
+                .withRunMigrationSucceeds()
+                .withLastMLSMigrationCheckResetSucceeds()
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -70,6 +69,7 @@ class MLSMigrationManagerTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withLastMLSMigrationCheck(false)
+                .withRunMigrationSucceeds()
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -85,6 +85,7 @@ class MLSMigrationManagerTest {
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(false)
+                .withRunMigrationSucceeds()
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -101,6 +102,7 @@ class MLSMigrationManagerTest {
             val (arrangement, _) = Arrangement()
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(false)
+                .withRunMigrationSucceeds()
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
@@ -127,14 +129,11 @@ class MLSMigrationManagerTest {
         val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
 
         @Mock
-        val mlsMigrationRepository = mock(classOf<MLSMigrationRepository>())
-
-        @Mock
         val mlsMigrationWorker = mock(classOf<MLSMigrationWorker>())
 
-        fun withFetchMigrationConfigurationSucceeds() = apply {
-            given(mlsMigrationRepository)
-                .suspendFunction(mlsMigrationRepository::fetchMigrationConfiguration)
+        fun withRunMigrationSucceeds() = apply {
+            given(mlsMigrationWorker)
+                .suspendFunction(mlsMigrationWorker::runMigration)
                 .whenInvoked()
                 .thenReturn(Either.Right(Unit))
         }
@@ -146,7 +145,7 @@ class MLSMigrationManagerTest {
                 .thenReturn(Either.Right(hasPassed))
         }
 
-        fun withLastMLSMigrationChecResetSucceeds() = apply {
+        fun withLastMLSMigrationCheckResetSucceeds() = apply {
             given(timestampKeyRepository)
                 .suspendFunction(timestampKeyRepository::reset)
                 .whenInvokedWith(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK))
@@ -173,7 +172,6 @@ class MLSMigrationManagerTest {
             lazy { clientRepository },
             lazy { timestampKeyRepository },
             lazy { mlsMigrationWorker },
-            lazy { mlsMigrationRepository },
             TestKaliumDispatcher
         )
     }

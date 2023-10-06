@@ -21,7 +21,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.mlsmigration.MLSMigrationRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
@@ -31,6 +30,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -55,7 +55,6 @@ internal class MLSMigrationManagerImpl(
     private val clientRepository: Lazy<ClientRepository>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
     private val mlsMigrationWorker: Lazy<MLSMigrationWorker>,
-    private val mlsMigrationRepository: Lazy<MLSMigrationRepository>,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSMigrationManager {
     /**
@@ -90,12 +89,14 @@ internal class MLSMigrationManagerImpl(
         ).flatMap { lastMlsMigrationCheckHasPassed ->
             kaliumLogger.d("Migration needs to be updated: $lastMlsMigrationCheckHasPassed")
             if (lastMlsMigrationCheckHasPassed) {
-                kaliumLogger.d("Updating migration config")
-                mlsMigrationRepository.value.fetchMigrationConfiguration()
-                    .onSuccess { timestampKeyRepository.value.reset(TimestampKeys.LAST_MLS_MIGRATION_CHECK) }
-                    .flatMap {
-                        mlsMigrationWorker.value.runMigration()
-                        Either.Right(Unit)
+                kaliumLogger.d("Running mls migration")
+                mlsMigrationWorker.value.runMigration()
+                    .onSuccess {
+                        kaliumLogger.d("Successfully advanced the mls migration")
+                        timestampKeyRepository.value.reset(TimestampKeys.LAST_MLS_MIGRATION_CHECK)
+                    }
+                    .onFailure {
+                        kaliumLogger.d("Failure while advancing the mls migration: $it")
                     }
             }
             Either.Right(Unit)

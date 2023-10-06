@@ -48,8 +48,10 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+@Serializable
 enum class SupportedProtocolEntity {
-    PROTEUS, MLS
+    @SerialName("PROTEUS") PROTEUS,
+    @SerialName("MLS") MLS
 }
 
 enum class UserAvailabilityStatusEntity {

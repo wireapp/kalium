@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
 interface OneOnOneResolver {
-    suspend fun resolveAllOneOnOneConversations(): Either<CoreFailure, Unit>
+    suspend fun resolveAllOneOnOneConversations(synchronizeUsers: Boolean = false): Either<CoreFailure, Unit>
     suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration = Duration.ZERO): Job
     suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId>
     suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId>
@@ -64,29 +64,34 @@ internal class OneOnOneResolverImpl(
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
     private val resolveActiveOneOnOneScope = CoroutineScope(dispatcher)
 
-    override suspend fun resolveAllOneOnOneConversations(): Either<CoreFailure, Unit> {
-        val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
-        kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
-        return usersWithOneOnOne.foldToEitherWhileRight(Unit) { item, _ ->
-            resolveOneOnOneConversationWithUser(item).flatMapLeft {
-                when (it) {
-                    is CoreFailure.NoKeyPackagesAvailable,
-                    is NetworkFailure.ServerMiscommunication,
-                    is NetworkFailure.FederatedBackendFailure,
-                    is CoreFailure.NoCommonProtocolFound
-                    -> {
-                        kaliumLogger.e("Resolving one-on-one failed $it, skipping")
-                        Either.Right(Unit)
-                    }
+    override suspend fun resolveAllOneOnOneConversations(synchronizeUsers: Boolean): Either<CoreFailure, Unit> =
+        if (synchronizeUsers) {
+            userRepository.fetchAllOtherUsers()
+        } else {
+            Either.Right(Unit)
+        }.flatMap {
+            val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
+            kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
+            usersWithOneOnOne.foldToEitherWhileRight(Unit) { item, _ ->
+                resolveOneOnOneConversationWithUser(item).flatMapLeft {
+                    when (it) {
+                        is CoreFailure.NoKeyPackagesAvailable,
+                        is NetworkFailure.ServerMiscommunication,
+                        is NetworkFailure.FederatedBackendFailure,
+                        is CoreFailure.NoCommonProtocolFound
+                        -> {
+                            kaliumLogger.e("Resolving one-on-one failed $it, skipping")
+                            Either.Right(Unit)
+                        }
 
-                    else -> {
-                        kaliumLogger.e("Resolving one-on-one failed $it, retrying")
-                        Either.Left(it)
+                        else -> {
+                            kaliumLogger.e("Resolving one-on-one failed $it, retrying")
+                            Either.Left(it)
+                        }
                     }
-                }
-            }.map { }
+                }.map { }
+            }
         }
-    }
 
     override suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration) =
         resolveActiveOneOnOneScope.launch {

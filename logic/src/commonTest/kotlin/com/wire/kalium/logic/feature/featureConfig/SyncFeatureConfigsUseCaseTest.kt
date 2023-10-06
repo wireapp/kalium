@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.E2EIConfigModel
 import com.wire.kalium.logic.data.featureConfig.E2EIModel
-import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -40,11 +39,12 @@ import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
@@ -52,6 +52,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.any
@@ -83,6 +84,7 @@ class SyncFeatureConfigsUseCaseTest {
                 )
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -102,6 +104,7 @@ class SyncFeatureConfigsUseCaseTest {
                     )
                 )
             )
+            .withGetSupportedProtocolsReturning(null)
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .arrange()
 
@@ -113,141 +116,13 @@ class SyncFeatureConfigsUseCaseTest {
     }
 
     @Test
-    fun givenMlsIsEnabledAndMlsIsDefaultProtocol_whenSyncing_thenMlsShouldBeStoredAsDefault() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(
-                    allowedUsers = emptyList(),
-                    defaultProtocol = SupportedProtocol.MLS,
-                    supportedProtocols = emptySet(),
-                    status = Status.ENABLED))
-            )
-            .withGetTeamSettingsSelfDeletionStatusSuccessful()
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.getDefaultProtocol().shouldSucceed {
-            assertEquals(SupportedProtocol.MLS, it)
-        }
-    }
-
-    @Test
-    fun givenMlsIsEnabledAndProteusIsDefaultProtocol_whenSyncing_thenProteusShouldBeStoredAsDefault() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(
-                    allowedUsers = emptyList(),
-                    defaultProtocol = SupportedProtocol.PROTEUS,
-                    supportedProtocols = emptySet(),
-                    status = Status.ENABLED))
-            )
-            .withGetTeamSettingsSelfDeletionStatusSuccessful()
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.getDefaultProtocol().shouldSucceed {
-            assertEquals(SupportedProtocol.PROTEUS, it)
-        }
-    }
-
-    @Test
-    fun givenMlsIsDisabledAndMlsIsDefaultProtocol_whenSyncing_thenProteusShouldBeStoredAsDefault() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(mlsModel = MLSModel(
-                    allowedUsers = emptyList(),
-                    defaultProtocol = SupportedProtocol.MLS,
-                    supportedProtocols = emptySet(),
-                    status = Status.DISABLED))
-            )
-            .withGetTeamSettingsSelfDeletionStatusSuccessful()
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.getDefaultProtocol().shouldSucceed {
-            assertEquals(SupportedProtocol.PROTEUS, it)
-        }
-    }
-
-    @Test
-    fun givenMlsIsEnabledAndSelfUserIsWhitelisted_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(
-                    mlsModel = MLSModel(
-                        allowedUsers = listOf(SELF_USER_ID.toPlainID()),
-                        defaultProtocol = SupportedProtocol.MLS,
-                        supportedProtocols = emptySet(),
-                        status = Status.ENABLED
-                    )
-                )
-            )
-            .withGetTeamSettingsSelfDeletionStatusSuccessful()
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.isMLSEnabled().shouldSucceed {
-            assertTrue(it)
-        }
-    }
-
-    @Test
-    fun givenMlsIsEnabledAndSelfUserIsNotWhitelisted_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(
-                    mlsModel = MLSModel(
-                        allowedUsers = emptyList(),
-                        defaultProtocol = SupportedProtocol.MLS,
-                        supportedProtocols = emptySet(),
-                        status = Status.ENABLED
-                    )
-                )
-            )
-            .withGetTeamSettingsSelfDeletionStatusSuccessful()
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.isMLSEnabled().shouldSucceed {
-            assertFalse(it)
-        }
-    }
-
-    @Test
-    fun givenMlsIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
-        val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
-            .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(
-                    mlsModel = MLSModel(
-                        allowedUsers = emptyList(),
-                        defaultProtocol = SupportedProtocol.MLS,
-                        supportedProtocols = emptySet(),
-                        status = Status.DISABLED
-                    )
-                )
-            )
-            .withGetTeamSettingsSelfDeletionStatusSuccessful()
-            .arrange()
-
-        syncFeatureConfigsUseCase()
-
-        arrangement.userConfigRepository.isMLSEnabled().shouldSucceed {
-            assertFalse(it)
-        }
-    }
-
-    @Test
     fun givenConferenceCallingIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.ENABLED))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -264,6 +139,7 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.DISABLED))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
 
@@ -281,6 +157,7 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.ENABLED))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -301,6 +178,7 @@ class SyncFeatureConfigsUseCaseTest {
                 isStatusChanged = false
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -317,6 +195,7 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(fileSharingModel = ConfigsStatusModel(Status.DISABLED))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
 
@@ -338,6 +217,7 @@ class SyncFeatureConfigsUseCaseTest {
                 isStatusChanged = false
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -358,6 +238,7 @@ class SyncFeatureConfigsUseCaseTest {
                 isStatusChanged = false
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -382,6 +263,7 @@ class SyncFeatureConfigsUseCaseTest {
                 isStatusChanged = false
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -405,6 +287,7 @@ class SyncFeatureConfigsUseCaseTest {
                 )
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -427,6 +310,7 @@ class SyncFeatureConfigsUseCaseTest {
                 )
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -449,6 +333,7 @@ class SyncFeatureConfigsUseCaseTest {
                 )
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -472,6 +357,7 @@ class SyncFeatureConfigsUseCaseTest {
                 )
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -528,6 +414,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.NoRestriction)
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -549,6 +436,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -566,6 +454,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.AllowSome(listOf("png", "jpg")))
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -583,6 +472,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withBuildConfigFileSharing(BuildFileRestrictionState.NoRestriction)
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -598,6 +488,7 @@ class SyncFeatureConfigsUseCaseTest {
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = Arrangement()
             .withKaliumConfigs { it.copy(selfDeletingMessages = false) }
             .withSetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         // When
@@ -624,6 +515,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withSetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         // When
@@ -650,6 +542,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withSetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         // When
@@ -677,6 +570,7 @@ class SyncFeatureConfigsUseCaseTest {
             )
             .withSetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         // When
@@ -702,6 +596,7 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(e2EIModel = e2EIModel)
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -720,6 +615,7 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel()
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
+            .withGetSupportedProtocolsReturning(null)
             .arrange()
 
         syncFeatureConfigsUseCase()
@@ -748,6 +644,8 @@ class SyncFeatureConfigsUseCaseTest {
         @Mock
         val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
 
+        @Mock
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
 
         private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 
@@ -816,6 +714,13 @@ class SyncFeatureConfigsUseCaseTest {
                 .then { }
         }
 
+        fun withGetSupportedProtocolsReturning(result: Set<SupportedProtocolEntity>?) = apply {
+            given(userConfigDAO)
+                .suspendFunction(userConfigDAO::getSupportedProtocols)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
@@ -825,7 +730,8 @@ class SyncFeatureConfigsUseCaseTest {
                 featureConfigRepository,
                 GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
                 FileSharingConfigHandler(userConfigRepository),
-                MLSConfigHandler(userConfigRepository, TestUser.SELF.id),
+                MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, TestUser.SELF.id),
+                MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
@@ -836,9 +742,5 @@ class SyncFeatureConfigsUseCaseTest {
             return this to syncFeatureConfigsUseCase
         }
 
-    }
-
-    private companion object {
-        val SELF_USER_ID = TestUser.USER_ID
     }
 }
