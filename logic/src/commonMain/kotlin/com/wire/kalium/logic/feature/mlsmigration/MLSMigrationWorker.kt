@@ -60,9 +60,9 @@ internal class MLSMigrationWorkerImpl(
 
     private suspend fun syncMigrationConfigurations(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { configurations ->
-            mlsConfigHandler.handle(configurations.mlsModel, true)
+            mlsConfigHandler.handle(configurations.mlsModel, duringSlowSync = false)
                 .flatMap { configurations.mlsMigrationModel?.let {
-                    mlsMigrationConfigHandler.handle(configurations.mlsMigrationModel, true)
+                    mlsMigrationConfigHandler.handle(configurations.mlsMigrationModel, duringSlowSync = false)
                 } ?: Either.Right(Unit) }
         }
 }

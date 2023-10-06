@@ -86,8 +86,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
-            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, false)
-            is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, false)
+            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
+            is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
             is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
             is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
             is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
