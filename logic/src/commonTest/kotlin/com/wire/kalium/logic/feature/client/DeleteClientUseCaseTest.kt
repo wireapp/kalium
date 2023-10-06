@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -33,6 +33,7 @@ import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImp
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
@@ -116,31 +117,15 @@ class DeleteClientUseCaseTest {
     fun givenRepositoryDeleteClientSucceeds_whenDeleting_thenUpdateSupportedProtocols() = runTest {
         val (arrangement, deleteClient) = arrange {
             withDeleteClient(Either.Right(Unit))
-            withUpdateSupportedProtocols(Either.Right(false))
+            withUpdateSupportedProtocolsAndResolveOneOnOnes(Either.Right(Unit))
         }
 
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
         assertIs<DeleteClientResult.Success>(result)
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenSupportedProtocolsAreUpdated_whenDeleting_thenResolveActiveOneOnOneConversations() = runTest {
-        val (arrangement, deleteClient) = arrange {
-            withDeleteClient(Either.Right(Unit))
-            withUpdateSupportedProtocols(Either.Right(true))
-            withFetchAllOtherUsersReturning(Either.Right(Unit))
-            withResolveAllOneOnOneConversationsReturning(Either.Right(Unit))
-        }
-
-        val result = deleteClient(DELETE_CLIENT_PARAMETERS)
-
-        assertIs<DeleteClientResult.Success>(result)
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
+        verify(arrangement.updateSupportedProtocolsAndResolveOneOnOnes)
+            .suspendFunction(arrangement.updateSupportedProtocolsAndResolveOneOnOnes::invoke)
+            .with(eq(true))
             .wasInvoked(exactly = once)
     }
 
@@ -152,7 +137,7 @@ class DeleteClientUseCaseTest {
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
-        val updateSupportedProtocols = mock(classOf<UpdateSupportedProtocolsUseCase>())
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
 
         fun withDeleteClient(result: Either<NetworkFailure, Unit>) {
             given(clientRepository)
@@ -161,10 +146,10 @@ class DeleteClientUseCaseTest {
                 .then { result }
         }
 
-        fun withUpdateSupportedProtocols(result: Either<CoreFailure, Boolean>) {
-            given(updateSupportedProtocols)
-                .suspendFunction(updateSupportedProtocols::invoke)
-                .whenInvoked()
+        fun withUpdateSupportedProtocolsAndResolveOneOnOnes(result: Either<CoreFailure, Unit>) {
+            given(updateSupportedProtocolsAndResolveOneOnOnes)
+                .suspendFunction(updateSupportedProtocolsAndResolveOneOnOnes::invoke)
+                .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
@@ -172,9 +157,7 @@ class DeleteClientUseCaseTest {
             block()
             this@Arrangement to DeleteClientUseCaseImpl(
                 clientRepository = clientRepository,
-                updateSupportedProtocols = updateSupportedProtocols,
-                userRepository = userRepository,
-                oneOnOneResolver = oneOnOneResolver,
+                updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes,
             )
         }
     }
@@ -185,6 +168,5 @@ class DeleteClientUseCaseTest {
         val CLIENT = TestClient.CLIENT
         val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.id)
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
-
     }
 }

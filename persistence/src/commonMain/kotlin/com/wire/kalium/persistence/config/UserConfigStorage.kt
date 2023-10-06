@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
@@ -223,6 +224,13 @@ sealed class SelfDeletionTimerEntity {
     @SerialName("enforced")
     data class Enforced(val enforcedDuration: Duration) : SelfDeletionTimerEntity()
 }
+
+@Serializable
+data class MLSMigrationEntity(
+    @Serializable val status: Boolean,
+    @Serializable val startTime: Instant?,
+    @Serializable val endTime: Instant?,
+)
 
 @Suppress("TooManyFunctions")
 class UserConfigStorageImpl(

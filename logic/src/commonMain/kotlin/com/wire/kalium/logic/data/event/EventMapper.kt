@@ -524,6 +524,13 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLS)
         )
 
+        is FeatureConfigData.MLSMigration -> Event.FeatureConfig.MLSMigrationUpdated(
+            id,
+            transient,
+            live,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.MLSMigration)
+        )
+
         is FeatureConfigData.ClassifiedDomains -> Event.FeatureConfig.ClassifiedDomainsUpdated(
             id,
             transient,
