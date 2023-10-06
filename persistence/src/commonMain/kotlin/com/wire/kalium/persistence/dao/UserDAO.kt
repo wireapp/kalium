@@ -71,6 +71,28 @@ data class UserEntity(
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
+    val defederated: Boolean
+)
+
+data class UserDetailsEntity(
+    val id: QualifiedIDEntity,
+    val name: String?,
+    val handle: String?,
+    val email: String?,
+    val phone: String?,
+    val accentId: Int,
+    val team: String?,
+    val connectionStatus: ConnectionEntity.State = ConnectionEntity.State.NOT_CONNECTED,
+    val previewAssetId: UserAssetIdEntity?,
+    val completeAssetId: UserAssetIdEntity?,
+    // for now availabilityStatus is stored only locally and ignored for API models,
+    // later, when API start supporting it, it should be added into API model too
+    val availabilityStatus: UserAvailabilityStatusEntity,
+    val userType: UserTypeEntity,
+    val botService: BotIdEntity?,
+    val deleted: Boolean,
+    val hasIncompleteMetadata: Boolean = false,
+    val expiresAt: Instant?,
     val defederated: Boolean,
     val isProteusVerified: Boolean
 )
@@ -182,46 +204,45 @@ interface UserDAO {
      * [UserEntity.completeAssetId]
      */
     suspend fun updateUser(user: UserEntity)
-    suspend fun getAllUsers(): Flow<List<UserEntity>>
-    suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
+    suspend fun getAllUsers(): Flow<List<UserDetailsEntity>>
+    suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>>
     suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
-    suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?>
+    suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
-    suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity>
+    suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity>
     suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
         connectionStates: List<ConnectionEntity.State>
-    ): Flow<List<UserEntity>>
+    ): Flow<List<UserDetailsEntity>>
 
     suspend fun getUserByHandleAndConnectionStates(
         handle: String,
         connectionStates: List<ConnectionEntity.State>
-    ): Flow<List<UserEntity>>
+    ): Flow<List<UserDetailsEntity>>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
-    fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>>
+    fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
     suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,
-    ): Flow<List<UserEntity>>
+    ): Flow<List<UserDetailsEntity>>
 
-    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>>
-    suspend fun getAllUsersByTeam(teamId: String): List<UserEntity>
+    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserDetailsEntity>>
+    suspend fun getAllUsersByTeam(teamId: String): List<UserDetailsEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
 
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 
-    suspend fun getUsersWithoutMetadata(): List<UserEntity>
+    suspend fun getUsersWithoutMetadata(): List<UserDetailsEntity>
 
     /**
      * @return [List] of [UserIDEntity] of all other users.
      * the list does not contain self user ID
      */
     suspend fun allOtherUsersId(): List<UserIDEntity>
-    suspend fun updateProteusVerificationStatus(userId: QualifiedIDEntity, isProteusVerified: Boolean)
 }

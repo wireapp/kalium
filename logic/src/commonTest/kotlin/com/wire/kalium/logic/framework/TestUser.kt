@@ -104,8 +104,7 @@ object TestUser {
         botService = null,
         deleted = false,
         expiresAt = null,
-        defederated = false,
-        isProteusVerified = false
+        defederated = false
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

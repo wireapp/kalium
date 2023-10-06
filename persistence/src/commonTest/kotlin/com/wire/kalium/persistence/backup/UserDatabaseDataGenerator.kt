@@ -193,8 +193,7 @@ class UserDatabaseDataGenerator(
             botService = null,
             hasIncompleteMetadata = false,
             expiresAt = null,
-            defederated = false,
-            isProteusVerified = false
+            defederated = false
         )
     }
 

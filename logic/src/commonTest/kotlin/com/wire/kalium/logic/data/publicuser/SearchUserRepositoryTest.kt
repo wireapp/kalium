@@ -575,8 +575,7 @@ class SearchUserRepositoryTest {
             botService = null,
             deleted = false,
             expiresAt = null,
-            defederated = false,
-            isProteusVerified = false
+            defederated = false
         )
 
         val SELF_USER = SelfUser(

@@ -68,14 +68,14 @@ internal class ConnectionMapperImpl(
             qualifiedToId = qualifiedToId.toModel(),
             status = statusMapper.fromDaoModel(status),
             toId = toId,
-            fromUser = otherUser?.let { publicUserMapper.fromUserEntityToOtherUser(it) }
+            fromUser = otherUser?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(it) }
         )
     }
 
     override fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails = with(connection) {
         ConversationDetails.Connection(
             conversationId = qualifiedConversationId.toModel(),
-            otherUser = otherUser?.let { publicUserMapper.fromUserEntityToOtherUser(it) },
+            otherUser = otherUser?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(it) },
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
             lastModifiedDate = lastUpdateDate.toIsoDateTimeString(),
             connection = fromDaoToModel(this),

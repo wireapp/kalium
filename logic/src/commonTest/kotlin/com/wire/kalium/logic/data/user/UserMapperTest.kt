@@ -82,8 +82,7 @@ class UserMapperTest {
             botService = null,
             deleted = false,
             expiresAt = null,
-            defederated = false,
-            isProteusVerified = false
+            defederated = false
         )
         val (_, userMapper) = Arrangement().arrange()
 

@@ -485,8 +485,7 @@ class UserSearchApiWrapperTest {
                 botService = null,
                 deleted = false,
                 expiresAt = null,
-                defederated = false,
-                isProteusVerified = false
+                defederated = false
             )
         }
     }

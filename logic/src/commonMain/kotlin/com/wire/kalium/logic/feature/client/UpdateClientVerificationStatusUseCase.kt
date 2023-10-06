@@ -21,13 +21,10 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
 
 /**
- * Updates the verification status of a client and user (if needed).
+ * Updates the verification status of a client.
  * @param userId The user id of the client.
  * @param clientId The client id of the client.
  * @param verified The new verification status of the client.
@@ -35,27 +32,16 @@ import com.wire.kalium.logic.kaliumLogger
  * [UpdateClientVerificationStatusUseCase.Result.Failure] if the client could not be updated.
  */
 class UpdateClientVerificationStatusUseCase internal constructor(
-    private val clientRepository: ClientRepository,
-    private val userRepository: UserRepository
+    private val clientRepository: ClientRepository
 ) {
     suspend operator fun invoke(userId: UserId, clientId: ClientId, verified: Boolean): Result =
-        clientRepository.updateClientProteusVerificationStatus(userId, clientId, verified)
-            .flatMap {
-                clientRepository.getClientsByUserId(userId)
-                    .flatMap {
-                        val isUserVerified = it.all { client -> client.isProteusVerified }
-                        userRepository.updateProteusVerificationStatus(userId, isUserVerified)
-                    }
-            }
-            .fold({ error ->
-                kaliumLogger.e("Error updating clients Proteus verification status: $error")
-                Result.Failure(error)
-            },
-                { Result.Success }
-            )
+        clientRepository.updateClientProteusVerificationStatus(userId, clientId, verified).fold(
+            { error -> Result.Failure(error) },
+            { Result.Success }
+        )
 
     sealed interface Result {
-        data object Success : Result
+        object Success : Result
         data class Failure(val error: StorageFailure) : Result
     }
 }

@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.datetime.toInstant
@@ -82,6 +83,23 @@ interface UserMapper {
     ): UserEntity
 
     fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity
+    fun fromSelfUserToUserDetailsEntity(selfUser: SelfUser): UserDetailsEntity
+    fun fromSelfUserDtoToUserDetailsEntity(userDTO: SelfUserDTO): UserDetailsEntity
+    fun fromTeamMemberToDaoDetailModel(
+        teamId: TeamId,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
+        userDomain: String
+    ): UserDetailsEntity
+
+    fun fromUserProfileDtoToUserDetailsEntity(
+        userProfile: UserProfileDTO,
+        connectionState: ConnectionEntity.State,
+        userTypeEntity: UserTypeEntity
+    ): UserDetailsEntity
+
+    fun fromFailedUserToDetailEntity(userId: NetworkQualifiedId): UserDetailsEntity
+    fun fromUserEntityToSelfUser(userEntity: UserDetailsEntity): SelfUser
 }
 
 internal class UserMapperImpl(
@@ -92,6 +110,23 @@ internal class UserMapperImpl(
 ) : UserMapper {
 
     override fun fromUserEntityToSelfUser(userEntity: UserEntity) = with(userEntity) {
+        SelfUser(
+            id.toModel(),
+            name,
+            handle,
+            email,
+            phone,
+            accentId,
+            team?.let { TeamId(it) },
+            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewAssetId?.toModel(),
+            completeAssetId?.toModel(),
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            expiresAt = expiresAt
+        )
+    }
+
+    override fun fromUserEntityToSelfUser(userEntity: UserDetailsEntity) = with(userEntity) {
         SelfUser(
             id.toModel(),
             name,
@@ -125,6 +160,27 @@ internal class UserMapperImpl(
             botService = null,
             deleted = false,
             expiresAt = expiresAt,
+            defederated = false
+        )
+    }
+
+    override fun fromSelfUserToUserDetailsEntity(selfUser: SelfUser): UserDetailsEntity = with(selfUser) {
+        UserDetailsEntity(
+            id = id.toDao(),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = teamId?.value,
+            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionStatus),
+            previewAssetId = previewPicture?.toDao(),
+            completeAssetId = completePicture?.toDao(),
+            availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            userType = UserTypeEntity.STANDARD,
+            botService = null,
+            deleted = false,
+            expiresAt = expiresAt,
             defederated = false,
             isProteusVerified = false
         )
@@ -132,6 +188,26 @@ internal class UserMapperImpl(
 
     override fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity = with(userDTO) {
         UserEntity(
+            id = idMapper.fromApiToDao(id),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = teamId,
+            previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
+            completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = UserTypeEntity.STANDARD,
+            botService = null,
+            deleted = userDTO.deleted ?: false,
+            expiresAt = expiresAt?.toInstant(),
+            defederated = false
+        )
+    }
+
+    override fun fromSelfUserDtoToUserDetailsEntity(userDTO: SelfUserDTO): UserDetailsEntity = with(userDTO) {
+        UserDetailsEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
             handle = handle,
@@ -208,6 +284,37 @@ internal class UserMapperImpl(
             botService = null,
             deleted = false,
             expiresAt = null,
+            defederated = false
+        )
+
+    /**
+     * Null and default/hardcoded values will be replaced later when fetching known users.
+     */
+    override fun fromTeamMemberToDaoDetailModel(
+        teamId: TeamId,
+        nonQualifiedUserId: NonQualifiedUserId,
+        permissionCode: Int?,
+        userDomain: String,
+    ): UserDetailsEntity =
+        UserDetailsEntity(
+            id = QualifiedIDEntity(
+                value = nonQualifiedUserId,
+                domain = userDomain
+            ),
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            accentId = 1,
+            team = teamId.value,
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = null,
+            completeAssetId = null,
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
+            botService = null,
+            deleted = false,
+            expiresAt = null,
             defederated = false,
             isProteusVerified = false
         )
@@ -217,6 +324,31 @@ internal class UserMapperImpl(
         connectionState: ConnectionEntity.State,
         userTypeEntity: UserTypeEntity
     ) = UserEntity(
+        id = idMapper.fromApiToDao(userProfile.id),
+        name = userProfile.name,
+        handle = userProfile.handle,
+        email = userProfile.email,
+        phone = null,
+        accentId = userProfile.accentId,
+        team = userProfile.teamId,
+        previewAssetId = userProfile.assets.getPreviewAssetOrNull()
+            ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
+        completeAssetId = userProfile.assets.getCompleteAssetOrNull()
+            ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
+        connectionStatus = connectionState,
+        availabilityStatus = UserAvailabilityStatusEntity.NONE,
+        userType = userTypeEntity,
+        botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
+        deleted = userProfile.deleted ?: false,
+        expiresAt = userProfile.expiresAt?.toInstant(),
+        defederated = false
+    )
+
+    override fun fromUserProfileDtoToUserDetailsEntity(
+        userProfile: UserProfileDTO,
+        connectionState: ConnectionEntity.State,
+        userTypeEntity: UserTypeEntity
+    ) = UserDetailsEntity(
         id = idMapper.fromApiToDao(userProfile.id),
         name = userProfile.name,
         handle = userProfile.handle,
@@ -259,6 +391,28 @@ internal class UserMapperImpl(
      */
     override fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity {
         return UserEntity(
+            id = userId.toDao(),
+            name = null,
+            handle = null,
+            email = null,
+            phone = null,
+            accentId = 1,
+            team = null,
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = null,
+            completeAssetId = null,
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            userType = UserTypeEntity.STANDARD,
+            botService = null,
+            deleted = false,
+            hasIncompleteMetadata = true,
+            expiresAt = null,
+            defederated = false
+        )
+    }
+
+    override fun fromFailedUserToDetailEntity(userId: NetworkQualifiedId): UserDetailsEntity {
+        return UserDetailsEntity(
             id = userId.toDao(),
             name = null,
             handle = null,

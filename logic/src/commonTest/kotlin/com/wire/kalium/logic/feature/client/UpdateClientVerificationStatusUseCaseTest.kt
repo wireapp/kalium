@@ -46,16 +46,6 @@ class UpdateClientVerificationStatusUseCaseTest {
 
         val (arrangement, useCase) = arrange {
             withUpdateClientProteusVerificationStatus(Either.Right(Unit))
-            withUpdateProteusVerificationStatus(Either.Right(Unit))
-            withClientsByUserId(
-                Either.Right(
-                    listOf(
-                        OTHER_USER_CLIENT,
-                        OTHER_USER_CLIENT.copy(id = "some_id_1"),
-                        OTHER_USER_CLIENT.copy(id = "some_id_2")
-                    )
-                )
-            )
         }
 
         useCase(userId, clientID, true)
@@ -63,11 +53,6 @@ class UpdateClientVerificationStatusUseCaseTest {
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
-            .with(eq(userId), eq(true))
             .wasInvoked(exactly = once)
     }
 
@@ -78,16 +63,6 @@ class UpdateClientVerificationStatusUseCaseTest {
 
         val (arrangement, useCase) = arrange {
             withUpdateClientProteusVerificationStatus(Either.Right(Unit))
-            withUpdateProteusVerificationStatus(Either.Right(Unit))
-            withClientsByUserId(
-                Either.Right(
-                    listOf(
-                        OTHER_USER_CLIENT,
-                        OTHER_USER_CLIENT.copy(id = "some_id_1"),
-                        OTHER_USER_CLIENT.copy(id = "some_id_2")
-                    )
-                )
-            )
         }
 
         useCase(userId, clientID, true).also {
@@ -97,11 +72,6 @@ class UpdateClientVerificationStatusUseCaseTest {
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
-            .with(eq(userId), eq(true))
             .wasInvoked(exactly = once)
     }
 
@@ -125,58 +95,17 @@ class UpdateClientVerificationStatusUseCaseTest {
             .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
             .wasInvoked(exactly = once)
-
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
-            .with(any(), any())
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenNotAllClientsVerified_whenUpdatingTheVerificationStatus_thenReturnSuccessAndSetUserNotVerified() = runTest {
-        val userId = UserId("userId", "domain")
-        val clientID = ClientId("clientId")
-
-        val (arrangement, useCase) = arrange {
-            withUpdateClientProteusVerificationStatus(Either.Right(Unit))
-            withUpdateProteusVerificationStatus(Either.Right(Unit))
-            withClientsByUserId(
-                Either.Right(
-                    listOf(
-                        OTHER_USER_CLIENT,
-                        OTHER_USER_CLIENT.copy(id = "some_id_1"),
-                        OTHER_USER_CLIENT.copy(id = "some_id_2", isProteusVerified = false)
-                    )
-                )
-            )
-        }
-
-        useCase(userId, clientID, true).also {
-            assertIs<UpdateClientVerificationStatusUseCase.Result.Success>(it)
-        }
-
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
-            .with(eq(userId), eq(clientID), eq(true))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateProteusVerificationStatus)
-            .with(eq(userId), eq(false))
-            .wasInvoked(exactly = once)
     }
 
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: Arrangement.() -> Unit
-    ) : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
+    ) : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
 
         fun arrange() = block().run {
             this@Arrangement to UpdateClientVerificationStatusUseCase(
-                clientRepository = clientRepository,
-                userRepository = userRepository
+                clientRepository = clientRepository
             )
         }
     }

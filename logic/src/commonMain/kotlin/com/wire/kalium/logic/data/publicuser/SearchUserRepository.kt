@@ -39,7 +39,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -193,8 +193,8 @@ internal class SearchUserRepositoryImpl(
 
     private suspend fun handleSearchUsersOptions(
         localSearchUserOptions: SearchUsersOptions,
-        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserEntity>>,
-        default: suspend () -> Flow<List<UserEntity>>
+        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserDetailsEntity>>,
+        default: suspend () -> Flow<List<UserDetailsEntity>>
     ): Flow<UserSearchResult> {
         val listFlow = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
             ConversationMemberExcludedOptions.None -> default()
@@ -202,7 +202,7 @@ internal class SearchUserRepositoryImpl(
         }
 
         return listFlow.map {
-            UserSearchResult(it.map(publicUserMapper::fromUserEntityToOtherUser))
+            UserSearchResult(it.map(publicUserMapper::fromUserDetailsEntityToOtherUser))
         }
     }
 
