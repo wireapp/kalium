@@ -90,10 +90,8 @@ internal class MLSMigrationManagerImpl(
             kaliumLogger.d("Migration needs to be updated: $lastMlsMigrationCheckHasPassed")
             if (lastMlsMigrationCheckHasPassed) {
                 kaliumLogger.d("Running mls migration")
-                println("running migration")
                 mlsMigrationWorker.value.runMigration()
                     .onSuccess {
-                        println("done migration")
                         kaliumLogger.d("Successfully advanced the mls migration")
                         timestampKeyRepository.value.reset(TimestampKeys.LAST_MLS_MIGRATION_CHECK)
                     }

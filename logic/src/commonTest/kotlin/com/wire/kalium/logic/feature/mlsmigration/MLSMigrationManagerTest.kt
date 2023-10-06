@@ -36,7 +36,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -56,10 +55,7 @@ class MLSMigrationManagerTest {
                 .arrange()
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
-            advanceUntilIdle()
             yield()
-
-            println("checking migration")
 
             verify(arrangement.mlsMigrationWorker)
                 .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
