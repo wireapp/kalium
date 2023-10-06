@@ -677,7 +677,7 @@ class SlowSyncWorkerTest {
         fun withResolveOneOnOneConversationsSuccess() = apply {
             given(oneOnOneResolver)
                 .suspendFunction(oneOnOneResolver::resolveAllOneOnOneConversations)
-                .whenInvoked()
+                .whenInvokedWith(any())
                 .thenReturn(success)
         }
     }

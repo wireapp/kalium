@@ -20,12 +20,11 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.isActive
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
-import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
@@ -47,14 +46,14 @@ interface UpdateSupportedProtocolsUseCase {
 internal class UpdateSupportedProtocolsUseCaseImpl(
     private val clientsRepository: ClientRepository,
     private val userRepository: UserRepository,
-    private val featureConfigRepository: FeatureConfigRepository
+    private val userConfigRepository: UserConfigRepository
 ) : UpdateSupportedProtocolsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
         kaliumLogger.d("Updating supported protocols")
 
         return (userRepository.getSelfUser()?.let { selfUser ->
-            supportedProtocols().flatMap { newSupportedProtocols ->
+            selfSupportedProtocols().flatMap { newSupportedProtocols ->
                 kaliumLogger.i(
                     "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
                 )
@@ -76,29 +75,31 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
         } ?: Either.Left(StorageFailure.DataNotFound))
     }
 
-    private suspend fun supportedProtocols(): Either<CoreFailure, Set<SupportedProtocol>> =
-        featureConfigRepository.getFeatureConfigs().flatMap { featureConfigs ->
-            clientsRepository.selfListOfClients().map { selfClients ->
-                val mlsConfiguration = featureConfigs.mlsModel
-                val migrationConfiguration = featureConfigs.mlsMigrationModel ?: MIGRATION_CONFIGURATION_DISABLED
-                val supportedProtocols = mutableSetOf<SupportedProtocol>()
-                if (proteusIsSupported(mlsConfiguration, migrationConfiguration)) {
-                    supportedProtocols.add(SupportedProtocol.PROTEUS)
-                }
+    private suspend fun selfSupportedProtocols(): Either<CoreFailure, Set<SupportedProtocol>> =
+        clientsRepository.selfListOfClients().flatMap { selfClients ->
+            userConfigRepository.getMigrationConfiguration()
+                .flatMapLeft { if (it is StorageFailure.DataNotFound) Either.Right(MIGRATION_CONFIGURATION_DISABLED) else Either.Left(it) }
+                .flatMap { migrationConfiguration ->
+                    userConfigRepository.getSupportedProtocols().map { supportedProtocols ->
+                        val selfSupportedProtocols = mutableSetOf<SupportedProtocol>()
+                        if (proteusIsSupported(supportedProtocols, migrationConfiguration)) {
+                            selfSupportedProtocols.add(SupportedProtocol.PROTEUS)
+                        }
 
-                if (mlsIsSupported(mlsConfiguration, migrationConfiguration, selfClients)) {
-                    supportedProtocols.add(SupportedProtocol.MLS)
+                        if (mlsIsSupported(supportedProtocols, migrationConfiguration, selfClients)) {
+                            selfSupportedProtocols.add(SupportedProtocol.MLS)
+                        }
+                        selfSupportedProtocols
+                    }
                 }
-                supportedProtocols
-            }
         }
 
     private fun mlsIsSupported(
-        mlsConfiguration: MLSModel,
+        supportedProtocols: Set<SupportedProtocol>,
         migrationConfiguration: MLSMigrationModel,
         selfClients: List<Client>
     ): Boolean {
-        val mlsIsSupported = mlsConfiguration.supportedProtocols.contains(SupportedProtocol.MLS)
+        val mlsIsSupported = supportedProtocols.contains(SupportedProtocol.MLS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
         val allSelfClientsAreMLSCapable = selfClients.filter { it.isActive }.all { it.isMLSCapable }
         kaliumLogger.d(
@@ -110,10 +111,10 @@ internal class UpdateSupportedProtocolsUseCaseImpl(
     }
 
     private fun proteusIsSupported(
-        mlsConfiguration: MLSModel,
+        supportedProtocols: Set<SupportedProtocol>,
         migrationConfiguration: MLSMigrationModel
     ): Boolean {
-        val proteusIsSupported = mlsConfiguration.supportedProtocols.contains(SupportedProtocol.PROTEUS)
+        val proteusIsSupported = supportedProtocols.contains(SupportedProtocol.PROTEUS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
         kaliumLogger.d(
             "proteus is supported = $proteusIsSupported, " +

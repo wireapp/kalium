@@ -66,7 +66,7 @@ class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
     override fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>) {
         given(oneOnOneResolver)
             .suspendFunction(oneOnOneResolver::resolveAllOneOnOneConversations)
-            .whenInvoked()
+            .whenInvokedWith(any())
             .thenReturn(result)
     }
 
