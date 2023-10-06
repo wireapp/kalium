@@ -41,6 +41,8 @@ internal interface TypingIndicatorRepository {
         conversationId: ConversationId,
         typingStatus: Conversation.TypingIndicatorMode
     ): Either<CoreFailure, Unit>
+
+    suspend fun clearExpiredTypingIndicators(): Unit
 }
 
 @Suppress("LongParameterList")
@@ -90,6 +92,14 @@ internal class TypingIndicatorRepositoryImpl(
             }
         }
         return Either.Right(Unit)
+    }
+
+    override suspend fun clearExpiredTypingIndicators() {
+        incomingTypingEventsCache.block { entry ->
+            entry.clear()
+        }.also {
+            incomingTypingUserDataSourceFlow.tryEmit(Unit)
+        }
     }
 
     companion object {

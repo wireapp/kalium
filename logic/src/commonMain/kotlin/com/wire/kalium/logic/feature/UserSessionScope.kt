@@ -1571,6 +1571,10 @@ class UserSessionScope internal constructor(
         launch {
             mlsConversationsVerificationStatusesHandler.invoke()
         }
+
+        launch {
+            conversations.typingIndicatorRepository.clearExpiredTypingIndicators()
+        }
     }
 
     fun onDestroy() {
