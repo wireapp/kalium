@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
 
@@ -49,12 +50,14 @@ internal class NewClientDAOImpl(
 ) : NewClientDAO {
 
     override suspend fun insertNewClient(client: InsertClientParam) = with(client) {
-        newClientsQueries.insertNewClient(
-            id = id,
-            device_type = deviceType,
-            registration_date = registrationDate,
-            model = model
-        )
+        withContext(queriesContext) {
+            newClientsQueries.insertNewClient(
+                id = id,
+                device_type = deviceType,
+                registration_date = registrationDate,
+                model = model
+            )
+        }
     }
 
     override suspend fun observeNewClients(): Flow<List<NewClientEntity>> =
@@ -63,7 +66,7 @@ internal class NewClientDAOImpl(
             .flowOn(queriesContext)
             .mapToList()
 
-    override suspend fun clearNewClients() {
+    override suspend fun clearNewClients() = withContext(queriesContext) {
         newClientsQueries.clearNewClients()
     }
 }
