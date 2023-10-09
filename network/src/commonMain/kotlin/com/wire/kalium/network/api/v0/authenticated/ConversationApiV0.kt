@@ -390,7 +390,7 @@ internal open class ConversationApiV0 internal constructor(
         typingIndicatorMode: TypingIndicatorStatusDTO
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/${PATH_TYPING_NOTIFICATION}") {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_TYPING_NOTIFICATION") {
                 setBody(typingIndicatorMode)
             }
         }
