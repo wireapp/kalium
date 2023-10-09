@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.featureFlags
 
+import com.wire.kalium.logic.util.MockEngine
 import com.wire.kalium.network.NetworkStateObserver
-import io.ktor.client.engine.HttpClientEngine
 
 data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
@@ -39,7 +39,7 @@ data class KaliumConfigs(
     val wipeOnRootedDevice: Boolean = false,
     val isWebSocketEnabledByDefault: Boolean = false,
     val certPinningConfig: Map<String, List<String>> = emptyMap(),
-    val mockEngine: HttpClientEngine? = null,
+    val mockEngine: MockEngine? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null
 )
 
