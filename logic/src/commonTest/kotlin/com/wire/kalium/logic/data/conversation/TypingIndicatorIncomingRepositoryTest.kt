@@ -30,7 +30,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class TypingIndicatorRepositoryTest {
+class TypingIndicatorIncomingRepositoryTest {
 
     @Test
     fun givenUsersInOneConversation_whenTheyAreTyping_thenAddItToTheListOfUsersTypingInConversation() =
