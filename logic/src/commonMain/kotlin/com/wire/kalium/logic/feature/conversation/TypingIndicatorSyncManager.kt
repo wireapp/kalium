@@ -17,14 +17,14 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
+import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal class TypingIndicatorSyncManager(
-    private val typingIndicatorRepository: Lazy<TypingIndicatorRepository>,
+    private val typingIndicatorIncomingRepository: Lazy<TypingIndicatorIncomingRepository>,
     private val observeSyncStateUseCase: ObserveSyncStateUseCase
 ) {
     /**
@@ -33,7 +33,7 @@ internal class TypingIndicatorSyncManager(
     suspend fun execute() {
         observeSyncStateUseCase().distinctUntilChanged().collectLatest {
             kaliumLogger.d("Starting clear of orphaned typing indicators...")
-            typingIndicatorRepository.value.clearExpiredTypingIndicators()
+            typingIndicatorIncomingRepository.value.clearExpiredTypingIndicators()
         }
     }
 }

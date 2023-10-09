@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
+import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
 /**
@@ -36,7 +36,7 @@ interface SendTypingEventUseCase {
 }
 
 internal class SendTypingEventUseCaseImpl(
-    private val typingIndicatorRepository: TypingIndicatorRepository
+    private val typingIndicatorRepository: TypingIndicatorOutgoingRepository
 ) : SendTypingEventUseCase {
     override suspend fun invoke(conversationId: ConversationId, typingStatus: Conversation.TypingIndicatorMode) {
         typingIndicatorRepository.sendTypingIndicatorStatus(conversationId, typingStatus)

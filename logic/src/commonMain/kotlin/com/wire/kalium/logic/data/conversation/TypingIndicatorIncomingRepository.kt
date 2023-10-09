@@ -18,11 +18,9 @@
 package com.wire.kalium.logic.data.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.safeComputeAndMutateSetValue
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -30,71 +28,50 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
-internal interface TypingIndicatorRepository {
+internal interface TypingIndicatorIncomingRepository {
     suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>>
-
-    suspend fun sendTypingIndicatorStatus(
-        conversationId: ConversationId,
-        typingStatus: Conversation.TypingIndicatorMode
-    ): Either<CoreFailure, Unit>
-
     suspend fun clearExpiredTypingIndicators()
 }
 
-internal class TypingIndicatorRepositoryImpl(
-    private val incomingTypingEventsCache: ConcurrentMutableMap<ConversationId, MutableSet<UserId>>,
-    private val userPropertyRepository: UserPropertyRepository,
-    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler
-) : TypingIndicatorRepository {
+internal class TypingIndicatorIncomingRepositoryImpl(
+    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<UserId>>,
+    private val userPropertyRepository: UserPropertyRepository
+) : TypingIndicatorIncomingRepository {
 
-    private val incomingTypingUserDataSourceFlow: MutableSharedFlow<Unit> =
+    private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
         MutableSharedFlow(extraBufferCapacity = BUFFER_SIZE, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         if (userPropertyRepository.getTypingIndicatorStatus()) {
-            incomingTypingEventsCache.safeComputeAndMutateSetValue(conversationId) { userId }
+            userTypingCache.safeComputeAndMutateSetValue(conversationId) { userId }
                 .also {
-                    incomingTypingUserDataSourceFlow.tryEmit(Unit)
+                    userTypingDataSourceFlow.tryEmit(Unit)
                 }
         }
     }
 
     override suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
-        incomingTypingEventsCache.block { entry ->
+        userTypingCache.block { entry ->
             entry[conversationId]?.apply { this.removeAll { it == userId } }
         }.also {
-            incomingTypingUserDataSourceFlow.tryEmit(Unit)
+            userTypingDataSourceFlow.tryEmit(Unit)
         }
     }
 
     override suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>> {
-        return incomingTypingUserDataSourceFlow
-            .map { incomingTypingEventsCache[conversationId] ?: emptySet() }
-            .onStart { emit(incomingTypingEventsCache[conversationId] ?: emptySet()) }
+        return userTypingDataSourceFlow
+            .map { userTypingCache[conversationId] ?: emptySet() }
+            .onStart { emit(userTypingCache[conversationId] ?: emptySet()) }
     }
 
-    override suspend fun sendTypingIndicatorStatus(
-        conversationId: ConversationId,
-        typingStatus: Conversation.TypingIndicatorMode
-    ): Either<CoreFailure, Unit> {
-        if (userPropertyRepository.getTypingIndicatorStatus()) {
-            when (typingStatus) {
-                Conversation.TypingIndicatorMode.STARTED ->
-                    typingIndicatorSenderHandler.sendStartedAndEnqueueStoppingEvent(conversationId)
-
-                Conversation.TypingIndicatorMode.STOPPED -> typingIndicatorSenderHandler.sendStoppingEvent(conversationId)
-            }
-        }
-        return Either.Right(Unit)
-    }
 
     override suspend fun clearExpiredTypingIndicators() {
-        incomingTypingEventsCache.block { entry ->
+        userTypingCache.block { entry ->
             entry.clear()
         }.also {
-            incomingTypingUserDataSourceFlow.tryEmit(Unit)
+            userTypingDataSourceFlow.tryEmit(Unit)
         }
     }
 

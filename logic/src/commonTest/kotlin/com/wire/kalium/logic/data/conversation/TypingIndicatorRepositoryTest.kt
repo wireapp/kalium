@@ -94,9 +94,6 @@ class TypingIndicatorRepositoryTest {
         @Mock
         val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
 
-        @Mock
-        val typingIndicatorSenderHandler: TypingIndicatorSenderHandler = mock(TypingIndicatorSenderHandler::class)
-
         fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
             given(userPropertyRepository)
                 .suspendFunction(userPropertyRepository::getTypingIndicatorStatus)
@@ -104,9 +101,8 @@ class TypingIndicatorRepositoryTest {
                 .thenReturn(enabled)
         }
 
-        fun arrange() = this to TypingIndicatorRepositoryImpl(
-            incomingTypingEventsCache = ConcurrentMutableMap(),
-            typingIndicatorSenderHandler = typingIndicatorSenderHandler,
+        fun arrange() = this to TypingIndicatorIncomingRepositoryImpl(
+            userTypingCache = ConcurrentMutableMap(),
             userPropertyRepository = userPropertyRepository
         )
     }
