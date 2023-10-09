@@ -44,7 +44,7 @@ class TypingIndicatorRepositoryTest {
 
             assertEquals(
                 setOf(expectedUserTypingOne, expectedUserTypingTwo),
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
             )
             verify(arrangement.userPropertyRepository)
                 .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
@@ -63,7 +63,7 @@ class TypingIndicatorRepositoryTest {
 
             assertEquals(
                 expectedUserTyping,
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
             )
             verify(arrangement.userPropertyRepository)
                 .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
@@ -79,11 +79,11 @@ class TypingIndicatorRepositoryTest {
 
             assertEquals(
                 setOf(expectedUserTypingOne),
-                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it.userId }?.toSet()
+                typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
             )
             assertEquals(
                 setOf(expectedUserTypingTwo),
-                typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()?.map { it.userId }?.toSet()
+                typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()?.map { it }?.toSet()
             )
             verify(arrangement.userPropertyRepository)
                 .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
@@ -94,6 +94,9 @@ class TypingIndicatorRepositoryTest {
         @Mock
         val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
 
+        @Mock
+        val typingIndicatorSenderHandler: TypingIndicatorSenderHandler = mock(TypingIndicatorSenderHandler::class)
+
         fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
             given(userPropertyRepository)
                 .suspendFunction(userPropertyRepository::getTypingIndicatorStatus)
@@ -103,6 +106,7 @@ class TypingIndicatorRepositoryTest {
 
         fun arrange() = this to TypingIndicatorRepositoryImpl(
             incomingTypingEventsCache = ConcurrentMutableMap(),
+            typingIndicatorSenderHandler = typingIndicatorSenderHandler,
             userPropertyRepository = userPropertyRepository
         )
     }
