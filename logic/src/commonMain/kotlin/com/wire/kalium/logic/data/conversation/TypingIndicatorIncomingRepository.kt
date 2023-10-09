@@ -79,8 +79,3 @@ internal class TypingIndicatorIncomingRepositoryImpl(
         const val BUFFER_SIZE = 32 // drop after this threshold
     }
 }
-
-// todo to cleanup pr pt2.
-// redo rename
-// separate incoming and outgoing into 2 repos
-// adjust and test
