@@ -70,6 +70,26 @@ class TypingIndicatorOutgoingRepositoryTest {
                 .wasInvoked()
         }
 
+    @Test
+    fun givenStoppedTypingEvent_whenCalled_thenShouldDelegateCallToHandler() =
+        runTest(TestKaliumDispatcher.default) {
+            val (arrangement, typingIndicatorRepository) = Arrangement()
+                .withTypingIndicatorStatus(true)
+                .withSenderHandlerStoppedCall()
+                .arrange()
+
+            typingIndicatorRepository.sendTypingIndicatorStatus(conversationOne, Conversation.TypingIndicatorMode.STOPPED)
+
+            verify(arrangement.userPropertyRepository)
+                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
+                .wasInvoked()
+
+            verify(arrangement.typingIndicatorSenderHandler)
+                .function(arrangement.typingIndicatorSenderHandler::sendStoppingEvent)
+                .with(any())
+                .wasInvoked()
+        }
+
     private class Arrangement {
         @Mock
         val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
@@ -82,6 +102,13 @@ class TypingIndicatorOutgoingRepositoryTest {
                 .suspendFunction(userPropertyRepository::getTypingIndicatorStatus)
                 .whenInvoked()
                 .thenReturn(enabled)
+        }
+
+        fun withSenderHandlerStoppedCall() = apply {
+            given(typingIndicatorSenderHandler)
+                .function(typingIndicatorSenderHandler::sendStoppingEvent)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         fun withSenderHandlerCall() = apply {
