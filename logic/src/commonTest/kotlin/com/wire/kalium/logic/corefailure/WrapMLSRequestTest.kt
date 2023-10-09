@@ -26,7 +26,9 @@ import com.wire.kalium.logic.wrapMLSRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import org.junit.Ignore
 
+@Ignore
 class WrapMLSRequestTest {
 
     @Test

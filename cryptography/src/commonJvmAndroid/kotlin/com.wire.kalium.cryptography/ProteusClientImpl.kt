@@ -55,7 +55,7 @@ actual class ProteusClientImpl actual constructor(
         return client.getIdentity()
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return client.getLocalFingerprint()
     }
 

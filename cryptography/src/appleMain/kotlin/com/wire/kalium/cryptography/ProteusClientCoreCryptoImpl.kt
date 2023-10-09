@@ -117,7 +117,7 @@ class ProteusClientCoreCryptoImpl constructor(private val rootDir: String, priva
         return ByteArray(0)
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return wrapException { coreCrypto.proteusFingerprint().toByteArray() }
     }
 

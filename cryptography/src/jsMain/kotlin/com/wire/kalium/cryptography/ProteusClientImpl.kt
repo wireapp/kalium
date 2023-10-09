@@ -67,7 +67,7 @@ actual class ProteusClientImpl actual constructor(
         return Int8Array(encodedIdentity).unsafeCast<ByteArray>()
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return box.identity.public_key.fingerprint().encodeToByteArray()
     }
 

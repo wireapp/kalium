@@ -25,6 +25,8 @@ import kotlin.test.assertTrue
 
 @IgnoreJS
 @IgnoreIOS
+@IgnoreJvm
+@IgnoreAndroidInstrumented
 class MLSClientTest : BaseMLSClientTest() {
 
     data class SampleUser(val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String) {

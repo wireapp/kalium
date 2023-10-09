@@ -82,7 +82,7 @@ class ProteusClientCryptoBoxImpl constructor(
         return wrapException { box.identity }
     }
 
-    override fun getLocalFingerprint(): ByteArray {
+    override suspend fun getLocalFingerprint(): ByteArray {
         return wrapException { box.localFingerprint }
     }
 

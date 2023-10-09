@@ -70,7 +70,7 @@ interface ProteusClient {
     fun getIdentity(): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
-    fun getLocalFingerprint(): ByteArray
+    suspend fun getLocalFingerprint(): ByteArray
 
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray
