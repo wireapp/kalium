@@ -66,7 +66,6 @@ internal class TypingIndicatorIncomingRepositoryImpl(
             .onStart { emit(userTypingCache[conversationId] ?: emptySet()) }
     }
 
-
     override suspend fun clearExpiredTypingIndicators() {
         userTypingCache.block { entry ->
             entry.clear()
