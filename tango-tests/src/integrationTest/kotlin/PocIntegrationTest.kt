@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.KaliumMockEngine
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.mock.MockEngine
@@ -133,7 +134,7 @@ class PocIntegrationTest {
                 encryptProteusStorage = true,
                 isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
-                mockEngine = mockEngine,
+                kaliumMockEngine = KaliumMockEngine(mockEngine = mockEngine),
                 mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER
             ), "Wire Integration Tests"
         )

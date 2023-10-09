@@ -102,7 +102,7 @@ class GlobalKaliumScope internal constructor(
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
-            kaliumConfigs.mockEngine
+            kaliumConfigs.kaliumMockEngine?.mockEngine
         )
     }
 

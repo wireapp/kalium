@@ -79,7 +79,7 @@ abstract class CoreLogicCommon internal constructor(
             getGlobalScope().serverConfigRepository,
             networkStateObserver,
             kaliumConfigs::certPinningConfig,
-            kaliumConfigs.mockEngine
+            kaliumConfigs.kaliumMockEngine?.mockEngine
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
