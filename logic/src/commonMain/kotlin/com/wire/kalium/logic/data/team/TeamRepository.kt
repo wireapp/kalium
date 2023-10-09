@@ -91,19 +91,16 @@ internal class TeamDataSource(
          */
         if (teamMemberList.hasMore.not()) {
             teamMemberList.members.map { teamMember ->
-                userMapper.fromTeamMemberToDaoModel(
-                    teamId = teamId,
-                    nonQualifiedUserId = teamMember.nonQualifiedUserId,
-                    permissionCode = teamMember.permissions?.own,
-                    userDomain = userDomain,
-                )
+                val userId = QualifiedIDEntity(teamMember.nonQualifiedUserId, userDomain)
+                val userType = userTypeEntityTypeMapper.teamRoleCodeToUserType(teamMember.permissions?.own)
+                userId to userType
             }
         } else {
             listOf()
         }
     }.flatMap { teamMembers ->
         wrapStorageRequest {
-            userDAO.upsertTeamMembersTypes(teamMembers)
+            userDAO.upsertTeamMemberUserTypes(teamMembers.toMap())
         }
     }
 
@@ -123,13 +120,9 @@ internal class TeamDataSource(
 
     override suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
-            val user = userMapper.fromTeamMemberToDaoModel(
-                teamId = TeamId(teamId),
-                nonQualifiedUserId = userId,
-                userDomain = selfUserId.domain,
-                permissionCode = permissionCode
-            )
-            userDAO.upsertTeamMembersTypes(listOf(user))
+            userDAO.upsertTeamMemberUserTypes(mapOf(
+                QualifiedIDEntity(userId, selfUserId.domain) to userTypeEntityTypeMapper.teamRoleCodeToUserType(permissionCode)
+            ))
         }
     }
 
@@ -139,7 +132,7 @@ internal class TeamDataSource(
                 teamId = teamId,
                 userId = userId,
             )
-        }.flatMap { _ ->
+        }.flatMap { _ -> // TODO jacob why dow we fetch team member info if we don't use the response?
             wrapApiRequest { userDetailsApi.getUserInfo(userId = QualifiedID(userId, selfUserId.domain)) }
                 .flatMap { userProfileDTO ->
                     wrapStorageRequest {
@@ -154,7 +147,7 @@ internal class TeamDataSource(
                                 isService = userProfileDTO.service != null
                             )
                         )
-                        userDAO.insertUser(userEntity)
+                        userDAO.upsertUser(userEntity)
                     }
                 }
         }

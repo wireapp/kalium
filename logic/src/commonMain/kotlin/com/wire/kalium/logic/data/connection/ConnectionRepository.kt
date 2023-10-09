@@ -229,7 +229,7 @@ internal class ConnectionDataSource(
                     )
                     insertConversationFromConnection(connection)
                     // should we insert first user before creating conversation ?
-                    userDAO.insertUser(userEntity)
+                    userDAO.upsertUser(userEntity)
                     connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
                 }
             })

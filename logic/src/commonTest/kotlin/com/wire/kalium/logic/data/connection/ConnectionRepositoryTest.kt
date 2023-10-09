@@ -137,7 +137,7 @@ class ConnectionRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::insertUser)
+            .suspendFunction(arrangement.userDAO::upsertUser)
             .with(any())
             .wasInvoked(once)
         verify(arrangement.userDetailsApi)
@@ -206,7 +206,7 @@ class ConnectionRepositoryTest {
             .with(any())
             .wasInvoked(once)
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::insertUser)
+            .suspendFunction(arrangement.userDAO::upsertUser)
             .with(any())
             .wasInvoked(once)
         verify(arrangement.conversationRepository)
@@ -536,7 +536,7 @@ class ConnectionRepositoryTest {
                 .then { flowOf(stubUserEntity) }
 
             given(userDAO)
-                .suspendFunction(userDAO::insertUser)
+                .suspendFunction(userDAO::upsertUser)
                 .whenInvokedWith(any())
                 .then { }
 

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -149,7 +150,7 @@ class EventRepositoryTest {
         @Mock
         val clientIdProvider = mock(CurrentClientIdProvider::class)
 
-        private val eventRepository: EventRepository = EventDataSource(notificationApi, metaDAO, clientIdProvider)
+        private val eventRepository: EventRepository = EventDataSource(notificationApi, metaDAO, clientIdProvider, TestUser.SELF.id)
 
         init {
             withCurrentClientIdReturning(TestClient.CLIENT_ID)

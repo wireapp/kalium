@@ -164,7 +164,7 @@ class MemberDAOTest : BaseDatabaseTest() {
         val member1 = TestStubs.member1
         val user = TestStubs.user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
 
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
             member = member1,
@@ -205,7 +205,7 @@ class MemberDAOTest : BaseDatabaseTest() {
         val member1 = TestStubs.member1
 
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED))
+        userDAO.upsertUser(user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED))
 
         memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
             member = member1,
@@ -299,9 +299,9 @@ class MemberDAOTest : BaseDatabaseTest() {
         val member3 = TestStubs.member3
         // given
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
-        userDAO.insertUser(user3)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        userDAO.upsertUser(user3)
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
         memberDAO.insertMember(member3, conversationEntity1.id)
@@ -328,9 +328,9 @@ class MemberDAOTest : BaseDatabaseTest() {
 
         // given
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
-        userDAO.insertUser(user3)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        userDAO.upsertUser(user3)
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
         memberDAO.insertMember(member3, conversationEntity1.id)
@@ -356,8 +356,8 @@ class MemberDAOTest : BaseDatabaseTest() {
             conversationDAO.insertConversation(conversationEntity1)
             conversationDAO.insertConversation(conversationEntity2.copy(hasIncompleteMetadata = true))
 
-            userDAO.insertUser(user1)
-            userDAO.insertUser(user2)
+            userDAO.upsertUser(user1)
+            userDAO.upsertUser(user2)
 
             memberDAO.insertMember(member1, conversationEntity1.id)
             memberDAO.insertMember(member2, conversationEntity1.id)
@@ -398,13 +398,13 @@ class MemberDAOTest : BaseDatabaseTest() {
 
         // Insert a conversation, user, and a member into the conversation to test the deletion operation
         val oldMember = MemberEntity(TestStubs.user3.id, MemberEntity.Role.Member)
-        userDAO.insertUser(TestStubs.user3)
+        userDAO.upsertUser(TestStubs.user3)
         conversationDAO.insertConversation(TestStubs.conversationEntity1)
         memberDAO.insertMember(oldMember, conversationID)
 
         // Ensure all new users are inserted before calling updateFullMemberList
         memberList.forEach { member ->
-            userDAO.insertUser(TestStubs.user1.copy(id = member.user))
+            userDAO.upsertUser(TestStubs.user1.copy(id = member.user))
         }
 
         // When
@@ -435,9 +435,9 @@ class MemberDAOTest : BaseDatabaseTest() {
             val user2 = TestStubs.user2
             val user3 = TestStubs.user3.copy(id = QualifiedIDEntity("3", secondDomain))
 
-            userDAO.insertUser(user1)
-            userDAO.insertUser(user2)
-            userDAO.insertUser(user3)
+            userDAO.upsertUser(user1)
+            userDAO.upsertUser(user2)
+            userDAO.upsertUser(user3)
 
             conversationDAO.insertConversation(groupConversationEntity)
 
@@ -470,8 +470,8 @@ class MemberDAOTest : BaseDatabaseTest() {
             val federatedUser = TestStubs.user1.copy(id = QualifiedIDEntity("fedid", federatedDomain))
             val otherUser = TestStubs.user1.copy(id = QualifiedIDEntity("other", "other.com"))
 
-            userDAO.insertUser(federatedUser)
-            userDAO.insertUser(otherUser)
+            userDAO.upsertUser(federatedUser)
+            userDAO.upsertUser(otherUser)
 
             conversationDAO.insertConversation(oneOnOneConversationEntity)
             conversationDAO.insertConversation(otherOneOnOneConversationEntity)

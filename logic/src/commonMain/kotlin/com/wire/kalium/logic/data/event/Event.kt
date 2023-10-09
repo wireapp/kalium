@@ -632,7 +632,7 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
             override val id: String,
             override val transient: Boolean,
             override val live: Boolean,
-            val userId: String,
+            val userId: UserId,
             val accentId: Int?,
             val ssoIdDeleted: Boolean?,
             val name: String?,
@@ -645,7 +645,7 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "User.Update",
                 idKey to id.obfuscateId(),
-                userIdKey to userId.obfuscateId()
+                userIdKey to userId.toLogString()
             )
         }
 

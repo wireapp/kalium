@@ -396,7 +396,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -445,7 +445,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -479,7 +479,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         val message = buildList {
             // add 9 Message before the lastReadDate
@@ -515,7 +515,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         val readMessagesCount = 3
         val unreadMessagesCount = 2
 
@@ -565,7 +565,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         val readMessagesCount = 3
         val unreadMessagesCount = 2
 
@@ -617,7 +617,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -650,7 +650,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         val unreadMessagesCount = 2
 
         val message = buildList {
@@ -791,7 +791,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             newConversationEntity(id = conversationId2)
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(
             listOf(
                 newRegularMessageEntity(
@@ -871,7 +871,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
         // when
@@ -932,7 +932,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
         // when
@@ -992,7 +992,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                     lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
                 )
             )
-            userDAO.insertUser(userEntity1)
+            userDAO.upsertUser(userEntity1)
             messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
             // when
@@ -1082,7 +1082,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessage(initialAssetMessage)
 
         // when
@@ -1121,7 +1121,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         val message1 = newRegularMessageEntity(
             id = messageId,
@@ -1155,8 +1155,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
-        userDAO.insertUser(userEntity1)
-        userDAO.insertUser(userEntity2)
+        userDAO.upsertUser(userEntity1)
+        userDAO.upsertUser(userEntity2)
 
         val messageFromUser1 = newRegularMessageEntity(
             id = messageId,
@@ -1313,7 +1313,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "ConversationReceiptModeChanged Message"
         conversationDAO.insertConversation(newConversationEntity(id = conversationId))
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         // when
         messageDAO.insertOrIgnoreMessages(
@@ -1349,7 +1349,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(newConversationEntity(id = conversationId2))
 
         val messageId = "systemMessage"
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         // when
         messageDAO.persistSystemMessageToAllConversations(
@@ -1405,7 +1405,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
         val messageId = "systemMessage"
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         // when
         messageDAO.persistSystemMessageToAllConversations(
@@ -1511,8 +1511,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "Conversation MessageSent With Partial Success"
         conversationDAO.insertConversation(newConversationEntity(id = conversationId))
-        userDAO.insertUser(userEntity1)
-        userDAO.insertUser(userEntity2)
+        userDAO.upsertUser(userEntity1)
+        userDAO.upsertUser(userEntity2)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(

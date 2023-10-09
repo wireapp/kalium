@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -149,7 +148,6 @@ internal class UserDataSource internal constructor(
     private val userDetailsApi: UserDetailsApi,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
-    private val qualifiedIdMapper: QualifiedIdMapper,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
@@ -177,7 +175,7 @@ internal class UserDataSource internal constructor(
                 updateSelfUserProviderAccountInfo(userDTO)
                     .map { userMapper.fromSelfUserDtoToUserEntity(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
                     .flatMap { userEntity ->
-                        wrapStorageRequest { userDAO.insertUser(userEntity) }
+                        wrapStorageRequest { userDAO.upsertUser(userEntity) }
                             .flatMap {
                                 wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
                             }
@@ -244,9 +242,7 @@ internal class UserDataSource internal constructor(
     }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
-        usersFailed.map { userMapper.fromFailedUserToEntity(it) }.forEach {
-            userDAO.insertUser(it)
-        }
+        userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
     }
 
     private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
@@ -256,7 +252,7 @@ internal class UserDataSource internal constructor(
             .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
         val otherUsers = listUserProfileDTO
             .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
-        userDAO.upsertTeamMembers(
+        userDAO.upsertUsers(
             teamMembers.map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
@@ -347,7 +343,7 @@ internal class UserDataSource internal constructor(
             .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
             .flatMap { userEntity ->
                 wrapStorageRequest {
-                    userDAO.updateUser(userEntity)
+                    userDAO.upsertUser(userEntity)
                 }.map { userMapper.fromUserEntityToSelfUser(userEntity) }
             }
     }
@@ -450,10 +446,13 @@ internal class UserDataSource internal constructor(
         }
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
-        val userId = qualifiedIdMapper.fromStringToQualifiedID(event.userId)
-        val user =
-            userDAO.getUserByQualifiedID(userId.toDao()).firstOrNull() ?: return Either.Left(StorageFailure.DataNotFound)
-        userDAO.updateUser(userMapper.fromUserUpdateEventToUserEntity(event, user))
+        userDAO.updateUser(event.userId.toDao(), userMapper.fromUserUpdateEventToPartialUserEntity(event))
+    }.flatMap { updated ->
+        if (!updated) {
+            Either.Left(StorageFailure.DataNotFound)
+        } else {
+            Either.Right(Unit)
+        }
     }
 
     override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {

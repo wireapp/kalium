@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSe
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
@@ -51,12 +52,13 @@ import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.serializer
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class EventMapper(
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper,
     private val featureConfigMapper: FeatureConfigMapper,
     private val roleMapper: ConversationRoleMapper,
+    private val selfUserId: UserId,
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) {
@@ -653,7 +655,7 @@ class EventMapper(
         live: Boolean
     ) = Event.User.Update(
         id = id,
-        userId = event.userData.nonQualifiedUserId,
+        userId = UserId(event.userData.nonQualifiedUserId, selfUserId.domain),
         accentId = event.userData.accentId,
         ssoIdDeleted = event.userData.ssoIdDeleted,
         name = event.userData.name,

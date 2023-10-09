@@ -46,7 +46,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientsAreInserted_whenDeletingTheUser_thenTheClientsAreDeleted() = runTest {
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertClientParam)
 
         userDAO.deleteUserByQualifiedID(user.id)

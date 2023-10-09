@@ -18,22 +18,13 @@
 
 package com.wire.kalium.logic.data.user
 
-import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.team.TeamRole
-import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
-import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserMapperTest {
 
     @Test
@@ -53,48 +44,6 @@ class UserMapperTest {
             givenUserTypeEntity
         )
         // Then
-        assertEquals(expectedResult, result)
-    }
-
-    @Test
-    fun givenTeamMemberApiModel_whenMappingFromApiResponse_thenDaoModelIsReturned() = runTest {
-        val apiModel = TestTeam.memberDTO(
-            nonQualifiedUserId = "teamMember1",
-            permissions = TeamsApi.Permissions(TeamRole.Member.value, TeamRole.Member.value)
-        )
-
-        val expectedResult = UserEntity(
-            id = QualifiedIDEntity(
-                value = "teamMember1",
-                domain = "userDomain"
-            ),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 1,
-            team = "teamId",
-            connectionStatus = ConnectionEntity.State.ACCEPTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.STANDARD,
-            botService = null,
-            deleted = false,
-            expiresAt = null,
-            defederated = false,
-            supportedProtocols = null,
-            activeOneOnOneConversationId = null
-        )
-        val (_, userMapper) = Arrangement().arrange()
-
-        val result = userMapper.fromTeamMemberToDaoModel(
-            teamId = TeamId("teamId"),
-            userDomain = "userDomain",
-            nonQualifiedUserId = "teamMember1",
-            permissionCode = apiModel.permissions?.own
-        )
-
         assertEquals(expectedResult, result)
     }
 

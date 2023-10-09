@@ -35,7 +35,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -63,6 +62,7 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -128,25 +128,16 @@ class UserRepositoryTest {
     @Test
     fun givenAUserEvent_whenPersistingTheUser_thenShouldSucceed() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withMapperQualifiedUserId()
+            .withUpdateUserReturning(true)
             .arrange()
 
-        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = UserEventReceiverTest.SELF_USER_ID))
+        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = SELF_USER.id))
 
         with(result) {
             shouldSucceed()
-
-            verify(arrangement.qualifiedIdMapper)
-                .function(arrangement.qualifiedIdMapper::fromStringToQualifiedID)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
-                .with(any())
-                .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::updateUser)
-                .with(any())
+                .with(any(), any())
                 .wasInvoked(exactly = once)
         }
     }
@@ -154,27 +145,18 @@ class UserRepositoryTest {
     @Test
     fun givenAUserEvent_whenPersistingTheUserAndNotExists_thenShouldFail() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withMapperQualifiedUserId()
-            .withUserDaoReturning(null)
+            .withUpdateUserReturning(false)
             .arrange()
 
-        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = UserEventReceiverTest.SELF_USER_ID))
+        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = SELF_USER.id))
 
         with(result) {
             shouldFail()
 
-            verify(arrangement.qualifiedIdMapper)
-                .function(arrangement.qualifiedIdMapper::fromStringToQualifiedID)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUserByQualifiedID)
-                .with(any())
-                .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::updateUser)
-                .with(any())
-                .wasNotInvoked()
+                .with(any(), any())
+                .wasInvoked(exactly = once)
         }
     }
 
@@ -297,13 +279,9 @@ class UserRepositoryTest {
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
-                .wasInvoked(exactly = once)
+                .wasInvoked()
         }
     }
 
@@ -319,10 +297,6 @@ class UserRepositoryTest {
         result.collect {
             verify(arrangement.userDetailsApi)
                 .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
                 .with(any())
                 .wasNotInvoked()
             verify(arrangement.userDAO)
@@ -347,23 +321,15 @@ class UserRepositoryTest {
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
-                .wasInvoked(exactly = once)
+                .wasInvoked(exactly = twice)
         }
 
         val resultSecondTime = userRepository.getKnownUser(TestUser.USER_ID)
         resultSecondTime.collect {
             verify(arrangement.userDetailsApi)
                 .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
                 .with(any())
                 .wasNotInvoked()
             verify(arrangement.userDAO)
@@ -393,7 +359,7 @@ class UserRepositoryTest {
         verify(arrangement.userDAO)
             .suspendFunction(arrangement.userDAO::upsertUsers)
             .with(matching {
-                it.first().name != null
+                it.firstOrNull()?.name != null
             })
             .wasInvoked(exactly = once)
     }
@@ -659,7 +625,6 @@ class UserRepositoryTest {
                 userDetailsApi,
                 sessionRepository,
                 selfUserId,
-                qualifiedIdMapper,
                 selfTeamIdProvider
             )
         }
@@ -695,6 +660,13 @@ class UserRepositoryTest {
                 .function(userDAO::observeUsersNotInConversation)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(userEntities))
+        }
+
+        fun withUpdateUserReturning(updated: Boolean) = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::updateUser)
+                .whenInvokedWith(any(), any())
+                .thenReturn(updated)
         }
 
         fun withSuccessfulGetUsersInfo() = apply {
@@ -837,6 +809,6 @@ class UserRepositoryTest {
     }
 
     private companion object {
-        val SELF_USER = TestUser.SELF_USER_DTO
+        val SELF_USER = TestUser.SELF
     }
 }

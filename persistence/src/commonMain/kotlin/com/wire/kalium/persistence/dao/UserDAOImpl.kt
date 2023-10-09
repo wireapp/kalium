@@ -135,27 +135,8 @@ class UserDAOImpl internal constructor(
 ) : UserDAO {
 
     val mapper = UserMapper()
-
-    override suspend fun insertUser(user: UserEntity) = withContext(queriesContext) {
-        userQueries.insertUser(
-            qualified_id = user.id,
-            name = user.name,
-            handle = user.handle,
-            email = user.email,
-            phone = user.phone,
-            accent_id = user.accentId,
-            team = user.team,
-            preview_asset_id = user.previewAssetId,
-            complete_asset_id = user.completeAssetId,
-            user_type = user.userType,
-            bot_service = user.botService,
-            incomplete_metadata = user.hasIncompleteMetadata,
-            expires_at = user.expiresAt,
-            connection_status = user.connectionStatus,
-            deleted = user.deleted,
-            supported_protocols = user.supportedProtocols,
-            active_one_on_one_conversation_id = user.activeOneOnOneConversationId
-        )
+    override suspend fun upsertUser(user: UserEntity) {
+        upsertUsers(listOf(user))
     }
 
     override suspend fun insertOrIgnoreUsers(users: List<UserEntity>) = withContext(queriesContext) {
@@ -183,130 +164,54 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun upsertTeamMembers(users: List<UserEntity>) = withContext(queriesContext) {
-        userQueries.transaction {
-            for (user: UserEntity in users) {
-                userQueries.updateTeamMemberUser(
-                    qualified_id = user.id,
-                    name = user.name,
-                    handle = user.handle,
-                    email = user.email,
-                    phone = user.phone,
-                    accent_id = user.accentId,
-                    team = user.team,
-                    preview_asset_id = user.previewAssetId,
-                    complete_asset_id = user.completeAssetId,
-                    bot_service = user.botService,
-                )
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        qualified_id = user.id,
-                        name = user.name,
-                        handle = user.handle,
-                        email = user.email,
-                        phone = user.phone,
-                        accent_id = user.accentId,
-                        team = user.team,
-                        preview_asset_id = user.previewAssetId,
-                        complete_asset_id = user.completeAssetId,
-                        user_type = user.userType,
-                        bot_service = user.botService,
-                        incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt,
-                        connection_status = user.connectionStatus,
-                        deleted = user.deleted,
-                        supported_protocols = user.supportedProtocols,
-                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
-                    )
-                }
-            }
-        }
+    override suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity) = withContext(queriesContext) {
+        userQueries.updateUser(
+            name = update.name,
+            handle = update.handle,
+            email = update.email,
+            accent_id = update.accentId,
+            preview_asset_id = update.previewAssetId,
+            complete_asset_id = update.completeAssetId,
+            supported_protocols = update.supportedProtocols,
+            id
+        ).executeAsOne() > 0
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                userQueries.updateUser(
-                    qualified_id = user.id,
-                    name = user.name,
-                    handle = user.handle,
-                    email = user.email,
-                    phone = user.phone,
-                    accent_id = user.accentId,
-                    team = user.team,
-                    preview_asset_id = user.previewAssetId,
-                    complete_asset_id = user.completeAssetId,
-                    user_type = user.userType,
-                    bot_service = user.botService,
-                    incomplete_metadata = false,
-                    expires_at = user.expiresAt,
-                )
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        qualified_id = user.id,
-                        name = user.name,
-                        handle = user.handle,
-                        email = user.email,
-                        phone = user.phone,
-                        accent_id = user.accentId,
-                        team = user.team,
-                        connection_status = user.connectionStatus,
-                        preview_asset_id = user.previewAssetId,
-                        complete_asset_id = user.completeAssetId,
-                        user_type = user.userType,
-                        bot_service = user.botService,
-                        deleted = user.deleted,
-                        incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt,
-                        supported_protocols = user.supportedProtocols,
-                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
-                    )
-                }
+                internalInsertUser(user)
             }
         }
     }
 
-    override suspend fun upsertTeamMembersTypes(users: List<UserEntity>) {
+    override suspend fun upsertTeamMemberUserTypes(users: Map<QualifiedIDEntity, UserTypeEntity>) {
         userQueries.transaction {
-            for (user: UserEntity in users) {
-                userQueries.updateTeamMemberType(user.team, user.connectionStatus, user.userType, user.id)
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        qualified_id = user.id,
-                        name = user.name,
-                        handle = user.handle,
-                        email = user.email,
-                        phone = user.phone,
-                        accent_id = user.accentId,
-                        team = user.team,
-                        connection_status = user.connectionStatus,
-                        preview_asset_id = user.previewAssetId,
-                        complete_asset_id = user.completeAssetId,
-                        user_type = user.userType,
-                        bot_service = user.botService,
-                        deleted = user.deleted,
-                        incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt,
-                        supported_protocols = user.supportedProtocols,
-                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
-                    )
-                }
+            for (user: Map.Entry<QualifiedIDEntity, UserTypeEntity> in users) {
+                userQueries.upsertTeamMemberUserType(user.key, ConnectionEntity.State.ACCEPTED, user.value)
             }
         }
     }
 
-    override suspend fun updateUser(user: UserEntity) = withContext(queriesContext) {
-        userQueries.updateSelfUser(
+    private fun internalInsertUser(user: UserEntity) {
+        userQueries.insertUser(
             qualified_id = user.id,
             name = user.name,
             handle = user.handle,
             email = user.email,
+            phone = user.phone,
             accent_id = user.accentId,
+            team = user.team,
             preview_asset_id = user.previewAssetId,
             complete_asset_id = user.completeAssetId,
+            user_type = user.userType,
+            bot_service = user.botService,
+            incomplete_metadata = user.hasIncompleteMetadata,
+            expires_at = user.expiresAt,
+            connection_status = user.connectionStatus,
+            deleted = user.deleted,
+            supported_protocols = user.supportedProtocols,
+            active_one_on_one_conversation_id = user.activeOneOnOneConversationId
         )
     }
 
