@@ -38,11 +38,16 @@ import kotlin.time.toDuration
  * - For each started sent event, will 'enqueue' a stopped event after a timeout.
  *
  */
-internal class TypingIndicatorSenderHandler(
+internal interface TypingIndicatorSenderHandler {
+    fun sendStoppingEvent(conversationId: ConversationId)
+    fun sendStartedAndEnqueueStoppingEvent(conversationId: ConversationId)
+}
+
+internal class TypingIndicatorSenderHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     userSessionCoroutineScope: CoroutineScope
-) : CoroutineScope by userSessionCoroutineScope {
+) : TypingIndicatorSenderHandler, CoroutineScope by userSessionCoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 
@@ -53,7 +58,7 @@ internal class TypingIndicatorSenderHandler(
     /**
      * Sends a stopping event and removes it from the 'queue'.
      */
-    fun sendStoppingEvent(conversationId: ConversationId) {
+    override fun sendStoppingEvent(conversationId: ConversationId) {
         launch {
             outgoingStoppedQueueTypingEventsMutex.withLock {
                 if (!outgoingStoppedQueueTypingEvents.containsKey(conversationId)) {
@@ -68,7 +73,7 @@ internal class TypingIndicatorSenderHandler(
     /**
      * Sends a started event and enqueues a stopping event if sent successfully.
      */
-    fun sendStartedAndEnqueueStoppingEvent(conversationId: ConversationId) {
+    override fun sendStartedAndEnqueueStoppingEvent(conversationId: ConversationId) {
         launch {
             outgoingStoppedQueueTypingEventsMutex.withLock {
                 if (outgoingStoppedQueueTypingEvents.containsKey(conversationId)) {
