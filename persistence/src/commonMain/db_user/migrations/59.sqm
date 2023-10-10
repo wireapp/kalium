@@ -1,4 +1,4 @@
-ALTER TABLE User ADD COLUMN supported_protocols TEXT AS Set<SupportedProtocolEntity>;
+ALTER TABLE User ADD COLUMN supported_protocols TEXT AS Set<SupportedProtocolEntity> DEFAULT 'PROTEUS';
 
 DROP VIEW IF EXISTS ConversationDetails;
 
