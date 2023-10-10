@@ -464,7 +464,8 @@ class UserSessionScope internal constructor(
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
         userAgent,
-        certificatePinning = kaliumConfigs.certPinningConfig
+        certificatePinning = kaliumConfigs.certPinningConfig,
+        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
@@ -475,7 +476,8 @@ class UserSessionScope internal constructor(
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
         networkStateObserver,
-        kaliumConfigs::certPinningConfig
+        kaliumConfigs::certPinningConfig,
+        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
 
     private val userConfigRepository: UserConfigRepository

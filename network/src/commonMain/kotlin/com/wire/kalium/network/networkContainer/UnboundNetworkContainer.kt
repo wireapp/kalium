@@ -60,12 +60,13 @@ class UnboundNetworkContainerCommon(
     private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    mockEngine: HttpClientEngine?
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
         networkStateObserver = networkStateObserver,
         userAgent = userAgent,
-        engine = defaultHttpEngine(
+        engine = mockEngine ?: defaultHttpEngine(
             ignoreSSLCertificates = ignoreSSLCertificates,
             certificatePinning = certificatePinning
         )
