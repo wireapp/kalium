@@ -27,7 +27,10 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
+import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -266,9 +269,25 @@ class ConversationScope internal constructor(
     val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
         get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
 
-    internal val typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap(), userPropertyRepository)
+    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler =
+        TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
+
+    internal val typingIndicatorIncomingRepository =
+        TypingIndicatorIncomingRepositoryImpl(
+            ConcurrentMutableMap(),
+            userPropertyRepository
+        )
+
+    internal val typingIndicatorOutgoingRepository =
+        TypingIndicatorOutgoingRepositoryImpl(
+            typingIndicatorSenderHandler,
+            userPropertyRepository
+        )
+
+    val sendTypingEvent: SendTypingEventUseCase
+        get() = SendTypingEventUseCaseImpl(typingIndicatorOutgoingRepository)
 
     val observeUsersTyping: ObserveUsersTypingUseCase
-        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorRepository, userRepository)
+        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorIncomingRepository, userRepository)
 
 }

@@ -18,8 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ExpiringUserTyping
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
+import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
@@ -33,7 +32,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
 
 class TypingIndicatorHandlerTest {
@@ -47,8 +45,8 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED))
 
         result.shouldSucceed()
-        verify(arrangement.typingIndicatorRepository)
-            .function(arrangement.typingIndicatorRepository::addTypingUserInConversation)
+        verify(arrangement.typingIndicatorIncomingRepository)
+            .function(arrangement.typingIndicatorIncomingRepository::addTypingUserInConversation)
             .with(eq(TestConversation.ID), eq(TestUser.SELF.id))
             .wasNotInvoked()
     }
@@ -62,8 +60,8 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED))
 
         result.shouldSucceed()
-        verify(arrangement.typingIndicatorRepository)
-            .function(arrangement.typingIndicatorRepository::addTypingUserInConversation)
+        verify(arrangement.typingIndicatorIncomingRepository)
+            .function(arrangement.typingIndicatorIncomingRepository::addTypingUserInConversation)
             .with(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
             .wasInvoked(once)
     }
@@ -77,8 +75,8 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STOPPED))
 
         result.shouldSucceed()
-        verify(arrangement.typingIndicatorRepository)
-            .function(arrangement.typingIndicatorRepository::removeTypingUserInConversation)
+        verify(arrangement.typingIndicatorIncomingRepository)
+            .function(arrangement.typingIndicatorIncomingRepository::removeTypingUserInConversation)
             .with(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
             .wasInvoked(once)
     }
@@ -92,24 +90,24 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STOPPED))
 
         result.shouldSucceed()
-        verify(arrangement.typingIndicatorRepository)
-            .function(arrangement.typingIndicatorRepository::removeTypingUserInConversation)
+        verify(arrangement.typingIndicatorIncomingRepository)
+            .function(arrangement.typingIndicatorIncomingRepository::removeTypingUserInConversation)
             .with(eq(TestConversation.ID), eq(TestUser.SELF.id))
             .wasNotInvoked()
     }
 
     private class Arrangement {
         @Mock
-        val typingIndicatorRepository: TypingIndicatorRepository = mock(TypingIndicatorRepository::class)
+        val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(TypingIndicatorIncomingRepository::class)
 
         fun withTypingIndicatorObserve(usersId: Set<UserId>) = apply {
-            given(typingIndicatorRepository)
-                .suspendFunction(typingIndicatorRepository::observeUsersTyping)
+            given(typingIndicatorIncomingRepository)
+                .suspendFunction(typingIndicatorIncomingRepository::observeUsersTyping)
                 .whenInvokedWith(eq(TestConversation.ID))
-                .thenReturn(flowOf(usersId.map { ExpiringUserTyping(it, Clock.System.now()) }.toSet()))
+                .thenReturn(flowOf(usersId))
         }
 
-        fun arrange() = this to TypingIndicatorHandlerImpl(TestUser.SELF.id, typingIndicatorRepository)
+        fun arrange() = this to TypingIndicatorHandlerImpl(TestUser.SELF.id, typingIndicatorIncomingRepository)
     }
 
 }
