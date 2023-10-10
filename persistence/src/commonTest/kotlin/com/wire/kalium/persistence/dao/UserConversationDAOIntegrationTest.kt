@@ -92,7 +92,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         userDAO.observeUsersDetailsNotInConversation(conversationId).test {
             val result = awaitItem()
             // then
-            assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+            assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -138,7 +138,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         userDAO.observeUsersDetailsNotInConversation(conversationId).test {
             // then
             val result = awaitItem()
-            assertTrue { result == listOf(user1, user2) }
+            assertEquals(listOf(user1, user2), result.map { it.toSimpleEntity() })
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -174,7 +174,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             .test {
                 // then
                 val result = awaitItem()
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
                 cancelAndIgnoreRemainingEvents()
             }
     }
@@ -210,7 +210,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             .test {
                 // then
                 val result = awaitItem()
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
                 cancelAndIgnoreRemainingEvents()
             }
     }
@@ -246,7 +246,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
             .test {
                 // then
                 val result = awaitItem()
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
                 cancelAndIgnoreRemainingEvents()
             }
     }
