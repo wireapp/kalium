@@ -75,22 +75,24 @@ internal class TypingIndicatorSenderHandlerImpl(
      */
     override fun sendStartedAndEnqueueStoppingEvent(conversationId: ConversationId) {
         launch {
-            outgoingStoppedQueueTypingEventsMutex.withLock {
+            val (_, isStartedSent) = outgoingStoppedQueueTypingEventsMutex.withLock {
                 if (outgoingStoppedQueueTypingEvents.containsKey(conversationId)) {
                     return@launch
                 }
                 val isSent = sendTypingIndicatorStatus(conversationId, Conversation.TypingIndicatorMode.STARTED)
-                when (isSent) {
-                    true -> {
-                        outgoingStoppedQueueTypingEvents[conversationId] = Unit
-                        delay(typingIndicatorTimeoutInSeconds)
-                        sendStoppingEvent(conversationId)
-                    }
+                this to isSent
+            }
 
-                    false -> Unit // do nothing
-                }
+            if (isStartedSent) {
+                enqueueStoppedEvent(conversationId)
             }
         }
+    }
+
+    private suspend fun enqueueStoppedEvent(conversationId: ConversationId) {
+        outgoingStoppedQueueTypingEvents[conversationId] = Unit
+        delay(typingIndicatorTimeoutInSeconds)
+        sendStoppingEvent(conversationId)
     }
 
     private suspend fun sendTypingIndicatorStatus(
