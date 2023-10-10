@@ -187,7 +187,7 @@ internal class SearchUserRepositoryImpl(
 
                 userDAO.observeUserDetailsByQualifiedID(selfUserID)
                     .filterNotNull()
-                    .map(userMapper::fromUserEntityToSelfUser)
+                    .map(userMapper::fromUserDetailsEntityToSelfUser)
             }.firstOrNull() ?: throw IllegalStateException()
     }
 

@@ -102,7 +102,6 @@ interface UserMapper {
     ): UserDetailsEntity
 
     fun fromFailedUserToDetailEntity(userId: NetworkQualifiedId): UserDetailsEntity
-    fun fromUserEntityToSelfUser(userEntity: UserDetailsEntity): SelfUser
 }
 
 @Suppress("TooManyFunctions")
@@ -114,23 +113,6 @@ internal class UserMapperImpl(
 ) : UserMapper {
 
     override fun fromUserEntityToSelfUser(userEntity: UserEntity) = with(userEntity) {
-        SelfUser(
-            id.toModel(),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            team?.let { TeamId(it) },
-            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
-            previewAssetId?.toModel(),
-            completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
-            expiresAt = expiresAt
-        )
-    }
-
-    override fun fromUserEntityToSelfUser(userEntity: UserDetailsEntity) = with(userEntity) {
         SelfUser(
             id.toModel(),
             name,

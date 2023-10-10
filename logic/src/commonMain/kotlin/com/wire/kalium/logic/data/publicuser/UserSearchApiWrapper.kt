@@ -139,7 +139,7 @@ internal class UserSearchApiWrapperImpl(
 
                 userDAO.observeUserDetailsByQualifiedID(selfUserID)
                     .filterNotNull()
-                    .map(userMapper::fromUserEntityToSelfUser)
+                    .map(userMapper::fromUserDetailsEntityToSelfUser)
             }.firstOrNull() ?: throw IllegalStateException()
     }
 }

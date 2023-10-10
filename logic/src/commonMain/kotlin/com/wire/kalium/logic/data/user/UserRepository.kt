@@ -309,7 +309,7 @@ internal class UserDataSource internal constructor(
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.observeUserDetailsByQualifiedID(selfUserID)
                 .filterNotNull()
-                .map(userMapper::fromUserEntityToSelfUser)
+                .map(userMapper::fromUserDetailsEntityToSelfUser)
         }
     }
 
@@ -320,7 +320,7 @@ internal class UserDataSource internal constructor(
             userDAO.getUserDetailsWithTeamByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map { (user, team) ->
-                    userMapper.fromUserEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
+                    userMapper.fromUserDetailsEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
                 }
         }
     }
@@ -368,7 +368,7 @@ internal class UserDataSource internal constructor(
             .map { userEntity ->
                 // TODO: cache SelfUserId so it's not fetched from DB every single time
                 if (userId == selfUserId) {
-                    userEntity?.let { userMapper.fromUserEntityToSelfUser(userEntity) }
+                    userEntity?.let { userMapper.fromUserDetailsEntityToSelfUser(userEntity) }
                 } else {
                     userEntity?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(userEntity) }
                 }
