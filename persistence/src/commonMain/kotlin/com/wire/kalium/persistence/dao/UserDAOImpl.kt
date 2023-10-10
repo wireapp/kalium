@@ -180,7 +180,25 @@ class UserDAOImpl internal constructor(
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                internalInsertUser(user)
+                userQueries.insertUser(
+                    qualified_id = user.id,
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    phone = user.phone,
+                    accent_id = user.accentId,
+                    team = user.team,
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    user_type = user.userType,
+                    bot_service = user.botService,
+                    incomplete_metadata = user.hasIncompleteMetadata,
+                    expires_at = user.expiresAt,
+                    connection_status = user.connectionStatus,
+                    deleted = user.deleted,
+                    supported_protocols = user.supportedProtocols,
+                    active_one_on_one_conversation_id = user.activeOneOnOneConversationId
+                )
             }
         }
     }
@@ -191,28 +209,6 @@ class UserDAOImpl internal constructor(
                 userQueries.upsertTeamMemberUserType(user.key, ConnectionEntity.State.ACCEPTED, user.value)
             }
         }
-    }
-
-    private fun internalInsertUser(user: UserEntity) {
-        userQueries.insertUser(
-            qualified_id = user.id,
-            name = user.name,
-            handle = user.handle,
-            email = user.email,
-            phone = user.phone,
-            accent_id = user.accentId,
-            team = user.team,
-            preview_asset_id = user.previewAssetId,
-            complete_asset_id = user.completeAssetId,
-            user_type = user.userType,
-            bot_service = user.botService,
-            incomplete_metadata = user.hasIncompleteMetadata,
-            expires_at = user.expiresAt,
-            connection_status = user.connectionStatus,
-            deleted = user.deleted,
-            supported_protocols = user.supportedProtocols,
-            active_one_on_one_conversation_id = user.activeOneOnOneConversationId
-        )
     }
 
     override suspend fun getAllUsers(): Flow<List<UserEntity>> = userQueries.selectAllUsers()
