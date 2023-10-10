@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.utils.stubs.TestStubs
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -145,41 +144,14 @@ class MemberDAOTest : BaseDatabaseTest() {
         val conversationEntity1 = TestStubs.conversationEntity1
         val member1 = TestStubs.member1
 
+        userDAO.upsertUser(TestStubs.user1)
         conversationDAO.insertConversation(conversationEntity1)
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+        memberDAO.updateOrInsertOneOnOneMember(
             member = member1,
-            status = ConnectionEntity.State.ACCEPTED,
             conversationID = conversationEntity1.id
         )
 
-        assertEquals(
-            listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first()
-        )
-        assertNotNull(userDAO.getUserByQualifiedID(member1.user).firstOrNull())
-    }
-
-    @Test
-    fun givenExistingUser_WhenInsertingToOneOnOneConversationThenConnectionStatusShouldBeAccepted() = runTest(dispatcher) {
-        val conversationEntity1 = TestStubs.conversationEntity1
-        val member1 = TestStubs.member1
-        val user = TestStubs.user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
-
-        userDAO.upsertUser(user)
-        conversationDAO.insertConversation(conversationEntity1)
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            member = member1,
-            status = ConnectionEntity.State.ACCEPTED,
-            conversationID = conversationEntity1.id
-        )
-
-        assertEquals(
-            listOf(member1),
-            memberDAO.observeConversationMembers(conversationEntity1.id).first()
-        )
-        assertEquals(
-            user.copy(connectionStatus = ConnectionEntity.State.ACCEPTED),
-            userDAO.getUserByQualifiedID(member1.user).firstOrNull()
-        )
+        assertEquals(listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first())
     }
 
     @Test
@@ -187,35 +159,14 @@ class MemberDAOTest : BaseDatabaseTest() {
         val conversationEntity1 = TestStubs.conversationEntity1
         val member1 = TestStubs.member1
 
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+        memberDAO.updateOrInsertOneOnOneMember(
             member = member1,
-            status = ConnectionEntity.State.ACCEPTED,
             conversationID = conversationEntity1.id
         )
 
         assertTrue(
             memberDAO.observeConversationMembers(conversationEntity1.id).first().isEmpty()
         )
-    }
-
-    @Test
-    fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest(dispatcher) {
-        val conversationEntity1 = TestStubs.conversationEntity1
-        val user1 = TestStubs.user1
-        val member1 = TestStubs.member1
-
-        conversationDAO.insertConversation(conversationEntity1)
-        userDAO.upsertUser(user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED))
-
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            member = member1,
-            status = ConnectionEntity.State.SENT,
-            conversationID = conversationEntity1.id
-        )
-
-        assertEquals(listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first())
-        assertEquals(ConnectionEntity.State.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
-        assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
     }
 
     @Test

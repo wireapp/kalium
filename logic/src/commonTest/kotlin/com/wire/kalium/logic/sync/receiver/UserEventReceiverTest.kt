@@ -181,6 +181,7 @@ class UserEventReceiverTest {
     fun givenNewConnectionEvent_thenConnectionIsPersisted() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.PENDING)
         val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
         }
 
@@ -196,6 +197,7 @@ class UserEventReceiverTest {
     fun givenNewConnectionEventWithStatusPending_thenActiveOneOnOneConversationIsNotResolved() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.PENDING).copy()
         val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
         }
 
@@ -211,6 +213,7 @@ class UserEventReceiverTest {
     fun givenNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduled() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
         val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
             withScheduleResolveOneOnOneConversationWithUserId()
         }
@@ -228,6 +231,7 @@ class UserEventReceiverTest {
     fun givenLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduledWithDelay() = runTest(TestKaliumDispatcher.default) {
         val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy(live = true)
         val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
             withScheduleResolveOneOnOneConversationWithUserId()
         }

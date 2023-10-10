@@ -95,17 +95,20 @@ internal class UserEventReceiverImpl internal constructor(
             }
 
     private suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
-        connectionRepository.insertConnectionFromEvent(event)
+        userRepository.fetchUserInfo(event.connection.qualifiedToId)
             .flatMap {
-                if (event.connection.status != ConnectionState.ACCEPTED) {
-                    return@flatMap Either.Right(Unit)
-                }
+                connectionRepository.insertConnectionFromEvent(event)
+                    .flatMap {
+                        if (event.connection.status != ConnectionState.ACCEPTED) {
+                            return@flatMap Either.Right(Unit)
+                        }
 
-                oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
-                    event.connection.qualifiedToId,
-                    delay = if (event.live) 3.seconds else ZERO
-                )
-                Either.Right(Unit)
+                        oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                            event.connection.qualifiedToId,
+                            delay = if (event.live) 3.seconds else ZERO
+                        )
+                        Either.Right(Unit)
+                    }
             }
             .onSuccess {
                 kaliumLogger

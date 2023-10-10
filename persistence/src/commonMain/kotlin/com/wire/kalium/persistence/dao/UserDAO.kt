@@ -249,4 +249,6 @@ interface UserDAO {
      * there can be multiple co-existing 1-1 conversations.
      */
     suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
+
+    suspend fun upsertConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State)
 }

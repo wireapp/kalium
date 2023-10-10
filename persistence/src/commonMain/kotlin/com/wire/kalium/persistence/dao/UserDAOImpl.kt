@@ -358,4 +358,10 @@ class UserDAOImpl internal constructor(
         withContext(queriesContext) {
             userQueries.updateOneOnOnConversationId(conversationId, userId)
         }
+
+    override suspend fun upsertConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State) {
+        withContext(queriesContext) {
+            userQueries.upsertUserConnectionStatus(userId, status)
+        }
+    }
 }

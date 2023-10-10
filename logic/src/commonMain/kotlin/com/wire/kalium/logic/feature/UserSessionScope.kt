@@ -672,10 +672,7 @@ class UserSessionScope internal constructor(
             userStorage.database.memberDAO,
             userStorage.database.connectionDAO,
             authenticatedNetworkContainer.connectionApi,
-            authenticatedNetworkContainer.userDetailsApi,
             userStorage.database.userDAO,
-            userId,
-            selfTeamId,
             conversationRepository
         )
 
@@ -1641,6 +1638,7 @@ class UserSessionScope internal constructor(
         get() = ConnectionScope(
             connectionRepository,
             conversationRepository,
+            userRepository,
             oneOnOneResolver
         )
 
