@@ -290,4 +290,7 @@ class ConversationScope internal constructor(
     val observeUsersTyping: ObserveUsersTypingUseCase
         get() = ObserveUsersTypingUseCaseImpl(typingIndicatorIncomingRepository, userRepository)
 
+    val clearUsersTypingEvents: ClearUsersTypingEventsUseCase
+        get() = ClearUsersTypingEventsUseCaseImpl(typingIndicatorIncomingRepository)
+
 }
