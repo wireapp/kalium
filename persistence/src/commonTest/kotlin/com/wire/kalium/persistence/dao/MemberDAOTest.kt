@@ -147,6 +147,7 @@ class MemberDAOTest : BaseDatabaseTest() {
         val conversationEntity1 = TestStubs.conversationEntity1
         val member1 = TestStubs.member1
         val user = TestStubs.user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
+        val userDetails = TestStubs.userDetails1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
 
         userDAO.insertUser(user)
         conversationDAO.insertConversation(conversationEntity1)
@@ -161,7 +162,7 @@ class MemberDAOTest : BaseDatabaseTest() {
             memberDAO.observeConversationMembers(conversationEntity1.id).first()
         )
         assertEquals(
-            user.copy(connectionStatus = ConnectionEntity.State.ACCEPTED),
+            userDetails.copy(connectionStatus = ConnectionEntity.State.ACCEPTED),
             userDAO.observeUserDetailsByQualifiedID(member1.user).firstOrNull()
         )
     }

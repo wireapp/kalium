@@ -47,6 +47,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -81,15 +82,15 @@ class UserRepositoryTest {
             UserId(value = "id2", domain = "domain2")
         )
         val knownUserEntities = listOf(
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
+            TestUser.DETAILS_ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
+            TestUser.DETAILS_ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
         )
         val (arrangement, userRepository) = Arrangement()
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
             .arrange()
 
         given(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUsersByQualifiedIDList)
+            .suspendFunction(arrangement.userDAO::getUsersDetailsByQualifiedIDList)
             .whenInvokedWith(any())
             .thenReturn(knownUserEntities)
 
@@ -105,7 +106,7 @@ class UserRepositoryTest {
     fun givenAUserIsNotKnown_whenFetchingUsersIfUnknown_thenShouldFetchFromAPIAndSucceed() = runTest {
         val missingUserId = UserId(value = "id2", domain = "domain2")
         val requestedUserIds = setOf(UserId(value = "id1", domain = "domain1"), missingUserId)
-        val knownUserEntities = listOf(TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")))
+        val knownUserEntities = listOf(TestUser.DETAILS_ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")))
         val (arrangement, userRepository) = Arrangement()
             .withGetSelfUserId()
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
@@ -282,7 +283,7 @@ class UserRepositoryTest {
     @Test
     fun givenAKnownFederatedUser_whenGettingFromDbAndCacheExpiredOrNotPresent_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.FEDERATED))
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -307,7 +308,7 @@ class UserRepositoryTest {
     @Test
     fun givenAKnownNOTFederatedUser_whenGettingFromDb_thenShouldNotRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.STANDARD))
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.STANDARD))
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -332,7 +333,7 @@ class UserRepositoryTest {
     @Test
     fun givenAKnownFederatedUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.FEDERATED))
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -374,7 +375,7 @@ class UserRepositoryTest {
     fun givenThereAreUsersWithoutMetadata_whenSyncingUsers_thenShouldUpdateThem() = runTest {
         // given
         val (arrangement, userRepository) = Arrangement()
-            .withDaoReturningNoMetadataUsers(listOf(TestUser.ENTITY.copy(name = null)))
+            .withDaoReturningNoMetadataUsers(listOf(TestUser.DETAILS_ENTITY.copy(name = null)))
             .withSuccessfulGetMultipleUsersApiRequest(ListUsersDTO(emptyList(), listOf(TestUser.USER_PROFILE_DTO)))
             .arrange()
 
@@ -443,8 +444,8 @@ class UserRepositoryTest {
             .withGetSelfUserId()
             .withDaoObservingByConnectionStatusReturning(
                 listOf(
-                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
-                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
+                    TestUser.DETAILS_ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
+                    TestUser.DETAILS_ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
                 )
             )
             .arrange()
@@ -461,7 +462,7 @@ class UserRepositoryTest {
         }
 
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::observeAllUsersByConnectionStatus)
+            .suspendFunction(arrangement.userDAO::observeAllUsersDetailsByConnectionStatus)
             .with(any())
             .wasInvoked(once)
     }
@@ -473,8 +474,8 @@ class UserRepositoryTest {
             .withGetSelfUserId()
             .withDaoObservingNotInConversationReturning(
                 listOf(
-                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
-                    TestUser.ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
+                    TestUser.DETAILS_ENTITY.copy(id = QualifiedIDEntity("id-valid", "domain2"), hasIncompleteMetadata = false),
+                    TestUser.DETAILS_ENTITY.copy(id = QualifiedIDEntity("id2", "domain2"), hasIncompleteMetadata = true)
                 )
             )
             .arrange()
@@ -491,7 +492,7 @@ class UserRepositoryTest {
         }
 
         verify(arrangement.userDAO)
-            .function(arrangement.userDAO::observeUsersNotInConversation)
+            .function(arrangement.userDAO::observeUsersDetailsNotInConversation)
             .with(any())
             .wasInvoked(once)
     }
@@ -521,8 +522,8 @@ class UserRepositoryTest {
             UserId(value = "id2", domain = "domain2")
         )
         val knownUserEntities = listOf(
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
-            TestUser.ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
+            TestUser.DETAILS_ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")),
+            TestUser.DETAILS_ENTITY.copy(id = UserIDEntity(value = "id2", domain = "domain2"))
         )
         val (arrangement, userRepository) = Arrangement()
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
@@ -533,7 +534,7 @@ class UserRepositoryTest {
 
         // Then
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUsersByQualifiedIDList)
+            .suspendFunction(arrangement.userDAO::getUsersDetailsByQualifiedIDList)
             .with(any())
             .wasInvoked(once)
     }
@@ -583,7 +584,7 @@ class UserRepositoryTest {
             withSelfUserIdFlowMetadataReturning(flowOf(TestUser.JSON_QUALIFIED_ID))
             given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
-                .then { flowOf(TestUser.ENTITY) }
+                .then { flowOf(TestUser.DETAILS_ENTITY) }
 
             given(selfTeamIdProvider)
                 .suspendFunction(selfTeamIdProvider::invoke)
@@ -598,16 +599,16 @@ class UserRepositoryTest {
                 .thenReturn(selfUserIdStringFlow)
         }
 
-        fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserEntity>) = apply {
+        fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserDetailsEntity>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::observeAllUsersByConnectionStatus)
+                .suspendFunction(userDAO::observeAllUsersDetailsByConnectionStatus)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(userEntities))
         }
 
-        fun withDaoObservingNotInConversationReturning(userEntities: List<UserEntity>) = apply {
+        fun withDaoObservingNotInConversationReturning(userEntities: List<UserDetailsEntity>) = apply {
             given(userDAO)
-                .function(userDAO::observeUsersNotInConversation)
+                .function(userDAO::observeUsersDetailsNotInConversation)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(userEntities))
         }
@@ -619,9 +620,9 @@ class UserRepositoryTest {
                 .thenReturn(NetworkResponse.Success(TestUser.USER_PROFILE_DTO, mapOf(), 200))
         }
 
-        fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserEntity>) = apply {
+        fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::getUsersByQualifiedIDList)
+                .suspendFunction(userDAO::getUsersDetailsByQualifiedIDList)
                 .whenInvokedWith(any())
                 .thenReturn(knownUserEntities)
         }
@@ -633,14 +634,14 @@ class UserRepositoryTest {
                 .thenReturn(com.wire.kalium.logic.data.id.QualifiedID("alice", "wonderland"))
         }
 
-        fun withUserDaoReturning(userEntity: UserEntity? = TestUser.ENTITY) = apply {
+        fun withUserDaoReturning(userEntity: UserDetailsEntity? = TestUser.DETAILS_ENTITY) = apply {
             given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(userEntity) }
         }
 
-        fun withDaoReturningNoMetadataUsers(userEntity: List<UserEntity> = emptyList()) = apply {
-            given(userDAO).suspendFunction(userDAO::getUsersWithoutMetadata)
+        fun withDaoReturningNoMetadataUsers(userEntity: List<UserDetailsEntity> = emptyList()) = apply {
+            given(userDAO).suspendFunction(userDAO::getUsersDetailsWithoutMetadata)
                 .whenInvoked()
                 .then { userEntity }
         }
@@ -694,9 +695,9 @@ class UserRepositoryTest {
                 .then { Either.Right(Unit) }
         }
 
-        fun withSuccessfulGetAllUsers(userEntities: List<UserEntity>) = apply {
+        fun withSuccessfulGetAllUsers(userEntities: List<UserDetailsEntity>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::getAllUsers)
+                .suspendFunction(userDAO::getAllUsersDetails)
                 .whenInvoked()
                 .then { flowOf(userEntities) }
         }

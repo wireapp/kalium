@@ -95,7 +95,27 @@ data class UserDetailsEntity(
     val expiresAt: Instant?,
     val defederated: Boolean,
     val isProteusVerified: Boolean
-)
+) {
+    fun toSimpleEntity() = UserEntity(
+        id = id,
+        name = name,
+        handle = handle,
+        email = email,
+        phone = phone,
+        accentId = accentId,
+        team = team,
+        connectionStatus = connectionStatus,
+        previewAssetId = previewAssetId,
+        completeAssetId = completeAssetId,
+        availabilityStatus = availabilityStatus,
+        userType = userType,
+        botService = botService,
+        deleted = deleted,
+        hasIncompleteMetadata = hasIncompleteMetadata,
+        expiresAt = expiresAt,
+        defederated = defederated
+    )
+}
 
 data class UserEntityMinimized(
     val id: QualifiedIDEntity,
@@ -204,18 +224,18 @@ interface UserDAO {
      * [UserEntity.completeAssetId]
      */
     suspend fun updateUser(user: UserEntity)
-    suspend fun getAllUsers(): Flow<List<UserDetailsEntity>>
-    suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>>
+    suspend fun getAllUsersDetails(): Flow<List<UserDetailsEntity>>
+    suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>>
     suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?>
-    suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?>
+    suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?>
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
-    suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity>
-    suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
+    suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity>
+    suspend fun getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
         connectionStates: List<ConnectionEntity.State>
     ): Flow<List<UserDetailsEntity>>
 
-    suspend fun getUserByHandleAndConnectionStates(
+    suspend fun getUserDetailsByHandleAndConnectionStates(
         handle: String,
         connectionStates: List<ConnectionEntity.State>
     ): Flow<List<UserDetailsEntity>>
@@ -225,20 +245,20 @@ interface UserDAO {
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
-    fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
+    fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
     suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
-    suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
+    suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,
     ): Flow<List<UserDetailsEntity>>
 
-    suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserDetailsEntity>>
-    suspend fun getAllUsersByTeam(teamId: String): List<UserDetailsEntity>
+    suspend fun getUsersDetailsNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserDetailsEntity>>
+    suspend fun getAllUsersDetailsByTeam(teamId: String): List<UserDetailsEntity>
     suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String)
 
     suspend fun removeUserAsset(assetId: QualifiedIDEntity)
 
-    suspend fun getUsersWithoutMetadata(): List<UserDetailsEntity>
+    suspend fun getUsersDetailsWithoutMetadata(): List<UserDetailsEntity>
 
     /**
      * @return [List] of [UserIDEntity] of all other users.

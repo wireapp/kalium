@@ -48,6 +48,7 @@ import kotlinx.datetime.toInstant
 interface UserMapper {
     fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity
     fun fromUserEntityToSelfUser(userEntity: UserEntity): SelfUser
+    fun fromUserDetailsEntityToSelfUser(userEntity: UserDetailsEntity): SelfUser
     fun fromSelfUserToUserEntity(selfUser: SelfUser): UserEntity
 
     /**
@@ -130,6 +131,23 @@ internal class UserMapperImpl(
     }
 
     override fun fromUserEntityToSelfUser(userEntity: UserDetailsEntity) = with(userEntity) {
+        SelfUser(
+            id.toModel(),
+            name,
+            handle,
+            email,
+            phone,
+            accentId,
+            team?.let { TeamId(it) },
+            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewAssetId?.toModel(),
+            completeAssetId?.toModel(),
+            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            expiresAt = expiresAt
+        )
+    }
+
+    override fun fromUserDetailsEntityToSelfUser(userEntity: UserDetailsEntity): SelfUser = with(userEntity) {
         SelfUser(
             id.toModel(),
             name,

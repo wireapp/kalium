@@ -104,13 +104,13 @@ internal class SearchUserRepositoryImpl(
         handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
-                userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
+                userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(
                     conversationId = conversationId.toDao(),
                     searchQuery = searchQuery
                 )
             },
             default = {
-                userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
                     searchQuery = searchQuery,
                     connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )
@@ -124,13 +124,13 @@ internal class SearchUserRepositoryImpl(
         handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
-                userDAO.getUsersNotInConversationByHandle(
+                userDAO.getUsersDetailsNotInConversationByHandle(
                     conversationId = conversationId.toDao(),
                     handle = handle
                 )
             },
             default = {
-                userDAO.getUserByHandleAndConnectionStates(
+                userDAO.getUserDetailsByHandleAndConnectionStates(
                     handle = handle,
                     connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )

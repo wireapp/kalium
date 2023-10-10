@@ -119,9 +119,14 @@ User.deleted,
 User.incomplete_metadata,
 User.expires_at,
 User.defederated,
-CASE IFNULL ((SELECT COUNT (*) FROM Client WHERE Client.user_id = User.qualified_id AND is_proteus_verified = 0), 0)
-    WHEN 0 THEN 1
-    ELSE 0
+CASE IFNULL ((SELECT COUNT (*) FROM Client WHERE Client.user_id = User.qualified_id), 0)
+    -- no clients means not verified
+    WHEN 0 THEN 0
+    ELSE (CASE IFNULL ((SELECT COUNT (*) FROM Client WHERE Client.user_id = User.qualified_id AND is_proteus_verified = 0), 0)
+            WHEN 0 THEN 1
+            -- at least one client is not verified -> user is not verified
+            ELSE 0
+        END)
 END AS is_proteus_verified
 FROM User;
 

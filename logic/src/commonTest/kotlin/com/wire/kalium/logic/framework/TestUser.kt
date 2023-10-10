@@ -36,6 +36,7 @@ import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
@@ -105,6 +106,26 @@ object TestUser {
         deleted = false,
         expiresAt = null,
         defederated = false
+    )
+
+    val DETAILS_ENTITY = UserDetailsEntity(
+        id = ENTITY_ID,
+        name = "username",
+        handle = "handle",
+        email = "email",
+        phone = "phone",
+        accentId = 0,
+        team = "teamId",
+        connectionStatus = ConnectionEntity.State.ACCEPTED,
+        previewAssetId = QualifiedIDEntity("value1", ENTITY_ID.domain),
+        completeAssetId = QualifiedIDEntity("value2", ENTITY_ID.domain),
+        availabilityStatus = UserAvailabilityStatusEntity.NONE,
+        userType = UserTypeEntity.EXTERNAL,
+        botService = null,
+        deleted = false,
+        expiresAt = null,
+        defederated = false,
+        isProteusVerified = false
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(

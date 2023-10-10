@@ -397,25 +397,7 @@ class ConnectionRepositoryTest {
             service = null
         )
 
-        val stubUserEntity = UserEntity(
-            id = QualifiedIDEntity("value", "domain"),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            team = null,
-            connectionStatus = ConnectionEntity.State.NOT_CONNECTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userType = UserTypeEntity.EXTERNAL,
-            botService = null,
-            deleted = false,
-            hasIncompleteMetadata = false,
-            expiresAt = null,
-            defederated = false
-        )
+        val stubUserEntity = TestUser.DETAILS_ENTITY
 
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
         val stubConversationID2 = QualifiedIDEntity("conversationId2", "domain")
