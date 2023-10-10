@@ -132,20 +132,14 @@ internal class TeamDataSource(
                 teamId = teamId,
                 userId = userId,
             )
-        }.flatMap { _ -> // TODO jacob why dow we fetch team member info if we don't use the response?
+        }.flatMap { member ->
             wrapApiRequest { userDetailsApi.getUserInfo(userId = QualifiedID(userId, selfUserId.domain)) }
                 .flatMap { userProfileDTO ->
                     wrapStorageRequest {
                         val userEntity = userMapper.fromUserProfileDtoToUserEntity(
                             userProfile = userProfileDTO,
                             connectionState = ConnectionEntity.State.ACCEPTED,
-                            userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
-                                otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = teamId,
-                                otherUserTeamId = userProfileDTO.teamId,
-                                selfUserDomain = selfUserId.domain,
-                                isService = userProfileDTO.service != null
-                            )
+                            userTypeEntity = userTypeEntityTypeMapper.teamRoleCodeToUserType(member.permissions?.own)
                         )
                         userDAO.upsertUser(userEntity)
                     }
