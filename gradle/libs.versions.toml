@@ -55,6 +55,7 @@ faker = "1.14.0"
 robolectric = "4.9"
 stately = "2.0.0-rc3"
 micrometer = "1.11.3"
+bouncy-castle = "1.70"
 
 [plugins]
 # Home-made convention plugins
@@ -192,3 +193,6 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
+
+# bouncy castle
+bouncy-castle = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bouncy-castle" }
