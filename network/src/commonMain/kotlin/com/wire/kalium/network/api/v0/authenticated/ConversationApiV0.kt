@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.CreateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
@@ -384,6 +385,16 @@ internal open class ConversationApiV0 internal constructor(
             }
         }
 
+    override suspend fun sendTypingIndicatorNotification(
+        conversationId: ConversationId,
+        typingIndicatorMode: TypingIndicatorStatusDTO
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_TYPING_NOTIFICATION") {
+                setBody(typingIndicatorMode)
+            }
+        }
+
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_SELF = "self"
@@ -404,6 +415,7 @@ internal open class ConversationApiV0 internal constructor(
         const val QUERY_KEY_START = "start"
         const val QUERY_KEY_SIZE = "size"
         const val QUERY_KEY_IDS = "qualified_ids"
+        const val PATH_TYPING_NOTIFICATION = "typing"
 
         const val MAX_CONVERSATION_DETAILS_COUNT = 1000
     }

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
@@ -34,7 +35,6 @@ import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
@@ -114,10 +114,7 @@ class EventMapper(
             transient,
             eventContentDTO.qualifiedFrom.toModel(),
             eventContentDTO.time,
-            when (eventContentDTO.status.status) {
-                TypingIndicatorStatus.STARTED -> Conversation.TypingIndicatorMode.STARTED
-                TypingIndicatorStatus.STOPPED -> Conversation.TypingIndicatorMode.STOPPED
-            }
+            eventContentDTO.status.status.toModel()
         )
 
     private fun federationTerminated(id: String, eventContentDTO: EventContentDTO.Federation, transient: Boolean): Event =
@@ -234,6 +231,7 @@ class EventMapper(
                     )
                 }
             }
+
             else -> unknown(
                 id = id,
                 transient = transient,
