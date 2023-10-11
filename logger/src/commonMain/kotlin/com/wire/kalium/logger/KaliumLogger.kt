@@ -100,10 +100,7 @@ class KaliumLogger(
         config = config.kermitConfig()
     )
 
-    private fun tag(): String = when (tag) {
-        is Tag.Text -> tag.text
-        is Tag.UserClientText -> tag.data().let { "${tag.prefix}[${it.userId}|${it.clientId}]" }
-    }
+    private fun tag(): String = tag.tagString()
 
     fun logLevel(): KaliumLogLevel = config.logLevel()
 
@@ -192,31 +189,38 @@ class KaliumLogger(
     }
 
     /**
-     * Defined types of tags that can be provided to the [KaliumLogger].
+     * Defined types of tags that can be provided to the [KaliumLogger] as a String text.
      */
     sealed class Tag {
+        abstract fun tagString(): String
 
         /**
          * Simple String text tag.
          */
-        data class Text(val text: String) : Tag()
+        data class Text(val text: String) : Tag() {
+            override fun tagString(): String = text
+        }
 
         /**
          * User-related data tag. Contains String text prefix and [UserClientData] (userId and clientId).
          * It will be added to the tag in the standard pattern: "tag[userId|clientId]",
          * so it can be combined with a [Tag.Text] type by adding the tag text as a prefix in this one.
          */
-        data class UserClientText(val prefix: String, val data: () -> UserClientData) : Tag()
+        data class UserClientText(val prefix: String, val data: () -> UserClientData) : Tag() {
+            override fun tagString(): String = data().let { "${prefix}[${it.userId}|${it.clientId}]" }
+        }
     }
 
     data class UserClientData(val userId: String, val clientId: String) {
-        fun addToTag(tag: String): String =
-            if (!tag.matches(regex)) "$tag[${userId}|${clientId}]"
-            else tag
 
         companion object {
             private val regex = Regex("^.*\\[.+\\|.+\\]\$")
 
+            /**
+             * Parses the user-related data from the String tag in the standard pattern: "tag[userId|clientId]".
+             * Returns null if the tag doesn't match the pattern, which means it does not contain user-related data.
+             */
+            @Suppress("unused")
             fun getFromTag(tag: String): UserClientData? =
                 if (tag.matches(regex)) {
                     tag.substringAfterLast("[").substringBefore("]").split("|")
