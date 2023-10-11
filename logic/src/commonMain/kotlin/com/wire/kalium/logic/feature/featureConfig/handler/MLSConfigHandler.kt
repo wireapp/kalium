@@ -41,6 +41,10 @@ class MLSConfigHandler(
 
         return userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
             .flatMap {
+                userConfigRepository.setDefaultProtocol(if (mlsEnabled) mlsConfig.defaultProtocol else SupportedProtocol.PROTEUS)
+            }.flatMap {
+                userConfigRepository.setSupportedProtocols(mlsConfig.supportedProtocols)
+            }.flatMap {
                 if (supportedProtocolsHasChanged) {
                     updateSupportedProtocolsAndResolveOneOnOnes(
                         synchroniseUsers = !duringSlowSync
@@ -48,11 +52,6 @@ class MLSConfigHandler(
                 } else {
                     Either.Right(Unit)
                 }
-            }
-            .flatMap {
-                userConfigRepository.setDefaultProtocol(if (mlsEnabled) mlsConfig.defaultProtocol else SupportedProtocol.PROTEUS)
-            }.flatMap {
-                userConfigRepository.setSupportedProtocols(mlsConfig.supportedProtocols)
             }
     }
 }

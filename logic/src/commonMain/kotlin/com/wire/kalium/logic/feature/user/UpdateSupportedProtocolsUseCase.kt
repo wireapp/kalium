@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
@@ -29,6 +28,7 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.mlsmigration.hasMigrationEnded
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
@@ -46,33 +46,38 @@ interface UpdateSupportedProtocolsUseCase {
 internal class UpdateSupportedProtocolsUseCaseImpl(
     private val clientsRepository: ClientRepository,
     private val userRepository: UserRepository,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val featureSupport: FeatureSupport
 ) : UpdateSupportedProtocolsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
-        kaliumLogger.d("Updating supported protocols")
-
-        return (userRepository.getSelfUser()?.let { selfUser ->
-            selfSupportedProtocols().flatMap { newSupportedProtocols ->
-                kaliumLogger.i(
-                    "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
-                )
-                if (newSupportedProtocols != selfUser.supportedProtocols) {
-                    userRepository.updateSupportedProtocols(newSupportedProtocols).map { true }
-                } else {
-                    Either.Right(false)
-                }
-            }.flatMapLeft {
-                if (it is NetworkFailure.FeatureNotSupported) {
-                    kaliumLogger.w(
-                        "Skip updating supported protocols since it's not supported by the backend API"
+        return if (!featureSupport.isMLSSupported) {
+            kaliumLogger.d("Skip updating supported protocols, since MLS is not supported.")
+            Either.Right(false)
+        } else {
+            (userRepository.getSelfUser()?.let { selfUser ->
+                selfSupportedProtocols().flatMap { newSupportedProtocols ->
+                    kaliumLogger.i(
+                        "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
                     )
-                    Either.Right(false)
-                } else {
-                    Either.Left(it)
+                    if (newSupportedProtocols != selfUser.supportedProtocols) {
+                        userRepository.updateSupportedProtocols(newSupportedProtocols).map { true }
+                    } else {
+                        Either.Right(false)
+                    }
+                }.flatMapLeft {
+                    when (it) {
+                        is StorageFailure.DataNotFound -> {
+                            kaliumLogger.w(
+                                "Skip updating supported protocols since additional protocols are not configured"
+                            )
+                            Either.Right(false)
+                        }
+                        else -> Either.Left(it)
+                    }
                 }
-            }
-        } ?: Either.Left(StorageFailure.DataNotFound))
+            } ?: Either.Left(StorageFailure.DataNotFound))
+        }
     }
 
     private suspend fun selfSupportedProtocols(): Either<CoreFailure, Set<SupportedProtocol>> =
