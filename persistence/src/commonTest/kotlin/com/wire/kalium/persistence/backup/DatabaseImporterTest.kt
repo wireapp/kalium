@@ -512,7 +512,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
         // then
         val restoredUsers = userDatabaseBuilder.userDAO.getAllUsersDetails().first()
-        assertEquals(restoredUsers, uniqueUsers + uniqueBackupUsers)
+        assertEquals(restoredUsers, uniqueBackupUsers + uniqueUsers)
         assertEquals(uniqueUsersAmount + uniqueBackupUsersAmount, restoredUsers.size)
     }
 
