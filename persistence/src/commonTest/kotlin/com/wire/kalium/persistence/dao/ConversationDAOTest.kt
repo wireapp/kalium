@@ -1288,7 +1288,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedDateTime = null,
             verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null
+            userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
+            userActiveOneOnOneConversationId = if(type == ConversationEntity.Type.ONE_ON_ONE) id else null
         )
     }
 

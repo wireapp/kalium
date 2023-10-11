@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
@@ -68,7 +69,8 @@ data class ConversationViewEntity(
     val archived: Boolean,
     val archivedDateTime: Instant?,
     val verificationStatus: ConversationEntity.VerificationStatus,
-    val userSupportedProtocols: Set<SupportedProtocolEntity>?
+    val userSupportedProtocols: Set<SupportedProtocolEntity>?,
+    val userActiveOneOnOneConversationId: ConversationIDEntity?
 ) {
     val isMember: Boolean get() = selfRole != null
 

@@ -68,7 +68,8 @@ internal class ConversationMapper {
             archived = archived,
             archivedDateTime = archived_date_time,
             verificationStatus = verification_status,
-            userSupportedProtocols = userSupportedProtocols
+            userSupportedProtocols = userSupportedProtocols,
+            userActiveOneOnOneConversationId = otherUserActiveConversationId
         )
     }
 
