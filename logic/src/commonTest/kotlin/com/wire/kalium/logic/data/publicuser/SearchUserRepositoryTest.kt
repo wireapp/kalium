@@ -21,13 +21,7 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
@@ -42,14 +36,8 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserDetailsEntity
-import com.wire.kalium.persistence.dao.UserEntity
-import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
@@ -276,7 +264,7 @@ class SearchUserRepositoryTest {
         given(userMapper)
             .function(userMapper::fromUserDetailsEntityToSelfUser)
             .whenInvokedWith(any())
-            .then { TestUser.SELF }
+            .then { TestUser.SELF.copy(teamId = null) }
 
         given(domainUserTypeMapper)
             .invocation {
@@ -284,7 +272,7 @@ class SearchUserRepositoryTest {
                     "domain",
                     null,
                     "team",
-                    "someId",
+                    "domain",
                     false
                 )
             }.then { UserType.FEDERATED }
@@ -327,7 +315,7 @@ class SearchUserRepositoryTest {
             given(userMapper)
                 .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
-                .then { TestUser.SELF }
+                .then { TestUser.SELF.copy(teamId = null) }
 
             given(domainUserTypeMapper)
                 .invocation {
@@ -335,7 +323,7 @@ class SearchUserRepositoryTest {
                         "domain",
                         null,
                         "team",
-                        "someId",
+                        "domain",
                         false
                     )
                 }.then { UserType.FEDERATED }

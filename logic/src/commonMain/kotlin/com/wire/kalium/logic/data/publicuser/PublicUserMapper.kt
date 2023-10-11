@@ -55,7 +55,7 @@ interface PublicUserMapper {
     ): OtherUser
 
     fun fromEntityToUserSummary(userEntity: UserEntity): UserSummary
-    fun fromDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary
+    fun fromUserDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary
     fun fromUserDetailsEntityToOtherUser(userDetailsEntity: UserDetailsEntity): OtherUser
     fun fromOtherToUserDetailsEntity(otherUser: OtherUser): UserDetailsEntity
 }
@@ -196,7 +196,7 @@ class PublicUserMapperImpl(
         )
     }
 
-    override fun fromDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary = with(userDetailsEntity) {
+    override fun fromUserDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary = with(userDetailsEntity) {
         UserSummary(
             userId = UserId(id.value, id.domain),
             userHandle = handle,

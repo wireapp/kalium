@@ -473,7 +473,7 @@ internal class UserDataSource internal constructor(
     override suspend fun getUsersSummaryByIds(userIds: List<QualifiedID>): Either<StorageFailure, List<UserSummary>> =
         wrapStorageRequest {
             userDAO.getUsersDetailsByQualifiedIDList(userIds.map { it.toDao() }).map {
-                publicUserMapper.fromDetailsEntityToUserSummary(it)
+                publicUserMapper.fromUserDetailsEntityToUserSummary(it)
             }
         }
 

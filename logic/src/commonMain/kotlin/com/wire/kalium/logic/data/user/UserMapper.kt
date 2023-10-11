@@ -88,12 +88,6 @@ interface UserMapper {
     fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity
     fun fromSelfUserToUserDetailsEntity(selfUser: SelfUser): UserDetailsEntity
     fun fromSelfUserDtoToUserDetailsEntity(userDTO: SelfUserDTO): UserDetailsEntity
-    fun fromTeamMemberToDaoDetailModel(
-        teamId: TeamId,
-        nonQualifiedUserId: NonQualifiedUserId,
-        permissionCode: Int?,
-        userDomain: String
-    ): UserDetailsEntity
 
     fun fromUserProfileDtoToUserDetailsEntity(
         userProfile: UserProfileDTO,
@@ -101,7 +95,7 @@ interface UserMapper {
         userTypeEntity: UserTypeEntity
     ): UserDetailsEntity
 
-    fun fromFailedUserToDetailEntity(userId: NetworkQualifiedId): UserDetailsEntity
+    fun fromFailedUserToDetailsEntity(userId: NetworkQualifiedId): UserDetailsEntity
 }
 
 @Suppress("TooManyFunctions")
@@ -290,38 +284,6 @@ internal class UserMapperImpl(
             defederated = false
         )
 
-    /**
-     * Null and default/hardcoded values will be replaced later when fetching known users.
-     */
-    override fun fromTeamMemberToDaoDetailModel(
-        teamId: TeamId,
-        nonQualifiedUserId: NonQualifiedUserId,
-        permissionCode: Int?,
-        userDomain: String,
-    ): UserDetailsEntity =
-        UserDetailsEntity(
-            id = QualifiedIDEntity(
-                value = nonQualifiedUserId,
-                domain = userDomain
-            ),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 1,
-            team = teamId.value,
-            connectionStatus = ConnectionEntity.State.ACCEPTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = userEntityTypeMapper.teamRoleCodeToUserType(permissionCode),
-            botService = null,
-            deleted = false,
-            expiresAt = null,
-            defederated = false,
-            isProteusVerified = false
-        )
-
     override fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
         connectionState: ConnectionEntity.State,
@@ -439,7 +401,7 @@ internal class UserMapperImpl(
         )
     }
 
-    override fun fromFailedUserToDetailEntity(userId: NetworkQualifiedId): UserDetailsEntity {
+    override fun fromFailedUserToDetailsEntity(userId: NetworkQualifiedId): UserDetailsEntity {
         return UserDetailsEntity(
             id = userId.toDao(),
             name = null,
