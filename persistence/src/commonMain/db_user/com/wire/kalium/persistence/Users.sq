@@ -122,7 +122,7 @@ User.defederated,
 CASE
     WHEN SUM(Client.is_proteus_verified) = COUNT(*) THEN 1
     ELSE 0
-END AS isProteusVerified
+END AS is_proteus_verified
 FROM User
 LEFT JOIN Client ON User.qualified_id = Client.user_id
 GROUP BY User.qualified_id;
