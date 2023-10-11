@@ -39,11 +39,11 @@ actual fun decodePemCertificate(
     ByteArrayInputStream(certificate.toByteArray()).run {
         (certificateFactory.generateCertificate(this) as X509Certificate).also {
             return E2eiCertificate(
-                issuer = it.issuerDN.name,
+                issuer = it.issuerX500Principal.name,
                 status = getCertificateStatus(it.notAfter.time),
-                serialNumber = it.serialNumber.toString(16)
-                    .chunked(2)
-                    .joinToString(":"),
+                serialNumber = it.serialNumber.toString(BASE_16)
+                    .chunked(CHUNK_SIZE)
+                    .joinToString(SEPARATOR),
                 certificateDetail = certificate
             )
         }
@@ -51,3 +51,6 @@ actual fun decodePemCertificate(
 }
 
 private const val TYPE = "X.509"
+private const val CHUNK_SIZE = 2
+private const val SEPARATOR = ":"
+private const val BASE_16 = 16

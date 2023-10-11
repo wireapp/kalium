@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-
 class DownloadE2eiCertificateUseCase {
     operator fun invoke() {
         // TODO download certificate using coreCrypto
