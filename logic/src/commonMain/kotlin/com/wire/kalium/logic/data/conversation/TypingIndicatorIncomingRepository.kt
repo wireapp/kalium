@@ -27,26 +27,25 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 
-internal interface TypingIndicatorRepository {
+internal interface TypingIndicatorIncomingRepository {
     suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId)
     suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId)
-    suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<ExpiringUserTyping>>
+    suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>>
+    suspend fun clearExpiredTypingIndicators()
 }
 
-internal class TypingIndicatorRepositoryImpl(
-    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<ExpiringUserTyping>>,
+internal class TypingIndicatorIncomingRepositoryImpl(
+    private val userTypingCache: ConcurrentMutableMap<ConversationId, MutableSet<UserId>>,
     private val userPropertyRepository: UserPropertyRepository
-) : TypingIndicatorRepository {
+) : TypingIndicatorIncomingRepository {
 
     private val userTypingDataSourceFlow: MutableSharedFlow<Unit> =
         MutableSharedFlow(extraBufferCapacity = BUFFER_SIZE, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     override suspend fun addTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         if (userPropertyRepository.getTypingIndicatorStatus()) {
-            userTypingCache.safeComputeAndMutateSetValue(conversationId) { ExpiringUserTyping(userId, Clock.System.now()) }
+            userTypingCache.safeComputeAndMutateSetValue(conversationId) { userId }
                 .also {
                     userTypingDataSourceFlow.tryEmit(Unit)
                 }
@@ -55,36 +54,27 @@ internal class TypingIndicatorRepositoryImpl(
 
     override suspend fun removeTypingUserInConversation(conversationId: ConversationId, userId: UserId) {
         userTypingCache.block { entry ->
-            entry[conversationId]?.apply { this.removeAll { it.userId == userId } }
+            entry[conversationId]?.apply { this.removeAll { it == userId } }
         }.also {
             userTypingDataSourceFlow.tryEmit(Unit)
         }
     }
 
-    override suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<ExpiringUserTyping>> {
+    override suspend fun observeUsersTyping(conversationId: ConversationId): Flow<Set<UserId>> {
         return userTypingDataSourceFlow
             .map { userTypingCache[conversationId] ?: emptySet() }
             .onStart { emit(userTypingCache[conversationId] ?: emptySet()) }
     }
 
-    companion object {
-        const val BUFFER_SIZE = 32 // drop after this threshold
-    }
-}
-
-// todo expire by worker
-data class ExpiringUserTyping(
-    val userId: UserId,
-    val date: Instant
-) {
-    override fun equals(other: Any?): Boolean {
-        return other != null && when (other) {
-            is ExpiringUserTyping -> other.userId == this.userId
-            else -> false
+    override suspend fun clearExpiredTypingIndicators() {
+        userTypingCache.block { entry ->
+            entry.clear()
+        }.also {
+            userTypingDataSourceFlow.tryEmit(Unit)
         }
     }
 
-    override fun hashCode(): Int {
-        return this.userId.hashCode()
+    companion object {
+        const val BUFFER_SIZE = 32 // drop after this threshold
     }
 }
