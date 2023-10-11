@@ -252,12 +252,14 @@ internal class UserDataSource internal constructor(
             .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
         val otherUsers = listUserProfileDTO
             .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
+
         userDAO.upsertUsers(
             teamMembers.map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.ACCEPTED,
-                    userTypeEntity = UserTypeEntity.STANDARD
+                    userTypeEntity = userDAO.getUserByQualifiedID(userProfileDTO.id.toDao())
+                        .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
                 )
             }
         )
