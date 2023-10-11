@@ -81,9 +81,11 @@ fun Severity.toKaliumLogLevel(): KaliumLogLevel = when (this) {
 }
 
 /**
- * the logWriter is to create a custom writer other than the existing log writers from kermit to intercept the logs
- * in the android case we use it to write the logs on file
- *
+ * Custom logger writer which uses multiplatform [KermitLogger] underneath to allow to customize log message or tag.
+ * @param config the [Config] object which contains the configuration of the logger
+ * @param tag the [Tag] object which identifies the source of the log message. Can combine multiple data and turns it
+ * into structured String used by the [KermitLogger] so that it can be parsed back again to the [Tag] object.
+ * To know more how it behaves and what are the possibilities, take a look at the [Tag] sealed class and its subtypes.
  */
 class KaliumLogger(
     private val config: Config = Config.DEFAULT,
@@ -105,6 +107,14 @@ class KaliumLogger(
 
     fun logLevel(): KaliumLogLevel = config.logLevel()
 
+    /**
+     * Creates a new logger with custom tag that replaces the old tag and allows to specify which specific app flow,
+     * one of [ApplicationFlow], the logs sent by this logger relate to.
+     * When the logger already contains [Tag.UserClientText] type of logs, then user-related tag data will still be included,
+     * and this featureId tag part will be added as a prefix, to keep the standard pattern of the tag: "tag[userId|clientId]".
+     * In this case it will become "featureId:featureName[userId|clientId]".
+     * When current type of tag is [Tag.Text], then it will just replace it with the new one: "featureId:featureName".
+     */
     @Suppress("unused")
     fun withFeatureId(featureId: ApplicationFlow): KaliumLogger = KaliumLogger(
         config = config,
@@ -116,6 +126,13 @@ class KaliumLogger(
         }
     )
 
+    /**
+     * Creates a new logger with custom tag that replaces the old tag and allows to add user-related data to the tag.
+     * When the logger already contains [Tag.UserClientText] type of tag, then user-related tag data part will be replaced,
+     * and if it contained already some text tag prefix part, then the same prefix will be also included in the new one,
+     * to keep the standard pattern of the tag: "tag[userId|clientId]".
+     */
+    @Suppress("unused")
     fun withUserDeviceData(data: () -> UserClientData): KaliumLogger = KaliumLogger(
         config = config,
         tag = when (tag) {
@@ -174,8 +191,21 @@ class KaliumLogger(
         }
     }
 
+    /**
+     * Defined types of tags that can be provided to the [KaliumLogger].
+     */
     sealed class Tag {
+
+        /**
+         * Simple String text tag.
+         */
         data class Text(val text: String) : Tag()
+
+        /**
+         * User-related data tag. Contains String text prefix and [UserClientData] (userId and clientId).
+         * It will be added to the tag in the standard pattern: "tag[userId|clientId]",
+         * so it can be combined with a [Tag.Text] type by adding the tag text as a prefix in this one.
+         */
         data class UserClientText(val prefix: String, val data: () -> UserClientData) : Tag()
     }
 
