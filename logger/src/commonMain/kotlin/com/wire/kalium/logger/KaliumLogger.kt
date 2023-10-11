@@ -171,10 +171,12 @@ class KaliumLogger(
 
         fun kermitConfig(): LoggerConfig = mutableKermitConfig
 
+        @Suppress("unused")
         fun setLogLevel(level: KaliumLogLevel) {
             mutableKermitConfig.minSeverity = level.toMinSeverity()
         }
 
+        @Suppress("unused")
         fun setLogWriterList(logWriterList: List<LogWriter>) {
             mutableKermitConfig.logWriterList = logWriterList
         }
@@ -207,7 +209,7 @@ class KaliumLogger(
          * so it can be combined with a [Tag.Text] type by adding the tag text as a prefix in this one.
          */
         data class UserClientText(val prefix: String, val data: () -> UserClientData) : Tag() {
-            override fun tagString(): String = data().let { "${prefix}[${it.userId}|${it.clientId}]" }
+            override fun tagString(): String = data().let { "$prefix[${it.userId}|${it.clientId}]" }
         }
     }
 
