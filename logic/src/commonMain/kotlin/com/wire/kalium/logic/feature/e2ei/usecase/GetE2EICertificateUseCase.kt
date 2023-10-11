@@ -20,6 +20,9 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.decodePemCertificate
 
+/**
+ * This use case is used to get the e2ei certificate
+ */
 interface GetE2EICertificateUseCase {
     operator fun invoke(): E2eiCertificate
 }
