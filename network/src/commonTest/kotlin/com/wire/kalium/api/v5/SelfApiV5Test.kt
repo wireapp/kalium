@@ -16,11 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.api.v4.user.self
+package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
-import com.wire.kalium.network.api.v4.authenticated.SelfApiV4
+import com.wire.kalium.network.api.v5.authenticated.SelfApiV5
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,7 +29,7 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
-internal class SelfApiV4Test : ApiTest() {
+internal class SelfApiV5Test : ApiTest() {
     @Test
     fun givenValidRequest_whenUpdatingSupportedProtocols_theRequestShouldBeConfiguredCorrectly() =
         runTest {
@@ -42,7 +42,7 @@ internal class SelfApiV4Test : ApiTest() {
                     assertPathEqual("$PATH_SELF/$PATH_SUPPORTED_PROTOCOLS")
                 }
             )
-            val selfApi = SelfApiV4(networkClient, TEST_SESSION_MANAGER)
+            val selfApi = SelfApiV5(networkClient, TEST_SESSION_MANAGER)
             val response = selfApi.updateSupportedProtocols(listOf(SupportedProtocolDTO.MLS))
             assertTrue(response.isSuccessful())
         }
