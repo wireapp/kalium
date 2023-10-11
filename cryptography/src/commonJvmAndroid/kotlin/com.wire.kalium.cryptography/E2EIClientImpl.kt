@@ -51,7 +51,7 @@ class E2EIClientImpl(
         toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(toUByteList(authz)))
 
     override fun createDpopToken(backendNonce: String) =
-        wireE2eIdentity.createDpopToken(expirySecs = defaultDPoPTokenExpiry, backendNonce)
+        TODO("Not implemented")
 
     override fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
         toByteArray(wireE2eIdentity.newDpopChallengeRequest(accessToken, previousNonce))
@@ -66,13 +66,13 @@ class E2EIClientImpl(
         toByteArray(wireE2eIdentity.checkOrderRequest(orderUrl, previousNonce))
 
     override fun checkOrderResponse(order: JsonRawData) =
-        wireE2eIdentity.checkOrderResponse(toUByteList(order))
+        TODO("Not implemented")
 
     override fun finalizeRequest(previousNonce: String) =
         toByteArray(wireE2eIdentity.finalizeRequest(previousNonce))
 
     override fun finalizeResponse(finalize: JsonRawData) =
-        wireE2eIdentity.finalizeResponse(toUByteList(finalize))
+        TODO("Not implemented")
 
     override fun certificateRequest(previousNonce: String) =
         toByteArray(wireE2eIdentity.certificateRequest(previousNonce))
