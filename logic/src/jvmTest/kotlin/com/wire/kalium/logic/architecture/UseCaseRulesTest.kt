@@ -21,14 +21,13 @@ import com.lemonappdev.konsist.api.Konsist
 import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
 import com.lemonappdev.konsist.api.ext.list.withParentNamed
 import com.lemonappdev.konsist.api.verify.assertTrue
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 class UseCaseRulesTest {
 
     @Test
     fun classesWithUseCaseSuffixShouldResideInFeaturePackage() {
-        Konsist.scopeFromProject()
+        Konsist.scopeFromProduction()
             .classes()
             .withNameEndingWith("UseCase")
             .assertTrue { it.resideInPackage("..feature..") }
@@ -37,7 +36,7 @@ class UseCaseRulesTest {
     @Test
     fun classesWithUseCaseSuffixShouldHaveSinglePublicOperatorFunctionCalledInvoke() {
         Konsist
-            .scopeFromProject()
+            .scopeFromProduction()
             .classes()
             .withNameEndingWith("UseCase")
             .assertTrue {
@@ -52,7 +51,7 @@ class UseCaseRulesTest {
     @Test
     fun everyUseCaseClassHasTests() {
         Konsist
-            .scopeFromProject()
+            .scopeFromProduction()
             .classes()
             .withParentNamed("UseCase")
             .assertTrue { it.hasTestClass() }
@@ -61,7 +60,7 @@ class UseCaseRulesTest {
     @Test
     fun everyUseCaseClassHasKDocs() {
         Konsist
-            .scopeFromProject()
+            .scopeFromProduction()
             .classes()
             .withParentNamed("UseCase")
             .assertTrue { it.hasKDoc }
@@ -69,7 +68,7 @@ class UseCaseRulesTest {
 
     @Test
     fun useCaseImplementationsShouldBeInternalOrHaveInternalConstructor() {
-        Konsist.scopeFromProject()
+        Konsist.scopeFromProduction()
             .classes()
             .withNameEndingWith("UseCaseImpl")
             .assertTrue { useCase ->
