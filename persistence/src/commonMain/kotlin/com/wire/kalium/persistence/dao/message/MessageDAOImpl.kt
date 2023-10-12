@@ -403,18 +403,12 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun getConversationMessagesFromSearch(
         searchQuery: String,
         conversationId: QualifiedIDEntity
-    ) {
-        withContext(coroutineContext) {
-            queries.selectConversationMessagesFromSearch(
-                searchQuery,
-                conversationId,
-                mapper::toEntityMessageFromView
-            )
-                .executeAsList()
-                .map {
-                    kaliumLogger.d("SEARCH_MSGS -> ${(it.content as MessageEntityContent.Text).messageBody}")
-                }
-        }
+    ): List<MessageEntity> = withContext(coroutineContext) {
+        queries.selectConversationMessagesFromSearch(
+            searchQuery,
+            conversationId,
+            mapper::toEntityMessageFromView
+        ).executeAsList()
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
