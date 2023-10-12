@@ -300,7 +300,7 @@ internal class MessageDAOImpl internal constructor(
                 )
             }
             val selfMention = newTextContent.mentions.firstNotNullOfOrNull { it.userId == selfUserId }
-            if(selfMention != null) {
+            if (selfMention != null) {
                 unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
             } else {
                 unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MESSAGE, currentMessageId, conversationId)
