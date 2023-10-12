@@ -734,6 +734,35 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(expectedNewOneOnOneConversationId, persistedUser?.activeOneOnOneConversationId)
     }
 
+    @Test
+    fun givenAnExistingUser_whenPerformingPartialUpdate_thenChangedFieldIsUpdatedOthersAreUnchanged() = runTest(dispatcher) {
+        // given
+        val expectedName = "new name"
+        val update = PartialUserEntity(
+            name = expectedName,
+            handle = null,
+            email = null,
+            accentId = null,
+            previewAssetId = null,
+            completeAssetId = null,
+            supportedProtocols = null
+            )
+        db.userDAO.upsertUser(user1)
+
+        // when
+        db.userDAO.updateUser(user1.id, update)
+
+        // then
+        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertEquals(expectedName, persistedUser?.name)
+        assertEquals(user1.handle, persistedUser?.handle)
+        assertEquals(user1.email, persistedUser?.email)
+        assertEquals(user1.accentId, persistedUser?.accentId)
+        assertEquals(user1.previewAssetId, persistedUser?.previewAssetId)
+        assertEquals(user1.completeAssetId, persistedUser?.completeAssetId)
+        assertEquals(user1.supportedProtocols, persistedUser?.supportedProtocols)
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))

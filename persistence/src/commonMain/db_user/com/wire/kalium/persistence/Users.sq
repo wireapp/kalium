@@ -63,13 +63,13 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 updateUser {
 UPDATE User
 SET
-name = :name, name = coalece(:name, name),
-handle = :handle, handle = coalece(:handle, handle),
-email = :email, email = coalece(:email, email),
-accent_id = :accent_id, accent_id = coalece(:accent_id, accent_id),
-preview_asset_id = :preview_asset_id, preview_asset_id = coalece(:preview_asset_id, preview_asset_id),
-complete_asset_id = :complete_asset_id, complete_asset_id = coalece(:complete_asset_id, complete_asset_id),
-supported_protocols = :supported_protocols, supported_protocols = coalece(:supported_protocols, supported_protocols)
+name = coalesce(:name, name),
+handle = coalesce(:handle, handle),
+email = coalesce(:email, email),
+accent_id = coalesce(:accent_id, accent_id),
+preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
+complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
+supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
 SELECT changes();
 }
