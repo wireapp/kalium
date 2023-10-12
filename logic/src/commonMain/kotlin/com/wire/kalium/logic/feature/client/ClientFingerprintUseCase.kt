@@ -44,7 +44,6 @@ interface ClientFingerprintUseCase {
     suspend operator fun invoke(userId: UserId, clientId: ClientId): Result
 }
 
-
 class ClientFingerprintUseCaseImpl internal constructor(
     private val proteusClientProvider: ProteusClientProvider,
     private val prekeyRepository: PreKeyRepository
