@@ -207,7 +207,8 @@ internal class ConversationMapperImpl(
                             connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
                             expiresAt = null,
                             defederated = userDefederated ?: false,
-                            supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet()
+                            supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet(),
+                            activeOneOnOneConversationId = userActiveOneOnOneConversationId?.toModel()
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
