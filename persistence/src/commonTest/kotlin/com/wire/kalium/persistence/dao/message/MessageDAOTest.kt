@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -43,6 +44,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -264,6 +266,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.SENT
             )
         )
+
         messageDAO.insertOrIgnoreMessages(allMessages)
 
         messageDAO.markMessageAsDeleted(messageUuid, deleteMessageConversationId)
@@ -274,6 +277,8 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         val notDeletedMessage = messageDAO.getMessageById(messageUuid, visibleMessageConversationId)
         assertTrue { notDeletedMessage?.visibility == MessageEntity.Visibility.VISIBLE }
+
+        assertFalse { messageDAO.observeUnreadEvents().first().containsKey(deleteMessageConversationId) }
     }
 
     @Test
