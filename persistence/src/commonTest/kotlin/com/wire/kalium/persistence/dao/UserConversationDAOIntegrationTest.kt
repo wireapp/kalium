@@ -25,15 +25,15 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -249,6 +249,29 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
                 assertTrue { result == (allUsers - userThatIsPartOfConversation) }
                 cancelAndIgnoreRemainingEvents()
             }
+    }
+
+    @Test
+    fun givenActiveOneOnOneWasSetForConversation_whenFetchingConversationView_thenActiveOneOnOneShouldMatch() = runTest {
+        userDAO.insertUser(user1)
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.insertMember(member1, conversationEntity1.id)
+
+        userDAO.updateActiveOneOnOneConversation(user1.id, conversationEntity1.id)
+
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertEquals(conversationEntity1.id, result?.userActiveOneOnOneConversationId)
+    }
+
+    @Test
+    fun givenActiveOneOnOneWasNotSetForConversation_whenFetchingConversationView_thenActiveOneOnOneShouldBeNull() = runTest {
+        userDAO.insertUser(user1)
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertNotNull(result)
+        assertNull(result.userActiveOneOnOneConversationId)
     }
 
     private suspend fun createTestConversation(conversationIDEntity: QualifiedIDEntity, members: List<MemberEntity>) {

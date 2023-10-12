@@ -82,7 +82,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversation_ThenConversationCanBeInserted() = runTest {
+    fun givenConversationIsInserted_whenFetchingById_thenConversationIsReturned() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
@@ -1289,7 +1289,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archivedDateTime = null,
             verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
-            userActiveOneOnOneConversationId = if(type == ConversationEntity.Type.ONE_ON_ONE) id else null
+            userActiveOneOnOneConversationId = null,
         )
     }
 
