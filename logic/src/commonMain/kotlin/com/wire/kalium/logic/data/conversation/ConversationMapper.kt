@@ -224,7 +224,8 @@ internal class ConversationMapperImpl(
                             teamId = teamId?.let { TeamId(it) },
                             connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
                             expiresAt = null,
-                            defederated = userDefederated ?: false
+                            defederated = userDefederated ?: false,
+                            isProteusVerified = false
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -260,7 +261,8 @@ internal class ConversationMapperImpl(
                         previewPicture = previewAssetId?.toModel(),
                         teamId = teamId?.let { TeamId(it) },
                         expiresAt = null,
-                        defederated = userDefederated ?: false
+                        defederated = userDefederated ?: false,
+                        isProteusVerified = false
                     )
 
                     ConversationDetails.Connection(

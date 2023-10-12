@@ -71,7 +71,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
             id = "id1",
             deviceType = null,
             isValid = true,
-            isVerified = false,
+            isProteusVerified = false,
             registrationDate = null,
             lastActive = null,
             label = null,
