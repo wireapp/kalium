@@ -462,7 +462,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
 
         // then
-        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
+        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsersDetails().first()
         assertEquals(userToBackup, restoredUsers)
     }
 
@@ -475,7 +475,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
 
         // then
-        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
+        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsersDetails().first()
         assertEquals(usersPresent, restoredUsers)
     }
 
@@ -489,7 +489,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
 
         // then
-        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
+        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsersDetails().first()
         assertTrue(restoredUsers.containsAll(userToBackup))
         assertEquals(usersPresent.size + userToBackup.size, restoredUsers.size)
     }
@@ -504,15 +504,15 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         val uniqueBackupUsers = backupDatabaseDataGenerator.generateAndInsertUsers(uniqueBackupUsersAmount)
 
         uniqueBackupUsers.forEach { userEntity ->
-            backupDatabaseBuilder.userDAO.insertUser(userEntity)
+            backupDatabaseBuilder.userDAO.insertUser(userEntity.toSimpleEntity())
         }
 
         // when
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
 
         // then
-        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsers().first()
-        assertEquals(restoredUsers, uniqueUsers + uniqueBackupUsers)
+        val restoredUsers = userDatabaseBuilder.userDAO.getAllUsersDetails().first()
+        assertEquals(restoredUsers, uniqueBackupUsers + uniqueUsers)
         assertEquals(uniqueUsersAmount + uniqueBackupUsersAmount, restoredUsers.size)
     }
 

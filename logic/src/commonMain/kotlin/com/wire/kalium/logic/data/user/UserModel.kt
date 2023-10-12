@@ -152,7 +152,8 @@ data class OtherUser(
     val botService: BotService?,
     val deleted: Boolean,
     val defederated: Boolean,
-    override val expiresAt: Instant? = null
+    override val expiresAt: Instant? = null,
+    val isProteusVerified: Boolean
 ) : User() {
 
     /**
