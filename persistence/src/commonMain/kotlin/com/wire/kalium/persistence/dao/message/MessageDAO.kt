@@ -134,6 +134,7 @@ interface MessageDAO {
     )
 
     suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
         conversationId: QualifiedIDEntity
     )
 

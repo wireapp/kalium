@@ -212,6 +212,7 @@ interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
         conversationId: ConversationId
     )
 
@@ -606,9 +607,13 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun getConversationMessagesFromSearch(conversationId: ConversationId) {
+    override suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
+        conversationId: ConversationId
+    ) {
         wrapStorageRequest {
             messageDAO.getConversationMessagesFromSearch(
+                searchQuery = searchQuery,
                 conversationId = conversationId.toDao()
             )
         }

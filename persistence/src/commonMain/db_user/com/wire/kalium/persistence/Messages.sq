@@ -495,4 +495,6 @@ VALUES(?, ?, ?, ?);
 
 selectConversationMessagesFromSearch:
 SELECT * FROM MessageDetailsView
-WHERE conversationId = ? AND contentType = 'TEXT'; -- TODO(Search): Add search query - messageTEXT LIKE('%'+query+'%');
+WHERE text LIKE ('%' || :searchQuery || '%')
+AND conversationId = :conversationId
+AND contentType = 'TEXT';

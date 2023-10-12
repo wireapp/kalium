@@ -400,9 +400,16 @@ internal class MessageDAOImpl internal constructor(
             .distinctUntilChanged()
     }
 
-    override suspend fun getConversationMessagesFromSearch(conversationId: QualifiedIDEntity) {
+    override suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
+        conversationId: QualifiedIDEntity
+    ) {
         withContext(coroutineContext) {
-            queries.selectConversationMessagesFromSearch(conversationId, mapper::toEntityMessageFromView)
+            queries.selectConversationMessagesFromSearch(
+                searchQuery,
+                conversationId,
+                mapper::toEntityMessageFromView
+            )
                 .executeAsList()
                 .map {
                     kaliumLogger.d("SEARCH_MSGS -> ${(it.content as MessageEntityContent.Text).messageBody}")

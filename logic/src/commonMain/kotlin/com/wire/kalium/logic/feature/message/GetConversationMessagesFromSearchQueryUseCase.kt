@@ -22,15 +22,19 @@ import com.wire.kalium.logic.data.message.MessageRepository
 
 interface GetConversationMessagesFromSearchQueryUseCase {
 
-    suspend operator fun invoke(conversationId: ConversationId)
+    suspend operator fun invoke(searchQuery: String, conversationId: ConversationId)
 }
 
 internal class GetConversationMessagesFromSearchQueryUseCaseImpl internal constructor(
     private val messageRepository: MessageRepository
 ) : GetConversationMessagesFromSearchQueryUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId) {
+    override suspend fun invoke(
+        searchQuery: String,
+        conversationId: ConversationId
+    ) {
         messageRepository.getConversationMessagesFromSearch(
+            searchQuery = searchQuery,
             conversationId = conversationId
         )
     }
