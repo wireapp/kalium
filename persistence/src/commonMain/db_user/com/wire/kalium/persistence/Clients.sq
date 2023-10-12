@@ -11,7 +11,8 @@ CREATE TABLE Client (
     id TEXT NOT NULL,
     device_type TEXT AS DeviceTypeEntity,
     is_valid INTEGER  AS Boolean NOT NULL DEFAULT 1,
-    is_proteus_verified INTEGER  AS Boolean NOT NULL DEFAULT 0,
+    -- is_proteus_verified
+    is_verified INTEGER  AS Boolean NOT NULL DEFAULT 0,
     client_type TEXT AS ClientTypeEntity DEFAULT NULL,
     registration_date INTEGER AS Instant DEFAULT NULL,
     label TEXT DEFAULT NULL,
@@ -68,7 +69,7 @@ conversationRecipets:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id) AND is_valid = 1;
 
 updateClientProteusVerificationStatus:
-UPDATE Client SET is_proteus_verified = :is_verified WHERE user_id = :user_id AND id = :client_id;
+UPDATE Client SET is_verified = :is_verified WHERE user_id = :user_id AND id = :client_id;
 
 selectRecipientsByConversationAndUserId:
 SELECT *

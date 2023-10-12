@@ -1,6 +1,3 @@
-ALTER TABLE Client
-RENAME COLUMN is_verified TO is_proteus_verified;
-
 CREATE VIEW IF NOT EXISTS UserDetails AS
 SELECT
 User.qualified_id,
