@@ -214,7 +214,7 @@ interface MessageRepository {
     suspend fun getConversationMessagesFromSearch(
         searchQuery: String,
         conversationId: ConversationId
-    )
+    ): Either<CoreFailure, List<Message.Standalone>>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -610,12 +610,13 @@ class MessageDataSource(
     override suspend fun getConversationMessagesFromSearch(
         searchQuery: String,
         conversationId: ConversationId
-    ) {
-        wrapStorageRequest {
-            messageDAO.getConversationMessagesFromSearch(
-                searchQuery = searchQuery,
-                conversationId = conversationId.toDao()
-            )
-        }
+    ): Either<CoreFailure, List<Message.Standalone>> = wrapStorageRequest({
+        kaliumLogger.w("Ignoring failed recipients for this 'not' Message.Regular : ${it.message.orEmpty()})")
+        Either.Right(listOf())
+    }) {
+        messageDAO.getConversationMessagesFromSearch(
+            searchQuery = searchQuery,
+            conversationId = conversationId.toDao()
+        ).map(messageMapper::fromEntityToMessage)
     }
 }

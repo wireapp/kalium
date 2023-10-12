@@ -17,12 +17,18 @@
  */
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.functional.Either
 
 interface GetConversationMessagesFromSearchQueryUseCase {
 
-    suspend operator fun invoke(searchQuery: String, conversationId: ConversationId)
+    suspend operator fun invoke(
+        searchQuery: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, List<Message.Standalone>>
 }
 
 internal class GetConversationMessagesFromSearchQueryUseCaseImpl internal constructor(
@@ -32,12 +38,10 @@ internal class GetConversationMessagesFromSearchQueryUseCaseImpl internal constr
     override suspend fun invoke(
         searchQuery: String,
         conversationId: ConversationId
-    ) {
-        messageRepository.getConversationMessagesFromSearch(
-            searchQuery = searchQuery,
-            conversationId = conversationId
-        )
-    }
+    ): Either<CoreFailure, List<Message.Standalone>> = messageRepository.getConversationMessagesFromSearch(
+        searchQuery = searchQuery,
+        conversationId = conversationId
+    )
 }
 
 
