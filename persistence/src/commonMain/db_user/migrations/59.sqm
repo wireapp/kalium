@@ -18,7 +18,7 @@ User.incomplete_metadata,
 User.expires_at,
 User.defederated,
 CASE
-    WHEN SUM(Client.is_proteus_verified) = COUNT(*) THEN 1
+    WHEN SUM(Client.is_verified) = COUNT(*) THEN 1
     ELSE 0
 END AS is_proteus_verified
 FROM User
