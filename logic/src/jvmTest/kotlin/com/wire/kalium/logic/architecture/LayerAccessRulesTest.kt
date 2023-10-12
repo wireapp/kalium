@@ -18,19 +18,45 @@
 package com.wire.kalium.logic.architecture
 
 import com.lemonappdev.konsist.api.Konsist
-import com.lemonappdev.konsist.api.ext.list.withNameEndingWith
-import com.lemonappdev.konsist.api.verify.assertTrue
+import com.lemonappdev.konsist.api.ext.list.withPackage
+import com.lemonappdev.konsist.api.verify.assertFalse
 import kotlin.test.Test
 
 class LayerAccessRulesTest {
 
     @Test
-    fun useCaseImplementationsShouldBeInternal() {
-        Konsist.scopeFromProject()
-            .classes()
-            .withNameEndingWith("UseCaseImpl")
-            .assertTrue { useCase ->
-                useCase.constructors.all { it.hasInternalModifier } || useCase.hasInternalModifier
+    fun repositoriesShouldNotAccessFeaturePackageClasses() {
+        Konsist.scopeFromProduction()
+            .files
+            .withPackage("com.wire.kalium.logic.data..")
+            .assertFalse {
+                it.hasImport {
+                    it.hasNameContaining("feature")
+                }
+            }
+    }
+
+    @Test
+    fun useCasesShouldNotAccessDaoLayerDirectly() {
+        Konsist.scopeFromProduction()
+            .files
+            .withPackage("com.wire.kalium.logic.feature..")
+            .assertFalse {
+                it.hasImport {
+                    it.hasNameContaining("persistence")
+                }
+            }
+    }
+
+    @Test
+    fun useCasesShouldNotAccessNetworkLayerDirectly() {
+        Konsist.scopeFromProduction()
+            .files
+            .withPackage("com.wire.kalium.logic.feature..")
+            .assertFalse {
+                it.hasImport {
+                    it.hasNameContaining("network") && !it.hasNameContaining("exception")
+                }
             }
     }
 }

@@ -37,15 +37,19 @@ import com.wire.kalium.logic.wrapProteusRequest
  * If no session exists for the client, a new session is established.
  * @param userId The user id of the client.
  * @param clientId The client id of the client.
- * @return [ClientFingerprintUseCase.Result.Success] if the fingerprint was retrieved successfully.
- * [ClientFingerprintUseCase.Result.Failure] if the fingerprint could not be retrieved.
+ * @return [Result.Success] if the fingerprint was retrieved successfully.
+ * [Result.Failure] if the fingerprint could not be retrieved.
  */
+interface ClientFingerprintUseCase {
+    suspend operator fun invoke(userId: UserId, clientId: ClientId): Result
+}
 
-class ClientFingerprintUseCase internal constructor(
+
+class ClientFingerprintUseCaseImpl internal constructor(
     private val proteusClientProvider: ProteusClientProvider,
     private val prekeyRepository: PreKeyRepository
-) {
-    suspend operator fun invoke(userId: UserId, clientId: ClientId): Result =
+) : ClientFingerprintUseCase {
+    override suspend operator fun invoke(userId: UserId, clientId: ClientId): Result =
         proteusClientProvider.getOrError().flatMap { proteusClient ->
             wrapProteusRequest {
                 proteusClient.remoteFingerPrint(CryptoSessionId(userId.toCrypto(), CryptoClientId(clientId.value)))
@@ -78,23 +82,23 @@ class ClientFingerprintUseCase internal constructor(
             }
         )
     }
+}
 
-    sealed interface Result {
-        data class Success(val fingerprint: ByteArray) : Result {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (other == null || this::class != other::class) return false
+sealed interface Result {
+    data class Success(val fingerprint: ByteArray) : Result {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
 
-                other as Success
+            other as Success
 
-                return fingerprint.contentEquals(other.fingerprint)
-            }
-
-            override fun hashCode(): Int {
-                return fingerprint.contentHashCode()
-            }
+            return fingerprint.contentEquals(other.fingerprint)
         }
 
-        data class Failure(val error: CoreFailure) : Result
+        override fun hashCode(): Int {
+            return fingerprint.contentHashCode()
+        }
     }
+
+    data class Failure(val error: CoreFailure) : Result
 }

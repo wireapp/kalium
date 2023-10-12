@@ -56,7 +56,7 @@ class ClientFingerprintUseCaseTest {
             .arrange()
 
         userCase(userId, clientId).also { result ->
-            assertIs<ClientFingerprintUseCase.Result.Success>(result)
+            assertIs<Result.Success>(result)
             assertEquals(fingerprint, result.fingerprint)
         }
 
@@ -84,7 +84,7 @@ class ClientFingerprintUseCaseTest {
             .arrange()
 
         userCase(userId, clientId).also { result ->
-            assertIs<ClientFingerprintUseCase.Result.Success>(result)
+            assertIs<Result.Success>(result)
             assertEquals(fingerprint, result.fingerprint)
         }
 
@@ -112,7 +112,7 @@ class ClientFingerprintUseCaseTest {
             .arrange()
 
         userCase(userId, clientId).also { result ->
-            assertIs<ClientFingerprintUseCase.Result.Failure>(result)
+            assertIs<Result.Failure>(result)
             assertIs<ProteusFailure>(result.error)
             assertEquals(error.code, (result.error as ProteusFailure).proteusException.code)
         }
@@ -140,7 +140,7 @@ class ClientFingerprintUseCaseTest {
         @Mock
         val proteusClient = mock(ProteusClient::class)
 
-        val userCase = ClientFingerprintUseCase(
+        val userCase = ClientFingerprintUseCaseImpl(
             proteusClientProvider = proteusClientProvider,
             prekeyRepository = preKeyRepository
         )
