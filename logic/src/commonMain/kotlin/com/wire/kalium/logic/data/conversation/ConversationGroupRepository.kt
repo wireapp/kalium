@@ -261,9 +261,17 @@ internal class ConversationGroupRepositoryImpl(
                 userIdList,
                 apiResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure
             )
-            // edge case, in case backend goes 🍌 and returns non-matching domains
-            if (failedUsers.isEmpty()) Either.Left(apiResult.value)
-            tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
+            when (failedUsers.isNotEmpty()) {
+                true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
+                false -> {
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationId,
+                        (validUsers + failedUsers).toSet()
+                    ).flatMap {
+                        Either.Left(apiResult.value)
+                    }
+                }
+            }
         } else {
             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
                 conversationId,

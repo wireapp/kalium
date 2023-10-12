@@ -57,18 +57,21 @@ internal class SearchKnownUsersUseCaseImpl(
         searchQuery: String,
         searchUsersOptions: SearchUsersOptions
     ): Flow<SearchUsersResult> {
-        return if (isUserLookingForHandle(searchQuery)) {
+        val sanitizedSearchQuery = searchQuery.lowercase()
+        return if (isUserLookingForHandle(sanitizedSearchQuery)) {
             searchUserRepository.searchKnownUsersByHandle(
-                handle = searchQuery.removePrefix("@"),
+                handle = sanitizedSearchQuery.sanitizeHandleSearchPattern(),
                 searchUsersOptions = searchUsersOptions
             )
         } else {
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
-                searchQuery = if (searchQuery.matches(FEDERATION_REGEX))
-                    searchQuery.run {
+                searchQuery = if (sanitizedSearchQuery.matches(FEDERATION_REGEX)) {
+                    sanitizedSearchQuery.run {
                         qualifiedIdMapper.fromStringToQualifiedID(this)
                     }.value
-                else searchQuery,
+                } else {
+                    sanitizedSearchQuery.removeSuffix("@")
+                },
                 searchUsersOptions = searchUsersOptions
             )
         }
@@ -86,3 +89,5 @@ internal class SearchKnownUsersUseCaseImpl(
     }
 
 }
+
+internal fun String.sanitizeHandleSearchPattern() = this.substringAfter("@").substringBefore("@")

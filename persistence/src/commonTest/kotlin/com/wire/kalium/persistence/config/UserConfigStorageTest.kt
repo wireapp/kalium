@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.config
 
+import app.cash.turbine.test
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
@@ -30,6 +31,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -79,7 +81,7 @@ class UserConfigStorageTest {
     @Test
     fun givenAReadReceiptsSetValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
         userConfigStorage.persistReadReceipts(true)
-        assertTrue(userConfigStorage.isReadReceiptsEnabled().first())
+        assertTrue(userConfigStorage.areReadReceiptsEnabled().first())
     }
 
     @Test
@@ -138,5 +140,42 @@ class UserConfigStorageTest {
     fun givenScreenshotCensoringConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
         userConfigStorage.persistScreenshotCensoring(enabled = true)
         assertEquals(true, userConfigStorage.isScreenshotCensoringEnabledFlow().first())
+    }
+
+    @Test
+    fun givenAppLockConfig_whenStoring_thenItCanBeRead() = runTest {
+        val expected = AppLockConfigEntity(
+            enforceAppLock = true,
+            inactivityTimeoutSecs = 60
+        )
+        userConfigStorage.persistAppLockStatus(expected.enforceAppLock, expected.inactivityTimeoutSecs)
+        assertEquals(expected, userConfigStorage.appLockStatus())
+    }
+
+    @Test
+    fun givenNewAppLockValueStored_whenObservingFlow_thenNewValueIsEmitted() = runTest {
+        userConfigStorage.appLockFlow().test {
+
+            awaitItem().also {
+                assertNull(it)
+            }
+            val expected1 = AppLockConfigEntity(
+                enforceAppLock = true,
+                inactivityTimeoutSecs = 60
+            )
+            userConfigStorage.persistAppLockStatus(expected1.enforceAppLock, expected1.inactivityTimeoutSecs)
+            awaitItem().also {
+                assertEquals(expected1, it)
+            }
+
+            val expected2 = AppLockConfigEntity(
+                enforceAppLock = false,
+                inactivityTimeoutSecs = 60
+            )
+            userConfigStorage.persistAppLockStatus(expected2.enforceAppLock, expected2.inactivityTimeoutSecs)
+            awaitItem().also {
+                assertEquals(expected2, it)
+            }
+        }
     }
 }

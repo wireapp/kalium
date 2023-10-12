@@ -18,10 +18,26 @@
 
 package com.wire.kalium.util
 
+import kotlinx.cinterop.ObjCObjectVar
+import kotlinx.cinterop.alloc
+import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
+import platform.Foundation.NSError
 import platform.Foundation.NSFileManager
 
 actual object FileUtil {
     actual fun mkDirs(path: String): Boolean =
         // TODO setup a logger for util and log on error?
         NSFileManager.defaultManager.createDirectoryAtPath(path, false, null, null)
+
+    actual fun deleteDirectory(path: String): Boolean = memScoped {
+        // TODO setup a logger for util and log on error?
+        val error = alloc<ObjCObjectVar<NSError?>>()
+        return NSFileManager.defaultManager.removeItemAtPath(path, error.ptr)
+    }
+
+    actual fun isDirectoryNonEmpty(path: String): Boolean = memScoped {
+        val error = alloc<ObjCObjectVar<NSError?>>()
+        NSFileManager.defaultManager.contentsOfDirectoryAtPath(path, error.ptr)?.isNotEmpty() ?: false
+    }
 }

@@ -27,6 +27,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for answering a call.
@@ -66,10 +67,11 @@ internal class AnswerCallUseCaseImpl(
                 unMuteCall(conversationId)
             }
         }
-
-        callManager.value.answerCall(
-            conversationId = conversationId,
-            isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
-        )
+        withContext(dispatchers.default) {
+            callManager.value.answerCall(
+                conversationId = conversationId,
+                isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
+            )
+        }
     }
 }

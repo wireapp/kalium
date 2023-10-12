@@ -34,7 +34,7 @@ class E2EIQualifiedIDTest {
         private const val USER_ID = "user_id"
         private const val DOMAIN = "domain"
 
-        val ENCODED_E2EI_QUALIFIED_CLIENT_ID = "${USER_ID.encodeBase64()}:$CLIENT_ID@$DOMAIN"
+        val ENCODED_E2EI_QUALIFIED_CLIENT_ID = "${USER_ID}:$CLIENT_ID@$DOMAIN"
 
         val E2EI_QUALIFIED_CLIENT_ID = E2EIQualifiedClientId(CLIENT_ID,  CryptoQualifiedID(USER_ID, DOMAIN))
     }

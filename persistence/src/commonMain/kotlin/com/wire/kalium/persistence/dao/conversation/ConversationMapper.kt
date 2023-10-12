@@ -64,7 +64,10 @@ internal class ConversationMapper {
             receiptMode = receipt_mode,
             messageTimer = message_timer,
             userMessageTimer = user_message_timer,
-            userDefederated = userDefederated
+            userDefederated = userDefederated,
+            archived = archived,
+            archivedDateTime = archived_date_time,
+            verificationStatus = verification_status
         )
     }
 
@@ -92,6 +95,9 @@ internal class ConversationMapper {
         receiptMode: ConversationEntity.ReceiptMode,
         messageTimer: Long?,
         userMessageTimer: Long?,
+        archived: Boolean,
+        archivedDateTime: Instant?,
+        verificationStatus: ConversationEntity.VerificationStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -116,6 +122,9 @@ internal class ConversationMapper {
         receiptMode = receiptMode,
         messageTimer = messageTimer,
         userMessageTimer = userMessageTimer,
+        archived = archived,
+        archivedInstant = archivedDateTime,
+        verificationStatus = verificationStatus
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -161,7 +170,10 @@ internal class ConversationMapper {
                 receiptMode = receipt_mode,
                 messageTimer = message_timer,
                 userMessageTimer = user_message_timer,
-                userDefederated = userDefederated
+                userDefederated = userDefederated,
+                archived = archived,
+                archivedDateTime = archived_date_time,
+                verificationStatus = verification_status
             )
         }
     }
@@ -173,7 +185,7 @@ internal class ConversationMapper {
         mlsGroupState: ConversationEntity.GroupState,
         mlsEpoch: Long,
         mlsLastKeyingMaterialUpdate: Instant,
-        mlsCipherSuite: ConversationEntity.CipherSuite,
+        mlsCipherSuite: ConversationEntity.CipherSuite
     ): ConversationEntity.ProtocolInfo {
         return when (protocol) {
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(

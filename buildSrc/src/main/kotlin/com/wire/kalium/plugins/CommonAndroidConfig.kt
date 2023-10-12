@@ -39,7 +39,7 @@ fun LibraryExtension.commonAndroidLibConfig(
     includeNativeInterop: Boolean,
     namespaceSuffix: String
 ) {
-    val sanitizedSuffix = namespaceSuffix.replace('-','.')
+    val sanitizedSuffix = namespaceSuffix.replace('-', '.')
     namespace = "$BASE_NAMESPACE.$sanitizedSuffix"
     compileSdk = Android.Sdk.compile
     sourceSets.getByName("main").manifest.srcFile("src/androidMain/AndroidManifest.xml")
@@ -54,10 +54,11 @@ fun LibraryExtension.commonAndroidLibConfig(
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    packagingOptions {
+    packaging {
         resources.pickFirsts.add("google/protobuf/*.proto")
         jniLibs.pickFirsts.add("**/libsodium.so")
     }
+
     // No Android Unit test. JVM does that. Android runs on emulator
     sourceSets.remove(sourceSets.getByName("test"))
 

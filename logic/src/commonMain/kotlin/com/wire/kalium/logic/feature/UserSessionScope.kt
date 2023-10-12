@@ -85,8 +85,8 @@ import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
-import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
+import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -154,14 +154,8 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
-import com.wire.kalium.logic.feature.conversation.ConversationVerificationStatusHandler
-import com.wire.kalium.logic.feature.conversation.ConversationVerificationStatusHandlerImpl
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCase
-import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
-import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -172,12 +166,17 @@ import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
+import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandlerImpl
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
@@ -185,11 +184,20 @@ import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
-import com.wire.kalium.logic.feature.message.DeleteConversationNotificationsManagerImpl
+import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -204,6 +212,10 @@ import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
 import com.wire.kalium.logic.feature.notificationToken.PushTokenUpdater
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
+import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefillerImpl
+import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
+import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -234,8 +246,6 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
-import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCase
-import com.wire.kalium.logic.feature.user.guestroomlink.GetGuestRoomLinkFeatureStatusUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
@@ -257,11 +267,13 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.SessionManagerImpl
+import com.wire.kalium.logic.sync.AvsSyncStateReporter
+import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
+import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.SyncManagerImpl
@@ -274,8 +286,6 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -318,18 +328,22 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -338,6 +352,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -448,7 +463,9 @@ class UserSessionScope internal constructor(
         networkStateObserver,
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
-        userAgent
+        userAgent,
+        certificatePinning = kaliumConfigs.certPinningConfig,
+        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
@@ -458,7 +475,9 @@ class UserSessionScope internal constructor(
         sessionManager.getServerConfig(),
         sessionManager.getProxyCredentials(),
         globalScope.serverConfigRepository,
-        networkStateObserver
+        networkStateObserver,
+        kaliumConfigs::certPinningConfig,
+        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
 
     private val userConfigRepository: UserConfigRepository
@@ -804,7 +823,8 @@ class UserSessionScope internal constructor(
             authenticatedNetworkContainer.conversationApi,
             clientRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            mlsUnpacker
         )
 
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
@@ -828,7 +848,8 @@ class UserSessionScope internal constructor(
         get() = JoinSubconversationUseCaseImpl(
             authenticatedNetworkContainer.conversationApi,
             mlsConversationRepository,
-            subconversationRepository
+            subconversationRepository,
+            mlsUnpacker
         )
 
     private val leaveSubconversationUseCase: LeaveSubconversationUseCase
@@ -842,6 +863,7 @@ class UserSessionScope internal constructor(
 
     private val slowSyncWorker: SlowSyncWorker by lazy {
         SlowSyncWorkerImpl(
+            eventRepository,
             syncSelfUser,
             syncFeatureConfigsUseCase,
             syncConversations,
@@ -889,7 +911,10 @@ class UserSessionScope internal constructor(
         )
     }
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
-        get() = IncrementalSyncRecoveryHandlerImpl(restartSlowSyncProcessForRecoveryUseCase)
+        get() = IncrementalSyncRecoveryHandlerImpl(
+            restartSlowSyncProcessForRecoveryUseCase,
+            eventRepository,
+        )
 
     private val incrementalSyncManager by lazy {
         IncrementalSyncManager(
@@ -1010,11 +1035,10 @@ class UserSessionScope internal constructor(
 
     private val mlsUnpacker: MLSMessageUnpacker
         get() = MLSMessageUnpackerImpl(
-            mlsClientProvider = mlsClientProvider,
             conversationRepository = conversationRepository,
             subconversationRepository = subconversationRepository,
+            mlsConversationRepository = mlsConversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
-            epochsFlow = epochsFlow,
             selfUserId = userId
         )
 
@@ -1054,7 +1078,7 @@ class UserSessionScope internal constructor(
             callManager,
             persistMessage,
             persistReaction,
-            MessageTextEditHandlerImpl(messageRepository),
+            MessageTextEditHandlerImpl(messageRepository, EphemeralEventsNotificationManagerImpl),
             LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
@@ -1062,7 +1086,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, userId),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, EphemeralEventsNotificationManagerImpl, userId),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -1095,7 +1119,7 @@ class UserSessionScope internal constructor(
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
-            userRepository, conversationRepository, DeleteConversationNotificationsManagerImpl
+            userRepository, conversationRepository, EphemeralEventsNotificationManagerImpl
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
@@ -1140,6 +1164,9 @@ class UserSessionScope internal constructor(
             conversationDAO = userStorage.database.conversationDAO
         )
 
+    private val typingIndicatorHandler: TypingIndicatorHandler
+        get() = TypingIndicatorHandlerImpl(userId, conversations.typingIndicatorIncomingRepository)
+
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
         ConversationEventReceiverImpl(
             newMessageHandler,
@@ -1153,7 +1180,8 @@ class UserSessionScope internal constructor(
             receiptModeUpdateEventHandler,
             conversationMessageTimerEventHandler,
             conversationCodeUpdateHandler,
-            conversationCodeDeletedHandler
+            conversationCodeDeletedHandler,
+            typingIndicatorHandler
         )
     }
 
@@ -1172,14 +1200,26 @@ class UserSessionScope internal constructor(
         get() = UserPropertiesEventReceiverImpl(userConfigRepository)
 
     private val federationEventReceiver: FederationEventReceiver
-        get() = FederationEventReceiverImpl(conversationRepository, connectionRepository, userRepository,
-            userStorage.database.memberDAO, persistMessage, userId)
+        get() = FederationEventReceiverImpl(
+            conversationRepository, connectionRepository, userRepository,
+            userStorage.database.memberDAO, persistMessage, userId
+        )
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
-        get() = FeatureConfigEventReceiverImpl(userConfigRepository, kaliumConfigs, userId)
+        get() = FeatureConfigEventReceiverImpl(
+            GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+            FileSharingConfigHandler(userConfigRepository),
+            MLSConfigHandler(userConfigRepository, userId),
+            ClassifiedDomainsConfigHandler(userConfigRepository),
+            ConferenceCallingConfigHandler(userConfigRepository),
+            SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
+            SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+            E2EIConfigHandler(userConfigRepository),
+            AppLockConfigHandler(userConfigRepository)
+        )
 
     private val preKeyRepository: PreKeyRepository
         get() = PreKeyDataSource(
@@ -1187,8 +1227,20 @@ class UserSessionScope internal constructor(
             proteusClientProvider,
             clientIdProvider,
             userStorage.database.prekeyDAO,
-            userStorage.database.clientDAO
+            userStorage.database.clientDAO,
+            userStorage.database.metadataDAO,
         )
+
+    private val proteusPreKeyRefiller: ProteusPreKeyRefiller
+        get() = ProteusPreKeyRefillerImpl(preKeyRepository)
+
+    private val proteusSyncWorker: ProteusSyncWorker by lazy {
+        ProteusSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            proteusPreKeyRefiller = proteusPreKeyRefiller,
+            preKeyRepository = preKeyRepository
+        )
+    }
 
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
@@ -1201,7 +1253,14 @@ class UserSessionScope internal constructor(
     )
 
     val observeSyncState: ObserveSyncStateUseCase
-        get() = ObserveSyncStateUseCase(slowSyncRepository, incrementalSyncRepository)
+        get() = ObserveSyncStateUseCaseImpl(slowSyncRepository, incrementalSyncRepository)
+
+    private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
+        AvsSyncStateReporterImpl(
+            callManager = callManager,
+            observeSyncStateUseCase = observeSyncState
+        )
+    }
 
     val setConnectionPolicy: SetConnectionPolicyUseCase
         get() = SetConnectionPolicyUseCase(incrementalSyncRepository)
@@ -1239,8 +1298,8 @@ class UserSessionScope internal constructor(
             slowSyncRepository,
             cachedClientIdClearer
         )
-    val conversations: ConversationScope
-        get() = ConversationScope(
+    val conversations: ConversationScope by lazy {
+        ConversationScope(
             conversationRepository,
             conversationGroupRepository,
             connectionRepository,
@@ -1261,8 +1320,10 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             globalScope.serverConfigRepository,
             userStorage,
+            userPropertyRepository,
             this
         )
+    }
 
     val migration get() = MigrationScope(userStorage.database)
     val debug: DebugScope
@@ -1365,11 +1426,6 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-    val getGuestRoomLinkFeature: GetGuestRoomLinkFeatureStatusUseCase
-        get() = GetGuestRoomLinkFeatureStatusUseCaseImpl(
-            userConfigRepository
-        )
-
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
@@ -1403,7 +1459,16 @@ class UserSessionScope internal constructor(
 
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
         get() = SyncFeatureConfigsUseCaseImpl(
-            userConfigRepository, featureConfigRepository, getGuestRoomLinkFeature, kaliumConfigs, userId
+            featureConfigRepository,
+            GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+            FileSharingConfigHandler(userConfigRepository),
+            MLSConfigHandler(userConfigRepository, userId),
+            ClassifiedDomainsConfigHandler(userConfigRepository),
+            ConferenceCallingConfigHandler(userConfigRepository),
+            SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
+            SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+            E2EIConfigHandler(userConfigRepository),
+            AppLockConfigHandler(userConfigRepository)
         )
 
     val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
@@ -1457,20 +1522,6 @@ class UserSessionScope internal constructor(
         }
     }
 
-    private val conversationVerificationStatusHandler: ConversationVerificationStatusHandler
-        get() = ConversationVerificationStatusHandlerImpl(
-            conversationRepository,
-            persistMessage,
-            userId
-        )
-
-    val getConversationVerificationStatus: GetConversationVerificationStatusUseCase
-        get() = GetConversationVerificationStatusUseCaseImpl(
-            conversationRepository,
-            mlsConversationRepository,
-            conversationVerificationStatusHandler
-        )
-
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)
 
@@ -1479,6 +1530,13 @@ class UserSessionScope internal constructor(
     )
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
+        MLSConversationsVerificationStatusesHandlerImpl(conversationRepository, persistMessage, mlsConversationRepository, userId)
+    }
+
+    private val typingIndicatorSyncManager: TypingIndicatorSyncManager =
+        TypingIndicatorSyncManager(lazy { conversations.typingIndicatorIncomingRepository }, observeSyncState)
 
     init {
         launch {
@@ -1506,6 +1564,22 @@ class UserSessionScope internal constructor(
 
         launch {
             messages.ephemeralMessageDeletionHandler.enqueuePendingSelfDeletionMessages()
+        }
+
+        launch {
+            proteusSyncWorker.execute()
+        }
+
+        launch {
+            avsSyncStateReporter.execute()
+        }
+
+        launch {
+            mlsConversationsVerificationStatusesHandler.invoke()
+        }
+
+        launch {
+            typingIndicatorSyncManager.execute()
         }
     }
 

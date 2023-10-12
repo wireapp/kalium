@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -37,49 +38,61 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
+import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
-import io.ktor.util.collections.ConcurrentMap
+import com.wire.kalium.network.session.CertificatePinning
+import io.ktor.client.engine.HttpClientEngine
 
 class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
 ) {
 
-    private val authenticationScopeStorage: ConcurrentMap<Pair<ServerConfig, ProxyCredentials?>,
+    private val authenticationScopeStorage: ConcurrentMutableMap<Pair<ServerConfig, ProxyCredentials?>,
             AuthenticationScope> by lazy {
-        ConcurrentMap()
+        ConcurrentMutableMap()
     }
 
+    @Suppress("LongParameterList")
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
         serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
+        certConfig: () -> CertificatePinning,
+        mockEngine: HttpClientEngine?
     ): AuthenticationScope =
-        authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
+        authenticationScopeStorage.safeComputeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,
                 proxyCredentials,
                 serverConfigRepository,
-                networkStateObserver
+                networkStateObserver,
+                certConfig,
+                mockEngine
             )
         }
 }
 
+@Suppress("LongParameterList")
 class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
     private val serverConfigRepository: ServerConfigRepository,
-    private val networkStateObserver: NetworkStateObserver
+    private val networkStateObserver: NetworkStateObserver,
+    certConfig: () -> CertificatePinning,
+    mockEngine: HttpClientEngine?
 ) {
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             networkStateObserver,
             MapperProvider.serverConfigMapper().toDTO(serverConfig),
             proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
-            userAgent
+            userAgent,
+            certificatePinning = certConfig(),
+            mockEngine
         )
     }
     private val loginRepository: LoginRepository

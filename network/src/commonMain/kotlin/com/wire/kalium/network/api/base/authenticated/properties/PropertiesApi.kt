@@ -26,7 +26,8 @@ interface PropertiesApi {
     suspend fun deleteProperty(propertyKey: PropertyKey): NetworkResponse<Unit>
 
     enum class PropertyKey(val key: String) {
-        WIRE_RECEIPT_MODE("WIRE_RECEIPT_MODE")
+        WIRE_RECEIPT_MODE("WIRE_RECEIPT_MODE"),
+        WIRE_TYPING_INDICATOR_MODE("WIRE_TYPING_INDICATOR_MODE")
         // TODO map other event like -ie. 'labels'-
     }
 }

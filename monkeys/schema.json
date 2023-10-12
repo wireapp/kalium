@@ -9,6 +9,36 @@
         "backends"
     ],
     "properties": {
+        "conversationDistribution": {
+            "description": "List of predefined groups to run the tests. A random user will be selected to create (if not logged in, it will automatically) and it will include only other users it is connected to.",
+            "type": "object",
+            "patternProperties": {
+                ".*": {
+                    "type": "object",
+                    "required": [
+                        "userCount",
+                        "groupCount"
+                    ],
+                    "properties": {
+                        "userCount": {
+                            "$ref": "#/$defs/UserCount"
+                        },
+                        "protocol": {
+                            "description": "The protocol of the group",
+                            "type": "string",
+                            "enum": [
+                                "MLS",
+                                "PROTEUS"
+                            ]
+                        },
+                        "groupCount": {
+                            "description": "The number of groups that should be created",
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
         "testCases": {
             "description": "List of test cases to run in parallel",
             "type": "array",
@@ -24,36 +54,6 @@
                     "name": {
                         "description": "Name of the test case",
                         "type": "string"
-                    },
-                    "conversationDistribution": {
-                        "description": "List of predefined groups to run the tests. A random user will be selected to create (if not logged in, it will automatically) and it will include only other users it is connected to.",
-                        "type": "object",
-                        "patternProperties": {
-                            ".*": {
-                                "type": "object",
-                                "required": [
-                                    "userCount",
-                                    "groupCount"
-                                ],
-                                "properties": {
-                                    "userCount": {
-                                        "$ref": "#/$defs/UserCount"
-                                    },
-                                    "protocol": {
-                                        "description": "The protocol of the group",
-                                        "type": "string",
-                                        "enum": [
-                                            "MLS",
-                                            "PROTEUS"
-                                        ]
-                                    },
-                                    "groupCount": {
-                                        "description": "The number of groups that should be created",
-                                        "type": "integer"
-                                    }
-                                }
-                            }
-                        }
                     },
                     "setup": {
                         "description": "List of actions to be executed prior to the test's execution. For things like connecting users to each other.",

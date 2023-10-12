@@ -186,7 +186,7 @@ class MessageMapperImpl(
         )
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     override fun fromMessageToLocalNotificationMessage(
         message: NotificationMessageEntity
     ): LocalNotificationMessage? {
@@ -195,12 +195,21 @@ class MessageMapperImpl(
             message.senderImage?.toModel()
         )
         if (message.isSelfDelete) {
-            return LocalNotificationMessage.SelfDeleteMessage(
-                message.date
-            )
+            return when (message.contentType) {
+                MessageEntity.ContentType.KNOCK -> LocalNotificationMessage.SelfDeleteKnock(
+                    message.id,
+                    message.date
+                )
+
+                else -> LocalNotificationMessage.SelfDeleteMessage(
+                    message.id,
+                    message.date
+                )
+            }
         }
         return when (message.contentType) {
             MessageEntity.ContentType.TEXT -> LocalNotificationMessage.Text(
+                messageId = message.id,
                 author = sender,
                 text = message.text.orEmpty(),
                 time = message.date,
@@ -212,11 +221,12 @@ class MessageMapperImpl(
                     if (it) LocalNotificationCommentType.PICTURE else LocalNotificationCommentType.FILE
                 } ?: LocalNotificationCommentType.FILE
 
-                LocalNotificationMessage.Comment(sender, message.date, type)
+                LocalNotificationMessage.Comment(message.id, sender, message.date, type)
             }
 
             MessageEntity.ContentType.KNOCK -> {
                 LocalNotificationMessage.Knock(
+                    message.id,
                     sender,
                     message.date
                 )
@@ -224,6 +234,7 @@ class MessageMapperImpl(
 
             MessageEntity.ContentType.MISSED_CALL -> {
                 LocalNotificationMessage.Comment(
+                    message.id,
                     sender,
                     message.date,
                     LocalNotificationCommentType.MISSED_CALL
@@ -247,6 +258,8 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> null
             MessageEntity.ContentType.COMPOSITE -> null
             MessageEntity.ContentType.FEDERATION -> null
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> null
         }
     }
 
@@ -352,7 +365,9 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
         is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
         is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
+        is MessageEntityContent.ConversationVerifiedMLS -> MessageContent.ConversationVerifiedMLS
         is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
+        is MessageEntityContent.ConversationVerifiedProteus -> MessageContent.ConversationVerifiedProteus
         is MessageEntityContent.Federation -> when (type) {
             MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
             MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
@@ -566,4 +581,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
         listOf(domain),
         MessageEntity.FederationType.DELETE
     )
+
+    MessageContent.ConversationVerifiedMLS -> MessageEntityContent.ConversationVerifiedMLS
+    MessageContent.ConversationVerifiedProteus -> MessageEntityContent.ConversationVerifiedProteus
 }

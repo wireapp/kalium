@@ -33,6 +33,10 @@ interface UserPropertyRepository {
     suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit>
+    suspend fun getTypingIndicatorStatus(): Boolean
+    suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
+    suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit>
+    suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>
 }
 
 internal class UserPropertyDataSource(
@@ -58,4 +62,23 @@ internal class UserPropertyDataSource(
         userConfigRepository.setReadReceiptsStatus(false)
     }
 
+    override suspend fun getTypingIndicatorStatus(): Boolean =
+        userConfigRepository.isTypingIndicatorEnabled()
+            .firstOrNull()
+            ?.fold({ false }, { it }) ?: true
+
+    override suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>> =
+        userConfigRepository.isTypingIndicatorEnabled()
+
+    override suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.deleteProperty(PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE)
+    }.flatMap {
+        userConfigRepository.setTypingIndicatorStatus(true)
+    }
+
+    override suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.setProperty(PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE, 0)
+    }.flatMap {
+        userConfigRepository.setTypingIndicatorStatus(false)
+    }
 }

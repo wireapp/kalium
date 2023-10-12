@@ -21,18 +21,23 @@ package com.wire.kalium.logic.data.notification
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import kotlinx.datetime.toInstant
 
 interface LocalNotificationMessageMapper {
     fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?): LocalNotificationMessageAuthor
-    fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotificationConversation
+    fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotification
     fun fromConversationEventToLocalNotification(
         conversationEvent: Event.Conversation,
         conversation: Conversation,
         author: User?
-    ): LocalNotificationConversation
+    ): LocalNotification
+
+    fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification
+    fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.TextEdited): LocalNotification
 }
 
 class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
@@ -40,15 +45,16 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
     override fun fromPublicUserToLocalNotificationMessageAuthor(author: OtherUser?) =
         LocalNotificationMessageAuthor(author?.name ?: "", null)
 
-    override fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotificationConversation {
+    override fun fromConnectionToLocalNotificationConversation(connection: ConversationDetails.Connection): LocalNotification {
         val author = fromPublicUserToLocalNotificationMessageAuthor(connection.otherUser)
         val message = LocalNotificationMessage.ConnectionRequest(
+            "",
             author,
             // TODO: change time to Instant
             connection.lastModifiedDate.toInstant(),
             connection.connection.qualifiedToId
         )
-        return LocalNotificationConversation(
+        return LocalNotification.Conversation(
             connection.conversationId,
             connection.conversation.name ?: "",
             listOf(message),
@@ -60,15 +66,16 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
         conversationEvent: Event.Conversation,
         conversation: Conversation,
         author: User?
-    ): LocalNotificationConversation {
+    ): LocalNotification {
         return when (conversationEvent) {
             is Event.Conversation.DeletedConversation -> {
                 val notificationMessage = LocalNotificationMessage.ConversationDeleted(
+                    messageId = "",
                     author = LocalNotificationMessageAuthor(author?.name ?: "", null),
                     // TODO: change time to Instant
                     time = conversationEvent.timestampIso.toInstant()
                 )
-                LocalNotificationConversation(
+                LocalNotification.Conversation(
                     id = conversation.id,
                     conversationName = conversation.name ?: "",
                     messages = listOf(notificationMessage),
@@ -78,7 +85,22 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
 
             else -> throw IllegalArgumentException("This event is not supported yet as a onetime notification")
         }
-
     }
 
+    override fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification =
+        LocalNotification.UpdateMessage(
+            message.conversationId,
+            message.id,
+            LocalNotificationUpdateMessageAction.Delete
+        )
+
+    override fun fromMessageToMessageEditedLocalNotification(
+        message: Message,
+        messageContent: MessageContent.TextEdited
+    ): LocalNotification =
+        LocalNotification.UpdateMessage(
+            message.conversationId,
+            messageContent.editMessageId,
+            LocalNotificationUpdateMessageAction.Edit(messageContent.newContent, message.id)
+        )
 }

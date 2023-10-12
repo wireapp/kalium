@@ -81,6 +81,8 @@ interface ConversationMapper {
 
     fun fromMigrationModel(conversation: Conversation): ConversationEntity
     fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
+    fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus): ConversationEntity.VerificationStatus
+    fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -117,7 +119,10 @@ internal class ConversationMapperImpl(
         receiptMode = receiptModeMapper.fromApiToDaoModel(apiModel.receiptMode),
         messageTimer = apiModel.messageTimer,
         userMessageTimer = null, // user picked self deletion timer is only persisted locally
-        hasIncompleteMetadata = false
+        hasIncompleteMetadata = false,
+        archived = apiModel.members.self.otrArchived ?: false,
+        archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
@@ -157,7 +162,10 @@ internal class ConversationMapperImpl(
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
-            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS)
+            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            archived = archived,
+            archivedDateTime = archivedDateTime,
+            verificationStatus = verificationStatusFromEntity(verificationStatus)
         )
     }
 
@@ -180,7 +188,10 @@ internal class ConversationMapperImpl(
             creatorId = creatorId,
             receiptMode = receiptModeMapper.fromEntityToModel(receiptMode),
             messageTimer = messageTimer?.toDuration(DurationUnit.MILLISECONDS),
-            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS)
+            userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
+            archived = archived,
+            archivedDateTime = archivedInstant,
+            verificationStatus = verificationStatusFromEntity(verificationStatus)
         )
     }
 
@@ -213,7 +224,8 @@ internal class ConversationMapperImpl(
                             teamId = teamId?.let { TeamId(it) },
                             connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
                             expiresAt = null,
-                            defederated = userDefederated ?: false
+                            defederated = userDefederated ?: false,
+                            isProteusVerified = false
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -249,7 +261,8 @@ internal class ConversationMapperImpl(
                         previewPicture = previewAssetId?.toModel(),
                         teamId = teamId?.let { TeamId(it) },
                         expiresAt = null,
-                        defederated = userDefederated ?: false
+                        defederated = userDefederated ?: false,
+                        isProteusVerified = false
                     )
 
                     ConversationDetails.Connection(
@@ -371,6 +384,9 @@ internal class ConversationMapperImpl(
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
             messageTimer = messageTimer?.inWholeMilliseconds,
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
+            archived = archived,
+            archivedInstant = archivedDateTime,
+            verificationStatus = verificationStatusToEntity(verificationStatus)
         )
     }
 
@@ -396,7 +412,10 @@ internal class ConversationMapperImpl(
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        hasIncompleteMetadata = true
+        hasIncompleteMetadata = true,
+        archived = false,
+        archivedInstant = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -433,6 +452,12 @@ internal class ConversationMapperImpl(
             ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
         }
     }
+
+    override fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus) =
+        Conversation.VerificationStatus.valueOf(verificationStatus.name)
+
+    override fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus) =
+        ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 }
 
 private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {

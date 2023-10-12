@@ -24,6 +24,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
@@ -38,7 +39,8 @@ internal interface MessageTextEditHandler {
 }
 
 class MessageTextEditHandlerImpl(
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val editMessageNotificationsManager: EphemeralEventsNotificationManager,
 ) : MessageTextEditHandler {
 
     override suspend fun handle(
@@ -72,6 +74,7 @@ class MessageTextEditHandlerImpl(
                     editTimeStamp = currentMessage.editStatus.lastTimeStamp
                 )
             } else {
+                editMessageNotificationsManager.scheduleEditMessageNotification(message, messageContent)
                 // incoming edit from the backend is newer than the one we have locally so we update the whole message and change the status
                 messageRepository.updateTextMessage(
                     conversationId = message.conversationId,
@@ -87,6 +90,7 @@ class MessageTextEditHandlerImpl(
                 }
             }
         } else {
+            editMessageNotificationsManager.scheduleEditMessageNotification(message, messageContent)
             messageRepository.updateTextMessage(
                 conversationId = message.conversationId,
                 messageContent = messageContent,

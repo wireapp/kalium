@@ -40,14 +40,15 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.CurrentPlatform
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformType
-import io.ktor.util.collections.ConcurrentMap
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 actual class GlobalCallManager(
     appContext: PlatformContext
 ) {
 
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
-        ConcurrentMap()
+        ConcurrentHashMap()
     }
 
     private val calling by lazy {
@@ -85,22 +86,22 @@ actual class GlobalCallManager(
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         kaliumConfigs: KaliumConfigs
     ): CallManager {
-        return callManagerHolder[userId] ?: CallManagerImpl(
-            calling = calling,
-            callRepository = callRepository,
-            userRepository = userRepository,
-            currentClientIdProvider = currentClientIdProvider,
-            selfConversationIdProvider = selfConversationIdProvider,
-            callMapper = callMapper,
-            messageSender = messageSender,
-            conversationRepository = conversationRepository,
-            federatedIdMapper = federatedIdMapper,
-            qualifiedIdMapper = qualifiedIdMapper,
-            videoStateChecker = videoStateChecker,
-            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
-            kaliumConfigs = kaliumConfigs
-        ).also {
-            callManagerHolder[userId] = it
+        return callManagerHolder.computeIfAbsent(userId) {
+            CallManagerImpl(
+                calling = calling,
+                callRepository = callRepository,
+                userRepository = userRepository,
+                currentClientIdProvider = currentClientIdProvider,
+                selfConversationIdProvider = selfConversationIdProvider,
+                callMapper = callMapper,
+                messageSender = messageSender,
+                conversationRepository = conversationRepository,
+                federatedIdMapper = federatedIdMapper,
+                qualifiedIdMapper = qualifiedIdMapper,
+                videoStateChecker = videoStateChecker,
+                conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+                kaliumConfigs = kaliumConfigs
+            )
         }
     }
 

@@ -24,8 +24,10 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
+import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
@@ -221,6 +223,25 @@ sealed class Event(open val id: String, open val transient: Boolean) {
                 )
             }
 
+            data class MemberArchivedStatusChanged(
+                override val id: String,
+                override val conversationId: ConversationId,
+                override val timestampIso: String,
+                override val transient: Boolean,
+                val archivedConversationChangedTime: String,
+                val isArchiving: Boolean
+            ) : MemberChanged(id, conversationId, timestampIso, transient) {
+
+                override fun toLogMap(): Map<String, Any?> = mapOf(
+                    typeKey to "Conversation.MemberArchivedStatusChanged",
+                    idKey to id.obfuscateId(),
+                    conversationIdKey to conversationId.toLogString(),
+                    timestampIsoKey to timestampIso,
+                    "isArchiving" to isArchiving,
+                    "archivedConversationChangedTime" to archivedConversationChangedTime
+                )
+            }
+
             data class IgnoredMemberChanged(
                 override val id: String,
                 override val conversationId: ConversationId,
@@ -341,6 +362,23 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             override val transient: Boolean,
         ) : Conversation(id, transient, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeDeleted")
+        }
+
+        data class TypingIndicator(
+            override val id: String,
+            override val conversationId: ConversationId,
+            override val transient: Boolean,
+            val senderUserId: UserId,
+            val timestampIso: String,
+            val typingIndicatorMode: TypingIndicatorMode,
+        ) : Conversation(id, transient, conversationId) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Conversation.TypingIndicator",
+                conversationIdKey to conversationId.toLogString(),
+                "typingIndicatorMode" to typingIndicatorMode.name,
+                senderUserIdKey to senderUserId.toLogString(),
+                timestampIsoKey to timestampIso
+            )
         }
     }
 
@@ -607,7 +645,20 @@ sealed class Event(open val id: String, open val transient: Boolean) {
             val value: Boolean,
         ) : UserProperty(id, transient) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "User.UserProperty",
+                typeKey to "User.UserProperty.ReadReceiptModeSet",
+                idKey to id.obfuscateId(),
+                "transient" to "$transient",
+                "value" to "$value"
+            )
+        }
+
+        data class TypingIndicatorModeSet(
+            override val id: String,
+            override val transient: Boolean,
+            val value: Boolean,
+        ) : UserProperty(id, transient) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.UserProperty.TypingIndicatorModeSet",
                 idKey to id.obfuscateId(),
                 "transient" to "$transient",
                 "value" to "$value"

@@ -29,18 +29,18 @@ internal open class KeyPackageApiV0 internal constructor() : KeyPackageApi {
     override suspend fun claimKeyPackages(
         param: KeyPackageApi.Param
     ): NetworkResponse<ClaimedKeyPackageList> = NetworkResponse.Error(
-        APINotSupported("MLS: claimKeyPackages api is only available on API V4")
+        APINotSupported("MLS: claimKeyPackages api is only available on API V5")
     )
 
     override suspend fun uploadKeyPackages(
         clientId: String,
         keyPackages: List<KeyPackage>
     ): NetworkResponse<Unit> = NetworkResponse.Error(
-        APINotSupported("MLS: uploadKeyPackages api is only available on API V4")
+        APINotSupported("MLS: uploadKeyPackages api is only available on API V5")
     )
 
     override suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO> =
         NetworkResponse.Error(
-            APINotSupported("MLS: getAvailableKeyPackageCount api is only available on API V4")
+            APINotSupported("MLS: getAvailableKeyPackageCount api is only available on API V5")
         )
 }

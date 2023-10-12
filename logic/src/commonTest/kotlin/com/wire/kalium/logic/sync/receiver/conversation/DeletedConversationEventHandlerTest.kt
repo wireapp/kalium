@@ -18,24 +18,19 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.message.DeleteConversationNotificationsManager
+import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -46,12 +41,11 @@ class DeletedConversationEventHandlerTest {
     @Test
     fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
         val event = TestEvent.deletedConversation()
-        val (arrangement, eventHandler) = Arrangement()
-            .withEphemeralNotificationEnqueue()
-            .withGetConversation(null)
-            .withGetUserAuthor(event.senderUserId)
-            .withDeletingConversationSucceeding()
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withGetConversation(null)
+            withObserveUser(userId = eq(event.senderUserId))
+            withDeletingConversationSucceeding(eq(TestConversation.ID))
+        }
 
         eventHandler.handle(event)
 
@@ -66,12 +60,13 @@ class DeletedConversationEventHandlerTest {
     @Test
     fun givenADeletedConversationEvent_whenHandlingIt_thenShouldDeleteTheConversationAndItsContent() = runTest {
         val event = TestEvent.deletedConversation()
-        val (arrangement, eventHandler) = Arrangement()
-            .withEphemeralNotificationEnqueue()
-            .withGetConversation()
-            .withGetUserAuthor(event.senderUserId)
-            .withDeletingConversationSucceeding()
-            .arrange()
+        val conversation = TestConversation.CONVERSATION
+        val otherUser = TestUser.OTHER
+        val (arrangement, eventHandler) = arrange {
+            withGetConversation(conversation)
+            withObserveUser(flowOf(otherUser), eq(event.senderUserId))
+            withDeletingConversationSucceeding(eq(TestConversation.ID))
+        }
 
         eventHandler.handle(event)
 
@@ -80,55 +75,50 @@ class DeletedConversationEventHandlerTest {
                 .suspendFunction(conversationRepository::deleteConversation)
                 .with(eq(TestConversation.ID))
                 .wasInvoked(exactly = once)
+
+            verify(ephemeralNotifications)
+                .suspendFunction(ephemeralNotifications::scheduleDeleteConversationNotification)
+                .with(eq(EphemeralConversationNotification(event, conversation, otherUser)))
+                .wasInvoked(exactly = once)
         }
     }
 
-    private class Arrangement {
-
-        @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
-        private val userRepository = mock(classOf<UserRepository>())
-
-        @Mock
-        private val ephemeralNotifications = mock(classOf<DeleteConversationNotificationsManager>())
-
-        private val deletedConversationEventHandler: DeletedConversationEventHandler = DeletedConversationEventHandlerImpl(
-            userRepository,
-            conversationRepository,
-            ephemeralNotifications
-        )
-
-        fun withDeletingConversationSucceeding(conversationId: ConversationId = TestConversation.ID) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::deleteConversation)
-                .whenInvokedWith((eq(conversationId)))
-                .thenReturn(Either.Right(Unit))
+    @Test
+    fun givenADeletedConversationEvent_whenHandlingItWithError_thenNoSchedulingTheNotification() = runTest {
+        val event = TestEvent.deletedConversation()
+        val conversation = TestConversation.CONVERSATION
+        val otherUser = TestUser.OTHER
+        val (arrangement, eventHandler) = arrange {
+            withGetConversation(conversation)
+            withObserveUser(flowOf(otherUser), eq(event.senderUserId))
+            withDeletingConversationFailing()
         }
 
-        fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationById)
-                .whenInvokedWith(any())
-                .thenReturn(conversation)
-        }
+        eventHandler.handle(event)
 
-        fun withGetUserAuthor(userId: UserId = TestUser.USER_ID) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::observeUser)
-                .whenInvokedWith(eq(userId))
-                .thenReturn(flowOf(TestUser.OTHER))
+        with(arrangement) {
+            verify(ephemeralNotifications)
+                .suspendFunction(ephemeralNotifications::scheduleDeleteConversationNotification)
+                .with(any())
+                .wasNotInvoked()
         }
+    }
 
-        fun withEphemeralNotificationEnqueue() = apply {
-            given(ephemeralNotifications)
-                .suspendFunction(ephemeralNotifications::scheduleNotification)
-                .whenInvokedWith(any())
-                .thenDoNothing()
+    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+
+    private class Arrangement(
+        private val block: Arrangement.() -> Unit
+    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
+
+        fun arrange() = block().run {
+            this@Arrangement to DeletedConversationEventHandlerImpl(
+                conversationRepository = conversationRepository,
+                userRepository = userRepository,
+                deleteConversationNotificationsManager = ephemeralNotifications
+            )
         }
-
-        fun arrange() = this to deletedConversationEventHandler
     }
 
 }

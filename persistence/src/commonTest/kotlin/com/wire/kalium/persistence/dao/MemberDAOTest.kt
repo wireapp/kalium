@@ -139,7 +139,7 @@ class MemberDAOTest : BaseDatabaseTest() {
         assertEquals(
             listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first()
         )
-        assertNotNull(userDAO.getUserByQualifiedID(member1.user).firstOrNull())
+        assertNotNull(userDAO.observeUserDetailsByQualifiedID(member1.user).firstOrNull())
     }
 
     @Test
@@ -147,6 +147,7 @@ class MemberDAOTest : BaseDatabaseTest() {
         val conversationEntity1 = TestStubs.conversationEntity1
         val member1 = TestStubs.member1
         val user = TestStubs.user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
+        val userDetails = TestStubs.userDetails1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
 
         userDAO.insertUser(user)
         conversationDAO.insertConversation(conversationEntity1)
@@ -161,8 +162,8 @@ class MemberDAOTest : BaseDatabaseTest() {
             memberDAO.observeConversationMembers(conversationEntity1.id).first()
         )
         assertEquals(
-            user.copy(connectionStatus = ConnectionEntity.State.ACCEPTED),
-            userDAO.getUserByQualifiedID(member1.user).firstOrNull()
+            userDetails.copy(connectionStatus = ConnectionEntity.State.ACCEPTED),
+            userDAO.observeUserDetailsByQualifiedID(member1.user).firstOrNull()
         )
     }
 
@@ -198,8 +199,8 @@ class MemberDAOTest : BaseDatabaseTest() {
         )
 
         assertEquals(listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first())
-        assertEquals(ConnectionEntity.State.SENT, userDAO.getUserByQualifiedID(user1.id).first()?.connectionStatus)
-        assertEquals(user1.name, userDAO.getUserByQualifiedID(user1.id).first()?.name)
+        assertEquals(ConnectionEntity.State.SENT, userDAO.observeUserDetailsByQualifiedID(user1.id).first()?.connectionStatus)
+        assertEquals(user1.name, userDAO.observeUserDetailsByQualifiedID(user1.id).first()?.name)
     }
 
     @Test
@@ -367,7 +368,7 @@ class MemberDAOTest : BaseDatabaseTest() {
         )
 
         // then
-        val member = userDAO.getUserByQualifiedID(user1.id).first()
+        val member = userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(true, member?.hasIncompleteMetadata)
     }
 

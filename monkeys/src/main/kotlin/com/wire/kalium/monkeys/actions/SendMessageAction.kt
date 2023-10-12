@@ -34,15 +34,14 @@ private val EMOJI: List<String> = listOf(
 )
 
 class SendMessageAction(val config: ActionType.SendMessage) : Action() {
-
-    override suspend fun execute(coreLogic: CoreLogic) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         repeat(this.config.count.toInt()) { i ->
             if (this.config.targets.isNotEmpty()) {
                 this.config.targets.forEach { target ->
                     if (target == ONE_2_1) {
-                        val monkeys = MonkeyPool.randomLoggedInMonkeys(this.config.userCount)
+                        val monkeys = monkeyPool.randomLoggedInMonkeys(this.config.userCount)
                         monkeys.forEach { monkey ->
-                            val targetMonkey = monkey.randomPeer()
+                            val targetMonkey = monkey.randomPeer(monkeyPool)
                             monkey.sendDirectMessageTo(targetMonkey, randomMessage(targetMonkey.user.email, i))
                         }
                     } else {

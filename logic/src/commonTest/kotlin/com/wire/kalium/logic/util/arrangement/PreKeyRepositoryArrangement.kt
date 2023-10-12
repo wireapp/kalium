@@ -26,6 +26,8 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 
 interface PreKeyRepositoryArrangement {
     val preKeyRepository: PreKeyRepository
@@ -39,6 +41,10 @@ interface PreKeyRepositoryArrangement {
     fun withMostRecentPreKeyId(result: Either<StorageFailure, Int>)
 
     fun withUpdatingMostRecentPrekeyReturning(result: Either<StorageFailure, Unit>)
+
+    fun withSetLastPreKeyUploadInstantReturning(result: Either<StorageFailure, Unit>)
+
+    fun withObserveLastPreKeyUploadInstantReturning(flow: Flow<Instant?>)
 }
 
 internal class PreKeyRepositoryArrangementImpl : PreKeyRepositoryArrangement {
@@ -78,5 +84,19 @@ internal class PreKeyRepositoryArrangementImpl : PreKeyRepositoryArrangement {
             .suspendFunction(preKeyRepository::updateMostRecentPreKeyId)
             .whenInvokedWith(any())
             .thenReturn(result)
+    }
+
+    override fun withSetLastPreKeyUploadInstantReturning(result: Either<StorageFailure, Unit>) {
+        given(preKeyRepository)
+            .suspendFunction(preKeyRepository::setLastPreKeyRefillCheckInstant)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withObserveLastPreKeyUploadInstantReturning(flow: Flow<Instant?>) {
+        given(preKeyRepository)
+            .suspendFunction(preKeyRepository::lastPreKeyRefillCheckInstantFlow)
+            .whenInvoked()
+            .thenReturn(flow)
     }
 }

@@ -17,65 +17,63 @@
  */
 package com.wire.kalium.cryptography
 
-import com.wire.crypto.WireE2eIdentity
-import com.wire.kalium.cryptography.MLSClientImpl.Companion.toByteArray
-import com.wire.kalium.cryptography.MLSClientImpl.Companion.toUByteList
+import com.wire.crypto.E2eiEnrollment
 
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class E2EIClientImpl(
-    val wireE2eIdentity: WireE2eIdentity
+    val wireE2eIdentity: E2eiEnrollment
 ) : E2EIClient {
 
     private val defaultDPoPTokenExpiry: UInt = 30U
 
-    override fun directoryResponse(directory: JsonRawData) =
-        toAcmeDirectory(wireE2eIdentity.directoryResponse(toUByteList(directory)))
+    override suspend fun directoryResponse(directory: JsonRawData) =
+        toAcmeDirectory(wireE2eIdentity.directoryResponse(directory))
 
-    override fun getNewAccountRequest(previousNonce: String) =
-        toByteArray(wireE2eIdentity.newAccountRequest(previousNonce))
+    override suspend fun getNewAccountRequest(previousNonce: String) =
+        wireE2eIdentity.newAccountRequest(previousNonce)
 
-    override fun setAccountResponse(account: JsonRawData) =
-        wireE2eIdentity.newAccountResponse(toUByteList(account))
+    override suspend fun setAccountResponse(account: JsonRawData) =
+        wireE2eIdentity.newAccountResponse(account)
 
-    override fun getNewOrderRequest(previousNonce: String) =
-        toByteArray(wireE2eIdentity.newOrderRequest(previousNonce))
+    override suspend fun getNewOrderRequest(previousNonce: String) =
+        wireE2eIdentity.newOrderRequest(previousNonce)
 
-    override fun setOrderResponse(order: JsonRawData) =
-        toNewAcmeOrder(wireE2eIdentity.newOrderResponse(toUByteList(order)))
+    override suspend fun setOrderResponse(order: JsonRawData) =
+        toNewAcmeOrder(wireE2eIdentity.newOrderResponse(order))
 
-    override fun getNewAuthzRequest(url: String, previousNonce: String) =
-        toByteArray(wireE2eIdentity.newAuthzRequest(url, previousNonce))
+    override suspend fun getNewAuthzRequest(url: String, previousNonce: String) =
+        wireE2eIdentity.newAuthzRequest(url, previousNonce)
 
-    override fun setAuthzResponse(authz: JsonRawData) =
-        toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(toUByteList(authz)))
+    override suspend fun setAuthzResponse(authz: JsonRawData) =
+        toNewAcmeAuthz(wireE2eIdentity.newAuthzResponse(authz))
 
-    override fun createDpopToken(backendNonce: String) =
+    override suspend fun createDpopToken(backendNonce: String) =
         wireE2eIdentity.createDpopToken(expirySecs = defaultDPoPTokenExpiry, backendNonce)
 
-    override fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
-        toByteArray(wireE2eIdentity.newDpopChallengeRequest(accessToken, previousNonce))
+    override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
+        wireE2eIdentity.newDpopChallengeRequest(accessToken, previousNonce)
 
-    override fun getNewOidcChallengeRequest(idToken: String, previousNonce: String) =
-        toByteArray(wireE2eIdentity.newOidcChallengeRequest(idToken, previousNonce))
+    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String) =
+        wireE2eIdentity.newOidcChallengeRequest(idToken, previousNonce)
 
-    override fun setChallengeResponse(challenge: JsonRawData) =
-        wireE2eIdentity.newChallengeResponse(toUByteList(challenge))
+    override suspend fun setChallengeResponse(challenge: JsonRawData) =
+        wireE2eIdentity.newChallengeResponse(challenge)
 
-    override fun checkOrderRequest(orderUrl: String, previousNonce: String) =
-        toByteArray(wireE2eIdentity.checkOrderRequest(orderUrl, previousNonce))
+    override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String) =
+        wireE2eIdentity.checkOrderRequest(orderUrl, previousNonce)
 
-    override fun checkOrderResponse(order: JsonRawData) =
-        wireE2eIdentity.checkOrderResponse(toUByteList(order))
+    override suspend fun checkOrderResponse(order: JsonRawData) =
+        wireE2eIdentity.checkOrderResponse(order)
 
-    override fun finalizeRequest(previousNonce: String) =
-        toByteArray(wireE2eIdentity.finalizeRequest(previousNonce))
+    override suspend fun finalizeRequest(previousNonce: String) =
+        wireE2eIdentity.finalizeRequest(previousNonce)
 
-    override fun finalizeResponse(finalize: JsonRawData) =
-        wireE2eIdentity.finalizeResponse(toUByteList(finalize))
+    override suspend fun finalizeResponse(finalize: JsonRawData) =
+        wireE2eIdentity.finalizeResponse(finalize)
 
-    override fun certificateRequest(previousNonce: String) =
-        toByteArray(wireE2eIdentity.certificateRequest(previousNonce))
+    override suspend fun certificateRequest(previousNonce: String) =
+        wireE2eIdentity.certificateRequest(previousNonce)
 
     companion object {
         fun toAcmeDirectory(value: com.wire.crypto.AcmeDirectory) = AcmeDirectory(

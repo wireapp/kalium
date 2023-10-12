@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
-import com.wire.kalium.logic.data.notification.LocalNotificationConversation
+import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -117,7 +117,7 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotificationConversation>>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotification>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -247,11 +247,11 @@ class MessageDataSource(
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
-    ): Either<CoreFailure, Flow<List<LocalNotificationConversation>>> = wrapStorageRequest {
+    ): Either<CoreFailure, Flow<List<LocalNotification>>> = wrapStorageRequest {
         messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
             notificationEntities.groupBy { it.conversationId }
                 .map { (conversationId, messages) ->
-                    LocalNotificationConversation(
+                    LocalNotification.Conversation(
                         // todo: needs some clean up!
                         id = conversationId.toModel(),
                         conversationName = messages.first().conversationName ?: "",

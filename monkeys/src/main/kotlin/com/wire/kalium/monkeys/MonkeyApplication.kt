@@ -28,12 +28,16 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.monkeys.importer.TestData
 import com.wire.kalium.monkeys.importer.TestDataImporter
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import io.ktor.server.application.call
+import io.ktor.server.netty.Netty
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.runBlocking
 import sun.misc.Signal
@@ -43,60 +47,63 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val dataFilePath by argument(help = "path to the test data file")
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-f", "--log-file", help = "output file for logs")
+    private val monkeysLogOutputFile by option("-m", "--monkeys-log-file", help = "output file for monkey logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
+    private val monkeyFileLogger: LogWriter by lazy { fileLogger(monkeysLogOutputFile ?: "monkeys.log") }
 
-    override fun run() = runBlocking {
+    override fun run() = runBlocking(Dispatchers.Default) {
         // stop on ctrl + c
         Signal.handle(Signal(("INT"))) {
             logger.i("Stopping Infinite Monkeys")
             this.coroutineContext.cancelChildren()
         }
-        val coreLogic = coreLogic(
-            rootPath = "$HOME_DIRECTORY/.kalium/accounts",
-            kaliumConfigs = KaliumConfigs(
-                developmentApiEnabled = true,
-                encryptProteusStorage = true,
-                isMLSSupportEnabled = true,
-                wipeOnDeviceRemoval = true,
-            )
-        )
 
         if (logOutputFile != null) {
             CoreLogger.setLoggingLevel(logLevel, fileLogger)
-            MonkeyLogger.setLoggingLevel(logLevel, fileLogger)
         } else {
             CoreLogger.setLoggingLevel(logLevel)
-            MonkeyLogger.setLoggingLevel(logLevel)
         }
-        logger.i("Initializing Infinite Monkeys")
+        MonkeyLogger.setLoggingLevel(logLevel, monkeyFileLogger)
+        logger.i("Initializing Metrics Endpoint")
+        io.ktor.server.engine.embeddedServer(Netty, port = 9090) {
+            routing {
+                get("/") {
+                    call.respondText(MetricsCollector.metrics())
+                }
+            }
+        }.start(false)
 
-        coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
+        logger.i("Initializing Infinite Monkeys")
         val testData = TestDataImporter.importFromFile(dataFilePath)
-        val users = TestDataImporter.generateUserData(testData)
-        MonkeyPool.init(users)
-        runMonkeys(coreLogic, testData)
+        runMonkeys(testData)
     }
 
     private suspend fun runMonkeys(
-        coreLogic: CoreLogic,
         testData: TestData
     ) = with(testData) {
-        logger.i("Running setup")
-        ActionScheduler.runSetup(testCases.flatMap { it.setup }, coreLogic)
-        logger.i("Creating prefixed groups")
-        testData.testCases.forEach {
-            it.conversationDistribution.forEach { (prefix, config) ->
-                ConversationPool.createPrefixedConversations(
-                    coreLogic,
-                    prefix,
-                    config.groupCount,
-                    config.userCount,
-                    config.protocol
-                )
+        val users = TestDataImporter.generateUserData(testData)
+        testData.testCases.forEachIndexed { index, testCase ->
+            val monkeyPool = MonkeyPool(users, testCase.name)
+            val coreLogic = coreLogic("$HOME_DIRECTORY/.kalium/${testCase.name.replace(' ', '_')}")
+            // the first one creates the preset groups
+            if (index == 0) {
+                logger.i("Creating prefixed groups")
+                testData.conversationDistribution.forEach { (prefix, config) ->
+                    ConversationPool.createPrefixedConversations(
+                        coreLogic,
+                        prefix,
+                        config.groupCount,
+                        config.userCount,
+                        config.protocol,
+                        monkeyPool
+                    )
+                }
             }
+            logger.i("Running setup for test case ${testCase.name}")
+            ActionScheduler.runSetup(testCase.setup, coreLogic, monkeyPool)
+            logger.i("Starting actions for test case ${testCase.name}")
+            ActionScheduler.start(testCase.name, testCase.actions, coreLogic, monkeyPool)
         }
-        logger.i("Starting stress tests")
-        ActionScheduler.start(testCases, coreLogic)
     }
 
     companion object {

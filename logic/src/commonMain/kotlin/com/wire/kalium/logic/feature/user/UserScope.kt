@@ -58,6 +58,10 @@ import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnable
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCaseImpl
+import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicatorEnabledUseCase
+import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicatorEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCase
+import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.persistence.dao.MetadataDAO
 
@@ -127,8 +131,16 @@ class UserScope internal constructor(
         get() = ObserveReadReceiptsEnabledUseCaseImpl(
             userPropertyRepository = userPropertyRepository
         )
+
+    val observeTypingIndicatorEnabled: ObserveTypingIndicatorEnabledUseCase
+        get() = ObserveTypingIndicatorEnabledUseCaseImpl(
+            userPropertyRepository = userPropertyRepository
+        )
     val persistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
         get() = PersistReadReceiptsStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
+
+    val persistTypingIndicatorStatusConfig: PersistTypingIndicatorStatusConfigUseCase
+        get() = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
     val serverLinks get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 

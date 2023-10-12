@@ -22,4 +22,12 @@ import java.io.File
 
 actual object FileUtil {
     actual fun mkDirs(path: String): Boolean = File(path).mkdirs()
+
+    actual fun deleteDirectory(path: String): Boolean {
+        return File(path).deleteRecursively()
+    }
+
+    actual fun isDirectoryNonEmpty(path: String): Boolean {
+        return File(path).listFiles()?.isNotEmpty() ?: false
+    }
 }

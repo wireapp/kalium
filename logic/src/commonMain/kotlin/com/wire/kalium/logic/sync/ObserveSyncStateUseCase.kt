@@ -34,12 +34,16 @@ import kotlinx.coroutines.flow.combine
  * in waiting for slow collectors.
  * In case a slow collector is interested in receiving all values, it should add a buffer of its own.
  */
-class ObserveSyncStateUseCase internal constructor(
+interface ObserveSyncStateUseCase {
+    operator fun invoke(): Flow<SyncState>
+}
+
+internal class ObserveSyncStateUseCaseImpl internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository
-) {
+) : ObserveSyncStateUseCase {
 
-    operator fun invoke(): Flow<SyncState> =
+    override operator fun invoke(): Flow<SyncState> =
         combine(slowSyncRepository.slowSyncStatus, incrementalSyncRepository.incrementalSyncState) { slowStatus, incrementalStatus ->
             when (slowStatus) {
                 is SlowSyncStatus.Failed -> SyncState.Failed(slowStatus.failure)

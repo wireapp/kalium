@@ -22,12 +22,16 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.feature.message.GetNotificationsUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 internal interface MessageRepositoryArrangement {
     @Mock
@@ -50,6 +54,8 @@ internal interface MessageRepositoryArrangement {
         messageID: Matcher<String> = any(),
         conversationId: Matcher<ConversationId> = any()
     )
+
+    fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>)
 }
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
@@ -87,5 +93,12 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
             .suspendFunction(messageRepository::markMessageAsDeleted)
             .whenInvokedWith(messageID, conversationId)
             .thenReturn(result)
+    }
+
+    override fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>) {
+        given(messageRepository)
+            .suspendFunction(messageRepository::getNotificationMessage)
+            .whenInvokedWith(any())
+            .thenReturn(list)
     }
 }

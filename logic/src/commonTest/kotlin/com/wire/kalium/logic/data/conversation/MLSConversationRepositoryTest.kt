@@ -26,10 +26,7 @@ import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
@@ -47,7 +44,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
@@ -86,6 +82,23 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class MLSConversationRepositoryTest {
+
+    @Test
+    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withDecryptMLSMessageSuccessful(Arrangement.DECRYPTED_MESSAGE_BUNDLE)
+            .arrange()
+
+        val epochChange = async(TestKaliumDispatcher.default) {
+            arrangement.epochsFlow.first()
+        }
+        yield()
+
+        mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+        assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
@@ -106,7 +119,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::addMember)
+            .suspendFunction(arrangement.mlsClient::addMember)
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
@@ -243,7 +256,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::addMember)
+            .suspendFunction(arrangement.mlsClient::addMember)
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
@@ -406,17 +419,18 @@ class MLSConversationRepositoryTest {
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
+            .withMergePendingGroupFromExternalCommitSuccessful()
             .arrange()
 
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::joinByExternalCommit)
+            .suspendFunction(arrangement.mlsClient::joinByExternalCommit)
             .with(any())
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::mergePendingGroupFromExternalCommit)
+            .suspendFunction(arrangement.mlsClient::mergePendingGroupFromExternalCommit)
             .with(any())
             .wasInvoked(once)
 
@@ -537,7 +551,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::removeMember)
+            .suspendFunction(arrangement.mlsClient::removeMember)
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
@@ -686,7 +700,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::removeMember)
+            .suspendFunction(arrangement.mlsClient::removeMember)
             .with(eq(Arrangement.RAW_GROUP_ID), anything())
             .wasInvoked(once)
 
@@ -857,7 +871,7 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::conversationEpoch)
+            .suspendFunction(arrangement.mlsClient::conversationEpoch)
             .with(any())
             .wasInvoked(once)
 
@@ -890,6 +904,7 @@ class MLSConversationRepositoryTest {
             .withSendMLSMessageSuccessful()
             .withSendCommitBundleSuccessful()
             .withJoinByExternalCommitSuccessful()
+            .withMergePendingGroupFromExternalCommitSuccessful()
             .arrange()
 
         val epochChange = async(TestKaliumDispatcher.default) {
@@ -910,12 +925,12 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            Either.Right(ConversationVerificationStatus.VERIFIED),
+            Either.Right(Conversation.VerificationStatus.VERIFIED),
             mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
         )
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::isGroupVerified)
+            .suspendFunction(arrangement.mlsClient::isGroupVerified)
             .with(any())
             .wasInvoked(once)
     }
@@ -928,12 +943,12 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            Either.Right(ConversationVerificationStatus.NOT_VERIFIED),
+            Either.Right(Conversation.VerificationStatus.NOT_VERIFIED),
             mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
         )
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::isGroupVerified)
+            .suspendFunction(arrangement.mlsClient::isGroupVerified)
             .with(any())
             .wasInvoked(once)
     }
@@ -952,7 +967,7 @@ class MLSConversationRepositoryTest {
         )
 
         verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::isGroupVerified)
+            .suspendFunction(arrangement.mlsClient::isGroupVerified)
             .with(any())
             .wasNotInvoked()
     }
@@ -1003,14 +1018,14 @@ class MLSConversationRepositoryTest {
 
         fun withGetConversationByGroupIdSuccessful() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByGroupID)
+                .suspendFunction(conversationDAO::observeConversationByGroupID)
                 .whenInvokedWith(anything())
                 .then { flowOf(TestConversation.VIEW_ENTITY) }
         }
 
         fun withGetConversationByGroupIdFailing() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::getConversationByGroupID)
+                .suspendFunction(conversationDAO::observeConversationByGroupID)
                 .whenInvokedWith(anything())
                 .then { flowOf(null) }
         }
@@ -1052,42 +1067,49 @@ class MLSConversationRepositoryTest {
 
         fun withAddMLSMemberSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::addMember)
+                .suspendFunction(mlsClient::addMember)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(COMMIT_BUNDLE)
         }
 
         fun withGetGroupEpochReturn(epoch: ULong) = apply {
             given(mlsClient)
-                .function(mlsClient::conversationEpoch)
+                .suspendFunction(mlsClient::conversationEpoch)
                 .whenInvokedWith(anything())
                 .thenReturn(epoch)
         }
 
         fun withJoinConversationSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::joinConversation)
+                .suspendFunction(mlsClient::joinConversation)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(COMMIT)
         }
 
         fun withJoinByExternalCommitSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::joinByExternalCommit)
+                .suspendFunction(mlsClient::joinByExternalCommit)
                 .whenInvokedWith(anything())
                 .thenReturn(COMMIT_BUNDLE)
         }
 
+        fun withMergePendingGroupFromExternalCommitSuccessful() = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::mergePendingGroupFromExternalCommit)
+                .whenInvokedWith(anything())
+                .thenReturn(Unit)
+        }
+
         fun withProcessWelcomeMessageSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::processWelcomeMessage)
+                .suspendFunction(mlsClient::processWelcomeMessage)
                 .whenInvokedWith(anything())
                 .thenReturn(RAW_GROUP_ID)
         }
 
         fun withCommitPendingProposalsSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::commitPendingProposals)
+                .suspendFunction(mlsClient::commitPendingProposals)
                 .whenInvokedWith(anything())
                 .thenReturn(COMMIT_BUNDLE)
         }
@@ -1096,14 +1118,14 @@ class MLSConversationRepositoryTest {
             withCommitPendingProposalsSuccessful()
             var invocationCounter = 0
             given(mlsClient)
-                .function(mlsClient::commitPendingProposals)
+                .suspendFunction(mlsClient::commitPendingProposals)
                 .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
                 .thenReturn(null)
         }
 
         fun withUpdateKeyingMaterialSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::updateKeyingMaterial)
+                .suspendFunction(mlsClient::updateKeyingMaterial)
                 .whenInvokedWith(anything())
                 .thenReturn(COMMIT_BUNDLE)
         }
@@ -1133,14 +1155,14 @@ class MLSConversationRepositoryTest {
 
         fun withDecryptMLSMessageSuccessful(decryptedMessage: com.wire.kalium.cryptography.DecryptedMessageBundle) = apply {
             given(mlsClient)
-                .function(mlsClient::decryptMessage)
+                .suspendFunction(mlsClient::decryptMessage)
                 .whenInvokedWith(any(), any())
-                .thenReturn(decryptedMessage)
+                .thenReturn(listOf(decryptedMessage))
         }
 
         fun withRemoveMemberSuccessful() = apply {
             given(mlsClient)
-                .function(mlsClient::removeMember)
+                .suspendFunction(mlsClient::removeMember)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(COMMIT_BUNDLE)
         }
@@ -1161,7 +1183,7 @@ class MLSConversationRepositoryTest {
 
         fun withGetGroupVerifyReturn(isVerified: Boolean) = apply {
             given(mlsClient)
-                .function(mlsClient::isGroupVerified)
+                .suspendFunction(mlsClient::isGroupVerified)
                 .whenInvokedWith(anything())
                 .thenReturn(isVerified)
         }
@@ -1184,7 +1206,6 @@ class MLSConversationRepositoryTest {
             const val RAW_GROUP_ID = "groupId"
             val TIME = DateTimeUtil.currentIsoDateTimeString()
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val CONVERSATION_ID = ConversationId("ConvId", "Domain")
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
@@ -1209,6 +1230,13 @@ class MLSConversationRepositoryTest {
                 PUBLIC_GROUP_STATE
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
+            val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
+                message = null,
+                commitDelay = null,
+                senderClientId = null,
+                hasEpochChanged = true,
+                identity = null
+            )
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,

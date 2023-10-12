@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.utils.stubs
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
@@ -64,4 +65,26 @@ fun newUserEntity(qualifiedID: QualifiedIDEntity, id: String = "test") =
         hasIncompleteMetadata = false,
         expiresAt = null,
         defederated = false
+    )
+
+fun newUserDetailsEntity(id: String = "test") =
+    UserDetailsEntity(
+        id = QualifiedIDEntity(id, "wire.com"),
+        name = "user$id",
+        handle = "handle$id",
+        email = "email$id",
+        phone = "phone$id",
+        accentId = 1,
+        team = "team",
+        ConnectionEntity.State.ACCEPTED,
+        null,
+        null,
+        UserAvailabilityStatusEntity.NONE,
+        UserTypeEntity.STANDARD,
+        botService = null,
+        deleted = false,
+        hasIncompleteMetadata = false,
+        expiresAt = null,
+        defederated = false,
+        isProteusVerified = false
     )

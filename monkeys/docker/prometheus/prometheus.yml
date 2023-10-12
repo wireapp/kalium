@@ -1,0 +1,14 @@
+global:
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    evaluation_interval: 10s
+scrape_configs:
+    -   job_name: monkeys
+        honor_timestamps: true
+        scrape_interval: 15s
+        scrape_timeout: 10s
+        metrics_path: /
+        scheme: http
+        static_configs:
+            -   targets:
+                    - monkeys:9090

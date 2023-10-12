@@ -33,6 +33,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHand
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
@@ -154,7 +155,8 @@ class ConversationEventReceiverTest {
 
     @Test
     fun givenMemberChangeEvent_whenOnEventInvoked_thenMemberChangeHandlerShouldBeCalled() = runTest {
-        val memberChangeEvent = TestEvent.memberChange(member = Conversation.Member(TestUser.USER_ID, Conversation.Member.Role.Admin))
+        val memberChangeEvent =
+            TestEvent.memberChange(member = Conversation.Member(TestUser.USER_ID, Conversation.Member.Role.Admin))
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
@@ -198,19 +200,20 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenConversationReceiptModeEvent_whenOnEventInvoked_thenReceiptModeUpdateEventHandlerShouldBeCalled() = runTest {
-        val receiptModeUpdateEvent = TestEvent.receiptModeUpdate()
+    fun givenConversationReceiptModeEvent_whenOnEventInvoked_thenReceiptModeUpdateEventHandlerShouldBeCalled() =
+        runTest {
+            val receiptModeUpdateEvent = TestEvent.receiptModeUpdate()
 
-        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+            val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(receiptModeUpdateEvent)
+            val result = featureConfigEventReceiver.onEvent(receiptModeUpdateEvent)
 
-        verify(arrangement.receiptModeUpdateEventHandler)
-            .suspendFunction(arrangement.receiptModeUpdateEventHandler::handle)
-            .with(eq(receiptModeUpdateEvent))
-            .wasInvoked(once)
-        result.shouldSucceed()
-    }
+            verify(arrangement.receiptModeUpdateEventHandler)
+                .suspendFunction(arrangement.receiptModeUpdateEventHandler::handle)
+                .with(eq(receiptModeUpdateEvent))
+                .wasInvoked(once)
+            result.shouldSucceed()
+        }
 
     @Test
     fun givenAccessUpdateEvent_whenOnEventInvoked_thenReturnSuccess() = runTest {
@@ -224,22 +227,23 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenConversationMessageTimerEvent_whenOnEventInvoked_thenPropagateConversationMessageTimerEventHandlerResult() = runTest {
-        val conversationMessageTimerEvent = TestEvent.timerChanged()
+    fun givenConversationMessageTimerEvent_whenOnEventInvoked_thenPropagateConversationMessageTimerEventHandlerResult() =
+        runTest {
+            val conversationMessageTimerEvent = TestEvent.timerChanged()
 
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withConversationMessageTimerFailed()
-            .arrange()
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withConversationMessageTimerFailed()
+                .arrange()
 
-        val result = featureConfigEventReceiver.onEvent(conversationMessageTimerEvent)
+            val result = featureConfigEventReceiver.onEvent(conversationMessageTimerEvent)
 
-        verify(arrangement.conversationMessageTimerEventHandler)
-            .suspendFunction(arrangement.conversationMessageTimerEventHandler::handle)
-            .with(eq(conversationMessageTimerEvent))
-            .wasInvoked(once)
+            verify(arrangement.conversationMessageTimerEventHandler)
+                .suspendFunction(arrangement.conversationMessageTimerEventHandler::handle)
+                .with(eq(conversationMessageTimerEvent))
+                .wasInvoked(once)
 
-        result.shouldFail()
-    }
+            result.shouldFail()
+        }
 
     @Test
     fun givenCodeUpdateEventAndHandlingSuccess_whenOnEventInvoked_thenPropagateCodeUpdatedHandlerResult() = runTest {
@@ -321,6 +325,38 @@ class ConversationEventReceiverTest {
         result.shouldFail()
     }
 
+    @Test
+    fun givenTypingEventAndHandlingSucceeds_whenOnEventInvoked_thenSuccessHandlerResult() = runTest {
+        val typingStarted = TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED)
+        val (arrangement, handler) = Arrangement()
+            .withConversationTypingEventSucceeded(Either.Right(Unit))
+            .arrange()
+
+        val result = handler.onEvent(typingStarted)
+
+        verify(arrangement.typingIndicatorHandler)
+            .suspendFunction(arrangement.typingIndicatorHandler::handle)
+            .with(eq(typingStarted))
+            .wasInvoked(once)
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenTypingEventAndHandlingFails_whenOnEventInvoked_thenSuccessHandlerPropagateFails() = runTest {
+        val typingStarted = TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED)
+        val (arrangement, handler) = Arrangement()
+            .withConversationTypingEventSucceeded(Either.Left(StorageFailure.Generic(RuntimeException("some error"))))
+            .arrange()
+
+        val result = handler.onEvent(typingStarted)
+
+        verify(arrangement.typingIndicatorHandler)
+            .suspendFunction(arrangement.typingIndicatorHandler::handle)
+            .with(eq(typingStarted))
+            .wasInvoked(once)
+        result.shouldFail()
+    }
+
     private class Arrangement :
         CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
         CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl() {
@@ -355,6 +391,9 @@ class ConversationEventReceiverTest {
         @Mock
         val deletedConversationEventHandler = mock(classOf<DeletedConversationEventHandler>())
 
+        @Mock
+        val typingIndicatorHandler = mock(classOf<TypingIndicatorHandler>())
+
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
@@ -367,7 +406,8 @@ class ConversationEventReceiverTest {
             receiptModeUpdateEventHandler = receiptModeUpdateEventHandler,
             conversationMessageTimerEventHandler = conversationMessageTimerEventHandler,
             codeUpdatedHandler = codeUpdatedHandler,
-            codeDeletedHandler = codeDeletedHandler
+            codeDeletedHandler = codeDeletedHandler,
+            typingIndicatorHandler = typingIndicatorHandler
         )
 
         fun arrange(block: Arrangement.() -> Unit = {}) = apply(block).run {
@@ -393,6 +433,13 @@ class ConversationEventReceiverTest {
                 .suspendFunction(conversationMessageTimerEventHandler::handle)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(failure))
+        }
+
+        fun withConversationTypingEventSucceeded(result: Either<StorageFailure, Unit>) = apply {
+            given(typingIndicatorHandler)
+                .suspendFunction(typingIndicatorHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
     }
 

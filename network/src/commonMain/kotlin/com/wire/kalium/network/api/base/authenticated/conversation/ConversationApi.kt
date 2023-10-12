@@ -147,4 +147,9 @@ interface ConversationApi {
         conversationId: ConversationId,
         messageTimer: Long?
     ): NetworkResponse<EventContentDTO.Conversation.MessageTimerUpdate>
+
+    suspend fun sendTypingIndicatorNotification(
+        conversationId: ConversationId,
+        typingIndicatorMode: TypingIndicatorStatusDTO
+    ): NetworkResponse<Unit>
 }

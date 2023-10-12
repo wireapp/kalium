@@ -16,9 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.cryptography.CryptoClientId
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -49,3 +51,5 @@ internal fun UserAssetDTO.toModel(domain: String): QualifiedID = QualifiedID(key
 internal fun SubconversationId.toApi(): String = value
 
 internal fun GroupID.toCrypto(): MLSGroupId = value
+
+internal fun CryptoQualifiedClientId.toModel() = QualifiedClientID(ClientId(value), userId.toModel())

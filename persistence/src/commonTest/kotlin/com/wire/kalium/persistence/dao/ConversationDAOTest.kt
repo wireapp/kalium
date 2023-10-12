@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -127,7 +126,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         insertTeamUserAndMember(team, user2, conversationEntity2.id)
         val result =
-            conversationDAO.getConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
+            conversationDAO.observeConversationByGroupID((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId)
                 .first()
         assertEquals(conversationEntity2.toViewEntity(user2), result)
     }
@@ -332,7 +331,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // when
         conversationDAO.updateKeyingMaterial(conversationProtocolInfo.groupId, newUpdate)
         // then
-        assertEquals(expected, conversationDAO.getConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
+        assertEquals(expected, conversationDAO.observeConversationByGroupID(conversationProtocolInfo.groupId).first()?.protocolInfo)
     }
 
     @Test
@@ -794,6 +793,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenConnectionRequestAndUserWithName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+        val fromArchive = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
         val connectionEntity = ConnectionEntity(
@@ -810,7 +810,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
-        conversationDAO.getAllConversationDetails().first().let {
+        conversationDAO.getAllConversationDetails(fromArchive).first().let {
             assertEquals(1, it.size)
             val result = it.first()
 
@@ -820,7 +820,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
+    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldNotReturnConnectionRequest() = runTest {
+        val fromArchive = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
         val connectionEntity = ConnectionEntity(
@@ -837,13 +838,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
-        conversationDAO.getAllConversationDetails().first().let {
+        conversationDAO.getAllConversationDetails(fromArchive).first().let {
             assertEquals(0, it.size)
         }
     }
 
     @Test
     fun givenLocalConversations_whenGettingAllConversations_thenShouldReturnsOnlyConversationsWithMetadata() = runTest {
+        val fromArchive = false
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
@@ -853,21 +855,58 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
 
-        conversationDAO.getAllConversationDetails().first().let {
+        conversationDAO.getAllConversationDetails(fromArchive).first().let {
             assertEquals(1, it.size)
             assertEquals(conversationEntity1.id, it.first().id)
         }
     }
 
     @Test
+    fun givenLocalConversations_whenGettingArchivedConversations_thenShouldReturnOnlyArchived() = runTest {
+        val fromArchive = true
+        conversationDAO.insertConversation(conversationEntity1.copy(archived = true))
+        conversationDAO.insertConversation(conversationEntity2.copy(archived = true))
+        conversationDAO.insertConversation(conversationEntity3.copy(archived = false))
+
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+
+        memberDAO.insertMember(member1, conversationEntity1.id)
+        memberDAO.insertMember(member2, conversationEntity2.id)
+
+        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun givenLocalConversations_whenGettingNotArchivedConversations_thenShouldReturnOnlyNotArchived() = runTest {
+        val fromArchive = false
+        conversationDAO.insertConversation(conversationEntity1.copy(archived = true))
+        conversationDAO.insertConversation(conversationEntity1.copy(archived = false))
+        conversationDAO.insertConversation(conversationEntity2.copy(archived = false))
+
+        userDAO.insertUser(user1)
+        userDAO.insertUser(user2)
+
+        memberDAO.insertMember(member1, conversationEntity1.id)
+        memberDAO.insertMember(member2, conversationEntity2.id)
+
+        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
     fun givenObserveConversationList_whenAConversationHaveNullAsName_thenItIsIncluded() = runTest {
         // given
+        val fromArchive = false
         val conversation = conversationEntity1.copy(name = null, type = ConversationEntity.Type.GROUP, hasIncompleteMetadata = false)
         conversationDAO.insertConversation(conversation)
         insertTeamUserAndMember(team, user1, conversation.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails().first()
+        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
 
         // then
         assertEquals(conversation.toViewEntity(user1), result.firstOrNull { it.id == conversation.id })
@@ -876,15 +915,136 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenObserveConversationList_whenAConversationHaveIncompleteMetadata_thenItIsNotIncluded() = runTest {
         // given
+        val fromArchive = false
         val conversation = conversationEntity1.copy(hasIncompleteMetadata = true)
         conversationDAO.insertConversation(conversation)
         insertTeamUserAndMember(team, user1, conversation.id)
 
         // when
-        val result = conversationDAO.getAllConversationDetails().first()
+        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
 
         // then
         assertNull(result.firstOrNull { it.id == conversation.id })
+    }
+
+    @Test
+    fun givenConversations_whenObservingTheFullList_thenConvWithNullNameAreLast() = runTest {
+        // given
+        val fromArchive = false
+        val conversation1 = conversationEntity1.copy(
+            id = ConversationIDEntity("convNullName", "domain"),
+            name = null,
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+        )
+
+        val conversation2 = conversationEntity2.copy(
+            id = ConversationIDEntity("convWithName", "domain"),
+            name = "name",
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+        )
+        conversationDAO.insertConversation(conversation1)
+        conversationDAO.insertConversation(conversation2)
+        insertTeamUserAndMember(team, user1, conversation1.id)
+        insertTeamUserAndMember(team, user1, conversation2.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+
+        // then
+        assertEquals(conversation2.id, result[0].id)
+        assertEquals(conversation1.id, result[1].id)
+    }
+
+    @Test
+    fun givenArchivedConversations_whenObservingTheFullListWithNoArchived_thenReturnedConversationsShouldNotBeArchived() = runTest {
+        // given
+        val fromArchive = false
+        val conversation1 = conversationEntity1.copy(
+            id = ConversationIDEntity("convNullName", "domain"),
+            name = null,
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = true
+        )
+
+        val conversation2 = conversationEntity2.copy(
+            id = ConversationIDEntity("convWithName", "domain"),
+            name = "name",
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = false
+        )
+        conversationDAO.insertConversation(conversation1)
+        conversationDAO.insertConversation(conversation2)
+        insertTeamUserAndMember(team, user1, conversation1.id)
+        insertTeamUserAndMember(team, user1, conversation2.id)
+
+        // when
+        val result = conversationDAO.getAllConversationDetails(fromArchive).first()
+
+        // then
+        assertTrue(result.size == 1)
+        assertTrue(!result[0].archived)
+        assertEquals(conversation2.id, result[0].id)
+    }
+
+    @Test
+    fun givenArchivedConversations_whenObservingUnreadConversationCount_thenReturnedCorrectCount() = runTest {
+        // given
+        val conversation1 = conversationEntity1.copy(
+            id = ConversationIDEntity("convNullName", "domain"),
+            name = null,
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = true
+        )
+
+        val conversation2 = conversationEntity2.copy(
+            id = ConversationIDEntity("convWithName", "domain"),
+            name = "name",
+            type = ConversationEntity.Type.GROUP,
+            hasIncompleteMetadata = false,
+            lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            lastReadDate = "2021-03-30T15:36:00.000Z".toInstant(),
+            archived = false
+        )
+
+        val instant = Clock.System.now()
+
+        conversationDAO.insertConversation(conversation1)
+        conversationDAO.insertConversation(conversation2)
+        insertTeamUserAndMember(team, user1, conversation1.id)
+        insertTeamUserAndMember(team, user1, conversation2.id)
+
+        repeat(5) {
+            newRegularMessageEntity(
+                id = Random.nextBytes(10).decodeToString(),
+                conversationId = conversation1.id,
+                senderUserId = user1.id,
+                date = instant
+            ).also { messageDAO.insertOrIgnoreMessage(it) }
+
+            newRegularMessageEntity(
+                id = Random.nextBytes(10).decodeToString(),
+                conversationId = conversation2.id,
+                senderUserId = user1.id,
+                date = instant
+            ).also { messageDAO.insertOrIgnoreMessage(it) }
+        }
+
+        // when
+        val result = conversationDAO.observeUnreadArchivedConversationsCount().first()
+
+        // then
+        assertTrue(result == 1L)
     }
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
@@ -952,7 +1112,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
             userMessageTimer = null,
-            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null
+            userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
+            archived = false,
+            archivedDateTime = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 
@@ -981,7 +1144,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1004,7 +1170,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1030,7 +1199,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1056,7 +1228,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = messageTimer,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

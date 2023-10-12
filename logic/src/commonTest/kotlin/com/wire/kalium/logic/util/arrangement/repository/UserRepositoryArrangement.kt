@@ -18,18 +18,23 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 internal interface UserRepositoryArrangement {
     val userRepository: UserRepository
     fun withDefederateUser(result: Either<CoreFailure, Unit>, userId: Matcher<UserId> = any())
+    fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: Matcher<UserId> = any())
 }
 
 internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
@@ -42,6 +47,13 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
     ) {
         given(userRepository)
             .suspendFunction(userRepository::defederateUser)
+            .whenInvokedWith(userId)
+            .thenReturn(result)
+    }
+
+    override fun withObserveUser(result: Flow<User?>, userId: Matcher<UserId>) {
+        given(userRepository)
+            .suspendFunction(userRepository::observeUser)
             .whenInvokedWith(userId)
             .thenReturn(result)
     }

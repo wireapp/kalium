@@ -13,6 +13,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
+import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
@@ -31,10 +34,11 @@ interface JoinSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 
-class JoinSubconversationUseCaseImpl(
-    val conversationApi: ConversationApi,
-    val mlsConversationRepository: MLSConversationRepository,
-    val subconversationRepository: SubconversationRepository
+internal class JoinSubconversationUseCaseImpl(
+    private val conversationApi: ConversationApi,
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val subconversationRepository: SubconversationRepository,
+    private val mlsMessageUnpacker: MLSMessageUnpacker,
 ) : JoinSubconversationUseCase {
     override suspend operator fun invoke(
         conversationId: ConversationId,
@@ -87,7 +91,14 @@ class JoinSubconversationUseCaseImpl(
                     mlsConversationRepository.joinGroupByExternalCommit(
                         GroupID(subconversationDetails.groupId),
                         groupInfo
-                    )
+
+                    ).flatMapLeft {
+                        if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
+                            Either.Right(Unit)
+                        } else {
+                            Either.Left(it)
+                        }
+                    }
                 }
             }
         } else {

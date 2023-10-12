@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -26,9 +27,14 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
+import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -84,6 +90,7 @@ class ConversationScope internal constructor(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
+    private val userPropertyRepository: UserPropertyRepository,
     private val scope: CoroutineScope
 ) {
 
@@ -154,6 +161,9 @@ class ConversationScope internal constructor(
 
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
         get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
+
+    val updateConversationArchivedStatus: UpdateConversationArchivedStatusUseCase
+        get() = UpdateConversationArchivedStatusUseCaseImpl(conversationRepository)
 
     val observeConnectionList: ObserveConnectionListUseCase
         get() = ObserveConnectionListUseCaseImpl(connectionRepository)
@@ -255,4 +265,32 @@ class ConversationScope internal constructor(
             serverConfigRepository,
             selfUserId
         )
+
+    val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
+        get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
+
+    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler =
+        TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
+
+    internal val typingIndicatorIncomingRepository =
+        TypingIndicatorIncomingRepositoryImpl(
+            ConcurrentMutableMap(),
+            userPropertyRepository
+        )
+
+    internal val typingIndicatorOutgoingRepository =
+        TypingIndicatorOutgoingRepositoryImpl(
+            typingIndicatorSenderHandler,
+            userPropertyRepository
+        )
+
+    val sendTypingEvent: SendTypingEventUseCase
+        get() = SendTypingEventUseCaseImpl(typingIndicatorOutgoingRepository)
+
+    val observeUsersTyping: ObserveUsersTypingUseCase
+        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorIncomingRepository, userRepository)
+
+    val clearUsersTypingEvents: ClearUsersTypingEventsUseCase
+        get() = ClearUsersTypingEventsUseCaseImpl(typingIndicatorIncomingRepository)
+
 }

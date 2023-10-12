@@ -28,12 +28,14 @@ import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 internal interface ConnectionRepositoryArrangement {
     val connectionRepository: ConnectionRepository
 
     fun withGetConnections(result: Either<StorageFailure, Flow<List<ConversationDetails>>>)
     fun withDeleteConnection(result: Either<StorageFailure, Unit>, conversationId: Matcher<ConversationId> = any())
+    fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>)
 }
 
 internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryArrangement {
@@ -57,5 +59,12 @@ internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryAr
             .suspendFunction(connectionRepository::deleteConnection)
             .whenInvokedWith(conversationId)
             .thenReturn(result)
+    }
+
+    override fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>) {
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::observeConnectionRequestsForNotification)
+            .whenInvoked()
+            .thenReturn(connectionsFlow)
     }
 }

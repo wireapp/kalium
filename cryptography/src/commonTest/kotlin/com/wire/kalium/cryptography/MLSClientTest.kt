@@ -18,6 +18,7 @@
 
 package com.wire.kalium.cryptography
 
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -31,24 +32,24 @@ class MLSClientTest : BaseMLSClientTest() {
         val qualifiedClientId: CryptoQualifiedClientId = CryptoQualifiedClientId(clientId.value, id)
     }
 
-    private fun createClient(user: SampleUser): MLSClient {
+    private suspend fun createClient(user: SampleUser): MLSClient {
         return createMLSClient(user.qualifiedClientId)
     }
 
     @Test
-    fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() {
+    fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
         val mlsClient = createClient(ALICE1)
         assertTrue(mlsClient.getPublicKey().isNotEmpty())
     }
 
     @Test
-    fun givenClient_whenCallingGenerateKeyPackages_ReturnListOfExpectedSize() {
+    fun givenClient_whenCallingGenerateKeyPackages_ReturnListOfExpectedSize() = runTest {
         val mlsClient = createClient(ALICE1)
         assertTrue(mlsClient.generateKeyPackages(10).isNotEmpty())
     }
 
     @Test
-    fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() {
+    fun givenNewConversation_whenCallingConversationEpoch_ReturnZeroEpoch() = runTest {
         val mlsClient = createClient(ALICE1)
         mlsClient.createConversation(MLS_CONVERSATION_ID)
         assertEquals(0UL, mlsClient.conversationEpoch(MLS_CONVERSATION_ID))
@@ -57,7 +58,7 @@ class MLSClientTest : BaseMLSClientTest() {
     // TODO figure out why this test crashes on iosX64
     @IgnoreIOS
     @Test
-    fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() {
+    fun givenTwoClients_whenCallingUpdateKeyingMaterial_weCanProcessTheCommitMessage() = runTest {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
@@ -71,11 +72,11 @@ class MLSClientTest : BaseMLSClientTest() {
         val commit = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID).commit
         val result = aliceClient.decryptMessage(conversationId, commit)
 
-        assertNull(result.message)
+        assertNull(result.first().message)
     }
 
     @Test
-    fun givenTwoClients_whenCallingCreateConversation_weCanProcessTheWelcomeMessage() {
+    fun givenTwoClients_whenCallingCreateConversation_weCanProcessTheWelcomeMessage() = runTest {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
@@ -89,7 +90,7 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() {
+    fun givenTwoClients_whenCallingJoinConversation_weCanProcessTheAddProposalMessage() = runTest {
         val alice1Client = createClient(ALICE1)
         val alice2Client = createClient(ALICE2)
         val bobClient = createClient(BOB1)
@@ -110,7 +111,7 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenTwoClients_whenCallingEncryptMessage_weCanDecryptTheMessage() {
+    fun givenTwoClients_whenCallingEncryptMessage_weCanDecryptTheMessage() = runTest {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
@@ -123,13 +124,13 @@ class MLSClientTest : BaseMLSClientTest() {
         val conversationId = aliceClient.processWelcomeMessage(welcome)
 
         val applicationMessage = aliceClient.encryptMessage(conversationId, PLAIN_TEXT.encodeToByteArray())
-        val plainMessage = bobClient.decryptMessage(conversationId, applicationMessage).message
+        val plainMessage = bobClient.decryptMessage(conversationId, applicationMessage).first().message
 
         assertEquals(PLAIN_TEXT, plainMessage?.decodeToString())
     }
 
     @Test
-    fun givenTwoClients_whenCallingAddMember_weCanProcessTheWelcomeMessage() {
+    fun givenTwoClients_whenCallingAddMember_weCanProcessTheWelcomeMessage() = runTest {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
 
@@ -145,7 +146,7 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() {
+    fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() = runTest {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
         val carolClient = createClient(CAROL1)
@@ -164,11 +165,11 @@ class MLSClientTest : BaseMLSClientTest() {
             listOf(Pair(CAROL1.qualifiedClientId, carolClient.generateKeyPackages(1).first()))
         )?.commit!!
 
-        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).message)
+        assertNull(aliceClient.decryptMessage(MLS_CONVERSATION_ID, commit).first().message)
     }
 
     @Test
-    fun givenThreeClients_whenCallingRemoveMember_weCanProcessTheHandshakeMessage() {
+    fun givenThreeClients_whenCallingRemoveMember_weCanProcessTheHandshakeMessage() = runTest {
         val aliceClient = createClient(ALICE1)
         val bobClient = createClient(BOB1)
         val carolClient = createClient(CAROL1)
@@ -185,7 +186,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientRemovalList = listOf(CAROL1.qualifiedClientId)
         val commit = bobClient.removeMember(conversationId, clientRemovalList).commit
 
-        assertNull(aliceClient.decryptMessage(conversationId, commit).message)
+        assertNull(aliceClient.decryptMessage(conversationId, commit).first().message)
     }
 
     companion object {

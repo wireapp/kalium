@@ -31,8 +31,8 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.client.RegisterClientResult
 import com.wire.kalium.logic.feature.client.RegisterClientUseCase
+import com.wire.kalium.logic.feature.conversation.CreateConversationResult
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
-import com.wire.kalium.logic.feature.conversation.GetOneToOneConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.monkeys.importer.Backend
 import com.wire.kalium.monkeys.importer.UserCount
@@ -121,13 +121,14 @@ class Monkey(val user: UserData) {
         callback(this)
     }
 
-    suspend fun randomPeer(): Monkey {
-        return MonkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
+    suspend fun randomPeer(monkeyPool: MonkeyPool): Monkey {
+        return monkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.user.email} not connected to anyone"))
     }
 
-    suspend fun randomPeers(userCount: UserCount, filterOut: List<UserId> = listOf()): List<Monkey> {
-        val count = resolveUserCount(userCount, this.connectedMonkeys().count().toUInt())
-        return this.connectedMonkeys().filterNot { filterOut.contains(it) }.shuffled().map(MonkeyPool::get).take(count.toInt())
+    suspend fun randomPeers(userCount: UserCount, monkeyPool: MonkeyPool, filterOut: List<UserId> = listOf()): List<Monkey> {
+        val connectedMonkeys = this.connectedMonkeys()
+        val count = resolveUserCount(userCount, connectedMonkeys.count().toUInt())
+        return connectedMonkeys.filterNot { filterOut.contains(it) }.shuffled().map(monkeyPool::get).take(count.toInt())
     }
 
     suspend fun sendRequest(anotherMonkey: Monkey) {
@@ -148,9 +149,9 @@ class Monkey(val user: UserData) {
         }
     }
 
-    suspend fun <T> makeReadyThen(coreLogic: CoreLogic, func: suspend Monkey.() -> T): T {
+    suspend fun <T> makeReadyThen(coreLogic: CoreLogic, monkeyPool: MonkeyPool, func: suspend Monkey.() -> T): T {
         if (this.monkeyState is MonkeyState.NotReady) {
-            this.login(coreLogic, MonkeyPool::loggedIn)
+            this.login(coreLogic, monkeyPool::loggedIn)
         }
         return this.func()
     }
@@ -168,7 +169,7 @@ class Monkey(val user: UserData) {
                 ConversationOptions(protocol = protocol)
             )
             if (result is CreateGroupConversationUseCase.Result.Success) {
-                MonkeyConversation(self, result.conversation, isDestroyable)
+                MonkeyConversation(self, result.conversation, isDestroyable, monkeyList)
             } else {
                 error("${self.user.email} could not create group $name: $result")
             }
@@ -214,14 +215,11 @@ class Monkey(val user: UserData) {
     suspend fun sendDirectMessageTo(anotherMonkey: Monkey, message: String) {
         val self = this.user.email
         this.monkeyState.readyThen {
-            conversations.getOneToOneConversation(anotherMonkey.user.userId).collect { result ->
-                if (result is GetOneToOneConversationUseCase.Result.Success) {
-                    messages.sendTextMessage(
-                        result.conversation.id, message
-                    )
-                } else {
-                    error("$self failed contacting ${anotherMonkey.user.email}: $result")
-                }
+            val result = conversations.getOrCreateOneToOneConversationUseCase(anotherMonkey.user.userId)
+            if (result is CreateConversationResult.Success) {
+                messages.sendTextMessage(result.conversation.id, message)
+            } else {
+                error("$self failed contacting ${anotherMonkey.user.email}: $result")
             }
         }
     }

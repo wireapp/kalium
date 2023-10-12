@@ -141,7 +141,7 @@ class ObserveSyncStateUseCaseTest {
         @Mock
         val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
-        fun arrange() = this to ObserveSyncStateUseCase(
+        fun arrange() = this to ObserveSyncStateUseCaseImpl(
             slowSyncRepository = slowSyncRepository,
             incrementalSyncRepository = incrementalSyncRepository
         )

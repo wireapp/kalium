@@ -68,7 +68,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     fun givenClientIsInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
 
         val insertedClient = insertedClient1.copy(user.id, "id1", deviceType = null)
-        val expected = client1.copy(user.id, "id1", deviceType = null, isValid = true, isVerified = false)
+        val expected = client1.copy(user.id, "id1", deviceType = null, isValid = true, isProteusVerified = false)
 
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
@@ -232,7 +232,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
-        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
     }
 
     @Test
@@ -240,11 +240,11 @@ class ClientDAOTest : BaseDatabaseTest() {
         val user = user
         userDAO.insertUser(user)
         clientDAO.insertClient(insertedClient)
-        clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, true)
-        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+        clientDAO.updateClientProteusVerificationStatus(user.id, insertedClient.id, true)
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
 
-        clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, false)
-        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+        clientDAO.updateClientProteusVerificationStatus(user.id, insertedClient.id, false)
+        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
     }
 
     @Test
@@ -270,13 +270,13 @@ class ClientDAOTest : BaseDatabaseTest() {
         userDAO.insertUser(user)
 
         clientDAO.insertClient(insertedClient)
-        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+        assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
 
-        clientDAO.updateClientVerificationStatus(user.id, insertedClient.id, true)
-        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+        clientDAO.updateClientProteusVerificationStatus(user.id, insertedClient.id, true)
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
 
         clientDAO.insertClient(insertedClient)
-        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isVerified }
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
     }
 
     @Test
@@ -366,7 +366,10 @@ class ClientDAOTest : BaseDatabaseTest() {
             accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 }
@@ -378,7 +381,7 @@ private fun InsertClientParam.toClient(): Client =
         deviceType = deviceType,
         clientType = clientType,
         isValid = true,
-        isVerified = false,
+        isProteusVerified = false,
         label = label,
         model = model,
         registrationDate = registrationDate,

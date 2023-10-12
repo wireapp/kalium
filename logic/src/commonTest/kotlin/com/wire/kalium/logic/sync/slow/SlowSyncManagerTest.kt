@@ -39,7 +39,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -77,7 +76,7 @@ class SlowSyncManagerTest {
 
         assertTrue(isCollected)
         verify(arrangement.slowSyncWorker)
-            .suspendFunction(arrangement.slowSyncWorker::performSlowSyncSteps)
+            .suspendFunction(arrangement.slowSyncWorker::slowSyncStepsFlow)
             .wasInvoked(exactly = once)
         verify(arrangement.slowSyncRepository)
             .suspendFunction(arrangement.slowSyncRepository::setSlowSyncVersion)
@@ -96,7 +95,7 @@ class SlowSyncManagerTest {
         advanceUntilIdle()
 
         verify(arrangement.slowSyncWorker)
-            .suspendFunction(arrangement.slowSyncWorker::performSlowSyncSteps)
+            .suspendFunction(arrangement.slowSyncWorker::slowSyncStepsFlow)
             .wasInvoked(exactly = twice)
     }
 
@@ -110,7 +109,7 @@ class SlowSyncManagerTest {
         advanceUntilIdle()
 
         verify(arrangement.slowSyncWorker)
-            .suspendFunction(arrangement.slowSyncWorker::performSlowSyncSteps)
+            .suspendFunction(arrangement.slowSyncWorker::slowSyncStepsFlow)
             .wasInvoked(exactly = once)
     }
 
@@ -438,7 +437,7 @@ class SlowSyncManagerTest {
 
         fun withSlowSyncWorkerReturning(stepFlow: Flow<SlowSyncStep>) = apply {
             given(slowSyncWorker)
-                .suspendFunction(slowSyncWorker::performSlowSyncSteps)
+                .suspendFunction(slowSyncWorker::slowSyncStepsFlow)
                 .whenInvoked()
                 .thenReturn(stepFlow)
         }

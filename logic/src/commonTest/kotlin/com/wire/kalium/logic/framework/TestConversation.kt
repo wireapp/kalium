@@ -73,7 +73,10 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -92,7 +95,10 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -111,7 +117,10 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -151,7 +160,10 @@ object TestConversation {
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        userDefederated = null
+        userDefederated = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -170,7 +182,10 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -258,7 +273,10 @@ object TestConversation {
         accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedInstant = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -295,7 +313,10 @@ object TestConversation {
         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
         messageTimer = null,
         userMessageTimer = null,
-        userDefederated = null
+        userDefederated = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     val CONVERSATION = Conversation(
@@ -314,21 +335,25 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
+    val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
+        GROUP_ID,
+        ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+        0UL,
+        Instant.parse("2021-03-30T15:36:00.000Z"),
+        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    )
     val MLS_CONVERSATION = Conversation(
         ConversationId("conv_id", "domain"),
         "MLS Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.MLS(
-            GROUP_ID,
-            ProtocolInfo.MLS.GroupState.PENDING_JOIN,
-            0UL,
-            Instant.parse("2021-03-30T15:36:00.000Z"),
-            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-        ),
+        MLS_PROTOCOL_INFO,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -339,7 +364,10 @@ object TestConversation {
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
-        userMessageTimer = null
+        userMessageTimer = null,
+        archived = false,
+        archivedDateTime = null,
+        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")

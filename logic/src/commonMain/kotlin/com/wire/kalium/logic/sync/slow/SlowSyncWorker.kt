@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -30,6 +31,8 @@ import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -45,11 +48,12 @@ internal interface SlowSyncWorker {
      * Performs all [SlowSyncStep] in the correct order,
      * emits the current ongoing step.
      */
-    suspend fun performSlowSyncSteps(): Flow<SlowSyncStep>
+    suspend fun slowSyncStepsFlow(): Flow<SlowSyncStep>
 }
 
 @Suppress("LongParameterList")
 internal class SlowSyncWorkerImpl(
+    private val eventRepository: EventRepository,
     private val syncSelfUser: SyncSelfUserUseCase,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val syncConversations: SyncConversationsUseCase,
@@ -61,7 +65,7 @@ internal class SlowSyncWorkerImpl(
 
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    override suspend fun performSlowSyncSteps(): Flow<SlowSyncStep> = flow {
+    override suspend fun slowSyncStepsFlow(): Flow<SlowSyncStep> = flow {
 
         suspend fun Either<CoreFailure, Unit>.continueWithStep(
             slowSyncStep: SlowSyncStep,
@@ -70,6 +74,8 @@ internal class SlowSyncWorkerImpl(
 
         logger.d("Starting SlowSync")
 
+        val lastProcessedEventIdToSaveOnSuccess = getLastProcessedEventIdToSaveOnSuccess()
+
         performStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
             .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
@@ -77,9 +83,35 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
+            .flatMap {
+                saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
+            }
             .onFailure {
                 throw KaliumSyncException("Failure during SlowSync", it)
             }
+    }
+
+    private suspend fun saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess: String?) =
+        if (lastProcessedEventIdToSaveOnSuccess != null) {
+            kaliumLogger.i("Saving last processed event ID to complete SlowSync: $lastProcessedEventIdToSaveOnSuccess")
+            eventRepository.updateLastProcessedEventId(lastProcessedEventIdToSaveOnSuccess)
+        } else {
+            kaliumLogger.i("Skipping saving last processed event ID to complete SlowSync")
+            Either.Right(Unit)
+        }
+
+    private suspend fun getLastProcessedEventIdToSaveOnSuccess(): String? {
+        val hasLastEventId = eventRepository.lastProcessedEventId().isRight()
+        val lastProcessedEventIdToSaveOnSuccess = if (hasLastEventId) {
+            kaliumLogger.i("Last processed event ID already exists, skipping fetch")
+            null
+        } else {
+            kaliumLogger.i("Last processed event ID does not exist, fetching most recent event ID from remote")
+            eventRepository.fetchMostRecentEventId().onFailure {
+                throw KaliumSyncException("Failure during SlowSync. Unable to fetch most recent event ID", it)
+            }.nullableFold({ null }, { it })
+        }
+        return lastProcessedEventIdToSaveOnSuccess
     }
 
     private suspend fun FlowCollector<SlowSyncStep>.performStep(

@@ -1,25 +1,25 @@
 {
+    "conversationDistribution": {
+        "groupPROTEUS": {
+            "userCount": {
+                "type": "PERCENTAGE",
+                "value": 50
+            },
+            "protocol": "PROTEUS",
+            "groupCount": 2
+        },
+        "groupMLS": {
+            "userCount": {
+                "type": "PERCENTAGE",
+                "value": 50
+            },
+            "protocol": "MLS",
+            "groupCount": 2
+        }
+    },
     "testCases": [
         {
             "name": "Example Test Case",
-            "conversationDistribution": {
-                "groupPROTEUS": {
-                    "userCount": {
-                        "type": "PERCENTAGE",
-                        "value": 50
-                    },
-                    "protocol": "PROTEUS",
-                    "groupCount": 2
-                },
-                "groupMLS": {
-                    "userCount": {
-                        "type": "PERCENTAGE",
-                        "value": 50
-                    },
-                    "protocol": "MLS",
-                    "groupCount": 2
-                }
-            },
             "setup": [
                 {
                     "description": "Log everyone in",
@@ -120,7 +120,7 @@
                             "type": "FIXED_COUNT",
                             "value": 10
                         },
-                        "protocol": "PROTEUS",
+                        "protocol": "MLS",
                         "teamOwner": "Elna"
                     }
                 }
@@ -141,7 +141,8 @@
             "teamName": "Diya",
             "authUser": "admin",
             "authPassword": "admin",
-            "userCount": 10
+            "userCount": 10,
+            "dumpUsers": true
         },
         {
             "api": "https://nginz-https.elna.wire.link",
@@ -156,7 +157,8 @@
             "teamName": "Elna",
             "authUser": "admin",
             "authPassword": "admin",
-            "userCount": 10
+            "userCount": 10,
+            "dumpUsers": true
         }
     ]
 }

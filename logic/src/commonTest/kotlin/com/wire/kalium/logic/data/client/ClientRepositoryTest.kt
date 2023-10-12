@@ -359,7 +359,7 @@ class ClientRepositoryTest {
                 deviceType = DeviceTypeEntity.Desktop,
                 label = null,
                 model = null,
-                isVerified = false,
+                isProteusVerified = false,
                 isValid = true,
                 userId = userId,
                 mlsPublicKeys = null

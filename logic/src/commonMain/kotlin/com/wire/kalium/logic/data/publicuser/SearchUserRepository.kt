@@ -39,7 +39,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -104,13 +104,13 @@ internal class SearchUserRepositoryImpl(
         handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
-                userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
+                userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(
                     conversationId = conversationId.toDao(),
                     searchQuery = searchQuery
                 )
             },
             default = {
-                userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
                     searchQuery = searchQuery,
                     connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )
@@ -124,13 +124,13 @@ internal class SearchUserRepositoryImpl(
         handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
-                userDAO.getUsersNotInConversationByHandle(
+                userDAO.getUsersDetailsNotInConversationByHandle(
                     conversationId = conversationId.toDao(),
                     handle = handle
                 )
             },
             default = {
-                userDAO.getUserByHandleAndConnectionStates(
+                userDAO.getUserDetailsByHandleAndConnectionStates(
                     handle = handle,
                     connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )
@@ -185,16 +185,16 @@ internal class SearchUserRepositoryImpl(
             .flatMapMerge { encodedValue ->
                 val selfUserID: QualifiedIDEntity = Json.decodeFromString(string = encodedValue)
 
-                userDAO.getUserByQualifiedID(selfUserID)
+                userDAO.observeUserDetailsByQualifiedID(selfUserID)
                     .filterNotNull()
-                    .map(userMapper::fromUserEntityToSelfUser)
+                    .map(userMapper::fromUserDetailsEntityToSelfUser)
             }.firstOrNull() ?: throw IllegalStateException()
     }
 
     private suspend fun handleSearchUsersOptions(
         localSearchUserOptions: SearchUsersOptions,
-        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserEntity>>,
-        default: suspend () -> Flow<List<UserEntity>>
+        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserDetailsEntity>>,
+        default: suspend () -> Flow<List<UserDetailsEntity>>
     ): Flow<UserSearchResult> {
         val listFlow = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
             ConversationMemberExcludedOptions.None -> default()
@@ -202,7 +202,7 @@ internal class SearchUserRepositoryImpl(
         }
 
         return listFlow.map {
-            UserSearchResult(it.map(publicUserMapper::fromUserEntityToOtherUser))
+            UserSearchResult(it.map(publicUserMapper::fromUserDetailsEntityToOtherUser))
         }
     }
 

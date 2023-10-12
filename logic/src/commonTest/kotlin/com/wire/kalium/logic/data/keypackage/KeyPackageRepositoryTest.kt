@@ -153,7 +153,7 @@ class KeyPackageRepositoryTest {
         }
 
         fun withGeneratingKeyPackagesSuccessful() = apply {
-            given(MLS_CLIENT).function(MLS_CLIENT::generateKeyPackages).whenInvokedWith(eq(1)).then { KEY_PACKAGES }
+            given(MLS_CLIENT).suspendFunction(MLS_CLIENT::generateKeyPackages).whenInvokedWith(eq(1)).then { KEY_PACKAGES }
         }
 
         fun withUploadingKeyPackagesSuccessful() = apply {

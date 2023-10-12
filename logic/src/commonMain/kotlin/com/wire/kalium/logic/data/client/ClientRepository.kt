@@ -73,7 +73,7 @@ interface ClientRepository {
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
     suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>>
 
-    suspend fun updateClientVerificationStatus(
+    suspend fun updateClientProteusVerificationStatus(
         userId: UserId,
         clientId: ClientId,
         verified: Boolean
@@ -213,12 +213,12 @@ class ClientDataSource(
             .map { it.map { clientMapper.fromClientEntity(it) } }
             .wrapStorageRequest()
 
-    override suspend fun updateClientVerificationStatus(
+    override suspend fun updateClientProteusVerificationStatus(
         userId: UserId,
         clientId: ClientId,
         verified: Boolean
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        clientDAO.updateClientVerificationStatus(userId.toDao(), clientId.value, verified)
+        clientDAO.updateClientProteusVerificationStatus(userId.toDao(), clientId.value, verified)
     }
 
     override suspend fun saveNewClientEvent(

@@ -50,7 +50,7 @@ internal object ClientMapper {
         deviceType = device_type,
         clientType = client_type,
         isValid = is_valid,
-        isVerified = is_verified,
+        isProteusVerified = is_verified,
         registrationDate = registration_date,
         label = label,
         model = model,
@@ -113,9 +113,9 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean) =
+    override suspend fun updateClientProteusVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean) =
         withContext(queriesContext) {
-            clientsQueries.updateClientVerificatioStatus(verified, userId, clientId)
+            clientsQueries.updateClientProteusVerificationStatus(verified, userId, clientId)
         }
 
     override suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?> =

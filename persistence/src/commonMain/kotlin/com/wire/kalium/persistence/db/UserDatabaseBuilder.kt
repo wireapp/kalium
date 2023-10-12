@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import com.wire.kalium.persistence.UserDatabase
@@ -40,7 +41,7 @@ import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
@@ -160,7 +161,7 @@ class UserDatabaseBuilder internal constructor(
     }
 
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val userCache = LRUCache<UserIDEntity, Flow<UserEntity?>>(USER_CACHE_SIZE)
+    private val userCache = LRUCache<UserIDEntity, Flow<UserDetailsEntity?>>(USER_CACHE_SIZE)
     val userDAO: UserDAO
         get() = UserDAOImpl(database.usersQueries, userCache, databaseScope, queriesContext)
 
@@ -283,11 +284,11 @@ internal expect fun getDatabaseAbsoluteFileLocation(
 ): String?
 
 @Suppress("TooGenericExceptionCaught")
-fun SqlDriver.migrate(sqlSchema: SqlSchema): Boolean {
+fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
     val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
         it.next()
-        it.getLong(0)
-    }, 0).value?.toInt() ?: return false
+        it.getLong(0).let { QueryResult.Value<Long?>(it) }
+    }, 0).value ?: return false
 
     val newVersion = sqlSchema.version
     return try {
@@ -309,9 +310,10 @@ fun SqlDriver.checkFKViolations(): Boolean {
         // foreign_key_check returns the rows with the fk violations
         // if the cursor has a next, it means there are violations
         // and the backup is corrupted
-        if (it.next()) {
+        if (it.next().value) {
             result = true
         }
+        QueryResult.Unit
     }, 0, null)
 
     return result

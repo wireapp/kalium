@@ -41,7 +41,7 @@ sqldelight {
             dialect(libs.sqldelight.dialect.get().toString())
             packageName.set("com.wire.kalium.persistence")
             val sourceFolderName = "db_user"
-            sourceFolders.set(listOf(sourceFolderName))
+            srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
         }
 
@@ -49,7 +49,7 @@ sqldelight {
             dialect(libs.sqldelight.dialect.get().toString())
             packageName.set("com.wire.kalium.persistence")
             val sourceFolderName = "db_global"
-            sourceFolders.set(listOf(sourceFolderName))
+            srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
         }
     }
@@ -100,7 +100,7 @@ kotlin {
         val jsTest by getting
         val androidMain by getting {
             dependencies {
-                implementation(libs.securityCrypto)
+                implementation(libs.androidCrypto)
                 implementation(libs.sqldelight.androidDriver)
                 implementation(libs.sqldelight.androidxPaging)
                 implementation(libs.paging3)
@@ -113,5 +113,11 @@ kotlin {
                 implementation(libs.sqldelight.nativeDriver)
             }
         }
+    }
+}
+
+android {
+    testOptions.unitTests.all {
+        it.enabled = false
     }
 }

@@ -23,14 +23,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class TestData(
+    @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig> = mapOf(),
     @SerialName("testCases") val testCases: List<TestCase>,
-    @SerialName("backends") val backends: List<BackendConfig>
+    @SerialName("backends") val backends: List<BackendConfig>,
 )
 
 @Serializable
 data class TestCase(
     @SerialName("name") val name: String,
-    @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig> = mapOf(),
     @SerialName("setup") val setup: List<ActionConfig> = listOf(),
     @SerialName("actions") val actions: List<ActionConfig>
 )

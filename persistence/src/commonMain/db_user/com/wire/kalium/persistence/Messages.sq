@@ -6,6 +6,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.Boolean;
 import kotlin.Int;
+import kotlin.String;
 import kotlin.collections.List;
 import kotlinx.datetime.Instant;
 

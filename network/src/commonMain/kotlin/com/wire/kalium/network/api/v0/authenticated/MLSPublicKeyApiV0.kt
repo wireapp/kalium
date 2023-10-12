@@ -25,6 +25,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 open class MLSPublicKeyApiV0 internal constructor() : MLSPublicKeyApi {
     override suspend fun getMLSPublicKeys(): NetworkResponse<MLSPublicKeysDTO> = NetworkResponse.Error(
-        APINotSupported("MLS: getMLSPublicKeys api is only available on API V4")
+        APINotSupported("MLS: getMLSPublicKeys api is only available on API V5")
     )
 }

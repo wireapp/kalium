@@ -18,6 +18,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -148,7 +149,10 @@ class EndCallOnConversationChangeUseCaseTest {
             creatorId = null,
             receiptMode = Conversation.ReceiptMode.ENABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedDateTime = null,
+            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
 
         val otherUser = OtherUser(
@@ -166,7 +170,8 @@ class EndCallOnConversationChangeUseCaseTest {
             userType = UserType.INTERNAL,
             botService = null,
             deleted = true,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
 
         private val groupConversationDetail = ConversationDetails.Group(

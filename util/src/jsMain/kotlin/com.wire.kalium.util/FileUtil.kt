@@ -22,4 +22,12 @@ actual object FileUtil {
     actual fun mkDirs(path: String): Boolean {
         TODO("Not yet implemented")
     }
+
+    actual fun deleteDirectory(path: String): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    actual fun isDirectoryNonEmpty(path: String): Boolean {
+        TODO("Not yet implemented")
+    }
 }

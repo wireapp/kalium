@@ -48,17 +48,16 @@ actual class GlobalDatabaseProvider(
 
     init {
         NSFileManager.defaultManager.createDirectoryAtPath(storePath, true, null, null)
-
         val schema = GlobalDatabase.Schema
         val driver = NativeSqliteDriver(
             DatabaseConfiguration(
                 name = dbName,
-                version = schema.version,
+                version = schema.version.toInt(),
                 create = { connection ->
                     wrapConnection(connection) { schema.create(it) }
                 },
                 upgrade = { connection, oldVersion, newVersion ->
-                    wrapConnection(connection) { schema.migrate(it, oldVersion, newVersion) }
+                    wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
                 },
                 extendedConfig = DatabaseConfiguration.Extended(
                     basePath = storePath

@@ -35,7 +35,7 @@ class UpdateClientVerificationStatusUseCase internal constructor(
     private val clientRepository: ClientRepository
 ) {
     suspend operator fun invoke(userId: UserId, clientId: ClientId, verified: Boolean): Result =
-        clientRepository.updateClientVerificationStatus(userId, clientId, verified).fold(
+        clientRepository.updateClientProteusVerificationStatus(userId, clientId, verified).fold(
             { error -> Result.Failure(error) },
             { Result.Success }
         )

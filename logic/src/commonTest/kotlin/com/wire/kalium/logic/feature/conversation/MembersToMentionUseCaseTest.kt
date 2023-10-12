@@ -139,7 +139,8 @@ class MembersToMentionUseCaseTest {
             userType = UserType.INTERNAL,
             botService = null,
             deleted = false,
-            defederated = false
+            defederated = false,
+            isProteusVerified = false
         )
 
         val members = listOf(

@@ -256,7 +256,10 @@ internal class ConnectionDataSource(
                         accessRole = emptyList(),
                         receiptMode = ConversationEntity.ReceiptMode.DISABLED,
                         messageTimer = null,
-                        userMessageTimer = null
+                        userMessageTimer = null,
+                        archived = false,
+                        archivedInstant = null,
+                        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                     )
                 )
             }

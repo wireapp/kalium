@@ -34,6 +34,8 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
+import com.wire.kalium.network.exceptions.KaliumException
+import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -85,7 +87,7 @@ internal class EventGathererImpl(
     override suspend fun gatherEvents(): Flow<Event> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
-        eventRepository.lastEventId().flatMap {
+        eventRepository.lastProcessedEventId().flatMap {
             eventRepository.liveEvents()
         }.onSuccess { webSocketEventFlow ->
             handleWebSocketEventsWhilePolicyAllows(webSocketEventFlow)
@@ -157,13 +159,8 @@ internal class EventGathererImpl(
         logger.i("Websocket Open")
         eventRepository
             .pendingEvents()
-            .onEach {
-                it.onFailure { failure ->
-                    throw KaliumSyncException(
-                        message = "Failure to fetch pending events, aborting Incremental Sync",
-                        coreFailureCause = failure
-                    )
-                }
+            .onEach { result ->
+                result.onFailure(::throwPendingEventException)
             }
             .filterIsInstance<Either.Right<Event>>()
             .map { offlineEvent -> offlineEvent.value }
@@ -174,5 +171,15 @@ internal class EventGathererImpl(
             }
         logger.i("Offline events collection finished. Collecting Live events.")
         _currentSource.value = EventSource.LIVE
+    }
+
+    private fun throwPendingEventException(failure: CoreFailure) {
+        val networkCause = (failure as? NetworkFailure.ServerMiscommunication)?.rootCause
+        val isEventNotFound = networkCause is KaliumException.InvalidRequestError
+                && networkCause.errorResponse.code == HttpStatusCode.NotFound.value
+        throw KaliumSyncException(
+            message = "Failure to fetch pending events, aborting Incremental Sync",
+            coreFailureCause = if (isEventNotFound) CoreFailure.SyncEventOrClientNotFound else failure
+        )
     }
 }

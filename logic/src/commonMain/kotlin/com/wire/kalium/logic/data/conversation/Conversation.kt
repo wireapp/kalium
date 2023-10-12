@@ -68,7 +68,10 @@ data class Conversation(
     val creatorId: String?,
     val receiptMode: ReceiptMode,
     val messageTimer: Duration?,
-    val userMessageTimer: Duration?
+    val userMessageTimer: Duration?,
+    val archived: Boolean,
+    val archivedDateTime: Instant?,
+    val verificationStatus: VerificationStatus
 ) {
 
     companion object {
@@ -174,6 +177,9 @@ data class Conversation(
     }
 
     enum class ReceiptMode { DISABLED, ENABLED }
+    enum class TypingIndicatorMode { STARTED, STOPPED }
+
+    enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {
@@ -295,7 +301,10 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             creatorId = null,
             receiptMode = Conversation.ReceiptMode.DISABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedDateTime = null,
+            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     )
 }

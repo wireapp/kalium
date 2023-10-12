@@ -20,4 +20,8 @@ package com.wire.kalium.util
 
 expect object FileUtil {
     fun mkDirs(path: String): Boolean
+
+    fun deleteDirectory(path: String): Boolean
+
+    fun isDirectoryNonEmpty(path: String): Boolean
 }

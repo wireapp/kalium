@@ -19,10 +19,12 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import java.net.Authenticator
 import java.net.InetSocketAddress
@@ -35,55 +37,71 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-actual fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?,
-    ignoreSSLCertificates: Boolean
-): HttpClientEngine = OkHttp.create {
+private object OkHttpSingleton {
+    private val sharedClient = OkHttpClient.Builder().apply {
 
-    val okHttpClient = OkHttpClient.Builder()
+        // OkHttp doesn't support configuring ping intervals dynamically,
+        // so they must be set when creating the Engine
+        // See https://youtrack.jetbrains.com/issue/KTOR-4752
+        pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+            .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+            .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+            .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+    }.build()
 
-    if (ignoreSSLCertificates) okHttpClient.ignoreAllSSLErrors()
-
-    okHttpClient.pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
-        .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-        .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-        .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-
-    // OkHttp doesn't support configuring ping intervals dynamically,
-    // so they must be set when creating the Engine
-    // See https://youtrack.jetbrains.com/issue/KTOR-4752
-    if (isProxyRequired(serverConfigDTOApiProxy)) {
-        if (serverConfigDTOApiProxy?.needsAuthentication == true) {
-            if (proxyCredentials == null) error("Credentials does not exist")
-            with(proxyCredentials) {
-                Authenticator.setDefault(object : Authenticator() {
-                    override fun getPasswordAuthentication(): PasswordAuthentication {
-                        return PasswordAuthentication(username, password?.toCharArray())
-                    }
-                })
-            }
-        }
-
-        val proxy = Proxy(
-            Proxy.Type.SOCKS,
-            InetSocketAddress.createUnresolved(serverConfigDTOApiProxy?.host, serverConfigDTOApiProxy!!.port)
-        )
-
-        val clientWithProxy = okHttpClient.proxy(proxy).build()
-        preconfigured = clientWithProxy
-        webSocketFactory = KaliumWebSocketFactory(clientWithProxy)
-
-    } else {
-        val client = okHttpClient.build()
-        preconfigured = client
-        webSocketFactory = KaliumWebSocketFactory(client)
+    fun createNew(block: OkHttpClient.Builder.() -> Unit): OkHttpClient {
+        return sharedClient.newBuilder().apply(block).build()
     }
 }
 
-fun OkHttpClient.Builder.ignoreAllSSLErrors(): OkHttpClient.Builder {
-    val naiveTrustManager = @Suppress("CustomX509TrustManager")
-    object : X509TrustManager {
+actual fun defaultHttpEngine(
+    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
+    proxyCredentials: ProxyCredentialsDTO?,
+    ignoreSSLCertificates: Boolean,
+    certificatePinning: CertificatePinning
+): HttpClientEngine = OkHttp.create {
+    OkHttpSingleton.createNew {
+        if (certificatePinning.isNotEmpty()) {
+            val certPinner = CertificatePinner.Builder().apply {
+                certificatePinning.forEach { (cert, hosts) ->
+                    hosts.forEach { host ->
+                        add(host, cert)
+                    }
+                }
+            }.build()
+            certificatePinner(certPinner)
+        }
+
+        if (ignoreSSLCertificates) ignoreAllSSLErrors()
+
+        if (isProxyRequired(serverConfigDTOApiProxy)) {
+            if (serverConfigDTOApiProxy?.needsAuthentication == true) {
+                if (proxyCredentials == null) error("Credentials does not exist")
+                with(proxyCredentials) {
+                    Authenticator.setDefault(object : Authenticator() {
+                        override fun getPasswordAuthentication(): PasswordAuthentication {
+                            return PasswordAuthentication(username, password?.toCharArray())
+                        }
+                    })
+                }
+            }
+
+            val proxy = Proxy(
+                Proxy.Type.SOCKS,
+                InetSocketAddress.createUnresolved(serverConfigDTOApiProxy?.host, serverConfigDTOApiProxy!!.port)
+            )
+
+            proxy(proxy)
+        }
+
+    }.also {
+        preconfigured = it
+        webSocketFactory = KaliumWebSocketFactory(it)
+    }
+}
+
+private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
+    val naiveTrustManager = object : X509TrustManager {
         override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
         override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) = Unit
         override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) = Unit
@@ -96,5 +114,4 @@ fun OkHttpClient.Builder.ignoreAllSSLErrors(): OkHttpClient.Builder {
 
     sslSocketFactory(insecureSocketFactory, naiveTrustManager)
     hostnameVerifier { _, _ -> true }
-    return this
 }

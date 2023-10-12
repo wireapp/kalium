@@ -1,6 +1,7 @@
 import com.wire.kalium.persistence.dao.BotIdEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import kotlin.Boolean;
+import kotlin.String;
 import kotlin.collections.List;
 
 CREATE TABLE Service (

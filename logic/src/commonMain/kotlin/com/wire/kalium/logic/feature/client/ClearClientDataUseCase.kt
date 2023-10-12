@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.feature.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -50,10 +49,8 @@ internal class ClearClientDataUseCaseImpl internal constructor(
     override suspend operator fun invoke() {
         withContext(dispatchers.io) {
             clearCrypto()
-                .onSuccess { success ->
-                    if (!success) {
-                        kaliumLogger.e("Did not clear crypto storage")
-                    }
+                .onSuccess {
+                    kaliumLogger.e("Did not clear crypto storage")
                 }
                 .onFailure {
                     kaliumLogger.e("Error clearing crypto storage: $it")
@@ -61,14 +58,12 @@ internal class ClearClientDataUseCaseImpl internal constructor(
         }
     }
 
-    private suspend fun clearCrypto(): Either<CoreFailure, Boolean> =
+    private suspend fun clearCrypto(): Either<CoreFailure, Unit> =
         wrapProteusRequest {
             proteusClientProvider.clearLocalFiles()
         }.flatMap {
-            mlsClientProvider.getMLSClient().getOrNull()?.let { mlsClient ->
-                wrapMLSRequest {
-                    mlsClient.clearLocalFiles()
-                }
-            } ?: Either.Right(false)
+            wrapMLSRequest {
+                mlsClientProvider.clearLocalFiles()
+            }
         }
 }

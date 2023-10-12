@@ -84,5 +84,5 @@ data class OtherUserClient(
     val deviceType: DeviceType,
     val id: String,
     val isValid: Boolean,
-    val isVerified: Boolean
+    val isProteusVerified: Boolean
 )

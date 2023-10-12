@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -348,12 +349,12 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
-                .then { flowOf(USER_ENTITY) }
+                .then { flowOf(TestUser.DETAILS_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromUserEntityToSelfUser)
+                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { selfUser }
 
@@ -381,12 +382,12 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
-                .then { flowOf(USER_ENTITY) }
+                .then { flowOf(TestUser.DETAILS_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromUserEntityToSelfUser)
+                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { selfUser }
 

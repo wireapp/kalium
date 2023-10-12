@@ -71,4 +71,8 @@ class CallManagerImpl : CallManager {
     override suspend fun updateConversationClients(conversationId: ConversationId, clients: String) {
         TODO("Not yet implemented")
     }
+
+    override suspend fun reportProcessNotifications(isStarted: Boolean) {
+        TODO("Not yet implemented")
+    }
 }

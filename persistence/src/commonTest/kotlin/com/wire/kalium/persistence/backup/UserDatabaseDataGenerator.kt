@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -277,7 +278,10 @@ class UserDatabaseDataGenerator(
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
-                    userMessageTimer = null
+                    userMessageTimer = null,
+                    archived = false,
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -319,7 +323,10 @@ class UserDatabaseDataGenerator(
             accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = null,
-            userMessageTimer = null
+            userMessageTimer = null,
+            archived = false,
+            archivedInstant = null,
+            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -385,7 +392,10 @@ class UserDatabaseDataGenerator(
                 accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                 receiptMode = DEFAULT_RECEIPT_MODE,
                 messageTimer = null,
-                userMessageTimer = null
+                userMessageTimer = null,
+                archived = false,
+                archivedInstant = null,
+                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -450,7 +460,10 @@ class UserDatabaseDataGenerator(
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
-                    userMessageTimer = null
+                    userMessageTimer = null,
+                    archived = false,
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -493,7 +506,10 @@ class UserDatabaseDataGenerator(
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
-                    userMessageTimer = null
+                    userMessageTimer = null,
+                    archived = false,
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -528,14 +544,14 @@ class UserDatabaseDataGenerator(
         return members
     }
 
-    suspend fun generateAndInsertUsers(amount: Int): List<UserEntity> {
+    suspend fun generateAndInsertUsers(amount: Int): List<UserDetailsEntity> {
         for (index in generatedUsersCount + 1..amount) {
             val user = generateUser()
 
             userDatabaseBuilder.userDAO.insertUser(user)
         }
 
-        return userDatabaseBuilder.userDAO.getAllUsers().first()
+        return userDatabaseBuilder.userDAO.getAllUsersDetails().first()
     }
 
     @Suppress("StringTemplate")
@@ -605,7 +621,10 @@ class UserDatabaseDataGenerator(
                     accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
-                    userMessageTimer = null
+                    userMessageTimer = null,
+                    archived = false,
+                    archivedInstant = null,
+                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 

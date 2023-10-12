@@ -83,7 +83,7 @@ class ClientMapper(
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
             label = label,
             model = model,
-            isVerified = isVerified,
+            isVerified = isProteusVerified,
             isValid = isValid,
             mlsPublicKeys = mlsPublicKeys
         )
@@ -192,7 +192,7 @@ class ClientMapper(
 
     fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isVerified)
+            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isProteusVerified)
         }
 
     private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO = when (deviceType) {

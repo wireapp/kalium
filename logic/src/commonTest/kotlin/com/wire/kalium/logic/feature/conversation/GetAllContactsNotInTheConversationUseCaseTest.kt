@@ -92,7 +92,8 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                     userType = UserType.INTERNAL,
                     botService = null,
                     deleted = false,
-                    defederated = false
+                    defederated = false,
+                    isProteusVerified = false
                 ),
                 OtherUser(
                     id = QualifiedID("someAllContactsValue1", "someAllContactsDomain1"),
@@ -109,7 +110,8 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                     userType = UserType.INTERNAL,
                     botService = null,
                     deleted = false,
-                    defederated = false
+                    defederated = false,
+                    isProteusVerified = false
                 )
             )
         }
