@@ -211,6 +211,10 @@ interface MessageRepository {
         usersWithFailedDeliveryList: List<UserId>
     ): Either<CoreFailure, Unit>
 
+    suspend fun getConversationMessagesFromSearch(
+        conversationId: ConversationId
+    )
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -602,4 +606,11 @@ class MessageDataSource(
         )
     }
 
+    override suspend fun getConversationMessagesFromSearch(conversationId: ConversationId) {
+        wrapStorageRequest {
+            messageDAO.getConversationMessagesFromSearch(
+                conversationId = conversationId.toDao()
+            )
+        }
+    }
 }
