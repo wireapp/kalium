@@ -195,6 +195,10 @@ CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN  User.qualified_id
     WHEN 'CONNECTION_PENDING' THEN connection_user.qualified_id
 END AS otherUserId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
+END AS otherUserActiveConversationId,
 CASE
     WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
     ELSE 0

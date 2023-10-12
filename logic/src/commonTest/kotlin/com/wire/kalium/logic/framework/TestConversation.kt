@@ -164,7 +164,8 @@ object TestConversation {
         archived = false,
         archivedDateTime = null,
         verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        userSupportedProtocols = null
+        userSupportedProtocols = null,
+        userActiveOneOnOneConversationId = null,
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -318,7 +319,8 @@ object TestConversation {
         archived = false,
         archivedDateTime = null,
         verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        userSupportedProtocols = null
+        userSupportedProtocols = null,
+        userActiveOneOnOneConversationId = null,
     )
 
     val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(

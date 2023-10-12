@@ -208,7 +208,8 @@ internal class ConversationMapperImpl(
                             expiresAt = null,
                             defederated = userDefederated ?: false,
                             isProteusVerified = false,
-                            supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet()
+                            supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet(),
+                            activeOneOnOneConversationId = userActiveOneOnOneConversationId?.toModel()
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
