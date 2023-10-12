@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
+import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.UserRepository
@@ -38,13 +38,13 @@ interface ObserveUsersTypingUseCase {
 }
 
 internal class ObserveUsersTypingUseCaseImpl(
-    private val typingIndicatorRepository: TypingIndicatorRepository,
+    private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository,
     private val userRepository: UserRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveUsersTypingUseCase {
     override suspend operator fun invoke(conversationId: ConversationId): Flow<Set<UserSummary>> = withContext(dispatcher.io) {
-        typingIndicatorRepository.observeUsersTyping(conversationId).map { usersEntries ->
-            userRepository.getUsersSummaryByIds(usersEntries.map { it.userId }).fold({
+        typingIndicatorIncomingRepository.observeUsersTyping(conversationId).map { usersEntries ->
+            userRepository.getUsersSummaryByIds(usersEntries.map { it }).fold({
                 kaliumLogger.w("Users not found locally, skipping... $it")
                 emptySet()
             }, { it.toSet() })

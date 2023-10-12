@@ -36,6 +36,7 @@ fun Project.configureDefaultMultiplatform(
     enableJs: Boolean,
     enableJsTests: Boolean,
     includeNativeInterop: Boolean,
+    enableIntegrationTests: Boolean,
     androidNamespaceSuffix: String = this.name
 ) {
     val kotlinExtension = extensions.findByName("kotlin") as? KotlinMultiplatformExtension
@@ -44,7 +45,7 @@ fun Project.configureDefaultMultiplatform(
     }
     kotlinExtension.apply {
         targetHierarchy.default()
-        jvm { commonJvmConfig(includeNativeInterop) }
+        jvm { commonJvmConfig(includeNativeInterop, enableIntegrationTests) }
 
         androidTarget { commmonKotlinAndroidTargetConfig() }
 
