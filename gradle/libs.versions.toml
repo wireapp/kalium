@@ -55,6 +55,7 @@ faker = "1.14.0"
 robolectric = "4.9"
 stately = "2.0.0-rc3"
 micrometer = "1.11.3"
+konsist = "0.13.0"
 
 [plugins]
 # Home-made convention plugins
@@ -166,6 +167,7 @@ mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockativ
 mockative-processor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 
 # detekt
 detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }

@@ -78,6 +78,7 @@ kotlin {
                 implementation(libs.mockative.runtime)
                 implementation(libs.okio.test)
                 implementation(libs.settings.kmpTest)
+                implementation(libs.konsist)
             }
         }
 
