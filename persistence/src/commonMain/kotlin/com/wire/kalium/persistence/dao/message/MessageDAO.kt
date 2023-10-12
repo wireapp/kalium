@@ -133,5 +133,9 @@ interface MessageDAO {
         recipientFailureTypeEntity: RecipientFailureTypeEntity
     )
 
+    suspend fun getConversationMessagesFromSearch(
+        conversationId: QualifiedIDEntity
+    )
+
     val platformExtensions: MessageExtensions
 }

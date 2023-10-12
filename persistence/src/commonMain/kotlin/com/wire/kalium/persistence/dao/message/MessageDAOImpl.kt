@@ -33,6 +33,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -397,6 +398,16 @@ internal class MessageDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrNull()
             .distinctUntilChanged()
+    }
+
+    override suspend fun getConversationMessagesFromSearch(conversationId: QualifiedIDEntity) {
+        withContext(coroutineContext) {
+            queries.selectConversationMessagesFromSearch(conversationId, mapper::toEntityMessageFromView)
+                .executeAsList()
+                .map {
+                    kaliumLogger.d("SEARCH_MSGS -> ${(it.content as MessageEntityContent.Text).messageBody}")
+                }
+        }
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
