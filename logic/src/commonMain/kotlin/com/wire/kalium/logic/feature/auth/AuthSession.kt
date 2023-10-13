@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.contracts.ExperimentalContracts
@@ -55,6 +56,9 @@ data class Account(
     val ssoId: SsoId?
 )
 
+/**
+ * Represents the authentication tokens received from the server, and the associated user id.
+ */
 data class AuthTokens(
     val userId: UserId,
     val accessToken: String,

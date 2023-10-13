@@ -191,7 +191,7 @@ class SessionManagerTest {
             accessTokenApi: AccessTokenApi,
             oldAccessToken: String,
             oldRefreshToken: String
-        ): SessionDTO? = testCredentials.copy(accessToken = UPDATED_ACCESS_TOKEN)
+        ): SessionDTO = testCredentials.copy(accessToken = UPDATED_ACCESS_TOKEN)
 
         override suspend fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
             testCredentials

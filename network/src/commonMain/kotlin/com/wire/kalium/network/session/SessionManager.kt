@@ -43,8 +43,17 @@ import kotlin.coroutines.CoroutineContext
 interface SessionManager {
     suspend fun session(): SessionDTO?
     fun serverConfig(): ServerConfigDTO
-    suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO?
-    suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO?
+
+    /**
+     * Updates the access token and refresh token in the session.
+     *
+     *
+     * @param accessTokenApi The AccessTokenApi interface used to retrieve the new access token.
+     * @param oldAccessToken The old access token to be replaced.
+     * @param oldRefreshToken The old refresh token to be replaced.
+     * @return The updated SessionDTO object.
+     */
+    suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO
     fun proxyCredentials(): ProxyCredentialsDTO?
 }
 

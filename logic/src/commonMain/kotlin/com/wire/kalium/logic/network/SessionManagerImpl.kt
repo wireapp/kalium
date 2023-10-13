@@ -90,7 +90,7 @@ class SessionManagerImpl internal constructor(
         serverConfig!!
     }!!
 
-    override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
+    suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO =
         wrapStorageRequest {
             tokenStorage.updateToken(
                 userId = userId.toDao(),
@@ -108,16 +108,18 @@ class SessionManagerImpl internal constructor(
             it
         })
 
-    override suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO? {
+    override suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO {
         return withContext(coroutineContext) {
             wrapApiRequest { accessTokenApi.getToken(oldRefreshToken) }.nullableFold({
+                if(it is NetworkFailure.ServerMiscommunication){
+                    onServerMissCommunication(it)
+                }
                 when (it) {
-                    is NetworkFailure.NoNetworkConnection -> null
-                    is NetworkFailure.ProxyError -> null
-                    is NetworkFailure.FederatedBackendFailure -> null
-                    is NetworkFailure.ServerMiscommunication -> {
-                        onServerMissCommunication(it)
-                        null
+                    is NetworkFailure.ServerMiscommunication,
+                    is NetworkFailure.NoNetworkConnection,
+                    is NetworkFailure.ProxyError,
+                    is NetworkFailure.FederatedBackendFailure -> {
+                        throw KaliumException()
                     }
                 }
             }, {

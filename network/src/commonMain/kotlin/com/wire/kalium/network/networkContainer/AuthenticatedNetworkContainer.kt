@@ -189,11 +189,10 @@ internal class AuthenticatedHttpClientProviderImpl(
         BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
     }
 
-    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
+    private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens = {
+        // TODO: Add logs for when the `oldTokens` are null just to make it easier to find in logs if it ever happens
         val newSession = sessionManager.updateToken(accessTokenApi(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-        newSession?.let {
-            BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
-        }
+        BearerTokens(accessToken =  newSession.accessToken, refreshToken =  newSession.refreshToken)
     }
 
     private val bearerAuthProvider: BearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)
