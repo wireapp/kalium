@@ -17,24 +17,22 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
-import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
-import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Arrangement.Companion.COMPLETED_MIGRATION_CONFIGURATION
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Arrangement.Companion.DISABLED_MIGRATION_CONFIGURATION
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Arrangement.Companion.ONGOING_MIGRATION_CONFIGURATION
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -43,18 +41,31 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateSupportedProtocolsUseCaseTest {
+
+    @Test
+    fun givenMLSIsNotSupported_whenInvokingUseCase_thenSupportedProtocolsAreNotUpdated() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(false)
+            .arrange()
+
+        useCase.invoke().shouldSucceed()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateSupportedProtocols)
+            .with(anything())
+            .wasNotInvoked()
+    }
 
     @Test
     fun givenSupportedProtocolsHasNotChanged_whenInvokingUseCase_thenSupportedProtocolsAreNotUpdated() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful(supportedProtocols = setOf(SupportedProtocol.PROTEUS))
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
             .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
@@ -73,6 +84,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenProteusAsSupportedProtocol_whenInvokingUseCase_thenProteusIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
             .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
@@ -91,6 +103,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenProteusIsNotSupportedButMigrationHasNotEnded_whenInvokingUseCase_thenProteusIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
             .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
@@ -109,6 +122,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenProteusIsNotSupported_whenInvokingUseCase_thenProteusIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
             .withGetMigrationConfigurationSuccessful(COMPLETED_MIGRATION_CONFIGURATION)
@@ -127,6 +141,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsSupportedAndAllActiveClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
             .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
@@ -147,6 +162,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsSupportedAndAnInactiveClientIsNotMlsCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
             .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
@@ -168,6 +184,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsSupportedAndAllActiveClientsAreNotCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
             .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
@@ -189,6 +206,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsSupportedAndMigrationHasEnded_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.MLS))
             .withGetMigrationConfigurationSuccessful(COMPLETED_MIGRATION_CONFIGURATION)
@@ -210,6 +228,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMigrationIsMissingAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS))
             .withGetMigrationConfigurationFailing(StorageFailure.DataNotFound)
@@ -230,6 +249,7 @@ class UpdateSupportedProtocolsUseCaseTest {
     @Test
     fun givenMlsIsNotSupportedAndAllClientsAreCapable_whenInvokingUseCase_thenMlsIsNotIncluded() = runTest {
         val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
             .withGetSelfUserSuccessful()
             .withGetSupportedProtocolsSuccessful(setOf(SupportedProtocol.PROTEUS))
             .withGetMigrationConfigurationSuccessful(DISABLED_MIGRATION_CONFIGURATION)
@@ -247,6 +267,25 @@ class UpdateSupportedProtocolsUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSupportedProtocolsAreNotConfigured_whenInvokingUseCase_thenSupportedProtocolsAreNotUpdated() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withGetSelfUserSuccessful(supportedProtocols = setOf(SupportedProtocol.PROTEUS))
+            .withGetSupportedProtocolsFailing(StorageFailure.DataNotFound)
+            .withGetMigrationConfigurationSuccessful(ONGOING_MIGRATION_CONFIGURATION)
+            .withGetSelfClientsSuccessful(clients = emptyList())
+            .withUpdateSupportedProtocolsSuccessful()
+            .arrange()
+
+        useCase.invoke().shouldSucceed()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::updateSupportedProtocols)
+            .with(anything())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
         @Mock
         val clientRepository = mock(ClientRepository::class)
@@ -254,6 +293,14 @@ class UpdateSupportedProtocolsUseCaseTest {
         val userRepository = mock(UserRepository::class)
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
+        @Mock
+        val featureSupport = mock(FeatureSupport::class)
+
+        fun withIsMLSSupported(supported: Boolean) = apply {
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(supported)
+        }
 
         fun withGetSelfUserSuccessful(supportedProtocols: Set<SupportedProtocol>? = null) = apply {
             given(userRepository)
@@ -292,6 +339,13 @@ class UpdateSupportedProtocolsUseCaseTest {
                 .thenReturn(Either.Right(supportedProtocols))
         }
 
+        fun withGetSupportedProtocolsFailing(failure: StorageFailure) = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::getSupportedProtocols)
+                .whenInvoked()
+                .thenReturn(Either.Left(failure))
+        }
+
         fun withGetSelfClientsSuccessful(clients: List<Client>) = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::selfListOfClients)
@@ -302,7 +356,8 @@ class UpdateSupportedProtocolsUseCaseTest {
         fun arrange() = this to UpdateSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
-            userConfigRepository
+            userConfigRepository,
+            featureSupport
         )
 
         companion object {

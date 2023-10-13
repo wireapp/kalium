@@ -908,7 +908,8 @@ class UserSessionScope internal constructor(
         get() = UpdateSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
-            userConfigRepository
+            userConfigRepository,
+            featureSupport
         )
 
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
