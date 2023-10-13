@@ -27,20 +27,20 @@ interface ValidatePasswordUseCase {
      * @param password The password to validate
      * @return true if the password is valid, false otherwise
      */
-    operator fun invoke(password: String): Boolean
+    operator fun invoke(password: String): ValidatePasswordResult
 }
 
 internal class ValidatePasswordUseCaseImpl : ValidatePasswordUseCase {
-    override operator fun invoke(password: String): Boolean = when {
-        isPasswordTooShort(password) -> false
-        !passwordCharactersValid(password) -> false
-        else -> true
-    }
+    override operator fun invoke(password: String): ValidatePasswordResult =
+        if (password.matches(PASSWORD_REGEX)) ValidatePasswordResult.Valid
+        else ValidatePasswordResult.Invalid(
+            missingLowercaseCharacter = !password.matches(PASSWORD_LOWERCASE_REGEX),
+            missingUppercaseCharacter = !password.matches(PASSWORD_UPPERCASE_REGEX),
+            missingDigit = !password.matches(PASSWORD_DIGIT_REGEX),
+            missingSpecialCharacter = !password.matches(PASSWORD_SPECIAL_CHAR_REGEX),
+            tooShort = !password.matches(PASSWORD_LENGTH_REGEX),
+        )
 
-    private fun passwordCharactersValid(password: String) =
-        password.matches(PASSWORD_REGEX)
-
-    private fun isPasswordTooShort(password: String) = password.length < PASSWORD_MIN_LENGTH
 
     private companion object {
         private const val PASSWORD_MIN_LENGTH = 8
@@ -54,5 +54,27 @@ internal class ValidatePasswordUseCaseImpl : ValidatePasswordUseCase {
                 ".{$PASSWORD_MIN_LENGTH,}" + // min PASSWORD_MIN_LENGTH characters
                 "$"
                 ).toRegex()
+        private val PASSWORD_LOWERCASE_REGEX = "^.*[a-z].*$".toRegex() // at least one lowercase ASCII letter
+        private val PASSWORD_UPPERCASE_REGEX = "^.*[A-Z].*$".toRegex() // at least one uppercase ASCII letter
+        private val PASSWORD_DIGIT_REGEX = "^.*[0-9].*$".toRegex() // at least a digit
+        private val PASSWORD_SPECIAL_CHAR_REGEX = "^.*[^a-zA-Z0-9].*$".toRegex() // at least a "special character"
+        private val PASSWORD_LENGTH_REGEX = "^.{$PASSWORD_MIN_LENGTH,}$".toRegex()  // min PASSWORD_MIN_LENGTH characters
     }
 }
+
+sealed class ValidatePasswordResult {
+    data object Valid : ValidatePasswordResult()
+    data class Invalid(
+        val missingLowercaseCharacter: Boolean = true,
+        val missingUppercaseCharacter: Boolean = true,
+        val missingDigit: Boolean = true,
+        val missingSpecialCharacter: Boolean = true,
+        val tooShort: Boolean = true,
+    ) : ValidatePasswordResult()
+
+    val isValid: Boolean
+        get() = this is Valid
+
+
+}
+
