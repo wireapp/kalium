@@ -31,6 +31,7 @@ internal object TestStubs {
     val user1 = newUserEntity(id = "1").copy(team = teamId)
     val user2 = newUserEntity(id = "2").copy(team = teamId)
     val user3 = newUserEntity(id = "3").copy(team = teamId)
+    val userDetails1 = newUserDetailsEntity(id = "1").copy(team = teamId)
     val messageTimer = 5000L
 
     val team = TeamEntity(teamId, "teamName", "")
