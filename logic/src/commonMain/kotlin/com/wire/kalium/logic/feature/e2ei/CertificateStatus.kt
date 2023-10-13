@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.feature.e2ei
 
 enum class CertificateStatus {
-    NOT_ACTIVATED,
     REVOKED,
     EXPIRED,
     VALID

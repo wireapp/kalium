@@ -15,13 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei.usecase
+package com.wire.kalium.logic.data.e2ei
 
-/**
- * This use case is used to download e2ei certificate
- */
-class DownloadE2eiCertificateUseCase {
-    operator fun invoke() {
-        // TODO download certificate using coreCrypto
+import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.functional.Either
+
+class E2eiCertificateRepository {
+    fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String> {
+        // TODO get certificate from CoreCrypto
+        return Either.Left(E2EIFailure(Exception()))
     }
 }

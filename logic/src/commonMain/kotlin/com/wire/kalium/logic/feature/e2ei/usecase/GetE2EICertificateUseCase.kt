@@ -17,20 +17,36 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.e2ei.E2eiCertificateRepository
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.decodePemCertificate
+import com.wire.kalium.logic.functional.fold
 
 /**
  * This use case is used to get the e2ei certificate
  */
-interface GetE2EICertificateUseCase {
-    operator fun invoke(): E2eiCertificate
+interface GetE2eiCertificateUseCase {
+    operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult
 }
 
-class GetE2EICertificateUseCaseImpl : GetE2EICertificateUseCase {
-    override operator fun invoke(): E2eiCertificate {
-        // TODO check if certificate is activated
-        val certificate = "" // TODO get this certificate from core crypto
-        return decodePemCertificate(certificate)
+class GetE2eiCertificateUseCaseImpl(
+    private val e2eiCertificateRepository: E2eiCertificateRepository
+) : GetE2eiCertificateUseCase {
+    override operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult =
+        e2eiCertificateRepository.getE2eiCertificate(clientId).fold(
+            {
+                GetE2EICertificateUseCaseResult.Failure.NotActivated
+            },
+            {
+                GetE2EICertificateUseCaseResult.Success(decodePemCertificate(it))
+            }
+        )
+}
+
+sealed class GetE2EICertificateUseCaseResult {
+    class Success(val certificate: E2eiCertificate) : GetE2EICertificateUseCaseResult()
+    sealed class Failure : GetE2EICertificateUseCaseResult() {
+        data object NotActivated : Failure()
     }
 }
