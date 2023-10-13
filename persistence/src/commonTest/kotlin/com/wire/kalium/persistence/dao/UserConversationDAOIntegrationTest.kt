@@ -59,7 +59,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     @Test
     fun givenUserExists_whenInsertingMember_thenOriginalUserDetailsAreKept() = runTest(dispatcher) {
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
 
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(member1, conversationEntity1.id)
@@ -253,7 +253,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     @Test
     fun givenActiveOneOnOneWasSetForConversation_whenFetchingConversationView_thenActiveOneOnOneShouldMatch() = runTest {
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(member1, conversationEntity1.id)
 
@@ -265,7 +265,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     @Test
     fun givenActiveOneOnOneWasNotSetForConversation_whenFetchingConversationView_thenActiveOneOnOneShouldBeNull() = runTest {
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(member1, conversationEntity1.id)
 

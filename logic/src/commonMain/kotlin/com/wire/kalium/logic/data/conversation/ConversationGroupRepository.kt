@@ -99,7 +99,7 @@ internal class ConversationGroupRepositoryImpl(
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
-    private val eventMapper: EventMapper = MapperProvider.eventMapper(),
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
 ) : ConversationGroupRepository {
 

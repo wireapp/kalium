@@ -58,7 +58,7 @@ class CompositeMessageTest : BaseDatabaseTest() {
     fun givenSuccess_whenInsertingCompositeMessage_thenMessageCanBeRetrieved() = runTest {
         val conversation = conversationEntity1
         conversationDAO.insertConversation(conversation)
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         val compositeMessage = newRegularMessageEntity().copy(
             senderUserId = userEntity1.id,
@@ -87,7 +87,7 @@ class CompositeMessageTest : BaseDatabaseTest() {
     fun givenCompositeMessage_whenMarkingButtonAsSelected_thenOnlyOneItIsMarked() = runTest {
         val conversation = conversationEntity1
         conversationDAO.insertConversation(conversation)
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         val compositeMessage = newRegularMessageEntity().copy(
             senderUserId = userEntity1.id,
@@ -124,7 +124,7 @@ class CompositeMessageTest : BaseDatabaseTest() {
     fun givenCompositeMessageWithSelection_whenResetSelection_thenSelectionIsFalse() = runTest {
         val conversation = conversationEntity1
         conversationDAO.insertConversation(conversation)
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         val compositeMessage = newRegularMessageEntity().copy(
             senderUserId = userEntity1.id,

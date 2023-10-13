@@ -218,7 +218,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenAllMembersAreMlsCapable_WhenGetTeamConversationIdsReadyToBeFinalised_ThenConversationIsReturned() = runTest {
         val allProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
         val selfUser = user1.copy(id = selfUserId, supportedProtocols = allProtocols)
-        userDAO.insertUser(selfUser)
+        userDAO.upsertUser(selfUser)
 
         conversationDAO.insertConversation(conversationEntity6)
         insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity6.id)
@@ -233,7 +233,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenOnlySomeMembersAreMlsCapable_WhenGetTeamConversationIdsReadyToBeFinalised_ThenConversationIsNotReturned() = runTest {
         val allProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
         val selfUser = user1.copy(id = selfUserId, supportedProtocols = allProtocols)
-        userDAO.insertUser(selfUser)
+        userDAO.upsertUser(selfUser)
 
         conversationDAO.insertConversation(conversationEntity5)
         insertTeamUserAndMember(team, user2.copy(supportedProtocols = allProtocols), conversationEntity5.id)
@@ -488,7 +488,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
             teamDAO.insertTeam(team)
             conversationDAO.insertConversation(conversation)
-            userDAO.insertUser(user1)
+            userDAO.upsertUser(user1)
 
             val messages = buildList {
                 repeat(10) {
@@ -703,9 +703,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = secondRemovalDate,
             conversationId = conversationEntity1.id
         )
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
-        userDAO.insertUser(user3)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        userDAO.upsertUser(user3)
         messageDAO.insertOrIgnoreMessage(message1)
         messageDAO.insertOrIgnoreMessage(message2)
 
@@ -727,9 +727,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member3, conversationEntity1.id)
         memberDAO.insertMember(mySelfMember, conversationEntity1.id)
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
-        userDAO.insertUser(user3)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        userDAO.upsertUser(user3)
 
         memberDAO.deleteMemberByQualifiedID(member3.user, conversationEntity1.id)
         val removalMessage = newSystemMessageEntity(
@@ -799,7 +799,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // given
         conversationDAO.insertConversation(conversationEntity3)
         teamDAO.insertTeam(team)
-        userDAO.insertUser(user2)
+        userDAO.upsertUser(user2)
         memberDAO.insertMember(MemberEntity(user2.id, MemberEntity.Role.Member), conversationEntity3.id)
 
         // when
@@ -828,7 +828,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // given
         conversationDAO.insertConversation(conversationEntity3.copy(creatorId = selfUserId.value))
         teamDAO.insertTeam(team)
-        userDAO.insertUser(user2)
+        userDAO.upsertUser(user2)
         insertTeamUserAndMember(team, user2, conversationEntity3.id)
 
         // when
@@ -892,7 +892,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         val instant = Clock.System.now()
 
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
 
         newRegularMessageEntity(
             id = Random.nextBytes(10).decodeToString(),
@@ -902,7 +902,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         ).also { messageDAO.insertOrIgnoreMessage(it) }
 
         // TODO: insert another message from self user to check if it is not ignored
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
 
         newRegularMessageEntity(
             id = Random.nextBytes(10).decodeToString(),
@@ -934,7 +934,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             toId = user1.id.value,
         )
 
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
@@ -962,7 +962,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             toId = user1.id.value,
         )
 
-        userDAO.insertUser(user1.copy(name = null))
+        userDAO.upsertUser(user1.copy(name = null))
         conversationDAO.insertConversation(conversation)
         connectionDAO.insertConnection(connectionEntity)
 
@@ -977,8 +977,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
-        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user with metadata
-        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id, name = null)) // user without metadata
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user with metadata
+        userDAO.upsertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id, name = null)) // user without metadata
 
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
@@ -996,8 +996,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2.copy(archived = true))
         conversationDAO.insertConversation(conversationEntity3.copy(archived = false))
 
-        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
-        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id))
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
+        userDAO.upsertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id))
 
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)
@@ -1014,8 +1014,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1.copy(archived = false))
         conversationDAO.insertConversation(conversationEntity2.copy(archived = false))
 
-        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
-        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id))
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
+        userDAO.upsertUser(user2.copy(activeOneOnOneConversationId = conversationEntity2.id))
 
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity2.id)
@@ -1180,8 +1180,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
 
-        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user active one-on-one
-        userDAO.insertUser(user2.copy(activeOneOnOneConversationId = null)) // user without active one-on-one
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id)) // user active one-on-one
+        userDAO.upsertUser(user2.copy(activeOneOnOneConversationId = null)) // user without active one-on-one
 
         memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity1.id)
         memberDAO.insertMembersWithQualifiedId(listOf(member1, member2), conversationEntity2.id)
@@ -1195,7 +1195,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenOneOnOneConversationNotExisting_whenGettingOneOnOneConversationId_thenShouldReturnEmptyList() = runTest {
         // given
-        userDAO.insertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
+        userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
 
         // then
         assertTrue(conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).isEmpty())
@@ -1204,7 +1204,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenOneOnOneConversationExisting_whenGettingOneOnOneConversationId_thenShouldRespectProtocol() = runTest {
         // given
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
         memberDAO.insertMember(member1, conversationEntity1.id)
@@ -1217,7 +1217,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         // should be inserted AFTER inserting the conversation!!!
         memberDAO.insertMembersWithQualifiedId(
             listOf(

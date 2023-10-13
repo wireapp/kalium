@@ -66,7 +66,7 @@ class UserDatabaseDataGenerator(
 
         for (index in generatedMessagesCount + 1..amount) {
             val senderUser = generateUser()
-            userDatabaseBuilder.userDAO.insertUser(senderUser)
+            userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
             val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
 
@@ -111,7 +111,7 @@ class UserDatabaseDataGenerator(
 
         for (index in generatedAssetsCount + 1..amount) {
             val senderUser = generateUser()
-            userDatabaseBuilder.userDAO.insertUser(senderUser)
+            userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
             val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
 
@@ -209,7 +209,7 @@ class UserDatabaseDataGenerator(
 
         for (index in generatedMessagesCount + 1..amount) {
             val senderUser = generateUser()
-            userDatabaseBuilder.userDAO.insertUser(senderUser)
+            userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
             val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
 
@@ -338,7 +338,7 @@ class UserDatabaseDataGenerator(
         val callPrefix = "${databasePrefix}Call${generatedCallsCount}"
 
         val userEntity = generateUser()
-        userDatabaseBuilder.userDAO.insertUser(userEntity)
+        userDatabaseBuilder.userDAO.upsertUser(userEntity)
 
         val conversationType = ConversationEntity.Type.values()[generatedCallsCount % ConversationEntity.Type.values().size]
         val type = CallEntity.Type.values()[generatedCallsCount % CallEntity.Type.values().size]
@@ -549,7 +549,7 @@ class UserDatabaseDataGenerator(
         for (index in generatedUsersCount + 1..amount) {
             val user = generateUser()
 
-            userDatabaseBuilder.userDAO.insertUser(user)
+            userDatabaseBuilder.userDAO.upsertUser(user)
         }
 
         return userDatabaseBuilder.userDAO.getAllUsers().first()

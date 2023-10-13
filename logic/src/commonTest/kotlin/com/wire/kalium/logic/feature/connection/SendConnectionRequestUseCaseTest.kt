@@ -22,8 +22,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -41,6 +43,7 @@ class SendConnectionRequestUseCaseTest {
         // given
         val (arrangement, sendConnectionRequestUseCase) = Arrangement()
             .withCreateConnectionResult(Either.Right(Unit))
+            .withFetchUserInfoResult(Either.Right(Unit))
             .arrange()
 
         // when
@@ -48,6 +51,10 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Success, resultOk)
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUserInfo)
+            .with(eq(userId))
+            .wasInvoked(once)
         verify(arrangement.connectionRepository)
             .suspendFunction(arrangement.connectionRepository::sendUserConnection)
             .with(eq(userId))
@@ -55,9 +62,33 @@ class SendConnectionRequestUseCaseTest {
     }
 
     @Test
+    fun givenAConnectionRequest_whenInvokingFetchUserInfoRequestFails_thenShouldReturnsAFailureResult() = runTest {
+        // given
+        val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withFetchUserInfoResult(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+            .withCreateConnectionResult(Either.Right(Unit))
+            .arrange()
+
+        // when
+        val resultFailure = sendConnectionRequestUseCase(userId)
+
+        // then
+        assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUserInfo)
+            .with(eq(userId))
+            .wasInvoked(once)
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
+            .with(eq(userId))
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenAConnectionRequest_whenInvokingASendAConnectionRequestFails_thenShouldReturnsAFailureResult() = runTest {
         // given
         val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withFetchUserInfoResult(Either.Right(Unit))
             .withCreateConnectionResult(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
             .arrange()
 
@@ -76,6 +107,7 @@ class SendConnectionRequestUseCaseTest {
     fun givenAConnectionRequest_whenInvokingAndFailsByFederationDenied_thenShouldReturnsAFederationDenied() = runTest {
         // given
         val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withFetchUserInfoResult(Either.Right(Unit))
             .withCreateConnectionResult(
                 Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied("federation-denied"))
             )
@@ -95,6 +127,9 @@ class SendConnectionRequestUseCaseTest {
         @Mock
         val connectionRepository = mock(classOf<ConnectionRepository>())
 
+        @Mock
+        val userRepository = mock(classOf<UserRepository>())
+
         fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
             given(connectionRepository)
                 .suspendFunction(connectionRepository::sendUserConnection)
@@ -102,7 +137,14 @@ class SendConnectionRequestUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun arrange() = this to SendConnectionRequestUseCaseImpl(connectionRepository)
+        fun withFetchUserInfoResult(result: Either<CoreFailure, Unit>) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchUserInfo)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun arrange() = this to SendConnectionRequestUseCaseImpl(connectionRepository, userRepository)
     }
 
     private companion object {
