@@ -122,7 +122,7 @@ class TeamRepositoryTest {
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertTeamMembersTypes)
+            .suspendFunction(arrangement.userDAO::upsertTeamMemberUserTypes)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -236,7 +236,7 @@ class TeamRepositoryTest {
         result.shouldSucceed()
 
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::insertUser)
+            .suspendFunction(arrangement.userDAO::upsertUser)
             .with(any())
             .wasInvoked(once)
     }

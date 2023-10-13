@@ -176,8 +176,8 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
 
     private suspend fun setupData() {
         conversationDAO.insertConversations(listOf(conversationEntity1))
-        userDAO.insertUser(userEntity1)
-        userDAO.insertUser(userEntity2)
+        userDAO.upsertUser(userEntity1)
+        userDAO.upsertUser(userEntity2)
     }
 
     private companion object {

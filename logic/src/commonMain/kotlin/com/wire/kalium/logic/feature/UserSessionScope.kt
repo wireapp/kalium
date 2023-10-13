@@ -639,7 +639,6 @@ class UserSessionScope internal constructor(
         authenticatedNetworkContainer.userDetailsApi,
         globalScope.sessionRepository,
         userId,
-        qualifiedIdMapper,
         selfTeamId
     )
 
@@ -674,10 +673,7 @@ class UserSessionScope internal constructor(
             userStorage.database.memberDAO,
             userStorage.database.connectionDAO,
             authenticatedNetworkContainer.connectionApi,
-            authenticatedNetworkContainer.userDetailsApi,
             userStorage.database.userDAO,
-            userId,
-            selfTeamId,
             conversationRepository
         )
 
@@ -1010,7 +1006,7 @@ class UserSessionScope internal constructor(
 
     private val eventRepository: EventRepository
         get() = EventDataSource(
-            authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider
+            authenticatedNetworkContainer.notificationApi, userStorage.database.metadataDAO, clientIdProvider, userId
         )
 
     private val mlsMigrator: MLSMigrator
@@ -1643,6 +1639,7 @@ class UserSessionScope internal constructor(
         get() = ConnectionScope(
             connectionRepository,
             conversationRepository,
+            userRepository,
             oneOnOneResolver
         )
 

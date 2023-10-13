@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.utils.stubs.TestStubs
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -145,42 +144,14 @@ class MemberDAOTest : BaseDatabaseTest() {
         val conversationEntity1 = TestStubs.conversationEntity1
         val member1 = TestStubs.member1
 
+        userDAO.upsertUser(TestStubs.user1)
         conversationDAO.insertConversation(conversationEntity1)
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+        memberDAO.updateOrInsertOneOnOneMember(
             member = member1,
-            status = ConnectionEntity.State.ACCEPTED,
             conversationID = conversationEntity1.id
         )
 
-        assertEquals(
-            listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first()
-        )
-        assertNotNull(userDAO.observeUserDetailsByQualifiedID(member1.user).firstOrNull())
-    }
-
-    @Test
-    fun givenExistingUser_WhenInsertingToOneOnOneConversationThenConnectionStatusShouldBeAccepted() = runTest(dispatcher) {
-        val conversationEntity1 = TestStubs.conversationEntity1
-        val member1 = TestStubs.member1
-        val user = TestStubs.user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
-        val userDetails = TestStubs.userDetails1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
-
-        userDAO.insertUser(user)
-        conversationDAO.insertConversation(conversationEntity1)
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            member = member1,
-            status = ConnectionEntity.State.ACCEPTED,
-            conversationID = conversationEntity1.id
-        )
-
-        assertEquals(
-            listOf(member1),
-            memberDAO.observeConversationMembers(conversationEntity1.id).first()
-        )
-        assertEquals(
-            userDetails.copy(connectionStatus = ConnectionEntity.State.ACCEPTED),
-            userDAO.observeUserDetailsByQualifiedID(member1.user).firstOrNull()
-        )
+        assertEquals(listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first())
     }
 
     @Test
@@ -188,35 +159,14 @@ class MemberDAOTest : BaseDatabaseTest() {
         val conversationEntity1 = TestStubs.conversationEntity1
         val member1 = TestStubs.member1
 
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+        memberDAO.updateOrInsertOneOnOneMember(
             member = member1,
-            status = ConnectionEntity.State.ACCEPTED,
             conversationID = conversationEntity1.id
         )
 
         assertTrue(
             memberDAO.observeConversationMembers(conversationEntity1.id).first().isEmpty()
         )
-    }
-
-    @Test
-    fun givenExistingConversation_ThenUserTableShouldBeUpdatedOnlyAndNotReplaced() = runTest(dispatcher) {
-        val conversationEntity1 = TestStubs.conversationEntity1
-        val user1 = TestStubs.user1
-        val member1 = TestStubs.member1
-
-        conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED))
-
-        memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-            member = member1,
-            status = ConnectionEntity.State.SENT,
-            conversationID = conversationEntity1.id
-        )
-
-        assertEquals(listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first())
-        assertEquals(ConnectionEntity.State.SENT, userDAO.observeUserDetailsByQualifiedID(user1.id).first()?.connectionStatus)
-        assertEquals(user1.name, userDAO.observeUserDetailsByQualifiedID(user1.id).first()?.name)
     }
 
     @Test
@@ -300,9 +250,9 @@ class MemberDAOTest : BaseDatabaseTest() {
         val member3 = TestStubs.member3
         // given
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
-        userDAO.insertUser(user3)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        userDAO.upsertUser(user3)
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
         memberDAO.insertMember(member3, conversationEntity1.id)
@@ -329,9 +279,9 @@ class MemberDAOTest : BaseDatabaseTest() {
 
         // given
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(user1)
-        userDAO.insertUser(user2)
-        userDAO.insertUser(user3)
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+        userDAO.upsertUser(user3)
         memberDAO.insertMember(member1, conversationEntity1.id)
         memberDAO.insertMember(member2, conversationEntity1.id)
         memberDAO.insertMember(member3, conversationEntity1.id)
@@ -357,8 +307,8 @@ class MemberDAOTest : BaseDatabaseTest() {
             conversationDAO.insertConversation(conversationEntity1)
             conversationDAO.insertConversation(conversationEntity2.copy(hasIncompleteMetadata = true))
 
-            userDAO.insertUser(user1)
-            userDAO.insertUser(user2)
+            userDAO.upsertUser(user1)
+            userDAO.upsertUser(user2)
 
             memberDAO.insertMember(member1, conversationEntity1.id)
             memberDAO.insertMember(member2, conversationEntity1.id)
@@ -399,13 +349,13 @@ class MemberDAOTest : BaseDatabaseTest() {
 
         // Insert a conversation, user, and a member into the conversation to test the deletion operation
         val oldMember = MemberEntity(TestStubs.user3.id, MemberEntity.Role.Member)
-        userDAO.insertUser(TestStubs.user3)
+        userDAO.upsertUser(TestStubs.user3)
         conversationDAO.insertConversation(TestStubs.conversationEntity1)
         memberDAO.insertMember(oldMember, conversationID)
 
         // Ensure all new users are inserted before calling updateFullMemberList
         memberList.forEach { member ->
-            userDAO.insertUser(TestStubs.user1.copy(id = member.user))
+            userDAO.upsertUser(TestStubs.user1.copy(id = member.user))
         }
 
         // When
@@ -436,9 +386,9 @@ class MemberDAOTest : BaseDatabaseTest() {
             val user2 = TestStubs.user2
             val user3 = TestStubs.user3.copy(id = QualifiedIDEntity("3", secondDomain))
 
-            userDAO.insertUser(user1)
-            userDAO.insertUser(user2)
-            userDAO.insertUser(user3)
+            userDAO.upsertUser(user1)
+            userDAO.upsertUser(user2)
+            userDAO.upsertUser(user3)
 
             conversationDAO.insertConversation(groupConversationEntity)
 
@@ -471,8 +421,8 @@ class MemberDAOTest : BaseDatabaseTest() {
             val federatedUser = TestStubs.user1.copy(id = QualifiedIDEntity("fedid", federatedDomain))
             val otherUser = TestStubs.user1.copy(id = QualifiedIDEntity("other", "other.com"))
 
-            userDAO.insertUser(federatedUser)
-            userDAO.insertUser(otherUser)
+            userDAO.upsertUser(federatedUser)
+            userDAO.upsertUser(otherUser)
 
             conversationDAO.insertConversation(oneOnOneConversationEntity)
             conversationDAO.insertConversation(otherOneOnOneConversationEntity)

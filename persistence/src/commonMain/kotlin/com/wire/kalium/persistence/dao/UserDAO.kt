@@ -141,6 +141,16 @@ data class BotIdEntity(
     val provider: String
 )
 
+data class PartialUserEntity(
+    val name: String?,
+    val handle: String?,
+    val email: String?,
+    val accentId: Int?,
+    val previewAssetId: UserAssetIdEntity?,
+    val completeAssetId: UserAssetIdEntity?,
+    val supportedProtocols: Set<SupportedProtocolEntity>?
+)
+
 enum class UserTypeEntity {
 
     /**Team member with owner permissions */
@@ -193,18 +203,35 @@ internal typealias UserAssetIdEntity = QualifiedIDEntity
 @Suppress("TooManyFunctions")
 interface UserDAO {
     /**
-     * Inserts a new user into the local storage
-     */
-    suspend fun insertUser(user: UserEntity)
-
-    /**
      * Inserts each user into the local storage or ignores if already exists
      */
     suspend fun insertOrIgnoreUsers(users: List<UserEntity>)
 
     /**
-     * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
-     * [ConnectionEntity.State.NOT_CONNECTED]
+     * Perform a partial update of an existing user. Only non-null values will be updated otherwise
+     * the existing value is kept.
+     *
+     * @return true if the user was updated
+     */
+    suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity): Boolean
+
+    /**
+     * This will update all columns (or insert a new record), except:
+     * - [ConnectionEntity.State]
+     * - [UserEntity.userType]
+     * - [UserEntity.activeOneOnOneConversationId]
+     *
+     * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
+     * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
+     */
+    suspend fun upsertUser(user: UserEntity)
+
+    /**
+     * This will update all columns (or insert a new record), except:
+     * - [ConnectionEntity.State]
+     * - [UserEntity.userType]
+     * - [UserEntity.activeOneOnOneConversationId]
+     *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
@@ -212,30 +239,12 @@ interface UserDAO {
 
     /**
      * This will update [UserEntity.team], [UserEntity.userType], [UserEntity.connectionStatus] to [ConnectionEntity.State.ACCEPTED]
-     * or insert a new record with default values for other columns.
+     * or insert a new record.
+     *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case when trying to insert a member, we could already have the record, so we need to pass only the data needed.
      */
-    suspend fun upsertTeamMembersTypes(users: List<UserEntity>)
-
-    /**
-     * This will update all columns, except [UserEntity.userType] or insert a new record with default values
-     * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
-     * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
-     */
-    suspend fun upsertTeamMembers(users: List<UserEntity>)
-
-    /**
-     * This will update a user record corresponding to the User,
-     * The Fields to update are:
-     * [UserEntity.name]
-     * [UserEntity.handle]
-     * [UserEntity.email]
-     * [UserEntity.accentId]
-     * [UserEntity.previewAssetId]
-     * [UserEntity.completeAssetId]
-     */
-    suspend fun updateUser(user: UserEntity)
+    suspend fun upsertTeamMemberUserTypes(users: Map<QualifiedIDEntity, UserTypeEntity>)
     suspend fun getAllUsersDetails(): Flow<List<UserDetailsEntity>>
     suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>>
     suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?>
@@ -287,4 +296,6 @@ interface UserDAO {
      * there can be multiple co-existing 1-1 conversations.
      */
     suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
+
+    suspend fun upsertConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State)
 }

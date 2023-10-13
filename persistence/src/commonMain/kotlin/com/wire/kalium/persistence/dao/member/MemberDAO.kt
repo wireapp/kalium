@@ -21,7 +21,6 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
-import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -45,9 +44,8 @@ interface MemberDAO {
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
     suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>>
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role)
-    suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
+    suspend fun updateOrInsertOneOnOneMember(
         member: MemberEntity,
-        status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     )
 
@@ -150,13 +148,11 @@ internal class MemberDAOImpl internal constructor(
             memberQueries.updateMemberRole(role, userId, conversationId)
         }
 
-    override suspend fun updateOrInsertOneOnOneMemberWithConnectionStatus(
+    override suspend fun updateOrInsertOneOnOneMember(
         member: MemberEntity,
-        status: ConnectionEntity.State,
         conversationID: QualifiedIDEntity
     ) = withContext(coroutineContext) {
         memberQueries.transaction {
-            userQueries.upsertUserConnectionStatus(member.user, status)
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
             val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
             if (conversationRecordExist) {
