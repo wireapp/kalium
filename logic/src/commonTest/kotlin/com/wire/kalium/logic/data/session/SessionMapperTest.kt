@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.session
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -49,7 +49,7 @@ class SessionMapperTest {
 
     @Test
     fun givenAnAuthTokens_whenMappingToSessionCredentials_thenValuesAreMappedCorrectly() {
-        val authSession: AuthTokens = TEST_AUTH_TOKENS
+        val authSession: AccountTokens = TEST_AUTH_TOKENS
 
         val acuteValue: SessionDTO =
             with(authSession) {
@@ -68,7 +68,7 @@ class SessionMapperTest {
 
     @Test
     fun givenAnAuthTokens_whenMappingToPersistenceAuthTokens_thenValuesAreMappedCorrectly() {
-        val authSession: AuthTokens = TEST_AUTH_TOKENS
+        val authSession: AccountTokens = TEST_AUTH_TOKENS
 
         given(idMapper).invocation { idMapper.toSsoIdEntity(TEST_SSO_ID) }.then { TEST_SSO_ID_ENTITY }
 
@@ -89,7 +89,7 @@ class SessionMapperTest {
     private companion object {
         val userId = UserId("user_id", "user.domain.io")
 
-        val TEST_AUTH_TOKENS = AuthTokens(
+        val TEST_AUTH_TOKENS = AccountTokens(
             userId = userId,
             tokenType = "Bearer",
             accessToken = "access_token",

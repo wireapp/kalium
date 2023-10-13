@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
             addAuthenticatedAccount(
                 serverConfigId = result.serverConfigId,
                 ssoId = result.ssoID,
-                authTokens = result.authData,
+                accountTokens = result.authData,
                 proxyCredentials = null
             )
         }

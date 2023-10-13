@@ -191,7 +191,7 @@ class AddAuthenticatedUserUseCaseTest {
     private companion object {
         val TEST_USERID = UserId("user_id", "domain.de")
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-        val TEST_AUTH_TOKENS = AuthTokens(
+        val TEST_AUTH_TOKENS = AccountTokens(
             TEST_USERID,
             "access-token",
             "refresh-token",
@@ -246,11 +246,11 @@ class AddAuthenticatedUserUseCaseTest {
         suspend fun withStoreSessionResult(
             serverConfigId: String,
             ssoId: SsoId?,
-            authTokens: AuthTokens,
+            accountTokens: AccountTokens,
             proxyCredentials: ProxyCredentials?,
             result: Either<StorageFailure, Unit>
         ) = apply {
-            given(sessionRepository).coroutine { storeSession(serverConfigId, ssoId, authTokens, proxyCredentials) }.then { result }
+            given(sessionRepository).coroutine { storeSession(serverConfigId, ssoId, accountTokens, proxyCredentials) }.then { result }
         }
 
         suspend fun withUpdateCurrentSessionResult(

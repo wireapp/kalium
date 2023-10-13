@@ -47,14 +47,12 @@ internal sealed interface AccessTokenRefreshResult {
  * Represents an access token, which is used for authentication and authorization purposes.
  *
  * @property value The value of the access token.
- * @property expiresIn The time in seconds until the access token expires.
  * @property tokenType The type of the access token. _e.g._ "Bearer"
  */
-internal data class AccessToken(
+data class AccessToken(
     val value: String,
-    val expiresIn: Int,
     val tokenType: String
 )
 
 @JvmInline
-internal value class RefreshToken(val value: String)
+value class RefreshToken(val value: String)
