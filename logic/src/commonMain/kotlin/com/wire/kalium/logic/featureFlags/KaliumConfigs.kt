@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.featureFlags
 
+import com.wire.kalium.logic.util.KaliumMockEngine
+import com.wire.kalium.network.NetworkStateObserver
+
 data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
     val fileRestrictionState: BuildFileRestrictionState = BuildFileRestrictionState.NoRestriction,
@@ -35,7 +38,9 @@ data class KaliumConfigs(
     val wipeOnDeviceRemoval: Boolean = false,
     val wipeOnRootedDevice: Boolean = false,
     val isWebSocketEnabledByDefault: Boolean = false,
-    val certPinningConfig: Map<String, List<String>> = emptyMap()
+    val certPinningConfig: Map<String, List<String>> = emptyMap(),
+    val kaliumMockEngine: KaliumMockEngine? = null,
+    val mockNetworkStateObserver: NetworkStateObserver? = null
 )
 
 sealed interface BuildFileRestrictionState {
