@@ -41,7 +41,6 @@ internal class ValidatePasswordUseCaseImpl : ValidatePasswordUseCase {
             tooShort = !password.matches(PASSWORD_LENGTH_REGEX),
         )
 
-
     private companion object {
         private const val PASSWORD_MIN_LENGTH = 8
 
@@ -58,7 +57,7 @@ internal class ValidatePasswordUseCaseImpl : ValidatePasswordUseCase {
         private val PASSWORD_UPPERCASE_REGEX = "^.*[A-Z].*$".toRegex() // at least one uppercase ASCII letter
         private val PASSWORD_DIGIT_REGEX = "^.*[0-9].*$".toRegex() // at least a digit
         private val PASSWORD_SPECIAL_CHAR_REGEX = "^.*[^a-zA-Z0-9].*$".toRegex() // at least a "special character"
-        private val PASSWORD_LENGTH_REGEX = "^.{$PASSWORD_MIN_LENGTH,}$".toRegex()  // min PASSWORD_MIN_LENGTH characters
+        private val PASSWORD_LENGTH_REGEX = "^.{$PASSWORD_MIN_LENGTH,}$".toRegex() // min PASSWORD_MIN_LENGTH characters
     }
 }
 
@@ -74,7 +73,4 @@ sealed class ValidatePasswordResult {
 
     val isValid: Boolean
         get() = this is Valid
-
-
 }
-
