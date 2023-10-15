@@ -413,6 +413,7 @@ com.wire.kalium.logic.feature.conversation
 com.wire.kalium.logic.feature.conversation.guestroomlink
 com.wire.kalium.logic.feature.conversation.keyingmaterials
 com.wire.kalium.logic.feature.conversation.messagetimer
+com.wire.kalium.logic.feature.conversation.mls
 com.wire.kalium.logic.feature.debug
 com.wire.kalium.logic.feature.e2ei
 com.wire.kalium.logic.feature.featureConfig
@@ -422,8 +423,10 @@ com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.message.composite
 com.wire.kalium.logic.feature.message.ephemeral
 com.wire.kalium.logic.feature.migration
+com.wire.kalium.logic.feature.mlsmigration
 com.wire.kalium.logic.feature.notificationToken
 com.wire.kalium.logic.feature.proteus
+com.wire.kalium.logic.feature.protocol
 com.wire.kalium.logic.feature.publicuser
 com.wire.kalium.logic.feature.publicuser.search
 com.wire.kalium.logic.feature.register
