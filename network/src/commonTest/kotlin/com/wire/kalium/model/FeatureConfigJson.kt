@@ -40,8 +40,11 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import kotlinx.datetime.Instant
 
 object FeatureConfigJson {
     private val featureConfigResponseSerializer = { _: FeatureConfigResponse ->
@@ -100,6 +103,7 @@ object FeatureConfigJson {
             |    "config": {
             |       "protocolToggleUsers": ["60368759-d23f-4502-ba6f-68b10e926f7a"],
             |       "defaultProtocol": "proteus",
+            |       "supportedProtocols": ["proteus", "mls"],
             |       "allowedCipherSuites": [1],
             |       "defaultCipherSuite": 1
             |    }
@@ -125,10 +129,14 @@ object FeatureConfigJson {
             SSO(FeatureFlagStatusDTO.ENABLED),
             ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             MLS(
-                MLSConfigDTO(emptyList(), ConvProtocol.PROTEUS, listOf(1), 1),
+                MLSConfigDTO(emptyList(), SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED)
+            FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.MLSMigration(
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
+                FeatureFlagStatusDTO.ENABLED
+            )
         ),
         featureConfigResponseSerializer
     )

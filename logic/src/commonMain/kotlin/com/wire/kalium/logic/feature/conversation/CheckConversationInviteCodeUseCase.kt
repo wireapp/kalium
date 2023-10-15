@@ -52,6 +52,7 @@ class CheckConversationInviteCodeUseCase internal constructor(
                 when (failure) {
                     is NetworkFailure.NoNetworkConnection,
                     is NetworkFailure.FederatedBackendFailure,
+                    is NetworkFailure.FeatureNotSupported,
                     is NetworkFailure.ProxyError -> Result.Failure.Generic(failure)
 
                     is NetworkFailure.ServerMiscommunication -> handleServerMissCommunicationError(failure)

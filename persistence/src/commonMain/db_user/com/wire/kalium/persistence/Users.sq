@@ -3,9 +3,11 @@ import com.wire.kalium.persistence.dao.ConnectionEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity;
 import com.wire.kalium.persistence.dao.UserTypeEntity;
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity;
 import kotlin.Int;
 import kotlinx.datetime.Instant;
 import kotlin.Boolean;
+import kotlin.collections.Set;
 
 CREATE TABLE User (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -24,7 +26,9 @@ CREATE TABLE User (
     deleted INTEGER AS Boolean NOT NULL DEFAULT 0,
     incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
     expires_at INTEGER AS Instant,
-    defederated INTEGER AS Boolean NOT NULL DEFAULT 0
+    defederated INTEGER AS Boolean NOT NULL DEFAULT 0,
+    supported_protocols TEXT AS Set<SupportedProtocolEntity> DEFAULT 'PROTEUS',
+    active_one_on_one_conversation_id TEXT AS QualifiedIDEntity
 );
 CREATE INDEX user_team_index ON User(team);
 CREATE INDEX user_service_id ON User(bot_service);
@@ -33,8 +37,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
 name = excluded.name,
 handle = excluded.handle,
@@ -42,7 +46,6 @@ email = excluded.email,
 phone = excluded.phone,
 accent_id = excluded.accent_id,
 team = excluded.team,
-connection_status = excluded.connection_status,
 preview_asset_id = excluded.preview_asset_id,
 complete_asset_id = excluded.complete_asset_id,
 user_type = excluded.user_type,
@@ -50,26 +53,33 @@ bot_service = excluded.bot_service,
 deleted = excluded.deleted,
 incomplete_metadata = excluded.incomplete_metadata,
 expires_at = excluded.expires_at,
-defederated = 0;
+defederated = 0,
+supported_protocols = excluded.supported_protocols;
 
 insertOrIgnoreUser:
-INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-updateUser:
+updateUser {
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, user_type = ?, bot_service = ?, incomplete_metadata = ?, expires_at = ?
+SET
+name = coalesce(:name, name),
+handle = coalesce(:handle, handle),
+email = coalesce(:email, email),
+accent_id = coalesce(:accent_id, accent_id),
+preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
+complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
+supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
+SELECT changes();
+}
 
-updateTeamMemberUser:
-UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?, incomplete_metadata = 0
-WHERE qualified_id = ?;
-
-updateTeamMemberType:
-UPDATE User
-SET team = ?, connection_status = ?, user_type = ?
-WHERE qualified_id = ?;
+upsertTeamMemberUserType:
+INSERT INTO User(qualified_id, connection_status, user_type)
+VALUES(?, ?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+connection_status = excluded.connection_status,
+user_type = excluded.user_type;
 
 markUserAsDeleted:
 UPDATE User
@@ -84,11 +94,6 @@ WHERE qualified_id = ?;
 insertOrIgnoreUserId:
 INSERT OR IGNORE INTO User(qualified_id, incomplete_metadata)
 VALUES(?, 1);
-
-updateSelfUser:
-UPDATE User
-SET name = ?, handle = ?, email = ?, accent_id = ?, preview_asset_id = ?, complete_asset_id = ?
-WHERE qualified_id = ?;
 
 insertOrIgnoreUserIdWithConnectionStatus:
 INSERT OR IGNORE INTO User(qualified_id, connection_status)
@@ -119,6 +124,8 @@ User.deleted,
 User.incomplete_metadata,
 User.expires_at,
 User.defederated,
+User.supported_protocols,
+User.active_one_on_one_conversation_id,
 CASE
     WHEN SUM(Client.is_verified) = COUNT(*) THEN 1
     ELSE 0
@@ -203,5 +210,21 @@ selectUsersWithoutMetadata:
 SELECT * FROM UserDetails AS user
 WHERE deleted = 0 AND incomplete_metadata = 1;
 
+selectUsersWithOneOnOne:
+SELECT * FROM User
+WHERE deleted = 0 AND qualified_id != (SELECT id FROM SelfUser) AND qualified_id IN
+(
+	SELECT user FROM Member
+	JOIN Conversation ON Conversation.qualified_id = Member.conversation
+	WHERE Conversation.type = 'ONE_ON_ONE' AND Member.user = User.qualified_id
+	LIMIT 1
+);
+
 userIdsWithoutSelf:
 SELECT qualified_id FROM User WHERE qualified_id != (SELECT id FROM SelfUser);
+
+updateUserSupportedProtocols:
+UPDATE User SET supported_protocols = ? WHERE qualified_id = ?;
+
+updateOneOnOnConversationId:
+UPDATE User SET active_one_on_one_conversation_id = ? WHERE qualified_id = ?;

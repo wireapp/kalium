@@ -42,7 +42,8 @@ object ListUsersResponseJson {
             email = null,
             expiresAt = null,
             nonQualifiedId = USER_1.value,
-            service = null
+            service = null,
+            supportedProtocols = null
         ),
         UserProfileDTO(
             id = USER_2,
@@ -56,7 +57,8 @@ object ListUsersResponseJson {
             email = null,
             expiresAt = null,
             nonQualifiedId = USER_2.value,
-            service = null
+            service = null,
+            supportedProtocols = null
         ),
     )
 

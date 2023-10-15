@@ -522,13 +522,13 @@ class SearchUserRepositoryTest {
                     email = null,
                     expiresAt = null,
                     nonQualifiedId = "value",
-                    service = null
+                    service = null,
+                    supportedProtocols = null
                 )
             )
         )
 
         const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
-
     }
 
 }

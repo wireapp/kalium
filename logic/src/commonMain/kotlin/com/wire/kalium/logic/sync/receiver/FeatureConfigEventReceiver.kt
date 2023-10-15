@@ -29,6 +29,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.functional.Either
@@ -43,6 +44,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val guestRoomConfigHandler: GuestRoomConfigHandler,
     private val fileSharingConfigHandler: FileSharingConfigHandler,
     private val mlsConfigHandler: MLSConfigHandler,
+    private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
     private val classifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler,
     private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
     private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
@@ -84,7 +86,8 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
-            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model)
+            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
+            is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
             is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
             is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
             is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)

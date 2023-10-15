@@ -77,14 +77,17 @@ internal class ConversationDAOImpl internal constructor(
                 name,
                 type,
                 teamId,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupId
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupId
                 else null,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.groupState
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.groupState
                 else ConversationEntity.GroupState.ESTABLISHED,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.epoch.toLong()
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.epoch.toLong()
                 else MLS_DEFAULT_EPOCH,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) ConversationEntity.Protocol.MLS
-                else ConversationEntity.Protocol.PROTEUS,
+                when (protocolInfo) {
+                    is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
+                    is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED
+                    is ConversationEntity.ProtocolInfo.Proteus -> ConversationEntity.Protocol.PROTEUS
+                },
                 mutedStatus,
                 mutedTime,
                 creatorId,
@@ -93,9 +96,9 @@ internal class ConversationDAOImpl internal constructor(
                 access,
                 accessRole,
                 lastReadDate,
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.keyingMaterialLastUpdate
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.keyingMaterialLastUpdate
                 else Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
-                if (protocolInfo is ConversationEntity.ProtocolInfo.MLS) protocolInfo.cipherSuite
+                if (protocolInfo is ConversationEntity.ProtocolInfo.MLSCapable) protocolInfo.cipherSuite
                 else MLS_DEFAULT_CIPHER_SUITE,
                 receiptMode,
                 messageTimer,
@@ -149,6 +152,24 @@ internal class ConversationDAOImpl internal constructor(
             .map { list -> list.map { it.let { conversationMapper.toModel(it) } } }
     }
 
+    override suspend fun getConversationIds(
+        type: ConversationEntity.Type,
+        protocol: ConversationEntity.Protocol,
+        teamId: String?
+    ): List<QualifiedIDEntity> {
+        return withContext(coroutineContext) {
+            conversationQueries.selectConversationIds(protocol, type, teamId).executeAsList()
+        }
+    }
+
+    override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity> {
+        return withContext(coroutineContext) {
+            conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
+                .executeAsList()
+                .map { it.qualified_id }
+        }
+    }
+
     override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
         return conversationQueries.selectByQualifiedId(qualifiedID)
             .asFlow()
@@ -177,12 +198,20 @@ internal class ConversationDAOImpl internal constructor(
             }
         }
 
-    override suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
-        return memberQueries.selectConversationByMember(userId)
+    override suspend fun getOneOnOneConversationIdsWithOtherUser(
+        userId: UserIDEntity,
+        protocol: ConversationEntity.Protocol
+    ): List<QualifiedIDEntity> =
+        withContext(coroutineContext) {
+            conversationQueries.selectOneOnOneConversationIdsByProtocol(protocol, userId).executeAsList()
+        }
+
+    override suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
+        return conversationQueries.selectActiveOneOnOneConversation(userId)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(coroutineContext)
-            .map { it?.let { conversationMapper.fromOneToOneToModel(it) } }
+            .map { it?.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo? =
@@ -210,7 +239,7 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity> =
         withContext(coroutineContext) {
-            conversationQueries.selectByGroupState(groupState, ConversationEntity.Protocol.MLS)
+            conversationQueries.selectByGroupState(groupState)
                 .executeAsList()
                 .map(conversationMapper::toModel)
         }
@@ -259,7 +288,6 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String> = withContext(coroutineContext) {
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
-            ConversationEntity.Protocol.MLS,
             DateTimeUtil.currentInstant().minus(threshold)
         ).executeAsList()
     }
@@ -273,7 +301,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
-        return conversationQueries.selectProposalTimers(ConversationEntity.Protocol.MLS)
+        return conversationQueries.selectProposalTimers()
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
@@ -295,12 +323,18 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateConversationType(type, conversationID)
         }
 
+    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean {
+        return withContext(coroutineContext) {
+            conversationQueries.updateConversationProtocol(protocol, conversationId).executeAsOne() > 0
+        }
+    }
+
     override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) = withContext(coroutineContext) {
         memberQueries.deleteUserFromGroupConversations(userId, userId)
     }
 
-    override suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity> = withContext(coroutineContext) {
-        memberQueries.selectConversationsByMember(userId).executeAsList().map { it.conversation }
+    override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(coroutineContext) {
+        memberQueries.selectConversationsByMember(userId, conversationMapper::toModel).executeAsList()
     }
 
     override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) =

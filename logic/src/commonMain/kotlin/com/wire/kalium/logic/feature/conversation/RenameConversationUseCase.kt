@@ -47,14 +47,14 @@ internal class RenameConversationUseCaseImpl(
     val persistMessage: PersistMessageUseCase,
     private val renamedConversationEventHandler: RenamedConversationEventHandler,
     val selfUserId: UserId,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId)
 ) : RenameConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, conversationName: String): RenamingResult {
         return conversationRepository.changeConversationName(conversationId, conversationName)
             .onSuccess { response ->
                 if (response is ConversationRenameResponse.Changed)
                     renamedConversationEventHandler.handle(
-                        eventMapper.conversationRenamed(LocalId.generate(), response.event, true)
+                        eventMapper.conversationRenamed(LocalId.generate(), response.event, true, false)
                     )
             }
             .fold({

@@ -83,6 +83,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -1752,7 +1753,7 @@ class CallRepositoryTest {
 
             val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(
                 groupId,
-                Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
+                Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 1UL,
                 Clock.System.now(),
                 Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519

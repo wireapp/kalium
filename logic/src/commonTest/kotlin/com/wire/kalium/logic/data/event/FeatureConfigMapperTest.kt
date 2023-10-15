@@ -30,7 +30,10 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -62,6 +65,17 @@ class FeatureConfigMapperTest {
 
         assertEquals(Status.ENABLED, model.status)
         assertEquals(listOf(PlainId("someId")), model.allowedUsers)
+    }
+
+    @Test
+    fun givenApiModelResponse_whenMappingMLSMigrationStatusToModel_thenShouldBeMappedCorrectly() {
+        val (arrangement, mapper) = Arrangement().arrange()
+
+        val model = arrangement.featureConfigResponse.mlsMigration?.let { mapper.fromDTO(it) }
+
+        assertEquals(Status.ENABLED, model?.status)
+        assertEquals(Instant.DISTANT_FUTURE, model?.startTime)
+        assertEquals(Instant.DISTANT_FUTURE, model?.endTime)
     }
 
     @Test
@@ -124,9 +138,13 @@ class FeatureConfigMapperTest {
     private class Arrangement {
         val featureConfigResponse = FeatureConfigResponse(
             FeatureConfigData.AppLock(
-                AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED
+                AppLockConfigDTO(true, 0),
+                FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.ClassifiedDomains(ClassifiedDomainsConfigDTO(listOf("wire.com")), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.ClassifiedDomains(
+                ClassifiedDomainsConfigDTO(listOf("wire.com")),
+                FeatureFlagStatusDTO.ENABLED
+            ),
             FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.ConversationGuestLinks(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.DigitalSignatures(FeatureFlagStatusDTO.ENABLED),
@@ -140,13 +158,21 @@ class FeatureConfigMapperTest {
             FeatureConfigData.MLS(
                 MLSConfigDTO(
                     listOf("someId"),
-                    ConvProtocol.MLS,
+                    SupportedProtocolDTO.MLS,
+                    listOf(SupportedProtocolDTO.MLS),
                     emptyList(),
                     1
                 ), FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.E2EI(
                 E2EIConfigDTO("url", 1_000_000L),
+                FeatureFlagStatusDTO.ENABLED
+            ),
+            FeatureConfigData.MLSMigration(
+                MLSMigrationConfigDTO(
+                    Instant.DISTANT_FUTURE,
+                    Instant.DISTANT_FUTURE
+                ),
                 FeatureFlagStatusDTO.ENABLED
             )
         )
@@ -155,5 +181,4 @@ class FeatureConfigMapperTest {
 
         fun arrange() = this to mapper
     }
-
 }

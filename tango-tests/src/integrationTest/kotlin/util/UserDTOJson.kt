@@ -90,7 +90,8 @@ object UserDTOJson {
             locale = "",
             managedByDTO = null,
             phone = null,
-            ssoID = null
+            ssoID = null,
+            supportedProtocols = null
         ), jsonProvider
     )
 }
