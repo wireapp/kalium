@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -43,6 +44,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -264,6 +266,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.SENT
             )
         )
+
         messageDAO.insertOrIgnoreMessages(allMessages)
 
         messageDAO.markMessageAsDeleted(messageUuid, deleteMessageConversationId)
@@ -274,6 +277,8 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         val notDeletedMessage = messageDAO.getMessageById(messageUuid, visibleMessageConversationId)
         assertTrue { notDeletedMessage?.visibility == MessageEntity.Visibility.VISIBLE }
+
+        assertFalse { messageDAO.observeUnreadEvents().first().containsKey(deleteMessageConversationId) }
     }
 
     @Test
@@ -396,7 +401,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -445,7 +450,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -479,7 +484,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         val message = buildList {
             // add 9 Message before the lastReadDate
@@ -515,7 +520,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         val readMessagesCount = 3
         val unreadMessagesCount = 2
 
@@ -565,7 +570,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         val readMessagesCount = 3
         val unreadMessagesCount = 2
 
@@ -617,7 +622,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -650,7 +655,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         val unreadMessagesCount = 2
 
         val message = buildList {
@@ -791,7 +796,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             newConversationEntity(id = conversationId2)
         )
 
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(
             listOf(
                 newRegularMessageEntity(
@@ -871,7 +876,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
         // when
@@ -932,7 +937,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
         // when
@@ -992,7 +997,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                     lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
                 )
             )
-            userDAO.insertUser(userEntity1)
+            userDAO.upsertUser(userEntity1)
             messageDAO.insertOrIgnoreMessages(listOf(previewAssetMessage))
 
             // when
@@ -1082,7 +1087,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant()
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         messageDAO.insertOrIgnoreMessage(initialAssetMessage)
 
         // when
@@ -1121,7 +1126,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         val message1 = newRegularMessageEntity(
             id = messageId,
@@ -1155,8 +1160,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
             )
         )
-        userDAO.insertUser(userEntity1)
-        userDAO.insertUser(userEntity2)
+        userDAO.upsertUser(userEntity1)
+        userDAO.upsertUser(userEntity2)
 
         val messageFromUser1 = newRegularMessageEntity(
             id = messageId,
@@ -1313,7 +1318,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "ConversationReceiptModeChanged Message"
         conversationDAO.insertConversation(newConversationEntity(id = conversationId))
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         // when
         messageDAO.insertOrIgnoreMessages(
@@ -1349,7 +1354,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(newConversationEntity(id = conversationId2))
 
         val messageId = "systemMessage"
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         // when
         messageDAO.persistSystemMessageToAllConversations(
@@ -1405,7 +1410,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
         val messageId = "systemMessage"
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
 
         // when
         messageDAO.persistSystemMessageToAllConversations(
@@ -1511,8 +1516,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         val conversationId = QualifiedIDEntity("1", "someDomain")
         val messageId = "Conversation MessageSent With Partial Success"
         conversationDAO.insertConversation(newConversationEntity(id = conversationId))
-        userDAO.insertUser(userEntity1)
-        userDAO.insertUser(userEntity2)
+        userDAO.upsertUser(userEntity1)
+        userDAO.upsertUser(userEntity2)
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
@@ -1631,6 +1636,129 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertNotNull(result)
         assertEquals(MessageEntity.Status.DELIVERED, result.status)
         assertTrue(result.readCount == 0L)
+    }
+
+    @Test
+    fun givenExistingMessagesAtSource_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = "1",
+                senderUserId = userEntity1.id,
+                conversationId = source.id,
+                content = MessageEntityContent.Text(messageBody = "Message 1")
+            ),
+            newRegularMessageEntity(
+                id = "2",
+                senderUserId = userEntity1.id,
+                conversationId = source.id,
+                content = MessageEntityContent.Text(messageBody = "Message 2")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        // when
+        messageDAO.moveMessages(source.id, destination.id)
+
+        // then
+        val retrievedMessages = messageDAO.getMessagesByConversationAndVisibility(
+            destination.id,
+            10,
+            0,
+            listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertEquals(
+            allMessages.map { it.content }.toSet(),
+            retrievedMessages.map { it.content }.toSet())
+    }
+
+    @Test
+    fun givenExistingMessagesAtSourceAndDestination_whenMovingMessages_thenMessagesAreAccessibleAtDestination() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = "1",
+                senderUserId = userEntity1.id,
+                conversationId = source.id,
+                content = MessageEntityContent.Text(messageBody = "Message 1")
+            ),
+            newRegularMessageEntity(
+                id = "2",
+                senderUserId = userEntity1.id,
+                conversationId = destination.id,
+                content = MessageEntityContent.Text(messageBody = "Message 2")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        // when
+        messageDAO.moveMessages(source.id, destination.id)
+
+        // then
+        val retrievedMessages = messageDAO.getMessagesByConversationAndVisibility(
+            destination.id,
+            10,
+            0,
+            listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertEquals(
+            allMessages.map { it.content }.toSet(),
+            retrievedMessages.map { it.content }.toSet())
+    }
+
+    @Test
+    fun givenNoExistingMessagesAtSource_whenMovingMessages_thenExistingMessagesAreAccessibleAtDestination() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+
+        val allMessages = listOf(
+            newRegularMessageEntity(
+                id = "1",
+                senderUserId = userEntity1.id,
+                conversationId = destination.id,
+                content = MessageEntityContent.Text(messageBody = "Message 1")
+            ),
+            newRegularMessageEntity(
+                id = "2",
+                senderUserId = userEntity1.id,
+                conversationId = destination.id,
+                content = MessageEntityContent.Text(messageBody = "Message 2")
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        // when
+        messageDAO.moveMessages(source.id, destination.id)
+
+        // then
+        val retrievedMessages = messageDAO.getMessagesByConversationAndVisibility(
+            destination.id,
+            10,
+            0,
+            listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertEquals(
+            allMessages.map { it.content }.toSet(),
+            retrievedMessages.map { it.content }.toSet())
     }
 
     private suspend fun insertInitialData() {

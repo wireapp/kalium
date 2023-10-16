@@ -31,6 +31,9 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
@@ -45,9 +48,62 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
 class MLSMessageUnpackerTest {
+
+    @Test
+    fun givenConversationWithProteusProtocol_whenUnpacking_thenFailWithNotSupportedByProteus() = runTest {
+        val eventTimestamp = DateTimeUtil.currentInstant()
+
+        val (_, mlsUnpacker) = Arrangement()
+            .withMLSClientProviderReturningClient()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.PROTEUS_PROTOCOL_INFO)
+            .arrange()
+
+        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        result.shouldFail { failure ->
+            assertEquals(CoreFailure.NotSupportedByProteus, failure)
+        }
+    }
+
+    @Test
+    fun givenConversationWithMixedProtocol_whenUnpacking_thenSucceed() = runTest {
+        val eventTimestamp = DateTimeUtil.currentInstant()
+        val commitDelay: Long = 10
+
+        val (_, mlsUnpacker) = Arrangement()
+            .withMLSClientProviderReturningClient()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.MIXED_PROTOCOL_INFO)
+            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .arrange()
+
+        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        result.shouldSucceed()
+
+        assertEquals(listOf(MessageUnpackResult.HandshakeMessage), result.getOrNull())
+    }
+
+    @Test
+    fun givenConversationWithMLSProtocol_whenUnpacking_thenSucceed() = runTest {
+        val eventTimestamp = DateTimeUtil.currentInstant()
+        val commitDelay: Long = 10
+
+        val (_, mlsUnpacker) = Arrangement()
+            .withMLSClientProviderReturningClient()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_PROTOCOL_INFO)
+            .withDecryptMessageReturning(Either.Right(listOf(DECRYPTED_MESSAGE_BUNDLE.copy(commitDelay = commitDelay))))
+            .arrange()
+
+        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
+        val result = mlsUnpacker.unpackMlsMessage(messageEvent)
+        result.shouldSucceed()
+
+        assertEquals(listOf(MessageUnpackResult.HandshakeMessage), result.getOrNull())
+    }
 
     @Test
     fun givenNewMLSMessageEventWithProposal_whenUnpacking_thenScheduleProposalTimer() = runTest {
@@ -145,7 +201,6 @@ class MLSMessageUnpackerTest {
         }
 
         fun arrange() = this to mlsMessageUnpacker
-
     }
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")

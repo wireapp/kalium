@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.functional.Either
@@ -51,6 +52,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val guestRoomConfigHandler: GuestRoomConfigHandler,
     private val fileSharingConfigHandler: FileSharingConfigHandler,
     private val mlsConfigHandler: MLSConfigHandler,
+    private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
     private val classifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler,
     private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
     private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
@@ -63,7 +65,8 @@ internal class SyncFeatureConfigsUseCaseImpl(
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             guestRoomConfigHandler.handle(it.guestRoomLinkModel)
             fileSharingConfigHandler.handle(it.fileSharingModel)
-            mlsConfigHandler.handle(it.mlsModel)
+            mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
+            it.mlsMigrationModel?.let { mlsMigrationConfigHandler.handle(it, duringSlowSync = true) }
             classifiedDomainsConfigHandler.handle(it.classifiedDomainsModel)
             conferenceCallingConfigHandler.handle(it.conferenceCallingModel)
             passwordChallengeConfigHandler.handle(it.secondFactorPasswordChallengeModel)

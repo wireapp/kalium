@@ -29,5 +29,6 @@ fun insertedClient(userId: QualifiedIDEntity = QualifiedIDEntity("test", "wire.c
     model = null,
     registrationDate = null,
     lastActive = null,
-    mlsPublicKeys = null
+    mlsPublicKeys = null,
+    isMLSCapable = false
 )

@@ -141,6 +141,35 @@ internal object TestStubs {
         verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
+    val conversationEntity5 = ConversationEntity(
+        QualifiedIDEntity("5", "wire.com"),
+        "conversation4",
+        ConversationEntity.Type.GROUP,
+        null,
+        ConversationEntity.ProtocolInfo.Mixed(
+            "group4",
+            ConversationEntity.GroupState.ESTABLISHED,
+            0UL,
+            Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        ),
+        creatorId = "someValue",
+        // This conversation was modified after the last time the user was notified about it
+        lastNotificationDate = "2021-03-30T15:30:00.000Z".toInstant(),
+        lastModifiedDate = "2021-03-30T15:36:00.000Z".toInstant(),
+        lastReadDate = "2000-01-01T12:00:00.000Z".toInstant(),
+        // and it's status is set to be only notified if there is a mention for the user
+        mutedStatus = ConversationEntity.MutedStatus.ONLY_MENTIONS_AND_REPLIES_ALLOWED,
+        access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+        accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+        receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+        messageTimer = messageTimer,
+        userMessageTimer = null,
+        archived = false,
+        archivedInstant = null,
+        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+    )
+
     val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
     val member2 = MemberEntity(user2.id, MemberEntity.Role.Member)
     val member3 = MemberEntity(user3.id, MemberEntity.Role.Admin)

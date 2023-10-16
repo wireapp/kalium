@@ -39,6 +39,7 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -167,7 +168,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID1,
-                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -177,7 +178,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             val MLS_CONVERSATION2 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID2,
-                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519

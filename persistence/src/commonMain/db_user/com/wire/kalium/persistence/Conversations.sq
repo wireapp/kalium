@@ -184,6 +184,10 @@ CASE (Conversation.type)
     WHEN 'CONNECTION_PENDING' THEN connection_user.defederated
 END AS userDefederated,
 CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.supported_protocols
+    WHEN 'CONNECTION_PENDING' THEN connection_user.supported_protocols
+END AS userSupportedProtocols,
+CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN  User.connection_status
     WHEN 'CONNECTION_PENDING' THEN connection_user.connection_status
 END AS connectionStatus,
@@ -191,10 +195,18 @@ CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN  User.qualified_id
     WHEN 'CONNECTION_PENDING' THEN connection_user.qualified_id
 END AS otherUserId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
+END AS otherUserActiveConversationId,
 CASE
     WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
     ELSE 0
 END AS isCreator,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
+    ELSE 1
+END AS isActive,
 Conversation.last_notified_date AS lastNotifiedMessageDate,
 memberRole. role AS selfRole,
 Conversation.protocol,
@@ -241,12 +253,21 @@ WHERE
     type IS 'GROUP' OR (type IS NOT 'GROUP' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos and connection requests if they have user metadata
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
     )
-    AND (protocol IS 'PROTEUS' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
     AND archived = :fromArchive
+    AND isActive
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectAllConversations:
 SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
+
+selectAllTeamProteusConversationsReadyForMigration:
+SELECT
+qualified_id,
+(SELECT count(*) FROM Member WHERE conversation = qualified_id) AS memberCount,
+(SELECT count(*) FROM Member LEFT JOIN User ON User.qualified_id = Member.user WHERE Member.conversation = Conversation.qualified_id AND (User.supported_protocols = 'MLS' OR User.supported_protocols = 'MLS,PROTEUS' OR User.supported_protocols = 'PROTEUS,MLS')) AS mlsCapableMemberCount
+FROM Conversation
+WHERE type IS 'GROUP' AND protocol IS 'MIXED' AND team_id = ? AND memberCount = mlsCapableMemberCount;
 
 selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
@@ -265,10 +286,22 @@ selectByGroupId:
 SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 
 selectByGroupState:
-SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND protocol = ?;
+SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS "MLS" OR protocol IS "MIXED");
+
+selectActiveOneOnOneConversation:
+SELECT * FROM ConversationDetails
+WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);
+
+selectOneOnOneConversationIdsByProtocol:
+SELECT Member.conversation FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = :protocol AND Member.user = :user;
 
 getConversationIdByGroupId:
 SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
+
+selectConversationIds:
+SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :type AND (:teamId IS NULL OR team_id = :teamId);
 
 updateConversationMutingStatus:
 UPDATE Conversation
@@ -287,7 +320,7 @@ updateKeyingMaterialDate:
 UPDATE Conversation SET mls_last_keying_material_update_date= ? WHERE mls_group_id = ?;
 
 selectByKeyingMaterialUpdate:
-SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND protocol = ? AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
+SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS "MLS" OR protocol IS "MIXED") AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
 
 updateProposalTimer:
 UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;
@@ -296,7 +329,7 @@ clearProposalTimer:
 UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
 
 selectProposalTimers:
-SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE protocol = ? AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
+SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE (protocol IS "MLS" OR protocol IS "MIXED") AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
 
 whoDeletedMeInConversation:
 SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = 'REMOVED' AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY creation_date DESC LIMIT 1;
@@ -310,6 +343,13 @@ updateConversationType:
 UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
+
+updateConversationProtocol {
+UPDATE Conversation
+SET protocol = :protocol
+WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SELECT changes();
+}
 
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;

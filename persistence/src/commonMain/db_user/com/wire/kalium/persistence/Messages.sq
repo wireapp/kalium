@@ -1,3 +1,4 @@
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
@@ -211,6 +212,15 @@ CREATE TABLE MessageRecipientFailure (
       PRIMARY KEY (message_id, conversation_id, recipient_failure_type)
 );
 
+CREATE TABLE MessageConversationProtocolChangedContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      protocol TEXT AS ConversationEntity.Protocol NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
@@ -369,6 +379,10 @@ insertConversationMessageTimerChanged:
 INSERT OR IGNORE INTO MessageConversationTimerChangedContent(message_id, conversation_id, message_timer)
 VALUES(?, ?, ?);
 
+insertConversationProtocolChanged:
+INSERT OR IGNORE INTO MessageConversationProtocolChangedContent(message_id, conversation_id, protocol)
+VALUES(?, ?, ?);
+
 updateMessageStatus:
 UPDATE Message
 SET status = ?
@@ -492,3 +506,8 @@ WHERE  conversation_id = ? AND id = ?;
 insertMessageRecipientsFailure:
 INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
 VALUES(?, ?, ?, ?);
+
+moveMessages:
+UPDATE OR REPLACE Message
+SET conversation_id = :to
+WHERE conversation_id = :from;

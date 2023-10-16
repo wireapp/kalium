@@ -46,7 +46,7 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientsAreInserted_whenDeletingTheUser_thenTheClientsAreDeleted() = runTest {
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertClientParam)
 
         userDAO.deleteUserByQualifiedID(user.id)
@@ -77,7 +77,8 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
             label = null,
             clientType = null,
             model = null,
-            mlsPublicKeys = null
+            mlsPublicKeys = null,
+            isMLSCapable = false
         )
         val insertClientParam = InsertClientParam(
             client.userId,
@@ -88,7 +89,8 @@ class UserClientDAOIntegrationTest : BaseDatabaseTest() {
             client.registrationDate,
             client.lastActive,
             client.model,
-            null
+            client.mlsPublicKeys,
+            client.isMLSCapable
         )
     }
 }

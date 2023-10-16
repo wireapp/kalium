@@ -136,7 +136,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
     private suspend fun populateMessageData() {
         val userId = UserIDEntity("user", "domain")
-        userDAO.insertUser(newUserEntity(qualifiedID = userId))
+        userDAO.upsertUser(newUserEntity(qualifiedID = userId))
         conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
         val messages = buildList<MessageEntity> {
             repeat(MESSAGE_COUNT) {

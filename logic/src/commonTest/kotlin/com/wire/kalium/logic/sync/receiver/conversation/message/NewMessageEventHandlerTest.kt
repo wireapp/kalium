@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
@@ -41,12 +42,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class NewMessageEventHandlerTest {
 
     @Test
@@ -284,15 +284,16 @@ class NewMessageEventHandlerTest {
     fun givenMLSEventFailsWithWrongEpoch_whenHandling_shouldCallWrongEpochHandler() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
+            .withVerifyEpoch(Either.Right(Unit))
             .arrange()
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
 
-        verify(arrangement.mlsWrongEpochHandler)
-            .suspendFunction(arrangement.mlsWrongEpochHandler::onMLSWrongEpoch)
-            .with(eq(newMessageEvent.conversationId),eq(newMessageEvent.timestampIso))
+        verify(arrangement.staleEpochVerifier)
+            .suspendFunction(arrangement.staleEpochVerifier::verifyEpoch)
+            .with(eq(newMessageEvent.conversationId),eq(newMessageEvent.timestampIso.toInstant()))
             .wasInvoked(exactly = once)
     }
 
@@ -300,6 +301,7 @@ class NewMessageEventHandlerTest {
     fun givenMLSEventFailsWithWrongEpoch_whenHandling_shouldNotPersistDecryptionErrorMessage() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withMLSUnpackerReturning(Either.Left(MLSFailure.WrongEpoch))
+            .withVerifyEpoch(Either.Right(Unit))
             .arrange()
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
@@ -326,7 +328,7 @@ class NewMessageEventHandlerTest {
         }
 
         @Mock
-        val mlsWrongEpochHandler = mock(classOf<MLSWrongEpochHandler>())
+        val staleEpochVerifier = mock(classOf<StaleEpochVerifier>())
 
         @Mock
         val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)
@@ -337,7 +339,7 @@ class NewMessageEventHandlerTest {
             applicationMessageHandler,
             { conversationId, messageId -> ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId) },
             SELF_USER_ID,
-            mlsWrongEpochHandler
+            staleEpochVerifier
         )
 
         fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult>) = apply {
@@ -350,6 +352,13 @@ class NewMessageEventHandlerTest {
         fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) = apply {
             given(mlsMessageUnpacker)
                 .suspendFunction(mlsMessageUnpacker::unpackMlsMessage)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
+            given(staleEpochVerifier)
+                .suspendFunction(staleEpochVerifier::verifyEpoch)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }

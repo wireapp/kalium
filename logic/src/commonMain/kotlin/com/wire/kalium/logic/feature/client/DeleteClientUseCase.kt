@@ -22,7 +22,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeleteClientParam
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isBadRequest
 import com.wire.kalium.network.exceptions.isInvalidCredentials
@@ -36,9 +38,18 @@ interface DeleteClientUseCase {
     suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult
 }
 
-class DeleteClientUseCaseImpl(private val clientRepository: ClientRepository) : DeleteClientUseCase {
+internal class DeleteClientUseCaseImpl(
+    private val clientRepository: ClientRepository,
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
+) : DeleteClientUseCase {
     override suspend operator fun invoke(param: DeleteClientParam): DeleteClientResult =
-        clientRepository.deleteClient(param).fold(
+        clientRepository.deleteClient(param)
+            .onSuccess {
+                updateSupportedProtocolsAndResolveOneOnOnes(
+                    synchroniseUsers = true
+                )
+            }
+            .fold(
             {
                 handleError(it)
             }, {

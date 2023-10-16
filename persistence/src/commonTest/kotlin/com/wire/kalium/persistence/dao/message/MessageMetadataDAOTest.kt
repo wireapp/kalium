@@ -60,7 +60,7 @@ class MessageMetadataDAOTest : BaseDatabaseTest() {
         val originalUser = userEntity1
 
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(originalUser)
+        userDAO.upsertUser(originalUser)
 
         val originalMessage = newRegularMessageEntity(
             id = messageId,
