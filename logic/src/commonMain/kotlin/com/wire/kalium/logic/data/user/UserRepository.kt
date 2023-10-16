@@ -32,11 +32,9 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UserSummary
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamMapper
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.di.MapperProvider
@@ -90,7 +88,7 @@ internal interface UserRepository {
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
-    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
+    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): SelfUser?
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
@@ -152,11 +150,9 @@ internal class UserDataSource internal constructor(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
     /**
@@ -189,14 +185,14 @@ internal class UserDataSource internal constructor(
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
-                userEntity?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(userEntity) }
+                userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
                 processFederatedUserRefresh(userId, otherUser)
             }
 
     override suspend fun getUsersWithOneOnOneConversation(): List<OtherUser> {
         return userDAO.getUsersWithOneOnOneConversation()
-            .map(publicUserMapper::fromUserEntityToOtherUser)
+            .map(userMapper::fromUserEntityToOtherUser)
     }
 
     /**
@@ -338,16 +334,15 @@ internal class UserDataSource internal constructor(
         replaceWith = ReplaceWith("eg: updateSelfDisplayName(displayName: String)")
     )
     // FIXME(refactor): create a dedicated function to update avatar, as this is the only usage of this function.
-    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
-        val user = getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
-        val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
+    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
+        val updateRequest = userMapper.fromModelToUpdateApiModel(newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
-            .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
-            .flatMap { userEntity ->
+            .map { userMapper.fromUpdateRequestToPartialUserEntity(updateRequest, selfUserId) }
+            .flatMap { partialUserEntity ->
                 wrapStorageRequest {
-                    userDAO.upsertUser(userEntity)
-                }.map { userMapper.fromUserEntityToSelfUser(userEntity) }
-            }
+                    userDAO.updateUser(selfUserId.toDao(), partialUserEntity)
+                }
+            }.map { }
     }
 
     // TODO: replace the flow with selfUser and cache it
@@ -361,14 +356,14 @@ internal class UserDataSource internal constructor(
             .mapRight { users ->
                 users
                     .filter { it.id != selfUserId && !it.deleted && !it.hasIncompleteMetadata }
-                    .map { userEntity -> publicUserMapper.fromUserDetailsEntityToOtherUser(userEntity) }
+                    .map { userEntity -> userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }
     }
 
     override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
         qualifiedID = userId.toDao()
     )?.let {
-        publicUserMapper.fromUserEntityToOtherUserMinimized(it)
+        userMapper.fromUserEntityToOtherUserMinimized(it)
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =
@@ -378,26 +373,17 @@ internal class UserDataSource internal constructor(
                 if (userId == selfUserId) {
                     userEntity?.let { userMapper.fromUserDetailsEntityToSelfUser(userEntity) }
                 } else {
-                    userEntity?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(userEntity) }
+                    userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
                 }
             }
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
-            getSelfUser()?.teamId.let { selfTeamId ->
+            getSelfUser()?.let { selfUser ->
                 Either.Right(
-                    publicUserMapper.fromUserProfileDtoToOtherUser(
-                        userDetailResponse = userProfileDTO,
-                        userType = userTypeMapper.fromTeamAndDomain(
-                            otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = selfTeamId?.value,
-                            otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUserId.domain,
-                            isService = userProfileDTO.service != null
-                        )
-                    )
+                    userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
                 )
-            }
+            } ?: Either.Left(StorageFailure.DataNotFound)
         }
 
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
@@ -424,7 +410,7 @@ internal class UserDataSource internal constructor(
             .mapRight { users ->
                 users
                     .filter { !it.deleted && !it.hasIncompleteMetadata }
-                    .map { publicUserMapper.fromUserDetailsEntityToOtherUser(it) }
+                    .map { userMapper.fromUserDetailsEntityToOtherUser(it) }
             }
     }
 
@@ -474,7 +460,7 @@ internal class UserDataSource internal constructor(
             userDAO.insertOrIgnoreUsers(
                 users.map { user ->
                     when (user) {
-                        is OtherUser -> publicUserMapper.fromOtherToUserEntity(user)
+                        is OtherUser -> userMapper.fromOtherToUserEntity(user)
                         is SelfUser -> userMapper.fromSelfUserToUserEntity(user)
                     }
                 }
@@ -496,7 +482,7 @@ internal class UserDataSource internal constructor(
     override suspend fun getUsersSummaryByIds(userIds: List<QualifiedID>): Either<StorageFailure, List<UserSummary>> =
         wrapStorageRequest {
             userDAO.getUsersDetailsByQualifiedIDList(userIds.map { it.toDao() }).map {
-                publicUserMapper.fromUserDetailsEntityToUserSummary(it)
+                userMapper.fromEntityToUserSummary(it.toSimpleEntity())
             }
         }
 

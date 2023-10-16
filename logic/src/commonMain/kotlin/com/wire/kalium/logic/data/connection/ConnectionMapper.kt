@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
 import com.wire.kalium.logic.data.user.Connection
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
@@ -46,7 +46,7 @@ interface ConnectionMapper {
 internal class ConnectionMapperImpl(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val statusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
+    private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
 ) : ConnectionMapper {
     override fun fromApiToDao(state: ConnectionDTO): ConnectionEntity = ConnectionEntity(
@@ -68,14 +68,14 @@ internal class ConnectionMapperImpl(
             qualifiedToId = qualifiedToId.toModel(),
             status = statusMapper.fromDaoModel(status),
             toId = toId,
-            fromUser = otherUser?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(it) }
+            fromUser = otherUser?.let { userMapper.fromUserDetailsEntityToOtherUser(it) }
         )
     }
 
     override fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails = with(connection) {
         ConversationDetails.Connection(
             conversationId = qualifiedConversationId.toModel(),
-            otherUser = otherUser?.let { publicUserMapper.fromUserDetailsEntityToOtherUser(it) },
+            otherUser = otherUser?.let { userMapper.fromUserDetailsEntityToOtherUser(it) },
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
             lastModifiedDate = lastUpdateDate.toIsoDateTimeString(),
             connection = fromDaoToModel(this),
