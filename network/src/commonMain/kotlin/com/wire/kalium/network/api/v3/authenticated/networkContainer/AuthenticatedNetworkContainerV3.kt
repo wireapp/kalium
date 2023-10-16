@@ -71,6 +71,7 @@ import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
 
+@Suppress("LongParameterList")
 internal class AuthenticatedNetworkContainerV3 internal constructor(
     private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
