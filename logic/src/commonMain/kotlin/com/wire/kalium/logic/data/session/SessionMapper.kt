@@ -66,8 +66,8 @@ internal class SessionMapperImpl(
         SessionDTO(
             userId = userId.toApi(),
             tokenType = tokenType,
-            accessToken = accessToken,
-            refreshToken = refreshToken,
+            accessToken = accessToken.value,
+            refreshToken = refreshToken.value,
             cookieLabel = cookieLabel
         )
     }
@@ -115,8 +115,8 @@ internal class SessionMapperImpl(
     override fun toAuthTokensEntity(authSession: AccountTokens): AuthTokenEntity = with(authSession) {
         AuthTokenEntity(
             userId = userId.toDao(),
-            accessToken = accessToken,
-            refreshToken = refreshToken,
+            accessToken = accessToken.value,
+            refreshToken = refreshToken.value,
             tokenType = tokenType,
             cookieLabel = cookieLabel
         )

@@ -17,8 +17,15 @@
  */
 package com.wire.kalium.logic.data.session.token
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.persistence.client.AuthTokenStorage
 
@@ -33,15 +40,51 @@ internal interface AccessTokenRepository {
      *
      * @param refreshToken The refresh token to use for obtaining a new access token.
      * @param clientId The optional client ID.
-     * @return Either a network failure or the new access token.
+     * @return Either a [CoreFailure] or the new access token.
      */
     suspend fun getNewAccessToken(
         refreshToken: String,
         clientId: String? = null
-    ): Either<NetworkFailure, AccessToken>
+    ): Either<NetworkFailure, AccessTokenRefreshResult>
+
+    /**
+     * Persists the access token and refresh token in the repository.
+     *
+     * @param accessToken The access token to persist.
+     * @param refreshToken The refresh token to persist.
+     * @return Either a [CoreFailure] if the operation fails, or [Unit] if the tokens are successfully persisted.
+     */
+    suspend fun persistTokens(
+        accessToken: AccessToken,
+        refreshToken: RefreshToken
+    ): Either<CoreFailure, Unit>
 }
 
 internal class AccessTokenRepositoryImpl(
+    private val userId: UserId,
     private val accessTokenApi: AccessTokenApi,
     private val authTokenStorage: AuthTokenStorage,
-)
+) : AccessTokenRepository {
+    override suspend fun getNewAccessToken(
+        refreshToken: String,
+        clientId: String?
+    ): Either<NetworkFailure, AccessTokenRefreshResult> = wrapApiRequest {
+        accessTokenApi.getToken(refreshToken, clientId)
+    }.map { (accessTokenDTO, newRefreshToken) ->
+        val token = AccessToken(accessTokenDTO.value, accessTokenDTO.tokenType)
+        val resolvedRefreshToken = newRefreshToken?.value ?: refreshToken
+        AccessTokenRefreshResult(token, RefreshToken(resolvedRefreshToken))
+    }
+
+    override suspend fun persistTokens(
+        accessToken: AccessToken,
+        refreshToken: RefreshToken
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        authTokenStorage.updateToken(
+            userId.toDao(),
+            accessToken.value,
+            accessToken.tokenType,
+            refreshToken.value
+        )
+    }.map { }
+}

@@ -17,23 +17,23 @@
  */
 package com.wire.kalium.logic.data.session.token
 
-import kotlin.jvm.JvmInline
-
-internal data class AccessTokenRefreshResult(
-    val accessToken: AccessToken,
-    val refreshToken: RefreshToken
-)
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
+import com.wire.kalium.persistence.client.AuthTokenStorage
 
 /**
- * Represents an access token, which is used for authentication and authorization purposes.
- *
- * @property value The value of the access token.
- * @property tokenType The type of the access token. _e.g._ "Bearer"
+ * Interface for creating an [AccessTokenRepository] instance.
+ * Allows intaking a dynamic [AccessTokenApi] for its construction.
  */
-data class AccessToken(
-    val value: String,
-    val tokenType: String
-)
+internal interface AccessTokenRepositoryFactory {
+    fun create(tokenApi: AccessTokenApi): AccessTokenRepository
+}
 
-@JvmInline
-value class RefreshToken(val value: String)
+internal class AccessTokenRepositoryFactoryImpl(
+    private val userId: UserId,
+    private val tokenStorage: AuthTokenStorage
+) : AccessTokenRepositoryFactory {
+    override fun create(tokenApi: AccessTokenApi): AccessTokenRepository {
+        return AccessTokenRepositoryImpl(userId, tokenApi, tokenStorage)
+    }
+}

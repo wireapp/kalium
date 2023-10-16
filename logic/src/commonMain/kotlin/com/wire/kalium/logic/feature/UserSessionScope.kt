@@ -87,8 +87,8 @@ import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCaseImpl
 import com.wire.kalium.logic.data.message.MessageDataSource
-import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
+import com.wire.kalium.logic.data.message.MessageMetadataSource
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
@@ -112,6 +112,8 @@ import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.service.ServiceDataSource
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.data.session.token.AccessTokenRepository
+import com.wire.kalium.logic.data.session.token.AccessTokenRepositoryImpl
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -162,8 +164,6 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCase
 import com.wire.kalium.logic.feature.conversation.GetConversationVerificationStatusUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
-import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
@@ -174,6 +174,8 @@ import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
+import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.RecoverMLSConversationsUseCase
@@ -219,6 +221,10 @@ import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactoryImpl
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -264,7 +270,6 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
 import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
@@ -281,8 +286,6 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorker
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
-import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
@@ -325,18 +328,20 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventH
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpacker
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
-import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
+import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncCriteriaProvider
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
@@ -345,6 +350,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -452,8 +458,28 @@ class UserSessionScope internal constructor(
 
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
+    private val accessTokenRepository: AccessTokenRepository
+        get() = AccessTokenRepositoryImpl(
+            userId = userId,
+            accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
+            authTokenStorage = globalPreferences.authTokenStorage
+        )
+
+    private val accessTokenRefresherFactory: AccessTokenRefresherFactory
+        get() = AccessTokenRefresherFactoryImpl(
+            userId = userId,
+            tokenStorage = globalPreferences.authTokenStorage
+        )
+
+    private val accessTokenRefresher: AccessTokenRefresher
+        get() = AccessTokenRefresherImpl(
+            userId = userId,
+            repository = accessTokenRepository
+        )
+
     private val sessionManager: SessionManager = SessionManagerImpl(
         sessionRepository = globalScope.sessionRepository,
+        accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(logoutReason) }
@@ -921,12 +947,11 @@ class UserSessionScope internal constructor(
     }
 
     private val upgradeCurrentSessionUseCase
-        get() =
-            UpgradeCurrentSessionUseCaseImpl(
-                authenticatedNetworkContainer,
-                authenticatedNetworkContainer.accessTokenApi,
-                sessionManager
-            )
+        get() = UpgradeCurrentSessionUseCaseImpl(
+            authenticatedNetworkContainer,
+            accessTokenRefresher,
+            sessionManager
+        )
 
     @Suppress("MagicNumber")
     private val apiMigrations = listOf(
@@ -1191,8 +1216,10 @@ class UserSessionScope internal constructor(
         get() = UserPropertiesEventReceiverImpl(userConfigRepository)
 
     private val federationEventReceiver: FederationEventReceiver
-        get() = FederationEventReceiverImpl(conversationRepository, connectionRepository, userRepository,
-            userStorage.database.memberDAO, persistMessage, userId)
+        get() = FederationEventReceiverImpl(
+            conversationRepository, connectionRepository, userRepository,
+            userStorage.database.memberDAO, persistMessage, userId
+        )
 
     private val teamEventReceiver: TeamEventReceiver
         get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)

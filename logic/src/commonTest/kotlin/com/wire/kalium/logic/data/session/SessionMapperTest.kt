@@ -56,8 +56,8 @@ class SessionMapperTest {
                 SessionDTO(
                     UserIdDTO(userId.value, userId.domain),
                     tokenType,
-                    accessToken,
-                    refreshToken,
+                    accessToken.value,
+                    refreshToken.value,
                     cookieLabel
                 )
             }
@@ -76,8 +76,8 @@ class SessionMapperTest {
             AuthTokenEntity(
                 userId = UserIDEntity(userId.value, userId.domain),
                 tokenType = tokenType,
-                accessToken = accessToken,
-                refreshToken = refreshToken,
+                accessToken = accessToken.value,
+                refreshToken = refreshToken.value,
                 cookieLabel = cookieLabel
             )
         }

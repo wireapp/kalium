@@ -49,6 +49,7 @@ import com.wire.kalium.network.api.v3.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
 import com.wire.kalium.network.defaultHttpEngine
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
@@ -186,13 +187,24 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     private val loadToken: suspend () -> BearerTokens? = {
         val session = sessionManager.session() ?: error("missing user session")
-        BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+        BearerTokens(accessToken = "Invalid", refreshToken = session.refreshToken)
     }
 
     private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens = {
-        // TODO: Add logs for when the `oldTokens` are null just to make it easier to find in logs if it ever happens
-        val newSession = sessionManager.updateToken(accessTokenApi(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-        BearerTokens(accessToken =  newSession.accessToken, refreshToken =  newSession.refreshToken)
+        val areOldTokensNull = oldTokens == null
+        kaliumLogger.i("Auth tokens are being refreshed")
+        if (areOldTokensNull) {
+            kaliumLogger.e("Old Auth tokens are null! Someone call the doctor! This should never happen")
+        }
+        val newSession = sessionManager.updateToken(
+            accessTokenApi = accessTokenApi(client),
+            oldAccessToken = oldTokens!!.accessToken,
+            oldRefreshToken = oldTokens!!.refreshToken
+        )
+        BearerTokens(
+            accessToken = newSession.accessToken,
+            refreshToken = newSession.refreshToken
+        )
     }
 
     private val bearerAuthProvider: BearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)

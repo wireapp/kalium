@@ -15,16 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.session
 
-package com.wire.kalium.network.api.base.authenticated
-
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
-import com.wire.kalium.network.utils.NetworkResponse
-
-interface AccessTokenApi {
-    suspend fun getToken(
-        refreshToken: String,
-        clientId: String? = null
-    ): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>>
-}
+/**
+ * Exception thrown when a token refresh fails.
+ * Could be caused by anything, including network errors, invalid credentials, etc.
+ *
+ * @param message The detail message.
+ * @param cause The cause of the exception.
+ */
+class FailureToRefreshTokenException(
+    message: String,
+    cause: Throwable? = null
+) : RuntimeException(message, cause)

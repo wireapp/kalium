@@ -46,16 +46,16 @@ class AddAuthenticatedUserUseCase internal constructor(
     suspend operator fun invoke(
         serverConfigId: String,
         ssoId: SsoId?,
-        accountTokens: AccountTokens,
+        authTokens: AccountTokens,
         proxyCredentials: ProxyCredentials?,
         replace: Boolean = false
-    ): Result = sessionRepository.doesValidSessionExist(accountTokens.userId).fold(
+    ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
             {
                 Result.Failure.Generic(it)
             }, { doesValidSessionExist ->
                 when (doesValidSessionExist) {
-                    true -> onUserExist(serverConfigId, ssoId, accountTokens, proxyCredentials, replace)
-                    false -> storeUser(serverConfigId, ssoId, accountTokens, proxyCredentials)
+                    true -> onUserExist(serverConfigId, ssoId, authTokens, proxyCredentials, replace)
+                    false -> storeUser(serverConfigId, ssoId, authTokens, proxyCredentials)
                 }
             }
         )

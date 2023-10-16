@@ -19,9 +19,7 @@
 package com.wire.kalium.network.session
 
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
@@ -45,13 +43,15 @@ interface SessionManager {
     fun serverConfig(): ServerConfigDTO
 
     /**
-     * Updates the access token and refresh token in the session.
+     * Updates the access token and (possibly) the refresh token for the session.
      *
+     * In case of failure to refresh the access token, an exception can be thrown.
      *
      * @param accessTokenApi The AccessTokenApi interface used to retrieve the new access token.
      * @param oldAccessToken The old access token to be replaced.
      * @param oldRefreshToken The old refresh token to be replaced.
      * @return The updated SessionDTO object.
+     * @see FailureToRefreshTokenException
      */
     suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO
     fun proxyCredentials(): ProxyCredentialsDTO?
