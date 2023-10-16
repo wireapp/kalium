@@ -142,13 +142,13 @@ data class BotIdEntity(
 )
 
 data class PartialUserEntity(
-    val name: String?,
-    val handle: String?,
-    val email: String?,
-    val accentId: Int?,
-    val previewAssetId: UserAssetIdEntity?,
-    val completeAssetId: UserAssetIdEntity?,
-    val supportedProtocols: Set<SupportedProtocolEntity>?
+    val name: String? = null,
+    val handle: String? = null,
+    val email: String? = null,
+    val accentId: Int? = null,
+    val previewAssetId: UserAssetIdEntity? = null,
+    val completeAssetId: UserAssetIdEntity? = null,
+    val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
 enum class UserTypeEntity {

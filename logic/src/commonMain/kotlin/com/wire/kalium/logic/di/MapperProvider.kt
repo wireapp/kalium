@@ -78,8 +78,6 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImp
 import com.wire.kalium.logic.data.prekey.PreKeyListMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapper
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
-import com.wire.kalium.logic.data.publicuser.PublicUserMapperImpl
 import com.wire.kalium.logic.data.service.ServiceMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionMapperImpl
@@ -105,9 +103,7 @@ internal object MapperProvider {
     fun sessionMapper(): SessionMapper = SessionMapperImpl(idMapper())
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
-    fun userMapper(): UserMapper = UserMapperImpl(
-        idMapper(), availabilityStatusMapper(), connectionStateMapper()
-    )
+    fun userMapper(): UserMapper = UserMapperImpl()
 
     fun userTypeMapper(): DomainUserTypeMapper = DomainUserTypeMapperImpl()
     fun reactionsMapper(): ReactionsMapper = ReactionsMapperImpl(domainUserTypeMapper = userTypeMapper())
@@ -131,7 +127,6 @@ internal object MapperProvider {
         )
 
     fun conversationRoleMapper(): ConversationRoleMapper = ConversationRoleMapperImpl()
-    fun publicUserMapper(): PublicUserMapper = PublicUserMapperImpl()
     fun sendMessageFailureMapper(): SendMessageFailureMapper = SendMessageFailureMapperImpl()
     fun assetMapper(): AssetMapper = AssetMapperImpl()
     fun encryptionAlgorithmMapper(): EncryptionAlgorithmMapper = EncryptionAlgorithmMapper()
