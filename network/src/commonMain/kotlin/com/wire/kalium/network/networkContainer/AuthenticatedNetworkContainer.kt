@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.NetworkStateObserver
@@ -110,7 +111,8 @@ interface AuthenticatedNetworkContainer {
             networkStateObserver: NetworkStateObserver,
             sessionManager: SessionManager,
             selfUserId: UserId,
-            userAgent: String
+            userAgent: String,
+            kaliumLogger: KaliumLogger,
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -119,35 +121,41 @@ interface AuthenticatedNetworkContainer {
                 0 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
+                    kaliumLogger,
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
+                    kaliumLogger,
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    kaliumLogger,
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    kaliumLogger,
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    kaliumLogger,
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
                     networkStateObserver,
                     sessionManager,
-                    selfUserId
+                    selfUserId,
+                    kaliumLogger,
                 )
 
                 else -> error("Unsupported version: $version")
@@ -169,6 +177,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val networkStateObserver: NetworkStateObserver,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
+    private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
 
     override suspend fun clearCachedToken() {
@@ -196,7 +205,8 @@ internal class AuthenticatedHttpClientProviderImpl(
             networkStateObserver,
             engine,
             sessionManager.serverConfig(),
-            bearerAuthProvider
+            bearerAuthProvider,
+            kaliumLogger
         )
     }
     override val websocketClient by lazy {
@@ -204,7 +214,8 @@ internal class AuthenticatedHttpClientProviderImpl(
             networkStateObserver,
             engine,
             bearerAuthProvider,
-            sessionManager.serverConfig()
+            sessionManager.serverConfig(),
+            kaliumLogger
         )
     }
     override val networkClientWithoutCompression by lazy {
@@ -213,6 +224,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider,
+            kaliumLogger,
             installCompression = false
         )
     }

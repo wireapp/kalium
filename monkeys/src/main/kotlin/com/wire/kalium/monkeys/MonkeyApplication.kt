@@ -27,6 +27,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -62,11 +63,11 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         )
 
         if (logOutputFile != null) {
-            CoreLogger.setLoggingLevel(logLevel, fileLogger)
-            MonkeyLogger.setLoggingLevel(logLevel, fileLogger)
+            CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
+            MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
         } else {
-            CoreLogger.setLoggingLevel(logLevel)
-            MonkeyLogger.setLoggingLevel(logLevel)
+            CoreLogger.init(KaliumLogger.Config(logLevel, emptyList()))
+            MonkeyLogger.init(KaliumLogger.Config(logLevel, emptyList()))
         }
         logger.i("Initializing Infinite Monkeys")
 
