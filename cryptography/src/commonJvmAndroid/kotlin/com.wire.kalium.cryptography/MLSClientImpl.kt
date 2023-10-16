@@ -27,9 +27,11 @@ import com.wire.crypto.CoreCryptoCallbacks
 import com.wire.crypto.CustomConfiguration
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.Invitee
-import com.wire.crypto.MlsPublicGroupStateEncryptionType
+import com.wire.crypto.MlsCredentialType
+import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
+import com.wire.crypto.client.CoreCryptoCentral.Companion.lower
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import java.io.File
@@ -86,11 +88,12 @@ actual class MLSClientImpl actual constructor(
     private val coreCrypto: CoreCrypto
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
+    private val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
     private val defaultE2EIExpiry: UInt = 90U
-//     private val defaultMLSCredentialType: MlsCredentialType = MlsCredentialType.BASIC
+    private val defaultMLSCredentialType: MlsCredentialType = MlsCredentialType.BASIC
 
     init {
-        coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), null)
+        coreCrypto = CoreCrypto(rootDir, databaseKey.value, toUByteList(clientId.toString()), listOf(defaultCiphersuite))
         coreCrypto.setCallbacks(Callbacks())
     }
 
@@ -99,16 +102,16 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
+        return coreCrypto.clientPublicKey(defaultCiphersuite).toUByteArray().asByteArray()
     }
 
     override fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(amount.toUInt())
+        return coreCrypto.clientKeypackages(defaultCiphersuite, defaultMLSCredentialType, amount.toUInt())
             .map { it.toUByteArray().asByteArray() }
     }
 
     override fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount()
+        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, defaultMLSCredentialType)
     }
 
     override fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -127,7 +130,9 @@ actual class MLSClientImpl actual constructor(
         return toByteArray(
             coreCrypto.newExternalAddProposal(
                 conversationId = toUByteList(groupId.decodeBase64Bytes()),
-                epoch = epoch
+                epoch = epoch,
+                ciphersuite = defaultCiphersuite,
+                credentialType = MlsCredentialType.BASIC
             )
         )
     }
@@ -135,8 +140,9 @@ actual class MLSClientImpl actual constructor(
     override fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
         return toCommitBundle(coreCrypto.joinByExternalCommit(
             toUByteList(publicGroupState),
-            defaultGroupConfiguration
-        ))
+            defaultGroupConfiguration,
+            MlsCredentialType.BASIC)
+        )
     }
 
     override fun mergePendingGroupFromExternalCommit(groupId: MLSGroupId) {
@@ -153,13 +159,13 @@ actual class MLSClientImpl actual constructor(
         externalSenders: List<Ed22519Key>
     ) {
         val conf = ConversationConfiguration(
-            CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
+            defaultCiphersuite,
             externalSenders.map { toUByteList(it.value) },
             defaultGroupConfiguration
         )
 
         val groupIdAsBytes = toUByteList(groupId.decodeBase64Bytes())
-        coreCrypto.createConversation(groupIdAsBytes, conf)
+        coreCrypto.createConversation(groupIdAsBytes, MlsCredentialType.BASIC, conf)
     }
 
     override fun wipeConversation(groupId: MLSGroupId) {
@@ -240,25 +246,47 @@ actual class MLSClientImpl actual constructor(
     }
 
     override fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
-        TODO("not implemented")
+        return E2EIClientImpl(
+            coreCrypto.e2eiNewEnrollment(
+                clientId.toString(),
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuite
+            )
+        )
     }
 
     override fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String
     ): E2EIClient {
-        TODO("not implemented")
+        return E2EIClientImpl(
+            coreCrypto.e2eiNewActivationEnrollment(
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuite
+            )
+        )
     }
 
     override fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?
     ): E2EIClient {
-        TODO("not implemented")
+        return E2EIClientImpl(
+            coreCrypto.e2eiNewRotateEnrollment(
+                displayName,
+                handle,
+                defaultE2EIExpiry,
+                defaultCiphersuite
+            )
+        )
     }
 
     override fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
-        TODO("not implemented")
+        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain)
     }
 
     override fun e2eiRotateAll(
@@ -266,11 +294,15 @@ actual class MLSClientImpl actual constructor(
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt
     ) {
-        TODO("not implemented")
+        coreCrypto.e2eiRotateAll(
+            (enrollment as E2EIClientImpl).wireE2eIdentity,
+            certificateChain,
+            newMLSKeyPackageCount
+        )
     }
 
     override fun isGroupVerified(groupId: MLSGroupId): Boolean =
-        TODO("not implemented")
+        !coreCrypto.e2eiIsDegraded(toUByteList(groupId.decodeBase64Bytes()))
 
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
@@ -280,30 +312,30 @@ actual class MLSClientImpl actual constructor(
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             toByteArray(value.commit),
             toByteArray(value.welcome),
-            toGroupInfoBundle(value.publicGroupState)
+            toGroupInfoBundle(value.groupInfo)
         )
 
         fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
             toByteArray(value.commit),
             value.welcome?.let { toByteArray(it) },
-            toGroupInfoBundle(value.publicGroupState)
+            toGroupInfoBundle(value.groupInfo)
         )
 
         fun toCommitBundle(value: com.wire.crypto.ConversationInitBundle) = CommitBundle(
             toByteArray(value.commit),
             null,
-            toGroupInfoBundle(value.publicGroupState)
+            toGroupInfoBundle(value.groupInfo)
         )
 
-        fun toGroupInfoBundle(value: com.wire.crypto.PublicGroupStateBundle) = GroupInfoBundle(
+        fun toGroupInfoBundle(value: com.wire.crypto.GroupInfoBundle) = GroupInfoBundle(
             toEncryptionType(value.encryptionType),
             toRatchetTreeType(value.ratchetTreeType),
             toByteArray(value.payload)
         )
 
-        fun toEncryptionType(value: MlsPublicGroupStateEncryptionType) = when (value) {
-            MlsPublicGroupStateEncryptionType.PLAINTEXT -> GroupInfoEncryptionType.PLAINTEXT
-            MlsPublicGroupStateEncryptionType.JWE_ENCRYPTED -> GroupInfoEncryptionType.JWE_ENCRYPTED
+        fun toEncryptionType(value: MlsGroupInfoEncryptionType) = when (value) {
+            MlsGroupInfoEncryptionType.PLAINTEXT -> GroupInfoEncryptionType.PLAINTEXT
+            MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> GroupInfoEncryptionType.JWE_ENCRYPTED
         }
 
         fun toRatchetTreeType(value: MlsRatchetTreeType) = when (value) {
