@@ -497,4 +497,5 @@ selectConversationMessagesFromSearch:
 SELECT * FROM MessageDetailsView
 WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
-AND contentType = 'TEXT';
+AND contentType = 'TEXT'
+ORDER BY lastEditTimestamp DESC;
