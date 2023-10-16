@@ -610,10 +610,7 @@ class MessageDataSource(
     override suspend fun getConversationMessagesFromSearch(
         searchQuery: String,
         conversationId: ConversationId
-    ): Either<CoreFailure, List<Message.Standalone>> = wrapStorageRequest({
-        kaliumLogger.w("Ignoring failed recipients for this 'not' Message.Regular : ${it.message.orEmpty()})")
-        Either.Right(listOf())
-    }) {
+    ): Either<CoreFailure, List<Message.Standalone>> = wrapStorageRequest {
         messageDAO.getConversationMessagesFromSearch(
             searchQuery = searchQuery,
             conversationId = conversationId.toDao()
