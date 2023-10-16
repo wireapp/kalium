@@ -18,8 +18,10 @@
 
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.CiphersuiteName
 import com.wire.crypto.CoreCrypto
-import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.CryptoException
+import com.wire.crypto.client.CoreCryptoCentral.Companion.lower
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -30,8 +32,82 @@ class ProteusClientCoreCryptoImpl private constructor(
     private val coreCrypto: CoreCrypto,
 ) : ProteusClient {
 
-    override suspend fun close() {
-        coreCrypto.close()
+    private val defaultCiphersuite = CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519.lower()
+    private val path: String = "$rootDir/$KEYSTORE_NAME"
+    private lateinit var coreCrypto: CoreCrypto
+
+    override fun clearLocalFiles(): Boolean {
+        if (::coreCrypto.isInitialized) {
+            coreCrypto.close()
+        }
+        return File(path).deleteRecursively()
+    }
+
+    override fun needsMigration(): Boolean {
+        return cryptoBoxFilesExists()
+    }
+
+    override suspend fun openOrCreate() {
+        wrapException {
+            File(rootDir).mkdirs()
+            coreCrypto = CoreCrypto.deferredInit(
+                path,
+                databaseKey.value,
+                listOf(defaultCiphersuite)
+            )
+            migrateFromCryptoBoxIfNecessary(coreCrypto)
+            coreCrypto.proteusInit()
+            coreCrypto
+        }
+    }
+
+    override suspend fun openOrError() {
+        val directory = File(rootDir)
+        if (directory.exists()) {
+            wrapException {
+                coreCrypto = CoreCrypto.deferredInit(
+                    path,
+                    databaseKey.value,
+                    listOf(defaultCiphersuite)
+                )
+                migrateFromCryptoBoxIfNecessary(coreCrypto)
+                coreCrypto.proteusInit()
+            }
+        } else {
+            throw ProteusException(
+                "Local files were not found",
+                ProteusException.Code.LOCAL_FILES_NOT_FOUND,
+                FileNotFoundException()
+            )
+        }
+    }
+
+    private fun cryptoBoxFilesExists(): Boolean =
+        CRYPTO_BOX_FILES.any {
+            File(rootDir).resolve(it).exists()
+        }
+
+    private fun deleteCryptoBoxFiles(): Boolean =
+        CRYPTO_BOX_FILES.fold(true) { acc, file ->
+            acc && File(rootDir).resolve(file).deleteRecursively()
+        }
+
+    private fun migrateFromCryptoBoxIfNecessary(coreCrypto: CoreCrypto) {
+        if (cryptoBoxFilesExists()) {
+            migrateFromCryptoBox(coreCrypto)
+        }
+    }
+
+    private fun migrateFromCryptoBox(coreCrypto: CoreCrypto) {
+        kaliumLogger.i("migrating from crypto box at: $rootDir")
+        coreCrypto.proteusCryptoboxMigrate(rootDir)
+        kaliumLogger.i("migration successful")
+
+        if (deleteCryptoBoxFiles()) {
+            kaliumLogger.i("successfully deleted old crypto box files")
+        } else {
+            kaliumLogger.e("Failed to deleted old crypto box files at $rootDir")
+        }
     }
 
     override fun getIdentity(): ByteArray {
