@@ -498,4 +498,4 @@ SELECT * FROM MessageDetailsView
 WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
 AND contentType = 'TEXT'
-ORDER BY lastEditTimestamp DESC;
+ORDER BY date DESC;
