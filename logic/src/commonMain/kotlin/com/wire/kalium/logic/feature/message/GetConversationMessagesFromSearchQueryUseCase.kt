@@ -26,7 +26,7 @@ import com.wire.kalium.logic.functional.Either
 /**
  * Retrieves a list of messages defined by the search query.
  * @param searchQuery The search term used to define which messages will be returned.
- * @param conversationId The conversation ID that it will look for messages in.c
+ * @param conversationId The conversation ID that it will look for messages in.
  * @return A [Either<CoreFailure, List<Message.Standalone>>] indicating the success of the operation.
  */
 interface GetConversationMessagesFromSearchQueryUseCase {
