@@ -51,7 +51,7 @@ class UploadUserAvatarUseCaseTest {
 
     @Test
     fun givenValidParams_whenUploadingUserAvatar_thenShouldReturnsASuccessResult() = runTest {
-        val expected = UploadedAssetId("some_key")
+        val expected = UploadedAssetId("some_key", "some_domain")
         val avatarImage = "An Avatar Image (:".encodeToByteArray()
         val avatarPath = "some-image-asset".toPath()
         val (arrangement, uploadUserAvatar) = Arrangement()
@@ -62,7 +62,7 @@ class UploadUserAvatarUseCaseTest {
         val actual = uploadUserAvatar(avatarPath, avatarImage.size.toLong())
 
         assertEquals(UploadAvatarResult.Success::class, actual::class)
-        assertEquals("value2", (actual as UploadAvatarResult.Success).userAssetId.value)
+        assertEquals(expected.key, (actual as UploadAvatarResult.Success).userAssetId.value)
 
         with(arrangement) {
             verify(assetRepository)
@@ -152,7 +152,7 @@ class UploadUserAvatarUseCaseTest {
             given(userRepository)
                 .suspendFunction(userRepository::updateSelfUser)
                 .whenInvokedWith(eq(null), eq(null), eq(expectedResponse.key))
-                .thenReturn(Either.Right(dummySelfUser))
+                .thenReturn(Either.Right(Unit))
             return this
         }
 

@@ -738,15 +738,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenAnExistingUser_whenPerformingPartialUpdate_thenChangedFieldIsUpdatedOthersAreUnchanged() = runTest(dispatcher) {
         // given
         val expectedName = "new name"
-        val update = PartialUserEntity(
-            name = expectedName,
-            handle = null,
-            email = null,
-            accentId = null,
-            previewAssetId = null,
-            completeAssetId = null,
-            supportedProtocols = null
-            )
+        val update = PartialUserEntity(name = expectedName)
         db.userDAO.upsertUser(user1)
 
         // when
