@@ -27,6 +27,7 @@ import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.serialization.XProtoBuf
@@ -113,8 +114,7 @@ internal abstract class ApiTest {
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
             networkStateObserver = networkStateObserver,
-            certificatePinning = emptyMap(),
-            mockEngine = null
+            kaliumLogger = kaliumLogger
         ).networkClient
     }
 
@@ -128,8 +128,7 @@ internal abstract class ApiTest {
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
             networkStateObserver = networkStateObserver,
-            certificatePinning = emptyMap(),
-            mockEngine = null
+            kaliumLogger = kaliumLogger
         ).websocketClient
     }
 
@@ -146,7 +145,8 @@ internal abstract class ApiTest {
             engine = mockEngine,
             serverConfigDTO = TEST_SESSION_MANAGER.serverConfig(),
             bearerAuthProvider = TEST_BEARER_AUTH_PROVIDER,
-            networkStateObserver = networkStateObserver
+            networkStateObserver = networkStateObserver,
+            kaliumLogger = kaliumLogger
         )
     }
 
@@ -253,8 +253,7 @@ internal abstract class ApiTest {
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
             networkStateObserver = networkStateObserver,
-            certificatePinning = emptyMap(),
-            mockEngine = null
+            kaliumLogger = kaliumLogger
         ).networkClient
     }
 

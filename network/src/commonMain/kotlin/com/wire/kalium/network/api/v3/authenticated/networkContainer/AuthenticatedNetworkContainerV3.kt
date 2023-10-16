@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.v3.authenticated.networkContainer
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -74,19 +75,15 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
     private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
-    certificatePinning: CertificatePinning,
-    mockEngine: HttpClientEngine?,
-    engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
-        serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
-        proxyCredentials = sessionManager.proxyCredentials(),
-        certificatePinning = certificatePinning
-    )
+    kaliumLogger: KaliumLogger,
+    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials())
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager,
         networkStateObserver,
         { httpClient -> AccessTokenApiV3(httpClient) },
-        engine
+        engine,
+        kaliumLogger
     ) {
 
     override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV3(networkClient.httpClient)

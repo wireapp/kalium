@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
@@ -286,6 +288,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.SessionManagerImpl
@@ -384,6 +387,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
@@ -421,6 +425,12 @@ class UserSessionScope internal constructor(
                 _clientId = it
             }
         }
+
+    private val clientIdStateFlow = MutableStateFlow<ClientId?>(null)
+
+    private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
+        KaliumLogger.UserClientData(userId.toLogString(), clientIdStateFlow.value?.value?.obfuscateId() ?: "")
+    }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
@@ -485,8 +495,7 @@ class UserSessionScope internal constructor(
         sessionManager,
         UserIdDTO(userId.value, userId.domain),
         userAgent,
-        certificatePinning = kaliumConfigs.certPinningConfig,
-        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
+        kaliumLogger = userScopedLogger
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,

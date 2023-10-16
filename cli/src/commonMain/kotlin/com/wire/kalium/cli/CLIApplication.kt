@@ -26,6 +26,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -63,11 +64,12 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
             )
         }
 
-        if (logOutputFile != null) {
-            CoreLogger.setLoggingLevel(logLevel, fileLogger)
-        } else {
-            CoreLogger.setLoggingLevel(logLevel)
-        }
+        CoreLogger.init(
+            KaliumLogger.Config(
+                logLevel,
+                if (logOutputFile != null) listOf(fileLogger) else emptyList(),
+            )
+        )
 
         currentContext.findObject<CoreLogic>()?.updateApiVersionsScheduler?.scheduleImmediateApiVersionUpdate()
         Unit
