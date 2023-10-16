@@ -29,8 +29,11 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.OtherUserMinimized
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
@@ -39,6 +42,7 @@ import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
 import kotlinx.datetime.toInstant
@@ -54,6 +58,9 @@ interface PublicUserMapper {
     ): OtherUser
 
     fun fromEntityToUserSummary(userEntity: UserEntity): UserSummary
+    fun fromUserDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary
+    fun fromUserDetailsEntityToOtherUser(userDetailsEntity: UserDetailsEntity): OtherUser
+    fun fromOtherToUserDetailsEntity(otherUser: OtherUser): UserDetailsEntity
 }
 
 class PublicUserMapperImpl(
@@ -79,7 +86,31 @@ class PublicUserMapperImpl(
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
         expiresAt = userEntity.expiresAt,
-        defederated = userEntity.defederated
+        defederated = userEntity.defederated,
+        isProteusVerified = false,
+        supportedProtocols = userEntity.supportedProtocols?.toModel(),
+        activeOneOnOneConversationId = userEntity.activeOneOnOneConversationId?.toModel()
+    )
+
+    override fun fromUserDetailsEntityToOtherUser(userDetailsEntity: UserDetailsEntity) = OtherUser(
+        id = userDetailsEntity.id.toModel(),
+        name = userDetailsEntity.name,
+        handle = userDetailsEntity.handle,
+        email = userDetailsEntity.email,
+        phone = userDetailsEntity.phone,
+        accentId = userDetailsEntity.accentId,
+        teamId = userDetailsEntity.team?.let { TeamId(it) },
+        connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = userDetailsEntity.connectionStatus),
+        previewPicture = userDetailsEntity.previewAssetId?.toModel(),
+        completePicture = userDetailsEntity.completeAssetId?.toModel(),
+        availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userDetailsEntity.availabilityStatus),
+        userType = domainUserTypeMapper.fromUserTypeEntity(userDetailsEntity.userType),
+        botService = userDetailsEntity.botService?.let { BotService(it.id, it.provider) },
+        deleted = userDetailsEntity.deleted,
+        expiresAt = userDetailsEntity.expiresAt,
+        defederated = userDetailsEntity.defederated,
+        isProteusVerified = userDetailsEntity.isProteusVerified,
+        supportedProtocols = userDetailsEntity.supportedProtocols?.toModel()
     )
 
     override fun fromOtherToUserEntity(otherUser: OtherUser): UserEntity = with(otherUser) {
@@ -100,7 +131,34 @@ class PublicUserMapperImpl(
             deleted = deleted,
             expiresAt = expiresAt,
             hasIncompleteMetadata = false,
-            defederated = defederated
+            defederated = defederated,
+            supportedProtocols = supportedProtocols?.toDao(),
+            activeOneOnOneConversationId = activeOneOnOneConversationId?.toDao()
+        )
+    }
+
+    override fun fromOtherToUserDetailsEntity(otherUser: OtherUser): UserDetailsEntity = with(otherUser) {
+        UserDetailsEntity(
+            id = id.toDao(),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            team = teamId?.value,
+            connectionStatus = connectionStateMapper.fromUserConnectionStateToDao(connectionStatus),
+            previewAssetId = previewPicture?.toDao(),
+            completeAssetId = completePicture?.toDao(),
+            availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            userType = userEntityTypeMapper.fromUserType(userType),
+            botService = botService?.let { BotIdEntity(it.id, it.provider) },
+            deleted = deleted,
+            expiresAt = expiresAt,
+            hasIncompleteMetadata = false,
+            defederated = defederated,
+            isProteusVerified = otherUser.isProteusVerified,
+            supportedProtocols = supportedProtocols?.toDao(),
+            activeOneOnOneConversationId = activeOneOnOneConversationId?.toDao()
         )
     }
 
@@ -131,10 +189,25 @@ class PublicUserMapperImpl(
         botService = userDetailResponse.service?.let { BotService(it.id, it.provider) },
         deleted = userDetailResponse.deleted ?: false,
         expiresAt = userDetailResponse.expiresAt?.toInstant(),
-        defederated = false
+        defederated = false,
+        isProteusVerified = false,
+        supportedProtocols = userDetailResponse.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS)
     )
 
     override fun fromEntityToUserSummary(userEntity: UserEntity) = with(userEntity) {
+        UserSummary(
+            userId = UserId(id.value, id.domain),
+            userHandle = handle,
+            userName = name,
+            userPreviewAssetId = previewAssetId?.toModel(),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userType),
+            isUserDeleted = deleted,
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionStatus)
+        )
+    }
+
+    override fun fromUserDetailsEntityToUserSummary(userDetailsEntity: UserDetailsEntity): UserSummary = with(userDetailsEntity) {
         UserSummary(
             userId = UserId(id.value, id.domain),
             userHandle = handle,

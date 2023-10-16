@@ -33,7 +33,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
-import com.wire.kalium.persistence.kaliumLogger
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -74,6 +74,7 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity) =
         withContext(coroutineContext) {
             queries.markMessageAsDeleted(id, conversationsId)
+            unreadEventsQueries.deleteUnreadEvent(id, conversationsId)
         }
 
     override suspend fun deleteAllMessages() = withContext(coroutineContext) {
@@ -298,6 +299,13 @@ internal class MessageDAOImpl internal constructor(
                     user_id = it.userId
                 )
             }
+            val selfMention = newTextContent.mentions.firstNotNullOfOrNull { it.userId == selfUserId }
+            if (selfMention != null) {
+                unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
+            } else {
+                unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MESSAGE, currentMessageId, conversationId)
+            }
+
             queries.updateMessageId(newMessageId, currentMessageId, conversationId)
             queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
         }
@@ -385,6 +393,11 @@ internal class MessageDAOImpl internal constructor(
     ) = withContext(coroutineContext) {
         queries.insertMessageRecipientsFailure(id, conversationsId, recipientsFailed, recipientFailureTypeEntity)
     }
+
+    override suspend fun moveMessages(from: ConversationIDEntity, to: ConversationIDEntity) =
+        withContext(coroutineContext) {
+            queries.moveMessages(to, from)
+        }
 
     override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(coroutineContext) {
         unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()

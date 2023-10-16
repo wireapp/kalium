@@ -20,6 +20,12 @@ package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.featureConfig.AppLockConfigModel
+import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.data.featureConfig.toEntity
+import com.wire.kalium.logic.data.featureConfig.toModel
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
@@ -57,6 +63,10 @@ interface UserConfigRepository {
     fun observeE2EISettings(): Flow<Either<StorageFailure, E2EISettings>>
     fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit>
     fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit>
+    fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit>
+    fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol>
+    suspend fun setSupportedProtocols(protocols: Set<SupportedProtocol>): Either<StorageFailure, Unit>
+    suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>>
     fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
     fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
@@ -80,6 +90,8 @@ interface UserConfigRepository {
     suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
     fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant?>>
     fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit>
+    suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel>
+    suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -186,6 +198,17 @@ class UserConfigDataSource(
 
     private fun getE2EINotificationTimeOrNull() = wrapStorageRequest { userConfigStorage.getE2EINotificationTime() }.getOrNull()
 
+    override fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigStorage.persistDefaultProtocol(protocol.toDao()) }
+
+    override fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
+        wrapStorageRequest { userConfigStorage.defaultProtocol().toModel() }
+
+    override suspend fun setSupportedProtocols(protocols: Set<SupportedProtocol>): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setSupportedProtocols(protocols.toDao()) }
+
+    override suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>> =
+        wrapStorageRequest { userConfigDAO.getSupportedProtocols()?.toModel() }
     override fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             userConfigStorage.persistConferenceCalling(enabled)
@@ -298,5 +321,15 @@ class UserConfigDataSource(
                     )
                 }
             }
+        }
+
+    override suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel> =
+        wrapStorageRequest {
+            userConfigDAO.getMigrationConfiguration()?.toModel()
+        }
+
+    override suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setMigrationConfiguration(configuration.toEntity())
         }
 }

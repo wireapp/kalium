@@ -136,6 +136,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMessageCreator: MLSMessageCreator,
     private val messageSendingInterceptor: MessageSendingInterceptor,
     private val userRepository: UserRepository,
+    private val staleEpochVerifier: StaleEpochVerifier,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
 ) : MessageSender {
@@ -225,7 +226,7 @@ internal class MessageSenderImpl internal constructor(
                         attemptToSendWithMLS(protocolInfo.groupId, message)
                     }
 
-                    is Conversation.ProtocolInfo.Proteus -> {
+                    is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {
                         // TODO(messaging): make this thread safe (per user)
                         attemptToSendWithProteus(message, messageTarget)
                     }
@@ -317,10 +318,13 @@ internal class MessageSenderImpl internal constructor(
                 messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         if (it.kaliumException.isMlsStaleMessage()) {
-                            logger.w("Encrypted MLS message for outdated epoch '${message.id}', re-trying..")
-                            return syncManager.waitUntilLiveOrFailure().flatMap {
-                                attemptToSend(message)
-                            }
+                            logger.w("Encrypted MLS message for stale epoch '${message.id}', re-trying..")
+                            return staleEpochVerifier.verifyEpoch(message.conversationId)
+                                .flatMap {
+                                    syncManager.waitUntilLiveOrFailure().flatMap {
+                                        attemptToSend(message)
+                                    }
+                                }
                         }
                     }
                     Either.Left(it)

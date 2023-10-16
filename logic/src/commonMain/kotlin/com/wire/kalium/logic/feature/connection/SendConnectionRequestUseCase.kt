@@ -22,6 +22,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 
@@ -39,22 +41,24 @@ interface SendConnectionRequestUseCase {
 }
 
 internal class SendConnectionRequestUseCaseImpl(
-    private val connectionRepository: ConnectionRepository
+    private val connectionRepository: ConnectionRepository,
+    private val userRepository: UserRepository
 ) : SendConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): SendConnectionRequestResult {
-        return connectionRepository.sendUserConnection(userId)
-            .fold({ coreFailure ->
-                kaliumLogger.e("An error occurred when sending a connection request to $userId")
-                when (coreFailure) {
-                    is NetworkFailure.FederatedBackendFailure.FederationDenied ->
-                        SendConnectionRequestResult.Failure.FederationDenied
+        return userRepository.fetchUserInfo(userId).flatMap {
+            connectionRepository.sendUserConnection(userId)
+        }.fold({ coreFailure ->
+            kaliumLogger.e("An error occurred when sending a connection request to $userId")
+            when (coreFailure) {
+                is NetworkFailure.FederatedBackendFailure.FederationDenied ->
+                    SendConnectionRequestResult.Failure.FederationDenied
 
-                    else -> SendConnectionRequestResult.Failure.GenericFailure(coreFailure)
-                }
-            }, {
-                SendConnectionRequestResult.Success
-            })
+                else -> SendConnectionRequestResult.Failure.GenericFailure(coreFailure)
+            }
+        }, {
+            SendConnectionRequestResult.Success
+        })
     }
 }
 

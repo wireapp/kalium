@@ -193,8 +193,8 @@ class ReactionDAOTest : BaseDatabaseTest() {
     }
 
     private suspend fun insertTestUsers() {
-        userDAO.insertUser(SELF_USER)
-        userDAO.insertUser(OTHER_USER)
+        userDAO.upsertUser(SELF_USER)
+        userDAO.upsertUser(OTHER_USER)
     }
 
     private companion object {

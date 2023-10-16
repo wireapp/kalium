@@ -69,7 +69,7 @@ class LastMessageListTest: BaseDatabaseTest() {
         )
 
         conversationDAO.insertConversation(conversion)
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         messageDAO.insertOrIgnoreMessage(message)
 
         messageDAO.observeLastMessages().first().also {

@@ -21,16 +21,11 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
@@ -41,13 +36,8 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
-import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
@@ -260,21 +250,21 @@ class SearchUserRepositoryTest {
         given(publicUserMapper)
             .function(publicUserMapper::fromUserProfileDtoToOtherUser)
             .whenInvokedWith(any(), any())
-            .then { _, _ -> PUBLIC_USER }
+            .then { _, _ -> TestUser.OTHER }
 
         given(metadataDAO)
             .suspendFunction(metadataDAO::valueByKeyFlow)
             .whenInvokedWith(any())
             .then { flowOf(JSON_QUALIFIED_ID) }
 
-        given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+        given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
             .whenInvokedWith(any())
-            .then { flowOf(USER_ENTITY) }
+            .then { flowOf(TestUser.DETAILS_ENTITY) }
 
         given(userMapper)
-            .function(userMapper::fromUserEntityToSelfUser)
+            .function(userMapper::fromUserDetailsEntityToSelfUser)
             .whenInvokedWith(any())
-            .then { SELF_USER }
+            .then { TestUser.SELF.copy(teamId = null) }
 
         given(domainUserTypeMapper)
             .invocation {
@@ -282,7 +272,7 @@ class SearchUserRepositoryTest {
                     "domain",
                     null,
                     "team",
-                    "someId",
+                    "domain",
                     false
                 )
             }.then { UserType.FEDERATED }
@@ -311,21 +301,21 @@ class SearchUserRepositoryTest {
             given(publicUserMapper)
                 .function(publicUserMapper::fromUserProfileDtoToOtherUser)
                 .whenInvokedWith(any(), any())
-                .then { _, _ -> PUBLIC_USER }
+                .then { _, _ -> TestUser.OTHER }
 
             given(metadataDAO)
                 .suspendFunction(metadataDAO::valueByKeyFlow)
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
-                .then { flowOf(USER_ENTITY) }
+                .then { flowOf(TestUser.DETAILS_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromUserEntityToSelfUser)
+                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
-                .then { SELF_USER }
+                .then { TestUser.SELF.copy(teamId = null) }
 
             given(domainUserTypeMapper)
                 .invocation {
@@ -333,13 +323,13 @@ class SearchUserRepositoryTest {
                         "domain",
                         null,
                         "team",
-                        "someId",
+                        "domain",
                         false
                     )
                 }.then { UserType.FEDERATED }
 
             val expectedResult = UserSearchResult(
-                result = listOf(PUBLIC_USER)
+                result = listOf(TestUser.OTHER)
             )
             // when
             val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -367,14 +357,14 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
-                .then { flowOf(USER_ENTITY) }
+                .then { flowOf(TestUser.DETAILS_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromUserEntityToSelfUser)
+                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
-                .then { SELF_USER }
+                .then { TestUser.SELF }
 
             val expectedResult = UserSearchResult(
                 result = emptyList()
@@ -391,12 +381,12 @@ class SearchUserRepositoryTest {
         runTest {
             // given
             given(userDAO)
-                .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
+                .suspendFunction(userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
                 .whenInvokedWith(anything(), anything())
                 .then { _, _ -> flowOf(listOf()) }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionStates)
+                .suspendFunction(userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
                 .whenInvokedWith(anything(), anything())
                 .then { _, _ -> flowOf(listOf()) }
 
@@ -412,12 +402,12 @@ class SearchUserRepositoryTest {
             )
 
             verify(userDAO)
-                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionStates)
+                .suspendFunction(userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
                 .with(anything(), anything())
                 .wasNotInvoked()
 
             verify(userDAO)
-                .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
+                .suspendFunction(userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
                 .with(anything(), anything())
                 .wasInvoked(Times(1))
         }
@@ -426,12 +416,12 @@ class SearchUserRepositoryTest {
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByHandle_ThenSearchForUsersNotInTheConversation() = runTest {
         // given
         given(userDAO)
-            .suspendFunction(userDAO::getUserByHandleAndConnectionStates)
+            .suspendFunction(userDAO::getUserDetailsByHandleAndConnectionStates)
             .whenInvokedWith(anything(), anything())
             .then { _, _ -> flowOf(listOf()) }
 
         given(userDAO)
-            .suspendFunction(userDAO::getUsersNotInConversationByHandle)
+            .suspendFunction(userDAO::getUsersDetailsNotInConversationByHandle)
             .whenInvokedWith(anything(), anything())
             .then { _, _ -> flowOf(listOf()) }
 
@@ -448,12 +438,12 @@ class SearchUserRepositoryTest {
 
         // then
         verify(userDAO)
-            .suspendFunction(userDAO::getUserByHandleAndConnectionStates)
+            .suspendFunction(userDAO::getUserDetailsByHandleAndConnectionStates)
             .with(anything(), anything())
             .wasNotInvoked()
 
         verify(userDAO)
-            .suspendFunction(userDAO::getUsersNotInConversationByHandle)
+            .suspendFunction(userDAO::getUsersDetailsNotInConversationByHandle)
             .with(anything(), anything())
             .wasInvoked(exactly = once)
     }
@@ -501,25 +491,6 @@ class SearchUserRepositoryTest {
             }
         }
 
-        val PUBLIC_USER = OtherUser(
-            id = com.wire.kalium.logic.data.user.UserId(value = "value", domain = "domain"),
-            name = "name",
-            handle = "handle",
-            email = "email",
-            phone = "phone",
-            accentId = 1,
-            teamId = TeamId("team"),
-            previewPicture = null,
-            completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.NONE,
-            userType = UserType.FEDERATED,
-            connectionStatus = ConnectionState.NOT_CONNECTED,
-            botService = null,
-            deleted = false,
-            expiresAt = null,
-            defederated = false
-        )
-
         val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
             documents = CONTACTS,
             found = CONTACTS.size,
@@ -551,47 +522,13 @@ class SearchUserRepositoryTest {
                     email = null,
                     expiresAt = null,
                     nonQualifiedId = "value",
-                    service = null
+                    service = null,
+                    supportedProtocols = null
                 )
             )
         )
 
         const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
-
-        val USER_ENTITY = UserEntity(
-            id = QualifiedIDEntity("value", "domain"),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            team = null,
-            connectionStatus = ConnectionEntity.State.NOT_CONNECTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userType = UserTypeEntity.EXTERNAL,
-            botService = null,
-            deleted = false,
-            expiresAt = null,
-            defederated = false
-        )
-
-        val SELF_USER = SelfUser(
-            id = QualifiedID("someValue", "someId"),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            teamId = null,
-            connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = null,
-            completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-            expiresAt = null
-        )
-
     }
 
 }

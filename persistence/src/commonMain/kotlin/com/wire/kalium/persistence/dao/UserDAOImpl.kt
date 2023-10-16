@@ -33,8 +33,34 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
 import com.wire.kalium.persistence.User as SQLDelightUser
+import com.wire.kalium.persistence.UserDetails as SQLDelightUserDetails
 
 class UserMapper {
+    fun toDetailsModel(user: SQLDelightUserDetails): UserDetailsEntity {
+        return UserDetailsEntity(
+            id = user.qualified_id,
+            name = user.name,
+            handle = user.handle,
+            email = user.email,
+            phone = user.phone,
+            accentId = user.accent_id,
+            team = user.team,
+            connectionStatus = user.connection_status,
+            previewAssetId = user.preview_asset_id,
+            completeAssetId = user.complete_asset_id,
+            availabilityStatus = user.user_availability_status,
+            userType = user.user_type,
+            botService = user.bot_service,
+            deleted = user.deleted,
+            hasIncompleteMetadata = user.incomplete_metadata,
+            expiresAt = user.expires_at,
+            defederated = user.defederated,
+            supportedProtocols = user.supported_protocols,
+            isProteusVerified = user.is_proteus_verified == 1L,
+            activeOneOnOneConversationId = user.active_one_on_one_conversation_id
+        )
+    }
+
     fun toModel(user: SQLDelightUser): UserEntity {
         return UserEntity(
             id = user.qualified_id,
@@ -53,7 +79,9 @@ class UserMapper {
             deleted = user.deleted,
             hasIncompleteMetadata = user.incomplete_metadata,
             expiresAt = user.expires_at,
-            defederated = user.defederated
+            defederated = user.defederated,
+            supportedProtocols = user.supported_protocols,
+            activeOneOnOneConversationId = user.active_one_on_one_conversation_id
         )
     }
 
@@ -76,11 +104,14 @@ class UserMapper {
         hasIncompleteMetadata: Boolean,
         expiresAt: Instant?,
         defederated: Boolean,
+        supportedProtocols: Set<SupportedProtocolEntity>?,
+        oneOnOneConversationId: QualifiedIDEntity?,
+        isVerifiedProteus: Long,
         id: String?,
         teamName: String?,
         teamIcon: String?,
-    ): Pair<UserEntity, TeamEntity?> {
-        val userEntity = UserEntity(
+    ): Pair<UserDetailsEntity, TeamEntity?> {
+        val userEntity = UserDetailsEntity(
             id = qualifiedId,
             name = name,
             handle = handle,
@@ -97,7 +128,10 @@ class UserMapper {
             deleted = deleted,
             hasIncompleteMetadata = hasIncompleteMetadata,
             expiresAt = expiresAt,
-            defederated = defederated
+            defederated = defederated,
+            isProteusVerified = isVerifiedProteus == 1L,
+            supportedProtocols = supportedProtocols,
+            activeOneOnOneConversationId = oneOnOneConversationId
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -123,31 +157,14 @@ class UserMapper {
 @Suppress("TooManyFunctions")
 class UserDAOImpl internal constructor(
     private val userQueries: UsersQueries,
-    private val userCache: Cache<UserIDEntity, Flow<UserEntity?>>,
+    private val userCache: Cache<UserIDEntity, Flow<UserDetailsEntity?>>,
     private val databaseScope: CoroutineScope,
     private val queriesContext: CoroutineContext
 ) : UserDAO {
 
     val mapper = UserMapper()
-
-    override suspend fun insertUser(user: UserEntity) = withContext(queriesContext) {
-        userQueries.insertUser(
-            qualified_id = user.id,
-            name = user.name,
-            handle = user.handle,
-            email = user.email,
-            phone = user.phone,
-            accent_id = user.accentId,
-            team = user.team,
-            preview_asset_id = user.previewAssetId,
-            complete_asset_id = user.completeAssetId,
-            user_type = user.userType,
-            bot_service = user.botService,
-            incomplete_metadata = user.hasIncompleteMetadata,
-            expires_at = user.expiresAt,
-            connection_status = user.connectionStatus,
-            deleted = user.deleted
-        )
+    override suspend fun upsertUser(user: UserEntity) {
+        upsertUsers(listOf(user))
     }
 
     override suspend fun insertOrIgnoreUsers(users: List<UserEntity>) = withContext(queriesContext) {
@@ -168,55 +185,30 @@ class UserDAOImpl internal constructor(
                     incomplete_metadata = false,
                     expires_at = user.expiresAt,
                     connection_status = user.connectionStatus,
-                    deleted = user.deleted
+                    deleted = user.deleted,
+                    supported_protocols = user.supportedProtocols
                 )
             }
         }
     }
 
-    override suspend fun upsertTeamMembers(users: List<UserEntity>) = withContext(queriesContext) {
-        userQueries.transaction {
-            for (user: UserEntity in users) {
-                userQueries.updateTeamMemberUser(
-                    qualified_id = user.id,
-                    name = user.name,
-                    handle = user.handle,
-                    email = user.email,
-                    phone = user.phone,
-                    accent_id = user.accentId,
-                    team = user.team,
-                    preview_asset_id = user.previewAssetId,
-                    complete_asset_id = user.completeAssetId,
-                    bot_service = user.botService,
-                )
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        qualified_id = user.id,
-                        name = user.name,
-                        handle = user.handle,
-                        email = user.email,
-                        phone = user.phone,
-                        accent_id = user.accentId,
-                        team = user.team,
-                        preview_asset_id = user.previewAssetId,
-                        complete_asset_id = user.completeAssetId,
-                        user_type = user.userType,
-                        bot_service = user.botService,
-                        incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt,
-                        connection_status = user.connectionStatus,
-                        deleted = user.deleted
-                    )
-                }
-            }
-        }
+    override suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity) = withContext(queriesContext) {
+        userQueries.updateUser(
+            name = update.name,
+            handle = update.handle,
+            email = update.email,
+            accent_id = update.accentId?.toLong(),
+            preview_asset_id = update.previewAssetId,
+            complete_asset_id = update.completeAssetId,
+            supported_protocols = update.supportedProtocols,
+            id
+        ).executeAsOne() > 0
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                userQueries.updateUser(
+                userQueries.insertUser(
                     qualified_id = user.id,
                     name = user.name,
                     handle = user.handle,
@@ -228,88 +220,41 @@ class UserDAOImpl internal constructor(
                     complete_asset_id = user.completeAssetId,
                     user_type = user.userType,
                     bot_service = user.botService,
-                    incomplete_metadata = false,
-                    expires_at = user.expiresAt
+                    incomplete_metadata = user.hasIncompleteMetadata,
+                    expires_at = user.expiresAt,
+                    connection_status = user.connectionStatus,
+                    deleted = user.deleted,
+                    supported_protocols = user.supportedProtocols,
+                    active_one_on_one_conversation_id = user.activeOneOnOneConversationId
                 )
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        qualified_id = user.id,
-                        name = user.name,
-                        handle = user.handle,
-                        email = user.email,
-                        phone = user.phone,
-                        accent_id = user.accentId,
-                        team = user.team,
-                        connection_status = user.connectionStatus,
-                        preview_asset_id = user.previewAssetId,
-                        complete_asset_id = user.completeAssetId,
-                        user_type = user.userType,
-                        bot_service = user.botService,
-                        deleted = user.deleted,
-                        incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt
-                    )
-                }
             }
         }
     }
 
-    override suspend fun upsertTeamMembersTypes(users: List<UserEntity>) {
+    override suspend fun upsertTeamMemberUserTypes(users: Map<QualifiedIDEntity, UserTypeEntity>) {
         userQueries.transaction {
-            for (user: UserEntity in users) {
-                userQueries.updateTeamMemberType(user.team, user.connectionStatus, user.userType, user.id)
-                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
-                if (recordDidNotExist) {
-                    userQueries.insertUser(
-                        qualified_id = user.id,
-                        name = user.name,
-                        handle = user.handle,
-                        email = user.email,
-                        phone = user.phone,
-                        accent_id = user.accentId,
-                        team = user.team,
-                        connection_status = user.connectionStatus,
-                        preview_asset_id = user.previewAssetId,
-                        complete_asset_id = user.completeAssetId,
-                        user_type = user.userType,
-                        bot_service = user.botService,
-                        deleted = user.deleted,
-                        incomplete_metadata = user.hasIncompleteMetadata,
-                        expires_at = user.expiresAt
-                    )
-                }
+            for (user: Map.Entry<QualifiedIDEntity, UserTypeEntity> in users) {
+                userQueries.upsertTeamMemberUserType(user.key, ConnectionEntity.State.ACCEPTED, user.value)
             }
         }
     }
 
-    override suspend fun updateUser(user: UserEntity) = withContext(queriesContext) {
-        userQueries.updateSelfUser(
-            qualified_id = user.id,
-            name = user.name,
-            handle = user.handle,
-            email = user.email,
-            accent_id = user.accentId,
-            preview_asset_id = user.previewAssetId,
-            complete_asset_id = user.completeAssetId,
-        )
-    }
-
-    override suspend fun getAllUsers(): Flow<List<UserEntity>> = userQueries.selectAllUsers()
+    override suspend fun getAllUsersDetails(): Flow<List<UserDetailsEntity>> = userQueries.selectAllUsers()
         .asFlow()
         .flowOn(queriesContext)
         .mapToList()
-        .map { entryList -> entryList.map(mapper::toModel) }
+        .map { entryList -> entryList.map(mapper::toDetailsModel) }
 
-    override suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?> = userCache.get(qualifiedID) {
-        userQueries.selectByQualifiedId(listOf(qualifiedID))
-            .asFlow()
-            .mapToOneOrNull()
-            .map { it?.let { mapper.toModel(it) } }
-            .shareIn(databaseScope, Lazily, 1)
-    }
+    override suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?> =
+        userCache.get(qualifiedID) {
+            userQueries.selectDetailsByQualifiedId(listOf(qualifiedID))
+                .asFlow()
+                .mapToOneOrNull()
+                .map { it?.let { mapper.toDetailsModel(it) } }
+                .shareIn(databaseScope, Lazily, 1)
+        }
 
-    override suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?> =
+    override suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?> =
         userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
             .asFlow()
             .mapToOneOrNull()
@@ -321,30 +266,34 @@ class UserDAOImpl internal constructor(
             }.executeAsOneOrNull()
         }
 
-    override suspend fun getUsersByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserEntity> =
+    override suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity> =
         withContext(queriesContext) {
-            userQueries.selectByQualifiedId(qualifiedIDList)
+            userQueries.selectDetailsByQualifiedId(qualifiedIDList)
                 .executeAsList()
-                .map { mapper.toModel(it) }
+                .map { mapper.toDetailsModel(it) }
         }
 
-    override suspend fun getUserByNameOrHandleOrEmailAndConnectionStates(
+    override suspend fun getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
         connectionStates: List<ConnectionEntity.State>
-    ): Flow<List<UserEntity>> = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
+    ): Flow<List<UserDetailsEntity>> = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
         .asFlow()
         .flowOn(queriesContext)
         .mapToList()
-        .map { it.map(mapper::toModel) }
+        .map { it.map(mapper::toDetailsModel) }
 
-    override suspend fun getUserByHandleAndConnectionStates(
+    override suspend fun getUserDetailsByHandleAndConnectionStates(
         handle: String,
         connectionStates: List<ConnectionEntity.State>
     ) = userQueries.selectByHandleAndConnectionState(handle, connectionStates)
         .asFlow()
         .flowOn(queriesContext)
         .mapToList()
-        .map { it.map(mapper::toModel) }
+        .map { it.map(mapper::toDetailsModel) }
+
+    override suspend fun getUsersWithOneOnOneConversation(): List<UserEntity> = withContext(queriesContext) {
+        userQueries.selectUsersWithOneOnOne().executeAsList().map(mapper::toModel)
+    }
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
         userQueries.deleteUser(qualifiedID)
@@ -367,48 +316,51 @@ class UserDAOImpl internal constructor(
             userQueries.updateUserAvailabilityStatus(status, qualifiedID)
         }
 
-    override fun observeUsersNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserEntity>> =
+    override fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>> =
         userQueries.getUsersNotPartOfTheConversation(conversationId)
             .asFlow()
             .flowOn(queriesContext)
             .mapToList()
-            .map { it.map(mapper::toModel) }
+            .map { it.map(mapper::toDetailsModel) }
 
-    override suspend fun getUsersNotInConversationByNameOrHandleOrEmail(
+    override suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String
-    ): Flow<List<UserEntity>> =
+    ): Flow<List<UserDetailsEntity>> =
         userQueries.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, searchQuery)
             .asFlow()
             .flowOn(queriesContext)
             .mapToList()
-            .map { it.map(mapper::toModel) }
+            .map { it.map(mapper::toDetailsModel) }
 
-    override suspend fun getUsersNotInConversationByHandle(conversationId: QualifiedIDEntity, handle: String): Flow<List<UserEntity>> =
+    override suspend fun getUsersDetailsNotInConversationByHandle(
+        conversationId: QualifiedIDEntity,
+        handle: String
+    ): Flow<List<UserDetailsEntity>> =
         userQueries.getUsersNotInConversationByHandle(conversationId, handle)
             .asFlow()
             .flowOn(queriesContext)
             .mapToList()
-            .map { it.map(mapper::toModel) }
+            .map { it.map(mapper::toDetailsModel) }
 
     override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) =
         withContext(queriesContext) {
             userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
         }
 
-    override suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>> =
+    override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
         withContext(queriesContext) {
             userQueries.selectAllUsersWithConnectionStatus(connectionState)
                 .asFlow()
                 .flowOn(queriesContext)
                 .mapToList()
-                .map { it.map(mapper::toModel) }
+                .map { it.map(mapper::toDetailsModel) }
         }
 
-    override suspend fun getAllUsersByTeam(teamId: String): List<UserEntity> = withContext(queriesContext) {
+    override suspend fun getAllUsersDetailsByTeam(teamId: String): List<UserDetailsEntity> = withContext(queriesContext) {
         userQueries.selectUsersByTeam(teamId)
             .executeAsList()
-            .map(mapper::toModel)
+            .map(mapper::toDetailsModel)
     }
 
     override suspend fun updateUserDisplayName(selfUserId: QualifiedIDEntity, displayName: String) = withContext(queriesContext) {
@@ -419,13 +371,29 @@ class UserDAOImpl internal constructor(
         userQueries.updateUserAsset(null, null, assetId)
     }
 
-    override suspend fun getUsersWithoutMetadata() = withContext(queriesContext) {
+    override suspend fun getUsersDetailsWithoutMetadata() = withContext(queriesContext) {
         userQueries.selectUsersWithoutMetadata()
             .executeAsList()
-            .map(mapper::toModel)
+            .map(mapper::toDetailsModel)
     }
 
     override suspend fun allOtherUsersId(): List<UserIDEntity> = withContext(queriesContext) {
         userQueries.userIdsWithoutSelf().executeAsList()
+    }
+
+    override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) =
+        withContext(queriesContext) {
+            userQueries.updateUserSupportedProtocols(supportedProtocols, selfUserId)
+        }
+
+    override suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity) =
+        withContext(queriesContext) {
+            userQueries.updateOneOnOnConversationId(conversationId, userId)
+        }
+
+    override suspend fun upsertConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State) {
+        withContext(queriesContext) {
+            userQueries.upsertUserConnectionStatus(userId, status)
+        }
     }
 }

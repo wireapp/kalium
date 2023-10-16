@@ -29,12 +29,13 @@ data class Client(
     val deviceType: DeviceTypeEntity?,
     val clientType: ClientTypeEntity?,
     val isValid: Boolean,
-    val isVerified: Boolean,
+    val isProteusVerified: Boolean,
     val registrationDate: Instant?,
     val lastActive: Instant?,
     val label: String?,
     val model: String?,
-    val mlsPublicKeys: Map<String, String>?
+    val mlsPublicKeys: Map<String, String>?,
+    val isMLSCapable: Boolean
 )
 
 data class InsertClientParam(
@@ -46,7 +47,8 @@ data class InsertClientParam(
     val registrationDate: Instant?,
     val lastActive: Instant?,
     val model: String?,
-    val mlsPublicKeys: Map<String, String>?
+    val mlsPublicKeys: Map<String, String>?,
+    val isMLSCapable: Boolean
 )
 
 enum class DeviceTypeEntity {
@@ -77,7 +79,7 @@ interface ClientDAO {
     suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>>
     suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>)
     suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
-    suspend fun updateClientVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
+    suspend fun updateClientProteusVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
     suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?>
 
     /**

@@ -169,8 +169,8 @@ class ReceiptDAOTest : BaseDatabaseTest() {
     }
 
     private suspend fun insertTestData() {
-        userDAO.insertUser(SELF_USER)
-        userDAO.insertUser(OTHER_USER)
+        userDAO.upsertUser(SELF_USER)
+        userDAO.upsertUser(OTHER_USER)
         conversationDAO.insertConversation(TEST_CONVERSATION)
         messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
     }

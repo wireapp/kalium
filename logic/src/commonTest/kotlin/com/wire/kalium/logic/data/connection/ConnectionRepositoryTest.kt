@@ -84,8 +84,8 @@ class ConnectionRepositoryTest {
 
         // then
         verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
+            .with(any(), any())
             .wasInvoked(exactly = twice)
 
         // Verifies that when fetching connections, it succeeded
@@ -106,8 +106,8 @@ class ConnectionRepositoryTest {
 
         // then
         verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
+            .with(any(), any())
             .wasInvoked(exactly = twice)
 
         // Verifies that when fetching connections, it succeeded
@@ -135,20 +135,6 @@ class ConnectionRepositoryTest {
             .suspendFunction(arrangement.connectionApi::createConnection)
             .with(eq(userId))
             .wasInvoked(once)
-
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::insertUser)
-            .with(any())
-            .wasInvoked(once)
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-            .with(any())
-            .wasInvoked(once)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversations)
-            .wasNotInvoked()
-
     }
 
     @Test
@@ -171,8 +157,8 @@ class ConnectionRepositoryTest {
             .with(eq(userId))
             .wasInvoked(once)
         verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
+            .with(any(), any())
             .wasNotInvoked()
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::fetchConversations)
@@ -205,13 +191,6 @@ class ConnectionRepositoryTest {
             .suspendFunction(arrangement.connectionDAO::insertConnection)
             .with(any())
             .wasInvoked(once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::insertUser)
-            .with(any())
-            .wasInvoked(once)
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversations)
-            .wasNotInvoked()
     }
 
     @Test
@@ -235,9 +214,9 @@ class ConnectionRepositoryTest {
             .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
             .wasInvoked(once)
         verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = twice)
+            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -257,8 +236,8 @@ class ConnectionRepositoryTest {
             .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
             .wasNotInvoked()
         verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -279,8 +258,8 @@ class ConnectionRepositoryTest {
             .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
             .wasInvoked(once)
         verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -301,8 +280,8 @@ class ConnectionRepositoryTest {
             .with(eq(userId), eq(ConnectionStateDTO.PENDING))
             .wasNotInvoked()
         verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .with(any(), any(), any())
+            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -351,10 +330,7 @@ class ConnectionRepositoryTest {
             conversationDAO = conversationDAO,
             connectionApi = connectionApi,
             connectionDAO = connectionDAO,
-            userDetailsApi = userDetailsApi,
             userDAO = userDAO,
-            selfUserId = TestUser.SELF.id,
-            selfTeamIdProvider = selfTeamIdProvider,
             memberDAO = memberDAO,
             conversationRepository = conversationRepository
         )
@@ -394,29 +370,11 @@ class ConnectionRepositoryTest {
             email = null,
             expiresAt = null,
             nonQualifiedId = "value",
-            service = null
+            service = null,
+            supportedProtocols = null
         )
 
-        val stubUserEntity = UserEntity(
-            id = QualifiedIDEntity("value", "domain"),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            team = null,
-            connectionStatus = ConnectionEntity.State.NOT_CONNECTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userType = UserTypeEntity.EXTERNAL,
-            botService = null,
-            deleted = false,
-            hasIncompleteMetadata = false,
-            expiresAt = null,
-            defederated = false
-        )
-
+        val stubUserEntity = TestUser.DETAILS_ENTITY
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
         val stubConversationID2 = QualifiedIDEntity("conversationId2", "domain")
 
@@ -455,11 +413,10 @@ class ConnectionRepositoryTest {
         }
 
         fun withNotFoundGetConversationError(): Arrangement = apply {
-            // TODO: user withUpdateOrInsertOneOnOneMemberWithConnectionStatusFailure directly in the test once it is fully refactored
-            withUpdateOrInsertOneOnOneMemberWithConnectionStatusFailure(
+            // TODO: use withUpdateOrInsertOneOnOneMemberFailure directly in the test once it is fully refactored
+            withUpdateOrInsertOneOnOneMemberFailure(
                 error = Exception("error"),
                 member = any(),
-                status = any(),
                 conversationId = any()
             )
         }
@@ -474,11 +431,10 @@ class ConnectionRepositoryTest {
         }
 
         fun withErrorOnPersistingConnectionResponse(userId: NetworkUserId): Arrangement = apply {
-            // TODO: user withUpdateOrInsertOneOnOneMemberWithConnectionStatusFailure directly in the test once it is fully refactored
-            withUpdateOrInsertOneOnOneMemberWithConnectionStatusFailure(
+            // TODO: use withUpdateOrInsertOneOnOneMemberFailure directly in the test once it is fully refactored
+            withUpdateOrInsertOneOnOneMemberFailure(
                 error = RuntimeException("An error occurred persisting the data"),
                 member = eq(UserIDEntity(userId.value, userId.domain)),
-                status = any(),
                 conversationId = any()
             )
         }
@@ -489,9 +445,8 @@ class ConnectionRepositoryTest {
                 .whenInvokedWith(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
                 .then { _, _ -> NetworkResponse.Success(stubConnectionOne, mapOf(), 200) }
 
-            withUpdateOrInsertOneOnOneMemberWithConnectionStatusSuccess(
+            withUpdateOrInsertOneOnOneMemberSuccess(
                 member = eq(UserIDEntity(userId.value, userId.domain)),
-                status = any(),
                 conversationId = any()
             )
         }
@@ -526,14 +481,14 @@ class ConnectionRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(stubUserProfileDTO, mapOf(), 200) }
 
-            withUpdateOrInsertOneOnOneMemberWithConnectionStatusSuccess()
+            withUpdateOrInsertOneOnOneMemberSuccess()
 
-            given(userDAO).suspendFunction(userDAO::getUserByQualifiedID)
+            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .then { flowOf(stubUserEntity) }
 
             given(userDAO)
-                .suspendFunction(userDAO::insertUser)
+                .suspendFunction(userDAO::upsertUser)
                 .whenInvokedWith(any())
                 .then { }
 
@@ -542,7 +497,7 @@ class ConnectionRepositoryTest {
 
         fun withSuccessfulGetUserById(id: QualifiedIDEntity): Arrangement {
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(eq(id))
                 .then { flowOf(stubUserEntity) }
 
