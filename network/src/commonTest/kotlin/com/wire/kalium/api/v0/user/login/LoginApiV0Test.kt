@@ -154,7 +154,8 @@ internal class LoginApiV0Test : ApiTest() {
             locale = "",
             managedByDTO = null,
             phone = null,
-            ssoID = null
+            ssoID = null,
+            supportedProtocols = null
         )
         val VALID_ACCESS_TOKEN_RESPONSE = AccessTokenDTOJson.createValid(accessTokenDto)
         val VALID_SELF_RESPONSE = UserDTOJson.createValid(userDTO)

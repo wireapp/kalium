@@ -22,7 +22,7 @@ import okio.Path
 
 data class UploadedAssetId(
     val key: String,
-    val domain: String? = null,
+    val domain: String,
     val assetToken: String? = null
 )
 

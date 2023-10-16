@@ -177,7 +177,8 @@ class CallingParticipantsOrderTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-            expiresAt = null
+            expiresAt = null,
+            supportedProtocols = null
         )
 
         const val selfClientId = "client1"

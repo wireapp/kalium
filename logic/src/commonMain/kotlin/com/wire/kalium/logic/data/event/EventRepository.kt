@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
@@ -81,7 +82,8 @@ class EventDataSource(
     private val notificationApi: NotificationApi,
     private val metadataDAO: MetadataDAO,
     private val currentClientId: CurrentClientIdProvider,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
+    private val selfUserId: UserId,
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId)
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
@@ -108,7 +110,7 @@ class EventDataSource(
                     }
 
                     is WebSocketEvent.BinaryPayloadReceived -> {
-                        eventMapper.fromDTO(webSocketEvent.payload).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
+                        eventMapper.fromDTO(webSocketEvent.payload, true).asFlow().map { WebSocketEvent.BinaryPayloadReceived(it) }
                     }
                 }
             }.flattenConcat()

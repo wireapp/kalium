@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
@@ -273,6 +274,10 @@ sealed class MessageContent {
         val messageTimer: Long?
     ) : System()
 
+    data class ConversationProtocolChanged(
+        val protocol: Conversation.Protocol
+    ) : System()
+
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     object Ignored : Signaling() // messages that aren't processed in any way
 
@@ -288,6 +293,8 @@ sealed class MessageContent {
     object ClientAction : Signaling()
 
     object CryptoSessionReset : System()
+
+    object HistoryLostProtocolChanged : System()
 
     object HistoryLost : System()
     object ConversationCreated : System()
@@ -328,6 +335,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationRenamed -> "ConversationRenamed"
     is MessageContent.CryptoSessionReset -> "CryptoSessionReset"
     is MessageContent.HistoryLost -> "HistoryLost"
+    is MessageContent.HistoryLostProtocolChanged -> "HistoryLostProtocolChanged"
     is MessageContent.MemberChange.Added -> "MemberChange.Added"
     is MessageContent.MemberChange.Removed -> "MemberChange.Removed"
     is MessageContent.MissedCall -> "MissedCall"
@@ -345,6 +353,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
     is MessageContent.FederationStopped.ConnectionRemoved -> "Federation.ConnectionRemoved"
     is MessageContent.FederationStopped.Removed -> "Federation.Removed"
+    is MessageContent.ConversationProtocolChanged -> "ConversationProtocolChanged"
     is MessageContent.Unknown -> "Unknown"
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"

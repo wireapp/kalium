@@ -38,6 +38,9 @@ UPDATE Connection SET last_update_date = ? WHERE to_id = ?;
 updateNotificationFlag:
 UPDATE Connection SET should_notify = ? WHERE qualified_to = ?;
 
+updateConnectionConversation:
+UPDATE Connection SET conversation_id = ?, qualified_conversation = ? WHERE qualified_to = ?;
+
 setAllConnectionsAsNotified:
 UPDATE Connection SET should_notify = 0
 WHERE status = 'PENDING' AND should_notify = 1;
