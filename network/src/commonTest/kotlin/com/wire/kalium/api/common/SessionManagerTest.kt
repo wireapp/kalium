@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
@@ -168,7 +169,7 @@ class SessionManagerTest {
         }
 
         val client = AuthenticatedNetworkClient(
-            DEFAULT_TEST_NETWORK_STATE_OBSERVER, mockEngine, sessionManager.serverConfig(), bearerAuthProvider, false
+            DEFAULT_TEST_NETWORK_STATE_OBSERVER, mockEngine, sessionManager.serverConfig(), bearerAuthProvider, kaliumLogger, false
         )
         val assetApi = AssetApiV0(client)
         val kaliumFileSystem: FileSystem = FakeFileSystem()
