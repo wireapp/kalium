@@ -19,10 +19,28 @@
 package com.wire.kalium.network.api.v5.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.base.authenticated.self.UpdateSupportedProtocolsRequest
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.v4.authenticated.SelfApiV4
 import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
 
 internal open class SelfApiV5 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
     sessionManager: SessionManager
-) : SelfApiV4(authenticatedNetworkClient, sessionManager)
+) : SelfApiV4(authenticatedNetworkClient, sessionManager) {
+    override suspend fun updateSupportedProtocols(
+        protocols: List<SupportedProtocolDTO>
+    ): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put("$PATH_SELF/$PATH_SUPPORTED_PROTOCOLS") {
+            setBody(UpdateSupportedProtocolsRequest(protocols))
+        }
+    }
+
+    companion object {
+        const val PATH_SUPPORTED_PROTOCOLS = "supported-protocols"
+    }
+}

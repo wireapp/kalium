@@ -28,10 +28,12 @@ import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.toInstant
 
 internal interface NewMessageEventHandler {
     suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage)
@@ -44,7 +46,7 @@ internal class NewMessageEventHandlerImpl(
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
-    private val mlsWrongEpochHandler: MLSWrongEpochHandler
+    private val staleEpochVerifier: StaleEpochVerifier
 ) : NewMessageEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -120,7 +122,7 @@ internal class NewMessageEventHandlerImpl(
                     }
                     is MLSMessageFailureResolution.OutOfSync -> {
                         logger.i("Epoch out of sync error: ${logMap.toJsonElement()}")
-                        mlsWrongEpochHandler.onMLSWrongEpoch(event.conversationId, event.timestampIso)
+                        staleEpochVerifier.verifyEpoch(event.conversationId, event.timestampIso.toInstant())
                     }
                 }
             }.onSuccess {

@@ -154,7 +154,8 @@ class SearchKnownUserUseCaseTest {
             botService = null,
             deleted = false,
             defederated = false,
-            isProteusVerified = false
+            isProteusVerified = false,
+            supportedProtocols = null
         )
 
         val (_, searchKnownUsersUseCase) = Arrangement()
@@ -345,7 +346,8 @@ class SearchKnownUserUseCaseTest {
                                     botService = null,
                                     deleted = false,
                                     defederated = false,
-                                    isProteusVerified = false
+                                    isProteusVerified = false,
+                                    supportedProtocols = null
                                 )
                             )
                         )
@@ -381,7 +383,8 @@ class SearchKnownUserUseCaseTest {
                     botService = null,
                     deleted = false,
                     defederated = false,
-                    isProteusVerified = false
+                    isProteusVerified = false,
+                    supportedProtocols = null
                 )
             )
 

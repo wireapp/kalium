@@ -302,7 +302,8 @@ class SearchUserUseCaseTest {
                     botService = null,
                     deleted = false,
                     defederated = false,
-                    isProteusVerified = false
+                    isProteusVerified = false,
+                    supportedProtocols = null
                 )
             }
         )

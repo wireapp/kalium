@@ -63,7 +63,7 @@ class MessageInsertExtensionTest : BaseDatabaseTest() {
     @Test
     fun givenDeletedAssetMessage_whenUpdateUploadStatus_thenFail() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
-        userDAO.insertUser(userEntity1)
+        userDAO.upsertUser(userEntity1)
         val assetMessage = newRegularMessageEntity(
             id = "messageId",
             date = Instant.DISTANT_PAST,

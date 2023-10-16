@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.util.arrangement.dao
 
-import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
@@ -34,16 +33,14 @@ interface MemberDAOArrangement {
     @Mock
     val memberDAO: MemberDAO
 
-    fun withUpdateOrInsertOneOnOneMemberWithConnectionStatusSuccess(
+    fun withUpdateOrInsertOneOnOneMemberSuccess(
         member: Matcher<MemberEntity> = any(),
-        status: Matcher<ConnectionEntity.State> = any(),
         conversationId: Matcher<QualifiedIDEntity> = any()
     )
 
-    fun withUpdateOrInsertOneOnOneMemberWithConnectionStatusFailure(
+    fun withUpdateOrInsertOneOnOneMemberFailure(
         error: Throwable,
         member: Matcher<MemberEntity> = any(),
-        status: Matcher<ConnectionEntity.State> = any(),
         conversationId: Matcher<QualifiedIDEntity> = any()
     )
 
@@ -79,25 +76,23 @@ class MemberDAOArrangementImpl : MemberDAOArrangement {
     @Mock
     override val memberDAO: MemberDAO = mock(MemberDAO::class)
 
-    override fun withUpdateOrInsertOneOnOneMemberWithConnectionStatusSuccess(
+    override fun withUpdateOrInsertOneOnOneMemberSuccess(
         member: Matcher<MemberEntity>,
-        status: Matcher<ConnectionEntity.State>,
         conversationId: Matcher<QualifiedIDEntity>
     ) {
         given(memberDAO)
-            .suspendFunction(memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .whenInvokedWith(member, status, conversationId)
+            .suspendFunction(memberDAO::updateOrInsertOneOnOneMember)
+            .whenInvokedWith(member, conversationId)
     }
 
-    override fun withUpdateOrInsertOneOnOneMemberWithConnectionStatusFailure(
+    override fun withUpdateOrInsertOneOnOneMemberFailure(
         error: Throwable,
         member: Matcher<MemberEntity>,
-        status: Matcher<ConnectionEntity.State>,
         conversationId: Matcher<QualifiedIDEntity>
     ) {
         given(memberDAO)
-            .suspendFunction(memberDAO::updateOrInsertOneOnOneMemberWithConnectionStatus)
-            .whenInvokedWith(member, status, conversationId)
+            .suspendFunction(memberDAO::updateOrInsertOneOnOneMember)
+            .whenInvokedWith(member, conversationId)
             .thenThrow(error)
     }
 
