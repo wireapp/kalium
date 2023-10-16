@@ -74,15 +74,21 @@ internal class AuthenticatedNetworkContainerV2 internal constructor(
     private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
+    certificatePinning: CertificatePinning,
+    mockEngine: HttpClientEngine?,
     kaliumLogger: KaliumLogger,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials())
+    engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
+        serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
+        proxyCredentials = sessionManager.proxyCredentials(),
+        certificatePinning = certificatePinning
+    )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
-        sessionManager,
-        networkStateObserver,
-        { httpClient -> AccessTokenApiV2(httpClient) },
-        engine,
-        kaliumLogger
+        sessionManager = sessionManager,
+        networkStateObserver = networkStateObserver,
+        accessTokenApi = { httpClient -> AccessTokenApiV2(httpClient) },
+        engine = engine,
+        kaliumLogger = kaliumLogger
     ) {
 
     override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV2(networkClient.httpClient)

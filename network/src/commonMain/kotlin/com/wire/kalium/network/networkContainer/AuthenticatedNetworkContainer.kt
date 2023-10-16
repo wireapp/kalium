@@ -114,6 +114,8 @@ interface AuthenticatedNetworkContainer {
             sessionManager: SessionManager,
             selfUserId: UserId,
             userAgent: String,
+            certificatePinning: CertificatePinning,
+            mockEngine: HttpClientEngine?,
             kaliumLogger: KaliumLogger,
         ): AuthenticatedNetworkContainer {
 
@@ -123,12 +125,16 @@ interface AuthenticatedNetworkContainer {
                 0 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
+                    certificatePinning,
+                    mockEngine,
                     kaliumLogger,
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
+                    certificatePinning,
+                    mockEngine,
                     kaliumLogger,
                 )
 
@@ -136,6 +142,8 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
+                    certificatePinning,
+                    mockEngine,
                     kaliumLogger,
                 )
 
@@ -143,6 +151,8 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
+                    certificatePinning,
+                    mockEngine,
                     kaliumLogger,
                 )
 
@@ -150,6 +160,8 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
+                    certificatePinning,
+                    mockEngine,
                     kaliumLogger,
                 )
 
@@ -157,6 +169,8 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
+                    certificatePinning,
+                    mockEngine,
                     kaliumLogger,
                 )
 
@@ -178,7 +192,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val networkStateObserver: NetworkStateObserver,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
-    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
+    private val engine: HttpClientEngine,
     private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
 

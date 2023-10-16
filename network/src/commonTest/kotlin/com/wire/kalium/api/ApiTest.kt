@@ -114,6 +114,8 @@ internal abstract class ApiTest {
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
             networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap(),
+            mockEngine = null,
             kaliumLogger = kaliumLogger
         ).networkClient
     }
@@ -128,6 +130,8 @@ internal abstract class ApiTest {
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
             networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap(),
+            mockEngine = null,
             kaliumLogger = kaliumLogger
         ).websocketClient
     }
@@ -253,6 +257,8 @@ internal abstract class ApiTest {
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
             networkStateObserver = networkStateObserver,
+            certificatePinning = emptyMap(),
+            mockEngine = null,
             kaliumLogger = kaliumLogger
         ).networkClient
     }

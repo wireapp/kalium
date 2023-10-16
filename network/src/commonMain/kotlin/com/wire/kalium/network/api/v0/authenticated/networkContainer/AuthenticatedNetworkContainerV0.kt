@@ -72,15 +72,21 @@ import io.ktor.client.engine.HttpClientEngine
 internal class AuthenticatedNetworkContainerV0 internal constructor(
     private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
+    certificatePinning: CertificatePinning,
+    mockEngine: HttpClientEngine?,
     kaliumLogger: KaliumLogger,
-    engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy, sessionManager.proxyCredentials())
+    engine: HttpClientEngine = mockEngine ?: defaultHttpEngine(
+        serverConfigDTOApiProxy = sessionManager.serverConfig().links.apiProxy,
+        proxyCredentials = sessionManager.proxyCredentials(),
+        certificatePinning = certificatePinning
+    )
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
-        sessionManager,
-        networkStateObserver,
-        { httpClient -> AccessTokenApiV0(httpClient) },
-        engine,
-        kaliumLogger
+        sessionManager = sessionManager,
+        networkStateObserver = networkStateObserver,
+        accessTokenApi = { httpClient -> AccessTokenApiV0(httpClient) },
+        engine = engine,
+        kaliumLogger = kaliumLogger
     ) {
 
     override val accessTokenApi: AccessTokenApi get() = AccessTokenApiV0(networkClient.httpClient)
