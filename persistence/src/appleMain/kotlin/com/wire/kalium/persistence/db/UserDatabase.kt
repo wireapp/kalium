@@ -34,7 +34,7 @@ import platform.Foundation.NSURL
 
 sealed interface DatabaseCredentials {
     data class Passphrase(val value: String) : DatabaseCredentials
-    object NotSet : DatabaseCredentials
+    data object NotSet : DatabaseCredentials
 }
 
 // TODO encrypt database using sqlcipher

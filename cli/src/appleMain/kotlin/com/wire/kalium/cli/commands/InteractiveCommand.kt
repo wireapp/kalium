@@ -56,7 +56,7 @@ import platform.posix.tcsetattr
 import platform.posix.termios
 
 sealed class PosixSignal {
-    object WindowChanged : PosixSignal()
+    data object WindowChanged : PosixSignal()
 }
 
 private val signalFlow = MutableSharedFlow<PosixSignal>()

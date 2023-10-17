@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.data.user.UserId
 
 sealed class BroadcastMessageOption {
-    object IgnoreAll : BroadcastMessageOption()
-    object ReportAll : BroadcastMessageOption()
+    data object IgnoreAll : BroadcastMessageOption()
+    data object ReportAll : BroadcastMessageOption()
     data class IgnoreSome(val userIDs: List<UserId>) : BroadcastMessageOption()
     data class ReportSome(val userIDs: List<UserId>) : BroadcastMessageOption()
 }

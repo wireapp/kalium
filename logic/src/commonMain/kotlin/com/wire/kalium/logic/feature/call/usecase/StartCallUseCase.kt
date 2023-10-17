@@ -73,11 +73,11 @@ class StartCallUseCase internal constructor(
         /**
          * Call started successfully
          */
-        object Success : Result
+        data object Success : Result
 
         /**
          * Failed to start a call as Sync is not yet performed
          */
-        object SyncFailure : Result
+        data object SyncFailure : Result
     }
 }

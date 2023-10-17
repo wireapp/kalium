@@ -87,6 +87,6 @@ internal class UpdateConversationReceiptModeUseCaseImpl(
 }
 
 sealed interface ConversationUpdateReceiptModeResult {
-    object Success : ConversationUpdateReceiptModeResult
+    data object Success : ConversationUpdateReceiptModeResult
     data class Failure(val cause: CoreFailure) : ConversationUpdateReceiptModeResult
 }
