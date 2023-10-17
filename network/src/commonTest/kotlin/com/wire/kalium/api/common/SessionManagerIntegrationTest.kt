@@ -230,6 +230,7 @@ class SessionManagerIntegrationTest {
             mockEngine,
             sessionManager.serverConfig(),
             bearerAuthProvider,
+            kaliumLogger,
             false
         )
         val assetApi = AssetApiV0(client)

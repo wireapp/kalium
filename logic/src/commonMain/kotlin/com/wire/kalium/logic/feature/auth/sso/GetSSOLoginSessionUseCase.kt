@@ -32,7 +32,11 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 
 sealed class SSOLoginSessionResult {
-    data class Success(val accountTokens: AccountTokens, val ssoId: SsoId?, val proxyCredentials: ProxyCredentials?) : SSOLoginSessionResult()
+    data class Success(
+        val accountTokens: AccountTokens,
+        val ssoId: SsoId?,
+        val proxyCredentials: ProxyCredentials?
+    ) : SSOLoginSessionResult()
 
     sealed class Failure : SSOLoginSessionResult() {
         object InvalidCookie : Failure()

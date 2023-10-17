@@ -77,5 +77,4 @@ data class AccountTokens(
     val tokenType: String
         get() = accessToken.tokenType
 
-
 }
