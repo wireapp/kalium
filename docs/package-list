@@ -388,6 +388,7 @@ com.wire.kalium.logic.data.publicuser.model
 com.wire.kalium.logic.data.register
 com.wire.kalium.logic.data.service
 com.wire.kalium.logic.data.session
+com.wire.kalium.logic.data.session.token
 com.wire.kalium.logic.data.sso
 com.wire.kalium.logic.data.sync
 com.wire.kalium.logic.data.team
@@ -435,6 +436,7 @@ com.wire.kalium.logic.feature.selfDeletingMessages
 com.wire.kalium.logic.feature.server
 com.wire.kalium.logic.feature.service
 com.wire.kalium.logic.feature.session
+com.wire.kalium.logic.feature.session.token
 com.wire.kalium.logic.feature.sessionreset
 com.wire.kalium.logic.feature.team
 com.wire.kalium.logic.feature.user
