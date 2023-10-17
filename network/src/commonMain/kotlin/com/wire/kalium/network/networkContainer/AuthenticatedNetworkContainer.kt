@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.networkContainer
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.NetworkStateObserver
@@ -114,7 +115,8 @@ interface AuthenticatedNetworkContainer {
             selfUserId: UserId,
             userAgent: String,
             certificatePinning: CertificatePinning,
-            mockEngine: HttpClientEngine?
+            mockEngine: HttpClientEngine?,
+            kaliumLogger: KaliumLogger,
         ): AuthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
@@ -124,14 +126,16 @@ interface AuthenticatedNetworkContainer {
                     networkStateObserver,
                     sessionManager,
                     certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    kaliumLogger,
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
                     networkStateObserver,
                     sessionManager,
                     certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    kaliumLogger,
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
@@ -139,7 +143,8 @@ interface AuthenticatedNetworkContainer {
                     sessionManager,
                     selfUserId,
                     certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    kaliumLogger,
                 )
 
                 3 -> AuthenticatedNetworkContainerV3(
@@ -147,7 +152,8 @@ interface AuthenticatedNetworkContainer {
                     sessionManager,
                     selfUserId,
                     certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    kaliumLogger,
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
@@ -155,7 +161,8 @@ interface AuthenticatedNetworkContainer {
                     sessionManager,
                     selfUserId,
                     certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    kaliumLogger,
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
@@ -163,7 +170,8 @@ interface AuthenticatedNetworkContainer {
                     sessionManager,
                     selfUserId,
                     certificatePinning,
-                    mockEngine
+                    mockEngine,
+                    kaliumLogger,
                 )
 
                 else -> error("Unsupported version: $version")
@@ -184,7 +192,8 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val networkStateObserver: NetworkStateObserver,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
-    private val engine: HttpClientEngine
+    private val engine: HttpClientEngine,
+    private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
 
     override suspend fun clearCachedToken() {
@@ -212,7 +221,8 @@ internal class AuthenticatedHttpClientProviderImpl(
             networkStateObserver,
             engine,
             sessionManager.serverConfig(),
-            bearerAuthProvider
+            bearerAuthProvider,
+            kaliumLogger
         )
     }
     override val websocketClient by lazy {
@@ -220,7 +230,8 @@ internal class AuthenticatedHttpClientProviderImpl(
             networkStateObserver,
             engine,
             bearerAuthProvider,
-            sessionManager.serverConfig()
+            sessionManager.serverConfig(),
+            kaliumLogger
         )
     }
     override val networkClientWithoutCompression by lazy {
@@ -229,6 +240,7 @@ internal class AuthenticatedHttpClientProviderImpl(
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider,
+            kaliumLogger,
             installCompression = false
         )
     }
