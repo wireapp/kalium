@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -1676,7 +1675,8 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         assertEquals(
             allMessages.map { it.content }.toSet(),
-            retrievedMessages.map { it.content }.toSet())
+            retrievedMessages.map { it.content }.toSet()
+        )
     }
 
     @Test
@@ -1717,7 +1717,8 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         assertEquals(
             allMessages.map { it.content }.toSet(),
-            retrievedMessages.map { it.content }.toSet())
+            retrievedMessages.map { it.content }.toSet()
+        )
     }
 
     @Test
@@ -1758,7 +1759,68 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         assertEquals(
             allMessages.map { it.content }.toSet(),
-            retrievedMessages.map { it.content }.toSet())
+            retrievedMessages.map { it.content }.toSet()
+        )
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingConversationMessagesFromSearch_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val userInQuestion = userEntity1
+        val otherUser = userEntity2
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                status = MessageEntity.Status.SENT,
+                senderUserId = otherUser.id,
+                senderName = otherUser.name!!,
+                content = MessageEntityContent.Text("message10"),
+                date = Instant.parse("2022-03-30T15:36:00.000Z")
+            ),
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                status = MessageEntity.Status.SENT,
+                senderUserId = otherUser.id,
+                senderName = otherUser.name!!,
+                content = MessageEntityContent.Text("message11"),
+                date = Instant.parse("2022-03-30T15:36:01.000Z")
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationEntity1.id,
+                senderUserId = otherUser.id,
+                senderName = otherUser.name!!,
+                status = MessageEntity.Status.SENT,
+                content = MessageEntityContent.Text("message20"),
+                date = Instant.parse("2022-03-30T15:36:02.000Z")
+            ),
+            newRegularMessageEntity(
+                "4",
+                conversationId = conversationEntity1.id,
+                senderUserId = otherUser.id,
+                senderName = otherUser.name!!,
+                status = MessageEntity.Status.SENT,
+                content = MessageEntityContent.Text("message21"),
+                date = Instant.parse("2022-03-30T15:36:03.000Z")
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        val result = messageDAO.getConversationMessagesFromSearch(
+            searchQuery = "message1",
+            conversationId = conversationEntity1.id
+        )
+
+        assertEquals(expectedMessages.size, result.size)
+        assertContentEquals(expectedMessages.sortedByDescending { it.date }, result)
     }
 
     private suspend fun insertInitialData() {

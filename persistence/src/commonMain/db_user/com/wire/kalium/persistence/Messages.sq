@@ -511,3 +511,10 @@ moveMessages:
 UPDATE OR REPLACE Message
 SET conversation_id = :to
 WHERE conversation_id = :from;
+
+selectConversationMessagesFromSearch:
+SELECT * FROM MessageDetailsView
+WHERE text LIKE ('%' || :searchQuery || '%')
+AND conversationId = :conversationId
+AND contentType = 'TEXT'
+ORDER BY date DESC;

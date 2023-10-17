@@ -57,7 +57,6 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -472,6 +471,58 @@ class MessageRepositoryTest {
         }
     }
 
+    @Test
+    fun givenConversationWithMessages_whenSearchingForSpecificMessages_thenReturnOnlyMetCriteriaMessages() = runTest {
+        // given
+        val qualifiedIdEntity = TEST_QUALIFIED_ID_ENTITY
+        val conversationId = TEST_CONVERSATION_ID
+        val searchTerm = "message 1"
+
+        val messageEntity1 = TEST_MESSAGE_ENTITY.copy(
+            id = "msg1",
+            conversationId = qualifiedIdEntity,
+            content = MessageEntityContent.Text("message 10")
+        )
+
+        val messages = listOf(messageEntity1)
+
+        val message1 = TEST_MESSAGE.copy(
+            id = "msg1",
+            conversationId = conversationId,
+            content = MessageContent.Text("message 10")
+        )
+
+        val expectedMessages = listOf(message1)
+
+        val (_, messageRepository) = Arrangement()
+            .withMessagesFromSearch(
+                searchTerm = searchTerm,
+                conversationId = qualifiedIdEntity,
+                messages = messages
+            )
+            .withMappedMessageModel(
+                result = message1,
+                param = messageEntity1
+            )
+            .arrange()
+
+        // when
+        val result = messageRepository.getConversationMessagesFromSearch(
+            searchQuery = searchTerm,
+            conversationId = conversationId
+        )
+
+        // then
+        assertEquals(
+            expectedMessages.size,
+            (result as Either.Right).value.size
+        )
+        assertEquals(
+            expectedMessages.first().id,
+            (result as Either.Right).value.first().id
+        )
+    }
+
     private class Arrangement {
 
         @Mock
@@ -511,6 +562,14 @@ class MessageRepositoryTest {
                 .function(messageMapper::fromEntityToMessage)
                 .whenInvokedWith(anything())
                 .then { message }
+            return this
+        }
+
+        fun withMappedMessageModel(result: Message.Regular, param: MessageEntity.Regular): Arrangement {
+            given(messageMapper)
+                .function(messageMapper::fromEntityToMessage)
+                .whenInvokedWith(eq(param))
+                .then { result }
             return this
         }
 
@@ -605,6 +664,17 @@ class MessageRepositoryTest {
                 .thenThrow(throwable)
         }
 
+        fun withMessagesFromSearch(
+            searchTerm: String,
+            conversationId: QualifiedIDEntity,
+            messages: List<MessageEntity>
+        ) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getConversationMessagesFromSearch)
+                .whenInvokedWith(eq(searchTerm), eq(conversationId))
+                .thenReturn(messages)
+        }
+
         fun arrange() = this to MessageDataSource(
             messageApi = messageApi,
             mlsMessageApi = mlsMessageApi,
@@ -668,4 +738,3 @@ class MessageRepositoryTest {
         )
     }
 }
-

@@ -413,6 +413,17 @@ internal class MessageDAOImpl internal constructor(
             .distinctUntilChanged()
     }
 
+    override suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
+        conversationId: QualifiedIDEntity
+    ): List<MessageEntity> = withContext(coroutineContext) {
+        queries.selectConversationMessagesFromSearch(
+            searchQuery,
+            conversationId,
+            mapper::toEntityMessageFromView
+        ).executeAsList()
+    }
+
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
 
 }
