@@ -65,8 +65,12 @@ internal abstract class ApiTest {
 
     private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens?
         get() = {
-            val newSession = TEST_SESSION_MANAGER.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-            newSession?.let {
+            val newSession = TEST_SESSION_MANAGER.updateToken(
+                accessTokenApi = AccessTokenApiV0(client),
+                oldAccessToken = oldTokens!!.accessToken,
+                oldRefreshToken = oldTokens!!.refreshToken
+            )
+            newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
             }
         }

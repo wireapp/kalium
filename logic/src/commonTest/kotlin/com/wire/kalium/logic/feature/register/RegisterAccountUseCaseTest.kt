@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -217,7 +217,7 @@ class RegisterAccountUseCaseTest {
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = null
         )
-        val TEST_AUTH_TOKENS = AuthTokens(
+        val TEST_AUTH_TOKENS = AccountTokens(
             accessToken = "access_token",
             refreshToken = "refresh_token",
             tokenType = "token_type",
