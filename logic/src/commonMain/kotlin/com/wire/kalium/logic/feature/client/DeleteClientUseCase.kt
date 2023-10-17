@@ -70,11 +70,11 @@ internal class DeleteClientUseCaseImpl(
 }
 
 sealed class DeleteClientResult {
-    object Success : DeleteClientResult()
+    data object Success : DeleteClientResult()
 
     sealed class Failure : DeleteClientResult() {
-        object InvalidCredentials : Failure()
-        object PasswordAuthRequired : Failure()
+        data object InvalidCredentials : Failure()
+        data object PasswordAuthRequired : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

@@ -20,6 +20,6 @@ package com.wire.kalium.network.api.base.authenticated.conversation
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 
 sealed class UpdateConversationProtocolResponse {
-    object ProtocolUnchanged : UpdateConversationProtocolResponse()
+    data object ProtocolUnchanged : UpdateConversationProtocolResponse()
     data class ProtocolUpdated(val event: EventContentDTO.Conversation.ProtocolUpdate) : UpdateConversationProtocolResponse()
 }

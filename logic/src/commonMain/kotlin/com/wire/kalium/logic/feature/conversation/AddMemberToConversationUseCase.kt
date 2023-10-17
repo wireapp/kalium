@@ -36,7 +36,7 @@ interface AddMemberToConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
 
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(val cause: CoreFailure) : Result
     }
 }

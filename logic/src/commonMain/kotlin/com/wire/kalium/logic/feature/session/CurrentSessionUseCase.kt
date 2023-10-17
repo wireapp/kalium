@@ -28,7 +28,7 @@ sealed class CurrentSessionResult {
     data class Success(val accountInfo: AccountInfo) : CurrentSessionResult()
 
     sealed class Failure : CurrentSessionResult() {
-        object SessionNotFound : Failure()
+        data object SessionNotFound : Failure()
 
         @Suppress("UNUSED_PARAMETER") // It's used by consumers of Kalium
         class Generic(coreFailure: CoreFailure) : Failure()

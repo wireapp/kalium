@@ -54,6 +54,6 @@ internal class IgnoreConnectionRequestUseCaseImpl(
 }
 
 sealed class IgnoreConnectionRequestUseCaseResult {
-    object Success : IgnoreConnectionRequestUseCaseResult()
-    class Failure(val coreFailure: CoreFailure) : IgnoreConnectionRequestUseCaseResult()
+    data object Success : IgnoreConnectionRequestUseCaseResult()
+    data class Failure(val coreFailure: CoreFailure) : IgnoreConnectionRequestUseCaseResult()
 }
