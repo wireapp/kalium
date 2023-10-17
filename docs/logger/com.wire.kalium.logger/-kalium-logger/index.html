@@ -53,24 +53,24 @@
   <div class="breadcrumbs"><a href="../../index.html">logger</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logger</a><span class="delimiter">/</span><span class="current">KaliumLogger</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Kalium</span><wbr><span><span>Logger</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">KaliumLogger</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">config<span class="token operator">: </span><a href="-config/index.html">KaliumLogger.Config</a><span class="token punctuation">, </span></span><span class="parameter ">logWriters<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>arrayOf()</span></span><span class="token punctuation">)</span></div><p class="paragraph">the logWriter is to create a custom writer other than the existing log writers from kermit to intercept the logs in the android case we use it to write the logs on file</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">KaliumLogger</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">config<span class="token operator">: </span><a href="-config/index.html">KaliumLogger.Config</a><span class="token operator"> = </span>Config.DEFAULT<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><a href="-tag/index.html">KaliumLogger.Tag</a><span class="token operator"> = </span>Tag.Text("KaliumLogger")</span></span><span class="token punctuation">)</span></div><p class="paragraph">Custom logger writer which uses multiplatform KermitLogger underneath to allow to customize log message or tag.</p><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>config</span></span></u></div></span></div><div><div class="title"><p class="paragraph">the <a href="-config/index.html">Config</a> object which contains the configuration of the logger</p></div></div></div></div><div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span><span>tag</span></span></u></div></span></div><div><div class="title"><p class="paragraph">the <a href="-tag/index.html">Tag</a> object which identifies the source of the log message. Can combine multiple data and turns it into structured String used by the KermitLogger so that it can be parsed back again to the <a href="-tag/index.html">Tag</a> object. To know more how it behaves and what are the possibilities, take a look at the <a href="-tag/index.html">Tag</a> sealed class and its subtypes.</p></div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
       <div data-togglable="CONSTRUCTOR">
         <h2 class="">Constructors</h2>
-        <div class="table"><a data-name="258124870%2FConstructors%2F2057396355" anchor-label="KaliumLogger" id="258124870%2FConstructors%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="2078257132%2FConstructors%2F2057396355" anchor-label="KaliumLogger" id="2078257132%2FConstructors%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="-kalium-logger.html"><span>Kalium</span><wbr><span><span>Logger</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="258124870%2FConstructors%2F2057396355"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2078257132%2FConstructors%2F2057396355"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">config<span class="token operator">: </span><a href="-config/index.html">KaliumLogger.Config</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">vararg </span>logWriters<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator"> = </span>arrayOf()</span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">config<span class="token operator">: </span><a href="-config/index.html">KaliumLogger.Config</a><span class="token operator"> = </span>Config.DEFAULT<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span><span class="token string">"KaliumLogger"</span></span></span><span class="token punctuation">)</span></div><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">config<span class="token operator">: </span><a href="-config/index.html">KaliumLogger.Config</a><span class="token operator"> = </span>Config.DEFAULT<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><a href="-tag/index.html">KaliumLogger.Tag</a><span class="token operator"> = </span>Tag.Text("KaliumLogger")</span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -104,26 +104,37 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-config/index.html">Config</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>severity<span class="token operator">: </span><a href="../-kalium-log-level/index.html">KaliumLogLevel</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-config/index.html">Config</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>initialLevel<span class="token operator">: </span><a href="../-kalium-log-level/index.html">KaliumLogLevel</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>initialLogWriterList<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span class="token keyword"></span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt;</span><span class="token operator"> = </span>listOf(platformLogWriter())</span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div data-togglable="PROPERTY">
-        <h2 class="">Properties</h2>
-        <div class="table"><a data-name="-1112751484%2FProperties%2F2057396355" anchor-label="severity" id="-1112751484%2FProperties%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-841714222%2FClasslikes%2F2057396355" anchor-label="Tag" id="-841714222%2FClasslikes%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="severity.html"><span><span>severity</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1112751484%2FProperties%2F2057396355"></span>
+                  <div><a href="-tag/index.html"><span><span>Tag</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-841714222%2FClasslikes%2F2057396355"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">val </span><a href="severity.html">severity</a><span class="token operator">: </span><a href="../-kalium-log-level/index.html">KaliumLogLevel</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-tag/index.html">Tag</a></div><div class="brief "><p class="paragraph">Defined types of tags that can be provided to the <a href="index.html">KaliumLogger</a> as a String text.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1299061482%2FClasslikes%2F2057396355" anchor-label="UserClientData" id="-1299061482%2FClasslikes%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-user-client-data/index.html"><span>User</span><wbr><span>Client</span><wbr><span><span>Data</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1299061482%2FClasslikes%2F2057396355"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-user-client-data/index.html">UserClientData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>userId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>clientId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -132,77 +143,92 @@
       </div>
       <div data-togglable="FUNCTION">
         <h2 class="">Functions</h2>
-        <div class="table"><a data-name="-1879761946%2FFunctions%2F2057396355" anchor-label="d" id="-1879761946%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="1868608075%2FFunctions%2F2057396355" anchor-label="d" id="1868608075%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="d.html"><span><span>d</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1879761946%2FFunctions%2F2057396355"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1868608075%2FFunctions%2F2057396355"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="d.html"><span class="token function">d</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="d.html"><span class="token function">d</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span>this.tag()</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-1249303321%2FFunctions%2F2057396355" anchor-label="e" id="-1249303321%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+<a data-name="1384932748%2FFunctions%2F2057396355" anchor-label="e" id="1384932748%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="e.html"><span><span>e</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1249303321%2FFunctions%2F2057396355"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1384932748%2FFunctions%2F2057396355"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="e.html"><span class="token function">e</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="e.html"><span class="token function">e</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span>this.tag()</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1272531179%2FFunctions%2F2057396355" anchor-label="i" id="1272531179%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+<a data-name="-549768560%2FFunctions%2F2057396355" anchor-label="i" id="-549768560%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="i.html"><span><span>i</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1272531179%2FFunctions%2F2057396355"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-549768560%2FFunctions%2F2057396355"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="i.html"><span class="token function">i</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="i.html"><span class="token function">i</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span>this.tag()</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="878558712%2FFunctions%2F2057396355" anchor-label="v" id="878558712%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+<a data-name="32387137%2FFunctions%2F2057396355" anchor-label="logLevel" id="32387137%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="log-level.html"><span>log</span><wbr><span><span>Level</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="32387137%2FFunctions%2F2057396355"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="log-level.html"><span class="token function">logLevel</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-kalium-log-level/index.html">KaliumLogLevel</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1752386781%2FFunctions%2F2057396355" anchor-label="v" id="1752386781%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="v.html"><span><span>v</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="878558712%2FFunctions%2F2057396355"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1752386781%2FFunctions%2F2057396355"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="v.html"><span class="token function">v</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="v.html"><span class="token function">v</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span>this.tag()</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="1509017337%2FFunctions%2F2057396355" anchor-label="w" id="1509017337%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+<a data-name="1268711454%2FFunctions%2F2057396355" anchor-label="w" id="1268711454%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
                   <div><a href="w.html"><span><span>w</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1509017337%2FFunctions%2F2057396355"></span>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1268711454%2FFunctions%2F2057396355"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="w.html"><span class="token function">w</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="w.html"><span class="token function">w</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">throwable<span class="token operator">: </span><span data-unresolved-link="kotlin/Throwable///PointingToDeclaration/">Throwable</span><span class="token operator">?</span><span class="token operator"> = </span>null<span class="token punctuation">, </span></span><span class="parameter ">tag<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span>this.tag()</span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
                 </div>
               </div>
             </div>
@@ -217,7 +243,22 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="with-feature-id.html"><span class="token function">withFeatureId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">featureId<span class="token operator">: </span><a href="-companion/-application-flow/index.html">KaliumLogger.Companion.ApplicationFlow</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">KaliumLogger</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="with-feature-id.html"><span class="token function">withFeatureId</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">featureId<span class="token operator">: </span><a href="-companion/-application-flow/index.html">KaliumLogger.Companion.ApplicationFlow</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">KaliumLogger</a></div><div class="brief "><p class="paragraph">Creates a new logger with custom tag that replaces the old tag and allows to specify which specific app flow, one of <a href="-companion/-application-flow/index.html">ApplicationFlow</a>, the logs sent by this logger relate to. When the logger already contains <a href="-tag/-user-client-text/index.html">Tag.UserClientText</a> type of logs, then user-related tag data will still be included, and this featureId tag part will be added as a prefix, to keep the standard pattern of the tag: "taguserId|clientId". In this case it will become "featureId:featureNameuserId|clientId". When current type of tag is <a href="-tag/-text/index.html">Tag.Text</a>, then it will just replace it with the new one: "featureId:featureName".</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="866320415%2FFunctions%2F2057396355" anchor-label="withUserDeviceData" id="866320415%2FFunctions%2F2057396355" data-filterable-set=":logger:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logger:dokkaHtmlPartial/commonMain" data-filterable-set=":logger:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="with-user-device-data.html"><span>with</span><wbr><span>User</span><wbr><span>Device</span><wbr><span><span>Data</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="866320415%2FFunctions%2F2057396355"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logger:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword"></span><span class="token keyword">fun </span><a href="with-user-device-data.html"><span class="token function">withUserDeviceData</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">data<span class="token operator">: </span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span class="token keyword"></span><a href="-user-client-data/index.html">KaliumLogger.UserClientData</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="index.html">KaliumLogger</a></div><div class="brief "><p class="paragraph">Creates a new logger with custom tag that replaces the old tag and allows to add user-related data to the tag. When the logger already contains <a href="-tag/-user-client-text/index.html">Tag.UserClientText</a> type of tag, then user-related tag data part will be replaced, and if it contained already some text tag prefix part, then the same prefix will be also included in the new one, to keep the standard pattern of the tag: "taguserId|clientId".</p></div></div></div>
                 </div>
               </div>
             </div>
