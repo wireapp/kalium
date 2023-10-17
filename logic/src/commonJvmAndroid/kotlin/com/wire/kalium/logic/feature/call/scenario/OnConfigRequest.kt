@@ -41,7 +41,17 @@ class OnConfigRequest(
             callRepository.getCallConfigResponse(limit = null)
                 .fold({
                     callingLogger.i("[OnConfigRequest] - Error: $it")
-                    // TODO: Add a better way to handle the Core Failure?
+                    // We can call config_update with an error if there was a connectivity issue
+                    // AVS will eventually ask us again for the config
+                    // TODO(improvement): We can retry it ourselves and improve the app responsiveness.
+                    //                    Maybe add a retry mechanism that listens for the network state
+                    //                    Caches the config string and exposes a "invalidate" function
+                    //                    That we could call when AVS requests new config.
+                    calling.wcall_config_update(
+                        inst = inst,
+                        error = 1,
+                        jsonString = ""
+                    )
                 }, { config ->
                     calling.wcall_config_update(
                         inst = inst,
