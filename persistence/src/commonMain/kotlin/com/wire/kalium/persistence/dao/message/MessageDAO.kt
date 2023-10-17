@@ -135,5 +135,10 @@ interface MessageDAO {
 
     suspend fun moveMessages(from: ConversationIDEntity, to: ConversationIDEntity)
 
+    suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
+        conversationId: QualifiedIDEntity
+    ): List<MessageEntity>
+
     val platformExtensions: MessageExtensions
 }

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -42,7 +42,7 @@ internal interface RegisterAccountRepository {
         name: String,
         password: String,
         cookieLabel: String?
-    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
+    ): Either<NetworkFailure, Pair<SsoId?, AccountTokens>>
 
     @Suppress("LongParameterList")
     suspend fun registerTeamWithEmail(
@@ -53,7 +53,7 @@ internal interface RegisterAccountRepository {
         teamName: String,
         teamIcon: String,
         cookieLabel: String?
-    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>>
+    ): Either<NetworkFailure, Pair<SsoId?, AccountTokens>>
 }
 
 internal class RegisterAccountDataSource internal constructor(
@@ -76,7 +76,7 @@ internal class RegisterAccountDataSource internal constructor(
         name: String,
         password: String,
         cookieLabel: String?
-    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
+    ): Either<NetworkFailure, Pair<SsoId?, AccountTokens>> =
         register(
             RegisterApi.RegisterParam.PersonalAccount(
                 email = email,
@@ -95,7 +95,7 @@ internal class RegisterAccountDataSource internal constructor(
         teamName: String,
         teamIcon: String,
         cookieLabel: String?
-    ): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
+    ): Either<NetworkFailure, Pair<SsoId?, AccountTokens>> =
         register(
             RegisterApi.RegisterParam.TeamAccount(
                 email = email,
@@ -115,7 +115,7 @@ internal class RegisterAccountDataSource internal constructor(
     private suspend fun activateUser(param: RegisterApi.ActivationParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { registerApi.activate(param) }
 
-    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SsoId?, AuthTokens>> =
+    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SsoId?, AccountTokens>> =
         wrapApiRequest { registerApi.register(param) }.map {
             Pair(idMapper.toSsoId(it.first.ssoID), sessionMapper.fromSessionDTO(it.second))
         }

@@ -15,16 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.session.token
 
-package com.wire.kalium.network.api.base.authenticated
+import kotlin.jvm.JvmInline
 
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
-import com.wire.kalium.network.utils.NetworkResponse
+internal data class AccessTokenRefreshResult(
+    val accessToken: AccessToken,
+    val refreshToken: RefreshToken
+)
 
-interface AccessTokenApi {
-    suspend fun getToken(
-        refreshToken: String,
-        clientId: String? = null
-    ): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>>
-}
+/**
+ * Represents an access token, which is used for authentication and authorization purposes.
+ *
+ * @property value The value of the access token.
+ * @property tokenType The type of the access token. _e.g._ "Bearer"
+ */
+data class AccessToken(
+    val value: String,
+    val tokenType: String
+)
+
+@JvmInline
+value class RefreshToken(val value: String)

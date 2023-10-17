@@ -37,7 +37,7 @@ import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
     data class Success(
-        val authData: AuthTokens,
+        val authData: AccountTokens,
         val ssoID: SsoId?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
