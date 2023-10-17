@@ -48,6 +48,6 @@ internal class PersistScreenshotCensoringConfigUseCaseImpl(
 }
 
 sealed class PersistScreenshotCensoringConfigResult {
-    object Success : PersistScreenshotCensoringConfigResult()
+    data object Success : PersistScreenshotCensoringConfigResult()
     data class Failure(val cause: CoreFailure) : PersistScreenshotCensoringConfigResult()
 }

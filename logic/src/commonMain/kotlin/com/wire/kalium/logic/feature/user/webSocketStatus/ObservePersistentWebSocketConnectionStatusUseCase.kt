@@ -38,7 +38,7 @@ interface ObservePersistentWebSocketConnectionStatusUseCase {
     sealed class Result {
         class Success(val persistentWebSocketStatusListFlow: Flow<List<PersistentWebSocketStatus>>) : Result()
         sealed class Failure : Result() {
-            object StorageFailure : Failure()
+            data object StorageFailure : Failure()
             data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }

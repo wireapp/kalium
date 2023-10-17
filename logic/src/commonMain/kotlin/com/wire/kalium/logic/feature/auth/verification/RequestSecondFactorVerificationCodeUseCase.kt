@@ -69,7 +69,7 @@ class RequestSecondFactorVerificationCodeUseCase(
     })
 
     interface Result {
-        object Success : Result
+        data object Success : Result
 
         interface Failure : Result {
             data class Generic(val cause: CoreFailure) : Result
@@ -80,7 +80,7 @@ class RequestSecondFactorVerificationCodeUseCase(
              * From a UI point of view, you might be able to proceed and request
              * the 2FA code to the user anyway
              */
-            object TooManyRequests : Result
+            data object TooManyRequests : Result
         }
     }
 }

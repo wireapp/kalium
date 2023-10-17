@@ -32,5 +32,5 @@ sealed class InputAction {
         val command: Command
     ) : InputAction()
 
-    object Quit : InputAction()
+    data object Quit : InputAction()
 }

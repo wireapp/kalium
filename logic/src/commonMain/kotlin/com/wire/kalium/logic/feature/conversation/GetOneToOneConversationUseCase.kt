@@ -47,7 +47,7 @@ class GetOneToOneConversationUseCase internal constructor(
 
     sealed class Result {
         data class Success(val conversation: Conversation) : Result()
-        object Failure : Result()
+        data object Failure : Result()
     }
 
 }

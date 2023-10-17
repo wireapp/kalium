@@ -77,7 +77,7 @@ sealed interface ConferenceCallingResult {
     /**
      * Eligible to start conference/one on one calls
      */
-    object Enabled : ConferenceCallingResult
+    data object Enabled : ConferenceCallingResult
 
     /**
      * Not eligible to start a conference/one on one calls
