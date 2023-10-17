@@ -22,6 +22,14 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
+/**
+ * Represents an access token received from an authentication server.
+ *
+ * @property userId The ID of the user associated with the access token.
+ * @property value The access token value.
+ * @property expiresIn The duration in seconds until the token expires.
+ * @property tokenType The type of the token. _e.g._ "Bearer"
+ */
 @Serializable
 data class AccessTokenDTO(
     @SerialName("user") val userId: NonQualifiedUserId,

@@ -22,16 +22,17 @@ import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respondError
@@ -49,23 +50,34 @@ import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
+/**
+ * Tests how our [SessionManager] integrates with the internals of Ktor.
+ * For example, making sure that when we throw an exception during token refresh,
+ * Ktor will catch it, and we will be able to return a [NetworkResponse.Error] with the exception.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
-class SessionManagerTest {
+class SessionManagerIntegrationTest {
 
     @Test
     fun givenClientWithAuth_whenServerReturns401_thenShouldTryAgainWithNewToken() = runTest {
         val sessionManager = createFakeSessionManager()
 
         val loadToken: suspend () -> BearerTokens? = {
-            val session = sessionManager.session() ?: error("missing user session")
+            val session = sessionManager.session()
             BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
         }
 
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
-            val newSession = sessionManager.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-            newSession?.let {
+            val newSession = sessionManager.updateToken(
+                accessTokenApi = AccessTokenApiV0(client),
+                oldAccessToken = oldTokens!!.accessToken,
+                oldRefreshToken = oldTokens!!.refreshToken
+            )
+            newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
             }
         }
@@ -74,7 +86,7 @@ class SessionManagerTest {
 
         var callCount = 0
         var didFail = false
-        val mockEngine = MockEngine() {
+        val mockEngine = MockEngine {
             callCount++
             // Fail only the first time, so the test can
             // proceed when sessionManager is called again
@@ -102,20 +114,24 @@ class SessionManagerTest {
         val sessionManager = createFakeSessionManager()
 
         val loadToken: suspend () -> BearerTokens? = {
-            val session = sessionManager.session() ?: error("missing user session")
+            val session = sessionManager.session()
             BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
         }
 
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
-            val newSession = sessionManager.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-            newSession?.let {
+            val newSession = sessionManager.updateToken(
+                accessTokenApi = AccessTokenApiV0(client),
+                oldAccessToken = oldTokens!!.accessToken,
+                oldRefreshToken = oldTokens!!.refreshToken
+            )
+            newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
             }
         }
 
         val bearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)
 
-        val mockEngine = MockEngine() {
+        val mockEngine = MockEngine {
             respondOk()
         }
 
@@ -137,13 +153,17 @@ class SessionManagerTest {
         val sessionManager = createFakeSessionManager()
 
         val loadToken: suspend () -> BearerTokens? = {
-            val session = sessionManager.session() ?: error("missing user session")
+            val session = sessionManager.session()
             BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
         }
 
         val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
-            val newSession = sessionManager.updateToken(AccessTokenApiV0(client), oldTokens!!.accessToken, oldTokens!!.refreshToken)
-            newSession?.let {
+            val newSession = sessionManager.updateToken(
+                AccessTokenApiV0(client),
+                oldTokens!!.accessToken,
+                oldTokens!!.refreshToken
+            )
+            newSession.let {
                 BearerTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
             }
         }
@@ -152,7 +172,7 @@ class SessionManagerTest {
 
         var callCount = 0
         var didFail = false
-        val mockEngine = MockEngine() {
+        val mockEngine = MockEngine {
             callCount++
             // Fail only the first time, so the test can
             // proceed when sessionManager is called again
@@ -176,6 +196,48 @@ class SessionManagerTest {
         assertEquals(2, callCount)
     }
 
+    @Test
+    fun givenRefreshTokenThrows_whenServerSignalTokenRefreshIsNeeded_thenShouldReturnFailure() = runTest {
+        KaliumUserAgentProvider.setUserAgent("KaliumTest")
+        val sessionManager = createFakeSessionManager()
+
+        val loadToken: suspend () -> BearerTokens? = {
+            val session = sessionManager.session()
+            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+        }
+
+        val expectedCause = Exception("Refresh token failed")
+        var isThrowing = false
+        val refreshToken: suspend RefreshTokensParams.() -> BearerTokens? = {
+            isThrowing = true
+            throw expectedCause
+        }
+
+        val bearerAuthProvider = BearerAuthProvider(refreshToken, loadToken, { true }, null)
+
+        val mockEngine = MockEngine {
+            respondError(status = HttpStatusCode.Unauthorized)
+        }
+
+        val client = AuthenticatedNetworkClient(
+            mockEngine,
+            sessionManager.serverConfig(),
+            bearerAuthProvider,
+            false
+        )
+        val assetApi = AssetApiV0(client)
+        val kaliumFileSystem: FileSystem = FakeFileSystem()
+        val tempPath = "some-dummy-path".toPath()
+        val tempOutputSink = kaliumFileSystem.sink(tempPath)
+
+        val result = assetApi.downloadAsset("asset_id", "asset_domain", null, tempFileSink = tempOutputSink)
+        assertIs<NetworkResponse.Error>(result)
+        val exception = result.kException
+        assertIs<KaliumException.GenericError>(exception)
+        assertEquals(expectedCause.message, exception.cause.message)
+        assertTrue(isThrowing)
+    }
+
     private companion object {
         const val UPDATED_ACCESS_TOKEN = "new access token"
     }
@@ -187,10 +249,7 @@ class SessionManagerTest {
             accessTokenApi: AccessTokenApi,
             oldAccessToken: String,
             oldRefreshToken: String
-        ): SessionDTO? = testCredentials.copy(accessToken = UPDATED_ACCESS_TOKEN)
-
-        override suspend fun updateLoginSession(newAccessTokeDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
-            testCredentials
+        ): SessionDTO = testCredentials.copy(accessToken = UPDATED_ACCESS_TOKEN)
 
         override fun proxyCredentials(): ProxyCredentialsDTO? = ProxyCredentialsDTO("username", "password")
     }

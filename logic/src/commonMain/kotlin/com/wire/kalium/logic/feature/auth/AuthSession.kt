@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.session.token.AccessToken
+import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import kotlin.contracts.ExperimentalContracts
@@ -55,10 +57,24 @@ data class Account(
     val ssoId: SsoId?
 )
 
-data class AuthTokens(
+/**
+ * Holds information about the user ID, and the associated user id.
+ */
+data class AccountTokens(
     val userId: UserId,
-    val accessToken: String,
-    val refreshToken: String,
-    val tokenType: String,
+    val accessToken: AccessToken,
+    val refreshToken: RefreshToken,
     val cookieLabel: String?
-)
+) {
+    constructor(
+        userId: UserId,
+        accessToken: String,
+        refreshToken: String,
+        tokenType: String,
+        cookieLabel: String?
+    ) : this(userId, AccessToken(accessToken, tokenType), RefreshToken(refreshToken), cookieLabel)
+
+    val tokenType: String
+        get() = accessToken.tokenType
+
+}

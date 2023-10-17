@@ -106,6 +106,8 @@ import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.service.ServiceDataSource
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.data.session.token.AccessTokenRepository
+import com.wire.kalium.logic.data.session.token.AccessTokenRepositoryImpl
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -212,6 +214,10 @@ import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactoryImpl
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -427,8 +433,28 @@ class UserSessionScope internal constructor(
 
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
+    private val accessTokenRepository: AccessTokenRepository
+        get() = AccessTokenRepositoryImpl(
+            userId = userId,
+            accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
+            authTokenStorage = globalPreferences.authTokenStorage
+        )
+
+    private val accessTokenRefresherFactory: AccessTokenRefresherFactory
+        get() = AccessTokenRefresherFactoryImpl(
+            userId = userId,
+            tokenStorage = globalPreferences.authTokenStorage
+        )
+
+    private val accessTokenRefresher: AccessTokenRefresher
+        get() = AccessTokenRefresherImpl(
+            userId = userId,
+            repository = accessTokenRepository
+        )
+
     private val sessionManager: SessionManager = SessionManagerImpl(
         sessionRepository = globalScope.sessionRepository,
+        accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(logoutReason) }
@@ -878,12 +904,11 @@ class UserSessionScope internal constructor(
     }
 
     private val upgradeCurrentSessionUseCase
-        get() =
-            UpgradeCurrentSessionUseCaseImpl(
-                authenticatedNetworkContainer,
-                authenticatedNetworkContainer.accessTokenApi,
-                sessionManager
-            )
+        get() = UpgradeCurrentSessionUseCaseImpl(
+            authenticatedNetworkContainer,
+            accessTokenRefresher,
+            sessionManager
+        )
 
     @Suppress("MagicNumber")
     private val apiMigrations = listOf(
