@@ -163,7 +163,7 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     private val loadToken: suspend () -> BearerTokens? = {
         val session = sessionManager.session() ?: error("missing user session")
-        BearerTokens(accessToken = "Invalid", refreshToken = session.refreshToken)
+        BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
     }
 
     private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens = {
