@@ -135,9 +135,9 @@ sealed class MessageContent {
             val assetMimeType: String
         ) : Content
 
-        object Deleted : Content
+        data object Deleted : Content
 
-        object Invalid : Content
+        data object Invalid : Content
     }
 
     data class Asset(val value: AssetContent) : Regular()
@@ -244,7 +244,7 @@ sealed class MessageContent {
 
     data class TeamMemberRemoved(val userName: String) : System()
 
-    object MissedCall : System()
+    data object MissedCall : System()
 
     data class Reaction(
         val messageId: String,
@@ -274,7 +274,7 @@ sealed class MessageContent {
     ) : System()
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
-    object Ignored : Signaling() // messages that aren't processed in any way
+    data object Ignored : Signaling() // messages that aren't processed in any way
 
     data class FailedDecryption(
         val encodedData: ByteArray? = null,
@@ -283,16 +283,16 @@ sealed class MessageContent {
         val clientId: ClientId? = null
     ) : Regular()
 
-    object MLSWrongEpochWarning : System()
+    data object MLSWrongEpochWarning : System()
 
-    object ClientAction : Signaling()
+    data object ClientAction : Signaling()
 
-    object CryptoSessionReset : System()
+    data object CryptoSessionReset : System()
 
-    object HistoryLost : System()
-    object ConversationCreated : System()
-    object ConversationDegradedMLS : System()
-    object ConversationDegradedProteus : System()
+    data object HistoryLost : System()
+    data object ConversationCreated : System()
+    data object ConversationDegradedMLS : System()
+    data object ConversationDegradedProteus : System()
     sealed class FederationStopped : System() {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
@@ -407,8 +407,8 @@ sealed interface MessagePreviewContent {
         val otherUserIdList: List<UserId>
     ) : MessagePreviewContent
 
-    object CryptoSessionReset : MessagePreviewContent
+    data object CryptoSessionReset : MessagePreviewContent
 
-    object Unknown : MessagePreviewContent
+    data object Unknown : MessagePreviewContent
 
 }

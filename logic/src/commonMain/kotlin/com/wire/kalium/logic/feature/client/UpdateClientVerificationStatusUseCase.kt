@@ -41,7 +41,7 @@ class UpdateClientVerificationStatusUseCase internal constructor(
         )
 
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(val error: StorageFailure) : Result
     }
 }

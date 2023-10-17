@@ -79,7 +79,7 @@ class UpdateConversationAccessRoleUseCase internal constructor(
     }
 
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(val cause: CoreFailure) : Result
     }
 }

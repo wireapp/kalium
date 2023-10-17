@@ -54,9 +54,9 @@ class VerifyActivationCodeUseCase internal constructor(
 }
 
 sealed class VerifyActivationCodeResult {
-    object Success : VerifyActivationCodeResult()
+    data object Success : VerifyActivationCodeResult()
     sealed class Failure : VerifyActivationCodeResult() {
-        object InvalidCode : Failure()
+        data object InvalidCode : Failure()
         class Generic(val failure: NetworkFailure) : Failure()
     }
 }

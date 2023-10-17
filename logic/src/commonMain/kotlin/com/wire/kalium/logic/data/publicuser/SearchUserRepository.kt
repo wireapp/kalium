@@ -82,7 +82,7 @@ data class SearchUsersOptions(
 }
 
 sealed class ConversationMemberExcludedOptions {
-    object None : ConversationMemberExcludedOptions()
+    data object None : ConversationMemberExcludedOptions()
     data class ConversationExcluded(val conversationId: QualifiedID) : ConversationMemberExcludedOptions()
 }
 

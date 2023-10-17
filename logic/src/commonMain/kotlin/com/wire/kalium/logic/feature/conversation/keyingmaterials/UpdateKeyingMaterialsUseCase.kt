@@ -27,7 +27,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 
 sealed class UpdateKeyingMaterialsResult {
 
-    object Success : UpdateKeyingMaterialsResult()
+    data object Success : UpdateKeyingMaterialsResult()
     class Failure(val failure: CoreFailure) : UpdateKeyingMaterialsResult()
 
 }

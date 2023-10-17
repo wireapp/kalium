@@ -23,8 +23,8 @@ data class FileSharingStatus(
     val isStatusChanged: Boolean?
 ) {
     sealed interface Value {
-        object Disabled : Value
-        object EnabledAll : Value
+        data object Disabled : Value
+        data object EnabledAll : Value
         data class EnabledSome(val allowedType: List<String>) : Value
     }
 }

@@ -33,7 +33,7 @@ internal sealed interface MessageUnpackResult {
      * The [Event] was successfully processed by the unpacker, and didn't result in
      * any [ApplicationMessage], only protocol-specific signaling/handshake.
      */
-    object HandshakeMessage : MessageUnpackResult
+    data object HandshakeMessage : MessageUnpackResult
 
     /**
      * The processed [Event] was successfully processed and resulted in a [ApplicationMessage].

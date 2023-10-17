@@ -54,6 +54,6 @@ internal class BlockUserUseCaseImpl(
 }
 
 sealed class BlockUserResult {
-    object Success : BlockUserResult()
+    data object Success : BlockUserResult()
     class Failure(val coreFailure: CoreFailure) : BlockUserResult()
 }

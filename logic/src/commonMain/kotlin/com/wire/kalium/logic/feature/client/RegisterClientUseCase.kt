@@ -59,21 +59,21 @@ sealed class RegisterClientResult {
             /**
              * The team has enabled 2FA but has not provided a 2FA code.
              */
-            object Missing2FA : InvalidCredentials()
+            data object Missing2FA : InvalidCredentials()
 
             /**
              * The team has enabled 2FA but the user has provided an invalid or expired 2FA code.
              */
-            object Invalid2FA : InvalidCredentials()
+            data object Invalid2FA : InvalidCredentials()
 
             /**
              * The password is invalid.
              */
-            object InvalidPassword : InvalidCredentials()
+            data object InvalidPassword : InvalidCredentials()
         }
 
-        object TooManyClients : Failure()
-        object PasswordAuthRequired : Failure()
+        data object TooManyClients : Failure()
+        data object PasswordAuthRequired : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

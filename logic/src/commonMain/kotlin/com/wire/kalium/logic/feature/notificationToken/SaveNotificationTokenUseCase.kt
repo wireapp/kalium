@@ -66,7 +66,7 @@ internal class SaveNotificationTokenUseCaseImpl(
 }
 
 sealed class Result {
-    object Success : Result()
+    data object Success : Result()
     sealed class Failure : Result() {
         class Generic(val failure: StorageFailure) : Failure()
     }

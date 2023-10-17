@@ -30,10 +30,10 @@ import com.wire.kalium.network.exceptions.isHandleExists
 import com.wire.kalium.network.exceptions.isInvalidHandle
 
 sealed class SetUserHandleResult {
-    object Success : SetUserHandleResult()
+    data object Success : SetUserHandleResult()
     sealed class Failure : SetUserHandleResult() {
-        object InvalidHandle : Failure()
-        object HandleExists : Failure()
+        data object InvalidHandle : Failure()
+        data object HandleExists : Failure()
         data class Generic(val error: CoreFailure) : Failure()
     }
 }

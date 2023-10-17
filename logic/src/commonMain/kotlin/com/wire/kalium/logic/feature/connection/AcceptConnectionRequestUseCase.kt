@@ -62,6 +62,6 @@ internal class AcceptConnectionRequestUseCaseImpl(
 }
 
 sealed class AcceptConnectionRequestUseCaseResult {
-    object Success : AcceptConnectionRequestUseCaseResult()
+    data object Success : AcceptConnectionRequestUseCaseResult()
     class Failure(val coreFailure: CoreFailure) : AcceptConnectionRequestUseCaseResult()
 }

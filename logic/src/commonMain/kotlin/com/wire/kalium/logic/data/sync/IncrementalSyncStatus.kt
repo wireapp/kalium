@@ -22,15 +22,15 @@ import com.wire.kalium.logic.CoreFailure
 
 sealed interface IncrementalSyncStatus {
 
-    object Pending : IncrementalSyncStatus {
+    data object Pending : IncrementalSyncStatus {
         override fun toString(): String = "PENDING"
     }
 
-    object FetchingPendingEvents : IncrementalSyncStatus {
+    data object FetchingPendingEvents : IncrementalSyncStatus {
         override fun toString() = "FETCHING_PENDING_EVENTS"
     }
 
-    object Live : IncrementalSyncStatus {
+    data object Live : IncrementalSyncStatus {
         override fun toString() = "LIVE"
     }
 

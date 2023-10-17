@@ -29,7 +29,7 @@ interface UpdateMessageTimerUseCase {
     suspend operator fun invoke(conversationId: ConversationId, messageTimer: Long?): Result
 
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(val cause: CoreFailure) : Result
     }
 }

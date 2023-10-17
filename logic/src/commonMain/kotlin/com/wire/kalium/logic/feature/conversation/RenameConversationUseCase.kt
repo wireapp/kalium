@@ -66,6 +66,6 @@ internal class RenameConversationUseCaseImpl(
 }
 
 sealed class RenamingResult {
-    object Success : RenamingResult()
+    data object Success : RenamingResult()
     data class Failure(val coreFailure: CoreFailure) : RenamingResult()
 }
