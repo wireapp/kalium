@@ -102,24 +102,26 @@ class SessionManagerImpl internal constructor(
                 if (it is NetworkFailure.ServerMiscommunication) {
                     onServerMissCommunication(it)
                 }
+            }.map { refreshResult ->
+                SessionDTO(
+                    userId = userId.toApi(),
+                    tokenType = refreshResult.accessToken.tokenType,
+                    accessToken = refreshResult.accessToken.value,
+                    refreshToken = refreshResult.refreshToken.value,
+                    cookieLabel = refreshResult.cookieLabel
+                )
+            }.fold({
+                val message = "Failure during auth token refresh. " +
+                        "A network request is failing because of this. " +
+                        "Future requests should reattempt to refresh the token. Failure='$it'"
+                kaliumLogger.w(message)
+                throw FailureToRefreshTokenException(message)
+            }, {
+                it
+            }).also {
+                session = it
             }
-        }.map { refreshResult ->
-            SessionDTO(
-                userId = userId.toApi(),
-                tokenType = refreshResult.accessToken.tokenType,
-                accessToken = refreshResult.accessToken.value,
-                refreshToken = refreshResult.refreshToken.value,
-                cookieLabel = null
-            )
-        }.fold({
-            val message = "Failure during auth token refresh. " +
-                    "A network request is failing because of this. " +
-                    "Future requests should reattempt to refresh the token. Failure='$it'"
-            kaliumLogger.w(message)
-            throw FailureToRefreshTokenException(message)
-        }, {
-            it
-        })
+        }
     }
 
     private suspend fun onServerMissCommunication(serverMiscommunication: NetworkFailure.ServerMiscommunication) {
