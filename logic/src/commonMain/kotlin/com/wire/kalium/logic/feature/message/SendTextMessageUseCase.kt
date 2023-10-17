@@ -35,7 +35,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -61,19 +60,6 @@ class SendTextMessageUseCase internal constructor(
     private val scope: CoroutineScope
 ) {
 
-    suspend operator fun invoke(
-        conversationReference: String,
-        text: String,
-        mentions: List<MessageMention> = emptyList(),
-        quotedMessageId: String? = null
-    ): Either<CoreFailure, Unit> = invoke(
-        ConversationId(conversationReference, conversationReference),
-        text,
-        mentions,
-        quotedMessageId
-    )
-
-    @DelicateKaliumApi("This method is not stable and can be changed in the future")
     suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
