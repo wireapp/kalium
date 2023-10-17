@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.kmmSettings
 
 import com.wire.kalium.persistence.client.AuthTokenStorage
+import com.wire.kalium.persistence.client.AuthTokenStorageImpl
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -37,7 +38,7 @@ actual class GlobalPrefProvider(
         )
 
     actual val authTokenStorage: AuthTokenStorage
-        get() = AuthTokenStorage(kaliumPref)
+        get() = AuthTokenStorageImpl(kaliumPref)
     actual val passphraseStorage: PassphraseStorage
         get() = PassphraseStorageImpl(kaliumPref)
     actual val tokenStorage: TokenStorage
