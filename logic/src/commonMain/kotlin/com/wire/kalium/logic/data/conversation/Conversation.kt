@@ -195,7 +195,7 @@ data class Conversation(
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
     sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo() {
+        data object Proteus : ProtocolInfo() {
             override fun name() = "Proteus"
         }
 
@@ -218,8 +218,8 @@ data class Conversation(
 
     data class Member(val id: UserId, val role: Role) {
         sealed class Role {
-            object Member : Role()
-            object Admin : Role()
+            data object Member : Role()
+            data object Admin : Role()
             data class Unknown(val name: String) : Role()
 
             override fun toString(): String =

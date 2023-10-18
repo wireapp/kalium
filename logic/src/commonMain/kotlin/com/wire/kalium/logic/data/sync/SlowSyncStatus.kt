@@ -22,9 +22,9 @@ import com.wire.kalium.logic.CoreFailure
 
 sealed interface SlowSyncStatus {
 
-    object Pending : SlowSyncStatus
+    data object Pending : SlowSyncStatus
 
-    object Complete : SlowSyncStatus
+    data object Complete : SlowSyncStatus
 
     data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
 

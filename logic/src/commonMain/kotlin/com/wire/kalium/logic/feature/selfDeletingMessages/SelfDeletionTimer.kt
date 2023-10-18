@@ -28,7 +28,7 @@ sealed interface SelfDeletionTimer {
     /**
      * Represents a self deletion timer that is currently disabled
      */
-    object Disabled : SelfDeletionTimer {
+    data object Disabled : SelfDeletionTimer {
         override val duration: Duration? = null
     }
 
@@ -99,8 +99,8 @@ data class TeamSettingsSelfDeletionStatus(
 )
 
 sealed interface TeamSelfDeleteTimer {
-    object Disabled : TeamSelfDeleteTimer
-    object Enabled : TeamSelfDeleteTimer
+    data object Disabled : TeamSelfDeleteTimer
+    data object Enabled : TeamSelfDeleteTimer
     data class Enforced(val enforcedDuration: Duration) : TeamSelfDeleteTimer
 
     fun toLogMap(eventDescription: String): Map<String, Any?> = mapOf(

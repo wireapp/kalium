@@ -63,6 +63,6 @@ internal class UpdateConversationMemberRoleUseCaseImpl(
 }
 
 sealed class UpdateConversationMemberRoleResult {
-    object Success : UpdateConversationMemberRoleResult()
-    object Failure : UpdateConversationMemberRoleResult()
+    data object Success : UpdateConversationMemberRoleResult()
+    data object Failure : UpdateConversationMemberRoleResult()
 }

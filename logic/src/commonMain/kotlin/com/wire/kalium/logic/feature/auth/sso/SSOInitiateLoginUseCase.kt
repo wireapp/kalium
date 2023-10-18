@@ -31,9 +31,9 @@ sealed class SSOInitiateLoginResult {
     data class Success(val requestUrl: String) : SSOInitiateLoginResult()
 
     sealed class Failure : SSOInitiateLoginResult() {
-        object InvalidCodeFormat : Failure()
-        object InvalidCode : Failure()
-        object InvalidRedirect : Failure()
+        data object InvalidCodeFormat : Failure()
+        data object InvalidCode : Failure()
+        data object InvalidRedirect : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

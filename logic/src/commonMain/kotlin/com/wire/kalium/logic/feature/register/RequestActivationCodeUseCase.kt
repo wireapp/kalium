@@ -57,12 +57,12 @@ class RequestActivationCodeUseCase internal constructor(
 }
 
 sealed class RequestActivationCodeResult {
-    object Success : RequestActivationCodeResult()
+    data object Success : RequestActivationCodeResult()
     sealed class Failure : RequestActivationCodeResult() {
-        object InvalidEmail : Failure()
-        object BlacklistedEmail : Failure()
-        object AlreadyInUse : Failure()
-        object DomainBlocked : Failure()
+        data object InvalidEmail : Failure()
+        data object BlacklistedEmail : Failure()
+        data object AlreadyInUse : Failure()
+        data object DomainBlocked : Failure()
         class Generic(val failure: NetworkFailure) : Failure()
     }
 }

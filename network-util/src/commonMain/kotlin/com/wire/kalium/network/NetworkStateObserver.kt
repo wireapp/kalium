@@ -47,7 +47,7 @@ interface NetworkStateObserver {
 }
 
 sealed class NetworkState {
-    object ConnectedWithInternet : NetworkState()
-    object ConnectedWithoutInternet : NetworkState()
-    object NotConnected : NetworkState()
+    data object ConnectedWithInternet : NetworkState()
+    data object ConnectedWithoutInternet : NetworkState()
+    data object NotConnected : NetworkState()
 }

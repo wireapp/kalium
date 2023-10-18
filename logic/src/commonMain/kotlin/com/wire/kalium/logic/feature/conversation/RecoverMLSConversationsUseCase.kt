@@ -34,7 +34,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 
 sealed class RecoverMLSConversationsResult {
-    object Success : RecoverMLSConversationsResult()
+    data object Success : RecoverMLSConversationsResult()
     class Failure(val failure: CoreFailure) : RecoverMLSConversationsResult()
 }
 

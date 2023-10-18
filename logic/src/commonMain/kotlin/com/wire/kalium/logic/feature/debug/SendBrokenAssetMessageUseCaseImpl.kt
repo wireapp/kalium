@@ -213,7 +213,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
 }
 
 sealed class SendBrokenAssetMessageResult {
-    object Success : SendBrokenAssetMessageResult()
+    data object Success : SendBrokenAssetMessageResult()
     class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
 }
 

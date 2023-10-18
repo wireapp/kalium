@@ -167,11 +167,11 @@ sealed class SelfDeletionTimerEntity {
 
     @Serializable
     @SerialName("disabled")
-    object Disabled : SelfDeletionTimerEntity()
+    data object Disabled : SelfDeletionTimerEntity()
 
     @Serializable
     @SerialName("enabled")
-    object Enabled : SelfDeletionTimerEntity()
+    data object Enabled : SelfDeletionTimerEntity()
 
     @Serializable
     @SerialName("enforced")

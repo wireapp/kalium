@@ -158,9 +158,9 @@ sealed class NetworkFailure : CoreFailure {
 
 interface MLSFailure : CoreFailure {
 
-    object WrongEpoch : MLSFailure
+    data object WrongEpoch : MLSFailure
 
-    object ConversationDoesNotSupportMLS : MLSFailure
+    data object ConversationDoesNotSupportMLS : MLSFailure
 
     class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
@@ -178,13 +178,13 @@ class ProteusFailure(internal val proteusException: ProteusException) : CoreFail
 }
 
 sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
-    object GenericEncryptionError : EncryptionFailure()
-    object GenericDecryptionError : EncryptionFailure()
-    object WrongAssetHash : EncryptionFailure()
+    data object GenericEncryptionError : EncryptionFailure()
+    data object GenericDecryptionError : EncryptionFailure()
+    data object WrongAssetHash : EncryptionFailure()
 }
 
 sealed class StorageFailure : CoreFailure {
-    object DataNotFound : StorageFailure()
+    data object DataNotFound : StorageFailure()
     data class Generic(val rootCause: Throwable) : StorageFailure()
 }
 

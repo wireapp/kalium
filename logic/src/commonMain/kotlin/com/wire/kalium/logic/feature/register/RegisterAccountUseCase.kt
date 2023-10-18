@@ -145,13 +145,13 @@ sealed class RegisterResult {
     ) : RegisterResult()
 
     sealed class Failure : RegisterResult() {
-        object EmailDomainBlocked : Failure()
-        object AccountAlreadyExists : Failure()
-        object InvalidActivationCode : Failure()
-        object UserCreationRestricted : Failure()
-        object TeamMembersLimitReached : Failure()
-        object BlackListed : Failure()
-        object InvalidEmail : Failure()
+        data object EmailDomainBlocked : Failure()
+        data object AccountAlreadyExists : Failure()
+        data object InvalidActivationCode : Failure()
+        data object UserCreationRestricted : Failure()
+        data object TeamMembersLimitReached : Failure()
+        data object BlackListed : Failure()
+        data object InvalidEmail : Failure()
         class Generic(val failure: CoreFailure) : Failure()
     }
 }
