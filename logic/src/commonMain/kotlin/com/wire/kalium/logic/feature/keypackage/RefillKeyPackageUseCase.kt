@@ -30,7 +30,7 @@ import com.wire.kalium.logic.kaliumLogger
 sealed class RefillKeyPackagesResult {
 
     data object Success : RefillKeyPackagesResult()
-    data class Failure(val failure: CoreFailure) : RefillKeyPackagesResult()
+    class Failure(val failure: CoreFailure) : RefillKeyPackagesResult()
 
 }
 

@@ -57,5 +57,5 @@ internal class CancelConnectionRequestUseCaseImpl(
 
 sealed class CancelConnectionRequestUseCaseResult {
     data object Success : CancelConnectionRequestUseCaseResult()
-    data class Failure(val coreFailure: CoreFailure) : CancelConnectionRequestUseCaseResult()
+    class Failure(val coreFailure: CoreFailure) : CancelConnectionRequestUseCaseResult()
 }

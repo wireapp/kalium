@@ -214,7 +214,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
 
 sealed class SendBrokenAssetMessageResult {
     data object Success : SendBrokenAssetMessageResult()
-    data class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
+    class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
 }
 
 private data class AssetMessageMetadata(

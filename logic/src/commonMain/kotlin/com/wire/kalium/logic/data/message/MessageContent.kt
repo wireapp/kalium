@@ -294,14 +294,10 @@ sealed class MessageContent {
 
     data object CryptoSessionReset : System()
 
-    data object HistoryLostProtocolChanged : System()
-
     data object HistoryLost : System()
     data object ConversationCreated : System()
     data object ConversationDegradedMLS : System()
-    data object ConversationVerifiedMLS : System()
     data object ConversationDegradedProteus : System()
-    data object ConversationVerifiedProteus : System()
     sealed class FederationStopped : System() {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()

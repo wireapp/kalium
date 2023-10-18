@@ -207,8 +207,8 @@ data class Conversation(
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
-    sealed interface ProtocolInfo {
-        data object Proteus : ProtocolInfo {
+    sealed class ProtocolInfo {
+        data object Proteus : ProtocolInfo() {
             override fun name() = "Proteus"
         }
 

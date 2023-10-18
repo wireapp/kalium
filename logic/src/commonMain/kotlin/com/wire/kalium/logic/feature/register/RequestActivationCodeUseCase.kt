@@ -63,6 +63,6 @@ sealed class RequestActivationCodeResult {
         data object BlacklistedEmail : Failure()
         data object AlreadyInUse : Failure()
         data object DomainBlocked : Failure()
-        data class Generic(val failure: NetworkFailure) : Failure()
+        class Generic(val failure: NetworkFailure) : Failure()
     }
 }

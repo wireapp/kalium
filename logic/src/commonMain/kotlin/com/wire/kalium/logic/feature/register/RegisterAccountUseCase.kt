@@ -152,6 +152,6 @@ sealed class RegisterResult {
         data object TeamMembersLimitReached : Failure()
         data object BlackListed : Failure()
         data object InvalidEmail : Failure()
-        data class Generic(val failure: CoreFailure) : Failure()
+        class Generic(val failure: CoreFailure) : Failure()
     }
 }

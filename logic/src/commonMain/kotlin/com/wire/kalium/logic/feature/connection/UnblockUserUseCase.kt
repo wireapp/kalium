@@ -54,5 +54,5 @@ internal class UnblockUserUseCaseImpl(
 
 sealed class UnblockUserResult {
     data object Success : UnblockUserResult()
-    data class Failure(val coreFailure: CoreFailure) : UnblockUserResult()
+    class Failure(val coreFailure: CoreFailure) : UnblockUserResult()
 }

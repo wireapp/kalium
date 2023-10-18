@@ -326,14 +326,10 @@ sealed class MessageEntityContent {
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
-    data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
-    data object HistoryLostProtocolChanged : System()
     data object HistoryLost : System()
     data object ConversationCreated : System()
     data object ConversationDegradedMLS : System()
-    data object ConversationVerifiedMLS : System()
     data object ConversationDegradedProteus : System()
-    data object ConversationVerifiedProteus : System()
     data class Federation(val domainList: List<String>, val type: MessageEntity.FederationType) : System()
 }
 

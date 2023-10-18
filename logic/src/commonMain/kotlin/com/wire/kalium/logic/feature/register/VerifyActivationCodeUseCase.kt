@@ -57,6 +57,6 @@ sealed class VerifyActivationCodeResult {
     data object Success : VerifyActivationCodeResult()
     sealed class Failure : VerifyActivationCodeResult() {
         data object InvalidCode : Failure()
-        data class Generic(val failure: NetworkFailure) : Failure()
+        class Generic(val failure: NetworkFailure) : Failure()
     }
 }

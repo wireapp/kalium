@@ -171,16 +171,6 @@ interface MLSFailure : CoreFailure {
 
     data object WrongEpoch : MLSFailure
 
-    data object DuplicateMessage : MLSFailure
-
-    data object BufferedFutureMessage : MLSFailure
-
-    data object SelfCommitIgnored : MLSFailure
-
-    data object UnmergedPendingGroup : MLSFailure
-
-    data object ConversationAlreadyExists : MLSFailure
-
     data object ConversationDoesNotSupportMLS : MLSFailure
 
     class Generic(internal val exception: Exception) : MLSFailure {
