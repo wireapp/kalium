@@ -35,7 +35,8 @@ interface ObserveFileSharingStatusUseCase {
     operator fun invoke(): Flow<FileSharingStatus>
 }
 
-internal class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: UserConfigRepository) : ObserveFileSharingStatusUseCase {
+internal class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: UserConfigRepository) :
+    ObserveFileSharingStatusUseCase {
     override operator fun invoke(): Flow<FileSharingStatus> =
         userConfigRepository.isFileSharingEnabledFlow().map { fileSharingStatusFlow ->
             fileSharingStatusFlow.fold({
@@ -44,6 +45,7 @@ internal class ObserveFileSharingStatusUseCaseImpl(private val userConfigReposit
                         kaliumLogger.e("Data not found in ObserveFileSharingStatusUseCase")
                         FileSharingStatus(FileSharingStatus.Value.Disabled, false)
                     }
+
                     is StorageFailure.Generic -> {
                         kaliumLogger.e("Storage Error : ${it.rootCause} in ObserveFileSharingStatusUseCase", it.rootCause)
                         FileSharingStatus(FileSharingStatus.Value.Disabled, false)
