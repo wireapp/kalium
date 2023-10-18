@@ -30,6 +30,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
@@ -173,12 +174,14 @@ class ConversationEventReceiverTest {
     fun givenMLSWelcomeEvent_whenOnEventInvoked_thenMlsWelcomeHandlerShouldBeCalled() = runTest {
         val mlsWelcomeEvent = TestEvent.newMLSWelcomeEvent()
 
-        val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMLSWelcomeEventSucceeded()
+            .arrange()
 
         val result = featureConfigEventReceiver.onEvent(mlsWelcomeEvent)
 
-        verify(arrangement.mLSWelcomeEventHandler)
-            .suspendFunction(arrangement.mLSWelcomeEventHandler::handle)
+        verify(arrangement.mlsWelcomeEventHandler)
+            .suspendFunction(arrangement.mlsWelcomeEventHandler::handle)
             .with(eq(mlsWelcomeEvent))
             .wasInvoked(once)
         result.shouldSucceed()
@@ -371,7 +374,7 @@ class ConversationEventReceiverTest {
         val renamedConversationEventHandler = mock(classOf<RenamedConversationEventHandler>())
 
         @Mock
-        val mLSWelcomeEventHandler = mock(classOf<MLSWelcomeEventHandler>())
+        val mlsWelcomeEventHandler = mock(classOf<MLSWelcomeEventHandler>())
 
         @Mock
         val memberChangeEventHandler = mock(classOf<MemberChangeEventHandler>())
@@ -394,6 +397,9 @@ class ConversationEventReceiverTest {
         @Mock
         val typingIndicatorHandler = mock(classOf<TypingIndicatorHandler>())
 
+        @Mock
+        val protocolUpdateEventHandler = mock(classOf<ProtocolUpdateEventHandler>())
+
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
             newConversationHandler = newConversationEventHandler,
@@ -401,13 +407,14 @@ class ConversationEventReceiverTest {
             memberJoinHandler = memberJoinEventHandler,
             memberLeaveHandler = memberLeaveEventHandler,
             memberChangeHandler = memberChangeEventHandler,
-            mlsWelcomeHandler = mLSWelcomeEventHandler,
+            mlsWelcomeHandler = mlsWelcomeEventHandler,
             renamedConversationHandler = renamedConversationEventHandler,
             receiptModeUpdateEventHandler = receiptModeUpdateEventHandler,
             conversationMessageTimerEventHandler = conversationMessageTimerEventHandler,
             codeUpdatedHandler = codeUpdatedHandler,
             codeDeletedHandler = codeDeletedHandler,
-            typingIndicatorHandler = typingIndicatorHandler
+            typingIndicatorHandler = typingIndicatorHandler,
+            protocolUpdateEventHandler = protocolUpdateEventHandler
         )
 
         fun arrange(block: Arrangement.() -> Unit = {}) = apply(block).run {
@@ -440,6 +447,13 @@ class ConversationEventReceiverTest {
                 .suspendFunction(typingIndicatorHandler::handle)
                 .whenInvokedWith(any())
                 .thenReturn(result)
+        }
+
+        fun withMLSWelcomeEventSucceeded() = apply {
+            given(mlsWelcomeEventHandler)
+                .suspendFunction(mlsWelcomeEventHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
     }
 

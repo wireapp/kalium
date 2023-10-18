@@ -20,6 +20,8 @@ package com.wire.kalium.logic.featureFlags
 
 import com.wire.kalium.logic.util.KaliumMockEngine
 import com.wire.kalium.network.NetworkStateObserver
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 
 data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
@@ -40,10 +42,12 @@ data class KaliumConfigs(
     val isWebSocketEnabledByDefault: Boolean = false,
     val certPinningConfig: Map<String, List<String>> = emptyMap(),
     val kaliumMockEngine: KaliumMockEngine? = null,
-    val mockNetworkStateObserver: NetworkStateObserver? = null
+    val mockNetworkStateObserver: NetworkStateObserver? = null,
+    // Interval between attempts to advance the proteus to MLS migration
+    val mlsMigrationInterval: Duration = 24.hours
 )
 
 sealed interface BuildFileRestrictionState {
-    object NoRestriction : BuildFileRestrictionState
+    data object NoRestriction : BuildFileRestrictionState
     data class AllowSome(val allowedType: List<String>) : BuildFileRestrictionState
 }

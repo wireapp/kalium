@@ -28,6 +28,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.MemberChangeEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.NewConversationEventHandler
+import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
@@ -53,7 +54,8 @@ internal class ConversationEventReceiverImpl(
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
     private val codeUpdatedHandler: CodeUpdatedHandler,
     private val codeDeletedHandler: CodeDeletedHandler,
-    private val typingIndicatorHandler: TypingIndicatorHandler
+    private val typingIndicatorHandler: TypingIndicatorHandler,
+    private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
 ) : ConversationEventReceiver {
     override suspend fun onEvent(event: Event.Conversation): Either<CoreFailure, Unit> {
         // TODO: Make sure errors are accounted for by each handler.
@@ -114,6 +116,9 @@ internal class ConversationEventReceiverImpl(
             is Event.Conversation.CodeDeleted -> codeDeletedHandler.handle(event)
             is Event.Conversation.CodeUpdated -> codeUpdatedHandler.handle(event)
             is Event.Conversation.TypingIndicator -> typingIndicatorHandler.handle(event)
+            is Event.Conversation.ConversationProtocol -> {
+                protocolUpdateEventHandler.handle(event)
+            }
         }
     }
 }

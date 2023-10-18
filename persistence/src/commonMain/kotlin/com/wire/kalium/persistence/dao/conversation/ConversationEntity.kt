@@ -54,7 +54,7 @@ data class ConversationEntity(
 
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
 
-    enum class Protocol { PROTEUS, MLS }
+    enum class Protocol { PROTEUS, MLS, MIXED }
     enum class ReceiptMode { DISABLED, ENABLED }
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
 
@@ -67,7 +67,8 @@ data class ConversationEntity(
         MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
         MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
         MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
-        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7),
+        MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519(61489);
 
         companion object {
             fun fromTag(tag: Int?): CipherSuite =
@@ -77,14 +78,29 @@ data class ConversationEntity(
 
     enum class MutedStatus { ALL_ALLOWED, ONLY_MENTIONS_AND_REPLIES_ALLOWED, MENTIONS_MUTED, ALL_MUTED }
 
-    sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo()
+    sealed interface ProtocolInfo {
+        data object Proteus : ProtocolInfo
         data class MLS(
-            val groupId: String,
-            val groupState: GroupState,
-            val epoch: ULong,
-            val keyingMaterialLastUpdate: Instant,
-            val cipherSuite: CipherSuite
-        ) : ProtocolInfo()
+            override val groupId: String,
+            override val groupState: ConversationEntity.GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: ConversationEntity.CipherSuite
+        ) : MLSCapable
+        data class Mixed(
+            override val groupId: String,
+            override val groupState: ConversationEntity.GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: ConversationEntity.CipherSuite
+        ) : MLSCapable
+
+        sealed interface MLSCapable : ProtocolInfo {
+            val groupId: String
+            val groupState: ConversationEntity.GroupState
+            val epoch: ULong
+            val keyingMaterialLastUpdate: Instant
+            val cipherSuite: ConversationEntity.CipherSuite
+        }
     }
 }

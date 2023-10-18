@@ -150,7 +150,10 @@ interface MessageRepository {
         messageOption: BroadcastMessageOption
     ): Either<CoreFailure, String>
 
-    suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, MessageSent>
+    suspend fun sendMLSMessage(
+        conversationId: ConversationId,
+        message: MLSMessageApi.Message
+    ): Either<CoreFailure, MessageSent>
 
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
@@ -210,6 +213,16 @@ interface MessageRepository {
         messageUuid: String,
         usersWithFailedDeliveryList: List<UserId>
     ): Either<CoreFailure, Unit>
+
+    suspend fun moveMessagesToAnotherConversation(
+        originalConversation: ConversationId,
+        targetConversation: ConversationId
+    ): Either<StorageFailure, Unit>
+
+    suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, List<Message.Standalone>>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -296,12 +309,18 @@ class MessageDataSource(
             messageDAO.deleteMessage(messageUuid, conversationId.toDao())
         }
 
-    override suspend fun markMessageAsDeleted(messageUuid: String, conversationId: ConversationId): Either<StorageFailure, Unit> =
+    override suspend fun markMessageAsDeleted(
+        messageUuid: String,
+        conversationId: ConversationId
+    ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             messageDAO.markMessageAsDeleted(id = messageUuid, conversationsId = conversationId.toDao())
         }
 
-    override suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message> =
+    override suspend fun getMessageById(
+        conversationId: ConversationId,
+        messageUuid: String
+    ): Either<StorageFailure, Message> =
         wrapStorageRequest {
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
         }.map(messageMapper::fromEntityToMessage)
@@ -316,7 +335,11 @@ class MessageDataSource(
         visibility.map { it.toEntityVisibility() }
     ).map { messageList -> messageList.map(messageMapper::fromEntityToMessage) }
 
-    override suspend fun updateMessageStatus(messageStatus: MessageEntity.Status, conversationId: ConversationId, messageUuid: String) =
+    override suspend fun updateMessageStatus(
+        messageStatus: MessageEntity.Status,
+        conversationId: ConversationId,
+        messageUuid: String
+    ) =
         wrapStorageRequest {
             messageDAO.updateMessageStatus(
                 status = messageStatus,
@@ -369,11 +392,12 @@ class MessageDataSource(
         envelope: MessageEnvelope,
         messageTarget: MessageTarget
     ): Either<CoreFailure, MessageSent> {
-        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
-            recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
-                clientPayload.clientId.value to clientPayload.payload.data
+        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> =
+            envelope.recipients.associate { recipientEntry ->
+                recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
+                    clientPayload.clientId.value to clientPayload.payload.data
+                }
             }
-        }
 
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
@@ -419,11 +443,12 @@ class MessageDataSource(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
     ): Either<CoreFailure, String> {
-        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> = envelope.recipients.associate { recipientEntry ->
-            recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
-                clientPayload.clientId.value to clientPayload.payload.data
+        val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> =
+            envelope.recipients.associate { recipientEntry ->
+                recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
+                    clientPayload.clientId.value to clientPayload.payload.data
+                }
             }
-        }
 
         val option = when (messageOption) {
             is BroadcastMessageOption.IgnoreSome -> MessageApi.QualifiedMessageOption.IgnoreSome(messageOption.userIDs.map { it.toApi() })
@@ -458,17 +483,21 @@ class MessageDataSource(
         })
     }
 
-    override suspend fun sendMLSMessage(conversationId: ConversationId, message: MLSMessageApi.Message): Either<CoreFailure, MessageSent> =
+    override suspend fun sendMLSMessage(
+        conversationId: ConversationId,
+        message: MLSMessageApi.Message
+    ): Either<CoreFailure, MessageSent> =
         wrapApiRequest {
             mlsMessageApi.sendMessage(message)
         }.flatMap { response ->
             Either.Right(sendMessagePartialFailureMapper.fromMlsDTO(response))
         }
 
-    override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> = wrapStorageRequest {
-        messageDAO.getAllPendingMessagesFromUser(senderUserId.toDao())
-            .map(messageMapper::fromEntityToMessage)
-    }
+    override suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>> =
+        wrapStorageRequest {
+            messageDAO.getAllPendingMessagesFromUser(senderUserId.toDao())
+                .map(messageMapper::fromEntityToMessage)
+        }
 
     override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
@@ -540,9 +569,10 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message>> = wrapStorageRequest {
-        messageDAO.getEphemeralMessagesMarkedForDeletion().map(messageMapper::fromEntityToMessage)
-    }
+    override suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message>> =
+        wrapStorageRequest {
+            messageDAO.getEphemeralMessagesMarkedForDeletion().map(messageMapper::fromEntityToMessage)
+        }
 
     override suspend fun markSelfDeletionStartDate(
         conversationId: ConversationId,
@@ -602,4 +632,23 @@ class MessageDataSource(
         )
     }
 
+    override suspend fun moveMessagesToAnotherConversation(
+        originalConversation: ConversationId,
+        targetConversation: ConversationId
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        messageDAO.moveMessages(
+            from = originalConversation.toDao(),
+            to = targetConversation.toDao()
+        )
+    }
+
+    override suspend fun getConversationMessagesFromSearch(
+        searchQuery: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, List<Message.Standalone>> = wrapStorageRequest {
+        messageDAO.getConversationMessagesFromSearch(
+            searchQuery = searchQuery,
+            conversationId = conversationId.toDao()
+        ).map(messageMapper::fromEntityToMessage)
+    }
 }

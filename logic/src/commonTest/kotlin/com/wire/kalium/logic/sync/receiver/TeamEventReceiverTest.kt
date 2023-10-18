@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.team.TeamRole
@@ -76,7 +76,7 @@ class TeamEventReceiverTest {
         val event = TestEvent.teamMemberLeave()
         val (arrangement, eventReceiver) = Arrangement()
             .withMemberLeaveSuccess()
-            .withConversationIdsByUserId(listOf(TestConversation.ID))
+            .withConversationsByUserId(listOf(TestConversation.CONVERSATION))
             .withPersistMessageSuccess()
             .arrange()
 
@@ -141,7 +141,8 @@ class TeamEventReceiverTest {
         }
 
         fun withUpdateTeamSuccess() = apply {
-            given(teamRepository).suspendFunction(teamRepository::updateTeam).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+            given(teamRepository).suspendFunction(teamRepository::updateTeam).whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withMemberJoinSuccess() = apply {
@@ -161,8 +162,8 @@ class TeamEventReceiverTest {
                 .whenInvokedWith(any(), any(), any()).thenReturn(Either.Right(Unit))
         }
 
-        fun withConversationIdsByUserId(conversationIds: List<ConversationId>) = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::getConversationIdsByUserId)
+        fun withConversationsByUserId(conversationIds: List<Conversation>) = apply {
+            given(conversationRepository).suspendFunction(conversationRepository::getConversationsByUserId)
                 .whenInvokedWith(any()).thenReturn(Either.Right(conversationIds))
         }
 

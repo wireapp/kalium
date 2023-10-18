@@ -22,26 +22,26 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isUnknownClient
+import com.wire.kalium.network.session.FailureToRefreshTokenException
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
@@ -55,6 +55,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("LongParameterList")
 class SessionManagerImpl internal constructor(
     private val sessionRepository: SessionRepository,
+    private val accessTokenRefresherFactory: AccessTokenRefresherFactory,
     private val userId: QualifiedID,
     private val tokenStorage: AuthTokenStorage,
     private val logout: suspend (LogoutReason) -> Unit,
@@ -88,41 +89,38 @@ class SessionManagerImpl internal constructor(
             .onSuccess { serverConfig = it }
             .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it })
         serverConfig!!
-    }!!
+    }
 
-    override suspend fun updateLoginSession(newAccessTokenDTO: AccessTokenDTO, newRefreshTokenDTO: RefreshTokenDTO?): SessionDTO? =
-        wrapStorageRequest {
-            tokenStorage.updateToken(
-                userId = userId.toDao(),
-                accessToken = newAccessTokenDTO.value,
-                tokenType = newAccessTokenDTO.tokenType,
-                refreshToken = newRefreshTokenDTO?.value
-            )
-        }.map {
-            sessionMapper.fromEntityToSessionDTO(it)
-        }.onSuccess {
-            session = it
-        }.nullableFold({
-            null
-        }, {
-            it
-        })
-
-    override suspend fun updateToken(accessTokenApi: AccessTokenApi, oldAccessToken: String, oldRefreshToken: String): SessionDTO? {
+    override suspend fun updateToken(
+        accessTokenApi: AccessTokenApi,
+        oldAccessToken: String,
+        oldRefreshToken: String
+    ): SessionDTO {
+        val refresher = accessTokenRefresherFactory.create(accessTokenApi)
         return withContext(coroutineContext) {
-            wrapApiRequest { accessTokenApi.getToken(oldRefreshToken) }.nullableFold({
-                when (it) {
-                    is NetworkFailure.NoNetworkConnection -> null
-                    is NetworkFailure.ProxyError -> null
-                    is NetworkFailure.FederatedBackendFailure -> null
-                    is NetworkFailure.ServerMiscommunication -> {
-                        onServerMissCommunication(it)
-                        null
-                    }
+            refresher.refreshTokenAndPersistSession(oldRefreshToken).onFailure {
+                if (it is NetworkFailure.ServerMiscommunication) {
+                    onServerMissCommunication(it)
                 }
+            }.map { refreshResult ->
+                SessionDTO(
+                    userId = userId.toApi(),
+                    tokenType = refreshResult.accessToken.tokenType,
+                    accessToken = refreshResult.accessToken.value,
+                    refreshToken = refreshResult.refreshToken.value,
+                    cookieLabel = refreshResult.cookieLabel
+                )
+            }.fold({
+                val message = "Failure during auth token refresh. " +
+                        "A network request is failing because of this. " +
+                        "Future requests should reattempt to refresh the token. Failure='$it'"
+                kaliumLogger.w(message)
+                throw FailureToRefreshTokenException(message)
             }, {
-                updateLoginSession(it.first, it.second)
-            })
+                it
+            }).also {
+                session = it
+            }
         }
     }
 

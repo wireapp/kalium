@@ -29,13 +29,13 @@ interface MessageApi {
          * All missing recipients clients will be ignored
          * The message will be sent regardless if the recipients list is correct or not
          */
-        object IgnoreAll : QualifiedMessageOption()
+        data object IgnoreAll : QualifiedMessageOption()
 
         /**
          * All missing recipients clients will be reported http error code 412
          * The message will not be sent unless the list is correct
          */
-        object ReportAll : QualifiedMessageOption()
+        data object ReportAll : QualifiedMessageOption()
         data class IgnoreSome(val userIDs: List<UserId>) : QualifiedMessageOption()
         data class ReportSome(val userIDs: List<UserId>) : QualifiedMessageOption()
     }

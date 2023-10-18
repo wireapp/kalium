@@ -21,6 +21,7 @@ package com.wire.kalium.api.v0.user.self
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.model.UserDTOJson
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful
@@ -104,8 +105,6 @@ internal class SelfApiV0Test : ApiTest() {
         }
     }
 
-
-
     @Test
     fun givenUpdateEmailFailure_whenChangingSelfEmail_thenFailureIsReturned() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
@@ -125,8 +124,14 @@ internal class SelfApiV0Test : ApiTest() {
         }
     }
 
+    @Test
+    fun givenRequest_whenUpdatingSupportedProtocols_thenRequestShouldFail() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(responseBody = "", statusCode = HttpStatusCode.OK)
+        val selfApi = SelfApiV0(networkClient, TEST_SESSION_MANAGER)
+        val response = selfApi.updateSupportedProtocols(listOf(SupportedProtocolDTO.PROTEUS))
 
-
+        assertFalse(response.isSuccessful())
+    }
 
     private companion object {
         const val PATH_SELF = "/self"

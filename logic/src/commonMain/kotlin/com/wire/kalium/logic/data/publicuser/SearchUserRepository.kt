@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -82,7 +82,7 @@ data class SearchUsersOptions(
 }
 
 sealed class ConversationMemberExcludedOptions {
-    object None : ConversationMemberExcludedOptions()
+    data object None : ConversationMemberExcludedOptions()
     data class ConversationExcluded(val conversationId: QualifiedID) : ConversationMemberExcludedOptions()
 }
 
@@ -92,9 +92,8 @@ internal class SearchUserRepositoryImpl(
     private val metadataDAO: MetadataDAO,
     private val userDetailsApi: UserDetailsApi,
     private val userSearchAPiWrapper: UserSearchApiWrapper,
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
+    private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
@@ -159,16 +158,7 @@ internal class SearchUserRepositoryImpl(
                 val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
                     val selfUser = getSelfUser()
                     userProfileDTOList.map { userProfileDTO ->
-                        publicUserMapper.fromUserProfileDtoToOtherUser(
-                            userDetailResponse = userProfileDTO,
-                            userType = userTypeMapper.fromTeamAndDomain(
-                                otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = selfUser.teamId?.value,
-                                otherUserTeamId = userProfileDTO.teamId,
-                                selfUserDomain = selfUser.id.domain,
-                                isService = userProfileDTO.service != null,
-                            )
-                        )
+                        userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
                     }
                 }
                 UserSearchResult(otherUserList)
@@ -202,7 +192,7 @@ internal class SearchUserRepositoryImpl(
         }
 
         return listFlow.map {
-            UserSearchResult(it.map(publicUserMapper::fromUserDetailsEntityToOtherUser))
+            UserSearchResult(it.map(userMapper::fromUserDetailsEntityToOtherUser))
         }
     }
 

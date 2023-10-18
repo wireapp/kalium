@@ -33,7 +33,7 @@ enum class ReceiptMode(val value: Int) {
     DISABLED(0),
     ENABLED(1);
 
-    object ReceiptModeAsIntSerializer : KSerializer<ReceiptMode> {
+    data object ReceiptModeAsIntSerializer : KSerializer<ReceiptMode> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("ReceiptMode", PrimitiveKind.INT).nullable
 
         override fun serialize(encoder: Encoder, value: ReceiptMode) {

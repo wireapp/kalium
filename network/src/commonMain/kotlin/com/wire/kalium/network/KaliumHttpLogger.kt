@@ -19,6 +19,7 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.utils.obfuscatePath
 import com.wire.kalium.network.utils.obfuscatedJsonMessage
 import com.wire.kalium.util.serialization.toJsonElement
@@ -40,7 +41,8 @@ import kotlinx.coroutines.Job
 
 internal class KaliumHttpLogger(
     private val level: LogLevel,
-    private val logger: Logger
+    private val logger: Logger,
+    private val kaliumLogger: KaliumLogger,
 ) {
     private val requestLog = mutableMapOf<String, Any>()
     private val responseLog = mutableMapOf<String, Any>()

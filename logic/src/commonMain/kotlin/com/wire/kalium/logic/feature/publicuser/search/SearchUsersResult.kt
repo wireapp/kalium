@@ -24,8 +24,8 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 sealed class SearchUsersResult {
     data class Success(val userSearchResult: UserSearchResult) : SearchUsersResult()
     sealed class Failure : SearchUsersResult() {
-        object InvalidQuery : Failure()
-        object InvalidRequest : Failure()
+        data object InvalidQuery : Failure()
+        data object InvalidRequest : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

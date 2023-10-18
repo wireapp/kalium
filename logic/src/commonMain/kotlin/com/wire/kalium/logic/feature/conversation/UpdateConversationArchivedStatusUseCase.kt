@@ -90,6 +90,6 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
 }
 
 sealed class ArchiveStatusUpdateResult {
-    object Success : ArchiveStatusUpdateResult()
-    object Failure : ArchiveStatusUpdateResult()
+    data object Success : ArchiveStatusUpdateResult()
+    data object Failure : ArchiveStatusUpdateResult()
 }

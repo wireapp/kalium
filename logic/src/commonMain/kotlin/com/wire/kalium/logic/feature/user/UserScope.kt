@@ -82,8 +82,9 @@ class UserScope internal constructor(
     private val userPropertyRepository: UserPropertyRepository,
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
+    private val e2EIRepository: E2EIRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
-    private val e2EIRepository: E2EIRepository
+    private val updateSupportedProtocolsUseCase: UpdateSupportedProtocolsUseCase,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -155,4 +156,6 @@ class UserScope internal constructor(
     val getAssetSizeLimit: GetAssetSizeLimitUseCase get() = GetAssetSizeLimitUseCaseImpl(isSelfATeamMember)
 
     val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
+
+    val updateSupportedProtocols: UpdateSupportedProtocolsUseCase get() = updateSupportedProtocolsUseCase
 }

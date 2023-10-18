@@ -39,8 +39,8 @@ import com.wire.kalium.logic.kaliumLogger
 interface CheckSystemIntegrityUseCase {
 
     sealed class Result {
-        object Success : Result()
-        object Failed : Result()
+        data object Success : Result()
+        data object Failed : Result()
     }
 
     suspend fun invoke(): Result

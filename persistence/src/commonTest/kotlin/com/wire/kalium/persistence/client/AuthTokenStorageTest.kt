@@ -37,7 +37,7 @@ class AuthTokenStorageTest {
     @BeforeTest
     fun setup() {
         mockSettings.clear()
-        authTokenStorage = AuthTokenStorage(kaliumPreferences)
+        authTokenStorage = AuthTokenStorageImpl(kaliumPreferences)
     }
 
     @Test
@@ -68,7 +68,6 @@ class AuthTokenStorageTest {
 
         assertFails {
             authTokenStorage.updateToken(expected.userId, "access_token", "token_type", "refresh_token")
-
         }
     }
 

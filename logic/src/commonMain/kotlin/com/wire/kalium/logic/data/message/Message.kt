@@ -305,6 +305,10 @@ sealed interface Message {
                     typeKey to "conversationMightLostHistory"
                 )
 
+                MessageContent.HistoryLostProtocolChanged -> mutableMapOf(
+                    typeKey to "conversationMightLostHistoryProtocolChanged"
+                )
+
                 is MessageContent.ConversationMessageTimerChanged -> mutableMapOf(
                     typeKey to "conversationMessageTimerChanged"
                 )
@@ -336,8 +340,13 @@ sealed interface Message {
                 is MessageContent.FederationStopped.ConnectionRemoved -> mutableMapOf(
                     typeKey to "federationConnectionRemoved"
                 )
+
                 is MessageContent.FederationStopped.Removed -> mutableMapOf(
                     typeKey to "federationRemoved"
+                )
+
+                is MessageContent.ConversationProtocolChanged -> mutableMapOf(
+                    typeKey to "conversationProtocolChanged"
                 )
             }
 
@@ -398,7 +407,7 @@ sealed interface Message {
     }
 
     sealed class EditStatus {
-        object NotEdited : EditStatus()
+        data object NotEdited : EditStatus()
         data class Edited(val lastTimeStamp: String) : EditStatus()
 
         override fun toString(): String = when (this) {
@@ -429,7 +438,7 @@ sealed interface Message {
     ) {
 
         sealed class SelfDeletionStatus {
-            object NotStarted : SelfDeletionStatus()
+            data object NotStarted : SelfDeletionStatus()
 
             data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
 
@@ -590,7 +599,7 @@ sealed class DeliveryStatus {
         val recipientsFailedDelivery: List<UserId>
     ) : DeliveryStatus()
 
-    object CompleteDelivery : DeliveryStatus()
+    data object CompleteDelivery : DeliveryStatus()
 
     fun toLogMap(): Map<String, String> = when (this) {
         is PartialDelivery -> mutableMapOf(

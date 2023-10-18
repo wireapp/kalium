@@ -27,11 +27,11 @@ import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpacker
-import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -50,6 +50,7 @@ import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class JoinExistingMLSConversationUseCaseTest {
@@ -109,7 +110,7 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     @Test
-    fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishGroup() =
+    fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishMlsGroup() =
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
@@ -127,7 +128,7 @@ class JoinExistingMLSConversationUseCaseTest {
         }
 
     @Test
-    fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishGroup() =
+    fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
                 .withIsMLSSupported(true)
@@ -141,6 +142,26 @@ class JoinExistingMLSConversationUseCaseTest {
             verify(arrangement.mlsConversationRepository)
                 .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
                 .with(eq(Arrangement.GROUP_ID_SELF), eq(emptyList()))
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenOneOnOneConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
+        runTest {
+            val members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION)
+                .withGetConversationMembersSuccessful(members)
+                .withEstablishMLSGroupSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.id).shouldSucceed()
+
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+                .with(eq(Arrangement.GROUP_ID_ONE_ON_ONE), eq(members))
                 .wasInvoked(once)
         }
 
@@ -200,16 +221,12 @@ class JoinExistingMLSConversationUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
-        @Mock
-        val mlsMessageUnpacker = mock(classOf<MLSMessageUnpacker>())
-
         fun arrange() = this to JoinExistingMLSConversationUseCaseImpl(
             featureSupport,
             conversationApi,
             clientRepository,
             conversationRepository,
-            mlsConversationRepository,
-            mlsMessageUnpacker
+            mlsConversationRepository
         )
 
         @Suppress("MaxLineLength")
@@ -226,6 +243,13 @@ class JoinExistingMLSConversationUseCaseTest {
                 .suspendFunction(conversationRepository::fetchConversation)
                 .whenInvokedWith(anything())
                 .then { Either.Right(Unit) }
+        }
+
+        fun withGetConversationMembersSuccessful(members: List<UserId>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationMembers)
+                .whenInvokedWith(anything())
+                .then { Either.Right(members) }
         }
 
         fun withEstablishMLSGroupSuccessful() = apply {
@@ -270,13 +294,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 .thenReturn(Either.Right(result))
         }
 
-        fun withUnpackMlsBundleSuccessful() = apply {
-            given(mlsMessageUnpacker)
-                .suspendFunction(mlsMessageUnpacker::unpackMlsBundle)
-                .whenInvokedWith(anything())
-                .thenReturn(MessageUnpackResult.HandshakeMessage)
-        }
-
         companion object {
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
 
@@ -303,12 +320,13 @@ class JoinExistingMLSConversationUseCaseTest {
             val GROUP_ID1 = GroupID("group1")
             val GROUP_ID2 = GroupID("group2")
             val GROUP_ID3 = GroupID("group3")
+            val GROUP_ID_ONE_ON_ONE = GroupID("group-one-on-ne")
             val GROUP_ID_SELF = GroupID("group-self")
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID1,
-                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -318,7 +336,7 @@ class JoinExistingMLSConversationUseCaseTest {
             val MLS_CONVERSATION2 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID2,
-                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -328,7 +346,7 @@ class JoinExistingMLSConversationUseCaseTest {
             val MLS_UNESTABLISHED_GROUP_CONVERSATION = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID3,
-                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -338,12 +356,22 @@ class JoinExistingMLSConversationUseCaseTest {
             val MLS_UNESTABLISHED_SELF_CONVERSATION = TestConversation.SELF(
                 Conversation.ProtocolInfo.MLS(
                     GROUP_ID_SELF,
-                    Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
                     cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("self", "domain"))
+
+            val MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION = TestConversation.ONE_ON_ONE(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID_ONE_ON_ONE,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("one-on-one", "domain"))
         }
     }
 }

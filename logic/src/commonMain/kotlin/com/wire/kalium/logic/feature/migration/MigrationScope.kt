@@ -18,15 +18,17 @@
 
 package com.wire.kalium.logic.feature.migration
 
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.PersistMigratedConversationUseCase
 import com.wire.kalium.logic.feature.conversation.PersistMigratedConversationUseCaseImpl
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
 class MigrationScope(
+    private val selfUserId: UserId,
     private val userDatabase: UserDatabaseBuilder
 ) {
 
     val persistMigratedConversation: PersistMigratedConversationUseCase
-        get() = PersistMigratedConversationUseCaseImpl(userDatabase.migrationDAO)
+        get() = PersistMigratedConversationUseCaseImpl(selfUserId, userDatabase.migrationDAO)
 
 }

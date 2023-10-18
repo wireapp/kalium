@@ -122,7 +122,7 @@ internal class MLSMessageUnpackerImpl(
                 mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
-            if (protocolInfo is Conversation.ProtocolInfo.MLS) {
+            if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.d(
                     "Decrypting MLS for " +
                             "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
@@ -130,7 +130,7 @@ internal class MLSMessageUnpackerImpl(
                 )
                 mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {
-                Either.Right(emptyList())
+                Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
 }
