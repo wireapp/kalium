@@ -41,7 +41,7 @@ interface AddMemberToConversationUseCase {
     }
 }
 
-class AddMemberToConversationUseCaseImpl(
+internal class AddMemberToConversationUseCaseImpl(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : AddMemberToConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>): AddMemberToConversationUseCase.Result {

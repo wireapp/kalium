@@ -32,7 +32,7 @@ interface NeedsToRegisterClientUseCase {
     suspend operator fun invoke(): Boolean
 }
 
-class NeedsToRegisterClientUseCaseImpl(
+internal class NeedsToRegisterClientUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val sessionRepository: SessionRepository,
     private val proteusClientProvider: ProteusClientProvider,

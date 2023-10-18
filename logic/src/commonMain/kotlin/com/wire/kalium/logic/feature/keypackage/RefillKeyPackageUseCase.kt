@@ -44,7 +44,7 @@ interface RefillKeyPackagesUseCase {
 
 }
 
-class RefillKeyPackagesUseCaseImpl(
+internal class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,

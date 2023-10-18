@@ -33,7 +33,7 @@ interface PersistNewSelfDeletionTimerUseCase {
     suspend operator fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer)
 }
 
-class PersistNewSelfDeletionTimerUseCaseImpl(
+class PersistNewSelfDeletionTimerUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
 ) : PersistNewSelfDeletionTimerUseCase {
     override suspend fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =

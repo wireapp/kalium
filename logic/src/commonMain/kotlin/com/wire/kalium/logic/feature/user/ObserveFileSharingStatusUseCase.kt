@@ -35,7 +35,7 @@ interface ObserveFileSharingStatusUseCase {
     operator fun invoke(): Flow<FileSharingStatus>
 }
 
-class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: UserConfigRepository) : ObserveFileSharingStatusUseCase {
+internal class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: UserConfigRepository) : ObserveFileSharingStatusUseCase {
     override operator fun invoke(): Flow<FileSharingStatus> =
         userConfigRepository.isFileSharingEnabledFlow().map { fileSharingStatusFlow ->
             fileSharingStatusFlow.fold({

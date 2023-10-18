@@ -28,7 +28,7 @@ interface ClearNewClientsForUserUseCase {
     suspend operator fun invoke(userId: UserId)
 }
 
-class ClearNewClientsForUserUseCaseImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : ClearNewClientsForUserUseCase {
+internal class ClearNewClientsForUserUseCaseImpl(private val userSessionScopeProvider: UserSessionScopeProvider) : ClearNewClientsForUserUseCase {
     override suspend fun invoke(userId: UserId) {
         userSessionScopeProvider.getOrCreate(userId)
             .clientRepository
