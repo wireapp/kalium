@@ -64,9 +64,7 @@ and `authPassword` with the credentials for the internal API of the respective b
 * The application should run until it receives a `SIGINT` (Ctrl+C) signal. There should be a
   configuration to finish the test run
 * Tests need to be implemented
-* Collecting metrics about the test execution
 * Tracing and replaying a test run. For this the order is the important factor, so when replayed it
   won't be executed in parallel.
-* Multi-clients. Right now each user can have just one client within the application
 * Clean-up the data created during the tests
 * Randomising times for action execution
