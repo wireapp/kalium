@@ -34,15 +34,16 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     }
 
-    private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
-        return createMLSClient(user.qualifiedClientId).newAcmeEnrollment(
+    private suspend fun createE2EIClient(user: SampleUser, mlsClient: MLSClient): E2EIClient {
+        return mlsClient.newAcmeEnrollment(
             user.e2eiCryptoId, user.name, user.handle
         )
     }
 
     @Test
-    fun givenClient_whenPassingAcmeDirectoryResponse_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenPassingAcmeDirectoryResponse_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         val expectedDirectory = AcmeDirectory(
             "https://balderdash.hogwash.work:9000/acme/wire/new-nonce",
             "https://balderdash.hogwash.work:9000/acme/wire/new-account",
@@ -53,23 +54,26 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingGetNewAccountRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingGetNewAccountRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         assertTrue(e2eiClient.getNewAccountRequest(NONCE).isNotEmpty())
     }
 
     @Test
-    fun givenClient_whenCallingGetNewOrderRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingGetNewOrderRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         assertTrue(e2eiClient.getNewOrderRequest(NONCE).isNotEmpty())
     }
 
     @Test
-    fun givenClient_whenCallingGetNewAuthzRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingGetNewAuthzRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -77,8 +81,9 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingCreateDpopToken_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingCreateDpopToken_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -87,8 +92,9 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingGetNewDpopChallengeRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingGetNewDpopChallengeRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -98,8 +104,9 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingGetNewOidcChallengeRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingGetNewOidcChallengeRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -109,8 +116,9 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -122,8 +130,9 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -136,8 +145,9 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
-        val e2eiClient = createE2EIClient(ALICE1)
+    fun givenE2EIClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -150,10 +160,33 @@ class E2EIClientTest : BaseMLSClientTest() {
         assertTrue(e2eiClient.certificateRequest(NONCE).isNotEmpty())
     }
 
+    @Test
+    fun givenE2EIClient_whenRotatingAllConversations_ReturnCorrectRotateBundles() = runTest {
+        val newKeyPackagesCount = 10U
+        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
+        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+        e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
+        e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
+        e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
+        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
+        e2eiClient.createDpopToken(NONCE)
+        e2eiClient.setChallengeResponse(DPOP_CHALLENGE_RESPONSE)
+        e2eiClient.setChallengeResponse(OIDC_CHALLENGE_RESPONSE)
+        e2eiClient.checkOrderResponse(ORDER_RESPONSE)
+        e2eiClient.finalizeResponse(FINALIZE_RESPONSE)
+        e2eiClient.certificateRequest(NONCE)
+        val rotateBundles = mlsClient.e2eiRotateAll(e2eiClient, CERTIFICATE, newKeyPackagesCount)
+        val x = 1
+    }
+
+    // userIdentities
+    // isVerified
+
+
     companion object {
 
         val ALICE1 = SampleUser(
-            CryptoQualifiedID("t6wRpI8BRSeviBwwiFp5MQ", "wire.com"), CryptoClientId("fb4b58152e20"), "Alice", "Alice_wire"
+            CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "elna.wire.link"), CryptoClientId("fb4b58152e20"), "Mojtaba Chenani", "mojtaba_wire"
         )
 
         val ACME_DIRECTORY_API_RESPONSE = """
@@ -187,7 +220,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                "identifiers":[
                   {
                      "type":"wireapp-id",
-                     "value":"{\"name\":\"mojtaba chenani staging\",\"domain\":\"staging.zinfra.io\",\"client-id\":\"im:wireapp=ZTE1Mjc0MzEyNDQ0NGJhY2E1NWZmNjA2ZTk1MjIyMzM/4eedbfe16d25bbf3@staging.zinfra.io\",\"handle\":\"im:wireapp=mjstaging\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                   }
                ],
                "notBefore":"2023-05-07T12:00:50.1666Z",
@@ -219,7 +252,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "expires": "3000-06-07T10:22:49Z",
                 "identifier": {
                     "type": "wireapp-id",
-                    "value": "{\"name\":\"Mojtaba Chenani\",\"domain\":\"anta.wire.link\",\"client-id\":\"im:wireapp=ZTk5ZjQ1NGNmNjdiNDQwMjhhNGUwYWVjZmNjZjBmMDU/89f1c4056c99edcb@anta.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                 },
                 "status": "pending",
                 "wildcard": false
@@ -259,7 +292,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "identifiers": [
                     {
                         "type": "wireapp-id",
-                        "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                     }
                 ],
                 "authorizations": [
@@ -277,7 +310,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "identifiers": [
                     {
                         "type": "wireapp-id",
-                        "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                     }
                 ],
                 "authorizations": [
@@ -287,5 +320,31 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "notBefore": "2013-02-09T14:59:20.442908Z",
                 "notAfter": "3000-02-09T15:59:20.442908Z"
             }""".toByteArray()
+        val CERTIFICATE ="""-----BEGIN CERTIFICATE-----
+        MIICNDCCAdqgAwIBAgIQYIj2PpdPLqtQXMmx0TmXujAKBggqhkjOPQQDAjAuMQ0w
+        CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
+        MzEwMDIxNTIyMjJaFw0yMzEyMzExNTIyMjJaMDMxFzAVBgNVBAoTDmVsbmEud2ly
+        ZS5saW5rMRgwFgYDVQQDEw9Nb2p0YWJhIENoZW5hbmkwKjAFBgMrZXADIQAonK3u
+        cLIUnWP+8iG2GdabCWmzfiHTgXMncNx/r064LKOCAQIwgf8wDgYDVR0PAQH/BAQD
+        AgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQUhVb7
+        GEXzaKxm3yiNEV0DOd78LBcwHwYDVR0jBBgwFoAUADMwoCFunlLkYO2SQbOAUOIL
+        VCowZQYDVR0RBF4wXIZBaW06d2lyZWFwcD1JRzlZdnp1V1FJS1VhUmsxMkY1Q0lR
+        Lzk1MzIxOGU2OGE2MzY0MWZAZWxuYS53aXJlLmxpbmuGF2ltOndpcmVhcHA9bW9q
+        dGFiYV93aXJlMCcGDCsGAQQBgqRkxihAAQQXMBUCAQYEDmdvb2dsZS1hbmRyb2lk
+        BAAwCgYIKoZIzj0EAwIDSAAwRQIhAJORy8WUjP8spjxlCCNOCAQrPIUbl6BTQGtv
+        FhJqP3UrAiAC4mbuQ6BlVmiovCzqP1YbiaGimvBEm/XTwtWJE6wM0A==
+        -----END CERTIFICATE-----
+        -----BEGIN CERTIFICATE-----
+        MIIBuDCCAV6gAwIBAgIQUJ8AHZqe79OeFVEPkdtQrDAKBggqhkjOPQQDAjAmMQ0w
+        CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNDE3MDkw
+        ODQxWhcNMzMwNDE0MDkwODQxWjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
+        aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABB9p
+        iYVv5ik10pwkOGdwVI6F6a8YKk9Ro/CqahPcTfefhOhL/M5RxzWmi2oW75mW6WKr
+        tG94D45Ur6yfNclLspmjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
+        AQH/AgEAMB0GA1UdDgQWBBQAMzCgIW6eUuRg7ZJBs4BQ4gtUKjAfBgNVHSMEGDAW
+        gBR40ZJlSIKIjEI/4ZMwgV3X5CB7tDAKBggqhkjOPQQDAgNIADBFAiEA5VT2B38E
+        9EunvJiLRCG9baeeMq4Yn1LwOT10cXdUIIICIEnDUrd2XW69YnUIPF3bEHln3oKt
+        wje0yUIA61GMpqNz
+        -----END CERTIFICATE-----"""
     }
 }

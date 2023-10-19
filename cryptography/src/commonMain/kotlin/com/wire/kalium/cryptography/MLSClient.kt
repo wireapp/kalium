@@ -38,6 +38,10 @@ enum class RatchetTreeType {
     BY_REF
 }
 
+enum class E2EIConversationState {
+    VERIFIED, NOT_VERIFIED, NOT_ENABLED;
+}
+
 open class GroupInfoBundle(
     var encryptionType: GroupInfoEncryptionType,
     var ratchetTreeType: RatchetTreeType,
@@ -50,12 +54,18 @@ open class CommitBundle(
     val groupInfoBundle: GroupInfoBundle
 )
 
+open class RotateBundle(
+    var commits: Map<MLSGroupId, CommitBundle>,
+    var newKeyPackages: List<ByteArray>,
+    var keyPackageRefsToRemove: List<ByteArray>
+)
+
 class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
-    val identity: E2EIdentity?
+    val identity: WireIdentity?
 )
 
 @JvmInline
@@ -307,6 +317,13 @@ interface MLSClient {
     suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain)
 
     /**
+     * The E2EI State for the current MLS Client
+     *
+     * @return the E2EI state for the current MLS Client
+     */
+    suspend fun isE2EIEnabled(): Boolean
+
+    /**
      * Generate new keypackages after E2EI certificate issued
      */
     suspend fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt)
@@ -316,5 +333,15 @@ interface MLSClient {
      *
      * @return the conversation verification status
      */
-    suspend fun isGroupVerified(groupId: MLSGroupId): Boolean
+    suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState
+
+    /**
+     * Get the identity of given clients in the given conversation
+     *
+     * @param clients a list of E2EIClientId of the requested clients
+     * @param groupId MLS group ID for an existing conversation
+     *
+     * @return the exist identities for requested clients
+     */
+    suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>):List<WireIdentity>
 }
