@@ -34,16 +34,15 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     }
 
-    private suspend fun createE2EIClient(user: SampleUser, mlsClient: MLSClient): E2EIClient {
-        return mlsClient.newAcmeEnrollment(
+    private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
+        return createMLSClient(user.qualifiedClientId).newAcmeEnrollment(
             user.e2eiCryptoId, user.name, user.handle
         )
     }
 
     @Test
-    fun givenE2EIClient_whenPassingAcmeDirectoryResponse_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenPassingAcmeDirectoryResponse_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         val expectedDirectory = AcmeDirectory(
             "https://balderdash.hogwash.work:9000/acme/wire/new-nonce",
             "https://balderdash.hogwash.work:9000/acme/wire/new-account",
@@ -54,26 +53,23 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenE2EIClient_whenCallingGetNewAccountRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingGetNewAccountRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         assertTrue(e2eiClient.getNewAccountRequest(NONCE).isNotEmpty())
     }
 
     @Test
-    fun givenE2EIClient_whenCallingGetNewOrderRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingGetNewOrderRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         assertTrue(e2eiClient.getNewOrderRequest(NONCE).isNotEmpty())
     }
 
     @Test
-    fun givenE2EIClient_whenCallingGetNewAuthzRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingGetNewAuthzRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -81,9 +77,8 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenE2EIClient_whenCallingCreateDpopToken_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingCreateDpopToken_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -92,9 +87,8 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenE2EIClient_whenCallingGetNewDpopChallengeRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingGetNewDpopChallengeRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -104,9 +98,8 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenE2EIClient_whenCallingGetNewOidcChallengeRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingGetNewOidcChallengeRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -116,9 +109,8 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenE2EIClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -130,9 +122,8 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenE2EIClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
@@ -145,9 +136,8 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     @Test
-    fun givenE2EIClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
+    fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
+        val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
