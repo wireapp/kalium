@@ -139,9 +139,6 @@ import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
-import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
-import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
-import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -210,18 +207,12 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
-import com.wire.kalium.logic.feature.message.MLSMessageCreator
-import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
-import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
-import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
-import com.wire.kalium.logic.feature.message.SessionEstablisher
-import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
@@ -742,15 +733,6 @@ class UserSessionScope internal constructor(
             globalPreferences,
         )
 
-    @Deprecated("UseCases should be in their respective scopes", ReplaceWith("backup.create"))
-    val createBackup: CreateBackupUseCase get() = backup.create
-
-    @Deprecated("UseCases should be in their respective scopes", ReplaceWith("backup.verify"))
-    val verifyBackupUseCase: VerifyBackupUseCase get() = backup.verify
-
-    @Deprecated("UseCases should be in their respective scopes", ReplaceWith("backup.restore"))
-    val restoreBackup: RestoreBackupUseCase get() = backup.restore
-
     val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
@@ -796,19 +778,6 @@ class UserSessionScope internal constructor(
             userStorage.database.newClientDAO,
             userId,
             authenticatedNetworkContainer.clientApi,
-        )
-
-    private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
-
-    private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(
-            proteusClientProvider = proteusClientProvider, selfUserId = userId
-        )
-
-    private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(
-            mlsClientProvider = mlsClientProvider, selfUserId = userId
         )
 
     private val messageSendingScheduler: MessageSendingScheduler
