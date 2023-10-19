@@ -53,6 +53,6 @@ internal class PersistReadReceiptsStatusConfigUseCaseImpl(
 }
 
 sealed class ReadReceiptStatusConfigResult {
-    object Success : ReadReceiptStatusConfigResult()
+    data object Success : ReadReceiptStatusConfigResult()
     data class Failure(val cause: CoreFailure) : ReadReceiptStatusConfigResult()
 }

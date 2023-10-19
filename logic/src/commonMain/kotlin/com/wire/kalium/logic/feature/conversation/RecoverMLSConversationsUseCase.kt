@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -34,20 +34,20 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 
 sealed class RecoverMLSConversationsResult {
-    object Success : RecoverMLSConversationsResult()
-    class Failure(val failure: CoreFailure) : RecoverMLSConversationsResult()
+    data object Success : RecoverMLSConversationsResult()
+    data class Failure(val failure: CoreFailure) : RecoverMLSConversationsResult()
 }
 
 /**
- *Iterate over all MLS Established conversations after 404 sync error and
+ * Iterate over all MLS Established conversations after 404 sync error and
  * check for out of sync epochs, if out of sync then it tries to re-join.
  */
-interface RecoverMLSConversationsUseCase {
+internal interface RecoverMLSConversationsUseCase {
     suspend operator fun invoke(): RecoverMLSConversationsResult
 }
 
 @Suppress("LongParameterList")
-class RecoverMLSConversationsUseCaseImpl(
+internal class RecoverMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,

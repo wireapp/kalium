@@ -43,8 +43,8 @@ interface ClearConversationContentUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Result
 
     sealed class Result {
-        object Success : Result()
-        object Failure : Result()
+        data object Success : Result()
+        data object Failure : Result()
     }
 }
 

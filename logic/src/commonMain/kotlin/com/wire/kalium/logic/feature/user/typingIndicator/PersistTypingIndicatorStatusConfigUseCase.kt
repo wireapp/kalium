@@ -53,6 +53,6 @@ internal class PersistTypingIndicatorStatusConfigUseCaseImpl(
 }
 
 sealed class TypingIndicatorConfigResult {
-    object Success : TypingIndicatorConfigResult()
+    data object Success : TypingIndicatorConfigResult()
     data class Failure(val cause: CoreFailure) : TypingIndicatorConfigResult()
 }

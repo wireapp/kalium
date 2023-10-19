@@ -504,7 +504,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         val uniqueBackupUsers = backupDatabaseDataGenerator.generateAndInsertUsers(uniqueBackupUsersAmount)
 
         uniqueBackupUsers.forEach { userEntity ->
-            backupDatabaseBuilder.userDAO.insertUser(userEntity.toSimpleEntity())
+            backupDatabaseBuilder.userDAO.upsertUser(userEntity.toSimpleEntity())
         }
 
         // when

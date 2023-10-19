@@ -24,8 +24,8 @@ data class MemberEntity(
     val role: Role
 ) {
     sealed class Role {
-        object Member : Role()
-        object Admin : Role()
+        data object Member : Role()
+        data object Admin : Role()
         data class Unknown(val name: String) : Role()
     }
 }

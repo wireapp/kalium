@@ -65,13 +65,13 @@ class UpdateEmailUseCase internal constructor(
 
     sealed interface Result {
         sealed interface Success : Result {
-            object VerificationEmailSent : Success
-            object NoChange : Success
+            data object VerificationEmailSent : Success
+            data object NoChange : Success
         }
 
         sealed interface Failure : Result {
-            object InvalidEmail : Failure
-            object EmailAlreadyInUse : Failure
+            data object InvalidEmail : Failure
+            data object EmailAlreadyInUse : Failure
             data class GenericFailure(val error: NetworkFailure) : Failure
         }
     }

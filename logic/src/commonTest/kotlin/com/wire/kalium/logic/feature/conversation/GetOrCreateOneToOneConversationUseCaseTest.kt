@@ -18,120 +18,111 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
-import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MutedConversationStatus
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.given
-import io.mockative.mock
+import io.mockative.eq
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
+@Suppress("MaxLineLength")
 class GetOrCreateOneToOneConversationUseCaseTest {
 
-    @Mock
-    private val conversationRepository = mock(classOf<ConversationRepository>())
-
-    @Mock
-    private val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
-
-    private lateinit var getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
-
-    @BeforeTest
-    fun setUp() {
-        getOrCreateOneToOneConversationUseCase = GetOrCreateOneToOneConversationUseCase(
-            conversationRepository = conversationRepository,
-            conversationGroupRepository = conversationGroupRepository
-        )
-    }
-
     @Test
-    fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenDoNotCreateAConversationButReturnExisting() = runTest {
+    fun givenConversationExist_whenCallingTheUseCase_ThenReturnExistingConversation() = runTest {
         // given
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf(Either.Right(CONVERSATION)))
+        val (arrangement, useCase) = arrange {
+            withObserveOneToOneConversationWithOtherUserReturning(Either.Right(CONVERSATION))
+        }
 
-        given(conversationRepository)
-            .suspendFunction(conversationGroupRepository::createGroupConversation)
-            .whenInvokedWith(anything(), anything(), anything())
-            .thenReturn(Either.Right(CONVERSATION))
         // when
-        val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
+        val result = useCase.invoke(OTHER_USER_ID)
+
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::createGroupConversation)
-            .with(anything(), anything(), anything())
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
+            .with(anything())
             .wasNotInvoked()
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::observeOneToOneConversationWithOtherUser)
             .with(anything())
             .wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenConversationExist_whenCallingTheUseCase_ThenCreateAConversationAndReturn() = runTest {
+    fun givenFailure_whenCallingTheUseCase_ThenErrorIsPropagated() = runTest {
         // given
-        given(conversationRepository)
-            .coroutine { observeOneToOneConversationWithOtherUser(USER_ID) }
-            .then { flowOf(Either.Left(StorageFailure.DataNotFound)) }
+        val (_, useCase) =  arrange {
+            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withResolveOneOnOneConversationWithUserReturning(Either.Left(CoreFailure.NoCommonProtocolFound))
+        }
 
-        given(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::createGroupConversation)
-            .whenInvokedWith(anything(), anything(), anything())
-            .thenReturn(Either.Right(CONVERSATION))
         // when
-        val result = getOrCreateOneToOneConversationUseCase.invoke(USER_ID)
+        val result = useCase.invoke(OTHER_USER_ID)
+
+        // then
+        assertIs<CreateConversationResult.Failure>(result)
+    }
+
+    @Test
+    fun givenConversationDoesNotExist_whenCallingTheUseCase_ThenResolveOneOnOneConversation() = runTest {
+        // given
+        val (arrangement, useCase) = arrange {
+            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION.id))
+            withGetConversationByIdReturning(CONVERSATION)
+        }
+
+        // when
+        val result = useCase.invoke(OTHER_USER_ID)
+
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(conversationGroupRepository)
-            .coroutine { createGroupConversation(usersList = MEMBER) }
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
+            .with(eq(OTHER_USER))
             .wasInvoked(exactly = once)
     }
 
+    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+
+    internal class Arrangement(
+        private val block: Arrangement.() -> Unit
+    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
+
+        fun arrange() = block().run {
+            this@Arrangement to GetOrCreateOneToOneConversationUseCaseImpl(
+                conversationRepository = conversationRepository,
+                userRepository = userRepository,
+                oneOnOneResolver = oneOnOneResolver
+            )
+        }
+    }
+
     private companion object {
-        val USER_ID = UserId(value = "userId", domain = "domainId")
-        val MEMBER = listOf(USER_ID)
-        val CONVERSATION_ID = ConversationId(value = "userId", domain = "domainId")
-        val CONVERSATION = Conversation(
-            id = CONVERSATION_ID,
-            name = null,
-            type = Conversation.Type.ONE_ON_ONE,
-            teamId = null,
-            ProtocolInfo.Proteus,
-            MutedConversationStatus.AllAllowed,
-            null,
-            null,
-            null,
-            lastReadDate = "2022-03-30T15:36:00.000Z",
-            access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
-            accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-            creatorId = null,
-            receiptMode = Conversation.ReceiptMode.DISABLED,
-            messageTimer = null,
-            userMessageTimer = null,
-            archived = false,
-            archivedDateTime = null,
-            mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
-        )
+        val OTHER_USER = TestUser.OTHER
+        val OTHER_USER_ID = OTHER_USER.id
+        val CONVERSATION = TestConversation.ONE_ON_ONE()
     }
 }

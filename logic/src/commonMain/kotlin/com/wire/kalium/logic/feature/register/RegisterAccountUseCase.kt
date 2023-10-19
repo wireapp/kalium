@@ -25,7 +25,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException
@@ -138,20 +138,20 @@ class RegisterAccountUseCase internal constructor(
 
 sealed class RegisterResult {
     data class Success(
-        val authData: AuthTokens,
+        val authData: AccountTokens,
         val ssoID: SsoId?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : RegisterResult()
 
     sealed class Failure : RegisterResult() {
-        object EmailDomainBlocked : Failure()
-        object AccountAlreadyExists : Failure()
-        object InvalidActivationCode : Failure()
-        object UserCreationRestricted : Failure()
-        object TeamMembersLimitReached : Failure()
-        object BlackListed : Failure()
-        object InvalidEmail : Failure()
-        class Generic(val failure: CoreFailure) : Failure()
+        data object EmailDomainBlocked : Failure()
+        data object AccountAlreadyExists : Failure()
+        data object InvalidActivationCode : Failure()
+        data object UserCreationRestricted : Failure()
+        data object TeamMembersLimitReached : Failure()
+        data object BlackListed : Failure()
+        data object InvalidEmail : Failure()
+        data class Generic(val failure: CoreFailure) : Failure()
     }
 }

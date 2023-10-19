@@ -48,6 +48,12 @@ data class QualifiedIDEntity(
 typealias UserIDEntity = QualifiedIDEntity
 typealias ConversationIDEntity = QualifiedIDEntity
 
+@Serializable
+enum class SupportedProtocolEntity {
+    @SerialName("PROTEUS") PROTEUS,
+    @SerialName("MLS") MLS
+}
+
 enum class UserAvailabilityStatusEntity {
     NONE, AVAILABLE, BUSY, AWAY
 }
@@ -71,7 +77,9 @@ data class UserEntity(
     val deleted: Boolean,
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
-    val defederated: Boolean
+    val defederated: Boolean,
+    val supportedProtocols: Set<SupportedProtocolEntity>?,
+    val activeOneOnOneConversationId: QualifiedIDEntity?
 )
 
 data class UserDetailsEntity(
@@ -94,7 +102,9 @@ data class UserDetailsEntity(
     val hasIncompleteMetadata: Boolean = false,
     val expiresAt: Instant?,
     val defederated: Boolean,
-    val isProteusVerified: Boolean
+    val isProteusVerified: Boolean,
+    val supportedProtocols: Set<SupportedProtocolEntity>?,
+    val activeOneOnOneConversationId: QualifiedIDEntity?
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,
@@ -113,7 +123,9 @@ data class UserDetailsEntity(
         deleted = deleted,
         hasIncompleteMetadata = hasIncompleteMetadata,
         expiresAt = expiresAt,
-        defederated = defederated
+        defederated = defederated,
+        supportedProtocols = supportedProtocols,
+        activeOneOnOneConversationId = activeOneOnOneConversationId
     )
 }
 
@@ -127,6 +139,16 @@ data class UserEntityMinimized(
 data class BotIdEntity(
     val id: String,
     val provider: String
+)
+
+data class PartialUserEntity(
+    val name: String? = null,
+    val handle: String? = null,
+    val email: String? = null,
+    val accentId: Int? = null,
+    val previewAssetId: UserAssetIdEntity? = null,
+    val completeAssetId: UserAssetIdEntity? = null,
+    val supportedProtocols: Set<SupportedProtocolEntity>? = null
 )
 
 enum class UserTypeEntity {
@@ -181,18 +203,35 @@ internal typealias UserAssetIdEntity = QualifiedIDEntity
 @Suppress("TooManyFunctions")
 interface UserDAO {
     /**
-     * Inserts a new user into the local storage
-     */
-    suspend fun insertUser(user: UserEntity)
-
-    /**
      * Inserts each user into the local storage or ignores if already exists
      */
     suspend fun insertOrIgnoreUsers(users: List<UserEntity>)
 
     /**
-     * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
-     * [ConnectionEntity.State.NOT_CONNECTED]
+     * Perform a partial update of an existing user. Only non-null values will be updated otherwise
+     * the existing value is kept.
+     *
+     * @return true if the user was updated
+     */
+    suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity): Boolean
+
+    /**
+     * This will update all columns (or insert a new record), except:
+     * - [ConnectionEntity.State]
+     * - [UserEntity.userType]
+     * - [UserEntity.activeOneOnOneConversationId]
+     *
+     * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
+     * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
+     */
+    suspend fun upsertUser(user: UserEntity)
+
+    /**
+     * This will update all columns (or insert a new record), except:
+     * - [ConnectionEntity.State]
+     * - [UserEntity.userType]
+     * - [UserEntity.activeOneOnOneConversationId]
+     *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
@@ -200,30 +239,12 @@ interface UserDAO {
 
     /**
      * This will update [UserEntity.team], [UserEntity.userType], [UserEntity.connectionStatus] to [ConnectionEntity.State.ACCEPTED]
-     * or insert a new record with default values for other columns.
+     * or insert a new record.
+     *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case when trying to insert a member, we could already have the record, so we need to pass only the data needed.
      */
-    suspend fun upsertTeamMembersTypes(users: List<UserEntity>)
-
-    /**
-     * This will update all columns, except [UserEntity.userType] or insert a new record with default values
-     * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
-     * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
-     */
-    suspend fun upsertTeamMembers(users: List<UserEntity>)
-
-    /**
-     * This will update a user record corresponding to the User,
-     * The Fields to update are:
-     * [UserEntity.name]
-     * [UserEntity.handle]
-     * [UserEntity.email]
-     * [UserEntity.accentId]
-     * [UserEntity.previewAssetId]
-     * [UserEntity.completeAssetId]
-     */
-    suspend fun updateUser(user: UserEntity)
+    suspend fun upsertTeamMemberUserTypes(users: Map<QualifiedIDEntity, UserTypeEntity>)
     suspend fun getAllUsersDetails(): Flow<List<UserDetailsEntity>>
     suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>>
     suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?>
@@ -239,6 +260,8 @@ interface UserDAO {
         handle: String,
         connectionStates: List<ConnectionEntity.State>
     ): Flow<List<UserDetailsEntity>>
+
+    suspend fun getUsersWithOneOnOneConversation(): List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity)
@@ -265,4 +288,14 @@ interface UserDAO {
      * the list does not contain self user ID
      */
     suspend fun allOtherUsersId(): List<UserIDEntity>
+
+    suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>)
+
+    /**
+     * Update which 1-1 conversation is the currently active one. If multiple encryption protocols are enabled
+     * there can be multiple co-existing 1-1 conversations.
+     */
+    suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
+
+    suspend fun upsertConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State)
 }

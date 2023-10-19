@@ -66,11 +66,10 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientIsInserted_whenFetchingClientsByUserId_thenTheRelevantClientIsReturned() = runTest {
+        val insertedClient = insertedClient1.copy(user.id, "id1", deviceType = null, isMLSCapable = true)
+        val expected = client1.copy(user.id, "id1", deviceType = null, isValid = true, isProteusVerified = false, isMLSCapable = true)
 
-        val insertedClient = insertedClient1.copy(user.id, "id1", deviceType = null)
-        val expected = client1.copy(user.id, "id1", deviceType = null, isValid = true, isProteusVerified = false)
-
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
 
         val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
@@ -88,7 +87,7 @@ class ClientDAOTest : BaseDatabaseTest() {
         val insertedClient2 = insertedClient2.copy(user.id, "id2", deviceType = null)
         val client2 = insertedClient2.toClient()
 
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClients(listOf(insertedClient, insertedClient2))
 
         val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
@@ -101,14 +100,14 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenClientsAreInsertedForMultipleUsers_whenFetchingClientsByUserId_thenOnlyTheRelevantClientsAreReturned() = runTest {
 
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClients(listOf(insertedClient1, insertedClient2))
 
         val unrelatedUserId = QualifiedIDEntity("unrelated", "user")
         val unrelatedUser = newUserEntity(unrelatedUserId)
         val unrelatedInsertedClient = insertedClient1.copy(unrelatedUserId, "id1", deviceType = null)
 
-        userDAO.insertUser(unrelatedUser)
+        userDAO.upsertUser(unrelatedUser)
         clientDAO.insertClient(unrelatedInsertedClient)
 
         val result = clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first()
@@ -119,7 +118,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientIsInserted_whenDeletingItSpecifically_thenItShouldNotBeReturnedAnymoreOnNextFetch() = runTest {
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient1)
 
         clientDAO.deleteClient(insertedClient1.userId, insertedClient1.id)
@@ -130,7 +129,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientsAreInserted_whenDeletingClientsOfUser_thenTheyShouldNotBeReturnedAnymoreOnNextFetch() = runTest {
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClients(listOf(insertedClient1, insertedClient2))
 
         clientDAO.deleteClientsOfUserByQualifiedID(insertedClient1.userId)
@@ -146,7 +145,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
         val insertClientWithNullType = insertClientWithType.copy(deviceType = null)
 
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClients(listOf(insertClientWithType))
         clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
             assertEquals(listOf(clientWithType), resultList)
@@ -162,7 +161,7 @@ class ClientDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenClientIsInsertedAndRemoveRedundant_whenFetchingClientsByUserId_thenTheRelevantClientsAreReturned() = runTest {
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient1, insertedClient2))
 
         val result = clientDAO.getClientsOfUserByQualifiedID(userId)
@@ -174,7 +173,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenClientIsInsertedAndRemoveRedundant_whenFetchingClientsByUserId_thenTheRedundantClientsAreNotReturned() = runTest {
 
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient, insertedClient1))
         // this supposes to remove insertedClient1
         clientDAO.insertClientsAndRemoveRedundant(listOf(insertedClient, insertedClient2))
@@ -186,9 +185,35 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenIsMLSCapableIsFalse_whenUpdatingAClient_thenItShouldUpdatedToTrue() = runTest {
+        val user = user
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = false
+        ))
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = true
+        ))
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isMLSCapable }
+    }
+
+    @Test
+    fun givenIsMLSCapableIsTrue_whenUpdatingAClient_thenItShouldRemainTrue() = runTest {
+        val user = user
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = true
+        ))
+        clientDAO.insertClient(insertedClient.copy(
+            isMLSCapable = false
+        ))
+        assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isMLSCapable }
+    }
+
+    @Test
     fun whenInsertingANewClient_thenIsMustBeMarkedAsValid() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
         assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isValid }
     }
@@ -196,7 +221,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenValidClient_whenMarkingAsInvalid_thenClientInfoIsUpdated() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
         clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
         assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isValid }
@@ -205,7 +230,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun whenClientIsInsertedTwice_thenIvValidMustNotBeChanged() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
         clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
         clientDAO.insertClient(insertedClient)
@@ -216,7 +241,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     fun givenInvalidUserClient_whenSelectingConversationRecipients_thenOnlyValidClientAreReturned() = runTest {
         val user = user
         val expected: Map<QualifiedIDEntity, List<Client>> = mapOf(user.id to listOf(client1, client2))
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
         clientDAO.insertClient(insertedClient1)
         clientDAO.insertClient(insertedClient2)
@@ -230,7 +255,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenNewClientAdded_thenItIsMarkedAsNotVerified() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
         assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
     }
@@ -238,7 +263,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenClient_whenUpdatingVerificationStatus_thenItIsUpdated() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
         clientDAO.updateClientProteusVerificationStatus(user.id, insertedClient.id, true)
         assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
@@ -250,7 +275,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenUserId_whenAClientIsAdded_thenNewListIsEmitted() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
 
         clientDAO.observeClientsByUserId(user.id).test {
             awaitItem().also { result -> assertEquals(emptyList(), result) }
@@ -267,7 +292,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenVerifiedClient_whenInsertingTheSameIdAgain_thenVerificationStatusIsNotChanges() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
 
         clientDAO.insertClient(insertedClient)
         assertFalse { clientDAO.getClientsOfUserByQualifiedID(userId).first().isProteusVerified }
@@ -282,7 +307,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenUserIsPartOfConversation_whenGettingRecipient_thenOnlyValidUserClientsAreReturned() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Admin), conversationEntity1.id)
 
@@ -300,13 +325,13 @@ class ClientDAOTest : BaseDatabaseTest() {
     @Test
     fun givenUserIsNotPartOfConversation_whenGettingRecipient_thenTheyAreNotIncludedInTheResult() = runTest {
         val user = user
-        userDAO.insertUser(user)
+        userDAO.upsertUser(user)
         clientDAO.insertClient(insertedClient)
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Admin), conversationEntity1.id)
 
         val user2 = newUserEntity(QualifiedIDEntity("test2", "domain"))
-        userDAO.insertUser(user2)
+        userDAO.upsertUser(user2)
         val insertedClient2 = InsertClientParam(
             userId = user2.id,
             id = "id01",
@@ -316,7 +341,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             model = null,
             registrationDate = null,
             lastActive = null,
-            mlsPublicKeys = null
+            mlsPublicKeys = null,
+            isMLSCapable = false
         )
         clientDAO.insertClient(insertedClient2)
 
@@ -340,7 +366,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             model = null,
             registrationDate = null,
             lastActive = null,
-            mlsPublicKeys = null
+            mlsPublicKeys = null,
+            isMLSCapable = false
         )
         val client = insertedClient.toClient()
 
@@ -382,6 +409,7 @@ private fun InsertClientParam.toClient(): Client =
         clientType = clientType,
         isValid = true,
         isProteusVerified = false,
+        isMLSCapable = false,
         label = label,
         model = model,
         registrationDate = registrationDate,

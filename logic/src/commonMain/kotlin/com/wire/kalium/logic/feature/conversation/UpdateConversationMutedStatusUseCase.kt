@@ -65,6 +65,6 @@ internal class UpdateConversationMutedStatusUseCaseImpl(
 }
 
 sealed class ConversationUpdateStatusResult {
-    object Success : ConversationUpdateStatusResult()
-    object Failure : ConversationUpdateStatusResult()
+    data object Success : ConversationUpdateStatusResult()
+    data object Failure : ConversationUpdateStatusResult()
 }

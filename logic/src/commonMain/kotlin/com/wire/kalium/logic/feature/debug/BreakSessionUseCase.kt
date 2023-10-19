@@ -75,6 +75,6 @@ internal class BreakSessionUseCaseImpl internal constructor(
 }
 
 sealed class BreakSessionResult {
-    object Success : BreakSessionResult()
+    data object Success : BreakSessionResult()
     data class Failure(val coreFailure: CoreFailure) : BreakSessionResult()
 }

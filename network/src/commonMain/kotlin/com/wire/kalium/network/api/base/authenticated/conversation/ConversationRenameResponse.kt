@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed class ConversationRenameResponse {
 
-    object Unchanged : ConversationRenameResponse()
+    data object Unchanged : ConversationRenameResponse()
 
     data class Changed(val event: EventContentDTO.Conversation.ConversationRenameDTO) : ConversationRenameResponse()
 }

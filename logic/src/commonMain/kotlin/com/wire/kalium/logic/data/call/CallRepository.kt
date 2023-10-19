@@ -633,7 +633,8 @@ internal class CallDataSource(
                         ).flattenConcat()
                     }
                 } ?: Either.Left(CoreFailure.NotSupportedByProteus)
-                is Conversation.ProtocolInfo.Proteus -> Either.Left(CoreFailure.NotSupportedByProteus)
+                is Conversation.ProtocolInfo.Proteus,
+                is Conversation.ProtocolInfo.Mixed -> Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
 

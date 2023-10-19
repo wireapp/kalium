@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
-import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.SelectConversationIdsWithCurrentAndActualProteusVerificationByClientId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
@@ -70,6 +69,8 @@ internal class ConversationMapper {
             archived = archived,
             archivedDateTime = archived_date_time,
             mlsVerificationStatus = mls_verification_status,
+            userSupportedProtocols = userSupportedProtocols,
+            userActiveOneOnOneConversationId = otherUserActiveConversationId,
             proteusVerificationStatus = proteus_verification_status
         )
     }
@@ -132,58 +133,6 @@ internal class ConversationMapper {
         proteusVerificationStatus = proteusVerificationStatus
     )
 
-    fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
-        return conversation?.run {
-            ConversationViewEntity(
-                id = qualifiedId,
-                name = name,
-                type = type,
-                teamId = teamId,
-                protocolInfo = mapProtocolInfo(
-                    protocol,
-                    mls_group_id,
-                    mls_group_state,
-                    mls_epoch,
-                    mls_last_keying_material_update_date,
-                    mls_cipher_suite
-                ),
-                isCreator = isCreator,
-                mutedStatus = mutedStatus,
-                mutedTime = muted_time,
-                creatorId = creator_id,
-                lastNotificationDate = lastNotifiedMessageDate,
-                lastModifiedDate = last_modified_date,
-                lastReadDate = lastReadDate,
-                accessList = access_list,
-                accessRoleList = access_role_list,
-                protocol = protocol,
-                mlsCipherSuite = mls_cipher_suite,
-                mlsEpoch = mls_epoch,
-                mlsGroupId = mls_group_id,
-                mlsLastKeyingMaterialUpdateDate = mls_last_keying_material_update_date,
-                mlsGroupState = mls_group_state,
-                mlsProposalTimer = mls_proposal_timer,
-                callStatus = callStatus,
-                previewAssetId = previewAssetId,
-                userAvailabilityStatus = userAvailabilityStatus,
-                userType = userType,
-                botService = botService,
-                userDeleted = userDeleted,
-                connectionStatus = connectionStatus,
-                otherUserId = otherUserId,
-                selfRole = selfRole,
-                receiptMode = receipt_mode,
-                messageTimer = message_timer,
-                userMessageTimer = user_message_timer,
-                userDefederated = userDefederated,
-                archived = archived,
-                archivedDateTime = archived_date_time,
-                mlsVerificationStatus = mls_verification_status,
-                proteusVerificationStatus = proteus_verification_status
-            )
-        }
-    }
-
     @Suppress("LongParameterList")
     fun mapProtocolInfo(
         protocol: ConversationEntity.Protocol,
@@ -195,6 +144,14 @@ internal class ConversationMapper {
     ): ConversationEntity.ProtocolInfo {
         return when (protocol) {
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
+                mlsGroupId ?: "",
+                mlsGroupState,
+                mlsEpoch.toULong(),
+                mlsLastKeyingMaterialUpdate,
+                mlsCipherSuite
+            )
+
+            ConversationEntity.Protocol.MIXED -> ConversationEntity.ProtocolInfo.Mixed(
                 mlsGroupId ?: "",
                 mlsGroupState,
                 mlsEpoch.toULong(),

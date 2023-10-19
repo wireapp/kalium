@@ -59,6 +59,6 @@ internal class UpdateAssetMessageUploadStatusUseCaseImpl(
 }
 
 sealed class UpdateUploadStatusResult {
-    object Success : UpdateUploadStatusResult()
+    data object Success : UpdateUploadStatusResult()
     data class Failure(val coreFailure: CoreFailure) : UpdateUploadStatusResult()
 }

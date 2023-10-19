@@ -39,7 +39,7 @@ internal interface SyncCriteriaResolution {
     /**
      * All criteria are satisfied and Sync is free to start or keep going.
      */
-    object Ready : SyncCriteriaResolution
+    data object Ready : SyncCriteriaResolution
 
     /**
      * At least a criterion is not satisfied

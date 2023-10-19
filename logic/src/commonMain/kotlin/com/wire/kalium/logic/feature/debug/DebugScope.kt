@@ -46,10 +46,12 @@ import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.SessionEstablisher
 import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.incremental.EventProcessor
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -75,6 +77,8 @@ class DebugScope internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val staleEpochVerifier: StaleEpochVerifier,
+    private val eventProcessor: EventProcessor,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -97,6 +101,11 @@ class DebugScope internal constructor(
             currentClientIdProvider,
             slowSyncRepository,
             messageSender
+        )
+
+    val disableEventProcessing: DisableEventProcessingUseCase
+        get() = DisableEventProcessingUseCaseImpl(
+            eventProcessor = eventProcessor
         )
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -138,6 +147,7 @@ class DebugScope internal constructor(
             mlsMessageCreator,
             messageSendingInterceptor,
             userRepository,
+            staleEpochVerifier,
             { message, expirationData -> ephemeralMessageDeletionHandler.enqueueSelfDeletion(message, expirationData) },
             scope
         )

@@ -31,6 +31,7 @@ data class ProposalTimerEntity(
 
 interface ConversationDAO {
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
+    suspend fun getMLSSelfConversationGroupId(): String?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
@@ -41,11 +42,21 @@ interface ConversationDAO {
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
+    suspend fun getConversationIds(
+        type: ConversationEntity.Type,
+        protocol: ConversationEntity.Protocol,
+        teamId: String? = null
+    ): List<QualifiedIDEntity>
+    suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
-    suspend fun observeConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
+    suspend fun getOneOnOneConversationIdsWithOtherUser(
+        userId: UserIDEntity,
+        protocol: ConversationEntity.Protocol
+    ): List<QualifiedIDEntity>
+    suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
     suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
@@ -78,8 +89,9 @@ interface ConversationDAO {
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
+    suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean
     suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity)
-    suspend fun getConversationIdsByUserId(userId: UserIDEntity): List<QualifiedIDEntity>
+    suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(
         conversationId: QualifiedIDEntity,

@@ -95,7 +95,7 @@ class CreateGroupConversationUseCase internal constructor(
         /**
          * There was a failure trying to Sync with the server
          */
-        object SyncFailure : Result
+        data object SyncFailure : Result
 
         /**
          * Other, unknown failure.

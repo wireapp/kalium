@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
+import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
@@ -59,6 +60,7 @@ import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
 import com.wire.kalium.persistence.content.ButtonContent
 import com.wire.kalium.persistence.adapter.StringListAdapter
+import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -177,7 +179,9 @@ internal object TableMapper {
         complete_asset_idAdapter = QualifiedIDAdapter,
         user_typeAdapter = EnumColumnAdapter(),
         bot_serviceAdapter = BotServiceAdapter(),
-        expires_atAdapter = InstantTypeAdapter
+        expires_atAdapter = InstantTypeAdapter,
+        supported_protocolsAdapter = SupportedProtocolSetAdapter,
+        active_one_on_one_conversation_idAdapter = QualifiedIDAdapter
     )
     val messageNewConversationReceiptModeContentAdapter = MessageNewConversationReceiptModeContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
@@ -188,7 +192,10 @@ internal object TableMapper {
     val messageConversationTimerChangedContentAdapter = MessageConversationTimerChangedContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
     )
-
+    val messageConversationProtocolChangedContentAdapter = MessageConversationProtocolChangedContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        protocolAdapter = EnumColumnAdapter()
+    )
     val unreadEventAdapter = UnreadEvent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         typeAdapter = EnumColumnAdapter(),

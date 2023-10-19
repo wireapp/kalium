@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
@@ -58,9 +59,6 @@ import kotlin.time.toDuration
 @Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
-    fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol
-    fun fromDaoModel(daoProtocol: Protocol?): Conversation.Protocol?
-    fun toDaoModel(protocol: Conversation.Protocol?): Protocol?
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
@@ -72,7 +70,7 @@ interface ConversationMapper {
     fun fromDaoModel(daoModel: ProposalTimerEntity): ProposalTimer
     fun toDAOAccess(accessList: Set<ConversationAccessDTO>): List<ConversationEntity.Access>
     fun toDAOAccessRole(accessRoleList: Set<ConversationAccessRoleDTO>): List<ConversationEntity.AccessRole>
-    fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState
+    fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState): GroupState
     fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity
     fun toApiModel(access: Conversation.Access): ConversationAccessDTO
     fun toApiModel(accessRole: Conversation.AccessRole): ConversationAccessRoleDTO
@@ -88,6 +86,7 @@ interface ConversationMapper {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class ConversationMapperImpl(
+    private val selfUserId: UserId,
     private val idMapper: IdMapper,
     private val conversationStatusMapper: ConversationStatusMapper,
     private val protocolInfoMapper: ProtocolInfoMapper,
@@ -111,7 +110,7 @@ internal class ConversationMapperImpl(
         mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
         mutedTime = apiModel.members.self.otrMutedRef?.let { Instant.parse(it) }?.toEpochMilliseconds() ?: 0,
         removedBy = null,
-        creatorId = apiModel.creator,
+        creatorId = apiModel.creator ?: selfUserId.value, // NOTE mls 1-1 does not have the creator field set.
         lastReadDate = Instant.UNIX_FIRST_DATE,
         lastNotificationDate = null,
         lastModifiedDate = apiModel.lastEventTime.toInstant(),
@@ -126,23 +125,6 @@ internal class ConversationMapperImpl(
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
-
-    override fun fromApiModelToDaoModel(apiModel: ConvProtocol): Protocol = when (apiModel) {
-        ConvProtocol.PROTEUS -> Protocol.PROTEUS
-        ConvProtocol.MLS -> Protocol.MLS
-    }
-
-    override fun fromDaoModel(daoProtocol: Protocol?): Conversation.Protocol? = when (daoProtocol) {
-        Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
-        Protocol.MLS -> Conversation.Protocol.MLS
-        null -> null
-    }
-
-    override fun toDaoModel(protocol: Conversation.Protocol?): Protocol? = when (protocol) {
-        Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
-        Conversation.Protocol.MLS -> Protocol.MLS
-        null -> null
-    }
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
@@ -229,7 +211,9 @@ internal class ConversationMapperImpl(
                             connectionStatus = connectionStatusMapper.fromDaoModel(connectionStatus),
                             expiresAt = null,
                             defederated = userDefederated ?: false,
-                            isProteusVerified = false
+                            isProteusVerified = false,
+                            supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet(),
+                            activeOneOnOneConversationId = userActiveOneOnOneConversationId?.toModel()
                         ),
                         legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
@@ -266,7 +250,8 @@ internal class ConversationMapperImpl(
                         teamId = teamId?.let { TeamId(it) },
                         expiresAt = null,
                         defederated = userDefederated ?: false,
-                        isProteusVerified = false
+                        isProteusVerified = false,
+                        supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet()
                     )
 
                     ConversationDetails.Connection(
@@ -316,12 +301,12 @@ internal class ConversationMapperImpl(
             }
         }
 
-    override fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLS.GroupState): GroupState =
+    override fun toDAOGroupState(groupState: Conversation.ProtocolInfo.MLSCapable.GroupState): GroupState =
         when (groupState) {
-            Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
-            Conversation.ProtocolInfo.MLS.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
-            Conversation.ProtocolInfo.MLS.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
-            Conversation.ProtocolInfo.MLS.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
+            Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
+            Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
         }
 
     override fun toDAOProposalTimer(proposalTimer: ProposalTimer): ProposalTimerEntity =
@@ -434,6 +419,14 @@ internal class ConversationMapperImpl(
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
+            ConvProtocol.MIXED -> ProtocolInfo.Mixed(
+                groupId ?: "",
+                mlsGroupState ?: GroupState.PENDING_JOIN,
+                epoch ?: 0UL,
+                keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
+            )
+
             ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }
@@ -514,7 +507,14 @@ private fun ConversationEntity.AccessRole.toDAO(): Conversation.AccessRole = whe
     ConversationEntity.AccessRole.EXTERNAL -> Conversation.AccessRole.EXTERNAL
 }
 
-private fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
+internal fun Conversation.ProtocolInfo.MLSCapable.GroupState.toDao(): ConversationEntity.GroupState = when (this) {
+    Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED -> GroupState.ESTABLISHED
+    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_CREATION -> GroupState.PENDING_CREATION
+    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN -> GroupState.PENDING_JOIN
+    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_WELCOME_MESSAGE -> GroupState.PENDING_WELCOME_MESSAGE
+}
+
+internal fun Conversation.Type.toDAO(): ConversationEntity.Type = when (this) {
     Conversation.Type.SELF -> ConversationEntity.Type.SELF
     Conversation.Type.ONE_ON_ONE -> ConversationEntity.Type.ONE_ON_ONE
     Conversation.Type.GROUP -> ConversationEntity.Type.GROUP
@@ -535,4 +535,28 @@ private fun Conversation.Access.toDAO(): ConversationEntity.Access = when (this)
     Conversation.Access.SELF_INVITE -> ConversationEntity.Access.SELF_INVITE
     Conversation.Access.LINK -> ConversationEntity.Access.LINK
     Conversation.Access.CODE -> ConversationEntity.Access.CODE
+}
+
+internal fun Conversation.Protocol.toApi(): ConvProtocol = when (this) {
+    Conversation.Protocol.PROTEUS -> ConvProtocol.PROTEUS
+    Conversation.Protocol.MIXED -> ConvProtocol.MIXED
+    Conversation.Protocol.MLS -> ConvProtocol.MLS
+}
+
+internal fun Conversation.Protocol.toDao(): Protocol = when (this) {
+    Conversation.Protocol.PROTEUS -> Protocol.PROTEUS
+    Conversation.Protocol.MIXED -> Protocol.MIXED
+    Conversation.Protocol.MLS -> Protocol.MLS
+}
+
+internal fun ConvProtocol.toModel(): Conversation.Protocol = when (this) {
+    ConvProtocol.PROTEUS -> Conversation.Protocol.PROTEUS
+    ConvProtocol.MIXED -> Conversation.Protocol.MIXED
+    ConvProtocol.MLS -> Conversation.Protocol.MLS
+}
+
+internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
+    Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
+    Protocol.MIXED -> Conversation.Protocol.MIXED
+    Protocol.MLS -> Conversation.Protocol.MLS
 }

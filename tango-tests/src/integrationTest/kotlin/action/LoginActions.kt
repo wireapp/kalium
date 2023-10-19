@@ -19,7 +19,7 @@ package action
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
-import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.network.api.base.model.SelfUserDTO
@@ -37,7 +37,7 @@ object LoginActions {
         password: String,
         coreLogic: CoreLogic,
         authScope: AuthenticationScope,
-    ): AuthTokens {
+    ): AccountTokens {
         val loginResult = authScope.login(email, password, true)
         if (loginResult !is AuthenticationResult.Success) {
             error("User creds didn't work ($email, $password)")
@@ -86,7 +86,8 @@ object LoginActions {
         locale = "",
         managedByDTO = null,
         phone = null,
-        ssoID = null
+        ssoID = null,
+        supportedProtocols = null
     )
     private val VALID_SELF_RESPONSE = UserDTOJson.createValid(selfUserDTO)
 

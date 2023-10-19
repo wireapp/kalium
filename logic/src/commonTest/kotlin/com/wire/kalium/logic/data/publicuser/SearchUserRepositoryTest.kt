@@ -71,9 +71,6 @@ class SearchUserRepositoryTest {
     private val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
 
     @Mock
-    private val publicUserMapper: PublicUserMapper = mock(classOf<PublicUserMapper>())
-
-    @Mock
     private val userMapper: UserMapper = mock(classOf<UserMapper>())
 
     @Mock
@@ -94,9 +91,7 @@ class SearchUserRepositoryTest {
             metadataDAO,
             userDetailsApi,
             userSearchApiWrapper,
-            publicUserMapper,
-            userMapper,
-            domainUserTypeMapper
+            userMapper
         )
 
         given(domainUserTypeMapper).invocation { federated }.then { UserType.FEDERATED }
@@ -157,8 +152,8 @@ class SearchUserRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserProfileDtoToOtherUser)
+        verify(userMapper)
+            .function(userMapper::fromUserProfileDtoToOtherUser)
             .with(any(), any())
             .wasNotInvoked()
     }
@@ -200,8 +195,8 @@ class SearchUserRepositoryTest {
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
-        verify(publicUserMapper)
-            .function(publicUserMapper::fromUserProfileDtoToOtherUser)
+        verify(userMapper)
+            .function(userMapper::fromUserProfileDtoToOtherUser)
             .with(any(), any())
             .wasNotInvoked()
     }
@@ -247,8 +242,8 @@ class SearchUserRepositoryTest {
             .whenInvokedWith(any())
             .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
 
-        given(publicUserMapper)
-            .function(publicUserMapper::fromUserProfileDtoToOtherUser)
+        given(userMapper)
+            .function(userMapper::fromUserProfileDtoToOtherUser)
             .whenInvokedWith(any(), any())
             .then { _, _ -> TestUser.OTHER }
 
@@ -298,8 +293,8 @@ class SearchUserRepositoryTest {
                 .whenInvokedWith(any())
                 .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
 
-            given(publicUserMapper)
-                .function(publicUserMapper::fromUserProfileDtoToOtherUser)
+            given(userMapper)
+                .function(userMapper::fromUserProfileDtoToOtherUser)
                 .whenInvokedWith(any(), any())
                 .then { _, _ -> TestUser.OTHER }
 
@@ -522,13 +517,13 @@ class SearchUserRepositoryTest {
                     email = null,
                     expiresAt = null,
                     nonQualifiedId = "value",
-                    service = null
+                    service = null,
+                    supportedProtocols = null
                 )
             )
         )
 
         const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
-
     }
 
 }

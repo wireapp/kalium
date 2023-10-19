@@ -68,13 +68,13 @@ internal class VerifyBackupUseCaseImpl(
 
 sealed class VerifyBackupResult {
     sealed class Success : VerifyBackupResult() {
-        object Encrypted : Success()
-        object NotEncrypted : Success()
-        object Web : Success()
+        data object Encrypted : Success()
+        data object NotEncrypted : Success()
+        data object Web : Success()
     }
 
     sealed class Failure : VerifyBackupResult() {
-        object InvalidBackupFile : Failure()
+        data object InvalidBackupFile : Failure()
         data class Generic(val error: CoreFailure) : Failure()
     }
 }

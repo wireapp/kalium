@@ -20,11 +20,12 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLS.GroupState
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
@@ -33,12 +34,12 @@ import com.wire.kalium.logic.kaliumLogger
  * Send an external commit to join all MLS conversations for which the user is a member,
  * but has not yet joined the corresponding MLS group.
  */
-interface JoinExistingMLSConversationsUseCase {
+internal interface JoinExistingMLSConversationsUseCase {
     suspend operator fun invoke(keepRetryingOnFailure: Boolean = true): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
-class JoinExistingMLSConversationsUseCaseImpl(
+internal class JoinExistingMLSConversationsUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
@@ -57,6 +58,18 @@ class JoinExistingMLSConversationsUseCaseImpl(
 
                 return pendingConversations.map { conversation ->
                     joinExistingMLSConversationUseCase(conversation.id)
+                        .flatMapLeft {
+                            if (it is CoreFailure.NoKeyPackagesAvailable) {
+                                kaliumLogger.w(
+                                    "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                             "since some participants are out of key packages, skipping."
+                                )
+                                Either.Right(Unit)
+                            } else {
+                                Either.Left(it)
+                            }
+
+                        }
                 }.foldToEitherWhileRight(Unit) { value, _ ->
                     value
                 }

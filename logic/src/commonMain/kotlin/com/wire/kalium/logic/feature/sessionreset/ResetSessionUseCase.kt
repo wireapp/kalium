@@ -93,6 +93,6 @@ internal class ResetSessionUseCaseImpl internal constructor(
 }
 
 sealed class ResetSessionResult {
-    object Success : ResetSessionResult()
+    data object Success : ResetSessionResult()
     data class Failure(val coreFailure: CoreFailure) : ResetSessionResult()
 }

@@ -21,6 +21,7 @@ package com.wire.kalium.logic
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
 import com.wire.kalium.network.utils.NetworkResponse
@@ -99,6 +100,11 @@ sealed interface CoreFailure {
     data object SyncEventOrClientNotFound : FeatureFailure()
 
     data object FeatureNotImplemented : FeatureFailure()
+    /**
+     * No common Protocol found in order to establish a conversation between parties.
+     * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
+     */
+    data object NoCommonProtocolFound : FeatureFailure()
 }
 
 sealed class NetworkFailure : CoreFailure {
@@ -155,19 +161,27 @@ sealed class NetworkFailure : CoreFailure {
 
     }
 
+    /**
+     * Failure due to a feature not supported by the current client/backend.
+     */
+    data object FeatureNotSupported : NetworkFailure()
 }
 
 interface MLSFailure : CoreFailure {
 
-    object WrongEpoch : MLSFailure
+    data object WrongEpoch : MLSFailure
 
-    object DuplicateMessage : MLSFailure
+    data object DuplicateMessage : MLSFailure
 
-    object SelfCommitIgnored : MLSFailure
+    data object BufferedFutureMessage : MLSFailure
 
-    object UnmergedPendingGroup : MLSFailure
+    data object SelfCommitIgnored : MLSFailure
 
-    object ConversationDoesNotSupportMLS : MLSFailure
+    data object UnmergedPendingGroup : MLSFailure
+
+    data object ConversationAlreadyExists : MLSFailure
+
+    data object ConversationDoesNotSupportMLS : MLSFailure
 
     class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
@@ -185,13 +199,13 @@ class ProteusFailure(internal val proteusException: ProteusException) : CoreFail
 }
 
 sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
-    object GenericEncryptionError : EncryptionFailure()
-    object GenericDecryptionError : EncryptionFailure()
-    object WrongAssetHash : EncryptionFailure()
+    data object GenericEncryptionError : EncryptionFailure()
+    data object GenericDecryptionError : EncryptionFailure()
+    data object WrongAssetHash : EncryptionFailure()
 }
 
 sealed class StorageFailure : CoreFailure {
-    object DataNotFound : StorageFailure()
+    data object DataNotFound : StorageFailure()
     data class Generic(val rootCause: Throwable) : StorageFailure()
 }
 
@@ -231,6 +245,10 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
 
                 exception is KaliumException.GenericError && exception.cause is IOException -> {
                     Either.Left(NetworkFailure.NoNetworkConnection(exception))
+                }
+
+                exception is APINotSupported -> {
+                    Either.Left(NetworkFailure.FeatureNotSupported)
                 }
 
                 else -> {

@@ -37,7 +37,7 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 data class ConversationResponse(
     @SerialName("creator")
-    val creator: String,
+    val creator: String?,
 
     @SerialName("members")
     val members: ConversationMembersResponse,

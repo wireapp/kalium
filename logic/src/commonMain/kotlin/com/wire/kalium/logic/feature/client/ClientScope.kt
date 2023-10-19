@@ -44,6 +44,7 @@ import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.util.DelicateKaliumApi
@@ -59,7 +60,6 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val mlsClientProvider: MLSClientProvider,
     private val notificationTokenRepository: NotificationTokenRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
-    private val conversationRepository: ConversationRepository,
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionRepository: SessionRepository,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
@@ -70,6 +70,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val cachedClientIdClearer: CachedClientIdClearer,
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
+    private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase
 ) {
     @OptIn(DelicateKaliumApi::class)
@@ -89,7 +91,11 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
 
     val selfClients: FetchSelfClientsFromRemoteUseCase get() = FetchSelfClientsFromRemoteUseCaseImpl(clientRepository, clientIdProvider)
     val observeClientDetailsUseCase: ObserveClientDetailsUseCase get() = ObserveClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
-    val deleteClient: DeleteClientUseCase get() = DeleteClientUseCaseImpl(clientRepository)
+    val deleteClient: DeleteClientUseCase
+        get() = DeleteClientUseCaseImpl(
+            clientRepository,
+            updateSupportedProtocolsAndResolveOneOnOnes,
+        )
     val needsToRegisterClient: NeedsToRegisterClientUseCase
         get() = NeedsToRegisterClientUseCaseImpl(clientIdProvider, sessionRepository, proteusClientProvider, selfUserId)
     val deregisterNativePushToken: DeregisterTokenUseCase

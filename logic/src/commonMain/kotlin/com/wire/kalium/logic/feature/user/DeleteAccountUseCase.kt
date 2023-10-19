@@ -32,7 +32,7 @@ class DeleteAccountUseCase internal constructor(
             .fold(Result::Failure, { Result.Success })
 
     sealed class Result {
-        object Success : Result()
+        data object Success : Result()
         data class Failure(val networkFailure: NetworkFailure) : Result()
     }
 }
