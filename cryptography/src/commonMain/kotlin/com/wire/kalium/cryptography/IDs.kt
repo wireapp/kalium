@@ -101,9 +101,6 @@ data class E2EIQualifiedClientId(
         // Base64url encode the UUID bytes without padding
         val base64UrlEncoded = uuidBytes.encodeBase64().removeSuffix("==")
 
-        // Print the base64url-encoded UUID without padding
-        println("Base64URL Encoded UUID (without padding): $base64UrlEncoded")
-
         return "${base64UrlEncoded}:${value}@${userId.domain}"
     }
 }
