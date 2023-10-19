@@ -354,6 +354,9 @@ SELECT changes();
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
 
+selfMLSGroupId:
+SELECT mls_group_id FROM Conversation WHERE type = 'SELF' AND protocol = 'MLS' LIMIT 1;
+
 updateConversationReceiptMode:
 UPDATE Conversation
 SET receipt_mode = ?
