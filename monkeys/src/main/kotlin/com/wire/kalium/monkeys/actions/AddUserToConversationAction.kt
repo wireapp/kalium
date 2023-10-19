@@ -18,17 +18,34 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.conversation.Monkey
+import com.wire.kalium.monkeys.conversation.MonkeyConversation
+import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class AddUserToConversationAction(val config: ActionType.AddUsersToConversation) : Action() {
+open class AddUserToConversationAction(val config: ActionType.AddUsersToConversation, sender: suspend (Event) -> Unit) : Action(sender) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val target = ConversationPool.randomDynamicConversations(this.config.countGroups.toInt())
-        target.forEach {
-            val filterOut = it.membersIds()
-            val participants = it.creator.randomPeers(this.config.userCount, monkeyPool, filterOut)
-            it.addMonkeys(participants)
+        val targets = pickConversations(monkeyPool)
+        targets.forEach { (monkeyConversation, participants) ->
+            monkeyConversation.addMonkeys(participants)
+            this.sender(
+                Event(
+                    monkeyConversation.creator.internalId,
+                    EventType.AddUsersToConversation(monkeyConversation.conversation.id, participants.map { it.internalId })
+                )
+            )
+        }
+    }
+
+    open suspend fun pickConversations(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
+        val targets = ConversationPool.randomDynamicConversations(this.config.countGroups.toInt())
+        return targets.map { target ->
+            val filterOut = target.membersIds()
+            val participants = target.creator.randomPeers(this.config.userCount, monkeyPool, filterOut)
+            Pair(target, participants)
         }
     }
 }

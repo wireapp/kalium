@@ -15,26 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions
+package com.wire.kalium.monkeys.actions.replay
 
-import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.monkeys.actions.AddUserToConversationAction
+import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
 import com.wire.kalium.monkeys.model.ActionType
-import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
+import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-open class DestroyConversationAction(val config: ActionType.DestroyConversation, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = conversationTargets()
-        targets.forEach {
-            it.destroy()
-            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversation.id)))
-        }
-    }
+class AddUserToConversationEventAction(private val eventConfig: EventType.AddUsersToConversation) :
+    AddUserToConversationAction(ActionType.AddUsersToConversation(1u, UserCount.fixed(eventConfig.newMembers.count().toUInt())), {}) {
 
-    open fun conversationTargets(): List<MonkeyConversation> {
-        return ConversationPool.randomDynamicConversations(this.config.count.toInt())
+    override suspend fun pickConversations(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
+        val target = ConversationPool.get(eventConfig.conversationId) ?: error("Could not find conversation")
+        val members = eventConfig.newMembers.map {
+            monkeyPool.getFromTeam(it.team, it.index)
+        }
+        return listOf(Pair(target, members))
     }
 }
