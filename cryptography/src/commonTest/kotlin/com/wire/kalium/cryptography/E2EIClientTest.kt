@@ -160,29 +160,6 @@ class E2EIClientTest : BaseMLSClientTest() {
         assertTrue(e2eiClient.certificateRequest(NONCE).isNotEmpty())
     }
 
-    @Test
-    fun givenE2EIClient_whenRotatingAllConversations_ReturnCorrectRotateBundles() = runTest {
-        val newKeyPackagesCount = 10U
-        val mlsClient = createMLSClient(ALICE1.qualifiedClientId)
-        val e2eiClient = createE2EIClient(ALICE1, mlsClient)
-        e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
-        e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
-        e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
-        e2eiClient.createDpopToken(NONCE)
-        e2eiClient.setChallengeResponse(DPOP_CHALLENGE_RESPONSE)
-        e2eiClient.setChallengeResponse(OIDC_CHALLENGE_RESPONSE)
-        e2eiClient.checkOrderResponse(ORDER_RESPONSE)
-        e2eiClient.finalizeResponse(FINALIZE_RESPONSE)
-        e2eiClient.certificateRequest(NONCE)
-        val rotateBundles = mlsClient.e2eiRotateAll(e2eiClient, CERTIFICATE, newKeyPackagesCount)
-        val x = 1
-    }
-
-    // userIdentities
-    // isVerified
-
-
     companion object {
 
         val ALICE1 = SampleUser(
@@ -320,31 +297,5 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "notBefore": "2013-02-09T14:59:20.442908Z",
                 "notAfter": "3000-02-09T15:59:20.442908Z"
             }""".toByteArray()
-        val CERTIFICATE ="""-----BEGIN CERTIFICATE-----
-        MIICNDCCAdqgAwIBAgIQYIj2PpdPLqtQXMmx0TmXujAKBggqhkjOPQQDAjAuMQ0w
-        CwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3aXJlIEludGVybWVkaWF0ZSBDQTAeFw0y
-        MzEwMDIxNTIyMjJaFw0yMzEyMzExNTIyMjJaMDMxFzAVBgNVBAoTDmVsbmEud2ly
-        ZS5saW5rMRgwFgYDVQQDEw9Nb2p0YWJhIENoZW5hbmkwKjAFBgMrZXADIQAonK3u
-        cLIUnWP+8iG2GdabCWmzfiHTgXMncNx/r064LKOCAQIwgf8wDgYDVR0PAQH/BAQD
-        AgeAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAdBgNVHQ4EFgQUhVb7
-        GEXzaKxm3yiNEV0DOd78LBcwHwYDVR0jBBgwFoAUADMwoCFunlLkYO2SQbOAUOIL
-        VCowZQYDVR0RBF4wXIZBaW06d2lyZWFwcD1JRzlZdnp1V1FJS1VhUmsxMkY1Q0lR
-        Lzk1MzIxOGU2OGE2MzY0MWZAZWxuYS53aXJlLmxpbmuGF2ltOndpcmVhcHA9bW9q
-        dGFiYV93aXJlMCcGDCsGAQQBgqRkxihAAQQXMBUCAQYEDmdvb2dsZS1hbmRyb2lk
-        BAAwCgYIKoZIzj0EAwIDSAAwRQIhAJORy8WUjP8spjxlCCNOCAQrPIUbl6BTQGtv
-        FhJqP3UrAiAC4mbuQ6BlVmiovCzqP1YbiaGimvBEm/XTwtWJE6wM0A==
-        -----END CERTIFICATE-----
-        -----BEGIN CERTIFICATE-----
-        MIIBuDCCAV6gAwIBAgIQUJ8AHZqe79OeFVEPkdtQrDAKBggqhkjOPQQDAjAmMQ0w
-        CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjMwNDE3MDkw
-        ODQxWhcNMzMwNDE0MDkwODQxWjAuMQ0wCwYDVQQKEwR3aXJlMR0wGwYDVQQDExR3
-        aXJlIEludGVybWVkaWF0ZSBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABB9p
-        iYVv5ik10pwkOGdwVI6F6a8YKk9Ro/CqahPcTfefhOhL/M5RxzWmi2oW75mW6WKr
-        tG94D45Ur6yfNclLspmjZjBkMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
-        AQH/AgEAMB0GA1UdDgQWBBQAMzCgIW6eUuRg7ZJBs4BQ4gtUKjAfBgNVHSMEGDAW
-        gBR40ZJlSIKIjEI/4ZMwgV3X5CB7tDAKBggqhkjOPQQDAgNIADBFAiEA5VT2B38E
-        9EunvJiLRCG9baeeMq4Yn1LwOT10cXdUIIICIEnDUrd2XW69YnUIPF3bEHln3oKt
-        wje0yUIA61GMpqNz
-        -----END CERTIFICATE-----"""
     }
 }

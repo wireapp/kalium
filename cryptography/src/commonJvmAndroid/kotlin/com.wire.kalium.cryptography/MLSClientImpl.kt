@@ -316,9 +316,9 @@ class MLSClientImpl(
         )
 
         // TODO: remove later, when CoreCrypto return the groupId instead of Hex value
-        fun toGroupId(value: String): MLSGroupId {
-            val x = value.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            return toByteArray(toUByteList(x)).encodeBase64()
+        fun toGroupId(hexValue: String): MLSGroupId {
+            val byteArrayValue = hexValue.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+            return toByteArray(toUByteList(byteArrayValue)).encodeBase64()
         }
 
         fun toGroupInfoBundle(value: com.wire.crypto.GroupInfoBundle) = GroupInfoBundle(
