@@ -1008,6 +1008,51 @@ class ConversationRepositoryTest {
     }
 
     @Test
+    fun givenAProteusVerificationStatuses_whenUpdatingProteusVerificationStatuses_thenShouldUpdateLocally() = runTest {
+        // given
+        val verificationStatus = Conversation.VerificationStatus.VERIFIED
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateProteusVerificationStatuses()
+            .arrange()
+
+        // when
+        val result =
+            conversationRepository.updateProteusVerificationStatuses(mapOf(CONVERSATION_ID to verificationStatus))
+
+        // then
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::updateProteusVerificationStatuses)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun whenGettingConversationsProteusVerificationDataByClientId_thenDAOFunctionIsCalled() = runTest {
+        val (arrange, conversationRepository) = Arrangement()
+            .withConversationsProteusVerificationDataByClientId(
+                listOf(
+                    ConversationEntity.ProteusVerificationData(
+                        CONVERSATION_ENTITY_ID, ConversationEntity.VerificationStatus.NOT_VERIFIED, false
+                    )
+                )
+            )
+            .arrange()
+
+        val result = conversationRepository.getConversationsProteusVerificationDataByClientId(CLIENT_ID)
+        with(result) {
+            shouldSucceed()
+            verify(arrange.conversationDAO)
+                .suspendFunction(arrange.conversationDAO::getConversationsProteusVerificationDataByClientId)
+                .with(eq(CLIENT_ID.value))
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
     fun givenSuccess_whenGettingDeleteMessageRecipients_thenSuccessIsPropagated() = runTest {
         val user = QualifiedIDEntity("userId", "domain.com")
         val conversationId = QualifiedIDEntity("conversationId", "domain.com")
@@ -1438,6 +1483,14 @@ class ConversationRepositoryTest {
                     .then { result }
             }
 
+        suspend fun withConversationsProteusVerificationDataByClientId(result: List<ConversationEntity.ProteusVerificationData>) =
+            apply {
+                given(conversationDAO)
+                    .suspendFunction(conversationDAO::getConversationsProteusVerificationDataByClientId)
+                    .whenInvokedWith(any())
+                    .thenReturn(result)
+            }
+
         fun withUpdateReceiptModeSuccess(receiptMode: ReceiptMode) = apply {
             given(conversationApi)
                 .suspendFunction(conversationApi::updateReceiptMode)
@@ -1462,6 +1515,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationDAO::getConversationsWithoutMetadata)
                 .whenInvoked()
                 .thenReturn(result)
+        }
+
+        fun withUpdateProteusVerificationStatuses() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateProteusVerificationStatuses)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         fun withGetGroupConversationWithUserIdsWithBothDomains(
@@ -1495,6 +1555,8 @@ class ConversationRepositoryTest {
 
         val CONVERSATION_ID = TestConversation.ID
         val USER_ID = TestUser.USER_ID
+
+        val CLIENT_ID = ClientId("client_id_value")
 
         val CONVERSATION_ENTITY_ID = QualifiedIDEntity(CONVERSATION_ID.value, CONVERSATION_ID.domain)
         val USER_ENTITY_ID = QualifiedIDEntity(USER_ID.value, USER_ID.domain)

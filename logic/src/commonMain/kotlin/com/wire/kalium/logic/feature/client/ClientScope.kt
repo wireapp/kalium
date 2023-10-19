@@ -23,9 +23,11 @@ import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepo
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -57,6 +59,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val mlsClientProvider: MLSClientProvider,
     private val notificationTokenRepository: NotificationTokenRepository,
     private val clientRemoteRepository: ClientRemoteRepository,
+    private val conversationRepository: ConversationRepository,
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionRepository: SessionRepository,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
@@ -66,7 +69,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val userRepository: UserRepository,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
     private val slowSyncRepository: SlowSyncRepository,
-    private val cachedClientIdClearer: CachedClientIdClearer
+    private val cachedClientIdClearer: CachedClientIdClearer,
+    private val persistMessage: PersistMessageUseCase
 ) {
     @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
@@ -142,6 +146,6 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
 
     val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCase(proteusClientProvider, preKeyRepository)
     val updateClientVerificationStatus: UpdateClientVerificationStatusUseCase
-        get() = UpdateClientVerificationStatusUseCase(clientRepository)
+        get() = UpdateClientVerificationStatusUseCase(clientRepository, conversationRepository, persistMessage, selfUserId)
 
 }

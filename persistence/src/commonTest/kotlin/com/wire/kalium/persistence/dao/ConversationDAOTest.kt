@@ -1115,7 +1115,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
             archived = false,
             archivedDateTime = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 
@@ -1147,7 +1147,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1173,7 +1173,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1202,7 +1202,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1231,7 +1231,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

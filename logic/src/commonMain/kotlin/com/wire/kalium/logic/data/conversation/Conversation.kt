@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
@@ -71,7 +73,8 @@ data class Conversation(
     val userMessageTimer: Duration?,
     val archived: Boolean,
     val archivedDateTime: Instant?,
-    val verificationStatus: VerificationStatus
+    val mlsVerificationStatus: VerificationStatus,
+    val proteusVerificationStatus: VerificationStatus
 ) {
 
     companion object {
@@ -246,6 +249,11 @@ data class Conversation(
         )
     }
 
+    data class ProteusVerificationData(
+        val conversationId: ConversationId,
+        val currentVerificationStatus: VerificationStatus,
+        val isActuallyVerified: Boolean
+    )
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -304,7 +312,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             userMessageTimer = null,
             archived = false,
             archivedDateTime = null,
-            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     )
 }

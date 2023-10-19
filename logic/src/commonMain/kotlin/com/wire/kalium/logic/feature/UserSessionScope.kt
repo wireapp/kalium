@@ -1287,6 +1287,7 @@ class UserSessionScope internal constructor(
             mlsClientProvider,
             notificationTokenRepository,
             clientRemoteRepository,
+            conversationRepository,
             proteusClientProvider,
             globalScope.sessionRepository,
             upgradeCurrentSessionUseCase,
@@ -1296,7 +1297,8 @@ class UserSessionScope internal constructor(
             userRepository,
             authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository,
-            cachedClientIdClearer
+            cachedClientIdClearer,
+            persistMessage
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(

@@ -28,7 +28,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
@@ -54,6 +53,8 @@ internal interface ConversationRepositoryArrangement {
     fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
     fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
     fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
+    fun withConversationsProteusVerificationDataByClientId(result: Either<StorageFailure, List<Conversation.ProteusVerificationData>>): ConversationRepositoryArrangementImpl
+    fun withUpdateProteusVerificationStatuses(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -125,7 +126,7 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
 
     override fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
         given(conversationRepository)
-            .suspendFunction(conversationRepository::updateVerificationStatus)
+            .suspendFunction(conversationRepository::updateMlsVerificationStatus)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
@@ -133,6 +134,22 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>) = apply {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationDetailsByMLSGroupId)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withConversationsProteusVerificationDataByClientId(
+        result: Either<StorageFailure, List<Conversation.ProteusVerificationData>>
+    ) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationsProteusVerificationDataByClientId)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withUpdateProteusVerificationStatuses(result: Either<StorageFailure, Unit>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateProteusVerificationStatuses)
             .whenInvokedWith(any())
             .thenReturn(result)
     }

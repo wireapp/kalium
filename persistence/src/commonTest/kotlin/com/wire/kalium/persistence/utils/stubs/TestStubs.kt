@@ -54,7 +54,7 @@ internal object TestStubs {
         userMessageTimer = null,
         archived = false,
         archivedInstant = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
     val conversationEntity2 = ConversationEntity(
         QualifiedIDEntity("2", "wire.com"),
@@ -80,7 +80,7 @@ internal object TestStubs {
         userMessageTimer = null,
         archived = false,
         archivedInstant = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     val conversationEntity3 = ConversationEntity(
@@ -109,7 +109,7 @@ internal object TestStubs {
         userMessageTimer = null,
         archived = false,
         archivedInstant = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     val conversationEntity4 = ConversationEntity(
@@ -138,7 +138,7 @@ internal object TestStubs {
         userMessageTimer = null,
         archived = false,
         archivedInstant = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

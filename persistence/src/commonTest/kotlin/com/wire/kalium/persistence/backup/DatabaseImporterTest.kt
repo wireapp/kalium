@@ -654,7 +654,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 userMessageTimer = null,
                 archived = false,
                 archivedInstant = null,
-                verificationStatus = verificationStatus
+                mlsVerificationStatus = mlsVerificationStatus
             )
         }
     }
@@ -693,7 +693,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 userMessageTimer = null,
                 archived = false,
                 archivedInstant = null,
-                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
             conversationAdded.add(overlappingConversation)

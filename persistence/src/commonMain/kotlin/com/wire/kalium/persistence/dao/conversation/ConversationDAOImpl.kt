@@ -22,6 +22,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
@@ -337,13 +338,31 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.clearContent(conversationId)
     }
 
-    override suspend fun updateVerificationStatus(
+    override suspend fun updateMlsVerificationStatus(
         verificationStatus: ConversationEntity.VerificationStatus,
         conversationId: QualifiedIDEntity
     ) = withContext(coroutineContext) {
-        conversationQueries.updateVerificationStatus(verificationStatus, conversationId)
+        conversationQueries.updateMlsVerificationStatus(verificationStatus, conversationId)
     }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
+
+
+    override suspend fun updateProteusVerificationStatuses(
+        statusesToUpdate: Map<QualifiedIDEntity, ConversationEntity.VerificationStatus>
+    ) = withContext(coroutineContext) {
+        conversationQueries.transaction {
+            statusesToUpdate.forEach { (conversationId, verificationStatus) ->
+                conversationQueries.updateProteusVerificationStatus(verificationStatus, conversationId)
+            }
+        }
+    }
+
+    override suspend fun getConversationsProteusVerificationDataByClientId(
+        clientId: String
+    ): List<ConversationEntity.ProteusVerificationData> =
+        conversationQueries.selectConversationIdsWithCurrentAndActualProteusVerificationByClientId(clientId)
+            .executeAsList()
+            .map { conversationMapper.mapToProteusVerificationData(it) }
 }

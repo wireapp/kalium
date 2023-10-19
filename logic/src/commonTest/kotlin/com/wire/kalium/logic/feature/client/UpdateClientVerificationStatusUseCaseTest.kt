@@ -21,14 +21,24 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import io.mockative.Mock
 import io.mockative.any
+import io.mockative.classOf
 import io.mockative.eq
+import io.mockative.given
+import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -46,6 +56,7 @@ class UpdateClientVerificationStatusUseCaseTest {
 
         val (arrangement, useCase) = arrange {
             withUpdateClientProteusVerificationStatus(Either.Right(Unit))
+            withConversationsProteusVerificationDataByClientId(Either.Right(listOf()))
         }
 
         useCase(userId, clientID, true)
@@ -53,6 +64,11 @@ class UpdateClientVerificationStatusUseCaseTest {
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::getConversationsProteusVerificationDataByClientId)
+            .with(eq(clientID))
             .wasInvoked(exactly = once)
     }
 
@@ -63,6 +79,7 @@ class UpdateClientVerificationStatusUseCaseTest {
 
         val (arrangement, useCase) = arrange {
             withUpdateClientProteusVerificationStatus(Either.Right(Unit))
+            withConversationsProteusVerificationDataByClientId(Either.Right(listOf()))
         }
 
         useCase(userId, clientID, true).also {
@@ -72,6 +89,11 @@ class UpdateClientVerificationStatusUseCaseTest {
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
             .with(eq(userId), eq(clientID), eq(true))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::getConversationsProteusVerificationDataByClientId)
+            .with(eq(clientID))
             .wasInvoked(exactly = once)
     }
 
@@ -97,15 +119,66 @@ class UpdateClientVerificationStatusUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+
+    @Test
+    fun givenSuccessAndSomeConversationToUpdateVerification_whenUpdatingTheVerificationStatus_thenConversationVerificationIsCalled() =
+        runTest {
+            val userId = UserId("userId", "domain")
+            val clientID = ClientId("clientId")
+            val proteusVerificationData = listOf(
+                Conversation.ProteusVerificationData(TestConversation.ID, Conversation.VerificationStatus.VERIFIED, false),
+                Conversation.ProteusVerificationData(
+                    TestConversation.ID.copy(value = "other_value"),
+                    Conversation.VerificationStatus.DEGRADED,
+                    false
+                )
+            )
+
+            val (arrangement, useCase) = arrange {
+                withUpdateClientProteusVerificationStatus(Either.Right(Unit))
+                withConversationsProteusVerificationDataByClientId(Either.Right(proteusVerificationData))
+            }
+
+            useCase(userId, clientID, true).also {
+                assertIs<UpdateClientVerificationStatusUseCase.Result.Success>(it)
+            }
+
+            verify(arrangement.conversationRepository)
+                .suspendFunction(arrangement.conversationRepository::updateProteusVerificationStatuses)
+                .with(eq(mapOf(TestConversation.ID to Conversation.VerificationStatus.DEGRADED)))
+                .wasInvoked(exactly = once)
+
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(any())
+                .wasInvoked(exactly = once)
+        }
+
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: Arrangement.() -> Unit
-    ) : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
+    ) : ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+
+        @Mock
+        val persistMessage = mock(classOf<PersistMessageUseCase>())
+
+        init {
+            given(persistMessage)
+                .suspendFunction(persistMessage::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+
+            withUpdateProteusVerificationStatuses(Either.Right(Unit))
+        }
 
         fun arrange() = block().run {
             this@Arrangement to UpdateClientVerificationStatusUseCase(
-                clientRepository = clientRepository
+                clientRepository = clientRepository,
+                conversationRepository = conversationRepository,
+                persistMessage = persistMessage,
+                selfUserId = TestUser.SELF.id
             )
         }
     }

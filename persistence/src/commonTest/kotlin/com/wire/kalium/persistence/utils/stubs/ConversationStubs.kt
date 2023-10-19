@@ -40,7 +40,7 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     userMessageTimer = null,
     archived = false,
     archivedInstant = null,
-    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
 )
 
 fun newConversationEntity(
@@ -64,5 +64,5 @@ fun newConversationEntity(
     userMessageTimer = null,
     archived = false,
     archivedInstant = null,
-    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
 )

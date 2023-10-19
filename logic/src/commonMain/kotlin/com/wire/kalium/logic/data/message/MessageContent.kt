@@ -415,4 +415,11 @@ sealed interface MessagePreviewContent {
 
     object Unknown : MessagePreviewContent
 
+    sealed class VerificationChanged: MessagePreviewContent {
+        data object VerifiedMls : VerificationChanged()
+        data object VerifiedProteus : VerificationChanged()
+        data object DegradedMls : VerificationChanged()
+        data object DegradedProteus : VerificationChanged()
+    }
+
 }

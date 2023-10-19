@@ -369,7 +369,7 @@ class ClientDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 }

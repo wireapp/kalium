@@ -420,6 +420,10 @@ sealed class MessagePreviewEntityContent {
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     object CryptoSessionReset : MessagePreviewEntityContent()
+    data object ConversationVerifiedMls : MessagePreviewEntityContent()
+    data object ConversationVerificationDegradedMls : MessagePreviewEntityContent()
+    data object ConversationVerifiedProteus : MessagePreviewEntityContent()
+    data object ConversationVerificationDegradedProteus : MessagePreviewEntityContent()
     object Unknown : MessagePreviewEntityContent()
 
 }

@@ -197,13 +197,13 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessagePreviewEntityContent.ConversationVerificationDegradedMls
+            MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> MessagePreviewEntityContent.ConversationVerificationDegradedProteus
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
-            MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
         }
     }
 

@@ -40,7 +40,9 @@ CREATE TABLE Conversation (
     is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
     archived INTEGER AS Boolean NOT NULL DEFAULT 0,
     archived_date_time INTEGER AS Instant,
-    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED"
+    -- mls_verification_status
+    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
+    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED"
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -216,7 +218,8 @@ Conversation.user_message_timer,
 Conversation.incomplete_metadata,
 Conversation.archived,
 Conversation.archived_date_time,
-Conversation.verification_status
+Conversation.verification_status AS mls_verification_status,
+Conversation.proteus_verification_status
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
@@ -252,7 +255,7 @@ selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationByQualifiedId:
-SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status FROM Conversation WHERE qualified_id = ?;
+SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status, proteus_verification_status FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
@@ -345,10 +348,15 @@ SELECT qualified_id
 FROM Conversation
 WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
 
-updateVerificationStatus:
+updateMlsVerificationStatus:
 UPDATE Conversation
-SET verification_status = ?
-WHERE qualified_id = ?;
+SET verification_status = :status
+WHERE qualified_id = :conversationId;
+
+updateProteusVerificationStatus:
+UPDATE Conversation
+SET proteus_verification_status = :status
+WHERE qualified_id = :conversationId;
 
 clearContent {
 DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
@@ -357,3 +365,14 @@ DELETE FROM Message WHERE conversation_id = :conversationId;
 
 selectChanges:
 SELECT changes();
+
+selectConversationIdsWithCurrentAndActualProteusVerificationByClientId:
+SELECT conv.qualified_id, conv.proteus_verification_status, (COUNT(*) = SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END)) AS isActuallyVerified
+FROM Conversation AS conv
+LEFT JOIN Member AS mem ON conv.qualified_id = mem.conversation
+LEFT JOIN Client AS client ON client.user_id = mem.user
+WHERE conv.qualified_id IN (SELECT Member.conversation FROM Member
+                            LEFT JOIN Client ON Client.user_id = Member.user
+                            WHERE Client.id = :clientId)
+AND mem.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+GROUP BY conv.qualified_id;

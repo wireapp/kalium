@@ -230,7 +230,7 @@ interface ConversationRepository {
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
 
-    suspend fun updateVerificationStatus(
+    suspend fun updateMlsVerificationStatus(
         verificationStatus: Conversation.VerificationStatus,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
@@ -242,6 +242,14 @@ interface ConversationRepository {
         conversationId: ConversationId,
         typingStatus: Conversation.TypingIndicatorMode
     ): Either<CoreFailure, Unit>
+
+    suspend fun getConversationsProteusVerificationDataByClientId(
+        clientId: ClientId
+    ): Either<StorageFailure, List<Conversation.ProteusVerificationData>>
+
+    suspend fun updateProteusVerificationStatuses(
+        statusesToUpdate: Map<QualifiedID, Conversation.VerificationStatus>
+    ): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -853,12 +861,12 @@ internal class ConversationDataSource internal constructor(
             .mapValues { it.value.toModel() }
     }
 
-    override suspend fun updateVerificationStatus(
+    override suspend fun updateMlsVerificationStatus(
         verificationStatus: Conversation.VerificationStatus,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.updateVerificationStatus(
+            conversationDAO.updateMlsVerificationStatus(
                 conversationMapper.verificationStatusToEntity(verificationStatus),
                 conversationID.toDao()
             )
@@ -879,6 +887,22 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Unit> = wrapApiRequest {
         conversationApi.sendTypingIndicatorNotification(conversationId.toApi(), typingStatus.toStatusDto())
     }
+
+    override suspend fun updateProteusVerificationStatuses(
+        statusesToUpdate: Map<QualifiedID, Conversation.VerificationStatus>
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateProteusVerificationStatuses(
+                statusesToUpdate.mapKeys { (conversationId, _) -> conversationId.toDao() }
+                    .mapValues { (_, verificationStatus) -> conversationMapper.verificationStatusToEntity(verificationStatus) }
+            )
+        }
+
+    override suspend fun getConversationsProteusVerificationDataByClientId(
+        clientId: ClientId
+    ): Either<StorageFailure, List<Conversation.ProteusVerificationData>> =
+        wrapStorageRequest { conversationDAO.getConversationsProteusVerificationDataByClientId(clientId.value) }
+            .map { list -> list.map { conversationMapper.fromDaoModelToProteusVerificationData(it) } }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>

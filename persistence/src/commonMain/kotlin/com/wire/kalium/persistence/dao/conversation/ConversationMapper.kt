@@ -18,9 +18,11 @@
 package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.SelectConversationByMember
+import com.wire.kalium.persistence.SelectConversationIdsWithCurrentAndActualProteusVerificationByClientId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.ConversationDetails as SQLDelightConversationView
+
 internal class ConversationMapper {
     fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
         ConversationViewEntity(
@@ -67,7 +69,8 @@ internal class ConversationMapper {
             userDefederated = userDefederated,
             archived = archived,
             archivedDateTime = archived_date_time,
-            verificationStatus = verification_status
+            mlsVerificationStatus = mls_verification_status,
+            proteusVerificationStatus = proteus_verification_status
         )
     }
 
@@ -97,7 +100,8 @@ internal class ConversationMapper {
         userMessageTimer: Long?,
         archived: Boolean,
         archivedDateTime: Instant?,
-        verificationStatus: ConversationEntity.VerificationStatus
+        mlsVerificationStatus: ConversationEntity.VerificationStatus,
+        proteusVerificationStatus: ConversationEntity.VerificationStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -124,7 +128,8 @@ internal class ConversationMapper {
         userMessageTimer = userMessageTimer,
         archived = archived,
         archivedInstant = archivedDateTime,
-        verificationStatus = verificationStatus
+        mlsVerificationStatus = mlsVerificationStatus,
+        proteusVerificationStatus = proteusVerificationStatus
     )
 
     fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
@@ -173,7 +178,8 @@ internal class ConversationMapper {
                 userDefederated = userDefederated,
                 archived = archived,
                 archivedDateTime = archived_date_time,
-                verificationStatus = verification_status
+                mlsVerificationStatus = mls_verification_status,
+                proteusVerificationStatus = proteus_verification_status
             )
         }
     }
@@ -199,4 +205,13 @@ internal class ConversationMapper {
             ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
         }
     }
+
+    fun mapToProteusVerificationData(
+        selection: SelectConversationIdsWithCurrentAndActualProteusVerificationByClientId,
+    ): ConversationEntity.ProteusVerificationData =
+        ConversationEntity.ProteusVerificationData(
+            selection.qualified_id,
+            selection.proteus_verification_status,
+            selection.isActuallyVerified
+        )
 }
