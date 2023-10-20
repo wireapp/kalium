@@ -18,6 +18,11 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.conversation.Conversation.Access
+import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
+import com.wire.kalium.logic.data.conversation.Conversation.Type
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
@@ -28,8 +33,6 @@ import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.serialization.toJsonElement
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
