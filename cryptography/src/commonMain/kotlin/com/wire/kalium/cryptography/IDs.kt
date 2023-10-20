@@ -81,11 +81,12 @@ data class WireIdentity(
     var certificate: String
 )
 
+@Suppress("MagicNumber")
 data class E2EIQualifiedClientId(
     val value: String,
     val userId: CryptoQualifiedID
 ) {
-    override fun toString():String {
+    override fun toString(): String {
         val sourceUUID = uuidFrom(userId.value)
 
         // Convert the UUID to bytes

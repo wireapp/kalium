@@ -87,10 +87,12 @@ class MLSClientImpl(
     }
 
     override suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
-        return toCommitBundle(coreCrypto.joinByExternalCommit(
-            publicGroupState,
-            defaultGroupConfiguration,
-            MlsCredentialType.BASIC)
+        return toCommitBundle(
+            coreCrypto.joinByExternalCommit(
+                publicGroupState,
+                defaultGroupConfiguration,
+                MlsCredentialType.BASIC
+            )
         )
     }
 
@@ -137,9 +139,11 @@ class MLSClientImpl(
             message
         )
 
-        val messageBundle = listOf(toDecryptedMessageBundle(
-            decryptedMessage
-        ))
+        val messageBundle = listOf(
+            toDecryptedMessageBundle(
+                decryptedMessage
+            )
+        )
         val bufferedMessages = decryptedMessage.bufferedMessages?.map {
             toDecryptedMessageBundle(it)
         } ?: emptyList()
@@ -316,6 +320,7 @@ class MLSClientImpl(
         )
 
         // TODO: remove later, when CoreCrypto return the groupId instead of Hex value
+        @Suppress("MagicNumber")
         fun toGroupId(hexValue: String): MLSGroupId {
             val byteArrayValue = hexValue.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
             return toByteArray(toUByteList(byteArrayValue)).encodeBase64()
@@ -340,7 +345,7 @@ class MLSClientImpl(
 
         fun toE2EIConversationState(value: com.wire.crypto.E2eiConversationState) = when (value) {
             E2eiConversationState.VERIFIED -> E2EIConversationState.VERIFIED
-            //TODO: this value is wrong on CoreCrypto, it will be renamed to NOT_VERIFIED
+            // TODO: this value is wrong on CoreCrypto, it will be renamed to NOT_VERIFIED
             E2eiConversationState.DEGRADED -> E2EIConversationState.NOT_VERIFIED
             E2eiConversationState.NOT_ENABLED -> E2EIConversationState.NOT_ENABLED
         }
@@ -365,5 +370,4 @@ class MLSClientImpl(
             }
         )
     }
-
 }

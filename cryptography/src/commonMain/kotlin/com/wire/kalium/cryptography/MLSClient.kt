@@ -343,5 +343,5 @@ interface MLSClient {
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>):List<WireIdentity>
+    suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity>
 }
