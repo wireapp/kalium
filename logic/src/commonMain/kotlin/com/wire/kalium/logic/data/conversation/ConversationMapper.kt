@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.E2EIConversationState
@@ -57,7 +57,6 @@ import kotlinx.datetime.toInstant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
