@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
+import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
@@ -513,8 +514,11 @@ internal class MLSConversationDataSource(
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
         }.map {
-            if (it) Conversation.VerificationStatus.VERIFIED
-            else Conversation.VerificationStatus.NOT_VERIFIED
+            when (it) {
+                E2EIConversationState.VERIFIED -> Conversation.VerificationStatus.VERIFIED
+                E2EIConversationState.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
+                E2EIConversationState.NOT_ENABLED -> Conversation.VerificationStatus.NOT_VERIFIED
+            }
         }
 
     private suspend fun retryOnCommitFailure(
