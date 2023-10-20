@@ -385,7 +385,6 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
 
-
     override suspend fun updateProteusVerificationStatuses(
         statusesToUpdate: Map<QualifiedIDEntity, ConversationEntity.VerificationStatus>
     ) = withContext(coroutineContext) {
