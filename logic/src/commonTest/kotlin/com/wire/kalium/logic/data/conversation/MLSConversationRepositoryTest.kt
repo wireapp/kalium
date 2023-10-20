@@ -1064,6 +1064,24 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenNotEnabledE2EIForConversation_whenGetGroupVerify_thenNotVerifiedReturned() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetGroupVerifyReturn(E2EIConversationState.NOT_ENABLED)
+            .arrange()
+
+        assertEquals(
+            Either.Right(Conversation.VerificationStatus.NOT_VERIFIED),
+            mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
+        )
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::isGroupVerified)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenNoMLSClient_whenGetGroupVerify_thenErrorReturned() = runTest {
         val failure = CoreFailure.Unknown(RuntimeException("Error!"))
         val (arrangement, mlsConversationRepository) = Arrangement()

@@ -513,13 +513,7 @@ internal class MLSConversationDataSource(
     override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus> =
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
-        }.map {
-            when (it) {
-                E2EIConversationState.VERIFIED -> Conversation.VerificationStatus.VERIFIED
-                E2EIConversationState.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
-                E2EIConversationState.NOT_ENABLED -> Conversation.VerificationStatus.NOT_VERIFIED
-            }
-        }
+        }.map { it.toModel() }
 
     private suspend fun retryOnCommitFailure(
         groupID: GroupID,
