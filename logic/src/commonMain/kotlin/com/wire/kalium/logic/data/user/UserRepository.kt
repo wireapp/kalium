@@ -223,7 +223,7 @@ internal class UserDataSource internal constructor(
                             ListUserRequest.qualifiedIds(chunk.map { userId -> userId.toApi() })
                         )
                     }.map {
-                        kaliumLogger.d("Found ${it.usersFound} users and ${it.usersFailed} failed users")
+                        kaliumLogger.d("Found ${it.usersFound.size} users and ${it.usersFailed.size} failed users")
                         acc.copy(
                             usersFound = (acc.usersFound + it.usersFound).distinct(),
                             usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
