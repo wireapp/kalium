@@ -216,7 +216,7 @@ internal class UserDataSource internal constructor(
             Either.Right(Unit)
         } else {
             qualifiedUserIdList
-                .chunked(500)
+                .chunked(BATCH_SIZE)
                 .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
                     wrapApiRequest {
                         kaliumLogger.d("Fetching ${chunk.size} users")
@@ -480,5 +480,6 @@ internal class UserDataSource internal constructor(
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
         internal val FEDERATED_USER_TTL = 5.minutes
+        internal const val BATCH_SIZE = 500
     }
 }
