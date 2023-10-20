@@ -209,23 +209,35 @@ internal class UserDataSource internal constructor(
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
+    @Suppress("MagicNumber")
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         if (qualifiedUserIdList.isEmpty()) {
-            return Either.Right(Unit)
+            Either.Right(Unit)
+        } else {
+            qualifiedUserIdList
+                .chunked(500)
+                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
+                    wrapApiRequest {
+                        kaliumLogger.d("Fetching ${chunk.size} users")
+                        userDetailsApi.getMultipleUsers(
+                            ListUserRequest.qualifiedIds(chunk.map { userId -> userId.toApi() })
+                        )
+                    }.map {
+                        kaliumLogger.d("Found ${it.usersFound} users and ${it.usersFailed} failed users")
+                        acc.copy(
+                            usersFound = (acc.usersFound + it.usersFound).distinct(),
+                            usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
+                        )
+                    }
+                }
+                .flatMap { listUserProfileDTO ->
+                    if (listUserProfileDTO.usersFailed.isNotEmpty()) {
+                        kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
+                        persistIncompleteUsers(listUserProfileDTO.usersFailed)
+                    }
+                    persistUsers(listUserProfileDTO.usersFound)
+                }
         }
-
-        return wrapApiRequest {
-            userDetailsApi.getMultipleUsers(
-                ListUserRequest.qualifiedIds(qualifiedUserIdList.map { userId -> userId.toApi() })
-            )
-        }.flatMap { listUserProfileDTO ->
-            if (listUserProfileDTO.usersFailed.isNotEmpty()) {
-                kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
-                persistIncompleteUsers(listUserProfileDTO.usersFailed)
-            }
-            persistUsers(listUserProfileDTO.usersFound)
-        }
-    }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
         usersFailed.map { userMapper.fromFailedUserToEntity(it) }.forEach {
