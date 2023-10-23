@@ -31,6 +31,7 @@ data class ProposalTimerEntity(
 
 interface ConversationDAO {
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
+    suspend fun getMLSSelfConversationGroupId(): String?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
