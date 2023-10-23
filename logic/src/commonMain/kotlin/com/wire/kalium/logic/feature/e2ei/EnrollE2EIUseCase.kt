@@ -111,8 +111,8 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.Certificate, it).toEitherLeft()
         }, { it })
 
-        // TODO(fix): init after fixing the MLS client initialization mechanism
-        // TODO(revert): e2EIRepository.initMLSClientWithCertificate(certificateRequest.response.decodeToString())
+        e2EIRepository.e2eiRotateAll(certificateRequest.response.decodeToString())
+
         return Either.Right(E2EIEnrollmentResult.Success(certificateRequest.response.decodeToString()))
     }
 

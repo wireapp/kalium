@@ -26,6 +26,7 @@ import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -60,6 +61,7 @@ interface E2EIRepository {
     suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
     suspend fun initMLSClientWithCertificate(certificateChain: String)
+    suspend fun e2eiRotateAll(certificateChain: String)
 }
 
 class E2EIRepositoryImpl(
@@ -67,7 +69,8 @@ class E2EIRepositoryImpl(
     private val acmeApi: ACMEApi,
     private val e2EIClientProvider: E2EIClientProvider,
     private val mlsClientProvider: MLSClientProvider,
-    private val currentClientIdProvider: CurrentClientIdProvider
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val mlsConversationRepository: MLSConversationRepository
 ) : E2EIRepository {
 
     override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = wrapApiRequest {
@@ -195,6 +198,14 @@ class E2EIRepositoryImpl(
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             mlsClientProvider.getMLSClient().map {
                 it.e2eiMlsInitOnly(e2eiClient, certificateChain)
+            }
+        }
+    }
+
+    override suspend fun e2eiRotateAll(certificateChain: String) {
+        e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            currentClientIdProvider().map { clientId ->
+                mlsConversationRepository.rotateConversation(clientId, e2eiClient, certificateChain)
             }
         }
     }

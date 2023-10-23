@@ -45,7 +45,8 @@ class MLSClientImpl(
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
 
     @Suppress("EmptyFunctionBlock")
-    override suspend fun close() {}
+    override suspend fun close() {
+    }
 
     override suspend fun getPublicKey(): ByteArray {
         return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
@@ -194,7 +195,11 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt) {
+    override suspend fun e2eiRotateAll(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ): RotateBundle {
         TODO("Not yet implemented")
     }
 
