@@ -87,10 +87,12 @@ class MLSClientImpl(
     }
 
     override suspend fun joinByExternalCommit(publicGroupState: ByteArray): CommitBundle {
-        return toCommitBundle(coreCrypto.joinByExternalCommit(
-            publicGroupState,
-            defaultGroupConfiguration,
-            MlsCredentialType.BASIC)
+        return toCommitBundle(
+            coreCrypto.joinByExternalCommit(
+                publicGroupState,
+                defaultGroupConfiguration,
+                MlsCredentialType.BASIC
+            )
         )
     }
 
@@ -137,9 +139,11 @@ class MLSClientImpl(
             message
         )
 
-        val messageBundle = listOf(toDecryptedMessageBundle(
-            decryptedMessage
-        ))
+        val messageBundle = listOf(
+            toDecryptedMessageBundle(
+                decryptedMessage
+            )
+        )
         val bufferedMessages = decryptedMessage.bufferedMessages?.map {
             toDecryptedMessageBundle(it)
         } ?: emptyList()
@@ -248,6 +252,10 @@ class MLSClientImpl(
         coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain)
     }
 
+    override suspend fun isE2EIEnabled(): Boolean {
+        return coreCrypto.e2eiIsEnabled(defaultCiphersuite)
+    }
+
     override suspend fun e2eiRotateAll(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
@@ -260,8 +268,17 @@ class MLSClientImpl(
         )
     }
 
-    override suspend fun isGroupVerified(groupId: MLSGroupId): Boolean =
-        coreCrypto.e2eiConversationState(groupId.decodeBase64Bytes()) != E2eiConversationState.DEGRADED
+    override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState =
+        toE2EIConversationState(coreCrypto.e2eiConversationState(groupId.decodeBase64Bytes()))
+
+    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+        val clientIds = clients.map {
+            it.toString().encodeToByteArray()
+        }
+        return coreCrypto.getUserIdentities(groupId.decodeBase64Bytes(), clientIds).map {
+            toIdentity(it)
+        }
+    }
 
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
@@ -286,6 +303,29 @@ class MLSClientImpl(
             toGroupInfoBundle(value.groupInfo)
         )
 
+        fun toRotateBundle(value: com.wire.crypto.RotateBundle) = RotateBundle(
+            value.commits.map { (groupId, commitBundle) ->
+                toGroupId(groupId) to toCommitBundle(commitBundle)
+            }.toMap(),
+            value.newKeyPackages,
+            value.keyPackageRefsToRemove
+        )
+
+        fun toIdentity(value: com.wire.crypto.WireIdentity) = WireIdentity(
+            value.clientId,
+            value.handle,
+            value.displayName,
+            value.domain,
+            value.certificate
+        )
+
+        // TODO: remove later, when CoreCrypto return the groupId instead of Hex value
+        @Suppress("MagicNumber")
+        fun toGroupId(hexValue: String): MLSGroupId {
+            val byteArrayValue = hexValue.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+            return toByteArray(toUByteList(byteArrayValue)).encodeBase64()
+        }
+
         fun toGroupInfoBundle(value: com.wire.crypto.GroupInfoBundle) = GroupInfoBundle(
             toEncryptionType(value.encryptionType),
             toRatchetTreeType(value.ratchetTreeType),
@@ -303,13 +343,20 @@ class MLSClientImpl(
             MlsRatchetTreeType.BY_REF -> RatchetTreeType.BY_REF
         }
 
+        fun toE2EIConversationState(value: com.wire.crypto.E2eiConversationState) = when (value) {
+            E2eiConversationState.VERIFIED -> E2EIConversationState.VERIFIED
+            // TODO: this value is wrong on CoreCrypto, it will be renamed to NOT_VERIFIED
+            E2eiConversationState.DEGRADED -> E2EIConversationState.NOT_VERIFIED
+            E2eiConversationState.NOT_ENABLED -> E2EIConversationState.NOT_ENABLED
+        }
+
         fun toDecryptedMessageBundle(value: DecryptedMessage) = DecryptedMessageBundle(
             value.message,
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
             value.identity?.let {
-                E2EIdentity(it.clientId, it.handle, it.displayName, it.domain)
+                WireIdentity(it.clientId, it.handle, it.displayName, it.domain, it.certificate)
             }
         )
 
@@ -319,9 +366,8 @@ class MLSClientImpl(
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
             value.identity?.let {
-                E2EIdentity(it.clientId, it.handle, it.displayName, it.domain)
+                WireIdentity(it.clientId, it.handle, it.displayName, it.domain, it.certificate)
             }
         )
     }
-
 }
