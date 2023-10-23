@@ -58,19 +58,7 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
         archivedStatusTimestamp: Long
     ): ArchiveStatusUpdateResult =
         if (!onlyLocally) {
-            conversationRepository.updateArchivedStatusRemotely(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
-                .onFailure {
-                    kaliumLogger.e(
-                        "Something went wrong when updating remotely convId (${conversationId.toLogString()}) archiving " +
-                                "status to archived = ($shouldArchiveConversation)"
-                    )
-                }
-                .onSuccess {
-                    kaliumLogger.d(
-                        "Successfully updated remotely convId (${conversationId.toLogString()}) archiving " +
-                                "status to archived = ($shouldArchiveConversation)"
-                    )
-                }
+            archiveRemotely(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
         } else {
             Either.Right(Unit)
         }
@@ -96,19 +84,7 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
                 }
 
                 if (!onlyLocally) {
-                    conversationRepository.updateMutedStatusRemotely(conversationId, updatedMutedStatus, archivedStatusTimestamp)
-                        .onFailure {
-                            kaliumLogger.e(
-                                "Something went wrong when updating remotely the muting status of the convId: " +
-                                        "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
-                            )
-                        }
-                        .onSuccess {
-                            kaliumLogger.d(
-                                "Successfully updated remotely the muting status of the convId: " +
-                                        "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
-                            )
-                        }
+                    updateMutedStatusRemotely(conversationId, updatedMutedStatus, archivedStatusTimestamp)
                 } else {
                     Either.Right(Unit)
                 }
@@ -128,6 +104,42 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
                 // Even if the muting status update fails, we should still return success as the archived status update was successful
                 ArchiveStatusUpdateResult.Success
             })
+
+    private suspend fun archiveRemotely(
+        conversationId: ConversationId,
+        shouldArchiveConversation: Boolean,
+        archivedStatusTimestamp: Long
+    ) = conversationRepository.updateArchivedStatusRemotely(conversationId, shouldArchiveConversation, archivedStatusTimestamp)
+        .onFailure {
+            kaliumLogger.e(
+                "Something went wrong when updating remotely convId (${conversationId.toLogString()}) archiving " +
+                        "status to archived = ($shouldArchiveConversation)"
+            )
+        }
+        .onSuccess {
+            kaliumLogger.d(
+                "Successfully updated remotely convId (${conversationId.toLogString()}) archiving " +
+                        "status to archived = ($shouldArchiveConversation)"
+            )
+        }
+
+    private suspend fun updateMutedStatusRemotely(
+        conversationId: ConversationId,
+        updatedMutedStatus: MutedConversationStatus,
+        archivedStatusTimestamp: Long
+    ) = conversationRepository.updateMutedStatusRemotely(conversationId, updatedMutedStatus, archivedStatusTimestamp)
+        .onFailure {
+            kaliumLogger.e(
+                "Something went wrong when updating remotely the muting status of the convId: " +
+                        "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
+            )
+        }
+        .onSuccess {
+            kaliumLogger.d(
+                "Successfully updated remotely the muting status of the convId: " +
+                        "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
+            )
+        }
 }
 
 sealed class ArchiveStatusUpdateResult {
