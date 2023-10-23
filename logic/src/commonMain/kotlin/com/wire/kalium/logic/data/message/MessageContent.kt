@@ -358,7 +358,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.Unknown -> "Unknown"
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
-    MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
+    is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
     null -> "null"
 }
 

@@ -378,6 +378,7 @@ class MessageMapperImpl(
             MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
         }
         is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
+        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
     }
 }
 
@@ -592,4 +593,5 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     MessageContent.ConversationVerifiedProteus -> MessageEntityContent.ConversationVerifiedProteus
     is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
     MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
+    is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
 }
