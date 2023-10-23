@@ -44,7 +44,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 
 object TestUser {
-    private const val value = "value"
+    private const val value = "41d2b365-f4a9-4ba1-bddf-5afb8aca6786"
     private const val domain = "domain"
 
     val USER_ID = UserId(value, domain)
