@@ -275,6 +275,12 @@ data class Conversation(
         )
     }
 
+    /**
+     * [conversationId] ID of the conversation.
+     * [currentVerificationStatus] is [VerificationStatus] of the conversation that is currently stored in DB, it might be out of the date.
+     * [isActuallyVerified] Boolean if the conversation actually Proteus verified or not,
+     * calculated by checking if ALL the Clients that belongs to that conversation are verified, so it's always actual.
+     */
     data class ProteusVerificationData(
         val conversationId: ConversationId,
         val currentVerificationStatus: VerificationStatus,

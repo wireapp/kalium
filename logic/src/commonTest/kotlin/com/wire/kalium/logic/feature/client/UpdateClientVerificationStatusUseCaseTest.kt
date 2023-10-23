@@ -31,8 +31,6 @@ import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrange
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -67,7 +65,7 @@ class UpdateClientVerificationStatusUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::getConversationsProteusVerificationDataByClientId)
+            .suspendFunction(arrangement.conversationRepository::getConversationsProteusVerificationData)
             .with(eq(clientID))
             .wasInvoked(exactly = once)
     }
@@ -92,7 +90,7 @@ class UpdateClientVerificationStatusUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::getConversationsProteusVerificationDataByClientId)
+            .suspendFunction(arrangement.conversationRepository::getConversationsProteusVerificationData)
             .with(eq(clientID))
             .wasInvoked(exactly = once)
     }
@@ -144,7 +142,7 @@ class UpdateClientVerificationStatusUseCaseTest {
             }
 
             verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::updateProteusVerificationStatuses)
+                .suspendFunction(arrangement.conversationRepository::updateProteusVerificationStatus)
                 .with(eq(mapOf(TestConversation.ID to Conversation.VerificationStatus.DEGRADED)))
                 .wasInvoked(exactly = once)
 

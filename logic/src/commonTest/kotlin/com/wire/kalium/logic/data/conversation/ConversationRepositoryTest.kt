@@ -1064,7 +1064,7 @@ class ConversationRepositoryTest {
 
         // when
         val result =
-            conversationRepository.updateProteusVerificationStatuses(mapOf(CONVERSATION_ID to verificationStatus))
+            conversationRepository.updateProteusVerificationStatus(mapOf(CONVERSATION_ID to verificationStatus))
 
         // then
         with(result) {
@@ -1088,7 +1088,7 @@ class ConversationRepositoryTest {
             )
             .arrange()
 
-        val result = conversationRepository.getConversationsProteusVerificationDataByClientId(CLIENT_ID)
+        val result = conversationRepository.getConversationsProteusVerificationData(CLIENT_ID)
         with(result) {
             shouldSucceed()
             verify(arrange.conversationDAO)

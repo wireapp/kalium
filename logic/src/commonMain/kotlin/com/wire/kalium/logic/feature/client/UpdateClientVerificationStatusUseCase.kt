@@ -51,7 +51,7 @@ class UpdateClientVerificationStatusUseCase internal constructor(
 ) {
     suspend operator fun invoke(userId: UserId, clientId: ClientId, verified: Boolean): Result =
         clientRepository.updateClientProteusVerificationStatus(userId, clientId, verified)
-            .flatMap { conversationRepository.getConversationsProteusVerificationDataByClientId(clientId) }
+            .flatMap { conversationRepository.getConversationsProteusVerificationData(clientId) }
             .flatMap { updateConversationsStatusIfNeeded(it) }
             .map { it.forEach { (conversationId, newStatus) -> notifyUserAboutStatusChanges(conversationId, newStatus) } }
             .fold(
@@ -85,7 +85,7 @@ class UpdateClientVerificationStatusUseCase internal constructor(
         }
 
         return if (mapForUpdatingStatuses.isEmpty()) Either.Right(mapForUpdatingStatuses)
-        else conversationRepository.updateProteusVerificationStatuses(mapForUpdatingStatuses)
+        else conversationRepository.updateProteusVerificationStatus(mapForUpdatingStatuses)
             .map { mapForUpdatingStatuses }
     }
 

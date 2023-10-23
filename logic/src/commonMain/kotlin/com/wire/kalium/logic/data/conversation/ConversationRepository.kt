@@ -282,11 +282,11 @@ interface ConversationRepository {
      */
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 
-    suspend fun getConversationsProteusVerificationDataByClientId(
+    suspend fun getConversationsProteusVerificationData(
         clientId: ClientId
     ): Either<StorageFailure, List<Conversation.ProteusVerificationData>>
 
-    suspend fun updateProteusVerificationStatuses(
+    suspend fun updateProteusVerificationStatus(
         statusesToUpdate: Map<QualifiedID, Conversation.VerificationStatus>
     ): Either<StorageFailure, Unit>
 }
@@ -998,7 +998,7 @@ internal class ConversationDataSource internal constructor(
         conversationApi.sendTypingIndicatorNotification(conversationId.toApi(), typingStatus.toStatusDto())
     }
 
-    override suspend fun updateProteusVerificationStatuses(
+    override suspend fun updateProteusVerificationStatus(
         statusesToUpdate: Map<QualifiedID, Conversation.VerificationStatus>
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
@@ -1008,7 +1008,7 @@ internal class ConversationDataSource internal constructor(
             )
         }
 
-    override suspend fun getConversationsProteusVerificationDataByClientId(
+    override suspend fun getConversationsProteusVerificationData(
         clientId: ClientId
     ): Either<StorageFailure, List<Conversation.ProteusVerificationData>> =
         wrapStorageRequest { conversationDAO.getConversationsProteusVerificationDataByClientId(clientId.value) }

@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.feature.connection.AcceptConnectionRequestUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -259,14 +258,14 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         result: Either<StorageFailure, List<Conversation.ProteusVerificationData>>
     ) = apply {
         given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationsProteusVerificationDataByClientId)
+            .suspendFunction(conversationRepository::getConversationsProteusVerificationData)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
 
     override fun withUpdateProteusVerificationStatuses(result: Either<StorageFailure, Unit>) = apply {
         given(conversationRepository)
-            .suspendFunction(conversationRepository::updateProteusVerificationStatuses)
+            .suspendFunction(conversationRepository::updateProteusVerificationStatus)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
