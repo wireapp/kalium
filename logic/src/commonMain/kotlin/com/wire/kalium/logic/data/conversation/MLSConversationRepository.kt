@@ -521,7 +521,7 @@ internal class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
             }.map { rotateBundle ->
-                //todo: make below API calls atomic when the backend does it in one request
+                // todo: make below API calls atomic when the backend does it in one request
                 kaliumLogger.w("drop old key packages after conversations migration")
                 keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove)
 
