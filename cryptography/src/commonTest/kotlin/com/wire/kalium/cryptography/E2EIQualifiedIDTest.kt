@@ -31,10 +31,11 @@ class E2EIQualifiedIDTest {
 
     companion object {
         private const val CLIENT_ID = "client_id"
-        private const val USER_ID = "user_id"
+        private const val USER_ID = "41d2b365-f4a9-4ba1-bddf-5afb8aca6786"
         private const val DOMAIN = "domain"
+        private const val ENCODED_USER_ID = "QdKzZfSpS6G931r7ispnhg"
 
-        val ENCODED_E2EI_QUALIFIED_CLIENT_ID = "${USER_ID}:$CLIENT_ID@$DOMAIN"
+        const val ENCODED_E2EI_QUALIFIED_CLIENT_ID = "${ENCODED_USER_ID}:$CLIENT_ID@$DOMAIN"
 
         val E2EI_QUALIFIED_CLIENT_ID = E2EIQualifiedClientId(CLIENT_ID,  CryptoQualifiedID(USER_ID, DOMAIN))
     }

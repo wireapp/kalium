@@ -77,7 +77,7 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.minutes
 
 @Suppress("TooManyFunctions")
-internal interface UserRepository {
+interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
 
     /**
