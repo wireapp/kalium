@@ -264,6 +264,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> null
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
+            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
         }
     }
 
