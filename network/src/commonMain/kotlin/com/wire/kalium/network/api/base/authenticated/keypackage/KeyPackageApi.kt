@@ -54,6 +54,15 @@ interface KeyPackageApi {
     suspend fun uploadKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit>
 
     /**
+     * Delete a batch key packages from the server
+     *
+     * @param clientId client ID
+     * @param keyPackages list of key packages
+     *
+     */
+    suspend fun deleteKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit>
+
+    /**
      * Get the number of available key packages for the self client
      *
      * @param clientId self client ID
