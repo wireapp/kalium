@@ -54,6 +54,8 @@ internal interface NewGroupConversationSystemMessagesCreator {
         conversationId: ConversationId,
         userIdList: Set<UserId>
     ): Either<CoreFailure, Unit>
+
+    suspend fun conversationStartedUnverifiedWarning(conversation: ConversationEntity): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -195,5 +197,10 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             persistMessage(messageStartedWithFailedMembers)
         }
 
+    }
+
+
+    override suspend fun conversationStartedUnverifiedWarning(conversation: ConversationEntity): Either<CoreFailure, Unit> {
+        TODO("Not yet implemented")
     }
 }
