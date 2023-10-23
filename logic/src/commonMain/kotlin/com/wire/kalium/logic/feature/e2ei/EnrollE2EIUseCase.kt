@@ -111,7 +111,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.Certificate, it).toEitherLeft()
         }, { it })
 
-        e2EIRepository.e2eiRotateAll(certificateRequest.response.decodeToString())
+        e2EIRepository.rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString())
 
         return Either.Right(E2EIEnrollmentResult.Success(certificateRequest.response.decodeToString()))
     }

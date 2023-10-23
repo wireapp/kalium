@@ -61,7 +61,7 @@ interface E2EIRepository {
     suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
     suspend fun initMLSClientWithCertificate(certificateChain: String)
-    suspend fun e2eiRotateAll(certificateChain: String)
+    suspend fun rotateKeysAndMigrateConversations(certificateChain: String)
 }
 
 class E2EIRepositoryImpl(
@@ -202,10 +202,10 @@ class E2EIRepositoryImpl(
         }
     }
 
-    override suspend fun e2eiRotateAll(certificateChain: String) {
+    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String) {
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             currentClientIdProvider().map { clientId ->
-                mlsConversationRepository.rotateConversation(clientId, e2eiClient, certificateChain)
+                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain)
             }
         }
     }

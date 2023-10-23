@@ -64,7 +64,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.util.encodeBase64
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -110,7 +109,7 @@ interface MLSConversationRepository {
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun observeEpochChanges(): Flow<GroupID>
     suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus>
-    suspend fun rotateConversation(clientId: ClientId, e2eiClient: E2EIClient, certificateChain: String)
+    suspend fun rotateKeysAndMigrateConversations(clientId: ClientId, e2eiClient: E2EIClient, certificateChain: String)
 }
 
 private enum class CommitStrategy {
@@ -517,19 +516,19 @@ internal class MLSConversationDataSource(
             wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
         }.map { it.toModel() }
 
-    override suspend fun rotateConversation(clientId: ClientId, e2eiClient: E2EIClient, certificateChain: String) {
+    override suspend fun rotateKeysAndMigrateConversations(clientId: ClientId, e2eiClient: E2EIClient, certificateChain: String) {
         mlsClientProvider.getMLSClient().map { mlsClient ->
             wrapMLSRequest {
                 mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
             }.map { rotateBundle ->
                 //todo: make below API calls atomic when the backend does it in one request
-                kaliumLogger.w("drop old key packages after conversations rotations")
+                kaliumLogger.w("drop old key packages after conversations migration")
                 keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove)
 
                 kaliumLogger.w("upload new key packages including x509 certificate")
                 keyPackageRepository.uploadKeyPackages(clientId, rotateBundle.newKeyPackages)
 
-                kaliumLogger.w("send commits after conversations rotations")
+                kaliumLogger.w("send migration commits after key rotations")
                 rotateBundle.commits.forEach {
                     sendCommitBundle(GroupID(it.key), it.value)
                 }

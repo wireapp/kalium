@@ -45,8 +45,7 @@ class MLSClientImpl(
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
 
     @Suppress("EmptyFunctionBlock")
-    override suspend fun close() {
-    }
+    override suspend fun close() {}
 
     override suspend fun getPublicKey(): ByteArray {
         return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
