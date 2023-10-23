@@ -82,7 +82,7 @@ class Monkey(val user: UserData) {
             val storeResult = addAuthenticatedAccount(
                 serverConfigId = loginResult.serverConfigId,
                 ssoId = loginResult.ssoID,
-                accountTokens = loginResult.authData,
+                authTokens = loginResult.authData,
                 proxyCredentials = loginResult.proxyCredentials,
                 replace = true
             )
