@@ -33,7 +33,7 @@ import com.wire.kalium.util.DateTimeUtil
 /**
  * Use Case that allows a user accept a connection request to connect with another User
  */
-fun interface AcceptConnectionRequestUseCase {
+interface AcceptConnectionRequestUseCase {
     /**
      * Use case [AcceptConnectionRequestUseCase] operation
      *
