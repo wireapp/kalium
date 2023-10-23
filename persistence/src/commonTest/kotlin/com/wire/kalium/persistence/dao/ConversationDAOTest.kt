@@ -1215,6 +1215,27 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(listOf(conversationEntity2.id), conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.MLS))
     }
 
+    @Test
+    fun givenMLSSelfConversationExists_whenGettingMLSSelfGroupId_thenShouldReturnGroupId() = runTest{
+        // given
+        userDAO.upsertUser(user1)
+        conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity2.copy(type = ConversationEntity.Type.SELF))
+
+        // then
+        assertEquals((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, conversationDAO.getMLSSelfConversationGroupId())
+    }
+
+    @Test
+    fun givenMLSSelfConversationDoesNotExist_whenGettingMLSSelfGroupId_thenShouldReturnNull() = runTest{
+        // given
+        userDAO.upsertUser(user1)
+        conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
+
+        // then
+        assertNull(conversationDAO.getMLSSelfConversationGroupId())
+    }
+
     private suspend fun insertTeamUserAndMember(team: TeamEntity, user: UserEntity, conversationId: QualifiedIDEntity) {
         teamDAO.insertTeam(team)
         userDAO.upsertUser(user)
