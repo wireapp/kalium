@@ -57,8 +57,8 @@ sealed class FetchApiVersionResult {
     class Success(val serverConfig: ServerConfig) : FetchApiVersionResult()
 
     sealed class Failure : FetchApiVersionResult() {
-        object UnknownServerVersion : Failure()
-        object TooNewVersion : Failure()
+        data object UnknownServerVersion : Failure()
+        data object TooNewVersion : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

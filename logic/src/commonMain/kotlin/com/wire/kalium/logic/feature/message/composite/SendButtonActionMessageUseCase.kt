@@ -77,7 +77,7 @@ class SendButtonActionMessageUseCase internal constructor(
     }.fold(Result::Failure, { Result.Success })
 
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(
             val error: CoreFailure
         ) : Result

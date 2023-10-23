@@ -7,22 +7,6 @@
 
 ## How to build
 
-### GitHub Packages authentication
-
-In order to download some open source libraries published on GitHub Pacakges, a GitHub Personal Access Token is needed with `packages:read` scope.
-
-1. You can generate one quickly [on this page](https://github.com/settings/tokens/new?description=ReadPackages&scopes=read:packages). Or, for more details, see [Creating a personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
-
-2. In `local.properties` add:
-```
-github.package_registry.user=<github_username>
-github.package_registry.token=<github_token>
-```
-
-Alternatively the credentials are also read from your environment if `GITHUB_USER` and `GITHUB_TOKEN` exists.
-
-> *Note*: See [GitHub packages docs](https://docs.github.com/en/packages/learn-github-packages/introduction-to-github-packages#authenticating-to-github-packages) for more details and.
-
 ### Dependencies
 
 - JDK 17 (ex: openjdk-17-jdk on Ubuntu)

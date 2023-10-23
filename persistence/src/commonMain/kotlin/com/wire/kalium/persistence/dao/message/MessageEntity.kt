@@ -117,7 +117,7 @@ sealed interface MessageEntity {
     }
 
     sealed class EditStatus {
-        object NotEdited : EditStatus()
+        data object NotEdited : EditStatus()
         data class Edited(val lastDate: Instant) : EditStatus()
 
         override fun toString(): String {
@@ -301,7 +301,7 @@ sealed class MessageEntityContent {
         val senderClientId: String?,
     ) : Regular()
 
-    object MLSWrongEpochWarning : System()
+    data object MLSWrongEpochWarning : System()
 
     data class MemberChange(
         val memberUserIdList: List<QualifiedIDEntity>,
@@ -319,17 +319,17 @@ sealed class MessageEntityContent {
         val buttonList: List<ButtonEntity>
     ) : Regular()
 
-    object MissedCall : System()
-    object CryptoSessionReset : System()
+    data object MissedCall : System()
+    data object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
     data class TeamMemberRemoved(val userName: String) : System()
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
-    object HistoryLostProtocolChanged : System()
-    object HistoryLost : System()
-    object ConversationCreated : System()
+    data object HistoryLostProtocolChanged : System()
+    data object HistoryLost : System()
+    data object ConversationCreated : System()
     data object ConversationDegradedMLS : System()
     data object ConversationVerifiedMLS : System()
     data object ConversationDegradedProteus : System()
@@ -422,8 +422,8 @@ sealed class MessagePreviewEntityContent {
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
     data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
-    object CryptoSessionReset : MessagePreviewEntityContent()
-    object Unknown : MessagePreviewEntityContent()
+    data object CryptoSessionReset : MessagePreviewEntityContent()
+    data object Unknown : MessagePreviewEntityContent()
 
 }
 
@@ -459,7 +459,7 @@ sealed class DeliveryStatusEntity {
         val recipientsFailedDelivery: List<UserIDEntity>
     ) : DeliveryStatusEntity()
 
-    object CompleteDelivery : DeliveryStatusEntity()
+    data object CompleteDelivery : DeliveryStatusEntity()
 }
 
 @Serializable

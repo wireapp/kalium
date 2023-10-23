@@ -21,9 +21,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 
 sealed class MLSMessageFailureResolution {
-    object Ignore : MLSMessageFailureResolution()
-    object InformUser : MLSMessageFailureResolution()
-    object OutOfSync : MLSMessageFailureResolution()
+    data object Ignore : MLSMessageFailureResolution()
+    data object InformUser : MLSMessageFailureResolution()
+    data object OutOfSync : MLSMessageFailureResolution()
 }
 
 internal object MLSMessageFailureHandler {

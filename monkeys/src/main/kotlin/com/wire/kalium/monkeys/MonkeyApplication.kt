@@ -27,6 +27,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.monkeys.importer.TestData
 import com.wire.kalium.monkeys.importer.TestDataImporter
@@ -59,11 +60,11 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         }
 
         if (logOutputFile != null) {
-            CoreLogger.setLoggingLevel(logLevel, fileLogger)
+            CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
         } else {
-            CoreLogger.setLoggingLevel(logLevel)
+            CoreLogger.init(KaliumLogger.Config(logLevel, emptyList()))
         }
-        MonkeyLogger.setLoggingLevel(logLevel, monkeyFileLogger)
+        MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
         logger.i("Initializing Metrics Endpoint")
         io.ktor.server.engine.embeddedServer(Netty, port = 9090) {
             routing {

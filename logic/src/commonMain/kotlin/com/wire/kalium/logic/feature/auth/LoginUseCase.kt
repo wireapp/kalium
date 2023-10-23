@@ -37,35 +37,35 @@ import com.wire.kalium.network.exceptions.isInvalidCredentials
 
 sealed class AuthenticationResult {
     data class Success(
-        val authData: AuthTokens,
+        val authData: AccountTokens,
         val ssoID: SsoId?,
         val serverConfigId: String,
         val proxyCredentials: ProxyCredentials?
     ) : AuthenticationResult()
 
     sealed class Failure : AuthenticationResult() {
-        object SocketError : Failure()
+        data object SocketError : Failure()
         sealed class InvalidCredentials : Failure() {
             /**
              * The team has enabled 2FA but the user has not entered it yet
              */
-            object Missing2FA : InvalidCredentials()
+            data object Missing2FA : InvalidCredentials()
 
             /**
              * The user has entered an invalid 2FA code, or the 2FA code has expired
              */
-            object Invalid2FA : InvalidCredentials()
+            data object Invalid2FA : InvalidCredentials()
 
             /**
              * The user has entered an invalid email/handle or password combination
              */
-            object InvalidPasswordIdentityCombination : InvalidCredentials()
+            data object InvalidPasswordIdentityCombination : InvalidCredentials()
         }
 
         /**
          * The user has entered a text that isn't considered a valid email or handle
          */
-        object InvalidUserIdentifier : Failure()
+        data object InvalidUserIdentifier : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

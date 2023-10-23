@@ -60,7 +60,7 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
         /**
          * All conversations should be marked as notified.
          */
-        object AllConversations : UpdateTarget
+        data object AllConversations : UpdateTarget
 
         /**
          * A specific conversation, represented by its [conversationId], should be marked as notified
@@ -70,6 +70,6 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
 }
 
 sealed class Result {
-    object Success : Result()
+    data object Success : Result()
     data class Failure(val storageFailure: StorageFailure) : Result()
 }

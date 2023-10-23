@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import okio.Path
 
 interface UploadUserAvatarUseCase {
@@ -44,11 +45,11 @@ internal class UploadUserAvatarUseCaseImpl(
 
     override suspend operator fun invoke(imageDataPath: Path, imageDataSize: Long): UploadAvatarResult {
         return assetDataSource.uploadAndPersistPublicAsset("image/jpg", imageDataPath, imageDataSize).flatMap { asset ->
-            userDataSource.updateSelfUser(newAssetId = asset.key)
+            userDataSource.updateSelfUser(newAssetId = asset.key).map { asset }
         }.fold({
             UploadAvatarResult.Failure(it)
-        }) { updatedUser ->
-            UploadAvatarResult.Success(updatedUser.completePicture!!)
+        }) { updatedAsset ->
+            UploadAvatarResult.Success(UserAssetId(updatedAsset.key, updatedAsset.domain))
         } // TODO(assets): remove old assets, non blocking this response, as will imply deleting locally and remotely
     }
 }

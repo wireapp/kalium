@@ -29,20 +29,40 @@ class ValidatePasswordUseCaseTest {
     @Test
     fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsValid_thenReturnTrue() {
         VALID_PASSWORDS.forEach { validPassword ->
-            assertTrue(message = "$validPassword is invalid ") { validatePasswordUseCase(validPassword) }
+            assertTrue(message = "$validPassword is invalid ") { validatePasswordUseCase(validPassword).isValid }
         }
     }
 
     @Test
     fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsInvalid_thenReturnFalse() {
         INVALID_PASSWORDS.forEach { invalidPassword ->
-            assertFalse { validatePasswordUseCase(invalidPassword) }
+            assertFalse { validatePasswordUseCase(invalidPassword).isValid }
         }
     }
 
     @Test
     fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsShort_thenReturnFalse() {
-        assertFalse { validatePasswordUseCase("1@3.") }
+        assertTrue { validatePasswordUseCase("aA1@3.").let { it is ValidatePasswordResult.Invalid && it.tooShort } }
+    }
+
+    @Test
+    fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsMissingUppercase_thenReturnFalse() {
+        assertTrue { validatePasswordUseCase("a1@3.").let { it is ValidatePasswordResult.Invalid && it.missingUppercaseCharacter } }
+    }
+
+    @Test
+    fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsMissingLowercase_thenReturnFalse() {
+        assertTrue { validatePasswordUseCase("A1@3.").let { it is ValidatePasswordResult.Invalid && it.missingLowercaseCharacter } }
+    }
+
+    @Test
+    fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsMissingSpecialCharacter_thenReturnFalse() {
+        assertTrue { validatePasswordUseCase("aA13").let { it is ValidatePasswordResult.Invalid && it.missingSpecialCharacter } }
+    }
+
+    @Test
+    fun givenAValidatePasswordUseCaseIsInvoked_whenPasswordIsMissingDigit_thenReturnFalse() {
+        assertTrue { validatePasswordUseCase("aA@.").let { it is ValidatePasswordResult.Invalid && it.missingDigit } }
     }
 
     private companion object {

@@ -38,10 +38,24 @@ data class ProxyCredentialsEntity(
     @SerialName("password") val password: String,
 )
 
-class AuthTokenStorage internal constructor(
+interface AuthTokenStorage {
+    fun addOrReplace(authTokenEntity: AuthTokenEntity, proxyCredentialsEntity: ProxyCredentialsEntity?)
+    fun updateToken(
+        userId: UserIDEntity,
+        accessToken: String,
+        tokenType: String,
+        refreshToken: String?,
+    ): AuthTokenEntity
+
+    fun getToken(userId: UserIDEntity): AuthTokenEntity?
+    fun deleteToken(userId: UserIDEntity)
+    fun proxyCredentials(userId: UserIDEntity): ProxyCredentialsEntity?
+}
+
+internal class AuthTokenStorageImpl(
     private val kaliumPreferences: KaliumPreferences
-) {
-    fun addOrReplace(authTokenEntity: AuthTokenEntity, proxyCredentialsEntity: ProxyCredentialsEntity?) {
+) : AuthTokenStorage {
+    override fun addOrReplace(authTokenEntity: AuthTokenEntity, proxyCredentialsEntity: ProxyCredentialsEntity?) {
         kaliumPreferences.putSerializable(
             tokenKey(authTokenEntity.userId),
             authTokenEntity,
@@ -53,7 +67,7 @@ class AuthTokenStorage internal constructor(
         }
     }
 
-    fun updateToken(
+    override fun updateToken(
         userId: UserIDEntity,
         accessToken: String,
         tokenType: String,
@@ -74,18 +88,18 @@ class AuthTokenStorage internal constructor(
     }
 
     // TODO: make suspendable
-    fun getToken(userId: UserIDEntity): AuthTokenEntity? =
+    override fun getToken(userId: UserIDEntity): AuthTokenEntity? =
         kaliumPreferences.getSerializable(
             tokenKey(userId),
             AuthTokenEntity.serializer()
         )
 
-    fun deleteToken(userId: UserIDEntity) {
+    override fun deleteToken(userId: UserIDEntity) {
         kaliumPreferences.remove(tokenKey(userId))
         kaliumPreferences.remove(proxyCredentialsKey(userId))
     }
 
-    fun proxyCredentials(userId: UserIDEntity): ProxyCredentialsEntity? =
+    override fun proxyCredentials(userId: UserIDEntity): ProxyCredentialsEntity? =
         kaliumPreferences.getSerializable(proxyCredentialsKey(userId), ProxyCredentialsEntity.serializer())
 
     private fun tokenKey(userId: UserIDEntity): String {

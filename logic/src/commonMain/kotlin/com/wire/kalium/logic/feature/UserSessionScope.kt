@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.feature
 
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.cache.MLSSelfConversationIdProvider
@@ -111,6 +113,8 @@ import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapper
 import com.wire.kalium.logic.data.publicuser.UserSearchApiWrapperImpl
 import com.wire.kalium.logic.data.service.ServiceDataSource
 import com.wire.kalium.logic.data.service.ServiceRepository
+import com.wire.kalium.logic.data.session.token.AccessTokenRepository
+import com.wire.kalium.logic.data.session.token.AccessTokenRepositoryImpl
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -135,9 +139,6 @@ import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
-import com.wire.kalium.logic.feature.backup.CreateBackupUseCase
-import com.wire.kalium.logic.feature.backup.RestoreBackupUseCase
-import com.wire.kalium.logic.feature.backup.VerifyBackupUseCase
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -206,18 +207,12 @@ import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
-import com.wire.kalium.logic.feature.message.MLSMessageCreator
-import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
-import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
-import com.wire.kalium.logic.feature.message.MessageEnvelopeCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCaseImpl
-import com.wire.kalium.logic.feature.message.SessionEstablisher
-import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
 import com.wire.kalium.logic.feature.migration.MigrationScope
@@ -242,6 +237,10 @@ import com.wire.kalium.logic.feature.service.ServiceScope
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCase
 import com.wire.kalium.logic.feature.session.GetProxyCredentialsUseCaseImpl
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCaseImpl
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactoryImpl
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
@@ -286,6 +285,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.network.ApiMigrationManager
 import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.SessionManagerImpl
@@ -384,6 +384,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
@@ -421,6 +422,12 @@ class UserSessionScope internal constructor(
                 _clientId = it
             }
         }
+
+    private val clientIdStateFlow = MutableStateFlow<ClientId?>(null)
+
+    private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
+        KaliumLogger.UserClientData(userId.toLogString(), clientIdStateFlow.value?.value?.obfuscateId() ?: "")
+    }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
         override fun invoke() {
@@ -474,8 +481,28 @@ class UserSessionScope internal constructor(
 
     private val selfTeamId = SelfTeamIdProvider { teamId() }
 
+    private val accessTokenRepository: AccessTokenRepository
+        get() = AccessTokenRepositoryImpl(
+            userId = userId,
+            accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
+            authTokenStorage = globalPreferences.authTokenStorage
+        )
+
+    private val accessTokenRefresherFactory: AccessTokenRefresherFactory
+        get() = AccessTokenRefresherFactoryImpl(
+            userId = userId,
+            tokenStorage = globalPreferences.authTokenStorage
+        )
+
+    private val accessTokenRefresher: AccessTokenRefresher
+        get() = AccessTokenRefresherImpl(
+            userId = userId,
+            repository = accessTokenRepository
+        )
+
     private val sessionManager: SessionManager = SessionManagerImpl(
         sessionRepository = globalScope.sessionRepository,
+        accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(logoutReason) }
@@ -486,7 +513,8 @@ class UserSessionScope internal constructor(
         UserIdDTO(userId.value, userId.domain),
         userAgent,
         certificatePinning = kaliumConfigs.certPinningConfig,
-        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
+        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine,
+        kaliumLogger = userScopedLogger
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         kaliumConfigs,
@@ -705,15 +733,6 @@ class UserSessionScope internal constructor(
             globalPreferences,
         )
 
-    @Deprecated("UseCases should be in their respective scopes", ReplaceWith("backup.create"))
-    val createBackup: CreateBackupUseCase get() = backup.create
-
-    @Deprecated("UseCases should be in their respective scopes", ReplaceWith("backup.verify"))
-    val verifyBackupUseCase: VerifyBackupUseCase get() = backup.verify
-
-    @Deprecated("UseCases should be in their respective scopes", ReplaceWith("backup.restore"))
-    val restoreBackup: RestoreBackupUseCase get() = backup.restore
-
     val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(messageRepository, userId)
 
@@ -759,19 +778,6 @@ class UserSessionScope internal constructor(
             userStorage.database.newClientDAO,
             userId,
             authenticatedNetworkContainer.clientApi,
-        )
-
-    private val sessionEstablisher: SessionEstablisher
-        get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
-
-    private val messageEnvelopeCreator: MessageEnvelopeCreator
-        get() = MessageEnvelopeCreatorImpl(
-            proteusClientProvider = proteusClientProvider, selfUserId = userId
-        )
-
-    private val mlsMessageCreator: MLSMessageCreator
-        get() = MLSMessageCreatorImpl(
-            mlsClientProvider = mlsClientProvider, selfUserId = userId
         )
 
     private val messageSendingScheduler: MessageSendingScheduler
@@ -986,12 +992,11 @@ class UserSessionScope internal constructor(
     }
 
     private val upgradeCurrentSessionUseCase
-        get() =
-            UpgradeCurrentSessionUseCaseImpl(
-                authenticatedNetworkContainer,
-                authenticatedNetworkContainer.accessTokenApi,
-                sessionManager
-            )
+        get() = UpgradeCurrentSessionUseCaseImpl(
+            authenticatedNetworkContainer,
+            accessTokenRefresher,
+            sessionManager
+        )
 
     @Suppress("MagicNumber")
     private val apiMigrations = listOf(

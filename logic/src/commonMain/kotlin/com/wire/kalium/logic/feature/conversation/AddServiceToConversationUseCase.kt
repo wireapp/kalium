@@ -38,7 +38,7 @@ class AddServiceToConversationUseCase internal constructor(
     ): Result = groupRepository.addService(serviceId, conversationId).fold(Result::Failure, { Result.Success })
 
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(val cause: CoreFailure) : Result
     }
 }

@@ -59,6 +59,6 @@ class UpdateAssetMessageDownloadStatusUseCaseImpl(
 }
 
 sealed class UpdateDownloadStatusResult {
-    object Success : UpdateDownloadStatusResult()
+    data object Success : UpdateDownloadStatusResult()
     data class Failure(val coreFailure: CoreFailure) : UpdateDownloadStatusResult()
 }

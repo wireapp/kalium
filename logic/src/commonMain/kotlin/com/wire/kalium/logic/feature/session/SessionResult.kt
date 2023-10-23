@@ -25,7 +25,7 @@ sealed class GetAllSessionsResult {
     class Success(val sessions: List<AccountInfo>) : GetAllSessionsResult()
 
     sealed class Failure : GetAllSessionsResult() {
-        object NoSessionFound : Failure()
+        data object NoSessionFound : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
     }
 }

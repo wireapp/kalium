@@ -93,5 +93,5 @@ internal class GetUserInfoUseCaseImpl(
 
 sealed class GetUserInfoResult {
     class Success(val otherUser: OtherUser, val team: Team?) : GetUserInfoResult()
-    object Failure : GetUserInfoResult()
+    data object Failure : GetUserInfoResult()
 }

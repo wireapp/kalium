@@ -499,14 +499,14 @@ class LoginUseCaseTest {
                 .thenReturn(handleValidationResult)
         }
 
-        fun withLoginUsingEmailResulting(result: Either<NetworkFailure, Pair<AuthTokens, SsoId?>>) = apply {
+        fun withLoginUsingEmailResulting(result: Either<NetworkFailure, Pair<AccountTokens, SsoId?>>) = apply {
             given(loginRepository)
                 .suspendFunction(loginRepository::loginWithEmail)
                 .whenInvokedWith(any(), any(), any(), any(), anything())
                 .thenReturn(result)
         }
 
-        fun withLoginUsingHandleResulting(result: Either<NetworkFailure, Pair<AuthTokens, SsoId?>>) = apply {
+        fun withLoginUsingHandleResulting(result: Either<NetworkFailure, Pair<AccountTokens, SsoId?>>) = apply {
             given(loginRepository)
                 .suspendFunction(loginRepository::loginWithHandle)
                 .whenInvokedWith(any(), any(), any(), any())
@@ -534,7 +534,7 @@ class LoginUseCaseTest {
         // TODO: Remove random value from tests
         val TEST_PERSIST_CLIENT = Random.nextBoolean()
         val TEST_SERVER_CONFIG: ServerConfig = newTestServer(1)
-        val TEST_AUTH_TOKENS = AuthTokens(
+        val TEST_AUTH_TOKENS = AccountTokens(
             userId = UserId("user_id", "domain.de"),
             accessToken = "access_token",
             refreshToken = "refresh_token",

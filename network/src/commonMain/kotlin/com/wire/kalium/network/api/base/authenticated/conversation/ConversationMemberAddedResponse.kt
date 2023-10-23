@@ -24,7 +24,7 @@ sealed class ConversationMemberAddedResponse {
     /**
      * The users requested to be added were already members
      */
-    object Unchanged : ConversationMemberAddedResponse()
+    data object Unchanged : ConversationMemberAddedResponse()
 
     data class Changed(val event: EventContentDTO.Conversation.MemberJoinDTO) : ConversationMemberAddedResponse()
 }
