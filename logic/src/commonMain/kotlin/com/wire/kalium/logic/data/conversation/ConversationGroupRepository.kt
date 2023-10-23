@@ -158,7 +158,9 @@ internal class ConversationGroupRepositoryImpl(
                         }
                     }.flatMap {
                         wrapStorageRequest {
-                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(conversationEntity.id.toModel())
+                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                                conversationEntity.id.toModel()
+                            )
                         }
                     }.flatMap {
                         wrapStorageRequest {
