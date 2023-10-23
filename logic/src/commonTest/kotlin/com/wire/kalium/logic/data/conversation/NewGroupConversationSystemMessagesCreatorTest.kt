@@ -342,6 +342,26 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedUnverifiedSystemMessage() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .arrange()
+
+        val result = sysMessageCreator.conversationStartedUnverifiedWarning(
+            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP)
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.ConversationStartedUnverifiedWarning)
+            })
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)

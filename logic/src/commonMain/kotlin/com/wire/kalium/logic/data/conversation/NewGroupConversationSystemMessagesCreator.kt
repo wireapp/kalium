@@ -199,8 +199,17 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 
     }
 
-
-    override suspend fun conversationStartedUnverifiedWarning(conversation: ConversationEntity): Either<CoreFailure, Unit> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun conversationStartedUnverifiedWarning(conversation: ConversationEntity): Either<CoreFailure, Unit> =
+        persistMessage(
+            Message.System(
+                uuid4().toString(),
+                MessageContent.ConversationStartedUnverifiedWarning,
+                conversation.id.toModel(),
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.Sent,
+                Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+        )
 }
