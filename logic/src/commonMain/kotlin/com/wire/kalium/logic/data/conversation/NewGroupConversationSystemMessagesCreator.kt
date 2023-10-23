@@ -55,7 +55,7 @@ internal interface NewGroupConversationSystemMessagesCreator {
         userIdList: Set<UserId>
     ): Either<CoreFailure, Unit>
 
-    suspend fun conversationStartedUnverifiedWarning(conversation: ConversationEntity): Either<CoreFailure, Unit>
+    suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -199,12 +199,12 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 
     }
 
-    override suspend fun conversationStartedUnverifiedWarning(conversation: ConversationEntity): Either<CoreFailure, Unit> =
+    override suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit> =
         persistMessage(
             Message.System(
                 uuid4().toString(),
                 MessageContent.ConversationStartedUnverifiedWarning,
-                conversation.id.toModel(),
+                conversationId,
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,
                 Message.Status.Sent,
