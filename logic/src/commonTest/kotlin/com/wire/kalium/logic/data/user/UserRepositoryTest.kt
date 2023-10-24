@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
@@ -61,6 +62,7 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -214,6 +216,52 @@ class UserRepositoryTest {
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
             .with(any())
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAUserIdListSmallerThanBatchSize_whenFetchingUsers_thenShouldExecuteRequestsOnce() = runTest {
+        // given
+        val requestedUserIds = buildSet {
+            repeat(BATCH_SIZE - 1) { add(UserId(value = "id$it", domain = "domain")) }
+        }
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetMultipleUsersApiRequest(
+                ListUsersDTO(
+                    usersFailed = emptyList(),
+                    usersFound = listOf(TestUser.USER_PROFILE_DTO)
+                )
+            )
+            .arrange()
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAUserIdListLargerThanBatchSize_whenFetchingUsers_thenShouldExecuteRequestsTwice() = runTest {
+        // given
+        val requestedUserIds = buildSet {
+            repeat(BATCH_SIZE + 1) { add(UserId(value = "id$it", domain = "domain")) }
+        }
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetMultipleUsersApiRequest(
+                ListUsersDTO(
+                    usersFailed = emptyList(),
+                    usersFound = listOf(TestUser.USER_PROFILE_DTO)
+                )
+            )
+            .arrange()
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(any())
+            .wasInvoked(exactly = twice)
     }
 
     @Test
