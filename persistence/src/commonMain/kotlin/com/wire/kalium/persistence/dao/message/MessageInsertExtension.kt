@@ -261,6 +261,10 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 protocol = content.protocol
             )
+
+            is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
+                /* no-op */
+            }
         }
     }
 
@@ -316,6 +320,7 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationVerifiedMLS,
                 MessageEntityContent.ConversationDegradedProteus,
                 MessageEntityContent.ConversationVerifiedProteus,
+                MessageEntityContent.ConversationStartedUnverifiedWarning,
                 is MessageEntityContent.TeamMemberRemoved -> {
                     /* no-op */
                 }
@@ -408,5 +413,6 @@ internal class MessageInsertExtensionImpl(
         MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
+        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
     }
 }

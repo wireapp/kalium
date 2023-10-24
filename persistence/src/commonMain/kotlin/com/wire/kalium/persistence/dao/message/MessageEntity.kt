@@ -193,7 +193,7 @@ sealed interface MessageEntity {
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, HISTORY_LOST_PROTOCOL_CHANGED,
         CONVERSATION_MESSAGE_TIMER_CHANGED, CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS,
         CONVERSATION_DEGRADED_PREOTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PREOTEUS, COMPOSITE, FEDERATION,
-        CONVERSATION_PROTOCOL_CHANGED
+        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_STARTED_UNVERIFIED_WARNING
     }
 
     enum class MemberChangeType {
@@ -334,6 +334,7 @@ sealed class MessageEntityContent {
     data object ConversationVerifiedMLS : System()
     data object ConversationDegradedProteus : System()
     data object ConversationVerifiedProteus : System()
+    data object ConversationStartedUnverifiedWarning : System()
     data class Federation(val domainList: List<String>, val type: MessageEntity.FederationType) : System()
 }
 
