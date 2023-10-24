@@ -1295,7 +1295,8 @@ class UserSessionScope internal constructor(
             logout,
             oneOnOneResolver,
             userId,
-            clientIdProvider
+            clientIdProvider,
+            lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
