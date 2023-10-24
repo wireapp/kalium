@@ -109,7 +109,11 @@ interface MLSConversationRepository {
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun observeEpochChanges(): Flow<GroupID>
     suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus>
-    suspend fun rotateKeysAndMigrateConversations(clientId: ClientId, e2eiClient: E2EIClient, certificateChain: String)
+    suspend fun rotateKeysAndMigrateConversations(
+        clientId: ClientId,
+        e2eiClient: E2EIClient,
+        certificateChain: String
+    ): Either<CoreFailure, Unit>
 }
 
 private enum class CommitStrategy {
@@ -516,22 +520,24 @@ internal class MLSConversationDataSource(
             wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
         }.map { it.toModel() }
 
-    override suspend fun rotateKeysAndMigrateConversations(clientId: ClientId, e2eiClient: E2EIClient, certificateChain: String) {
-        mlsClientProvider.getMLSClient().map { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
-            }.map { rotateBundle ->
-                // todo: make below API calls atomic when the backend does it in one request
-                kaliumLogger.w("drop old key packages after conversations migration")
-                keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove)
+    override suspend fun rotateKeysAndMigrateConversations(
+        clientId: ClientId,
+        e2eiClient: E2EIClient,
+        certificateChain: String
+    ) = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+        wrapMLSRequest {
+            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
+        }.map { rotateBundle ->
+            // todo: make below API calls atomic when the backend does it in one request
+            kaliumLogger.w("drop old key packages after conversations migration")
+            keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove)
 
-                kaliumLogger.w("upload new key packages including x509 certificate")
-                keyPackageRepository.uploadKeyPackages(clientId, rotateBundle.newKeyPackages)
+            kaliumLogger.w("upload new key packages including x509 certificate")
+            keyPackageRepository.uploadKeyPackages(clientId, rotateBundle.newKeyPackages)
 
-                kaliumLogger.w("send migration commits after key rotations")
-                rotateBundle.commits.forEach {
-                    sendCommitBundle(GroupID(it.key), it.value)
-                }
+            kaliumLogger.w("send migration commits after key rotations")
+            rotateBundle.commits.forEach {
+                sendCommitBundle(GroupID(it.key), it.value)
             }
         }
     }

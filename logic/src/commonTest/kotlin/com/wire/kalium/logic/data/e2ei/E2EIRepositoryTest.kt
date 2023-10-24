@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.e2ei
 import com.wire.kalium.cryptography.*
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_CHALLENGE
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ACCESS_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ID_TOKEN
@@ -767,13 +768,23 @@ class E2EIRepositoryTest {
         val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
 
         @Mock
+        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+
+        @Mock
         val mlsClient = mock(classOf<MLSClient>())
 
         @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         fun arrange() =
-            this to E2EIRepositoryImpl(e2eiApi, acmeApi, e2eiClientProvider, mlsClientProvider, currentClientIdProvider)
+            this to E2EIRepositoryImpl(
+                e2eiApi,
+                acmeApi,
+                e2eiClientProvider,
+                mlsClientProvider,
+                currentClientIdProvider,
+                mlsConversationRepository
+            )
 
         companion object {
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
