@@ -39,8 +39,10 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
@@ -86,42 +88,18 @@ class SessionManagerTest {
     }
 
     @Test
-    fun givenInitialSessionIsUpdated_whenFetchingSession_thenSessionShouldBeUpdatedProperly() = runTest {
-        val expectedData = TEST_ACCOUNT_TOKENS
-        val (arrangement, sessionManager) = arrange {
-            withCurrentTokenResult(
-                AuthTokenEntity(
-                    userId = UserIDEntity("potato", "potahto"),
-                    accessToken = "aToken",
-                    refreshToken = "rToken",
-                    tokenType = "tType",
-                    cookieLabel = "cLabel"
-                )
-            )
-            withTokenRefresherResult(Either.Right(expectedData))
-        }
-
-        sessionManager.session()
-        sessionManager.updateToken(arrangement.accessTokenApi, "egal", "egal")
-        val result = sessionManager.session()
-        assertNotNull(result)
-        assertEquals(expectedData.userId.value, result.userId.value)
-        assertEquals(expectedData.userId.domain, result.userId.domain)
-        assertEquals(expectedData.accessToken.value, result.accessToken)
-        assertEquals(expectedData.refreshToken.value, result.refreshToken)
-        assertEquals(expectedData.tokenType, result.tokenType)
-        assertEquals(expectedData.cookieLabel, result.cookieLabel)
-    }
-
-    @Test
-    fun givenTokenWasUpdated_whenGettingSession_thenItShouldBeUpdatedAsWell() = runTest {
+    fun givenSuccess_whenUpdatingToken_thenItShouldCallTokenRefresherCorrectly() = runTest {
         val (arrangement, sessionManager) = arrange {
             withTokenRefresherResult(Either.Right(TEST_ACCOUNT_TOKENS))
         }
 
-        sessionManager.updateToken(arrangement.accessTokenApi, "egal", "egal")
+        val accessToken = "egal"
+        val refreshToken = "refreshToken"
+        sessionManager.updateToken(arrangement.accessTokenApi, accessToken, refreshToken)
 
-        assertEquals(TEST_SESSION_DTO, sessionManager.session())
+        verify(arrangement.accessTokenRefresher)
+            .suspendFunction(arrangement.accessTokenRefresher::refreshTokenAndPersistSession)
+            .with(eq(accessToken), eq(refreshToken))
     }
 
     @Test
@@ -134,8 +112,12 @@ class SessionManagerTest {
             tokenType = "tType",
             cookieLabel = "cLabel"
         )
-        val updatedTokens = originalTokens.copy(
-            accessToken = "a completely different token"
+        val updatedTokens = AuthTokenEntity(
+            userId = UserIDEntity("updated userId", "updated userDomain"),
+            accessToken = "a completely different token",
+            refreshToken = "a completely different refresh token",
+            tokenType = "updated tType",
+            cookieLabel = "updated cLabel"
         )
         val (_, sessionManager) = arrange {
             withCurrentTokenReturning {
@@ -148,11 +130,16 @@ class SessionManagerTest {
             }
         }
 
-        val firstResult = sessionManager.session()
-        val secondResult = sessionManager.session()
+        val firstResult = sessionManager.session()!!
+        val secondResult = sessionManager.session()!!
 
-        assertEquals(originalTokens.accessToken, firstResult!!.accessToken)
-        assertEquals(updatedTokens.accessToken, secondResult!!.accessToken)
+        assertEquals(originalTokens.accessToken, firstResult.accessToken)
+        assertEquals(updatedTokens.accessToken, secondResult.accessToken)
+        assertEquals(updatedTokens.refreshToken, secondResult.refreshToken)
+        assertEquals(updatedTokens.userId.value, secondResult.userId.value)
+        assertEquals(updatedTokens.userId.domain, secondResult.userId.domain)
+        assertEquals(updatedTokens.tokenType, secondResult.tokenType)
+        assertEquals(updatedTokens.cookieLabel, secondResult.cookieLabel)
     }
 
     private class Arrangement(private val configure: Arrangement.() -> Unit) {
@@ -165,7 +152,7 @@ class SessionManagerTest {
         val accessTokenApi = mock(AccessTokenApi::class)
 
         @Mock
-        private val accessTokenRefresher = mock(AccessTokenRefresher::class)
+        val accessTokenRefresher = mock(AccessTokenRefresher::class)
         private val accessTokenRefresherFactory = object : AccessTokenRefresherFactory {
             override fun create(accessTokenApi: AccessTokenApi): AccessTokenRefresher {
                 return accessTokenRefresher
