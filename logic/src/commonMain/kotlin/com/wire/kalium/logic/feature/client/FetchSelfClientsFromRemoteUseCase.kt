@@ -37,7 +37,7 @@ interface FetchSelfClientsFromRemoteUseCase {
     suspend operator fun invoke(): SelfClientsResult
 }
 
-class FetchSelfClientsFromRemoteUseCaseImpl(
+internal class FetchSelfClientsFromRemoteUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val provideClientId: CurrentClientIdProvider,
 ) : FetchSelfClientsFromRemoteUseCase {

@@ -33,7 +33,7 @@ interface MLSKeyPackageCountUseCase {
     suspend operator fun invoke(fromAPI: Boolean = true): MLSKeyPackageCountResult
 }
 
-class MLSKeyPackageCountUseCaseImpl(
+internal class MLSKeyPackageCountUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,

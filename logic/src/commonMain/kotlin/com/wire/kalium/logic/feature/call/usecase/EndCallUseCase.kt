@@ -43,7 +43,7 @@ interface EndCallUseCase {
 /**
  * This use case is responsible for ending a call.
  */
-class EndCallUseCaseImpl(
+internal class EndCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl

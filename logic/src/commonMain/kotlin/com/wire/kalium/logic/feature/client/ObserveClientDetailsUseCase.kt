@@ -40,7 +40,7 @@ interface ObserveClientDetailsUseCase {
     suspend operator fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult>
 }
 
-class ObserveClientDetailsUseCaseImpl(
+internal class ObserveClientDetailsUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val provideClientId: CurrentClientIdProvider
 ) : ObserveClientDetailsUseCase {

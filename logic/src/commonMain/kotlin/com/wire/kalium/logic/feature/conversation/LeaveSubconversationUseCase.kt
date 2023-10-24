@@ -41,7 +41,7 @@ interface LeaveSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 
-class LeaveSubconversationUseCaseImpl(
+internal class LeaveSubconversationUseCaseImpl(
     val conversationApi: ConversationApi,
     val mlsClientProvider: MLSClientProvider,
     val subconversationRepository: SubconversationRepository,
