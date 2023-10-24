@@ -64,23 +64,22 @@ class SessionManagerImpl internal constructor(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
 
-    private var session: SessionDTO? = null
     private var serverConfig: ServerConfigDTO? = null
 
-    override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
-        session ?: run {
-            wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
-                .map { sessionMapper.fromEntityToSessionDTO(it) }
-                .onSuccess { session = it }
-                .onFailure {
-                    kaliumLogger.e(
-                        """SESSION MANAGER: 
+    override suspend fun session(): SessionDTO = withContext(coroutineContext) {
+        wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
+            .map { sessionMapper.fromEntityToSessionDTO(it) }
+            .fold({
+                error(
+                    """SESSION MANAGER: 
                     |"error": "missing user session",
                     |"cause": "$it" """.trimMargin()
-                    )
-                }
-            session
-        }
+                )
+            }, { session ->
+                kaliumLogger.i("_TOKEN_ FOUND SESSION = $session")
+                session
+            }
+            )
     }
 
     override fun serverConfig(): ServerConfigDTO = serverConfig ?: run {
@@ -118,9 +117,7 @@ class SessionManagerImpl internal constructor(
                 throw FailureToRefreshTokenException(message)
             }, {
                 it
-            }).also {
-                session = it
-            }
+            })
         }
     }
 

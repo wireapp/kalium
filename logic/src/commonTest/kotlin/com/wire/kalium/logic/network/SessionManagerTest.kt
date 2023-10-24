@@ -124,6 +124,37 @@ class SessionManagerTest {
         assertEquals(TEST_SESSION_DTO, sessionManager.session())
     }
 
+    @Test
+    fun givenSessionWasUpdated_whenGettingSession_thenItShouldBeUpdatedAsWell() = runTest {
+        var counter = 0
+        val originalTokens = AuthTokenEntity(
+            userId = UserIDEntity("potato", "potahto"),
+            accessToken = "aToken",
+            refreshToken = "rToken",
+            tokenType = "tType",
+            cookieLabel = "cLabel"
+        )
+        val updatedTokens = originalTokens.copy(
+            accessToken = "a completely different token"
+        )
+        val (_, sessionManager) = arrange {
+            withCurrentTokenReturning {
+                counter++
+                if (counter == 1) {
+                    originalTokens
+                } else {
+                    updatedTokens
+                }
+            }
+        }
+
+        val firstResult = sessionManager.session()
+        val secondResult = sessionManager.session()
+
+        assertEquals(originalTokens.accessToken, firstResult!!.accessToken)
+        assertEquals(updatedTokens.accessToken, secondResult!!.accessToken)
+    }
+
     private class Arrangement(private val configure: Arrangement.() -> Unit) {
 
         @Mock
@@ -172,10 +203,14 @@ class SessionManagerTest {
         }
 
         fun withCurrentTokenResult(result: AuthTokenEntity) = apply {
+            withCurrentTokenReturning { result }
+        }
+
+        fun withCurrentTokenReturning(block: () -> AuthTokenEntity) = apply {
             given(tokenStorage)
                 .function(tokenStorage::getToken)
                 .whenInvokedWith(any())
-                .thenReturn(result)
+                .then { block() }
         }
     }
 
