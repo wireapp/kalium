@@ -22,7 +22,7 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 
 internal object SupportedProtocolSetAdapter : ColumnAdapter<Set<SupportedProtocolEntity>, String> {
     override fun decode(databaseValue: String): Set<SupportedProtocolEntity> {
-        return if(databaseValue.isBlank()) {
+        return if (databaseValue.isBlank()) {
             emptySet()
         } else {
             databaseValue.split(SEPARATOR).map { SupportedProtocolEntity.valueOf(it) }.toSet()
