@@ -1646,7 +1646,8 @@ class UserSessionScope internal constructor(
             connectionRepository,
             conversationRepository,
             userRepository,
-            oneOnOneResolver
+            oneOnOneResolver,
+            conversations.newGroupConversationSystemMessagesCreator
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
