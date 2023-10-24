@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -183,6 +184,7 @@ class UserEventReceiverTest {
         val (arrangement, eventReceiver) = arrange {
             withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
+            withPersistUnverifiedWarningMessageSuccess()
         }
 
         eventReceiver.onEvent(event)
@@ -199,6 +201,7 @@ class UserEventReceiverTest {
         val (arrangement, eventReceiver) = arrange {
             withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
+            withPersistUnverifiedWarningMessageSuccess()
         }
 
         eventReceiver.onEvent(event)
@@ -216,6 +219,7 @@ class UserEventReceiverTest {
             withFetchUserInfoReturning(Either.Right(Unit))
             withInsertConnectionFromEventSucceeding()
             withScheduleResolveOneOnOneConversationWithUserId()
+            withPersistUnverifiedWarningMessageSuccess()
         }
 
         eventReceiver.onEvent(event)
@@ -228,27 +232,28 @@ class UserEventReceiverTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduledWithDelay() = runTest(TestKaliumDispatcher.default) {
-        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy(live = true)
-        val (arrangement, eventReceiver) = arrange {
-            withFetchUserInfoReturning(Either.Right(Unit))
-            withInsertConnectionFromEventSucceeding()
-            withScheduleResolveOneOnOneConversationWithUserId()
+    fun givenLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduledWithDelay() =
+        runTest(TestKaliumDispatcher.default) {
+            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy(live = true)
+            val (arrangement, eventReceiver) = arrange {
+                withFetchUserInfoReturning(Either.Right(Unit))
+                withInsertConnectionFromEventSucceeding()
+                withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
+            }
+
+            eventReceiver.onEvent(event)
+            advanceUntilIdle()
+
+            verify(arrangement.oneOnOneResolver)
+                .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
+                .with(eq(event.connection.qualifiedToId), eq(3.seconds))
+                .wasInvoked(exactly = once)
         }
-
-        eventReceiver.onEvent(event)
-        advanceUntilIdle()
-
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
-            .with(eq(event.connection.qualifiedToId), eq(3.seconds))
-            .wasInvoked(exactly = once)
-    }
 
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl()
-    {
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         @Mock
         val connectionRepository = mock(classOf<ConnectionRepository>())
 
@@ -264,6 +269,9 @@ class UserEventReceiverTest {
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
+        @Mock
+        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
@@ -272,7 +280,8 @@ class UserEventReceiverTest {
             logoutUseCase,
             oneOnOneResolver,
             SELF_USER_ID,
-            currentClientIdProvider
+            currentClientIdProvider,
+            lazy { newGroupConversationSystemMessagesCreator }
         )
 
         init {
@@ -284,6 +293,13 @@ class UserEventReceiverTest {
                 .suspendFunction(connectionRepository::insertConnectionFromEvent)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withPersistUnverifiedWarningMessageSuccess() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .whenInvokedWith(any())
+                .then { Either.Right(Unit) }
         }
 
         fun withSaveNewClientSucceeding() = apply {
