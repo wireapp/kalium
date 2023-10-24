@@ -158,6 +158,12 @@ internal class ConversationGroupRepositoryImpl(
                         }
                     }.flatMap {
                         wrapStorageRequest {
+                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                                conversationEntity.id.toModel()
+                            )
+                        }
+                    }.flatMap {
+                        wrapStorageRequest {
                             conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
                                 conversationMapper.fromDaoModel(it)
                             }

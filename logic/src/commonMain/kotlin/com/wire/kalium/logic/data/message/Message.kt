@@ -348,6 +348,10 @@ sealed interface Message {
                 is MessageContent.ConversationProtocolChanged -> mutableMapOf(
                     typeKey to "conversationProtocolChanged"
                 )
+
+                is MessageContent.ConversationStartedUnverifiedWarning -> mutableMapOf(
+                    typeKey to "conversationStartedUnverifiedWarning"
+                )
             }
 
             val standardProperties = mapOf(
