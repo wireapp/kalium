@@ -17,15 +17,15 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-actual fun getCertificateStatus(notAfterTimestamp: Long): CertificateStatus = CertificateStatus.VALID
+actual interface PemCertificateDecoder {
+    actual fun decode(certificate: String): E2eiCertificate
+}
 
-actual fun decodePemCertificate(
-    certificate: String
-): E2eiCertificate {
-    return E2eiCertificate(
-        issuer = "",
-        status = getCertificateStatus(0),
-        serialNumber = "",
-        certificateDetail = ""
-    )
+actual class PemCertificateDecoderImpl actual constructor(
+    private val x509CertificateGenerator: X509CertificateGenerator,
+    private val certificateStatusChecker: CertificateStatusChecker
+) : PemCertificateDecoder {
+    override fun decode(certificate: String): E2eiCertificate {
+        TODO("Not yet implemented")
+    }
 }

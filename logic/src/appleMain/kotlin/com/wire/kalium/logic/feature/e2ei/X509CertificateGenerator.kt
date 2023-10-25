@@ -17,8 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-expect fun getCertificateStatus(notAfterTimestamp: Long): CertificateStatus
+actual interface X509CertificateGenerator {
+    actual fun generate(certificateByteArray: ByteArray): PlatformX509Certificate
+}
 
-expect fun decodePemCertificate(
-    certificate: String
-): E2eiCertificate
+actual class X509CertificateGeneratorImpl : X509CertificateGenerator {
+    override fun generate(certificateByteArray: ByteArray): PlatformX509Certificate {
+        TODO("Not yet implemented")
+    }
+}

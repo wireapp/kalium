@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.e2ei.E2eiCertificateRepository
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
-import com.wire.kalium.logic.feature.e2ei.decodePemCertificate
+import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -31,7 +31,8 @@ interface GetE2eiCertificateUseCase {
 }
 
 class GetE2eiCertificateUseCaseImpl(
-    private val e2eiCertificateRepository: E2eiCertificateRepository
+    private val e2eiCertificateRepository: E2eiCertificateRepository,
+    private val pemCertificateDecoder: PemCertificateDecoder
 ) : GetE2eiCertificateUseCase {
     override operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult =
         e2eiCertificateRepository.getE2eiCertificate(clientId).fold(
@@ -39,7 +40,8 @@ class GetE2eiCertificateUseCaseImpl(
                 GetE2EICertificateUseCaseResult.Failure.NotActivated
             },
             {
-                GetE2EICertificateUseCaseResult.Success(decodePemCertificate(it))
+                val certificate = pemCertificateDecoder.decode(it)
+                GetE2EICertificateUseCaseResult.Success(certificate)
             }
         )
 }

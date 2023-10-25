@@ -15,19 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.e2ei
+package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.functional.Either
-
-interface E2eiCertificateRepository {
-    fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String>
+actual interface CertificateStatusChecker {
+    actual fun status(notAfterTimestamp: Long): CertificateStatus
 }
 
-class E2eiCertificateRepositoryImpl : E2eiCertificateRepository {
-    override fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String> {
-        // TODO get certificate from CoreCrypto
-        return Either.Left(E2EIFailure(Exception()))
+actual class CertificateStatusCheckerImpl : CertificateStatusChecker {
+    override fun status(notAfterTimestamp: Long): CertificateStatus {
+        TODO("Not yet implemented")
     }
 }

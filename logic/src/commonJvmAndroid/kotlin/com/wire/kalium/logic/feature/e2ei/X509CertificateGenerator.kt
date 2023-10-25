@@ -15,19 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.e2ei
+package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.functional.Either
+import java.io.ByteArrayInputStream
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 
-interface E2eiCertificateRepository {
-    fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String>
+actual interface X509CertificateGenerator {
+    actual fun generate(certificateByteArray: ByteArray): PlatformX509Certificate
 }
 
-class E2eiCertificateRepositoryImpl : E2eiCertificateRepository {
-    override fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String> {
-        // TODO get certificate from CoreCrypto
-        return Either.Left(E2EIFailure(Exception()))
+actual class X509CertificateGeneratorImpl : X509CertificateGenerator {
+    override fun generate(certificateByteArray: ByteArray): PlatformX509Certificate {
+        return PlatformX509Certificate(
+            CertificateFactory.getInstance(TYPE)
+                .generateCertificate(ByteArrayInputStream(certificateByteArray)) as X509Certificate
+        )
     }
 }
+
+private const val TYPE = "X.509"

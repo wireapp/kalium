@@ -15,19 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.e2ei
+package com.wire.kalium.logic.util
 
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.functional.Either
+/**
+ * This extension function is used to format the serial number of the certificate.
+ * output will be in the format of 2 bytes separated by a colon.
+ * e.g. 01:02:03:04:05:06:07:08:09:0A:0B:0C:0D:0E:0F:10
+ */
+fun String.serialNumber() = this.chunked(CHUNK_SIZE)
+    .joinToString(SEPARATOR)
+    .uppercase()
 
-interface E2eiCertificateRepository {
-    fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String>
-}
-
-class E2eiCertificateRepositoryImpl : E2eiCertificateRepository {
-    override fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String> {
-        // TODO get certificate from CoreCrypto
-        return Either.Left(E2EIFailure(Exception()))
-    }
-}
+private const val CHUNK_SIZE = 2
+private const val SEPARATOR = ":"

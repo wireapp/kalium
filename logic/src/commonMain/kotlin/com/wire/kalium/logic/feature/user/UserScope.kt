@@ -22,7 +22,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
-import com.wire.kalium.logic.data.e2ei.E2eiCertificateRepository
+import com.wire.kalium.logic.data.e2ei.E2eiCertificateRepositoryImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -42,6 +42,7 @@ import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
+import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoderImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
@@ -107,10 +108,11 @@ class UserScope internal constructor(
             qualifiedIdMapper
         )
 
-    private val e2eiCertificateRepository by lazy { E2eiCertificateRepository() }
+    private val e2eiCertificateRepository by lazy { E2eiCertificateRepositoryImpl() }
+    private val pemCertificateDecoderImpl by lazy { PemCertificateDecoderImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
-    val getE2EICertificate: GetE2eiCertificateUseCase get() = GetE2eiCertificateUseCaseImpl(e2eiCertificateRepository)
+    val getE2EICertificate: GetE2eiCertificateUseCase get() = GetE2eiCertificateUseCaseImpl(e2eiCertificateRepository, pemCertificateDecoderImpl)
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)
