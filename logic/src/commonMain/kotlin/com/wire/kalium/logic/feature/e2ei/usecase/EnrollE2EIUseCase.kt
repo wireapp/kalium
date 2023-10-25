@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
