@@ -26,14 +26,11 @@ jobs:
                     fetch-depth: 0
 
             -   name: Set up JDK
-                uses: actions/setup-java@v3
+                uses: buildjet/setup-java@v3
                 with:
                     java-version: '17'
                     distribution: 'temurin'
                     cache: gradle
-
-            -   name: Gradle Setup
-                uses: gradle/gradle-build-action@v2
 
             -   name: Validate Gradle wrapper
                 uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
