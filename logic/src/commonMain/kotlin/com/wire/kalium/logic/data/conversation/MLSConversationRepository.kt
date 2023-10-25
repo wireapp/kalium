@@ -549,7 +549,6 @@ internal class MLSConversationDataSource(
         }
     }
 
-
     private suspend fun retryOnCommitFailure(
         groupID: GroupID,
         retryOnClientMismatch: Boolean = true,
