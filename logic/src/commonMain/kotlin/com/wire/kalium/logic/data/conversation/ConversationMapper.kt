@@ -81,7 +81,6 @@ interface ConversationMapper {
     fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
     fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus): ConversationEntity.VerificationStatus
     fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
-    fun fromDaoModelToProteusVerificationData(daoModel: ConversationEntity.ProteusVerificationData): Conversation.ProteusVerificationData
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -458,14 +457,6 @@ internal class ConversationMapperImpl(
     override fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus) =
         ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 
-    override fun fromDaoModelToProteusVerificationData(
-        daoModel: ConversationEntity.ProteusVerificationData,
-    ): Conversation.ProteusVerificationData =
-        Conversation.ProteusVerificationData(
-            daoModel.conversationId.toModel(),
-            verificationStatusFromEntity(daoModel.currentVerificationStatus),
-            daoModel.isActuallyVerified
-        )
 }
 
 private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {

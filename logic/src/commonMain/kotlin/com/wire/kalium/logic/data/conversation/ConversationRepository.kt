@@ -22,8 +22,8 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIO
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -282,13 +282,6 @@ interface ConversationRepository {
      */
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 
-    suspend fun getConversationsProteusVerificationData(
-        clientId: ClientId
-    ): Either<StorageFailure, List<Conversation.ProteusVerificationData>>
-
-    suspend fun updateProteusVerificationStatus(
-        statusesToUpdate: Map<QualifiedID, Conversation.VerificationStatus>
-    ): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -997,22 +990,6 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Unit> = wrapApiRequest {
         conversationApi.sendTypingIndicatorNotification(conversationId.toApi(), typingStatus.toStatusDto())
     }
-
-    override suspend fun updateProteusVerificationStatus(
-        statusesToUpdate: Map<QualifiedID, Conversation.VerificationStatus>
-    ): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            conversationDAO.updateProteusVerificationStatuses(
-                statusesToUpdate.mapKeys { (conversationId, _) -> conversationId.toDao() }
-                    .mapValues { (_, verificationStatus) -> conversationMapper.verificationStatusToEntity(verificationStatus) }
-            )
-        }
-
-    override suspend fun getConversationsProteusVerificationData(
-        clientId: ClientId
-    ): Either<StorageFailure, List<Conversation.ProteusVerificationData>> =
-        wrapStorageRequest { conversationDAO.getConversationsProteusVerificationDataByClientId(clientId.value) }
-            .map { list -> list.map { conversationMapper.fromDaoModelToProteusVerificationData(it) } }
 
     private suspend fun persistIncompleteConversations(
         conversationsFailed: List<NetworkQualifiedId>

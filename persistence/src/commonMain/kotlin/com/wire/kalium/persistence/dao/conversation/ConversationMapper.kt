@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
-import com.wire.kalium.persistence.SelectConversationIdsWithCurrentAndActualProteusVerificationByClientId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.ConversationDetails as SQLDelightConversationView
@@ -163,12 +162,4 @@ internal class ConversationMapper {
         }
     }
 
-    fun mapToProteusVerificationData(
-        selection: SelectConversationIdsWithCurrentAndActualProteusVerificationByClientId,
-    ): ConversationEntity.ProteusVerificationData =
-        ConversationEntity.ProteusVerificationData(
-            selection.qualified_id,
-            selection.proteus_verification_status,
-            selection.isActuallyVerified
-        )
 }

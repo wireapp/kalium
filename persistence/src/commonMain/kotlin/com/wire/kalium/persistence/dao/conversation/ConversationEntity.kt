@@ -104,10 +104,4 @@ data class ConversationEntity(
             val cipherSuite: ConversationEntity.CipherSuite
         }
     }
-
-    data class ProteusVerificationData(
-        val conversationId: QualifiedIDEntity,
-        val currentVerificationStatus: VerificationStatus,
-        val isActuallyVerified: Boolean
-    )
 }

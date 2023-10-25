@@ -98,8 +98,6 @@ internal interface ConversationRepositoryArrangement {
             .whenInvokedWith(any(), any())
             .thenReturn(result)
     }
-    fun withConversationsProteusVerificationDataByClientId(result: Either<StorageFailure, List<Conversation.ProteusVerificationData>>): ConversationRepositoryArrangementImpl
-    fun withUpdateProteusVerificationStatuses(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -254,19 +252,4 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .thenReturn(result)
     }
 
-    override fun withConversationsProteusVerificationDataByClientId(
-        result: Either<StorageFailure, List<Conversation.ProteusVerificationData>>
-    ) = apply {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationsProteusVerificationData)
-            .whenInvokedWith(any())
-            .thenReturn(result)
-    }
-
-    override fun withUpdateProteusVerificationStatuses(result: Either<StorageFailure, Unit>) = apply {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateProteusVerificationStatus)
-            .whenInvokedWith(any())
-            .thenReturn(result)
-    }
 }
