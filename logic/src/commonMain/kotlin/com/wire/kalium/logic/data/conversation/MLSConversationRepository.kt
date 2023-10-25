@@ -44,6 +44,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.flatten
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -529,18 +531,24 @@ internal class MLSConversationDataSource(
             mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
         }.map { rotateBundle ->
             // todo: make below API calls atomic when the backend does it in one request
+            // todo: store keypackages to drop, later drop them again
             kaliumLogger.w("drop old key packages after conversations migration")
-            keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove)
+            keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove).flatMapLeft {
+                return Either.Left(it)
+            }
 
             kaliumLogger.w("upload new key packages including x509 certificate")
-            keyPackageRepository.uploadKeyPackages(clientId, rotateBundle.newKeyPackages)
+            keyPackageRepository.uploadKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
+                return Either.Left(it)
+            }
 
             kaliumLogger.w("send migration commits after key rotations")
-            rotateBundle.commits.forEach {
+            rotateBundle.commits.map {
                 sendCommitBundle(GroupID(it.key), it.value)
-            }
+            }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
         }
     }
+
 
     private suspend fun retryOnCommitFailure(
         groupID: GroupID,
