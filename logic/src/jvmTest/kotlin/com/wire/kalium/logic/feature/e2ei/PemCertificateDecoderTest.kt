@@ -32,6 +32,12 @@ class PemCertificateDecoderTest {
 
     @Test
     fun givenAValidCertificate_whenDecodingIt_thenReturnCertificateObject() {
+        val expectedCertificate = E2eiCertificate(
+            issuer = "CN=wire Intermediate CA,O=wire",
+            status = CertificateStatus.VALID,
+            serialNumber = "60:88:F6:3E:97:4F:2E:AB:50:5C:C9:B1:D1:39:97:BA",
+            certificateDetail = validPemCertificateString
+        )
         val (arrangement, pemCertificateDecoder) = Arrangement()
             .withCertificate(validPemCertificateString)
             .withValidStatus()
@@ -39,12 +45,13 @@ class PemCertificateDecoderTest {
 
         val result = pemCertificateDecoder.decode(validPemCertificateString)
 
+        println("result: $result")
         verify(arrangement.x509CertificateGeneratorMock)
             .function(arrangement.x509CertificateGeneratorMock::generate)
             .with(any())
             .wasInvoked(once)
 
-        assertEquals(CertificateStatus.VALID, result.status)
+        assertEquals(expectedCertificate, result)
     }
 
     @Test(expected = CertificateException::class)
