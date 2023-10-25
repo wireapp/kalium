@@ -81,6 +81,7 @@ class NewConversationEventHandlerTest {
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
@@ -104,7 +105,7 @@ class NewConversationEventHandlerTest {
         val event = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
-            transient =false,
+            transient = false,
             live = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
@@ -124,6 +125,7 @@ class NewConversationEventHandlerTest {
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
@@ -167,6 +169,7 @@ class NewConversationEventHandlerTest {
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
             .withConversationResolvedMembersSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
@@ -194,6 +197,11 @@ class NewConversationEventHandlerTest {
                 fun1<ConversationResponse>()
             )
             .with(eq(event.conversation))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+            .with(eq(event.conversation.id.toModel()))
             .wasInvoked(exactly = once)
     }
 
@@ -311,6 +319,13 @@ class NewConversationEventHandlerTest {
                 .suspendFunction(
                     newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed
                 )
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withConversationUnverifiedWarningSystemMessage() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

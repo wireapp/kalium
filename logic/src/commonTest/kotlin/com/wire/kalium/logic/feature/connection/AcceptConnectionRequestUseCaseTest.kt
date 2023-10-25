@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
@@ -48,6 +50,7 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversation(Either.Right(Unit))
             withUpdateConversationModifiedDate(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
         }
 
@@ -69,6 +72,7 @@ class AcceptConnectionRequestUseCaseTest {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversation(Either.Right(Unit))
             withUpdateConversationModifiedDate(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
         }
 
@@ -89,6 +93,7 @@ class AcceptConnectionRequestUseCaseTest {
         val (arrangement, acceptConnectionRequestUseCase) = arrange {
             withUpdateConnectionStatus(Either.Right(CONNECTION))
             withFetchConversation(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
             withUpdateConversationModifiedDate(Either.Right(Unit))
             withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
         }
@@ -126,14 +131,15 @@ class AcceptConnectionRequestUseCaseTest {
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl()
-    {
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
+        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
         fun arrange() = run {
             block()
             this@Arrangement to AcceptConnectionRequestUseCaseImpl(
                 connectionRepository = connectionRepository,
                 conversationRepository = conversationRepository,
-                oneOnOneResolver = oneOnOneResolver
+                oneOnOneResolver = oneOnOneResolver,
+                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
             )
         }
     }
