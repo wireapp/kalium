@@ -21,4 +21,4 @@ expect interface X509CertificateGenerator {
     fun generate(certificateByteArray: ByteArray): PlatformX509Certificate
 }
 
-expect class X509CertificateGeneratorImpl: X509CertificateGenerator
+expect class X509CertificateGeneratorImpl : X509CertificateGenerator
