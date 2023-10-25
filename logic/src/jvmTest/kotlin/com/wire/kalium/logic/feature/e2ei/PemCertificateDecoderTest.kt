@@ -45,7 +45,6 @@ class PemCertificateDecoderTest {
 
         val result = pemCertificateDecoder.decode(validPemCertificateString)
 
-        println("result: $result")
         verify(arrangement.x509CertificateGeneratorMock)
             .function(arrangement.x509CertificateGeneratorMock::generate)
             .with(any())
