@@ -592,7 +592,8 @@ class UserSessionScope internal constructor(
             globalScope.unboundNetworkContainer.acmeApi,
             e2EIClientProvider,
             mlsClientProvider,
-            clientIdProvider
+            clientIdProvider,
+            mlsConversationRepository
         )
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
