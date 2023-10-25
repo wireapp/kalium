@@ -206,6 +206,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -577,6 +578,8 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessageEntityContent.ConversationProtocolChanged(
                 protocol = conversationProtocolChanged ?: ConversationEntity.Protocol.PROTEUS
             )
+
+            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
         }
 
         return createMessageEntity(
