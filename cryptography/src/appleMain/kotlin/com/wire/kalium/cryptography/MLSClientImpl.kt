@@ -190,12 +190,20 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
+    override suspend fun isE2EIEnabled(): Boolean {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt) {
         TODO("Not yet implemented")
     }
 
-    override suspend fun isGroupVerified(groupId: MLSGroupId): Boolean {
+    override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState {
         TODO("Not supported on apple devices")
+    }
+
+    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+        TODO("Not yet implemented")
     }
 
     companion object {

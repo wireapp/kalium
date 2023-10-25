@@ -18,23 +18,18 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.*
-import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import com.wire.kalium.logic.data.client.E2EClientProvider
+import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_CHALLENGE
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_DIRECTORIES
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_DIRECTORIES_RESPONSE
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ACCESS_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ID_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_NONCE
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_URL
-import com.wire.kalium.logic.data.featureConfig.*
 import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.*
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
@@ -42,14 +37,9 @@ import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.util.serialization.toJsonElement
-import io.ktor.util.*
 import io.mockative.*
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class E2EIRepositoryTest {
     @Test
@@ -768,7 +758,7 @@ class E2EIRepositoryTest {
         val acmeApi: ACMEApi = mock(classOf<ACMEApi>())
 
         @Mock
-        val e2eiClientProvider: E2EClientProvider = mock(classOf<E2EClientProvider>())
+        val e2eiClientProvider: E2EIClientProvider = mock(classOf<E2EIClientProvider>())
 
         @Mock
         val e2eiClient = mock(classOf<E2EIClient>())

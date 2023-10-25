@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -1030,7 +1031,7 @@ class MLSConversationRepositoryTest {
     fun givenVerifiedConversation_whenGetGroupVerify_thenVerifiedReturned() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetGroupVerifyReturn(true)
+            .withGetGroupVerifyReturn(E2EIConversationState.VERIFIED)
             .arrange()
 
         assertEquals(
@@ -1048,7 +1049,25 @@ class MLSConversationRepositoryTest {
     fun givenNotVerifiedConversation_whenGetGroupVerify_thenNotVerifiedReturned() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetGroupVerifyReturn(false)
+            .withGetGroupVerifyReturn(E2EIConversationState.NOT_VERIFIED)
+            .arrange()
+
+        assertEquals(
+            Either.Right(Conversation.VerificationStatus.NOT_VERIFIED),
+            mlsConversationRepository.getConversationVerificationStatus(Arrangement.GROUP_ID)
+        )
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::isGroupVerified)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNotEnabledE2EIForConversation_whenGetGroupVerify_thenNotVerifiedReturned() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetGroupVerifyReturn(E2EIConversationState.NOT_ENABLED)
             .arrange()
 
         assertEquals(
@@ -1067,7 +1086,7 @@ class MLSConversationRepositoryTest {
         val failure = CoreFailure.Unknown(RuntimeException("Error!"))
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientFailed(failure)
-            .withGetGroupVerifyReturn(false)
+            .withGetGroupVerifyReturn(E2EIConversationState.NOT_VERIFIED)
             .arrange()
 
         assertEquals(
@@ -1290,11 +1309,11 @@ class MLSConversationRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetGroupVerifyReturn(isVerified: Boolean) = apply {
+        fun withGetGroupVerifyReturn(verificationStatus: E2EIConversationState) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::isGroupVerified)
                 .whenInvokedWith(anything())
-                .thenReturn(isVerified)
+                .thenReturn(verificationStatus)
         }
 
         fun arrange() = this to MLSConversationDataSource(
