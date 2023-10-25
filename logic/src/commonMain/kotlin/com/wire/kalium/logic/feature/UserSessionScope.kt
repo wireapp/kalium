@@ -44,8 +44,8 @@ import com.wire.kalium.logic.data.call.VideoStateCheckerImpl
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.ClientDataSource
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.E2EClientProvider
-import com.wire.kalium.logic.data.client.E2EIClientProviderImpl
+import com.wire.kalium.logic.data.client.E2EIClientProvider
+import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
@@ -188,8 +188,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -595,8 +595,8 @@ class UserSessionScope internal constructor(
             clientIdProvider
         )
 
-    private val e2EIClientProvider: E2EClientProvider by lazy {
-        E2EIClientProviderImpl(
+    private val e2EIClientProvider: E2EIClientProvider by lazy {
+        EI2EIClientProviderImpl(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
@@ -1295,7 +1295,8 @@ class UserSessionScope internal constructor(
             logout,
             oneOnOneResolver,
             userId,
-            clientIdProvider
+            clientIdProvider,
+            lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1648,7 +1649,8 @@ class UserSessionScope internal constructor(
             connectionRepository,
             conversationRepository,
             userRepository,
-            oneOnOneResolver
+            oneOnOneResolver,
+            conversations.newGroupConversationSystemMessagesCreator
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase

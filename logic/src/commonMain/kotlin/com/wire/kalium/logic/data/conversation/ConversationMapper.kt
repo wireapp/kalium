@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
@@ -56,7 +57,6 @@ import kotlinx.datetime.toInstant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
@@ -550,4 +550,10 @@ internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
     Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
     Protocol.MIXED -> Conversation.Protocol.MIXED
     Protocol.MLS -> Conversation.Protocol.MLS
+}
+
+internal fun E2EIConversationState.toModel(): Conversation.VerificationStatus = when (this) {
+    E2EIConversationState.VERIFIED -> Conversation.VerificationStatus.VERIFIED
+    E2EIConversationState.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
+    E2EIConversationState.NOT_ENABLED -> Conversation.VerificationStatus.NOT_VERIFIED
 }
