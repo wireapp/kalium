@@ -1694,8 +1694,6 @@ class ConversationRepositoryTest {
         val CONVERSATION_ID = TestConversation.ID
         val USER_ID = TestUser.USER_ID
 
-        val CLIENT_ID = ClientId("client_id_value")
-
         val CONVERSATION_ENTITY_ID = QualifiedIDEntity(CONVERSATION_ID.value, CONVERSATION_ID.domain)
         val USER_ENTITY_ID = QualifiedIDEntity(USER_ID.value, USER_ID.domain)
 

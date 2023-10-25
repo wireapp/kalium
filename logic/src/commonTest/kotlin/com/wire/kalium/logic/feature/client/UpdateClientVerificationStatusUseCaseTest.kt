@@ -21,19 +21,14 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -102,47 +97,16 @@ class UpdateClientVerificationStatusUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-
-    @Test
-    fun givenSuccessAndSomeConversationToUpdateVerification_whenUpdatingTheVerificationStatus_thenConversationVerificationIsCalled() =
-        runTest {
-            val userId = UserId("userId", "domain")
-            val clientID = ClientId("clientId")
-
-            val (arrangement, useCase) = arrange {
-                withUpdateClientProteusVerificationStatus(Either.Right(Unit))
-            }
-
-            useCase(userId, clientID, true).also {
-                assertIs<UpdateClientVerificationStatusUseCase.Result.Success>(it)
-            }
-
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(any())
-                .wasInvoked(exactly = once)
-        }
-
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: Arrangement.() -> Unit
-    ) : ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
-
-        @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
-
-        init {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-
-        }
+    ) : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
 
         fun arrange() = block().run {
-            this@Arrangement to UpdateClientVerificationStatusUseCase(clientRepository = clientRepository)
+            this@Arrangement to UpdateClientVerificationStatusUseCase(
+                clientRepository = clientRepository
+            )
         }
     }
 
