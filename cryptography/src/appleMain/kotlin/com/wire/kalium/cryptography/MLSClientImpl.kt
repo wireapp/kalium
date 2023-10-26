@@ -194,7 +194,11 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt) {
+    override suspend fun e2eiRotateAll(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ): RotateBundle {
         TODO("Not yet implemented")
     }
 

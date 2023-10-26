@@ -43,6 +43,7 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
@@ -51,6 +52,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.model.SelfUserDTO
@@ -219,23 +221,35 @@ internal class UserDataSource internal constructor(
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
             .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
+    @Suppress("MagicNumber")
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         if (qualifiedUserIdList.isEmpty()) {
-            return Either.Right(Unit)
+            Either.Right(Unit)
+        } else {
+            qualifiedUserIdList
+                .chunked(BATCH_SIZE)
+                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
+                    wrapApiRequest {
+                        kaliumLogger.d("Fetching ${chunk.size} users")
+                        userDetailsApi.getMultipleUsers(
+                            ListUserRequest.qualifiedIds(chunk.map { userId -> userId.toApi() })
+                        )
+                    }.map {
+                        kaliumLogger.d("Found ${it.usersFound.size} users and ${it.usersFailed.size} failed users")
+                        acc.copy(
+                            usersFound = (acc.usersFound + it.usersFound).distinct(),
+                            usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
+                        )
+                    }
+                }
+                .flatMap { listUserProfileDTO ->
+                    if (listUserProfileDTO.usersFailed.isNotEmpty()) {
+                        kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
+                        persistIncompleteUsers(listUserProfileDTO.usersFailed)
+                    }
+                    persistUsers(listUserProfileDTO.usersFound)
+                }
         }
-
-        return wrapApiRequest {
-            userDetailsApi.getMultipleUsers(
-                ListUserRequest.qualifiedIds(qualifiedUserIdList.map { userId -> userId.toApi() })
-            )
-        }.flatMap { listUserProfileDTO ->
-            if (listUserProfileDTO.usersFailed.isNotEmpty()) {
-                kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
-                persistIncompleteUsers(listUserProfileDTO.usersFailed)
-            }
-            persistUsers(listUserProfileDTO.usersFound)
-        }
-    }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
         userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
@@ -489,5 +503,6 @@ internal class UserDataSource internal constructor(
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
         internal val FEDERATED_USER_TTL = 5.minutes
+        internal const val BATCH_SIZE = 500
     }
 }

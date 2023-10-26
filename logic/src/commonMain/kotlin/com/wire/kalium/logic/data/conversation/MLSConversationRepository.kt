@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
+import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
@@ -43,6 +44,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.flatten
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -108,6 +111,11 @@ interface MLSConversationRepository {
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun observeEpochChanges(): Flow<GroupID>
     suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus>
+    suspend fun rotateKeysAndMigrateConversations(
+        clientId: ClientId,
+        e2eiClient: E2EIClient,
+        certificateChain: String
+    ): Either<CoreFailure, Unit>
 }
 
 private enum class CommitStrategy {
@@ -513,6 +521,33 @@ internal class MLSConversationDataSource(
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
         }.map { it.toModel() }
+
+    override suspend fun rotateKeysAndMigrateConversations(
+        clientId: ClientId,
+        e2eiClient: E2EIClient,
+        certificateChain: String
+    ) = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+        wrapMLSRequest {
+            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
+        }.map { rotateBundle ->
+            // todo: make below API calls atomic when the backend does it in one request
+            // todo: store keypackages to drop, later drop them again
+            kaliumLogger.w("drop old key packages after conversations migration")
+            keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove).flatMapLeft {
+                return Either.Left(it)
+            }
+
+            kaliumLogger.w("upload new key packages including x509 certificate")
+            keyPackageRepository.uploadKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
+                return Either.Left(it)
+            }
+
+            kaliumLogger.w("send migration commits after key rotations")
+            rotateBundle.commits.map {
+                sendCommitBundle(GroupID(it.key), it.value)
+            }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
+        }
+    }
 
     private suspend fun retryOnCommitFailure(
         groupID: GroupID,

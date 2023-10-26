@@ -260,11 +260,13 @@ class MLSClientImpl(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt
-    ) {
-        coreCrypto.e2eiRotateAll(
-            (enrollment as E2EIClientImpl).wireE2eIdentity,
-            certificateChain,
-            newMLSKeyPackageCount
+    ): RotateBundle {
+        return toRotateBundle(
+            coreCrypto.e2eiRotateAll(
+                (enrollment as E2EIClientImpl).wireE2eIdentity,
+                certificateChain,
+                newMLSKeyPackageCount
+            )
         )
     }
 
