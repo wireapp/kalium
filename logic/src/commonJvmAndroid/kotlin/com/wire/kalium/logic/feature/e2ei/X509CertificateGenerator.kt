@@ -15,23 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.adapter
+package com.wire.kalium.logic.feature.e2ei
 
-import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+import java.io.ByteArrayInputStream
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 
-internal object SupportedProtocolSetAdapter : ColumnAdapter<Set<SupportedProtocolEntity>, String> {
-    override fun decode(databaseValue: String): Set<SupportedProtocolEntity> {
-        return if (databaseValue.isBlank()) {
-            emptySet()
-        } else {
-            databaseValue.split(SEPARATOR).map { SupportedProtocolEntity.valueOf(it) }.toSet()
-        }
-    }
-
-    override fun encode(value: Set<SupportedProtocolEntity>): String {
-        return value.joinToString(SEPARATOR) { it.name }
-    }
-
-    private const val SEPARATOR = ","
+actual interface X509CertificateGenerator {
+    actual fun generate(certificateByteArray: ByteArray): PlatformX509Certificate
 }
+
+actual class X509CertificateGeneratorImpl : X509CertificateGenerator {
+    override fun generate(certificateByteArray: ByteArray): PlatformX509Certificate {
+        return PlatformX509Certificate(
+            CertificateFactory.getInstance(TYPE)
+                .generateCertificate(ByteArrayInputStream(certificateByteArray)) as X509Certificate
+        )
+    }
+}
+
+private const val TYPE = "X.509"

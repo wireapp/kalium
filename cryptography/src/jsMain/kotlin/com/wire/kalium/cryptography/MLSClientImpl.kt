@@ -136,7 +136,7 @@ class MLSClientImpl : MLSClient {
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt
-    ) {
+    ): RotateBundle {
         TODO("Not yet implemented")
     }
 

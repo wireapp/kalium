@@ -15,23 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.adapter
+package com.wire.kalium.logic.data.e2ei
 
-import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.functional.Either
 
-internal object SupportedProtocolSetAdapter : ColumnAdapter<Set<SupportedProtocolEntity>, String> {
-    override fun decode(databaseValue: String): Set<SupportedProtocolEntity> {
-        return if (databaseValue.isBlank()) {
-            emptySet()
-        } else {
-            databaseValue.split(SEPARATOR).map { SupportedProtocolEntity.valueOf(it) }.toSet()
-        }
+interface E2eiCertificateRepository {
+    fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String>
+}
+
+class E2eiCertificateRepositoryImpl : E2eiCertificateRepository {
+    override fun getE2eiCertificate(clientId: ClientId): Either<E2EIFailure, String> {
+        // TODO get certificate from CoreCrypto
+        return Either.Left(E2EIFailure(Exception()))
     }
-
-    override fun encode(value: Set<SupportedProtocolEntity>): String {
-        return value.joinToString(SEPARATOR) { it.name }
-    }
-
-    private const val SEPARATOR = ","
 }

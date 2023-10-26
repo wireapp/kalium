@@ -15,23 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.adapter
+package com.wire.kalium.logic.feature.e2ei
 
-import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+actual interface PemCertificateDecoder {
+    actual fun decode(certificate: String): E2eiCertificate
+}
 
-internal object SupportedProtocolSetAdapter : ColumnAdapter<Set<SupportedProtocolEntity>, String> {
-    override fun decode(databaseValue: String): Set<SupportedProtocolEntity> {
-        return if (databaseValue.isBlank()) {
-            emptySet()
-        } else {
-            databaseValue.split(SEPARATOR).map { SupportedProtocolEntity.valueOf(it) }.toSet()
-        }
+actual class PemCertificateDecoderImpl actual constructor(
+    private val x509CertificateGenerator: X509CertificateGenerator,
+    private val certificateStatusChecker: CertificateStatusChecker
+) : PemCertificateDecoder {
+    override fun decode(certificate: String): E2eiCertificate {
+        TODO("Not yet implemented")
     }
-
-    override fun encode(value: Set<SupportedProtocolEntity>): String {
-        return value.joinToString(SEPARATOR) { it.name }
-    }
-
-    private const val SEPARATOR = ","
 }

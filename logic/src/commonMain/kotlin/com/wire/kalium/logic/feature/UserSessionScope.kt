@@ -188,8 +188,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -592,7 +592,8 @@ class UserSessionScope internal constructor(
             globalScope.unboundNetworkContainer.acmeApi,
             e2EIClientProvider,
             mlsClientProvider,
-            clientIdProvider
+            clientIdProvider,
+            mlsConversationRepository
         )
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {

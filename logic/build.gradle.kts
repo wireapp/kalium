@@ -96,6 +96,7 @@ kotlin {
             dependencies {
                 implementation(libs.jna)
                 implementation(libs.coreCryptoJvm)
+                implementation(libs.bouncy.castle)
             }
         }
         val jvmTest by getting
