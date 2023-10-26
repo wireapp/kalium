@@ -152,10 +152,22 @@ internal class SlowSyncManager(
     }
 
     private companion object {
+        /**
+         * The current version of Slow Sync.
+         *
+         * By bumping this version, we can force all clients to perform a new Slow Sync.
+         * Useful when a new step is added to Slow Sync, or when we fix some bug in Slow Sync,
+         * and we'd like to get all users to take advantage of the fix.
+         */
+        const val CURRENT_VERSION = 5
+
         val MIN_RETRY_DELAY = 1.seconds
         val MAX_RETRY_DELAY = 10.minutes
         val MIN_TIME_BETWEEN_SLOW_SYNCS = 7.days
     }
 }
+<<<<<<< HEAD
 
 const val CURRENT_VERSION = 5 // bump this version to perform slow sync when some new feature flag was added
+=======
+>>>>>>> 8f733ec373 (chore(sync): bump slow sync version (WPB-5057) (#2173))
