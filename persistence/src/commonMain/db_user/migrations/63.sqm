@@ -113,7 +113,7 @@ LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = C
 CREATE TRIGGER updateConversationProteusVerificationStatus
 AFTER UPDATE ON Client
 BEGIN
-    UPDATE Conversation SET proteus_verification_status = "VERIFIED"
+    UPDATE Conversation SET proteus_verification_status = (CASE (new.is_verified) WHEN 1 THEN "VERIFIED" ELSE "DEGRADED" END)
         WHERE qualified_id IN (
             SELECT id FROM (SELECT conv.qualified_id AS id, conv.proteus_verification_status AS verificationStatus, (COUNT(*) = SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END)) AS isActuallyVerified
                 FROM Conversation AS conv
@@ -125,7 +125,6 @@ BEGIN
                 AND mem.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
                 GROUP BY conv.qualified_id)
             WHERE (CASE (verificationStatus) WHEN "VERIFIED" THEN 1 ELSE 0 END) != isActuallyVerified
-
         );
 END;
 
