@@ -104,3 +104,9 @@ data class ConversationEntity(
         }
     }
 }
+
+data class E2EIConversationClientInfoEntity(
+    val userId: QualifiedIDEntity,
+    val mlsGroupId: String,
+    val clientId: String
+)

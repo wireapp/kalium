@@ -22,10 +22,13 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.E2EIQualifiedClientId
+import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
@@ -116,6 +119,8 @@ interface MLSConversationRepository {
         e2eiClient: E2EIClient,
         certificateChain: String
     ): Either<CoreFailure, Unit>
+    suspend fun getE2EIQualifiedIDByClientId(clientId: ClientId): Either<CoreFailure, E2EIQualifiedClientId>
+    suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
 }
 
 private enum class CommitStrategy {
@@ -548,6 +553,23 @@ internal class MLSConversationDataSource(
             }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
         }
     }
+
+    override suspend fun getE2EIQualifiedIDByClientId(clientId: ClientId): Either<StorageFailure, E2EIQualifiedClientId> =
+        wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.map {
+            E2EIQualifiedClientId(it.clientId, it.userId.toModel().toCrypto())
+        }
+
+    override suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity> =
+        wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.getUserIdentities(
+                        it.mlsGroupId,
+                        listOf(E2EIQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
+                    ).first() // todo: ask if it's possible that's a client has more than one identity?
+                }
+            }
+        }
 
     private suspend fun retryOnCommitFailure(
         groupID: GroupID,
