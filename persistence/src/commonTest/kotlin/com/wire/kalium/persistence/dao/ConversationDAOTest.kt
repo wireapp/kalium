@@ -140,6 +140,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationDAO.getConversationIdByGroupID((conversationEntity6.protocolInfo as ConversationEntity.ProtocolInfo.Mixed).groupId)
         assertEquals(conversationEntity6.id, result)
     }
+
     @Test
     fun givenExistingMLSConversation_ThenConversationIdCanBeRetrievedByGroupID() = runTest {
         conversationDAO.insertConversation(conversationEntity2)
@@ -177,15 +178,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user2, conversationEntity5.id)
 
         val result =
-            conversationDAO.getConversationIds(ConversationEntity.Type.GROUP, ConversationEntity.Protocol.PROTEUS,  teamId)
+            conversationDAO.getConversationIds(ConversationEntity.Type.GROUP, ConversationEntity.Protocol.PROTEUS, teamId)
 
         assertEquals(listOf(conversationEntity5.id), result)
     }
 
     @Test
     fun givenExistingConversations_WhenGetConversationIdsWithoutTeamId_ThenConversationsWithAllTeamIdsAreReturned() = runTest {
-        conversationDAO.insertConversation(conversationEntity4.copy( protocolInfo = ConversationEntity.ProtocolInfo.Proteus))
-        conversationDAO.insertConversation(conversationEntity5.copy( teamId = null))
+        conversationDAO.insertConversation(conversationEntity4.copy(protocolInfo = ConversationEntity.ProtocolInfo.Proteus))
+        conversationDAO.insertConversation(conversationEntity5.copy(teamId = null))
         insertTeamUserAndMember(team, user2, conversationEntity5.id)
 
         val result =
@@ -1198,7 +1199,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
 
         // then
-        assertTrue(conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).isEmpty())
+        assertTrue(
+            conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).isEmpty()
+        )
     }
 
     @Test
@@ -1211,23 +1214,32 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity2.id)
 
         // then
-        assertEquals(listOf(conversationEntity1.id), conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS))
-        assertEquals(listOf(conversationEntity2.id), conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.MLS))
+        assertEquals(
+            listOf(conversationEntity1.id),
+            conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS)
+        )
+        assertEquals(
+            listOf(conversationEntity2.id),
+            conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.MLS)
+        )
     }
 
     @Test
-    fun givenMLSSelfConversationExists_whenGettingMLSSelfGroupId_thenShouldReturnGroupId() = runTest{
+    fun givenMLSSelfConversationExists_whenGettingMLSSelfGroupId_thenShouldReturnGroupId() = runTest {
         // given
         userDAO.upsertUser(user1)
         conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
         conversationDAO.insertConversation(conversationEntity2.copy(type = ConversationEntity.Type.SELF))
 
         // then
-        assertEquals((conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId, conversationDAO.getMLSSelfConversationGroupId())
+        assertEquals(
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+            conversationDAO.getMLSSelfConversationGroupId()
+        )
     }
 
     @Test
-    fun givenMLSSelfConversationDoesNotExist_whenGettingMLSSelfGroupId_thenShouldReturnNull() = runTest{
+    fun givenMLSSelfConversationDoesNotExist_whenGettingMLSSelfGroupId_thenShouldReturnNull() = runTest {
         // given
         userDAO.upsertUser(user1)
         conversationDAO.insertConversation(conversationEntity1.copy(type = ConversationEntity.Type.SELF))
@@ -1308,7 +1320,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
             archived = false,
             archivedDateTime = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
         )
@@ -1342,7 +1355,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1368,7 +1382,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1397,7 +1412,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1426,7 +1442,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity5 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
@@ -1446,7 +1463,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("6", "wire.com"),
@@ -1474,7 +1492,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
