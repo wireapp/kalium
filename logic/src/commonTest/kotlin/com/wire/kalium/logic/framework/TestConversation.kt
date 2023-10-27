@@ -76,7 +76,8 @@ object TestConversation {
         userMessageTimer = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -98,7 +99,8 @@ object TestConversation {
         userMessageTimer = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -120,7 +122,8 @@ object TestConversation {
         userMessageTimer = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -163,7 +166,8 @@ object TestConversation {
         userDefederated = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
     )
@@ -187,7 +191,8 @@ object TestConversation {
         userMessageTimer = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -278,7 +283,8 @@ object TestConversation {
         userMessageTimer = null,
         archived = false,
         archivedInstant = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -318,7 +324,8 @@ object TestConversation {
         userDefederated = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         userSupportedProtocols = null,
         userActiveOneOnOneConversationId = null,
     )
@@ -360,7 +367,8 @@ object TestConversation {
         userMessageTimer = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -382,7 +390,8 @@ object TestConversation {
         userMessageTimer = null,
         archived = false,
         archivedDateTime = null,
-        verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")

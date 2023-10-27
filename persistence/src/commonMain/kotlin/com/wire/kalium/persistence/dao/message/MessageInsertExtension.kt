@@ -407,11 +407,11 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
         is MessageEntityContent.MLSWrongEpochWarning -> MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING
         is MessageEntityContent.ConversationDegradedMLS -> MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS
-        is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS
+        is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS
         is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
         is MessageEntityContent.Federation -> MessageEntity.ContentType.FEDERATION
         MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
-        MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS
+        MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
     }

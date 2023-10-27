@@ -51,7 +51,8 @@ SELECT
     user_message_timer,
     archived,
     archived_date_time,
-    verification_status
+    verification_status,
+    proteus_verification_status
 FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;

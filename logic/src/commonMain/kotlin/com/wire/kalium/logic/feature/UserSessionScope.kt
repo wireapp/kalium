@@ -1437,7 +1437,9 @@ class UserSessionScope internal constructor(
             authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository,
             cachedClientIdClearer,
-            updateSupportedProtocolsAndResolveOneOnOnes
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            conversationRepository,
+            persistMessage
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(

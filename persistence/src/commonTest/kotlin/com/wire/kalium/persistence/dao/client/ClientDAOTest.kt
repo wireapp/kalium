@@ -308,6 +308,7 @@ class ClientDAOTest : BaseDatabaseTest() {
     fun givenUserIsPartOfConversation_whenGettingRecipient_thenOnlyValidUserClientsAreReturned() = runTest {
         val user = user
         userDAO.upsertUser(user)
+        userDAO.upsertUser(user.copy(id = selfUserId))
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Admin), conversationEntity1.id)
 
@@ -396,7 +397,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 }

@@ -22,8 +22,8 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIO
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -248,7 +248,7 @@ interface ConversationRepository {
         domain: String
     ): Either<CoreFailure, OneOnOneMembers>
 
-    suspend fun updateVerificationStatus(
+    suspend fun updateMlsVerificationStatus(
         verificationStatus: Conversation.VerificationStatus,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
@@ -281,6 +281,7 @@ interface ConversationRepository {
      * @return **true** if the protocol was changed or **false** if the protocol was unchanged.
      */
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
+
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -963,12 +964,12 @@ internal class ConversationDataSource internal constructor(
             .mapValues { it.value.toModel() }
     }
 
-    override suspend fun updateVerificationStatus(
+    override suspend fun updateMlsVerificationStatus(
         verificationStatus: Conversation.VerificationStatus,
         conversationID: ConversationId
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.updateVerificationStatus(
+            conversationDAO.updateMlsVerificationStatus(
                 conversationMapper.verificationStatusToEntity(verificationStatus),
                 conversationID.toDao()
             )

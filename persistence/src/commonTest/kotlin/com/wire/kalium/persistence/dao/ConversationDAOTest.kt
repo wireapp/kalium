@@ -183,15 +183,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user2, conversationEntity5.id)
 
         val result =
-            conversationDAO.getConversationIds(ConversationEntity.Type.GROUP, ConversationEntity.Protocol.PROTEUS,  teamId)
+            conversationDAO.getConversationIds(ConversationEntity.Type.GROUP, ConversationEntity.Protocol.PROTEUS, teamId)
 
         assertEquals(listOf(conversationEntity5.id), result)
     }
 
     @Test
     fun givenExistingConversations_WhenGetConversationIdsWithoutTeamId_ThenConversationsWithAllTeamIdsAreReturned() = runTest {
-        conversationDAO.insertConversation(conversationEntity4.copy( protocolInfo = ConversationEntity.ProtocolInfo.Proteus))
-        conversationDAO.insertConversation(conversationEntity5.copy( teamId = null))
+        conversationDAO.insertConversation(conversationEntity4.copy(protocolInfo = ConversationEntity.ProtocolInfo.Proteus))
+        conversationDAO.insertConversation(conversationEntity5.copy(teamId = null))
         insertTeamUserAndMember(team, user2, conversationEntity5.id)
 
         val result =
@@ -1204,7 +1204,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         userDAO.upsertUser(user1.copy(activeOneOnOneConversationId = conversationEntity1.id))
 
         // then
-        assertTrue(conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).isEmpty())
+        assertTrue(
+            conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS).isEmpty()
+        )
     }
 
     @Test
@@ -1217,8 +1219,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
         memberDAO.insertMember(member1, conversationEntity2.id)
 
         // then
-        assertEquals(listOf(conversationEntity1.id), conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS))
-        assertEquals(listOf(conversationEntity2.id), conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.MLS))
+        assertEquals(
+            listOf(conversationEntity1.id),
+            conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.PROTEUS)
+        )
+        assertEquals(
+            listOf(conversationEntity2.id),
+            conversationDAO.getOneOnOneConversationIdsWithOtherUser(user1.id, protocol = ConversationEntity.Protocol.MLS)
+        )
     }
 
     @Test
@@ -1550,7 +1558,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals(
-            expected, conversationDAO.getE2EIConversationClientInfoByClientId(clientId)
+            expected,
+            conversationDAO.getE2EIConversationClientInfoByClientId(clientId)
         )
     }
 
@@ -1639,7 +1648,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userDefederated = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.defederated else null,
             archived = false,
             archivedDateTime = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
         )
@@ -1686,7 +1696,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1712,7 +1723,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1741,7 +1753,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1770,7 +1783,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity5 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
@@ -1790,7 +1804,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("6", "wire.com"),
@@ -1818,7 +1833,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

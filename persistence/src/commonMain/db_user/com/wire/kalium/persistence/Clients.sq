@@ -79,3 +79,32 @@ SELECT *
   WHERE user_id IN
   (SELECT user FROM Member WHERE conversation = :conversation_id AND user_id IN :userIdList)
   AND is_valid = 1;
+
+CREATE TRIGGER updateConversationProteusVerificationStatus
+AFTER UPDATE ON Client
+BEGIN
+    UPDATE Conversation SET proteus_verification_status = (CASE (new.is_verified) WHEN 1 THEN "VERIFIED" ELSE "DEGRADED" END)
+        WHERE qualified_id IN (
+            SELECT id FROM (SELECT conv.qualified_id AS id, conv.proteus_verification_status AS verificationStatus, (COUNT(*) = SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END)) AS isActuallyVerified
+                FROM Conversation AS conv
+                LEFT JOIN Member AS mem ON conv.qualified_id = mem.conversation
+                LEFT JOIN Client AS client ON client.user_id = mem.user
+                WHERE conv.qualified_id IN (SELECT Member.conversation FROM Member
+                                            LEFT JOIN Client ON Client.user_id = Member.user
+                                            WHERE Client.id = new.id)
+                AND mem.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+                GROUP BY conv.qualified_id)
+            WHERE (CASE (verificationStatus) WHEN "VERIFIED" THEN 1 ELSE 0 END) != isActuallyVerified
+        );
+END;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterNewClient
+AFTER INSERT ON Client
+BEGIN
+    UPDATE Conversation SET proteus_verification_status = "DEGRADED"
+    WHERE qualified_id IN (
+        SELECT Member.conversation FROM Member
+        LEFT JOIN Client ON Client.user_id = Member.user
+        WHERE Client.id = new.id
+    );
+END;
