@@ -26,9 +26,13 @@ import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
+import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -58,8 +62,10 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -1247,6 +1253,69 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdSucceed_thenReturnsIdentity() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(listOf(WIRE_IDENTITY))
+            .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
+            .arrange()
+
+        assertEquals(Either.Right(WIRE_IDENTITY), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .with(any(), any())
+            .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::getE2EIConversationClientInfoByClientId)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdFails_thenReturnsError() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(listOf(WIRE_IDENTITY))
+            .withGetE2EIConversationClientInfoByClientIdReturns(null)
+            .arrange()
+
+        assertEquals(Either.Left(StorageFailure.DataNotFound), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .with(any(), any())
+            .wasNotInvoked()
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::getE2EIConversationClientInfoByClientId)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenGetClientId_whenGetUserIdentitiesFails_thenReturnsError() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(emptyList())
+            .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
+            .arrange()
+
+        mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID).shouldFail()
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .with(any(), any())
+            .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::getE2EIConversationClientInfoByClientId)
+            .with(any())
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -1362,6 +1431,20 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClient::e2eiRotateAll)
                 .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(ROTATE_BUNDLE)
+        }
+
+        fun withGetUserIdentitiesReturn(identities: List<WireIdentity>) = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::getUserIdentities)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(identities)
+        }
+
+        fun withGetE2EIConversationClientInfoByClientIdReturns(e2eiInfo: E2EIConversationClientInfoEntity?) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getE2EIConversationClientInfoByClientId)
+                .whenInvokedWith(anything())
+                .thenReturn(e2eiInfo)
         }
 
         fun withAddMLSMemberSuccessful() = apply {
@@ -1532,6 +1615,9 @@ class MLSConversationRepositoryTest {
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList())
+            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate")
+            val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
+                E2EIConversationClientInfoEntity(UserIDEntity("id", "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
                 message = null,
                 commitDelay = null,
