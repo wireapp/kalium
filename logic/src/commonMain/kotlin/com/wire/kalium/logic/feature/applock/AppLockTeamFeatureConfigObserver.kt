@@ -27,21 +27,21 @@ import kotlin.time.Duration.Companion.seconds
  * observe app lock feature flag of the team
  */
 interface AppLockTeamFeatureConfigObserver {
-    operator fun invoke(): Flow<AppLockConfig>
+    operator fun invoke(): Flow<AppLockTeamConfig>
 }
 
 class AppLockTeamFeatureConfigObserverImpl(
     private val userConfigRepository: UserConfigRepository
 ) : AppLockTeamFeatureConfigObserver {
-    override fun invoke(): Flow<AppLockConfig> =
+    override fun invoke(): Flow<AppLockTeamConfig> =
         userConfigRepository.observeAppLockStatus().map {
             it.fold({
-                AppLockConfig(
+                AppLockTeamConfig(
                     isEnabled = false,
                     timeout = DEFAULT_TIMEOUT
                 )
             }, { appLockModel ->
-                AppLockConfig(
+                AppLockTeamConfig(
                     isEnabled = appLockModel.enforceAppLock,
                     timeout = appLockModel.inactivityTimeoutSecs.seconds
                 )

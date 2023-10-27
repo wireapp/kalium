@@ -39,7 +39,7 @@ class AppLockTeamFeatureConfigObserverTest {
     @Test
     fun givenRepositoryFailure_whenObservingAppLock_thenEmitAppLockConfigWithDisabledStatus() =
         runTest {
-            val expectedAppLockValue = AppLockConfig(
+            val expectedAppLockValue = AppLockTeamConfig(
                 false,
                 AppLockTeamFeatureConfigObserverImpl.DEFAULT_TIMEOUT
             )
@@ -58,7 +58,7 @@ class AppLockTeamFeatureConfigObserverTest {
     @Test
     fun givenRepositorySuccess_whenObservingAppLock_thenEmitAppLockConfigWithValueFromRepository() {
         runTest {
-            val expectedAppLockValue = AppLockConfig(
+            val expectedAppLockValue = AppLockTeamConfig(
                 appLockConfigModel.enforceAppLock,
                 appLockConfigModel.inactivityTimeoutSecs.seconds
             )
