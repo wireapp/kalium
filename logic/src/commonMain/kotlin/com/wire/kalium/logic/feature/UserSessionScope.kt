@@ -1537,6 +1537,7 @@ class UserSessionScope internal constructor(
             messages.messageSender,
             clientIdProvider,
             e2eiRepository,
+            mlsConversationRepository,
             team.isSelfATeamMember,
             updateSupportedProtocols
         )

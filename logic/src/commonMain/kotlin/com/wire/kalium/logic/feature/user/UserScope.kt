@@ -21,8 +21,8 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
-import com.wire.kalium.logic.data.e2ei.E2eiCertificateRepositoryImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -87,6 +87,7 @@ class UserScope internal constructor(
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
     private val e2EIRepository: E2EIRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val updateSupportedProtocolsUseCase: UpdateSupportedProtocolsUseCase,
 ) {
@@ -108,12 +109,11 @@ class UserScope internal constructor(
             qualifiedIdMapper
         )
 
-    private val e2eiCertificateRepository by lazy { E2eiCertificateRepositoryImpl() }
     private val pemCertificateDecoderImpl by lazy { PemCertificateDecoderImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
     val getE2EICertificate: GetE2eiCertificateUseCase get() = GetE2eiCertificateUseCaseImpl(
-        e2eiCertificateRepository = e2eiCertificateRepository,
+        mlsConversationRepository = mlsConversationRepository,
         pemCertificateDecoder = pemCertificateDecoderImpl
     )
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)

@@ -162,4 +162,10 @@ internal class ConversationMapper {
         }
     }
 
+    fun toE2EIConversationClient(
+        mlsGroupId: String,
+        userId: QualifiedIDEntity,
+        clientId: String
+    ) = E2EIConversationClientInfoEntity(userId, mlsGroupId, clientId)
+
 }
