@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -410,7 +409,8 @@ class UpdateConversationAccessUseCaseTest {
             userMessageTimer = null,
             archived = false,
             archivedDateTime = null,
-            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     }
 

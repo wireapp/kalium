@@ -44,7 +44,8 @@ data class ConversationEntity(
     val hasIncompleteMetadata: Boolean = false,
     val archived: Boolean = false,
     val archivedInstant: Instant?,
-    val verificationStatus: VerificationStatus
+    val mlsVerificationStatus: VerificationStatus,
+    val proteusVerificationStatus: VerificationStatus
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
