@@ -121,7 +121,8 @@ internal class ConversationMapperImpl(
         hasIncompleteMetadata = false,
         archived = apiModel.members.self.otrArchived ?: false,
         archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
@@ -147,7 +148,8 @@ internal class ConversationMapperImpl(
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
             archivedDateTime = archivedDateTime,
-            verificationStatus = verificationStatusFromEntity(verificationStatus)
+            mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus)
         )
     }
 
@@ -173,7 +175,8 @@ internal class ConversationMapperImpl(
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
             archivedDateTime = archivedInstant,
-            verificationStatus = verificationStatusFromEntity(verificationStatus)
+            mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus)
         )
     }
 
@@ -371,7 +374,8 @@ internal class ConversationMapperImpl(
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
             archived = archived,
             archivedInstant = archivedDateTime,
-            verificationStatus = verificationStatusToEntity(verificationStatus)
+            mlsVerificationStatus = verificationStatusToEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus)
         )
     }
 
@@ -400,7 +404,8 @@ internal class ConversationMapperImpl(
         hasIncompleteMetadata = true,
         archived = false,
         archivedInstant = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -451,6 +456,7 @@ internal class ConversationMapperImpl(
 
     override fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus) =
         ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
+
 }
 
 private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {

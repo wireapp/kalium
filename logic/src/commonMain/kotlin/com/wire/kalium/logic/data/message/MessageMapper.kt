@@ -258,11 +258,11 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_CREATED -> null
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> null
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> null
-            MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS -> null
+            MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS -> null
             MessageEntity.ContentType.COMPOSITE -> null
             MessageEntity.ContentType.FEDERATION -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
-            MessageEntity.ContentType.CONVERSATION_VERIFIED_PREOTEUS -> null
+            MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
         }
@@ -440,6 +440,10 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
     is MessagePreviewEntityContent.Composite -> MessagePreviewContent.WithUser.Composite(username = senderName, messageBody = messageBody)
+    is MessagePreviewEntityContent.ConversationVerifiedMls -> MessagePreviewContent.VerificationChanged.VerifiedMls
+    is MessagePreviewEntityContent.ConversationVerifiedProteus -> MessagePreviewContent.VerificationChanged.VerifiedProteus
+    is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls
+    is MessagePreviewEntityContent.ConversationVerificationDegradedProteus -> MessagePreviewContent.VerificationChanged.DegradedProteus
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {

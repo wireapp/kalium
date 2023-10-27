@@ -104,7 +104,7 @@ interface ConversationDAO {
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
-    suspend fun updateVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
+    suspend fun updateMlsVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
     suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
 }

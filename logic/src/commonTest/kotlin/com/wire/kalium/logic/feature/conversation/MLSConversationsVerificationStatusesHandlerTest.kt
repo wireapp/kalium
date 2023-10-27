@@ -45,7 +45,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
     fun givenVerifiedConversation_whenVerifiedStatusComes_thenNotingChanged() = runTest {
         val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
             conversation = TestConversation.MLS_CONVERSATION.copy(
-                verificationStatus = Conversation.VerificationStatus.VERIFIED
+                mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
             )
         )
         val (arrangement, handler) = arrange {
@@ -58,7 +58,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         advanceUntilIdle()
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
             .with(any(), any())
             .wasNotInvoked()
 
@@ -81,7 +81,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         advanceUntilIdle()
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
             .with(any(), any())
             .wasNotInvoked()
 
@@ -95,7 +95,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
     fun givenVerifiedConversation_whenNotVerifiedStatusComes_thenStatusSetToDegradedAndSystemMessageAdded() = runTest {
         val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
             conversation = TestConversation.MLS_CONVERSATION.copy(
-                verificationStatus = Conversation.VerificationStatus.VERIFIED
+                mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
             )
         )
         val (arrangement, handler) = arrange {
@@ -108,7 +108,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         advanceUntilIdle()
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
             .with(eq(Conversation.VerificationStatus.DEGRADED), eq(conversationDetails.conversation.id))
             .wasInvoked(once)
 
@@ -122,7 +122,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
     fun givenDegradedConversation_whenNotVerifiedStatusComes_thenNothingChanged() = runTest {
         val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
             conversation = TestConversation.MLS_CONVERSATION
-                .copy(verificationStatus = Conversation.VerificationStatus.DEGRADED)
+                .copy(mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED)
         )
         val (arrangement, handler) = arrange {
             withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
@@ -134,7 +134,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         advanceUntilIdle()
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
             .with(any(), any())
             .wasNotInvoked()
 
@@ -148,7 +148,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
     fun givenDegradedConversation_whenVerifiedStatusComes_thenStatusUpdated() = runTest {
         val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
             conversation = TestConversation.MLS_CONVERSATION.copy(
-                verificationStatus = Conversation.VerificationStatus.DEGRADED
+                mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
             )
         )
         val (arrangement, handler) = arrange {
@@ -161,7 +161,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         advanceUntilIdle()
 
         verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateVerificationStatus)
+            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
             .with(eq(Conversation.VerificationStatus.VERIFIED), eq(conversationDetails.conversation.id))
             .wasInvoked(once)
 

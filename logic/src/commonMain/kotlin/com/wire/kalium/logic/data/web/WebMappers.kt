@@ -170,7 +170,8 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             userMessageTimer = null,
             archived = archivedState ?: false,
             archivedDateTime = conversationArchivedTimestamp,
-            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     }
 }

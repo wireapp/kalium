@@ -375,13 +375,14 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.clearContent(conversationId)
     }
 
-    override suspend fun updateVerificationStatus(
+    override suspend fun updateMlsVerificationStatus(
         verificationStatus: ConversationEntity.VerificationStatus,
         conversationId: QualifiedIDEntity
     ) = withContext(coroutineContext) {
-        conversationQueries.updateVerificationStatus(verificationStatus, conversationId)
+        conversationQueries.updateMlsVerificationStatus(verificationStatus, conversationId)
     }
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
+
 }

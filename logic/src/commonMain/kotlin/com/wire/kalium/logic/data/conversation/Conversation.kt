@@ -18,6 +18,11 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.conversation.Conversation.Access
+import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
+import com.wire.kalium.logic.data.conversation.Conversation.Type
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
@@ -71,7 +76,8 @@ data class Conversation(
     val userMessageTimer: Duration?,
     val archived: Boolean,
     val archivedDateTime: Instant?,
-    val verificationStatus: VerificationStatus
+    val mlsVerificationStatus: VerificationStatus,
+    val proteusVerificationStatus: VerificationStatus
 ) {
 
     companion object {
@@ -268,7 +274,6 @@ data class Conversation(
             "role" to "$role"
         )
     }
-
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -327,7 +332,8 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             userMessageTimer = null,
             archived = false,
             archivedDateTime = null,
-            verificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     )
 }
