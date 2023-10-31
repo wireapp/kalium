@@ -140,5 +140,10 @@ interface MessageDAO {
         conversationId: QualifiedIDEntity
     ): List<MessageEntity>
 
+    suspend fun getSearchedConversationMessagePosition(
+        conversationId: QualifiedIDEntity,
+        messageId: String
+    ): Long
+
     val platformExtensions: MessageExtensions
 }
