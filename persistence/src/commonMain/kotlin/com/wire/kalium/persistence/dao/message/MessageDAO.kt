@@ -143,7 +143,7 @@ interface MessageDAO {
     suspend fun getSearchedConversationMessagePosition(
         conversationId: QualifiedIDEntity,
         messageId: String
-    ): Long
+    ): Int
 
     val platformExtensions: MessageExtensions
 }

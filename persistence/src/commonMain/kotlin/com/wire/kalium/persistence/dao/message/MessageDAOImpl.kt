@@ -427,10 +427,11 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun getSearchedConversationMessagePosition(
         conversationId: QualifiedIDEntity,
         messageId: String
-    ): Long = withContext(coroutineContext) {
+    ): Int = withContext(coroutineContext) {
         queries
             .selectSearchedConversationMessagePosition(conversationId, messageId)
             .executeAsOne()
+            .toInt()
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)

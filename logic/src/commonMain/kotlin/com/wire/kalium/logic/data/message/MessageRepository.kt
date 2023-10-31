@@ -227,7 +227,7 @@ interface MessageRepository {
     suspend fun getSearchedConversationMessagePosition(
         conversationId: ConversationId,
         messageId: String
-    ): Either<StorageFailure, Long>
+    ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -660,7 +660,7 @@ class MessageDataSource(
     override suspend fun getSearchedConversationMessagePosition(
         conversationId: ConversationId,
         messageId: String
-    ): Either<StorageFailure, Long> = wrapStorageRequest {
+    ): Either<StorageFailure, Int> = wrapStorageRequest {
         messageDAO.getSearchedConversationMessagePosition(
             conversationId = conversationId.toDao(),
             messageId = messageId

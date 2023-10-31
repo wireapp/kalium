@@ -27,7 +27,7 @@ interface GetSearchedConversationMessagePositionUseCase {
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Either<StorageFailure, Long>
+    ): Either<StorageFailure, Int>
 }
 
 internal class GetSearchedConversationMessagePositionUseCaseImpl internal constructor(
@@ -37,7 +37,7 @@ internal class GetSearchedConversationMessagePositionUseCaseImpl internal constr
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Either<StorageFailure, Long> = messageRepository
+    ): Either<StorageFailure, Int> = messageRepository
         .getSearchedConversationMessagePosition(
             conversationId = conversationId,
             messageId = messageId
