@@ -20,14 +20,20 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.feature.conversation.GetConversationUnreadEventsCountUseCase
+import com.wire.kalium.logic.functional.fold
 
 interface GetSearchedConversationMessagePositionUseCase {
 
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Either<StorageFailure, Int>
+    ): Result
+
+    sealed class Result {
+        data class Success(val position: Int) : Result()
+        data class Failure(val storageFailure: StorageFailure) : Result()
+    }
 }
 
 internal class GetSearchedConversationMessagePositionUseCaseImpl internal constructor(
@@ -37,9 +43,12 @@ internal class GetSearchedConversationMessagePositionUseCaseImpl internal constr
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Either<StorageFailure, Int> = messageRepository
+    ): GetSearchedConversationMessagePositionUseCase.Result = messageRepository
         .getSearchedConversationMessagePosition(
             conversationId = conversationId,
             messageId = messageId
+        ).fold(
+            { GetSearchedConversationMessagePositionUseCase.Result.Failure(it) },
+            { GetSearchedConversationMessagePositionUseCase.Result.Success(it) }
         )
 }
