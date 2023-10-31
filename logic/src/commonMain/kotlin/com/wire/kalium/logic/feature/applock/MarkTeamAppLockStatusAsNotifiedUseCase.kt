@@ -17,9 +17,21 @@
  */
 package com.wire.kalium.logic.feature.applock
 
-import kotlin.time.Duration
+import com.wire.kalium.logic.configuration.UserConfigRepository
 
-data class AppLockTeamConfig(
-    val isEnabled: Boolean,
-    val timeout: Duration
-)
+interface MarkTeamAppLockStatusAsNotifiedUseCase {
+    operator fun invoke()
+}
+
+/**
+ * Mark the team app lock status as notified
+ * need to be called after notifying the user about the change
+ * e.g. after showing a dialog, or a toast etc.
+ */
+class MarkTeamAppLockStatusAsNotifiedUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository
+) : MarkTeamAppLockStatusAsNotifiedUseCase {
+    override operator fun invoke() {
+        userConfigRepository.setTeamAppLockAsNotified()
+    }
+}

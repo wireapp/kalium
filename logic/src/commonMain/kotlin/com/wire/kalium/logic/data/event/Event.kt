@@ -620,7 +620,7 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
                 typeKey to "FeatureConfig.AppLockUpdated",
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
-                "config" to model.config
+                "timeout" to model.inactivityTimeoutSecs
             )
         }
 

@@ -20,12 +20,27 @@ package com.wire.kalium.logic.feature.featureConfig.handler
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 class AppLockConfigHandler(
     private val userConfigRepository: UserConfigRepository
 ) {
     fun handle(appLockConfig: AppLockModel): Either<CoreFailure, Unit> {
-        return userConfigRepository.setAppLockStatus(appLockConfig.config)
+
+        val isStatusChanged = userConfigRepository.isTeamAppLockEnabled().fold(
+            { false },
+            {
+                val newStatus = appLockConfig.status == Status.ENABLED
+                it != newStatus
+            }
+        )
+        return userConfigRepository.setAppLockStatus(
+            isAppLocked = appLockConfig.status.toBoolean(),
+            timeout = appLockConfig.inactivityTimeoutSecs,
+            isStatusChanged = isStatusChanged
+        )
     }
 }
