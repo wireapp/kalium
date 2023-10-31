@@ -326,4 +326,9 @@ class MessageScope internal constructor(
         get() = GetConversationMessagesFromSearchQueryUseCaseImpl(
             messageRepository = messageRepository
         )
+
+    val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
+        get() = GetSearchedConversationMessagePositionUseCaseImpl(
+            messageRepository = messageRepository
+        )
 }
