@@ -406,6 +406,7 @@ com.wire.kalium.logic.di
 com.wire.kalium.logic.failure
 com.wire.kalium.logic.feature
 com.wire.kalium.logic.feature.appVersioning
+com.wire.kalium.logic.feature.applock
 com.wire.kalium.logic.feature.asset
 com.wire.kalium.logic.feature.auth
 com.wire.kalium.logic.feature.auth.autoVersioningAuth
