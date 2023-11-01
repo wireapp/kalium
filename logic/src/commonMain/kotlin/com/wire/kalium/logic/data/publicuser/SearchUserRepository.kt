@@ -35,11 +35,17 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+<<<<<<< HEAD
 import com.wire.kalium.persistence.dao.UserDetailsEntity
+=======
+import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
+>>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -157,8 +163,36 @@ internal class SearchUserRepositoryImpl(
             response.map { userProfileDTOList ->
                 val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
                     val selfUser = getSelfUser()
+<<<<<<< HEAD
                     userProfileDTOList.map { userProfileDTO ->
                         userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
+=======
+                    val (teamMembers, otherUsers) = userProfileDTOList
+                        .partition { it.isTeamMember(selfUser.teamId?.value, selfUser.id.domain) }
+
+                    // We need to store all found team members locally and not return them as they will be "known" users from now on.
+                    userDAO.upsertTeamMembers(
+                        teamMembers.map { userProfileDTO ->
+                            userMapper.fromUserProfileDtoToUserEntity(
+                                userProfile = userProfileDTO,
+                                connectionState = ConnectionEntity.State.ACCEPTED,
+                                userTypeEntity = UserTypeEntity.STANDARD
+                            )
+                        }
+                    )
+
+                    otherUsers.map { userProfileDTO ->
+                        publicUserMapper.fromUserProfileDtoToOtherUser(
+                            userDetailResponse = userProfileDTO,
+                            userType = userTypeMapper.fromTeamAndDomain(
+                                otherUserDomain = userProfileDTO.id.domain,
+                                selfUserTeamId = selfUser.teamId?.value,
+                                otherUserTeamId = userProfileDTO.teamId,
+                                selfUserDomain = selfUser.id.domain,
+                                isService = userProfileDTO.service != null,
+                            )
+                        )
+>>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
                     }
                 }
                 UserSearchResult(otherUserList)
