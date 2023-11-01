@@ -55,7 +55,7 @@ interface UserConfigRepository {
         isStatusChanged: Boolean?
     ): Either<StorageFailure, Unit>
 
-    fun isTeamAppLockEnabled(): Either<StorageFailure, Boolean>
+    fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig>
     fun observeAppLockConfig(): Flow<Either<StorageFailure, AppLockTeamConfig>>
     fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit>
     fun setFileSharingStatus(
@@ -359,9 +359,15 @@ class UserConfigDataSource(
             }
         }
 
-    override fun isTeamAppLockEnabled(): Either<StorageFailure, Boolean> {
+    override fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig> {
         val serverSideConfig = wrapStorageRequest { userConfigStorage.appLockStatus() }
-        return serverSideConfig.map { it.enforceAppLock }
+        return serverSideConfig.map {
+            AppLockTeamConfig(
+                isEnabled = it.enforceAppLock,
+                timeout = it.inactivityTimeoutSecs.seconds,
+                isStatusChanged = it.isStatusChanged
+            )
+        }
     }
 
     override fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {

@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.featureConfig.handler
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
@@ -30,6 +31,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
 class AppLockConfigHandlerTest {
 
@@ -58,7 +60,7 @@ class AppLockConfigHandlerTest {
 
     @Test
     fun givenNewStatusSameAsCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {
-        val appLockModel = AppLockModel(Status.ENABLED, 20)
+        val appLockModel = AppLockModel(Status.ENABLED, 44)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withAppLocked()
             .arrange()
@@ -75,6 +77,29 @@ class AppLockConfigHandlerTest {
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(false)
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenStatusEnabledAndTimeoutDifferentFromCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
+        val appLockModel = AppLockModel(Status.ENABLED, 20)
+        val (arrangement, appLockConfigHandler) = Arrangement()
+            .withAppLocked()
+            .arrange()
+
+        appLockConfigHandler.handle(appLockModel)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setAppLockStatus)
+            .with(
+                eq(appLockModel.status.toBoolean()),
+                eq(appLockModel.inactivityTimeoutSecs),
+                eq(true)
             )
             .wasInvoked(exactly = once)
     }
@@ -131,14 +156,19 @@ class AppLockConfigHandlerTest {
             given(userConfigRepository)
                 .function(userConfigRepository::isTeamAppLockEnabled)
                 .whenInvoked()
-                .thenReturn(Either.Right(true))
+                .thenReturn(Either.Right(appLockTeamConfigEnabled))
         }
 
         fun withAppNotLocked() = apply {
             given(userConfigRepository)
                 .function(userConfigRepository::isTeamAppLockEnabled)
                 .whenInvoked()
-                .thenReturn(Either.Right(false))
+                .thenReturn(Either.Right(appLockTeamConfigDisabled))
         }
+    }
+
+    companion object {
+        val appLockTeamConfigEnabled = AppLockTeamConfig(true, 44.seconds, false)
+        val appLockTeamConfigDisabled = AppLockTeamConfig(false, 44.seconds, false)
     }
 }
