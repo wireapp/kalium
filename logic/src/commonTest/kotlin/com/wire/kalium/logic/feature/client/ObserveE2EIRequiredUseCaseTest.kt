@@ -28,7 +28,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
@@ -221,6 +220,6 @@ class ObserveE2EIRequiredUseCaseTest {
     }
 
     companion object {
-        private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null)
+        private val MLS_E2EI_SETTING = E2EISettings(true, "discover_url", null)
     }
 }
