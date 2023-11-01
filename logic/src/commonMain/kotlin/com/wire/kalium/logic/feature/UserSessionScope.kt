@@ -1598,7 +1598,7 @@ class UserSessionScope internal constructor(
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
-    val observeE2EIRequired: ObserveE2EIRequiredUseCase get() = ObserveE2EIRequiredUseCaseImpl(userConfigRepository)
+    val observeE2EIRequired: ObserveE2EIRequiredUseCase get() = ObserveE2EIRequiredUseCaseImpl(userConfigRepository, featureSupport)
     val markE2EIRequiredAsNotified: MarkEnablingE2EIAsNotifiedUseCase
         get() = MarkEnablingE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 
