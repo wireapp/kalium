@@ -249,7 +249,7 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
-        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain)
+        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain, null)
     }
 
     override suspend fun isE2EIEnabled(): Boolean {
