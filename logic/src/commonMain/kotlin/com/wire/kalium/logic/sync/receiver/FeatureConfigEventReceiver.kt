@@ -53,7 +53,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val appLockConfigHandler: AppLockConfigHandler
 ) : FeatureConfigEventReceiver {
 
-    override suspend fun onEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
         handleFeatureConfigEvent(event)
             .onSuccess {
                 kaliumLogger.logEventProcessing(
@@ -76,11 +76,6 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     )
                 }
             }
-        // TODO: Make sure errors are accounted for.
-        //       onEvent now requires Either, so we can propagate errors.
-        //       Returning Either.Right is the equivalent of how it was originally working.
-        return Either.Right(Unit)
-    }
 
     @Suppress("LongMethod", "ComplexMethod")
     private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
@@ -93,6 +88,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
             is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
             is Event.FeatureConfig.SelfDeletingMessagesConfig -> selfDeletingMessagesConfigHandler.handle(event.model)
             is Event.FeatureConfig.MLSE2EIUpdated -> e2EIConfigHandler.handle(event.model)
+            is Event.FeatureConfig.AppLockUpdated -> appLockConfigHandler.handle(event.model)
             is Event.FeatureConfig.UnknownFeatureUpdated -> Either.Left(CoreFailure.FeatureNotImplemented)
         }
 }
