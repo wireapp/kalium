@@ -19,15 +19,15 @@ package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 
-interface MarkTeamAppLockStatusAsNotifiedUseCase {
-    operator fun invoke()
-}
-
 /**
  * Mark the team app lock status as notified
  * need to be called after notifying the user about the change
  * e.g. after showing a dialog, or a toast etc.
  */
+interface MarkTeamAppLockStatusAsNotifiedUseCase {
+    operator fun invoke()
+}
+
 class MarkTeamAppLockStatusAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : MarkTeamAppLockStatusAsNotifiedUseCase {

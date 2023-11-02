@@ -99,7 +99,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
 
     override fun fromDTO(data: FeatureConfigData.AppLock): AppLockModel =
         AppLockModel(
-            status = if(data.config.enforceAppLock) Status.ENABLED else Status.DISABLED,
+            status = if (data.config.enforceAppLock) Status.ENABLED else Status.DISABLED,
             inactivityTimeoutSecs = data.config.inactivityTimeoutSecs
         )
 
