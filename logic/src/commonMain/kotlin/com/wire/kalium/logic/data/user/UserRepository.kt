@@ -262,14 +262,9 @@ internal class UserDataSource internal constructor(
         val teamMembers = listUserProfileDTO
             .filter { userProfileDTO -> userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
         val otherUsers = listUserProfileDTO
-<<<<<<< HEAD
-            .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
+            .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
 
         userDAO.upsertUsers(
-=======
-            .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
-        userDAO.upsertTeamMembers(
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
             teamMembers.map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,

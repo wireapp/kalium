@@ -20,12 +20,12 @@ package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
-import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.framework.TestUser.USER_PROFILE_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
@@ -33,12 +33,12 @@ import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.UserDetailsEntity
+import com.wire.kalium.persistence.dao.UserEntity
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
@@ -57,57 +57,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
-// TODO: refactor to arrangement pattern
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchUserRepositoryTest {
 
-<<<<<<< HEAD
-    @Mock
-    private val metadataDAO: MetadataDAO = mock(classOf<MetadataDAO>())
-
-    @Mock
-    private val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
-
-    @Mock
-    private val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
-
-    @Mock
-    private val userMapper: UserMapper = mock(classOf<UserMapper>())
-
-    @Mock
-    private val idMapper: IdMapper = mock(classOf<IdMapper>())
-
-    @Mock
-    private val domainUserTypeMapper: DomainUserTypeMapper = mock(classOf<DomainUserTypeMapper>())
-
-    @Mock
-    private val userDAO: UserDAO = mock(classOf<UserDAO>())
-
-    private lateinit var searchUserRepository: SearchUserRepository
-
-    @BeforeTest
-    fun setup() {
-        searchUserRepository = SearchUserRepositoryImpl(
-            userDAO,
-            metadataDAO,
-            userDetailsApi,
-            userSearchApiWrapper,
-            userMapper
-        )
-
-        given(domainUserTypeMapper).invocation { federated }.then { UserType.FEDERATED }
-
-        given(domainUserTypeMapper).invocation { guest }.then { UserType.GUEST }
-
-        given(domainUserTypeMapper).invocation { standard }.then { UserType.INTERNAL }
-
-        given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
-    }
-
-=======
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         // given
@@ -154,13 +107,8 @@ class SearchUserRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-<<<<<<< HEAD
-        verify(userMapper)
-            .function(userMapper::fromUserProfileDtoToOtherUser)
-=======
-        verify(arrangement.publicUserMapper)
-            .function(arrangement.publicUserMapper::fromUserProfileDtoToOtherUser)
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
+        verify(arrangement.userMapper)
+            .function(arrangement.userMapper::fromUserProfileDtoToOtherUser)
             .with(any(), any())
             .wasNotInvoked()
     }
@@ -192,13 +140,8 @@ class SearchUserRepositoryTest {
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
-<<<<<<< HEAD
-        verify(userMapper)
-            .function(userMapper::fromUserProfileDtoToOtherUser)
-=======
-        verify(arrangement.publicUserMapper)
-            .function(arrangement.publicUserMapper::fromUserProfileDtoToOtherUser)
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
+        verify(arrangement.userMapper)
+            .function(arrangement.userMapper::fromUserProfileDtoToOtherUser)
             .with(any(), any())
             .wasNotInvoked()
     }
@@ -230,57 +173,14 @@ class SearchUserRepositoryTest {
     @Test
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
         // given
-<<<<<<< HEAD
-        given(userSearchApiWrapper)
-            .suspendFunction(userSearchApiWrapper::search)
-            .whenInvokedWith(anything(), anything(), anything(), anything())
-            .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
-
-        given(userDetailsApi)
-            .suspendFunction(userDetailsApi::getMultipleUsers)
-            .whenInvokedWith(any())
-            .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
-
-        given(userMapper)
-            .function(userMapper::fromUserProfileDtoToOtherUser)
-            .whenInvokedWith(any(), any())
-            .then { _, _ -> TestUser.OTHER }
-
-        given(metadataDAO)
-            .suspendFunction(metadataDAO::valueByKeyFlow)
-            .whenInvokedWith(any())
-            .then { flowOf(JSON_QUALIFIED_ID) }
-
-        given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-            .whenInvokedWith(any())
-            .then { flowOf(TestUser.DETAILS_ENTITY) }
-
-        given(userMapper)
-            .function(userMapper::fromUserDetailsEntityToSelfUser)
-            .whenInvokedWith(any())
-            .then { TestUser.SELF.copy(teamId = null) }
-
-        given(domainUserTypeMapper)
-            .invocation {
-                domainUserTypeMapper.fromTeamAndDomain(
-                    "domain",
-                    null,
-                    "team",
-                    "domain",
-                    false
-                )
-            }.then { UserType.FEDERATED }
-=======
         val (_, searchUserRepository) = Arrangement()
             .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
             .withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE, mapOf(), 200))
-            .withFromUserProfileDtoToOtherUserResult(PUBLIC_USER)
+            .withFromUserProfileDtoToOtherUserResult(TestUser.OTHER)
             .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-            .withGetUserByQualifiedIdResult(flowOf(USER_ENTITY))
-            .withFromUserEntityToSelfUser(SELF_USER)
-            .withFromTeamAndDomain(UserType.FEDERATED)
+            .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
+            .withFromUserDetailsEntityToSelfUser(TestUser.SELF.copy(teamId = null))
             .arrange()
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
 
         // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -293,57 +193,14 @@ class SearchUserRepositoryTest {
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
         runTest {
             // given
-<<<<<<< HEAD
-            given(userSearchApiWrapper)
-                .suspendFunction(userSearchApiWrapper::search)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
-
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getMultipleUsers)
-                .whenInvokedWith(any())
-                .then { NetworkResponse.Success(USER_RESPONSE, mapOf(), 200) }
-
-            given(userMapper)
-                .function(userMapper::fromUserProfileDtoToOtherUser)
-                .whenInvokedWith(any(), any())
-                .then { _, _ -> TestUser.OTHER }
-
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKeyFlow)
-                .whenInvokedWith(any())
-                .then { flowOf(JSON_QUALIFIED_ID) }
-
-            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(any())
-                .then { flowOf(TestUser.DETAILS_ENTITY) }
-
-            given(userMapper)
-                .function(userMapper::fromUserDetailsEntityToSelfUser)
-                .whenInvokedWith(any())
-                .then { TestUser.SELF.copy(teamId = null) }
-
-            given(domainUserTypeMapper)
-                .invocation {
-                    domainUserTypeMapper.fromTeamAndDomain(
-                        "domain",
-                        null,
-                        "team",
-                        "domain",
-                        false
-                    )
-                }.then { UserType.FEDERATED }
-=======
             val (_, searchUserRepository) = Arrangement()
                 .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
                 .withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE, mapOf(), 200))
-                .withFromUserProfileDtoToOtherUserResult(PUBLIC_USER)
+                .withFromUserProfileDtoToOtherUserResult(TestUser.OTHER)
                 .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-                .withGetUserByQualifiedIdResult(flowOf(USER_ENTITY))
-                .withFromUserEntityToSelfUser(SELF_USER)
-                .withFromTeamAndDomain(UserType.FEDERATED)
+                .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
+                .withFromUserDetailsEntityToSelfUser(TestUser.SELF.copy(teamId = null))
                 .arrange()
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
 
             val expectedResult = UserSearchResult(
                 result = listOf(TestUser.OTHER)
@@ -359,39 +216,13 @@ class SearchUserRepositoryTest {
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
             // given
-<<<<<<< HEAD
-            given(userSearchApiWrapper)
-                .suspendFunction(userSearchApiWrapper::search)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(Either.Right(CONTACT_SEARCH_RESPONSE))
-
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getMultipleUsers)
-                .whenInvokedWith(any())
-                .then { NetworkResponse.Success(USER_RESPONSE.copy(usersFound = emptyList()), mapOf(), 200) }
-
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKeyFlow)
-                .whenInvokedWith(any())
-                .then { flowOf(JSON_QUALIFIED_ID) }
-
-            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(any())
-                .then { flowOf(TestUser.DETAILS_ENTITY) }
-
-            given(userMapper)
-                .function(userMapper::fromUserDetailsEntityToSelfUser)
-                .whenInvokedWith(any())
-                .then { TestUser.SELF }
-=======
             val (_, searchUserRepository) = Arrangement()
                 .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
                 .withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE.copy(usersFound = emptyList()), mapOf(), 200))
                 .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-                .withGetUserByQualifiedIdResult(flowOf(USER_ENTITY))
-                .withFromUserEntityToSelfUser(SELF_USER)
+                .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
+                .withFromUserDetailsEntityToSelfUser(TestUser.SELF)
                 .arrange()
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
 
             val expectedResult = UserSearchResult(
                 result = emptyList()
@@ -407,22 +238,10 @@ class SearchUserRepositoryTest {
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByNameOrHandleOrEmail_ThenSearchForUsersNotInTheConversation() =
         runTest {
             // given
-<<<<<<< HEAD
-            given(userDAO)
-                .suspendFunction(userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
-                .whenInvokedWith(anything(), anything())
-                .then { _, _ -> flowOf(listOf()) }
-
-            given(userDAO)
-                .suspendFunction(userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
-                .whenInvokedWith(anything(), anything())
-                .then { _, _ -> flowOf(listOf()) }
-=======
             val (arrangement, searchUserRepository) = Arrangement()
-                .withGetUsersNotInConversationByNameOrHandleOrEmailResult(flowOf(listOf()))
-                .withGetUserByNameOrHandleOrEmailAndConnectionStatesResult(flowOf(listOf()))
+                .withGetUsersDetailsNotInConversationByNameOrHandleOrEmailResult(flowOf(listOf()))
+                .withGetUserDetailsByNameOrHandleOrEmailAndConnectionStatesResult(flowOf(listOf()))
                 .arrange()
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
 
             // when
             searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
@@ -435,23 +254,14 @@ class SearchUserRepositoryTest {
                 )
             )
 
-<<<<<<< HEAD
-            verify(userDAO)
-                .suspendFunction(userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
-                .with(anything(), anything())
-                .wasNotInvoked()
-
-            verify(userDAO)
-                .suspendFunction(userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
-=======
+            // then
             verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUserByNameOrHandleOrEmailAndConnectionStates)
+                .suspendFunction(arrangement.userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
                 .with(anything(), anything())
                 .wasNotInvoked()
 
             verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
+                .suspendFunction(arrangement.userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
                 .with(anything(), anything())
                 .wasInvoked(Times(1))
         }
@@ -459,22 +269,10 @@ class SearchUserRepositoryTest {
     @Test
     fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByHandle_ThenSearchForUsersNotInTheConversation() = runTest {
         // given
-<<<<<<< HEAD
-        given(userDAO)
-            .suspendFunction(userDAO::getUserDetailsByHandleAndConnectionStates)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ -> flowOf(listOf()) }
-
-        given(userDAO)
-            .suspendFunction(userDAO::getUsersDetailsNotInConversationByHandle)
-            .whenInvokedWith(anything(), anything())
-            .then { _, _ -> flowOf(listOf()) }
-=======
         val (arrangement, searchUserRepository) = Arrangement()
-            .withGetUserByHandleAndConnectionStatesResult(flowOf(listOf()))
-            .withGetUsersNotInConversationByHandleResult(flowOf(listOf()))
+            .withGetUserDetailsByHandleAndConnectionStatesResult(flowOf(listOf()))
+            .withGetUsersDetailsNotInConversationByHandleResult(flowOf(listOf()))
             .arrange()
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
 
         // when
         searchUserRepository.searchKnownUsersByHandle(
@@ -488,23 +286,13 @@ class SearchUserRepositoryTest {
         )
 
         // then
-<<<<<<< HEAD
-        verify(userDAO)
-            .suspendFunction(userDAO::getUserDetailsByHandleAndConnectionStates)
-            .with(anything(), anything())
-            .wasNotInvoked()
-
-        verify(userDAO)
-            .suspendFunction(userDAO::getUsersDetailsNotInConversationByHandle)
-=======
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUserByHandleAndConnectionStates)
+            .suspendFunction(arrangement.userDAO::getUserDetailsByHandleAndConnectionStates)
             .with(anything(), anything())
             .wasNotInvoked()
 
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUsersNotInConversationByHandle)
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
+            .suspendFunction(arrangement.userDAO::getUsersDetailsNotInConversationByHandle)
             .with(anything(), anything())
             .wasInvoked(exactly = once)
     }
@@ -534,18 +322,19 @@ class SearchUserRepositoryTest {
         // given
         val userListResponse = ListUsersDTO(
             usersFailed = emptyList(),
-            usersFound = listOf(USER_PROFILE_DTO.copy(id = UserId("teamUser", SELF_USER.id.domain), teamId = SELF_USER.teamId?.value),)
+            usersFound = listOf(
+                USER_PROFILE_DTO.copy(id = UserId("teamUser", TestUser.SELF.id.domain), teamId = TestUser.SELF.teamId?.value),
+            )
         )
         val (arrangement, searchUserRepository) = Arrangement()
             .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
             .withGetMultipleUsersResult(NetworkResponse.Success(userListResponse, mapOf(), 200))
             .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-            .withGetUserByQualifiedIdResult(flowOf(USER_ENTITY))
-            .withFromUserEntityToSelfUser(SELF_USER)
-            .withUpsertTeamMembersSuccess()
-            .withFromUserProfileDtoToOtherUserResult(PUBLIC_USER)
-            .withFromUserProfileDtoToUserEntityResult(USER_ENTITY)
-            .withFromTeamAndDomain(UserType.FEDERATED)
+            .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
+            .withFromUserDetailsEntityToSelfUser(TestUser.SELF)
+            .withUpsertUsersSuccess()
+            .withFromUserProfileDtoToOtherUserResult(TestUser.OTHER)
+            .withFromUserProfileDtoToUserEntityResult(TestUser.ENTITY)
             .arrange()
 
         // when
@@ -556,8 +345,8 @@ class SearchUserRepositoryTest {
         assertTrue { actual.value.result.isEmpty() }
 
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertTeamMembers)
-            .with(eq(listOf(USER_ENTITY)))
+            .suspendFunction(arrangement.userDAO::upsertUsers)
+            .with(eq(listOf(TestUser.ENTITY)))
             .wasInvoked()
     }
 
@@ -573,13 +362,7 @@ class SearchUserRepositoryTest {
         internal val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
 
         @Mock
-        internal val publicUserMapper: PublicUserMapper = mock(classOf<PublicUserMapper>())
-
-        @Mock
         internal val userMapper: UserMapper = mock(classOf<UserMapper>())
-
-        @Mock
-        internal val domainUserTypeMapper: DomainUserTypeMapper = mock(classOf<DomainUserTypeMapper>())
 
         @Mock
         internal val userDAO: UserDAO = mock(classOf<UserDAO>())
@@ -590,20 +373,11 @@ class SearchUserRepositoryTest {
                 metadataDAO,
                 userDetailsApi,
                 userSearchApiWrapper,
-                publicUserMapper,
                 userMapper,
-                domainUserTypeMapper
             )
         }
 
         fun arrange() = this to searchUserRepository
-
-        init {
-            given(domainUserTypeMapper).invocation { federated }.then { UserType.FEDERATED }
-            given(domainUserTypeMapper).invocation { guest }.then { UserType.GUEST }
-            given(domainUserTypeMapper).invocation { standard }.then { UserType.INTERNAL }
-            given(domainUserTypeMapper).invocation { external }.then { UserType.EXTERNAL }
-        }
 
         fun withSearchResult(result: Either<NetworkFailure, UserSearchResponse>) = apply {
             given(userSearchApiWrapper)
@@ -620,8 +394,8 @@ class SearchUserRepositoryTest {
         }
 
         fun withFromUserProfileDtoToOtherUserResult(result: OtherUser) = apply {
-            given(publicUserMapper)
-                .function(publicUserMapper::fromUserProfileDtoToOtherUser)
+            given(userMapper)
+                .function(userMapper::fromUserProfileDtoToOtherUser)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
@@ -633,51 +407,44 @@ class SearchUserRepositoryTest {
                 .thenReturn(result)
         }
 
-        fun withGetUserByQualifiedIdResult(result: Flow<UserEntity?>) = apply {
+        fun withObserveUserDetailsByQualifiedIdResult(result: Flow<UserDetailsEntity?>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
-        fun withFromUserEntityToSelfUser(result: SelfUser) = apply {
+        fun withFromUserDetailsEntityToSelfUser(result: SelfUser) = apply {
             given(userMapper)
-                .function(userMapper::fromUserEntityToSelfUser)
+                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
-        fun withFromTeamAndDomain(result: UserType) = apply {
-            given(domainUserTypeMapper)
-                .function(domainUserTypeMapper::fromTeamAndDomain)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(result)
-        }
-
-        fun withGetUsersNotInConversationByNameOrHandleOrEmailResult(result: Flow<List<UserEntity>>) = apply {
+        fun withGetUsersDetailsNotInConversationByNameOrHandleOrEmailResult(result: Flow<List<UserDetailsEntity>>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::getUsersNotInConversationByNameOrHandleOrEmail)
+                .suspendFunction(userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }
 
-        fun withGetUserByNameOrHandleOrEmailAndConnectionStatesResult(result: Flow<List<UserEntity>>) = apply {
+        fun withGetUserDetailsByNameOrHandleOrEmailAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::getUserByNameOrHandleOrEmailAndConnectionStates)
+                .suspendFunction(userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }
 
-        fun withGetUserByHandleAndConnectionStatesResult(result: Flow<List<UserEntity>>) = apply {
+        fun withGetUserDetailsByHandleAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::getUserByHandleAndConnectionStates)
+                .suspendFunction(userDAO::getUserDetailsByHandleAndConnectionStates)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }
 
-        fun withGetUsersNotInConversationByHandleResult(result: Flow<List<UserEntity>>) = apply {
+        fun withGetUsersDetailsNotInConversationByHandleResult(result: Flow<List<UserDetailsEntity>>) = apply {
             given(userDAO)
-                .suspendFunction(userDAO::getUsersNotInConversationByHandle)
+                .suspendFunction(userDAO::getUsersDetailsNotInConversationByHandle)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }
@@ -689,9 +456,9 @@ class SearchUserRepositoryTest {
                 .thenReturn(result)
         }
 
-        fun withUpsertTeamMembersSuccess() = apply {
+        fun withUpsertUsersSuccess() = apply {
             given(userDAO)
-                .suspendFunction(userDAO::upsertTeamMembers)
+                .suspendFunction(userDAO::upsertUsers)
                 .whenInvokedWith(anything())
                 .thenReturn(Unit)
         }
@@ -735,84 +502,9 @@ class SearchUserRepositoryTest {
             took = 0,
         )
 
-<<<<<<< HEAD
-        val USER_RESPONSE = ListUsersDTO(
-            usersFailed = emptyList(),
-            usersFound = listOf(
-                UserProfileDTO(
-                    accentId = 1,
-                    handle = "handle",
-                    id = UserIdDTO(value = "value", domain = "domain"),
-                    name = "name",
-                    legalHoldStatus = LegalHoldStatusResponse.ENABLED,
-                    teamId = "team",
-                    assets = emptyList(),
-                    deleted = null,
-                    email = null,
-                    expiresAt = null,
-                    nonQualifiedId = "value",
-                    service = null,
-                    supportedProtocols = null
-                )
-            )
-=======
-        val USER_PROFILE_DTO = UserProfileDTO(
-            accentId = 1,
-            handle = "handle",
-            id = UserIdDTO(value = "value", domain = "domain"),
-            name = "name",
-            legalHoldStatus = LegalHoldStatusResponse.ENABLED,
-            teamId = "team",
-            assets = emptyList(),
-            deleted = null,
-            email = null,
-            expiresAt = null,
-            nonQualifiedId = "value",
-            service = null
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
-        )
-
         val USER_RESPONSE = ListUsersDTO(usersFailed = emptyList(), usersFound = listOf(USER_PROFILE_DTO))
 
         const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
-<<<<<<< HEAD
-=======
-
-        val USER_ENTITY = UserEntity(
-            id = QualifiedIDEntity("value", "domain"),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            team = null,
-            connectionStatus = ConnectionEntity.State.NOT_CONNECTED,
-            previewAssetId = null,
-            completeAssetId = null,
-            availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
-            userType = UserTypeEntity.EXTERNAL,
-            botService = null,
-            deleted = false,
-            expiresAt = null,
-            defederated = false
-        )
-
-        val SELF_USER = SelfUser(
-            id = QualifiedID("someValue", "someId"),
-            name = null,
-            handle = null,
-            email = null,
-            phone = null,
-            accentId = 0,
-            teamId = TeamId("someTeamId"),
-            connectionStatus = ConnectionState.NOT_CONNECTED,
-            previewPicture = null,
-            completePicture = null,
-            availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-            expiresAt = null
-        )
-
->>>>>>> 0df069cb00 (fix: persist searched team members [WPB-5262] (#2179))
     }
 
 }
