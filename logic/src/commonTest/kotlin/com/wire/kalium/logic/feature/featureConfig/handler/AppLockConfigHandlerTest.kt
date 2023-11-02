@@ -36,7 +36,7 @@ import kotlin.time.Duration.Companion.seconds
 class AppLockConfigHandlerTest {
 
     @Test
-    fun givenConfigRepositoryReturnsFailure_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {
+    fun givenConfigRepositoryReturnsFailureWithStatusDisabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {
         val appLockModel = AppLockModel(Status.DISABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withUserConfigRepositoryFailure()
@@ -54,6 +54,29 @@ class AppLockConfigHandlerTest {
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(false)
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenConfigRepositoryReturnsFailureWithStatusEnabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
+        val appLockModel = AppLockModel(Status.ENABLED, 20)
+        val (arrangement, appLockConfigHandler) = Arrangement()
+            .withUserConfigRepositoryFailure()
+            .arrange()
+
+        appLockConfigHandler.handle(appLockModel)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setAppLockStatus)
+            .with(
+                eq(appLockModel.status.toBoolean()),
+                eq(appLockModel.inactivityTimeoutSecs),
+                eq(true)
             )
             .wasInvoked(exactly = once)
     }

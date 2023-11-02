@@ -18,11 +18,12 @@
 package com.wire.kalium.logic.feature.featureConfig.handler
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.nullableFold
 import kotlin.time.Duration.Companion.seconds
 
 class AppLockConfigHandler(
@@ -30,8 +31,10 @@ class AppLockConfigHandler(
 ) {
     fun handle(appLockConfig: AppLockModel): Either<CoreFailure, Unit> {
 
-        val isStatusChanged = userConfigRepository.isTeamAppLockEnabled().fold(
-            { false },
+        val isStatusChanged = userConfigRepository.isTeamAppLockEnabled().nullableFold(
+            {
+                it is StorageFailure.DataNotFound && appLockConfig.status == Status.ENABLED
+            },
             {
                 val newStatus = appLockConfig.status == Status.ENABLED
                 ((it.isEnabled != newStatus) ||
