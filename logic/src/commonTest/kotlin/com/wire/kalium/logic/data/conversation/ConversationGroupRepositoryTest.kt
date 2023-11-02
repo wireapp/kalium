@@ -98,6 +98,7 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -130,6 +131,7 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -167,6 +169,7 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .arrange()
 
         val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
@@ -255,6 +258,7 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -1148,6 +1152,39 @@ class ConversationGroupRepositoryTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenAValidConversation_whenCreating_thenConversationIsCreatedAndUnverifiedWarningSystemMessagePersisted() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        with(arrangement) {
+            verify(conversationDAO)
+                .suspendFunction(conversationDAO::insertConversation)
+                .with(anything())
+                .wasInvoked(once)
+
+            verify(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .with(anything())
+                .wasInvoked(once)
+        }
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1539,6 +1576,13 @@ class ConversationGroupRepositoryTest {
                     .whenInvokedWith(any(), any())
                     .thenReturnSequentially(*networkResponses)
             }
+
+        fun withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
 
         fun arrange() = this to conversationGroupRepository
     }

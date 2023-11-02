@@ -81,6 +81,7 @@ internal class NewConversationEventHandlerImpl(
                 event.conversation
             )
             newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation)
+            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(event.conversation.id.toModel())
         }
     }
 }

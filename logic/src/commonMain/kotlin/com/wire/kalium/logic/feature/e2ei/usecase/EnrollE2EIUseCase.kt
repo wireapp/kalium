@@ -15,13 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onFailure
 
 /**
  * Issue an E2EI certificate and re-initiate the MLSClient
@@ -111,8 +112,10 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.Certificate, it).toEitherLeft()
         }, { it })
 
-        // TODO(fix): init after fixing the MLS client initialization mechanism
-        // TODO(revert): e2EIRepository.initMLSClientWithCertificate(certificateRequest.response.decodeToString())
+        e2EIRepository.rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString()).onFailure {
+            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
+        }
+
         return Either.Right(E2EIEnrollmentResult.Success(certificateRequest.response.decodeToString()))
     }
 
@@ -132,6 +135,7 @@ sealed interface E2EIEnrollmentResult {
         OIDCChallenge,
         CheckOrderRequest,
         FinalizeRequest,
+        ConversationMigration,
         Certificate
     }
 

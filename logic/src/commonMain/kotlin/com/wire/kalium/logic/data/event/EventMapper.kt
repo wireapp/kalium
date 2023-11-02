@@ -558,6 +558,13 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.E2EI)
         )
 
+        is FeatureConfigData.AppLock -> Event.FeatureConfig.AppLockUpdated(
+            id,
+            transient,
+            live,
+            featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AppLock)
+        )
+
         else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient, live)
     }
 

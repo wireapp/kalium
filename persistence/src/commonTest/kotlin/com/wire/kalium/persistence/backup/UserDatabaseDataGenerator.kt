@@ -283,7 +283,8 @@ class UserDatabaseDataGenerator(
                     userMessageTimer = null,
                     archived = false,
                     archivedInstant = null,
-                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -328,7 +329,8 @@ class UserDatabaseDataGenerator(
             userMessageTimer = null,
             archived = false,
             archivedInstant = null,
-            verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -397,7 +399,8 @@ class UserDatabaseDataGenerator(
                 userMessageTimer = null,
                 archived = false,
                 archivedInstant = null,
-                verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -465,7 +468,8 @@ class UserDatabaseDataGenerator(
                     userMessageTimer = null,
                     archived = false,
                     archivedInstant = null,
-                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -511,7 +515,8 @@ class UserDatabaseDataGenerator(
                     userMessageTimer = null,
                     archived = false,
                     archivedInstant = null,
-                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -626,7 +631,8 @@ class UserDatabaseDataGenerator(
                     userMessageTimer = null,
                     archived = false,
                     archivedInstant = null,
-                    verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 

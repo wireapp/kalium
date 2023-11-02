@@ -67,9 +67,10 @@ internal class ConversationMapper {
             userDefederated = userDefederated,
             archived = archived,
             archivedDateTime = archived_date_time,
-            verificationStatus = verification_status,
+            mlsVerificationStatus = mls_verification_status,
             userSupportedProtocols = userSupportedProtocols,
-            userActiveOneOnOneConversationId = otherUserActiveConversationId
+            userActiveOneOnOneConversationId = otherUserActiveConversationId,
+            proteusVerificationStatus = proteus_verification_status
         )
     }
 
@@ -99,7 +100,8 @@ internal class ConversationMapper {
         userMessageTimer: Long?,
         archived: Boolean,
         archivedDateTime: Instant?,
-        verificationStatus: ConversationEntity.VerificationStatus
+        mlsVerificationStatus: ConversationEntity.VerificationStatus,
+        proteusVerificationStatus: ConversationEntity.VerificationStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -126,7 +128,8 @@ internal class ConversationMapper {
         userMessageTimer = userMessageTimer,
         archived = archived,
         archivedInstant = archivedDateTime,
-        verificationStatus = verificationStatus
+        mlsVerificationStatus = mlsVerificationStatus,
+        proteusVerificationStatus = proteusVerificationStatus
     )
 
     @Suppress("LongParameterList")
@@ -158,4 +161,11 @@ internal class ConversationMapper {
             ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
         }
     }
+
+    fun toE2EIConversationClient(
+        mlsGroupId: String,
+        userId: QualifiedIDEntity,
+        clientId: String
+    ) = E2EIConversationClientInfoEntity(userId, mlsGroupId, clientId)
+
 }

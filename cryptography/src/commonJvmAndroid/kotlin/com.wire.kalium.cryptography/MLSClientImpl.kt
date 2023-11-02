@@ -249,7 +249,7 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
-        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain)
+        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain, null)
     }
 
     override suspend fun isE2EIEnabled(): Boolean {
@@ -260,11 +260,13 @@ class MLSClientImpl(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt
-    ) {
-        coreCrypto.e2eiRotateAll(
-            (enrollment as E2EIClientImpl).wireE2eIdentity,
-            certificateChain,
-            newMLSKeyPackageCount
+    ): RotateBundle {
+        return toRotateBundle(
+            coreCrypto.e2eiRotateAll(
+                (enrollment as E2EIClientImpl).wireE2eIdentity,
+                certificateChain,
+                newMLSKeyPackageCount
+            )
         )
     }
 

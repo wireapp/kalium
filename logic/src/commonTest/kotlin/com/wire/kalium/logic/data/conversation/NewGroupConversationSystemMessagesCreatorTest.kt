@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
@@ -341,6 +342,26 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 })
                 .wasInvoked(once)
         }
+
+    @Test
+    fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedUnverifiedSystemMessage() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .arrange()
+
+        val result = sysMessageCreator.conversationStartedUnverifiedWarning(
+            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP).id.toModel()
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.ConversationStartedUnverifiedWarning)
+            })
+            .wasInvoked(once)
+    }
 
     private class Arrangement {
         @Mock

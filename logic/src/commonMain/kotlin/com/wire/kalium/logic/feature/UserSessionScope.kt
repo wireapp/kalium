@@ -130,6 +130,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
+import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -188,8 +190,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -592,7 +594,8 @@ class UserSessionScope internal constructor(
             globalScope.unboundNetworkContainer.acmeApi,
             e2EIClientProvider,
             mlsClientProvider,
-            clientIdProvider
+            clientIdProvider,
+            mlsConversationRepository
         )
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
@@ -1295,7 +1298,8 @@ class UserSessionScope internal constructor(
             logout,
             oneOnOneResolver,
             userId,
-            clientIdProvider
+            clientIdProvider,
+            lazy { conversations.newGroupConversationSystemMessagesCreator }
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1435,7 +1439,9 @@ class UserSessionScope internal constructor(
             authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository,
             cachedClientIdClearer,
-            updateSupportedProtocolsAndResolveOneOnOnes
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            conversationRepository,
+            persistMessage
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(
@@ -1533,6 +1539,7 @@ class UserSessionScope internal constructor(
             messages.messageSender,
             clientIdProvider,
             e2eiRepository,
+            mlsConversationRepository,
             team.isSelfATeamMember,
             updateSupportedProtocols
         )
@@ -1572,6 +1579,9 @@ class UserSessionScope internal constructor(
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
+
+    val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
 
     val markSelfDeletingMessagesAsNotified: MarkSelfDeletionStatusAsNotifiedUseCase
         get() = MarkSelfDeletionStatusAsNotifiedUseCaseImpl(userConfigRepository)
@@ -1646,7 +1656,8 @@ class UserSessionScope internal constructor(
             connectionRepository,
             conversationRepository,
             userRepository,
-            oneOnOneResolver
+            oneOnOneResolver,
+            conversations.newGroupConversationSystemMessagesCreator
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase

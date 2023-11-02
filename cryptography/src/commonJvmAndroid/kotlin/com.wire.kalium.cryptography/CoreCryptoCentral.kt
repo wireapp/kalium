@@ -27,7 +27,7 @@ import java.io.File
 actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, Ciphersuites.DEFAULT.lower())
+    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, Ciphersuites.DEFAULT.lower(), null)
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(coreCrypto, rootDir)
 }
@@ -62,7 +62,7 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
 
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
-        cc.mlsInit(clientId.toString().encodeToByteArray(), Ciphersuites.DEFAULT.lower())
+        cc.mlsInit(clientId.toString().encodeToByteArray(), Ciphersuites.DEFAULT.lower(), null)
         return MLSClientImpl(cc)
     }
 

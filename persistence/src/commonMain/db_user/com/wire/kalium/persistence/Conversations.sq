@@ -40,7 +40,9 @@ CREATE TABLE Conversation (
     is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
     archived INTEGER AS Boolean NOT NULL DEFAULT 0,
     archived_date_time INTEGER AS Instant,
-    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED"
+    -- mls_verification_status
+    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
+    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED"
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -228,7 +230,8 @@ Conversation.user_message_timer,
 Conversation.incomplete_metadata,
 Conversation.archived,
 Conversation.archived_date_time,
-Conversation.verification_status
+Conversation.verification_status AS mls_verification_status,
+Conversation.proteus_verification_status
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
@@ -273,7 +276,7 @@ selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationByQualifiedId:
-SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status FROM Conversation WHERE qualified_id = ?;
+SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status, proteus_verification_status FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
@@ -354,8 +357,13 @@ SELECT changes();
 selfConversationId:
 SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
 
-selfMLSGroupId:
-SELECT mls_group_id FROM Conversation WHERE type = 'SELF' AND protocol = 'MLS' LIMIT 1;
+getMLSGroupIdAndUserIdByClientId:
+SELECT Conversation.mls_group_id, Client.user_id, Client.id FROM Client
+LEFT JOIN Member ON Client.user_id = Member.user
+LEFT JOIN Conversation
+ON Member.conversation = Conversation.qualified_id OR Client.user_id = Conversation.qualified_id
+WHERE Conversation.mls_group_id IS NOT NULL AND Client.id = :clientId
+ORDER BY Conversation.type DESC LIMIT 1;
 
 updateConversationReceiptMode:
 UPDATE Conversation
@@ -388,10 +396,10 @@ SELECT qualified_id
 FROM Conversation
 WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
 
-updateVerificationStatus:
+updateMlsVerificationStatus:
 UPDATE Conversation
-SET verification_status = ?
-WHERE qualified_id = ?;
+SET verification_status = :status
+WHERE qualified_id = :conversationId;
 
 clearContent {
 DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
@@ -400,3 +408,25 @@ DELETE FROM Message WHERE conversation_id = :conversationId;
 
 selectChanges:
 SELECT changes();
+
+CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
+AFTER UPDATE ON Conversation
+WHEN new.proteus_verification_status != old.proteus_verification_status
+BEGIN
+    INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
+    VALUES(
+        (SELECT lower(hex(randomblob(4)) || '-' || lower(hex(randomblob(2))) || '-4' ||
+        substr(lower(hex(randomblob(2))),2) || '-a' || substr(lower(hex(randomblob(2))),2)
+        || '-' || lower(hex(randomblob(6))))),
+        (CASE (new.proteus_verification_status)
+            WHEN "VERIFIED" THEN "CONVERSATION_VERIFIED_PROTEUS"
+            ELSE "CONVERSATION_DEGRADED_PROTEUS" END
+        ),
+        new.qualified_id,
+        (SELECT CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)),
+        (SELECT SelfUser.id FROM SelfUser LIMIT 1),
+        (SELECT Client.id FROM Client WHERE Client.user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1) LIMIT 1),
+        "SENT",
+        "VISIBLE"
+    );
+END;
