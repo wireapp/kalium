@@ -298,6 +298,7 @@ sealed class MessageContent {
 
     data object HistoryLost : System()
     data object ConversationCreated : System()
+    data object ConversationStartedUnverifiedWarning : System()
     data object ConversationDegradedMLS : System()
     data object ConversationVerifiedMLS : System()
     data object ConversationDegradedProteus : System()
@@ -357,6 +358,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.Unknown -> "Unknown"
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
+    is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
     null -> "null"
 }
 
@@ -423,5 +425,12 @@ sealed interface MessagePreviewContent {
     data object CryptoSessionReset : MessagePreviewContent
 
     data object Unknown : MessagePreviewContent
+
+    sealed class VerificationChanged : MessagePreviewContent {
+        data object VerifiedMls : VerificationChanged()
+        data object VerifiedProteus : VerificationChanged()
+        data object DegradedMls : VerificationChanged()
+        data object DegradedProteus : VerificationChanged()
+    }
 
 }

@@ -57,12 +57,12 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
             }
 
     private suspend fun updateStatusAndNotifyUserIfNeeded(newStatusFromCC: VerificationStatus, conversation: ConversationDetails) {
-        val currentStatus = conversation.conversation.verificationStatus
+        val currentStatus = conversation.conversation.mlsVerificationStatus
         val newStatus = getActualNewStatus(newStatusFromCC, currentStatus)
 
         if (newStatus == currentStatus) return
 
-        conversationRepository.updateVerificationStatus(newStatus, conversation.conversation.id)
+        conversationRepository.updateMlsVerificationStatus(newStatus, conversation.conversation.id)
 
         if (newStatus == VerificationStatus.DEGRADED || newStatus == VerificationStatus.VERIFIED) {
             notifyUserAboutStateChanges(conversation.conversation.id, newStatus)

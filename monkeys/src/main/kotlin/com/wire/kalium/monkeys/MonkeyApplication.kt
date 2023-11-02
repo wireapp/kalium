@@ -61,12 +61,10 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
         if (logOutputFile != null) {
             CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
-            MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
         } else {
             CoreLogger.init(KaliumLogger.Config(logLevel, emptyList()))
-            MonkeyLogger.init(KaliumLogger.Config(logLevel, emptyList()))
         }
-        MonkeyLogger.setLoggingLevel(logLevel, monkeyFileLogger)
+        MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
         logger.i("Initializing Metrics Endpoint")
         io.ktor.server.engine.embeddedServer(Netty, port = 9090) {
             routing {

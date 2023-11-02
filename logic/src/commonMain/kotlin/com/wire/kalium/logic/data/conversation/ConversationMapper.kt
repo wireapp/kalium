@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
+@file:Suppress("TooManyFunctions")
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.logic.data.connection.ConnectionStatusMapper
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
@@ -56,7 +57,6 @@ import kotlinx.datetime.toInstant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@Suppress("TooManyFunctions")
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
     fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
@@ -121,7 +121,8 @@ internal class ConversationMapperImpl(
         hasIncompleteMetadata = false,
         archived = apiModel.members.self.otrArchived ?: false,
         archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
@@ -147,7 +148,8 @@ internal class ConversationMapperImpl(
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
             archivedDateTime = archivedDateTime,
-            verificationStatus = verificationStatusFromEntity(verificationStatus)
+            mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus)
         )
     }
 
@@ -173,7 +175,8 @@ internal class ConversationMapperImpl(
             userMessageTimer = userMessageTimer?.toDuration(DurationUnit.MILLISECONDS),
             archived = archived,
             archivedDateTime = archivedInstant,
-            verificationStatus = verificationStatusFromEntity(verificationStatus)
+            mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus)
         )
     }
 
@@ -371,7 +374,8 @@ internal class ConversationMapperImpl(
             userMessageTimer = userMessageTimer?.inWholeMilliseconds,
             archived = archived,
             archivedInstant = archivedDateTime,
-            verificationStatus = verificationStatusToEntity(verificationStatus)
+            mlsVerificationStatus = verificationStatusToEntity(mlsVerificationStatus),
+            proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus)
         )
     }
 
@@ -400,7 +404,8 @@ internal class ConversationMapperImpl(
         hasIncompleteMetadata = true,
         archived = false,
         archivedInstant = null,
-        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -451,6 +456,7 @@ internal class ConversationMapperImpl(
 
     override fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus) =
         ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
+
 }
 
 private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {
@@ -544,4 +550,10 @@ internal fun Protocol.toModel(): Conversation.Protocol = when (this) {
     Protocol.PROTEUS -> Conversation.Protocol.PROTEUS
     Protocol.MIXED -> Conversation.Protocol.MIXED
     Protocol.MLS -> Conversation.Protocol.MLS
+}
+
+internal fun E2EIConversationState.toModel(): Conversation.VerificationStatus = when (this) {
+    E2EIConversationState.VERIFIED -> Conversation.VerificationStatus.VERIFIED
+    E2EIConversationState.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
+    E2EIConversationState.NOT_ENABLED -> Conversation.VerificationStatus.NOT_VERIFIED
 }

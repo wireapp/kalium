@@ -36,7 +36,7 @@ pbandk = "0.14.2"
 turbine = "1.0.0"
 avs = "9.4.14"
 jna = "5.13.0"
-core-crypto = "1.0.0-rc.12"
+core-crypto = "1.0.0-rc.17"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "2.0.3"
@@ -55,6 +55,7 @@ faker = "1.15.0"
 robolectric = "4.9"
 stately = "2.0.0-rc3"
 micrometer = "1.11.3"
+bouncy-castle = "1.70"
 
 [plugins]
 # Home-made convention plugins
@@ -192,3 +193,6 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
+
+# bouncy castle
+bouncy-castle = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bouncy-castle" }

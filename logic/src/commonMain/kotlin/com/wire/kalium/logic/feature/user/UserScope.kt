@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -41,8 +42,11 @@ import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoderImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
@@ -83,6 +87,7 @@ class UserScope internal constructor(
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
     private val e2EIRepository: E2EIRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val updateSupportedProtocolsUseCase: UpdateSupportedProtocolsUseCase,
 ) {
@@ -103,8 +108,14 @@ class UserScope internal constructor(
             userRepository,
             qualifiedIdMapper
         )
+
+    private val pemCertificateDecoderImpl by lazy { PemCertificateDecoderImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
+    val getE2EICertificate: GetE2eiCertificateUseCase get() = GetE2eiCertificateUseCaseImpl(
+        mlsConversationRepository = mlsConversationRepository,
+        pemCertificateDecoder = pemCertificateDecoderImpl
+    )
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
     val getAllKnownUsers: GetAllContactsUseCase get() = GetAllContactsUseCaseImpl(userRepository)

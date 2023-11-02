@@ -228,7 +228,8 @@ internal class ConnectionDataSource(
                         userMessageTimer = null,
                         archived = false,
                         archivedInstant = null,
-                        verificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                     )
                 )
             }

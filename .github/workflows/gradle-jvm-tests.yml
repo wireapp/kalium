@@ -22,7 +22,7 @@ jobs:
     container: wirebot/cryptobox:1.4.0
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -84,7 +84,7 @@ jobs:
             **/build/test-results/**/*.xml
 
       - name: Upload Test Report
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
             files: "build/reports/kover/report.xml"
 

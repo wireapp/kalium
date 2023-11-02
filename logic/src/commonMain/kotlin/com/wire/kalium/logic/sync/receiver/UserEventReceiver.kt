@@ -23,6 +23,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -34,8 +35,8 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -54,7 +55,8 @@ internal class UserEventReceiverImpl internal constructor(
     private val logout: LogoutUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val selfUserId: UserId,
-    private val currentClientIdProvider: CurrentClientIdProvider
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>
 ) : UserEventReceiver {
 
     override suspend fun onEvent(event: Event.User): Either<CoreFailure, Unit> {
@@ -108,6 +110,10 @@ internal class UserEventReceiverImpl internal constructor(
                             delay = if (event.live) 3.seconds else ZERO
                         )
                         Either.Right(Unit)
+                    }.flatMap {
+                        newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                            event.connection.qualifiedConversationId
+                        )
                     }
             }
             .onSuccess {

@@ -42,13 +42,14 @@ class UpdateConversationArchivedStatusUseCaseTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
         val archivedStatusTimestamp = 123456789L
+        val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
             .withSuccessfulMutingUpdates()
             .withUpdateArchivedStatusFullSuccess()
             .arrange()
 
-        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, archivedStatusTimestamp)
+        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
         assertEquals(ArchiveStatusUpdateResult.Success::class, result::class)
 
         with(arrangement) {
@@ -65,17 +66,47 @@ class UpdateConversationArchivedStatusUseCaseTest {
     }
 
     @Test
+    fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndUserIsNotMember_thenShouldArchiveOnlyLocally() =
+        runTest {
+            val conversationId = TestConversation.ID
+            val isConversationArchived = true
+            val archivedStatusTimestamp = 123456789L
+            val onlyLocally = true
+
+            val (arrangement, updateConversationArchivedStatus) = Arrangement()
+                .withSuccessfulMutingUpdates()
+                .withUpdateArchivedStatusFullSuccess()
+                .arrange()
+
+            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
+            assertEquals(ArchiveStatusUpdateResult.Success::class, result::class)
+
+            with(arrangement) {
+                verify(conversationRepository)
+                    .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
+                    .with(any(), any())
+                    .wasNotInvoked()
+
+                verify(conversationRepository)
+                    .suspendFunction(conversationRepository::updateArchivedStatusLocally)
+                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
+                    .wasInvoked(exactly = once)
+            }
+        }
+
+    @Test
     fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
         val archivedStatusTimestamp = 123456789L
+        val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
             .withSuccessfulMutingUpdates()
             .withRemoteUpdateArchivedStatusFailure()
             .arrange()
 
-        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, archivedStatusTimestamp)
+        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
         assertEquals(ArchiveStatusUpdateResult.Failure::class, result::class)
 
         with(arrangement) {
@@ -96,13 +127,14 @@ class UpdateConversationArchivedStatusUseCaseTest {
         val conversationId = TestConversation.ID
         val isConversationArchived = true
         val archivedStatusTimestamp = 123456789L
+        val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
             .withLocalUpdateArchivedStatusFailure()
             .withSuccessfulMutingUpdates()
             .arrange()
 
-        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, archivedStatusTimestamp)
+        val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
         assertEquals(ArchiveStatusUpdateResult.Failure::class, result::class)
 
         with(arrangement) {
@@ -124,13 +156,14 @@ class UpdateConversationArchivedStatusUseCaseTest {
             val conversationId = TestConversation.ID
             val isConversationArchived = true
             val archivedStatusTimestamp = 123456789L
+            val onlyLocally = false
 
             val (arrangement, updateConversationArchivedStatus) = Arrangement()
                 .withUpdateArchivedStatusFullSuccess()
                 .withRemoteErrorMutingUpdates()
                 .arrange()
 
-            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, archivedStatusTimestamp)
+            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
             assertTrue(result is ArchiveStatusUpdateResult.Success)
 
             with(arrangement) {
@@ -152,13 +185,14 @@ class UpdateConversationArchivedStatusUseCaseTest {
             val conversationId = TestConversation.ID
             val isConversationArchived = true
             val archivedStatusTimestamp = 123456789L
+            val onlyLocally = false
 
             val (arrangement, updateConversationArchivedStatus) = Arrangement()
                 .withUpdateArchivedStatusFullSuccess()
                 .withLocalErrorMutingUpdates()
                 .arrange()
 
-            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, archivedStatusTimestamp)
+            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
             assertTrue(result is ArchiveStatusUpdateResult.Success)
 
             with(arrangement) {
