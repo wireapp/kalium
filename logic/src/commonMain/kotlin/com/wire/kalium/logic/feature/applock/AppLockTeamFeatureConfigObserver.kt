@@ -18,12 +18,12 @@
 package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.logic.configuration.AppLockTeamConfig
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlin.time.Duration.Companion.seconds
 
 /**
