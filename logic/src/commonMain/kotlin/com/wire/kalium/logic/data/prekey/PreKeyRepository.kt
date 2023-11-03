@@ -29,8 +29,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.feature.message.CryptoSessionMapper
-import com.wire.kalium.logic.feature.message.CryptoSessionMapperImpl
+import com.wire.kalium.logic.data.message.CryptoSessionMapper
+import com.wire.kalium.logic.data.message.CryptoSessionMapperImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure

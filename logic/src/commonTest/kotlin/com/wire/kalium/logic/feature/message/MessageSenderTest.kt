@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.message.MessageEnvelope
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.message.RecipientEntry
+import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
