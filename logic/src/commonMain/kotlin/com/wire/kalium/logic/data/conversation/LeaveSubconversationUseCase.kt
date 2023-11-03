@@ -36,7 +36,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.Subconversati
 /**
  * Leave a sub-conversation you've previously joined
  */
-interface LeaveSubconversationUseCase {
+internal interface LeaveSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 

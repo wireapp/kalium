@@ -45,7 +45,7 @@ import kotlin.time.Duration
 /**
  * Join a sub-conversation of a MLS conversation
  */
-interface JoinSubconversationUseCase {
+internal interface JoinSubconversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, subconversationId: SubconversationId): Either<CoreFailure, Unit>
 }
 
