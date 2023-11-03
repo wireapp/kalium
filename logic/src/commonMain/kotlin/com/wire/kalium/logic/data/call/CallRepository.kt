@@ -189,8 +189,8 @@ internal class CallDataSource(
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
     ) {
-        val conversation: ConversationDetails =
-            conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
+        val conversation: Conversation =
+            conversationRepository.observeById(conversationId).onlyRight().first()
 
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
@@ -203,13 +203,13 @@ internal class CallDataSource(
             id = uuid4().toString(),
             type = type,
             status = status,
-            conversationType = conversation.conversation.type,
+            conversationType = conversation.type,
             callerId = callerIdWithDomain
         )
 
         val metadata = CallMetadata(
-            conversationName = conversation.conversation.name,
-            conversationType = conversation.conversation.type,
+            conversationName = conversation.name,
+            conversationType = conversation.type,
             callerName = caller?.name,
             callerTeamName = team?.name,
             isMuted = isMuted,
@@ -217,7 +217,7 @@ internal class CallDataSource(
             isCbrEnabled = isCbrEnabled,
             establishedTime = null,
             callStatus = status,
-            protocol = conversation.conversation.protocol
+            protocol = conversation.protocol
         )
 
         val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId)

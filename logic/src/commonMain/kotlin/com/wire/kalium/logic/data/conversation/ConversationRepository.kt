@@ -526,6 +526,7 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getConversationIds(type.toDAO(), protocol.toDao(), teamId?.value)
                 .map { it.toModel() }
         }
+
     override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: TeamId): Either<StorageFailure, List<QualifiedID>> =
         wrapStorageRequest {
             conversationDAO.getTeamConversationIdsReadyToCompleteMigration(teamId.value)
@@ -539,7 +540,18 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.observeGetConversationByQualifiedID(conversationID.toDao())
             .wrapStorageRequest()
             // TODO we don't need last message and unread count here, we should discuss to divide model for list and for details
-            .mapRight { conversationMapper.fromDaoModelToDetails(it, null, mapOf()) }
+            .map { eitherConversationView ->
+                eitherConversationView.flatMap {
+                    try {
+                        Either.Right(conversationMapper.fromDaoModelToDetails(it, null, mapOf()))
+                    } catch (error: IllegalArgumentException) {
+                        kaliumLogger.e("require field in conversation Details", error)
+                        Either.Left(StorageFailure.DataNotFound)
+                    } catch (e: Throwable) {
+                        Either.Left(StorageFailure.Generic(e))
+                    }
+                }
+            }
             .distinctUntilChanged()
 
     override suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit> {
