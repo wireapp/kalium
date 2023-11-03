@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.session
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.functional.fold
 
 sealed class CurrentSessionResult {

@@ -19,7 +19,7 @@ package action
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
-import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.network.api.base.model.SelfUserDTO

@@ -25,7 +25,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.network.exceptions.KaliumException

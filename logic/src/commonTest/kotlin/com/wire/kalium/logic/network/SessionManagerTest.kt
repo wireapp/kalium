@@ -23,7 +23,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.framework.TestUser

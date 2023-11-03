@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.rootDetection
 
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.feature.auth.AccountInfo
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either

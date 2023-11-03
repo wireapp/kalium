@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.feature.auth.AccountTokens
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
