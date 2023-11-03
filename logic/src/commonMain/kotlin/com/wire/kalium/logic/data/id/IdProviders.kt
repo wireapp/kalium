@@ -15,11 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature
+package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.functional.Either
 
 fun interface CurrentClientIdProvider {
