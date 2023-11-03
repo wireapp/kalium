@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
-import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.persistence.dao.call.CallEntity
