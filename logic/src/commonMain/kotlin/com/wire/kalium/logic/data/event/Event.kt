@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.ClassifiedDomainsModel
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
@@ -604,6 +605,19 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
         ) : FeatureConfig(id, transient, live) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSE2EIUpdated",
+                idKey to id.obfuscateId(),
+                featureStatusKey to model.status.name,
+                "config" to model.config
+            )
+        }
+        data class AppLockUpdated(
+            override val id: String,
+            override val transient: Boolean,
+            override val live: Boolean,
+            val model: AppLockModel
+        ) : FeatureConfig(id, transient, live) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.AppLockUpdated",
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
                 "config" to model.config
