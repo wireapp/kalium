@@ -27,7 +27,7 @@ class LayerAccessRulesTest {
     private companion object {
         val importsFromFeatureLayer = ".*?(\\.|)feature(\\..*|\\n)".toRegex()
         val importsFromPersistenceLayer = ".*?(\\.|)persistence(\\..*|\\n)".toRegex()
-        val importsFromNetworkLayer = ".*?(\\.|)persistence(\\..*|\\n)".toRegex()
+        val importsFromNetworkLayer = ".*?(\\.|)network(\\..*|\\n)".toRegex()
     }
 
     @Test
