@@ -20,9 +20,16 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.feature.conversation.GetConversationUnreadEventsCountUseCase
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Gets the Selected Message Position from Search
+ *
+ * @param conversationId [ConversationId] the id of the conversation where the search is happening.
+ * @param messageId [String] the id of the selected message from search.
+ *
+ * @result [Result] Success with Int position. Failure with StorageFailure.
+ */
 interface GetSearchedConversationMessagePositionUseCase {
 
     suspend operator fun invoke(
