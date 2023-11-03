@@ -764,7 +764,7 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenExistingTeamMemberUser_whenUpdatingIt_thenAllImportantFieldsAreProperlyUpdated() = runTest(dispatcher) {
+    fun givenExistingTeamMemberUser_whenUpsertingIt_thenAllImportantFieldsAreProperlyUpdated() = runTest(dispatcher) {
         val user = user1.copy(
             name = "Name",
             handle = "Handle",
