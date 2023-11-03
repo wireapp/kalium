@@ -168,10 +168,10 @@ import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUse
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
