@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -760,6 +761,68 @@ class UserDAOTest : BaseDatabaseTest() {
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
         assertNotNull(result)
         assertEquals(false, result.defederated)
+    }
+
+    @Test
+    fun givenExistingTeamMemberUser_whenUpdatingIt_thenAllImportantFieldsAreProperlyUpdated() = runTest(dispatcher) {
+        val user = user1.copy(
+            name = "Name",
+            handle = "Handle",
+            email = "Email",
+            phone = "Phone",
+            accentId = 1,
+            team = "Team",
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = UserAssetIdEntity("PreviewAssetId", "PreviewAssetDomain"),
+            completeAssetId = UserAssetIdEntity("CompleteAssetId", "CompleteAssetDomain"),
+            availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
+            userType = UserTypeEntity.STANDARD,
+            botService = BotIdEntity("BotService", "BotServiceDomain"),
+            deleted = false,
+            hasIncompleteMetadata = false,
+            expiresAt = null,
+            defederated = false,
+        )
+        db.userDAO.insertUser(user)
+        val updatedTeamMemberUser = user1.copy(
+            name = "newName",
+            handle = "newHandle",
+            email = "newEmail",
+            phone = "newPhone",
+            accentId = 2,
+            team = "newTeam",
+            connectionStatus = ConnectionEntity.State.PENDING,
+            previewAssetId = UserAssetIdEntity("newPreviewAssetId", "newPreviewAssetDomain"),
+            completeAssetId = UserAssetIdEntity("newCompleteAssetId", "newCompleteAssetDomain"),
+            availabilityStatus = UserAvailabilityStatusEntity.BUSY,
+            userType = UserTypeEntity.EXTERNAL,
+            botService = BotIdEntity("newBotService", "newBotServiceDomain"),
+            deleted = true,
+            hasIncompleteMetadata = true,
+            expiresAt = Clock.System.now(),
+            defederated = true,
+        )
+        db.userDAO.upsertTeamMembers(listOf(updatedTeamMemberUser))
+        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        assertTrue {
+            result != null &&
+            result.name == updatedTeamMemberUser.name &&
+            result.handle == updatedTeamMemberUser.handle &&
+            result.email == updatedTeamMemberUser.email &&
+            result.phone == updatedTeamMemberUser.phone &&
+            result.accentId == updatedTeamMemberUser.accentId &&
+            result.team == updatedTeamMemberUser.team &&
+            result.connectionStatus == updatedTeamMemberUser.connectionStatus &&
+            result.previewAssetId == updatedTeamMemberUser.previewAssetId &&
+            result.completeAssetId == updatedTeamMemberUser.completeAssetId &&
+            result.availabilityStatus != updatedTeamMemberUser.availabilityStatus && // should not be updated
+            result.userType != updatedTeamMemberUser.userType && // should not be updated
+            result.botService == updatedTeamMemberUser.botService &&
+            result.deleted != updatedTeamMemberUser.deleted && // should not be updated
+            result.hasIncompleteMetadata != updatedTeamMemberUser.hasIncompleteMetadata && // should not be updated
+            result.expiresAt != updatedTeamMemberUser.expiresAt && // should not be updated
+            result.defederated != updatedTeamMemberUser.defederated // should not be updated
+        }
     }
 
     private companion object {
