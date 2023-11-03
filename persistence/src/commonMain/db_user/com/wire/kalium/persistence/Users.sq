@@ -63,7 +63,7 @@ WHERE qualified_id = ?;
 
 updateTeamMemberUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?, incomplete_metadata = 0
+SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, connection_status = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?, incomplete_metadata = 0
 WHERE qualified_id = ?;
 
 updateTeamMemberType:
