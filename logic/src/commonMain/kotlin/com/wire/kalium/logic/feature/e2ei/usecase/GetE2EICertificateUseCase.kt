@@ -30,7 +30,7 @@ interface GetE2eiCertificateUseCase {
     suspend operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult
 }
 
-class GetE2eiCertificateUseCaseImpl(
+class GetE2eiCertificateUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val pemCertificateDecoder: PemCertificateDecoder
 ) : GetE2eiCertificateUseCase {
@@ -46,7 +46,7 @@ class GetE2eiCertificateUseCaseImpl(
         )
 }
 
-sealed class GetE2EICertificateUseCaseResult {
+sealed class GetE2EICertificateUseCaseResult {c
     class Success(val certificate: E2eiCertificate) : GetE2EICertificateUseCaseResult()
     sealed class Failure : GetE2EICertificateUseCaseResult() {
         data object NotActivated : Failure()
