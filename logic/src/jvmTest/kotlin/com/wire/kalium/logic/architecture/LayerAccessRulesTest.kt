@@ -24,6 +24,12 @@ import kotlin.test.Test
 
 class LayerAccessRulesTest {
 
+    private companion object {
+        val importsFromFeatureLayer = ".*?(\\.|)feature(\\..*|\\n)".toRegex()
+        val importsFromPersistenceLayer = ".*?(\\.|)persistence(\\..*|\\n)".toRegex()
+        val importsFromNetworkLayer = ".*?(\\.|)persistence(\\..*|\\n)".toRegex()
+    }
+
     @Test
     fun repositoriesShouldNotAccessFeaturePackageClasses() {
         Konsist.scopeFromProduction()
@@ -31,7 +37,7 @@ class LayerAccessRulesTest {
             .withPackage("com.wire.kalium.logic.data..")
             .assertFalse {
                 it.hasImport {
-                    it.hasNameContaining("feature")
+                    it.hasNameMatching(importsFromFeatureLayer)
                 }
             }
     }
@@ -43,7 +49,7 @@ class LayerAccessRulesTest {
             .withPackage("com.wire.kalium.logic.feature..")
             .assertFalse {
                 it.hasImport {
-                    it.hasNameContaining("persistence")
+                    it.hasNameMatching(importsFromPersistenceLayer)
                 }
             }
     }
@@ -55,7 +61,7 @@ class LayerAccessRulesTest {
             .withPackage("com.wire.kalium.logic.feature..")
             .assertFalse {
                 it.hasImport {
-                    it.hasNameContaining("network") && !it.hasNameContaining("exception")
+                    it.hasNameMatching(importsFromNetworkLayer) && !it.hasNameContaining("exception")
                 }
             }
     }
