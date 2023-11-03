@@ -46,7 +46,7 @@ class GetE2eiCertificateUseCaseImpl internal constructor(
         )
 }
 
-sealed class GetE2EICertificateUseCaseResult {c
+sealed class GetE2EICertificateUseCaseResult {
     class Success(val certificate: E2eiCertificate) : GetE2EICertificateUseCaseResult()
     sealed class Failure : GetE2EICertificateUseCaseResult() {
         data object NotActivated : Failure()
