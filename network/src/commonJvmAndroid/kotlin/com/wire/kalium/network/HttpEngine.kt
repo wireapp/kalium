@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("MatchingDeclarationName")
+
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
@@ -120,7 +122,7 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
     hostnameVerifier { _, _ -> true }
 }
 
-internal fun supportedConnectionSpecs(): List<ConnectionSpec> {
+private fun supportedConnectionSpecs(): List<ConnectionSpec> {
     val wireSpec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
         .tlsVersions(TlsVersion.TLS_1_2)
         .build()

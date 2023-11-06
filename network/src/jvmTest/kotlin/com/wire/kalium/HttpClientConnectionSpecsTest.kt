@@ -24,10 +24,10 @@ import okhttp3.ConnectionSpec
 import okhttp3.TlsVersion
 import kotlin.test.Test
 
-class ClientConnectionSpecsTest {
+class HttpClientConnectionSpecsTest {
 
     @Test
-    fun givenTheHttpClientIsCreated_ThenEnsureSupportedSpecsArePresent() {
+    fun givenTheHttpClientIsCreated_ThenEnsureOnlySupportedSpecsArePresent() {
         val connectionSpecs = OkHttpSingleton.createNew {}.connectionSpecs
         with(connectionSpecs[0]) {
             tlsVersions?.let {
