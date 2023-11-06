@@ -40,7 +40,8 @@ import java.io.File
 actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
-    userAgent: String
+    userAgent: String,
+    useInMemoryStorage: Boolean = false,
 ) : CoreLogicCommon(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
@@ -75,7 +76,8 @@ actual class CoreLogic(
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
-            userAgent
+            userAgent,
+            useInMemoryStorage
         )
     }
 }
