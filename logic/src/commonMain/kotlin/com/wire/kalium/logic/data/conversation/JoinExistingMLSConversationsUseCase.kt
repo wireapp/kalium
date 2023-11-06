@@ -16,12 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.conversation
+package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap

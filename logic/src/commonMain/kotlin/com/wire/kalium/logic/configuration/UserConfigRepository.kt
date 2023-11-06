@@ -26,9 +26,9 @@ import com.wire.kalium.logic.data.featureConfig.toModel
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toDao
 import com.wire.kalium.logic.data.user.toModel
-import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toSelfDeletionTimerEntity
-import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionMapper.toTeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.data.message.SelfDeletionMapper.toSelfDeletionTimerEntity
+import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either

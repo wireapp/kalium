@@ -37,8 +37,8 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser

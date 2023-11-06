@@ -21,8 +21,8 @@ package com.wire.kalium.logic.feature.user.screeenshotCensoring
 import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigResult
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.logic.functional.Either

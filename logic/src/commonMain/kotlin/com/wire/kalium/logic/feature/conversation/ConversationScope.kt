@@ -32,15 +32,15 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
@@ -147,7 +147,7 @@ class ConversationScope internal constructor(
     internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
         get() = NewGroupConversationSystemMessagesCreatorImpl(
             persistMessage,
-            isSelfATeamMember,
+            selfTeamIdProvider,
             qualifiedIdMapper,
             selfUserId
         )
