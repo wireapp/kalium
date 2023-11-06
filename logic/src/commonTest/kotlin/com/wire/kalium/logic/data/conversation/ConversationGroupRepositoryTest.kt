@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser

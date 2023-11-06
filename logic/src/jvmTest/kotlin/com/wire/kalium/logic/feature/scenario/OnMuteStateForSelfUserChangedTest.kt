@@ -20,8 +20,8 @@ package com.wire.kalium.logic.feature.scenario
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChanged
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock

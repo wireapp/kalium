@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
-import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock

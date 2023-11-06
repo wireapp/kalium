@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.CallStatus
 
 data class CallMetadataProfile(
     val data: Map<ConversationId, CallMetadata>
