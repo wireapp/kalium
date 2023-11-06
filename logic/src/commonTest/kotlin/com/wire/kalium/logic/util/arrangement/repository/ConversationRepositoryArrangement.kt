@@ -32,6 +32,7 @@ import io.mockative.any
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal interface ConversationRepositoryArrangement {
@@ -62,6 +63,7 @@ internal interface ConversationRepositoryArrangement {
     fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 
     fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>)
+    fun withObserveConversationDetailsByIdReturningFlow(result: Flow<Either<StorageFailure, ConversationDetails>>)
 
     fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
@@ -222,6 +224,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
             .thenReturn(flowOf(result))
+    }
+
+    override fun withObserveConversationDetailsByIdReturningFlow(result: Flow<Either<StorageFailure, ConversationDetails>>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(result)
     }
 
     override fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>) {

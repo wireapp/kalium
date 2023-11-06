@@ -1,10 +1,8 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
@@ -19,6 +17,10 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.feature.call.Call
 import com.wire.kalium.logic.feature.call.CallStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -27,97 +29,123 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.cache
+import kotlinx.coroutines.flow.cancel
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class EndCallOnConversationChangeUseCaseTest {
 
-    @Mock
-    private val callRepository = mock(classOf<CallRepository>())
-
-    @Mock
-    private val conversationRepository = mock(classOf<ConversationRepository>())
-
-    @Mock
-    private val endCall = mock(classOf<EndCallUseCase>())
-
-    private lateinit var endCallOnConversationChange: EndCallOnConversationChangeUseCase
-
-    @BeforeTest
-    fun setup() {
-        endCallOnConversationChange = EndCallOnConversationChangeUseCaseImpl(
-            callRepository = callRepository,
-            conversationRepository = conversationRepository,
-            endCallUseCase = endCall
-        )
-
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf(call)))
-
-        given(endCall)
-            .suspendFunction(endCall::invoke)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
-    }
-
     @Test
     fun givenAnEstablishedCall_whenConversationIsDeleted_thenEndTheCurrentCall() = runTest {
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(conversationId))
-            .then {
-                flowOf(Either.Left(StorageFailure.DataNotFound))
-            }
+        val (arrangement, endCallOnConversationChange) = arrange {
+            withObserveConversationDetailsByIdReturning(Either.Left(StorageFailure.DataNotFound))
+        }
 
         endCallOnConversationChange()
 
-        verify(endCall)
-            .suspendFunction(endCall::invoke)
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
             .with(eq(conversationId))
             .wasInvoked(once)
     }
 
     @Test
     fun givenAnEstablishedCall_whenUserIsRemovedFromConversation_thenEndTheCurrentCall() = runTest {
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(conversationId))
-            .then {
-                flowOf(Either.Right(groupConversationDetail))
-            }
+        val (arrangement, endCallOnConversationChange) = arrange {
+            withObserveConversationDetailsByIdReturning(Either.Right(groupConversationDetail))
+        }
 
         endCallOnConversationChange()
 
-        verify(endCall)
-            .suspendFunction(endCall::invoke)
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
             .with(eq(conversationId))
             .wasInvoked(once)
     }
 
     @Test
     fun givenAnEstablishedCall_whenUserDeletesHisAccount_thenEndTheCurrentCall() = runTest {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(eq(conversationId))
-            .then {
-                flowOf(Either.Right(oneOnOneConversationDetail))
-            }
+        val (arrangement, endCallOnConversationChange) = arrange {
+            withObserveConversationDetailsByIdReturning(Either.Right(oneOnOneConversationDetail))
+        }
 
         endCallOnConversationChange()
 
-        verify(endCall)
-            .suspendFunction(endCall::invoke)
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
             .with(eq(conversationId))
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenAnEstablishedCall_whenConversationProteusDegraded_thenEndTheCurrentCall() = runTest {
+        val flow = MutableSharedFlow<Either<StorageFailure, ConversationDetails>>()
+        val (arrangement, endCallOnConversationChange) = arrange {
+            withObserveConversationDetailsByIdReturningFlow(flow)
+        }
+
+        endCallOnConversationChange()
+        flow.emit(Either.Right(oneOnOneConversationDetail.copy(conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.VERIFIED))))
+
+        advanceUntilIdle()
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
+            .with(eq(conversationId))
+            .wasNotInvoked()
+        flow.emit(Either.Right(oneOnOneConversationDetail.copy(conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.DEGRADED))))
+
+        advanceUntilIdle()
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
+            .with(eq(conversationId))
+            .wasInvoked(once)
+        cancel()
+    }
+
+    private class Arrangement(private val block: Arrangement.() -> Unit) :
+        CallRepositoryArrangement by CallRepositoryArrangementImpl(),
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+
+        @Mock
+        val endCall = mock(classOf<EndCallUseCase>())
+
+        @Mock
+        val endCallDialogManager = mock(classOf<EndCallDialogManager>())
+
+        init {
+            given(endCall)
+                .suspendFunction(endCall::invoke)
+                .whenInvokedWith(eq(conversationId))
+                .thenDoNothing()
+            given(endCallDialogManager)
+                .suspendFunction(endCallDialogManager::scheduleEndCallDialogEvent)
+                .whenInvokedWith(eq(conversationId))
+                .thenDoNothing()
+
+            withEstablishedCallsFlow(listOf(call))
+        }
+
+        fun arrange() = run {
+            block()
+            this@Arrangement to EndCallOnConversationChangeUseCaseImpl(
+                callRepository = callRepository,
+                conversationRepository = conversationRepository,
+                endCallUseCase = endCall,
+                dialogManager = endCallDialogManager
+            )
+        }
+    }
+
     companion object {
+        private fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+
         val conversationId = ConversationId("conversationId", "domainId")
         private val call = Call(
             conversationId = conversationId,

@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.EndCallDialogManagerImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
@@ -48,6 +49,8 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDialogUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDialogUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
@@ -109,13 +112,14 @@ class CallsScope internal constructor(
             callRepository = callRepository,
         )
 
-    val startCall: StartCallUseCase get() = StartCallUseCase(
-        callManager = callManager,
-        syncManager = syncManager,
-        callRepository = callRepository,
-        answerCall = answerCall,
-        kaliumConfigs = kaliumConfigs
-    )
+    val startCall: StartCallUseCase
+        get() = StartCallUseCase(
+            callManager = callManager,
+            syncManager = syncManager,
+            callRepository = callRepository,
+            answerCall = answerCall,
+            kaliumConfigs = kaliumConfigs
+        )
 
     val answerCall: AnswerCallUseCase
         get() = AnswerCallUseCaseImpl(
@@ -132,7 +136,8 @@ class CallsScope internal constructor(
         get() = EndCallOnConversationChangeUseCaseImpl(
             callRepository = callRepository,
             conversationRepository = conversationRepository,
-            endCallUseCase = endCall
+            endCallUseCase = endCall,
+            dialogManager = EndCallDialogManagerImpl
         )
 
     val updateConversationClientsForCurrentCallUseCase: UpdateConversationClientsForCurrentCallUseCase
@@ -172,4 +177,6 @@ class CallsScope internal constructor(
     val requestVideoStreams: RequestVideoStreamsUseCase get() = RequestVideoStreamsUseCase(callManager, KaliumDispatcherImpl)
 
     val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
+
+    val observeEndCallDialog: ObserveEndCallDialogUseCase get() = ObserveEndCallDialogUseCaseImpl(EndCallDialogManagerImpl)
 }
