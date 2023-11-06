@@ -185,6 +185,7 @@ class UserDAOImpl internal constructor(
                     phone = user.phone,
                     accent_id = user.accentId,
                     team = user.team,
+                    connection_status = user.connectionStatus,
                     preview_asset_id = user.previewAssetId,
                     complete_asset_id = user.completeAssetId,
                     bot_service = user.botService,
