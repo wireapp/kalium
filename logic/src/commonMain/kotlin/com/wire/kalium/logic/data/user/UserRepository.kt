@@ -276,7 +276,6 @@ internal class UserDataSource internal constructor(
             userDAO.upsertConnectionStatuses(it.associate { it.id to it.connectionStatus })
         }
 
-
         userDAO.upsertUsers(
             otherUsers.map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
