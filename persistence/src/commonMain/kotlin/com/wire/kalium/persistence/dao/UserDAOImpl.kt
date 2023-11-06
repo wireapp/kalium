@@ -192,6 +192,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
+<<<<<<< HEAD
     override suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity) = withContext(queriesContext) {
         userQueries.updateUser(
             name = update.name,
@@ -203,6 +204,46 @@ class UserDAOImpl internal constructor(
             supported_protocols = update.supportedProtocols,
             id
         ).executeAsOne() > 0
+=======
+    override suspend fun upsertTeamMembers(users: List<UserEntity>) = withContext(queriesContext) {
+        userQueries.transaction {
+            for (user: UserEntity in users) {
+                userQueries.updateTeamMemberUser(
+                    qualified_id = user.id,
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    phone = user.phone,
+                    accent_id = user.accentId,
+                    team = user.team,
+                    connection_status = user.connectionStatus,
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    bot_service = user.botService,
+                )
+                val recordDidNotExist = userQueries.selectChanges().executeAsOne() == 0L
+                if (recordDidNotExist) {
+                    userQueries.insertUser(
+                        qualified_id = user.id,
+                        name = user.name,
+                        handle = user.handle,
+                        email = user.email,
+                        phone = user.phone,
+                        accent_id = user.accentId,
+                        team = user.team,
+                        preview_asset_id = user.previewAssetId,
+                        complete_asset_id = user.completeAssetId,
+                        user_type = user.userType,
+                        bot_service = user.botService,
+                        incomplete_metadata = user.hasIncompleteMetadata,
+                        expires_at = user.expiresAt,
+                        connection_status = user.connectionStatus,
+                        deleted = user.deleted
+                    )
+                }
+            }
+        }
+>>>>>>> d77445c92c (fix: persisting team members connection state (RC) [WPB-5338] (#2191))
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {

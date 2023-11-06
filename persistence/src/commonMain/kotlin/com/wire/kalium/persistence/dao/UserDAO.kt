@@ -244,11 +244,45 @@ interface UserDAO {
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case when trying to insert a member, we could already have the record, so we need to pass only the data needed.
      */
+<<<<<<< HEAD
     suspend fun upsertTeamMemberUserTypes(users: Map<QualifiedIDEntity, UserTypeEntity>)
     suspend fun getAllUsersDetails(): Flow<List<UserDetailsEntity>>
     suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>>
     suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserDetailsEntity?>
     suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?>
+=======
+    suspend fun upsertTeamMembersTypes(users: List<UserEntity>)
+
+    /**
+     * This will update all columns, except:
+     * - [UserEntity.availabilityStatus]
+     * - [UserEntity.userType]
+     * - [UserEntity.deleted]
+     * - [UserEntity.hasIncompleteMetadata]
+     * - [UserEntity.expiresAt]
+     * - [UserEntity.defederated]
+     * or insert a new record with default values
+     * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
+     * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
+     */
+    suspend fun upsertTeamMembers(users: List<UserEntity>)
+
+    /**
+     * This will update a user record corresponding to the User,
+     * The Fields to update are:
+     * [UserEntity.name]
+     * [UserEntity.handle]
+     * [UserEntity.email]
+     * [UserEntity.accentId]
+     * [UserEntity.previewAssetId]
+     * [UserEntity.completeAssetId]
+     */
+    suspend fun updateUser(user: UserEntity)
+    suspend fun getAllUsers(): Flow<List<UserEntity>>
+    suspend fun observeAllUsersByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserEntity>>
+    suspend fun getUserByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<UserEntity?>
+    suspend fun getUserWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserEntity, TeamEntity?>?>
+>>>>>>> d77445c92c (fix: persisting team members connection state (RC) [WPB-5338] (#2191))
     suspend fun getUserMinimizedByQualifiedID(qualifiedID: QualifiedIDEntity): UserEntityMinimized?
     suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity>
     suspend fun getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
