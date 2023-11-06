@@ -53,6 +53,7 @@ bot_service = excluded.bot_service,
 deleted = excluded.deleted,
 incomplete_metadata = excluded.incomplete_metadata,
 expires_at = excluded.expires_at,
+defederated = 0,
 supported_protocols = excluded.supported_protocols;
 
 insertOrIgnoreUser:
