@@ -34,6 +34,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -804,25 +805,23 @@ class UserDAOTest : BaseDatabaseTest() {
         )
         db.userDAO.upsertTeamMembers(listOf(updatedTeamMemberUser))
         val result = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertTrue {
-            result != null &&
-            result.name == updatedTeamMemberUser.name &&
-            result.handle == updatedTeamMemberUser.handle &&
-            result.email == updatedTeamMemberUser.email &&
-            result.phone == updatedTeamMemberUser.phone &&
-            result.accentId == updatedTeamMemberUser.accentId &&
-            result.team == updatedTeamMemberUser.team &&
-            result.connectionStatus == updatedTeamMemberUser.connectionStatus &&
-            result.previewAssetId == updatedTeamMemberUser.previewAssetId &&
-            result.completeAssetId == updatedTeamMemberUser.completeAssetId &&
-            result.availabilityStatus != updatedTeamMemberUser.availabilityStatus && // should not be updated
-            result.userType != updatedTeamMemberUser.userType && // should not be updated
-            result.botService == updatedTeamMemberUser.botService &&
-            result.deleted != updatedTeamMemberUser.deleted && // should not be updated
-            result.hasIncompleteMetadata != updatedTeamMemberUser.hasIncompleteMetadata && // should not be updated
-            result.expiresAt != updatedTeamMemberUser.expiresAt && // should not be updated
-            result.defederated != updatedTeamMemberUser.defederated // should not be updated
-        }
+        assertNotNull(result)
+        assertEquals(updatedTeamMemberUser.name, result.name)
+        assertEquals(updatedTeamMemberUser.handle, result.handle)
+        assertEquals(updatedTeamMemberUser.email, result.email)
+        assertEquals(updatedTeamMemberUser.phone, result.phone)
+        assertEquals(updatedTeamMemberUser.accentId, result.accentId)
+        assertEquals(updatedTeamMemberUser.team, result.team)
+        assertEquals(updatedTeamMemberUser.connectionStatus, result.connectionStatus)
+        assertEquals(updatedTeamMemberUser.previewAssetId, result.previewAssetId)
+        assertEquals(updatedTeamMemberUser.completeAssetId, result.completeAssetId)
+        assertEquals(updatedTeamMemberUser.botService, result.botService)
+        assertNotEquals(updatedTeamMemberUser.availabilityStatus, result.availabilityStatus)
+        assertNotEquals(updatedTeamMemberUser.userType, result.userType)
+        assertNotEquals(updatedTeamMemberUser.deleted, result.deleted)
+        assertNotEquals(updatedTeamMemberUser.hasIncompleteMetadata, result.hasIncompleteMetadata)
+        assertNotEquals(updatedTeamMemberUser.expiresAt, result.expiresAt)
+        assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
     }
 
     private companion object {
