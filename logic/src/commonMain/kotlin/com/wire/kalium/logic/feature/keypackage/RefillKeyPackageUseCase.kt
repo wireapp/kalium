@@ -51,6 +51,8 @@ class RefillKeyPackagesUseCaseImpl(
 ) : RefillKeyPackagesUseCase {
     override suspend operator fun invoke(): RefillKeyPackagesResult =
         currentClientIdProvider().flatMap { selfClientId ->
+            // TODO: Maybe use MLSKeyPackageCountUseCase instead of repository directly,
+            //       and fetch from local instead of remote
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
                 .flatMap {
                     if (keyPackageLimitsProvider.needsRefill(it.count)) {
