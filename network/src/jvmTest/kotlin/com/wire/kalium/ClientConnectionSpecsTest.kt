@@ -18,12 +18,11 @@
 package com.wire.kalium
 
 import com.wire.kalium.network.OkHttpSingleton
+import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
-import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.TlsVersion
 import kotlin.test.Test
-import kotlin.test.assertContains
 
 class ClientConnectionSpecsTest {
 
@@ -32,13 +31,8 @@ class ClientConnectionSpecsTest {
         val connectionSpecs = OkHttpSingleton.createNew {}.connectionSpecs
         with(connectionSpecs[0]) {
             tlsVersions?.let {
-                assertContains(it, TlsVersion.TLS_1_2)
-                assertContains(it, TlsVersion.TLS_1_3)
-            }
-
-            cipherSuites?.let {
-                assertContains(it, CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256)
-                assertContains(it, CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384)
+                assertTrue(it.contains(TlsVersion.TLS_1_2) && it.contains(TlsVersion.TLS_1_3))
+                assertFalse(it.contains(TlsVersion.TLS_1_1) && it.contains(TlsVersion.TLS_1_0) && it.contains(TlsVersion.SSL_3_0))
             }
         }
 

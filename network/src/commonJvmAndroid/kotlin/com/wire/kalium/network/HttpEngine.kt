@@ -25,7 +25,6 @@ import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner
-import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.TlsVersion
@@ -122,12 +121,9 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
 }
 
 internal fun supportedConnectionSpecs(): List<ConnectionSpec> {
-    val spec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+    val wireSpec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
         .tlsVersions(TlsVersion.TLS_1_2)
-        .cipherSuites(
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-        ).build()
+        .build()
 
-    return listOf(spec, ConnectionSpec.CLEARTEXT)
+    return listOf(wireSpec, ConnectionSpec.CLEARTEXT)
 }
