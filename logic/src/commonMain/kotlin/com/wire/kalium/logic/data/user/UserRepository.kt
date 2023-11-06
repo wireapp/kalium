@@ -264,22 +264,24 @@ internal class UserDataSource internal constructor(
         val otherUsers = listUserProfileDTO
             .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
 
-        userDAO.upsertUsers(
-            teamMembers.map { userProfileDTO ->
-                userMapper.fromUserProfileDtoToUserEntity(
-                    userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.ACCEPTED,
-                    userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
-                        .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
-                )
-            }
-        )
+        teamMembers.map { userProfileDTO ->
+            userMapper.fromUserProfileDtoToUserEntity(
+                userProfile = userProfileDTO,
+                connectionState = ConnectionEntity.State.ACCEPTED, // this won't be updated, just to avoid a null value
+                userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
+                    .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
+            )
+        }.let {
+            userDAO.upsertUsers(it)
+            userDAO.upsertConnectionStatuses(it.associate { it.id to it.connectionStatus })
+        }
+
 
         userDAO.upsertUsers(
             otherUsers.map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.NOT_CONNECTED,
+                    connectionState = ConnectionEntity.State.NOT_CONNECTED, // this won't be updated, just to avoid a null value
                     userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUserTeamId,

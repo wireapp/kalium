@@ -161,16 +161,17 @@ internal class SearchUserRepositoryImpl(
                         .partition { it.isTeamMember(selfUser.teamId?.value, selfUser.id.domain) }
 
                     // We need to store all found team members locally and not return them as they will be "known" users from now on.
-                    userDAO.upsertUsers(
-                        teamMembers.map { userProfileDTO ->
-                            userMapper.fromUserProfileDtoToUserEntity(
-                                userProfile = userProfileDTO,
-                                connectionState = ConnectionEntity.State.ACCEPTED,
-                                userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
-                                    .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
-                            )
-                        }
-                    )
+                    teamMembers.map { userProfileDTO ->
+                        userMapper.fromUserProfileDtoToUserEntity(
+                            userProfile = userProfileDTO,
+                            connectionState = ConnectionEntity.State.ACCEPTED,
+                            userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
+                                .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
+                        )
+                    }.let {
+                        userDAO.upsertUsers(it)
+                        userDAO.upsertConnectionStatuses(it.associate { it.id to it.connectionStatus })
+                    }
 
                     otherUsers.map { userProfileDTO ->
                         userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)

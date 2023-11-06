@@ -195,7 +195,7 @@ internal class ConnectionDataSource(
     private suspend fun persistConnection(connection: Connection) =
         wrapStorageRequest {
             val connectionStatus = connectionStatusMapper.toDaoModel(state = connection.status)
-            userDAO.upsertConnectionStatus(connection.qualifiedToId.toDao(), connectionStatus)
+            userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to connectionStatus))
 
             insertConversationFromConnection(connection)
 
