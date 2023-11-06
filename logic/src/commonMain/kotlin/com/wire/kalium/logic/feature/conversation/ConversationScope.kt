@@ -44,7 +44,8 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
-import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
+import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
+import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -171,8 +172,15 @@ class ConversationScope internal constructor(
     val updateConversationArchivedStatus: UpdateConversationArchivedStatusUseCase
         get() = UpdateConversationArchivedStatusUseCaseImpl(conversationRepository)
 
+    @Deprecated(
+        "Name is misleading, and this field will be removed",
+        ReplaceWith("observePendingConnectionRequests")
+    )
     val observeConnectionList: ObserveConnectionListUseCase
-        get() = ObserveConnectionListUseCaseImpl(connectionRepository)
+        get() = observePendingConnectionRequests
+
+    val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
+        get() = ObservePendingConnectionRequestsUseCaseImpl(connectionRepository)
 
     val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
