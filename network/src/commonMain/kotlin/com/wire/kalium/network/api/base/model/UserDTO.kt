@@ -56,6 +56,9 @@ data class UserProfileDTO(
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
 ) : UserDTO()
 
+fun UserProfileDTO.isTeamMember(selfUserTeamId: String?, selfUserDomain: String?) =
+    (selfUserTeamId != null && this.teamId == selfUserTeamId && this.id.domain == selfUserDomain)
+
 @Serializable
 data class SelfUserDTO(
     @SerialName("qualified_id") override val id: UserId,

@@ -57,6 +57,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.base.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -259,9 +260,9 @@ internal class UserDataSource internal constructor(
         val selfUserDomain = selfUserId.domain
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
-            .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
+            .filter { userProfileDTO -> userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
         val otherUsers = listUserProfileDTO
-            .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
+            .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
 
         userDAO.upsertUsers(
             teamMembers.map { userProfileDTO ->
@@ -290,14 +291,6 @@ internal class UserDataSource internal constructor(
             }
         )
     }
-
-    private fun isTeamMember(
-        selfUserTeamId: String?,
-        userProfileDTO: UserProfileDTO,
-        selfUserDomain: String?
-    ) = (selfUserTeamId != null &&
-            userProfileDTO.teamId == selfUserTeamId &&
-            userProfileDTO.id.domain == selfUserDomain)
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map { it.toDao() }

@@ -24,15 +24,17 @@ import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.DatabaseStorageType
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import java.io.File
 
 @Suppress("LongParameterList")
 internal actual class UserSessionScopeProviderImpl(
@@ -44,19 +46,27 @@ internal actual class UserSessionScopeProviderImpl(
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
-    userAgent: String
+    userAgent: String,
+    private val useInMemoryDatabase: Boolean
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
 
     override fun create(userId: UserId): UserSessionScope {
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootStoragePath = "$rootAccountPath/storage"
+        val databaseInfo = if (useInMemoryDatabase) {
+            DatabaseStorageType.InMemory
+        } else {
+            DatabaseStorageType.FiledBacked(
+                File(rootStoragePath)
+            )
+        }
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
         val rootCachePath = CacheFolder("$rootAccountPath/cache")
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         val userSessionWorkScheduler = UserSessionWorkSchedulerImpl(userId)
         return UserSessionScope(
-            PlatformUserStorageProperties(rootPathsProvider.rootPath, rootStoragePath),
+            PlatformUserStorageProperties(rootPathsProvider.rootPath, databaseInfo),
             userId,
             globalScope,
             globalCallManager,
