@@ -41,7 +41,7 @@ interface RemoveMemberFromConversationUseCase {
     }
 }
 
-class RemoveMemberFromConversationUseCaseImpl(
+internal class RemoveMemberFromConversationUseCaseImpl(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : RemoveMemberFromConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId): RemoveMemberFromConversationUseCase.Result {

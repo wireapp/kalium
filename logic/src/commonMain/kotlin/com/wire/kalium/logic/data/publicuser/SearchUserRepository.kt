@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -35,11 +34,13 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -93,7 +94,6 @@ internal class SearchUserRepositoryImpl(
     private val userDetailsApi: UserDetailsApi,
     private val userSearchAPiWrapper: UserSearchApiWrapper,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
@@ -157,7 +157,22 @@ internal class SearchUserRepositoryImpl(
             response.map { userProfileDTOList ->
                 val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
                     val selfUser = getSelfUser()
-                    userProfileDTOList.map { userProfileDTO ->
+                    val (teamMembers, otherUsers) = userProfileDTOList
+                        .partition { it.isTeamMember(selfUser.teamId?.value, selfUser.id.domain) }
+
+                    // We need to store all found team members locally and not return them as they will be "known" users from now on.
+                    userDAO.upsertUsers(
+                        teamMembers.map { userProfileDTO ->
+                            userMapper.fromUserProfileDtoToUserEntity(
+                                userProfile = userProfileDTO,
+                                connectionState = ConnectionEntity.State.ACCEPTED,
+                                userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
+                                    .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
+                            )
+                        }
+                    )
+
+                    otherUsers.map { userProfileDTO ->
                         userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
                     }
                 }

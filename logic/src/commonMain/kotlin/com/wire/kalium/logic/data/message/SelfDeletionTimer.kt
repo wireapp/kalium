@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.selfDeletingMessages
+package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.serialization.toJsonElement
