@@ -34,7 +34,7 @@ interface LeaveConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId): RemoveMemberFromConversationUseCase.Result
 }
 
-class LeaveConversationUseCaseImpl(
+internal class LeaveConversationUseCaseImpl(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val selfUserId: UserId,
 ) : LeaveConversationUseCase {

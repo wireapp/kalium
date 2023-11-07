@@ -32,7 +32,7 @@ interface UnMuteCallUseCase {
     )
 }
 
-class UnMuteCallUseCaseImpl(
+internal class UnMuteCallUseCaseImpl(
     private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository
 ) : UnMuteCallUseCase {

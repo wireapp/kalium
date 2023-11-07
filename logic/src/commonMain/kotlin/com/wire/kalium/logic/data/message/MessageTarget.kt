@@ -15,17 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.message
 
-sealed class BroadcastMessageTarget(open val limit: Int) {
+package com.wire.kalium.logic.data.message
 
-    /** Broadcast the message to all users in contact list (teammates and others)
-     * @param limit message will be broadcasted only to the first [limit] Users (teammates are prioritized)
-     */
-    data class AllUsers(override val limit: Int) : BroadcastMessageTarget(limit)
+import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.user.UserId
 
-    /** Broadcast the message only to the teammates
-     * @param limit message will be broadcasted only to the first [limit] teammates.
-     */
-    data class OnlyTeam(override val limit: Int) : BroadcastMessageTarget(limit)
+sealed interface MessageTarget {
+    data class Users(val userId: List<UserId>) : MessageTarget {
+        constructor(vararg userId: UserId) : this(userId.toList())
+    }
+
+    class Client(val recipients: List<Recipient>) : MessageTarget
+    data class Conversation(val usersToIgnore: Set<UserId> = emptySet()) : MessageTarget
 }
