@@ -202,7 +202,7 @@ internal class UserDataSource internal constructor(
             fetchUserInfo(userId).also {
                 kaliumLogger.d("Federated user, refreshing user info from API after $USER_DETAILS_MAX_AGE")
             }
-            userDetailsRefreshInstantCache[userId] = DateTimeUtil.currentInstant()
+            userDetailsRefreshInstantCache[userId] = now
         }
     }
 
