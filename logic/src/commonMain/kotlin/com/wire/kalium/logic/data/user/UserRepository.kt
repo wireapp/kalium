@@ -39,7 +39,7 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold

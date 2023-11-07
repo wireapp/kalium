@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser

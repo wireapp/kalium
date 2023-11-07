@@ -45,10 +45,8 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -83,7 +81,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

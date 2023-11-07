@@ -31,8 +31,8 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.ProteusClientProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -44,8 +44,8 @@ import com.wire.kalium.logic.feature.message.MessageSenderImpl
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptor
 import com.wire.kalium.logic.feature.message.MessageSendingInterceptorImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
-import com.wire.kalium.logic.feature.message.SessionEstablisher
-import com.wire.kalium.logic.feature.message.SessionEstablisherImpl
+import com.wire.kalium.logic.data.message.SessionEstablisher
+import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl

@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.id
 
-package com.wire.kalium.logic.feature.message
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.functional.Either
 
-import com.wire.kalium.logic.data.conversation.Recipient
-import com.wire.kalium.logic.data.user.UserId
+fun interface CurrentClientIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, ClientId>
+}
 
-sealed interface MessageTarget {
-    data class Users(val userId: List<UserId>) : MessageTarget {
-        constructor(vararg userId: UserId) : this(userId.toList())
-    }
-
-    class Client(val recipients: List<Recipient>) : MessageTarget
-    data class Conversation(val usersToIgnore: Set<UserId> = emptySet()) : MessageTarget
+fun interface SelfTeamIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }

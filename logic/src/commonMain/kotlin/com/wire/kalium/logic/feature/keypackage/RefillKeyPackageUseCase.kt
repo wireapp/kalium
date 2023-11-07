@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.keypackage
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -44,7 +44,7 @@ interface RefillKeyPackagesUseCase {
 
 }
 
-class RefillKeyPackagesUseCaseImpl(
+internal class RefillKeyPackagesUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,

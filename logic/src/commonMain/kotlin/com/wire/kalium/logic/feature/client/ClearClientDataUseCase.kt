@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.feature.ProteusClientProvider
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure

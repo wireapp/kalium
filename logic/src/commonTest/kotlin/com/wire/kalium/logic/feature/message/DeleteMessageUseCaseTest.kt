@@ -33,7 +33,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser

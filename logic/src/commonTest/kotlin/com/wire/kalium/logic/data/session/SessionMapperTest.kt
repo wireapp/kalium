@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.session
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.auth.AccountTokens
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.dao.UserIDEntity

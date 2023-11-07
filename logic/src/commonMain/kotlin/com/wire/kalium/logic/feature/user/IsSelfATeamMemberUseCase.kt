@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.fold
 
 /**
