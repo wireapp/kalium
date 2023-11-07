@@ -29,14 +29,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.cache
-import kotlinx.coroutines.flow.cancel
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -86,27 +78,45 @@ class EndCallOnConversationChangeUseCaseTest {
 
     @Test
     fun givenAnEstablishedCall_whenConversationProteusDegraded_thenEndTheCurrentCall() = runTest {
-        val flow = MutableSharedFlow<Either<StorageFailure, ConversationDetails>>()
+        val verifiedConversation = oneOnOneConversationDetail.copy(
+            conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.VERIFIED),
+            otherUser = otherUser.copy(deleted = false)
+        )
+        val value0 = Either.Right(verifiedConversation)
+        val value1 =
+            Either.Right(
+                verifiedConversation.copy(
+                    conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.DEGRADED)
+                )
+            )
         val (arrangement, endCallOnConversationChange) = arrange {
-            withObserveConversationDetailsByIdReturningFlow(flow)
+            withObserveConversationDetailsByIdReturning(value0, value1)
         }
 
         endCallOnConversationChange()
-        flow.emit(Either.Right(oneOnOneConversationDetail.copy(conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.VERIFIED))))
 
-        advanceUntilIdle()
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(eq(conversationId))
-            .wasNotInvoked()
-        flow.emit(Either.Right(oneOnOneConversationDetail.copy(conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.DEGRADED))))
-
-        advanceUntilIdle()
         verify(arrangement.endCall)
             .suspendFunction(arrangement.endCall::invoke)
             .with(eq(conversationId))
             .wasInvoked(once)
-        cancel()
+    }
+
+    @Test
+    fun givenAnEstablishedCallInVerifiedConversationAndUserIsOkay_thenCurrentCallIsNotEnded() = runTest {
+        val verifiedConversation = oneOnOneConversationDetail.copy(
+            conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.VERIFIED),
+            otherUser = otherUser.copy(deleted = false)
+        )
+        val (arrangement, endCallOnConversationChange) = arrange {
+            withObserveConversationDetailsByIdReturning(Either.Right(verifiedConversation))
+        }
+
+        endCallOnConversationChange()
+
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
+            .with(eq(conversationId))
+            .wasNotInvoked()
     }
 
     private class Arrangement(private val block: Arrangement.() -> Unit) :

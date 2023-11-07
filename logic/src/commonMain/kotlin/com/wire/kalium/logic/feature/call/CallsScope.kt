@@ -69,6 +69,7 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 @Suppress("LongParameterList")
@@ -84,7 +85,8 @@ class CallsScope internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userConfigRepository: UserConfigRepository,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     val allCallsWithSortedParticipants: GetAllCallsWithSortedParticipantsUseCase

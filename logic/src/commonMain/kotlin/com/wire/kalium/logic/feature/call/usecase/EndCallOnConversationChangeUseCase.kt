@@ -7,6 +7,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -50,10 +52,7 @@ class EndCallOnConversationChangeUseCaseImpl(
     private suspend fun finishCallBecauseOfMembershipChangesFlow(conversationId: ConversationId) =
         conversationRepository.observeConversationDetailsById(conversationId).cancellable()
             .map { conversationDetails ->
-                conversationDetails.fold({
-                    // conversation deleted
-                    true
-                }, {
+                conversationDetails.map {
                     // Member blocked or deleted
                     val isOtherUserBlockedOrDeleted = it is ConversationDetails.OneOne
                             && (it.otherUser.deleted || it.otherUser.connectionStatus == ConnectionState.BLOCKED)
@@ -61,7 +60,7 @@ class EndCallOnConversationChangeUseCaseImpl(
                     val isSelfRemovedFromGroup = it is ConversationDetails.Group && !it.isSelfUserMember
 
                     isOtherUserBlockedOrDeleted || isSelfRemovedFromGroup
-                })
+                }.getOrElse(true)
             }
             .filter { it }
             .map { conversationId }
