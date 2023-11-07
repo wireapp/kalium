@@ -334,11 +334,7 @@ class UserRepositoryTest {
     @Test
     fun givenAKnownUser_whenGettingFromDb_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-<<<<<<< HEAD
-            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.STANDARD))
-=======
-            .withUserDaoReturning(TestUser.ENTITY)
->>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY)
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -350,13 +346,6 @@ class UserRepositoryTest {
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
-<<<<<<< HEAD
-=======
-                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
->>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
                 .wasInvoked(exactly = once)
@@ -366,11 +355,7 @@ class UserRepositoryTest {
     @Test
     fun givenAKnownUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-<<<<<<< HEAD
-            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.FEDERATED))
-=======
-            .withUserDaoReturning(TestUser.ENTITY)
->>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY)
             .withSuccessfulGetUsersInfo()
             .arrange()
 

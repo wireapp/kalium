@@ -163,11 +163,7 @@ internal class UserDataSource internal constructor(
      * @see Event.User.Update
      * @see USER_DETAILS_MAX_AGE
      */
-<<<<<<< HEAD
-    private val federatedUsersExpirationCache = ConcurrentMutableMap<UserId, Instant>()
-=======
-    private val userDetailsRefreshInstantCache = ConcurrentMap<UserId, Instant>()
->>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
+    private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { userDTO ->
