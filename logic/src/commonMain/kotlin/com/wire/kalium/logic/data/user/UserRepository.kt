@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -38,7 +39,6 @@ import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -265,11 +265,7 @@ internal class UserDataSource internal constructor(
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
             .filter { userProfileDTO -> userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
-        val otherUsers = listUserProfileDTO
-            .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
-
-        userDAO.upsertUsers(
-            teamMembers.map { userProfileDTO ->
+            .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.ACCEPTED,
@@ -277,10 +273,10 @@ internal class UserDataSource internal constructor(
                         .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
                 )
             }
-        )
 
-        userDAO.upsertUsers(
-            otherUsers.map { userProfileDTO ->
+        val otherUsers = listUserProfileDTO
+            .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
+            .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.NOT_CONNECTED,
@@ -293,7 +289,13 @@ internal class UserDataSource internal constructor(
                     )
                 )
             }
-        )
+        if (teamMembers.isNotEmpty()) {
+            userDAO.upsertUsers(teamMembers)
+        }
+
+        if (otherUsers.isNotEmpty()) {
+            userDAO.upsertUsers(otherUsers)
+        }
     }
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
