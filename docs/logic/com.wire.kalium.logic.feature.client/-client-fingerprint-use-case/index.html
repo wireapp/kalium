@@ -53,49 +53,11 @@
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature.client</a><span class="delimiter">/</span><span class="current">ClientFingerprintUseCase</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Client</span><wbr><span>Fingerprint</span><wbr><span>Use</span><wbr><span><span>Case</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="index.html">ClientFingerprintUseCase</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">proteusClientProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature/-proteus-client-provider/index.html">ProteusClientProvider</a><span class="token punctuation">, </span></span><span class="parameter ">prekeyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.prekey/-pre-key-repository/index.html">PreKeyRepository</a></span></span><span class="token punctuation">)</span></div><p class="paragraph">Retrieves the Proteus-specific fingerprint of a client. If no session exists for the client, a new session is established.</p><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph"><a href="-result/-success/index.html">ClientFingerprintUseCase.Result.Success</a> if the fingerprint was retrieved successfully. <a href="-result/-failure/index.html">ClientFingerprintUseCase.Result.Failure</a> if the fingerprint could not be retrieved.</p></span><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>user</span><wbr><span><span>Id</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The user id of the client.</p></div></div></div></div><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>client</span><wbr><span><span>Id</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The client id of the client.</p></div></div></div></div></div></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="index.html">ClientFingerprintUseCase</a></div><p class="paragraph">Retrieves the Proteus-specific fingerprint of a client. If no session exists for the client, a new session is established.</p><span class="kdoc-tag"><h4 class="">Return</h4><p class="paragraph"><a href="../-result/-success/index.html">Result.Success</a> if the fingerprint was retrieved successfully. <a href="../-result/-failure/index.html">Result.Failure</a> if the fingerprint could not be retrieved.</p></span><h4 class="">Parameters</h4><div class="table"><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>user</span><wbr><span><span>Id</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The user id of the client.</p></div></div></div></div><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><u><span>client</span><wbr><span><span>Id</span></span></u></div></span></div><div><div class="title"><p class="paragraph">The client id of the client.</p></div></div></div></div></div><h4 class="">Inheritors</h4><div class="table"><div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="../-client-fingerprint-use-case-impl/index.html">ClientFingerprintUseCaseImpl</a></div></span></div><div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
-      <div data-togglable="CONSTRUCTOR">
-        <h2 class="">Constructors</h2>
-        <div class="table"><a data-name="-880350818%2FConstructors%2F867774983" anchor-label="ClientFingerprintUseCase" id="-880350818%2FConstructors%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-togglable="CONSTRUCTOR" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="-client-fingerprint-use-case.html"><span>Client</span><wbr><span>Fingerprint</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-880350818%2FConstructors%2F867774983"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">proteusClientProvider<span class="token operator">: </span><a href="../../com.wire.kalium.logic.feature/-proteus-client-provider/index.html">ProteusClientProvider</a><span class="token punctuation">, </span></span><span class="parameter ">prekeyRepository<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.prekey/-pre-key-repository/index.html">PreKeyRepository</a></span></span><span class="token punctuation">)</span></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div data-togglable="TYPE">
-        <h2 class="">Types</h2>
-        <div class="table"><a data-name="1217930265%2FClasslikes%2F867774983" anchor-label="Result" id="1217930265%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
-          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="-result/index.html"><span><span>Result</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1217930265%2FClasslikes%2F867774983"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-result/index.html">Result</a></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
       <div data-togglable="FUNCTION">
         <h2 class="">Functions</h2>
         <div class="table"><a data-name="-317646100%2FFunctions%2F867774983" anchor-label="invoke" id="-317646100%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
@@ -108,7 +70,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">suspend operator </span><span class="token keyword">fun </span><a href="invoke.html"><span class="token function">invoke</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.conversation/index.html#2077685964%2FClasslikes%2F867774983">ClientId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-result/index.html">ClientFingerprintUseCase.Result</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">abstract </span><span class="token keyword">suspend operator </span><span class="token keyword">fun </span><a href="invoke.html"><span class="token function">invoke</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">userId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.user/index.html#1454924116%2FClasslikes%2F867774983">UserId</a><span class="token punctuation">, </span></span><span class="parameter ">clientId<span class="token operator">: </span><a href="../../com.wire.kalium.logic.data.conversation/index.html#2077685964%2FClasslikes%2F867774983">ClientId</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../-result/index.html">Result</a></div></div></div>
                 </div>
               </div>
             </div>
