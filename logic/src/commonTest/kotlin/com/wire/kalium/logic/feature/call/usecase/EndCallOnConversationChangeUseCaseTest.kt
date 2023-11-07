@@ -127,7 +127,7 @@ class EndCallOnConversationChangeUseCaseTest {
         val endCall = mock(classOf<EndCallUseCase>())
 
         @Mock
-        val endCallDialogManager = mock(classOf<EndCallDialogManager>())
+        val endCallDialogManager = mock(classOf<EndOngoingCallManager>())
 
         init {
             given(endCall)
@@ -135,7 +135,7 @@ class EndCallOnConversationChangeUseCaseTest {
                 .whenInvokedWith(eq(conversationId))
                 .thenDoNothing()
             given(endCallDialogManager)
-                .suspendFunction(endCallDialogManager::scheduleEndCallDialogEvent)
+                .suspendFunction(endCallDialogManager::onCallEndedBecauseOfVerificationDegraded)
                 .whenInvokedWith(eq(conversationId))
                 .thenDoNothing()
 

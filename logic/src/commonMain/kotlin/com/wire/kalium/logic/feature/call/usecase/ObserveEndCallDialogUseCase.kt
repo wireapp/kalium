@@ -25,8 +25,8 @@ interface ObserveEndCallDialogUseCase {
 }
 
 internal class ObserveEndCallDialogUseCaseImpl(
-    private val dialogManager: EndCallDialogManager
+    private val dialogManager: EndOngoingCallManager
 ) : ObserveEndCallDialogUseCase {
     override suspend fun invoke(): Flow<Unit> =
-        dialogManager.observeEndCallDialogEvent().map { Unit }
+        dialogManager.observeCallEndedBecauseOfVerificationDegraded().map { Unit }
 }

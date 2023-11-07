@@ -6,7 +6,6 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
@@ -30,7 +29,7 @@ class EndCallOnConversationChangeUseCaseImpl(
     private val callRepository: CallRepository,
     private val conversationRepository: ConversationRepository,
     private val endCallUseCase: EndCallUseCase,
-    private val dialogManager: EndCallDialogManager
+    private val dialogManager: EndOngoingCallManager
 ) : EndCallOnConversationChangeUseCase {
     override suspend operator fun invoke() {
         val callsFlow = callRepository.establishedCallsFlow().map { calls ->
@@ -89,7 +88,7 @@ class EndCallOnConversationChangeUseCaseImpl(
             }
             .filter { it.shouldFinishCall() }
             .map {
-                dialogManager.scheduleEndCallDialogEvent(conversationId)
+                dialogManager.onCallEndedBecauseOfVerificationDegraded(conversationId)
                 conversationId
             }
 

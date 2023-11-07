@@ -21,21 +21,21 @@ import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
-interface EndCallDialogManager {
-    suspend fun observeEndCallDialogEvent(): Flow<ConversationId>
-    suspend fun scheduleEndCallDialogEvent(conversationId: ConversationId)
+interface EndOngoingCallManager {
+    suspend fun observeCallEndedBecauseOfVerificationDegraded(): Flow<ConversationId>
+    suspend fun onCallEndedBecauseOfVerificationDegraded(conversationId: ConversationId)
 }
 
 /**
  * This singleton allow us to queue event to show dialog informing user that call was ended because of verification degradation.
  */
-object EndCallDialogManagerImpl : EndCallDialogManager {
+object EndOngoingCallManagerImpl : EndOngoingCallManager {
 
     private val conversationCallEnded = MutableSharedFlow<ConversationId>()
 
-    override suspend fun observeEndCallDialogEvent(): Flow<ConversationId> = conversationCallEnded
+    override suspend fun observeCallEndedBecauseOfVerificationDegraded(): Flow<ConversationId> = conversationCallEnded
 
-    override suspend fun scheduleEndCallDialogEvent(conversationId: ConversationId) {
+    override suspend fun onCallEndedBecauseOfVerificationDegraded(conversationId: ConversationId) {
         conversationCallEnded.emit(conversationId)
     }
 }
