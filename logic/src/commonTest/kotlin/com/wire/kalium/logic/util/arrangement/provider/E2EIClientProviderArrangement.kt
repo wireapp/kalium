@@ -18,12 +18,11 @@
 package com.wire.kalium.logic.util.arrangement.provider
 
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.E2EIQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.anything

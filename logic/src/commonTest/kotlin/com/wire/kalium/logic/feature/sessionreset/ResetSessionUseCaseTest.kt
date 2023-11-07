@@ -23,7 +23,7 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.feature.ProteusClientProvider
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.feature.message.SessionResetSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either

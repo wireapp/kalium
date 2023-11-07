@@ -46,7 +46,7 @@ interface CheckSystemIntegrityUseCase {
     suspend fun invoke(): Result
 }
 
-class CheckSystemIntegrityUseCaseImpl(
+internal class CheckSystemIntegrityUseCaseImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val rootDetector: RootDetector,
     private val sessionRepository: SessionRepository,

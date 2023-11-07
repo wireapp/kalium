@@ -36,7 +36,7 @@ interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
     suspend operator fun invoke(synchroniseUsers: Boolean): Either<CoreFailure, Unit>
 }
 
-class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
+internal class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
     private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase,
     private val oneOnOneResolver: OneOnOneResolver
 ) : UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {

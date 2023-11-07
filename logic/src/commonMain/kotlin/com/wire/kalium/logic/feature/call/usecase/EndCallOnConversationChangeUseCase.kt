@@ -17,7 +17,7 @@ interface EndCallOnConversationChangeUseCase {
     suspend operator fun invoke()
 }
 
-class EndCallOnConversationChangeUseCaseImpl(
+internal class EndCallOnConversationChangeUseCaseImpl(
     private val callRepository: CallRepository,
     private val conversationRepository: ConversationRepository,
     private val endCallUseCase: EndCallUseCase

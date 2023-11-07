@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.selfDeletingMessages
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.serialization.toJsonElement
@@ -33,7 +34,7 @@ interface PersistNewSelfDeletionTimerUseCase {
     suspend operator fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer)
 }
 
-class PersistNewSelfDeletionTimerUseCaseImpl(
+class PersistNewSelfDeletionTimerUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
 ) : PersistNewSelfDeletionTimerUseCase {
     override suspend fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
