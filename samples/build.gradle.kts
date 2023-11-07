@@ -63,11 +63,5 @@ kotlin {
                 implementation(project(":calling"))
             }
         }
-
-        val appleTest by getting {
-            dependencies {
-                implementation(libs.konsist)
-            }
-        }
     }
 }

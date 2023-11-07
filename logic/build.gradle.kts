@@ -78,7 +78,6 @@ kotlin {
                 implementation(libs.mockative.runtime)
                 implementation(libs.okio.test)
                 implementation(libs.settings.kmpTest)
-                implementation(libs.konsist)
             }
         }
 
@@ -92,12 +91,6 @@ kotlin {
             }
         }
 
-        val appleTest by getting {
-            dependencies {
-                implementation(libs.konsist)
-            }
-        }
-
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
@@ -106,7 +99,11 @@ kotlin {
                 implementation(libs.bouncy.castle)
             }
         }
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.konsist)
+            }
+        }
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
