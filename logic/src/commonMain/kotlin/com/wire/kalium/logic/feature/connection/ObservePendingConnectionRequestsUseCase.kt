@@ -25,36 +25,41 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
+@Deprecated(
+    "Name is misleading and will be removed in the future",
+    ReplaceWith("ObservePendingConnectionRequestsUseCase")
+)
+typealias ObserveConnectionListUseCase = ObservePendingConnectionRequestsUseCase
+
 /**
- * Use Case that listen to any user connection changes
+ * Use Case that lists the current pending connection requests.
+ *
+ * Only connections that are [ConnectionState.PENDING] or [ConnectionState.SENT] are returned.
+ *
+ * @see ConnectionState
  */
-fun interface ObserveConnectionListUseCase {
+fun interface ObservePendingConnectionRequestsUseCase {
     /**
-     * Use case [ObserveConnectionListUseCase] operation
+     * Use case [ObservePendingConnectionRequestsUseCase] operation
      *
-     * @return a [Flow<List<Connection>>] containing all current connections
+     * @return a [Flow] with a list of [ConversationDetails] containing all current connections
      */
-    suspend operator fun invoke(): Flow<List<ConversationDetails>>
+    suspend operator fun invoke(): Flow<List<ConversationDetails.Connection>>
 }
 
-internal class ObserveConnectionListUseCaseImpl internal constructor(
+internal class ObservePendingConnectionRequestsUseCaseImpl internal constructor(
     private val connectionRepository: ConnectionRepository,
-) : ObserveConnectionListUseCase {
+) : ObservePendingConnectionRequestsUseCase {
 
-    override suspend operator fun invoke(): Flow<List<ConversationDetails>> {
+    override suspend operator fun invoke(): Flow<List<ConversationDetails.Connection>> {
         return connectionRepository.observeConnectionRequestList()
             .map { conversationDetails ->
                 /** Ignored connections are filtered because they should not be visible
                  *  in conversation list
                  */
-                conversationDetails
-                    .filter {
-                        when (it) {
-                            is ConversationDetails.Connection -> it.connection.status != ConnectionState.IGNORED
-                            else -> false
-                        }
-                    }
-            }
-            .distinctUntilChanged()
+                conversationDetails.filter {
+                    it.connection.status != ConnectionState.IGNORED
+                }
+            }.distinctUntilChanged()
     }
 }
