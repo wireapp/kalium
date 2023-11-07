@@ -29,7 +29,7 @@ class EndCallOnConversationChangeUseCaseImpl(
     private val callRepository: CallRepository,
     private val conversationRepository: ConversationRepository,
     private val endCallUseCase: EndCallUseCase,
-    private val dialogManager: EndOngoingCallManager
+    private val endCallListener: EndCallResultListener
 ) : EndCallOnConversationChangeUseCase {
     override suspend operator fun invoke() {
         val callsFlow = callRepository.establishedCallsFlow().map { calls ->
@@ -88,7 +88,7 @@ class EndCallOnConversationChangeUseCaseImpl(
             }
             .filter { it.shouldFinishCall() }
             .map {
-                dialogManager.onCallEndedBecauseOfVerificationDegraded(conversationId)
+                endCallListener.onCallEndedBecauseOfVerificationDegraded(conversationId)
                 conversationId
             }
 

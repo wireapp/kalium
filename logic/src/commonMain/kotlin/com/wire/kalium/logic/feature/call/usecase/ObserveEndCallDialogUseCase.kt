@@ -20,13 +20,19 @@ package com.wire.kalium.logic.feature.call.usecase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * The useCase for observing when the ongoing call was ended because of degradation of conversation verification status (Proteus or MLS)
+ */
 interface ObserveEndCallDialogUseCase {
+    /**
+     * @return [Flow] that emits only when the call was ended because of degradation of conversation verification status (Proteus or MLS)
+     */
     suspend operator fun invoke(): Flow<Unit>
 }
 
 internal class ObserveEndCallDialogUseCaseImpl(
-    private val dialogManager: EndOngoingCallManager
+    private val endCallListener: EndCallResultListener
 ) : ObserveEndCallDialogUseCase {
     override suspend fun invoke(): Flow<Unit> =
-        dialogManager.observeCallEndedBecauseOfVerificationDegraded().map { Unit }
+        endCallListener.observeCallEndedBecauseOfVerificationDegraded().map { Unit }
 }

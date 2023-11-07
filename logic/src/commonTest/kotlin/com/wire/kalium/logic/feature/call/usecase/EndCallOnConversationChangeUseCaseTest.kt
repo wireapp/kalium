@@ -102,6 +102,31 @@ class EndCallOnConversationChangeUseCaseTest {
     }
 
     @Test
+    fun givenAnEstablishedCall_whenConversationMLSDegraded_thenEndTheCurrentCall() = runTest {
+        val verifiedConversation = oneOnOneConversationDetail.copy(
+            conversation = conversation.copy(mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED),
+            otherUser = otherUser.copy(deleted = false)
+        )
+        val value0 = Either.Right(verifiedConversation)
+        val value1 =
+            Either.Right(
+                verifiedConversation.copy(
+                    conversation = conversation.copy(mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED)
+                )
+            )
+        val (arrangement, endCallOnConversationChange) = arrange {
+            withObserveConversationDetailsByIdReturning(value0, value1)
+        }
+
+        endCallOnConversationChange()
+
+        verify(arrangement.endCall)
+            .suspendFunction(arrangement.endCall::invoke)
+            .with(eq(conversationId))
+            .wasInvoked(once)
+    }
+
+    @Test
     fun givenAnEstablishedCallInVerifiedConversationAndUserIsOkay_thenCurrentCallIsNotEnded() = runTest {
         val verifiedConversation = oneOnOneConversationDetail.copy(
             conversation = conversation.copy(proteusVerificationStatus = Conversation.VerificationStatus.VERIFIED),
@@ -127,7 +152,7 @@ class EndCallOnConversationChangeUseCaseTest {
         val endCall = mock(classOf<EndCallUseCase>())
 
         @Mock
-        val endCallDialogManager = mock(classOf<EndOngoingCallManager>())
+        val endCallDialogManager = mock(classOf<EndCallResultListener>())
 
         init {
             given(endCall)
@@ -148,7 +173,7 @@ class EndCallOnConversationChangeUseCaseTest {
                 callRepository = callRepository,
                 conversationRepository = conversationRepository,
                 endCallUseCase = endCall,
-                dialogManager = endCallDialogManager
+                endCallListener = endCallDialogManager
             )
         }
     }
