@@ -41,7 +41,7 @@ interface UpdateAssetMessageDownloadStatusUseCase {
     ): UpdateDownloadStatusResult
 }
 
-class UpdateAssetMessageDownloadStatusUseCaseImpl(
+internal class UpdateAssetMessageDownloadStatusUseCaseImpl(
     private val messageRepository: MessageRepository
 ) : UpdateAssetMessageDownloadStatusUseCase {
 

@@ -16,9 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 

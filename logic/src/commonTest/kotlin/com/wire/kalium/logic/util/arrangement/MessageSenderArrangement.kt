@@ -20,7 +20,7 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.MessageTarget
+import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
