@@ -332,9 +332,13 @@ class UserRepositoryTest {
     }
 
     @Test
-    fun givenAKnownNOTFederatedUser_whenGettingFromDb_thenShouldNotRefreshItsDataFromAPI() = runTest {
+    fun givenAKnownUser_whenGettingFromDb_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
+<<<<<<< HEAD
             .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.STANDARD))
+=======
+            .withUserDaoReturning(TestUser.ENTITY)
+>>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -344,18 +348,29 @@ class UserRepositoryTest {
             verify(arrangement.userDetailsApi)
                 .suspendFunction(arrangement.userDetailsApi::getUserInfo)
                 .with(any())
-                .wasNotInvoked()
+                .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
+<<<<<<< HEAD
+=======
+                .suspendFunction(arrangement.userDAO::upsertTeamMembers)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+>>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
-                .wasNotInvoked()
+                .wasInvoked(exactly = once)
         }
     }
 
     @Test
-    fun givenAKnownFederatedUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
+    fun givenAKnownUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
+<<<<<<< HEAD
             .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+=======
+            .withUserDaoReturning(TestUser.ENTITY)
+>>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
             .withSuccessfulGetUsersInfo()
             .arrange()
 

@@ -36,7 +36,6 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -159,12 +158,16 @@ internal class UserDataSource internal constructor(
 ) : UserRepository {
 
     /**
-     * In case of federated users, we need to refresh their info every time.
-     * Since the current backend implementation at wire does not emit user events across backends.
+     * Stores the last time a user's details were fetched from remote.
      *
-     * This is an in-memory cache, to help avoid unnecessary requests in a time window.
+     * @see Event.User.Update
+     * @see USER_DETAILS_MAX_AGE
      */
+<<<<<<< HEAD
     private val federatedUsersExpirationCache = ConcurrentMutableMap<UserId, Instant>()
+=======
+    private val userDetailsRefreshInstantCache = ConcurrentMap<UserId, Instant>()
+>>>>>>> 33a635afc2 (fix: update all users when getting their data [AR-5057] (#2200))
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { userDTO ->
@@ -190,7 +193,9 @@ internal class UserDataSource internal constructor(
             .map { userEntity ->
                 userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
-                processFederatedUserRefresh(userId, otherUser)
+                if (otherUser != null) {
+                    refreshUserDetailsIfNeeded(userId)
+                }
             }
 
     override suspend fun getUsersWithOneOnOneConversation(): List<OtherUser> {
@@ -199,16 +204,19 @@ internal class UserDataSource internal constructor(
     }
 
     /**
-     * Only in case of federated users and if it's expired or not cached, we fetch and refresh the user info.
+     * Only refresh user profiles if it wasn't fetched recently.
+     *
+     * @see userDetailsRefreshInstantCache
+     * @see USER_DETAILS_MAX_AGE
      */
-    private suspend fun processFederatedUserRefresh(userId: UserId, otherUser: OtherUser?) {
-        if (otherUser != null && otherUser.userType.isFederated()
-            && federatedUsersExpirationCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
-        ) {
+    private suspend fun refreshUserDetailsIfNeeded(userId: UserId) {
+        val now = DateTimeUtil.currentInstant()
+        val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
+        if (!wasFetchedRecently) {
             fetchUserInfo(userId).also {
-                kaliumLogger.d("Federated user, refreshing user info from API after $FEDERATED_USER_TTL")
+                kaliumLogger.d("Federated user, refreshing user info from API after $USER_DETAILS_MAX_AGE")
             }
-            federatedUsersExpirationCache[userId] = DateTimeUtil.currentInstant().plus(FEDERATED_USER_TTL)
+            userDetailsRefreshInstantCache[userId] = now
         }
     }
 
@@ -495,7 +503,16 @@ internal class UserDataSource internal constructor(
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
-        internal val FEDERATED_USER_TTL = 5.minutes
+
+        /**
+         * Maximum age for user details.
+         *
+         * The USER_DETAILS_MAX_AGE constant represents the maximum age in minutes that user details can be considered valid. After
+         * this duration, the user details should be refreshed.
+         *
+         * This is needed because some users don't get `user.update` events, so we need to refresh their details every so often.
+         */
+        internal val USER_DETAILS_MAX_AGE = 5.minutes
         internal const val BATCH_SIZE = 500
     }
 }
