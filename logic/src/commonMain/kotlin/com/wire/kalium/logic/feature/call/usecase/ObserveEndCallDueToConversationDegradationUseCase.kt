@@ -23,16 +23,16 @@ import kotlinx.coroutines.flow.map
 /**
  * The useCase for observing when the ongoing call was ended because of degradation of conversation verification status (Proteus or MLS)
  */
-interface ObserveEndCallDialogUseCase {
+interface ObserveEndCallDueToConversationDegradationUseCase {
     /**
      * @return [Flow] that emits only when the call was ended because of degradation of conversation verification status (Proteus or MLS)
      */
     suspend operator fun invoke(): Flow<Unit>
 }
 
-internal class ObserveEndCallDialogUseCaseImpl(
+internal class ObserveEndCallDueToConversationDegradationUseCaseImpl(
     private val endCallListener: EndCallResultListener
-) : ObserveEndCallDialogUseCase {
+) : ObserveEndCallDueToConversationDegradationUseCase {
     override suspend fun invoke(): Flow<Unit> =
         endCallListener.observeCallEndedBecauseOfVerificationDegraded().map { Unit }
 }

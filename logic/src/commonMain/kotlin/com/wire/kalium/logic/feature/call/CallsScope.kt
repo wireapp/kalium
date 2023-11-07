@@ -49,8 +49,8 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCase
 import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDialogUseCase
-import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDialogUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingCallsUseCase
@@ -180,5 +180,5 @@ class CallsScope internal constructor(
 
     val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 
-    val observeEndCallDialog: ObserveEndCallDialogUseCase get() = ObserveEndCallDialogUseCaseImpl(EndCallResultListenerImpl)
+    val observeEndCallDialog: ObserveEndCallDueToConversationDegradationUseCase get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
 }
