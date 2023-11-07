@@ -180,5 +180,6 @@ class CallsScope internal constructor(
 
     val isEligibleToStartCall: IsEligibleToStartCallUseCase get() = IsEligibleToStartCallUseCaseImpl(userConfigRepository, callRepository)
 
-    val observeEndCallDialog: ObserveEndCallDueToConversationDegradationUseCase get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
+    val observeEndCallDialog: ObserveEndCallDueToConversationDegradationUseCase
+        get() = ObserveEndCallDueToConversationDegradationUseCaseImpl(EndCallResultListenerImpl)
 }
