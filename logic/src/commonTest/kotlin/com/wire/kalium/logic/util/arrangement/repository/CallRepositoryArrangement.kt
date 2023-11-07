@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.feature.call.Call
+import com.wire.kalium.logic.data.call.Call
 import io.mockative.Mock
 import io.mockative.given
 import io.mockative.mock
