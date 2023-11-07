@@ -15,31 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.data.sync
+package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.user.AccountRepository
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.functional.Either
 
-sealed interface SlowSyncStatus {
-
-    data object Pending : SlowSyncStatus
-
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure) : SlowSyncStatus
-}
-
-enum class SlowSyncStep {
-    SELF_USER,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    MIGRATION
+sealed interface SlowSyncParam {
+    data object Success : SlowSyncParam
+    data object NotPerformedBefore : SlowSyncParam
+    data object LastSlowSyncTooOld : SlowSyncParam
+    data class MigrationNeeded(val oldVersion: Int, val newVersion: Int) : SlowSyncParam
 }

@@ -39,6 +39,7 @@ import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +52,7 @@ internal interface SlowSyncWorker {
      * Performs all [SlowSyncStep] in the correct order,
      * emits the current ongoing step.
      */
-    suspend fun slowSyncStepsFlow(): Flow<SlowSyncStep>
+    suspend fun slowSyncStepsFlow(migrationSteps: List<SyncMigrationStep>): Flow<SlowSyncStep>
 }
 
 @Suppress("LongParameterList")
@@ -70,7 +71,7 @@ internal class SlowSyncWorkerImpl(
 
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    override suspend fun slowSyncStepsFlow(): Flow<SlowSyncStep> = flow {
+    override suspend fun slowSyncStepsFlow(migrationSteps: List<SyncMigrationStep>): Flow<SlowSyncStep> = flow {
 
         suspend fun Either<CoreFailure, Unit>.continueWithStep(
             slowSyncStep: SlowSyncStep,
@@ -90,6 +91,13 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
             .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
+            .apply {
+                for (step  in migrationSteps) {
+                    if(continueWithStep(SlowSyncStep.MIGRATION, step.migrate) is Either.Left) {
+                        break
+                    }
+                }
+            }
             .flatMap {
                 saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
             }
