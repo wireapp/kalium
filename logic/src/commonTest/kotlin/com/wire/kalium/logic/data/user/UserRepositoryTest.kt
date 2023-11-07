@@ -369,7 +369,7 @@ class UserRepositoryTest {
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
-                .wasInvoked(exactly = twice)
+                .wasInvoked(exactly = once)
         }
 
         val resultSecondTime = userRepository.getKnownUser(TestUser.USER_ID)
