@@ -18,7 +18,15 @@
 
 package com.wire.kalium.logic.di
 
+import java.io.File
+
 actual class PlatformUserStorageProperties internal constructor(
     val rootPath: String,
-    val rootStoragePath: String
+    val databaseInfo: DatabaseStorageType
 )
+
+sealed interface DatabaseStorageType {
+    data class FiledBacked(val filePath: File) : DatabaseStorageType
+
+    data object InMemory : DatabaseStorageType
+}
