@@ -89,6 +89,11 @@ kotlin {
         val appleMain by getting {
             dependencies {
                 implementation(libs.coreCrypto)
+            }
+        }
+
+        val appleTest by getting {
+            dependencies {
                 implementation(libs.konsist)
             }
         }
