@@ -31,7 +31,7 @@ interface IsFileSharingEnabledUseCase {
     operator fun invoke(): FileSharingStatus
 }
 
-class IsFileSharingEnabledUseCaseImpl(
+internal class IsFileSharingEnabledUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : IsFileSharingEnabledUseCase {
 
