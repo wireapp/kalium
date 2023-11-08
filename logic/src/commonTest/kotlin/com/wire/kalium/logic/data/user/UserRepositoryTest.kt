@@ -39,12 +39,14 @@ import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -635,6 +637,39 @@ class UserRepositoryTest {
         }
     }
 
+    @Test
+    fun givenATeamMemberUser_whenFetchingUserInfo_thenItShouldBeUpsertedAsATeamMember() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(team = TestTeam.TEAM_ID.value))
+            .withSuccessfulGetUsersInfo(TestUser.USER_PROFILE_DTO.copy(teamId = TestTeam.TEAM_ID.value))
+            .withSuccessfulFetchTeamMembersByIds(listOf(TestTeam.memberDTO((TestUser.USER_PROFILE_DTO.id.value))))
+            .arrange()
+
+        val result = userRepository.fetchUserInfo(TestUser.USER_ID)
+
+        assertIs<Either.Right<Unit>>(result)
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamMembersByIds)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertUsers)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertConnectionStatuses)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertUsers)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
@@ -650,6 +685,9 @@ class UserRepositoryTest {
 
         @Mock
         val userDetailsApi = mock(classOf<UserDetailsApi>())
+
+        @Mock
+        val teamsApi = mock(classOf<TeamsApi>())
 
         @Mock
         val sessionRepository = mock(SessionRepository::class)
@@ -669,6 +707,7 @@ class UserRepositoryTest {
                 clientDAO,
                 selfApi,
                 userDetailsApi,
+                teamsApi,
                 sessionRepository,
                 selfUserId,
                 selfTeamIdProvider
@@ -715,11 +754,18 @@ class UserRepositoryTest {
                 .thenReturn(updated)
         }
 
-        fun withSuccessfulGetUsersInfo() = apply {
+        fun withSuccessfulGetUsersInfo(result: UserProfileDTO = TestUser.USER_PROFILE_DTO) = apply {
             given(userDetailsApi)
                 .suspendFunction(userDetailsApi::getUserInfo)
                 .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(TestUser.USER_PROFILE_DTO, mapOf(), 200))
+                .thenReturn(NetworkResponse.Success(result, mapOf(), 200))
+        }
+
+        fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::getTeamMembersByIds)
+                .whenInvokedWith(any(), any())
+                .thenReturn(NetworkResponse.Success(TeamsApi.TeamMemberList(false, result), mapOf(), 200))
         }
 
         fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {

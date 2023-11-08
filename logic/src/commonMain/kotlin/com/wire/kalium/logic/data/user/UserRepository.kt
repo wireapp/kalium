@@ -49,6 +49,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
@@ -146,6 +147,7 @@ internal class UserDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
+    private val teamsApi: TeamsApi,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
@@ -224,7 +226,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
-            .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
+            .flatMap { userProfileDTO ->
+                fetchTeamMembersByIds(listOf(userProfileDTO))
+                    .flatMap { persistUsers(listOf(userProfileDTO), it) }
+            }
 
     @Suppress("MagicNumber")
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
@@ -252,30 +257,52 @@ internal class UserDataSource internal constructor(
                         kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
                         persistIncompleteUsers(listUserProfileDTO.usersFailed)
                     }
-                    persistUsers(listUserProfileDTO.usersFound)
+                    fetchTeamMembersByIds(listUserProfileDTO.usersFound)
+                        .flatMap { persistUsers(listUserProfileDTO.usersFound, it) }
                 }
         }
+
+    private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
+        val selfUserDomain = selfUserId.domain
+        val selfUserTeamId = selfTeamIdProvider().getOrNull()
+        val teamMemberIds = userProfileList.filter { it.isTeamMember(selfUserTeamId?.value, selfUserDomain) }.map { it.id.value }
+        return if (selfUserTeamId == null || teamMemberIds.isEmpty()) Either.Right(emptyList())
+        else teamMemberIds
+            .chunked(BATCH_SIZE)
+            .foldToEitherWhileRight(emptyList()) { chunk, acc ->
+                wrapApiRequest {
+                    kaliumLogger.d("Fetching ${chunk.size} team members")
+                    teamsApi.getTeamMembersByIds(selfUserTeamId.value, TeamsApi.TeamMemberIdList(chunk))
+                }.map {
+                    kaliumLogger.d("Found ${it.members.size} team members")
+                    (acc + it.members).distinct()
+                }
+            }
+    }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
         userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
     }
 
-    private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
-        val selfUserDomain = selfUserId.domain
+    private suspend fun persistUsers(
+        listUserProfileDTO: List<UserProfileDTO>,
+        listTeamMemberDTO: List<TeamsApi.TeamMemberDTO>,
+    ) = wrapStorageRequest {
+        val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
-            .filter { userProfileDTO -> userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
+            .filter { userProfileDTO ->  mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.ACCEPTED, // this won't be updated, just to avoid a null value
-                    userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
-                        .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
+                    connectionState = ConnectionEntity.State.ACCEPTED,
+                    userTypeEntity =
+                        if (userProfileDTO.service != null) UserTypeEntity.SERVICE
+                        else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
                 )
             }
-
         val otherUsers = listUserProfileDTO
-            .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
+            .filter { userProfileDTO -> !mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
@@ -293,7 +320,6 @@ internal class UserDataSource internal constructor(
             userDAO.upsertUsers(teamMembers)
             userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
         }
-
         if (otherUsers.isNotEmpty()) {
             userDAO.upsertUsers(otherUsers)
         }
