@@ -21,8 +21,8 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold

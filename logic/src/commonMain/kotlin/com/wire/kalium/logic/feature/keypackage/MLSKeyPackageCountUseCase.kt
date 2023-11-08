@@ -23,7 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -33,7 +33,7 @@ interface MLSKeyPackageCountUseCase {
     suspend operator fun invoke(fromAPI: Boolean = true): MLSKeyPackageCountResult
 }
 
-class MLSKeyPackageCountUseCaseImpl(
+internal class MLSKeyPackageCountUseCaseImpl(
     private val keyPackageRepository: KeyPackageRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,

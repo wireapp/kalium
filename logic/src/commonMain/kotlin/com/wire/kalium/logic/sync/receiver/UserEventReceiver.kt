@@ -31,7 +31,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either

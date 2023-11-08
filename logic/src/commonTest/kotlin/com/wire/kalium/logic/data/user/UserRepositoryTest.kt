@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
@@ -50,7 +50,6 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
-import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -333,30 +332,9 @@ class UserRepositoryTest {
     }
 
     @Test
-    fun givenAKnownNOTFederatedUser_whenGettingFromDb_thenShouldNotRefreshItsDataFromAPI() = runTest {
+    fun givenAKnownUser_whenGettingFromDb_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.STANDARD))
-            .withSuccessfulGetUsersInfo()
-            .arrange()
-
-        val result = userRepository.getKnownUser(TestUser.USER_ID)
-
-        result.collect {
-            verify(arrangement.userDetailsApi)
-                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUsers)
-                .with(any())
-                .wasNotInvoked()
-        }
-    }
-
-    @Test
-    fun givenAKnownFederatedUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY)
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -370,7 +348,28 @@ class UserRepositoryTest {
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
-                .wasInvoked(exactly = twice)
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAKnownUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY)
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+
+        val result = userRepository.getKnownUser(TestUser.USER_ID)
+
+        result.collect {
+            verify(arrangement.userDetailsApi)
+                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertUsers)
+                .with(any())
+                .wasInvoked(exactly = once)
         }
 
         val resultSecondTime = userRepository.getKnownUser(TestUser.USER_ID)

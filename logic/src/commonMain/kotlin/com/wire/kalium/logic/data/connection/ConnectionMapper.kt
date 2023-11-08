@@ -38,7 +38,7 @@ import kotlinx.datetime.toInstant
 interface ConnectionMapper {
     fun fromApiToDao(state: ConnectionDTO): ConnectionEntity
     fun fromDaoToModel(connection: ConnectionEntity): Connection
-    fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails
+    fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails.Connection
     fun fromApiToModel(state: ConnectionDTO): Connection
     fun modelToDao(state: Connection): ConnectionEntity
 }
@@ -72,7 +72,9 @@ internal class ConnectionMapperImpl(
         )
     }
 
-    override fun fromDaoToConversationDetails(connection: ConnectionEntity): ConversationDetails = with(connection) {
+    override fun fromDaoToConversationDetails(
+        connection: ConnectionEntity
+    ): ConversationDetails.Connection = with(connection) {
         ConversationDetails.Connection(
             conversationId = qualifiedConversationId.toModel(),
             otherUser = otherUser?.let { userMapper.fromUserDetailsEntityToOtherUser(it) },

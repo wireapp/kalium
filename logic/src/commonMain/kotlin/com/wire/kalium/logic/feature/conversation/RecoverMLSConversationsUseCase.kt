@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either

@@ -33,7 +33,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
