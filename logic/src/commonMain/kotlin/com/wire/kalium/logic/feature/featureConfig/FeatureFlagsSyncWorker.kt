@@ -28,7 +28,7 @@ import kotlin.time.Duration.Companion.minutes
 /**
  * Worker that periodically syncs feature flags.
  */
-interface FeatureFlagsSyncWorker {
+internal interface FeatureFlagsSyncWorker {
     suspend fun execute()
 }
 
