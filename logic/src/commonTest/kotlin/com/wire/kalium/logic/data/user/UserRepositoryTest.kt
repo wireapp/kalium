@@ -36,12 +36,9 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
-<<<<<<< HEAD
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-=======
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
->>>>>>> 9b8b0e6937 (fix: handle federation not enabled [WPB-5237] (#2189))
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi

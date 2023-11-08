@@ -18,11 +18,8 @@
 
 package com.wire.kalium.logic.data.user
 
-<<<<<<< HEAD
 import co.touchlab.stately.collections.ConcurrentMutableMap
-=======
 import com.wire.kalium.logger.obfuscateDomain
->>>>>>> 9b8b0e6937 (fix: handle federation not enabled [WPB-5237] (#2189))
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
