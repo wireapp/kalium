@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.TestStubs
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.test.TestResult
@@ -34,6 +35,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -753,6 +755,72 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(user1.previewAssetId, persistedUser?.previewAssetId)
         assertEquals(user1.completeAssetId, persistedUser?.completeAssetId)
         assertEquals(user1.supportedProtocols, persistedUser?.supportedProtocols)
+    }
+
+    @Test
+    fun givenExistingUser_whenUpsertingIt_thenAllImportantFieldsAreProperlyUpdated() = runTest(dispatcher) {
+        val user = user1.copy(
+            name = "Name",
+            handle = "Handle",
+            email = "Email",
+            phone = "Phone",
+            accentId = 1,
+            team = "Team",
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = UserAssetIdEntity("PreviewAssetId", "PreviewAssetDomain"),
+            completeAssetId = UserAssetIdEntity("CompleteAssetId", "CompleteAssetDomain"),
+            availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
+            userType = UserTypeEntity.STANDARD,
+            botService = BotIdEntity("BotService", "BotServiceDomain"),
+            deleted = false,
+            hasIncompleteMetadata = false,
+            expiresAt = null,
+            defederated = false,
+            supportedProtocols = setOf(SupportedProtocolEntity.MLS),
+            activeOneOnOneConversationId = null,
+        )
+        db.userDAO.upsertUser(user)
+        val updatedTeamMemberUser = user1.copy(
+            name = "newName",
+            handle = "newHandle",
+            email = "newEmail",
+            phone = "newPhone",
+            accentId = 2,
+            team = "newTeam",
+            connectionStatus = ConnectionEntity.State.PENDING,
+            previewAssetId = UserAssetIdEntity("newPreviewAssetId", "newPreviewAssetDomain"),
+            completeAssetId = UserAssetIdEntity("newCompleteAssetId", "newCompleteAssetDomain"),
+            availabilityStatus = UserAvailabilityStatusEntity.BUSY,
+            userType = UserTypeEntity.EXTERNAL,
+            botService = BotIdEntity("newBotService", "newBotServiceDomain"),
+            deleted = true,
+            hasIncompleteMetadata = true,
+            expiresAt = DateTimeUtil.currentInstant(),
+            defederated = true,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS),
+            activeOneOnOneConversationId = QualifiedIDEntity("newActiveOneOnOneConversationId", "newActiveOneOnOneConversationDomain")
+        )
+        db.userDAO.upsertUser(updatedTeamMemberUser)
+        val result = db.userDAO.getUsersDetailsByQualifiedIDList(listOf(user1.id)).firstOrNull()
+        assertNotNull(result)
+        assertEquals(updatedTeamMemberUser.name, result.name)
+        assertEquals(updatedTeamMemberUser.handle, result.handle)
+        assertEquals(updatedTeamMemberUser.email, result.email)
+        assertEquals(updatedTeamMemberUser.phone, result.phone)
+        assertEquals(updatedTeamMemberUser.accentId, result.accentId)
+        assertEquals(updatedTeamMemberUser.team, result.team)
+        assertEquals(updatedTeamMemberUser.previewAssetId, result.previewAssetId)
+        assertEquals(updatedTeamMemberUser.completeAssetId, result.completeAssetId)
+        assertEquals(updatedTeamMemberUser.userType, result.userType)
+        assertEquals(updatedTeamMemberUser.botService, result.botService)
+        assertEquals(updatedTeamMemberUser.deleted, result.deleted)
+        assertEquals(updatedTeamMemberUser.hasIncompleteMetadata, result.hasIncompleteMetadata)
+        assertEquals(updatedTeamMemberUser.expiresAt, result.expiresAt)
+        assertEquals(updatedTeamMemberUser.supportedProtocols, result.supportedProtocols)
+        assertNotEquals(updatedTeamMemberUser.connectionStatus, result.connectionStatus)
+        assertNotEquals(updatedTeamMemberUser.availabilityStatus, result.availabilityStatus)
+        assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
+        assertNotEquals(updatedTeamMemberUser.activeOneOnOneConversationId, result.activeOneOnOneConversationId)
     }
 
     private companion object {
