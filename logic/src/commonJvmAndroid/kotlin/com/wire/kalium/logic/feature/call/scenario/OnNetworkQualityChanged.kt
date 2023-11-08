@@ -36,6 +36,9 @@ class OnNetworkQualityChanged : NetworkQualityChangedHandler {
         arg: Pointer?
     ) {
         // Not yet implemented
-        callingLogger.i("[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()} | UserId: ${userId.obfuscateId()} | Quality: $quality")
+        callingLogger.i(
+            "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +
+                    " | UserId: ${userId.obfuscateId()} | Quality: $quality"
+        )
     }
 }
