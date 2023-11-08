@@ -164,7 +164,14 @@ interface UserDAO {
     suspend fun upsertTeamMembersTypes(users: List<UserEntity>)
 
     /**
-     * This will update all columns, except [UserEntity.userType] or insert a new record with default values
+     * This will update all columns, except:
+     * - [UserEntity.availabilityStatus]
+     * - [UserEntity.userType]
+     * - [UserEntity.deleted]
+     * - [UserEntity.hasIncompleteMetadata]
+     * - [UserEntity.expiresAt]
+     * - [UserEntity.defederated]
+     * or insert a new record with default values
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */

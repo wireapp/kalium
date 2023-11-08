@@ -58,27 +58,57 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, user_type = ?, bot_service = ?, incomplete_metadata = ?, expires_at = ?
+SET name = ?,
+    handle = ?,
+    email = ?,
+    phone = ?,
+    accent_id = ?,
+    team = ?,
+    preview_asset_id = ?,
+    complete_asset_id = ?,
+    user_type = ?,
+    bot_service = ?,
+    incomplete_metadata = ?,
+    expires_at = ?
 WHERE qualified_id = ?;
 
 updateTeamMemberUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, phone = ?, accent_id = ?, team = ?, preview_asset_id = ?, complete_asset_id = ?, bot_service = ?, incomplete_metadata = 0
+SET name = ?,
+    handle = ?,
+    email = ?,
+    phone = ?,
+    accent_id = ?,
+    team = ?,
+    connection_status = ?,
+    preview_asset_id = ?,
+    complete_asset_id = ?,
+    bot_service = ?,
+    incomplete_metadata = 0
 WHERE qualified_id = ?;
 
 updateTeamMemberType:
 UPDATE User
-SET team = ?, connection_status = ?, user_type = ?
+SET team = ?,
+    connection_status = ?,
+    user_type = ?
 WHERE qualified_id = ?;
 
 markUserAsDeleted:
 UPDATE User
-SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, user_type = ?, deleted = 1
+SET team = NULL ,
+    preview_asset_id = NULL,
+    complete_asset_id = NULL,
+    user_type = ?,
+    deleted = 1
 WHERE qualified_id = ?;
 
 markUserAsDefederated:
 UPDATE User
-SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, defederated = 1
+SET team = NULL,
+    preview_asset_id = NULL,
+    complete_asset_id = NULL,
+    defederated = 1
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:
@@ -87,7 +117,12 @@ VALUES(?, 1);
 
 updateSelfUser:
 UPDATE User
-SET name = ?, handle = ?, email = ?, accent_id = ?, preview_asset_id = ?, complete_asset_id = ?
+SET name = ?,
+    handle = ?,
+    email = ?,
+    accent_id = ?,
+    preview_asset_id = ?,
+    complete_asset_id = ?
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserIdWithConnectionStatus:
@@ -136,7 +171,10 @@ updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
 
 updateUserAsset:
-UPDATE User SET complete_asset_id = ?, preview_asset_id = ? WHERE complete_asset_id = ?;
+UPDATE User
+SET complete_asset_id = ?,
+    preview_asset_id = ?
+WHERE complete_asset_id = ?;
 
 selectChanges:
 SELECT changes();
