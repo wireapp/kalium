@@ -521,6 +521,38 @@ class MessageRepositoryTest {
         )
     }
 
+    @Test
+    fun givenSearchedMessages_whenMessageIsSelected_thenReturnMessagePosition() = runTest {
+        // given
+        val qualifiedIdEntity = TEST_QUALIFIED_ID_ENTITY
+        val conversationId = TEST_CONVERSATION_ID
+        val message = TEST_MESSAGE_ENTITY.copy(
+            id = "msg1",
+            conversationId = qualifiedIdEntity,
+            content = MessageEntityContent.Text("message 1")
+        )
+        val expectedResult = 113
+        val (_, messageRepository) = Arrangement()
+            .withSelectedMessagePosition(
+                conversationId = conversationId.toDao(),
+                messageId = message.id,
+                result = expectedResult
+            )
+            .arrange()
+
+        // when
+        val result = messageRepository.getSearchedConversationMessagePosition(
+            conversationId = conversationId,
+            messageId = message.id
+        )
+
+        // then
+        assertEquals(
+            expectedResult,
+            (result as Either.Right).value
+        )
+    }
+
     private class Arrangement {
 
         @Mock
@@ -671,6 +703,17 @@ class MessageRepositoryTest {
                 .suspendFunction(messageDAO::getConversationMessagesFromSearch)
                 .whenInvokedWith(eq(searchTerm), eq(conversationId))
                 .thenReturn(messages)
+        }
+
+        fun withSelectedMessagePosition(
+            conversationId: QualifiedIDEntity,
+            messageId: String,
+            result: Int
+        ) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getSearchedConversationMessagePosition)
+                .whenInvokedWith(eq(conversationId), eq(messageId))
+                .thenReturn(result)
         }
 
         fun arrange() = this to MessageDataSource(
