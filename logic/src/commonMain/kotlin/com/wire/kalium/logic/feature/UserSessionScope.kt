@@ -187,6 +187,8 @@ import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterial
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
+import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
@@ -1250,6 +1252,13 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
+        FeatureFlagSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            syncFeatureConfigs = syncFeatureConfigsUseCase,
+        )
+    }
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
@@ -1570,6 +1579,10 @@ class UserSessionScope internal constructor(
 
         launch {
             proteusSyncWorker.execute()
+        }
+
+        launch {
+            featureFlagsSyncWorker.execute()
         }
     }
 
