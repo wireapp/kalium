@@ -197,8 +197,15 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+<<<<<<< HEAD
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
+=======
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCase
+import com.wire.kalium.logic.feature.e2ei.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
+import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
+>>>>>>> bb40497d30 (feat(sync): pull feature flags when online (#2208))
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -1386,6 +1393,13 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
+        FeatureFlagSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            syncFeatureConfigs = syncFeatureConfigsUseCase,
+        )
+    }
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
@@ -1743,6 +1757,7 @@ class UserSessionScope internal constructor(
         }
 
         launch {
+<<<<<<< HEAD
             avsSyncStateReporter.execute()
         }
 
@@ -1752,6 +1767,9 @@ class UserSessionScope internal constructor(
 
         launch {
             typingIndicatorSyncManager.execute()
+=======
+            featureFlagsSyncWorker.execute()
+>>>>>>> bb40497d30 (feat(sync): pull feature flags when online (#2208))
         }
     }
 
