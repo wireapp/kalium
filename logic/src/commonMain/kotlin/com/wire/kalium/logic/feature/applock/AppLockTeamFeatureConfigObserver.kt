@@ -17,9 +17,12 @@
  */
 package com.wire.kalium.logic.feature.applock
 
+import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlin.time.Duration.Companion.seconds
 
@@ -31,22 +34,31 @@ interface AppLockTeamFeatureConfigObserver {
 }
 
 class AppLockTeamFeatureConfigObserverImpl(
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val kaliumConfigs: KaliumConfigs
 ) : AppLockTeamFeatureConfigObserver {
-    override fun invoke(): Flow<AppLockTeamConfig> =
-        userConfigRepository.observeAppLockStatus().map {
+    override fun invoke(): Flow<AppLockTeamConfig> {
+        if (kaliumConfigs.teamAppLock) {
+            return flowOf(
+                AppLockTeamConfig(
+                    isEnabled = true,
+                    timeout = kaliumConfigs.teamAppLockTimeout.seconds,
+                    isStatusChanged = false
+                )
+            )
+        }
+        return userConfigRepository.observeAppLockConfig().map {
             it.fold({
                 AppLockTeamConfig(
                     isEnabled = false,
-                    timeout = DEFAULT_TIMEOUT
+                    timeout = DEFAULT_TIMEOUT,
+                    isStatusChanged = false
                 )
-            }, { appLockModel ->
-                AppLockTeamConfig(
-                    isEnabled = appLockModel.enforceAppLock,
-                    timeout = appLockModel.inactivityTimeoutSecs.seconds
-                )
+            }, { appLock ->
+                appLock
             })
         }
+    }
 
     companion object {
         val DEFAULT_TIMEOUT = 60.seconds

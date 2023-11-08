@@ -268,7 +268,7 @@ internal class UserDataSource internal constructor(
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.ACCEPTED,
+                    connectionState = ConnectionEntity.State.ACCEPTED, // this won't be updated, just to avoid a null value
                     userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
                         .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
                 )
@@ -279,7 +279,7 @@ internal class UserDataSource internal constructor(
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.NOT_CONNECTED,
+                    connectionState = ConnectionEntity.State.NOT_CONNECTED, // this won't be updated, just to avoid a null value
                     userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUserTeamId,
@@ -291,6 +291,7 @@ internal class UserDataSource internal constructor(
             }
         if (teamMembers.isNotEmpty()) {
             userDAO.upsertUsers(teamMembers)
+            userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
         }
 
         if (otherUsers.isNotEmpty()) {
