@@ -70,7 +70,7 @@ interface ConnectionRepository {
     suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<Connection>>
-    suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails>>
+    suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>>
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
@@ -155,7 +155,7 @@ internal class ConnectionDataSource(
         observeConnectionRequestList()
     }
 
-    override suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails>> {
+    override suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>> {
         return connectionDAO.getConnectionRequests().map { connections ->
             connections
                 .map { connection ->

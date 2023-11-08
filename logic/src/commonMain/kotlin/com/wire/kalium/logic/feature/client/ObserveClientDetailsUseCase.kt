@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import kotlinx.coroutines.flow.Flow
@@ -40,7 +40,7 @@ interface ObserveClientDetailsUseCase {
     suspend operator fun invoke(userId: UserId, clientId: ClientId): Flow<GetClientDetailsResult>
 }
 
-class ObserveClientDetailsUseCaseImpl(
+internal class ObserveClientDetailsUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val provideClientId: CurrentClientIdProvider
 ) : ObserveClientDetailsUseCase {

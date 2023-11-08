@@ -32,10 +32,9 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.MessageTarget
+import com.wire.kalium.logic.data.message.MessageTarget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 // TODO(testing): create unit test

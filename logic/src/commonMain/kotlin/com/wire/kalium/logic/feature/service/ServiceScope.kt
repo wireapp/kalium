@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 
 class ServiceScope internal constructor(
     private val serviceRepository: ServiceRepository,
