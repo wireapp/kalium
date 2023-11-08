@@ -393,7 +393,7 @@ class UserRepositoryTest {
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertTeamMembers)
                 .with(any())
-                .wasInvoked(exactly = once)
+                .wasNotInvoked()
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
