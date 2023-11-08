@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.BroadcastMessageTarget
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

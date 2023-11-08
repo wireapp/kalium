@@ -20,10 +20,10 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
@@ -92,8 +92,8 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
             .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
             .apply {
-                for (step  in migrationSteps) {
-                    if(continueWithStep(SlowSyncStep.MIGRATION, step::invoke) is Either.Left) {
+                for (step in migrationSteps) {
+                    if (continueWithStep(SlowSyncStep.MIGRATION, step::invoke) is Either.Left) {
                         break
                     }
                 }

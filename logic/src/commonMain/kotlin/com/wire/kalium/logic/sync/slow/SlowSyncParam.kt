@@ -17,11 +17,6 @@
  */
 package com.wire.kalium.logic.sync.slow
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.AccountRepository
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.functional.Either
-
 sealed interface SlowSyncParam {
     data object Success : SlowSyncParam
     data object NotPerformedBefore : SlowSyncParam

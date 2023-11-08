@@ -137,7 +137,7 @@ internal class SlowSyncManager(
             // START SYNC IF NEEDED
             logger.i("SlowSync criteria ready, checking if SlowSync is needed or already performed")
 
-            when(isSlowSyncNeeded) {
+            when (isSlowSyncNeeded) {
                 SlowSyncParam.LastSlowSyncTooOld,
                 SlowSyncParam.NotPerformedBefore -> {
                     logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
@@ -149,7 +149,14 @@ internal class SlowSyncManager(
 
                 is SlowSyncParam.MigrationNeeded -> {
                     logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
-                    performSlowSync(migrationSteps = syncMigrationStepsProvider().getMigrationSteps(isSlowSyncNeeded.oldVersion, isSlowSyncNeeded.newVersion))
+                    val migrationSteps = syncMigrationStepsProvider()
+                        .getMigrationSteps(
+                            isSlowSyncNeeded.oldVersion,
+                            isSlowSyncNeeded.newVersion
+                        )
+                    performSlowSync(
+                        migrationSteps = migrationSteps
+                    )
                     logger.i("SlowSync completed. Updating last completion instant")
                     slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
                     slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())

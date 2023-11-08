@@ -18,13 +18,13 @@
 package com.wire.kalium.logic.sync.slow.migration.steps
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 
-@Suppress("className")
+@Suppress("ClassNaming", "MagicNumber")
 internal class SyncMigrationStep_6_7(
     private val accountRepository: Lazy<AccountRepository>,
     private val selfTeamIdProvider: SelfTeamIdProvider

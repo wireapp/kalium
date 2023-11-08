@@ -17,20 +17,20 @@
  */
 package com.wire.kalium.logic.sync.slow.migration
 
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.AccountRepository
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
-
 
 internal interface SyncMigrationStepsProvider {
     fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep>
 }
 
-internal class SyncMigrationStepsProviderImpl (
+@Suppress("MagicNumber")
+internal class SyncMigrationStepsProviderImpl(
     accountRepository: Lazy<AccountRepository>,
     selfTeamIdProvider: SelfTeamIdProvider
-)  : SyncMigrationStepsProvider{
+) : SyncMigrationStepsProvider {
 
     private val steps = mapOf(
         7 to lazy { SyncMigrationStep_6_7(accountRepository, selfTeamIdProvider) }
