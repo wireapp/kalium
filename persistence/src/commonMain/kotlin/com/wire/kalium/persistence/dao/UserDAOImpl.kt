@@ -231,7 +231,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun upsertTeamMemberUserTypes(users: Map<QualifiedIDEntity, UserTypeEntity>) {
+    override suspend fun upsertTeamMemberUserTypes(users: Map<QualifiedIDEntity, UserTypeEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             for (user: Map.Entry<QualifiedIDEntity, UserTypeEntity> in users) {
                 userQueries.upsertTeamMemberUserType(user.key, ConnectionEntity.State.ACCEPTED, user.value)
@@ -391,9 +391,13 @@ class UserDAOImpl internal constructor(
             userQueries.updateOneOnOnConversationId(conversationId, userId)
         }
 
-    override suspend fun upsertConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State) {
+    override suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>) {
         withContext(queriesContext) {
-            userQueries.upsertUserConnectionStatus(userId, status)
+            userQueries.transaction {
+                for (user: Map.Entry<QualifiedIDEntity, ConnectionEntity.State> in userStatuses) {
+                    userQueries.upsertUserConnectionStatus(user.key, user.value)
+                }
+            }
         }
     }
 }

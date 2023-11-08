@@ -354,30 +354,9 @@ class UserRepositoryTest {
     }
 
     @Test
-    fun givenAKnownNOTFederatedUser_whenGettingFromDb_thenShouldNotRefreshItsDataFromAPI() = runTest {
+    fun givenAKnownUser_whenGettingFromDb_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.STANDARD))
-            .withSuccessfulGetUsersInfo()
-            .arrange()
-
-        val result = userRepository.getKnownUser(TestUser.USER_ID)
-
-        result.collect {
-            verify(arrangement.userDetailsApi)
-                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUsers)
-                .with(any())
-                .wasNotInvoked()
-        }
-    }
-
-    @Test
-    fun givenAKnownFederatedUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY)
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -391,7 +370,28 @@ class UserRepositoryTest {
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
-                .wasInvoked(exactly = twice)
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAKnownUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDaoReturning(TestUser.DETAILS_ENTITY)
+            .withSuccessfulGetUsersInfo()
+            .arrange()
+
+        val result = userRepository.getKnownUser(TestUser.USER_ID)
+
+        result.collect {
+            verify(arrangement.userDetailsApi)
+                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userDAO)
+                .suspendFunction(arrangement.userDAO::upsertUsers)
+                .with(any())
+                .wasInvoked(exactly = once)
         }
 
         val resultSecondTime = userRepository.getKnownUser(TestUser.USER_ID)

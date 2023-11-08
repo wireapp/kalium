@@ -18,8 +18,11 @@
 package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.featureConfig.AppLockConfigModel
+import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
@@ -37,11 +40,31 @@ import kotlin.time.Duration.Companion.seconds
 class AppLockTeamFeatureConfigObserverTest {
 
     @Test
+    fun givenAppLockedByKaliumConfig_whenObservingAppLock_thenReturnAppLockWithStatusEnabled() =
+        runTest {
+            val expectedAppLockValue = AppLockTeamConfig(
+                true,
+                50.seconds,
+                false
+            )
+            val (arrangement, observer) = Arrangement()
+                .arrangeWithCustomKaliumConfig()
+
+            val result = observer.invoke()
+
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::observeAppLockConfig)
+                .wasNotInvoked()
+            assertEquals(expectedAppLockValue, result.first())
+        }
+
+    @Test
     fun givenRepositoryFailure_whenObservingAppLock_thenEmitAppLockConfigWithDisabledStatus() =
         runTest {
             val expectedAppLockValue = AppLockTeamConfig(
                 false,
-                AppLockTeamFeatureConfigObserverImpl.DEFAULT_TIMEOUT
+                AppLockTeamFeatureConfigObserverImpl.DEFAULT_TIMEOUT,
+                false
             )
             val (arrangement, observer) = Arrangement()
                 .withFailure()
@@ -50,7 +73,7 @@ class AppLockTeamFeatureConfigObserverTest {
             val result = observer.invoke()
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeAppLockStatus)
+                .function(arrangement.userConfigRepository::observeAppLockConfig)
                 .wasInvoked(exactly = once)
             assertEquals(expectedAppLockValue, result.first())
         }
@@ -59,8 +82,9 @@ class AppLockTeamFeatureConfigObserverTest {
     fun givenRepositorySuccess_whenObservingAppLock_thenEmitAppLockConfigWithValueFromRepository() {
         runTest {
             val expectedAppLockValue = AppLockTeamConfig(
-                appLockConfigModel.enforceAppLock,
-                appLockConfigModel.inactivityTimeoutSecs.seconds
+                appLockConfigModel.status.toBoolean(),
+                appLockConfigModel.inactivityTimeoutSecs.seconds,
+                isStatusChanged = false
             )
             val (arrangement, observer) = Arrangement()
                 .withSuccess()
@@ -69,7 +93,7 @@ class AppLockTeamFeatureConfigObserverTest {
             val result = observer.invoke()
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeAppLockStatus)
+                .function(arrangement.userConfigRepository::observeAppLockConfig)
                 .wasInvoked(exactly = once)
             assertEquals(expectedAppLockValue, result.first())
         }
@@ -80,24 +104,35 @@ class AppLockTeamFeatureConfigObserverTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
+        val kaliumConfigs = KaliumConfigs()
+
         fun withFailure(): Arrangement = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeAppLockStatus)
+                .function(userConfigRepository::observeAppLockConfig)
                 .whenInvoked()
                 .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun withSuccess(): Arrangement = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeAppLockStatus)
+                .function(userConfigRepository::observeAppLockConfig)
                 .whenInvoked()
-                .thenReturn(flowOf(Either.Right(appLockConfigModel)))
+                .thenReturn(flowOf(Either.Right(appLockTeamConfig)))
         }
 
-        fun arrange() = this to AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
+        fun arrange() = this to AppLockTeamFeatureConfigObserverImpl(
+            userConfigRepository = userConfigRepository,
+            kaliumConfigs = kaliumConfigs
+        )
+
+        fun arrangeWithCustomKaliumConfig() = this to AppLockTeamFeatureConfigObserverImpl(
+            userConfigRepository = userConfigRepository,
+            kaliumConfigs = KaliumConfigs(teamAppLock = true, teamAppLockTimeout = 50)
+        )
     }
 
     companion object {
-        val appLockConfigModel = AppLockConfigModel(true, 60)
+        val appLockConfigModel = AppLockModel(Status.ENABLED, 60)
+        val appLockTeamConfig = AppLockTeamConfig(true, 60.seconds, false)
     }
 }
