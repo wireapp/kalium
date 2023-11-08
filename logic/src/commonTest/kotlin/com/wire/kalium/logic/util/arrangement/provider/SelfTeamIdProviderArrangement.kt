@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.util.arrangement.provider
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given
