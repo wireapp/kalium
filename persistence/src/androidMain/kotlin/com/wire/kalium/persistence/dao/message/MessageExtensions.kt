@@ -29,6 +29,7 @@ actual interface MessageExtensions {
     fun getPagerForConversation(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
+        contentTypes: Collection<MessageEntity.ContentType>?,
         pagingConfig: PagingConfig,
     ): KaliumPager<MessageEntity>
 }
@@ -42,32 +43,54 @@ actual class MessageExtensionsImpl actual constructor(
     override fun getPagerForConversation(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
+        contentTypes: Collection<MessageEntity.ContentType>?,
         pagingConfig: PagingConfig
     ): KaliumPager<MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
         return KaliumPager(
-            Pager(pagingConfig) { getPagingSource(conversationId, visibilities) },
-            getPagingSource(conversationId, visibilities),
-            coroutineContext
+            Pager(pagingConfig) { getPagingSource(conversationId, visibilities, contentTypes) },
+            getPagingSource(conversationId, visibilities, contentTypes),
+            coroutineContext,
         )
     }
 
     private fun getPagingSource(
         conversationId: ConversationIDEntity,
-        visibilities: Collection<MessageEntity.Visibility>
+        visibilities: Collection<MessageEntity.Visibility>,
+        contentTypes: Collection<MessageEntity.ContentType>?
     ) =
         QueryPagingSource(
-            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+            countQuery = if (contentTypes != null) {
+                messagesQueries.countAssetMessagesByConversationIdAndMimeTypes(conversationId,   listOf(
+                    "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
+                ),)
+            } else {
+                messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities)
+            },
             transacter = messagesQueries,
             context = coroutineContext,
             queryProvider = { limit, offset ->
-                messagesQueries.selectByConversationIdAndVisibility(
-                    conversationId,
-                    visibilities,
-                    limit,
-                    offset,
-                    messageMapper::toEntityMessageFromView
-                )
+                if (contentTypes != null) {
+                    messagesQueries.selectAssetMessagesByConversationIdAndMimeTypes(
+                        conversationId,
+                        visibilities,
+                        contentTypes,
+                        listOf(
+                            "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
+                        ),
+                        limit,
+                        offset,
+                        messageMapper::toEntityMessageFromView
+                    )
+                } else {
+                    messagesQueries.selectByConversationIdAndVisibility(
+                        conversationId,
+                        visibilities,
+                        limit,
+                        offset,
+                        messageMapper::toEntityMessageFromView
+                    )
+                }
             }
         )
 }

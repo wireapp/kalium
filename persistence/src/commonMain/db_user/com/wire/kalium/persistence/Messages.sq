@@ -438,6 +438,22 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
+countAssetMessagesByConversationIdAndMimeTypes:
+SELECT count(*) FROM MessageAssetContent WHERE conversation_id = :conversatonId
+AND asset_mime_type IN :mimeTypes
+AND asset_width > 0
+AND asset_height > 0;
+
+selectAssetMessagesByConversationIdAndMimeTypes:
+SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND contentType IN :contentTypes
+AND assetMimeType IN :mimeTypes
+AND assetWidth > 0
+AND assetHeight > 0
+ORDER BY date DESC
+LIMIT :limit OFFSET :offset;
+
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;
 

@@ -35,6 +35,13 @@ actual interface MessageRepositoryExtensions {
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
     ): Flow<PagingData<Message.Standalone>>
+
+    suspend fun getPaginatedMessagesByConversationIdAndVisibilityAndContentType(
+        conversationId: ConversationId,
+        visibility: List<Message.Visibility>,
+        contentTypes: List<MessageEntity.ContentType>,
+        pagingConfig: PagingConfig,
+    ): Flow<PagingData<Message.Standalone>>
 }
 
 actual class MessageRepositoryExtensionsImpl actual constructor(
@@ -50,6 +57,25 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
         val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
             conversationId.toDao(),
             visibility.map { it.toEntityVisibility() },
+            null,
+            pagingConfig
+        )
+
+        return pager.pagingDataFlow.map { pagingData: PagingData<MessageEntity> ->
+            pagingData.map(messageMapper::fromEntityToMessage)
+        }
+    }
+
+    override suspend fun getPaginatedMessagesByConversationIdAndVisibilityAndContentType(
+        conversationId: ConversationId,
+        visibility: List<Message.Visibility>,
+        contentTypes: List<MessageEntity.ContentType>,
+        pagingConfig: PagingConfig
+    ): Flow<PagingData<Message.Standalone>> {
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
+            conversationId.toDao(),
+            visibility.map { it.toEntityVisibility() },
+            contentTypes,
             pagingConfig
         )
 
