@@ -20,7 +20,7 @@ package com.wire.kalium.logic.sync.slow.migration.steps
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either
 
-interface SyncMigrationStep {
+internal interface SyncMigrationStep {
     val version: Int
-    val migrate: suspend () -> Either<CoreFailure, Unit>
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
 }

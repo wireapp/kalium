@@ -22,16 +22,21 @@ import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
 
-internal class SyncMigrationStepsProvider(
+
+internal interface SyncMigrationStepsProvider {
+    fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep>
+}
+
+internal class SyncMigrationStepsProviderImpl (
     accountRepository: Lazy<AccountRepository>,
     selfTeamIdProvider: SelfTeamIdProvider
-) {
+)  : SyncMigrationStepsProvider{
 
     private val steps = mapOf(
         7 to lazy { SyncMigrationStep_6_7(accountRepository, selfTeamIdProvider) }
     )
 
-    fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep> {
+    override fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep> {
         return steps.filter { it.key in (fromVersion + 1)..toVersion }.values.sortedBy { it.value.version }.map { it.value }
     }
 }

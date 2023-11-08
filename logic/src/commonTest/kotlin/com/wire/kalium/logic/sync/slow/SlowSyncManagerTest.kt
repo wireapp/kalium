@@ -21,10 +21,13 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExponentialDurationHelper
+import com.wire.kalium.logic.util.arrangement.provider.SyncMigrationStepsProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.SyncMigrationStepsProviderArrangementImpl
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
@@ -39,6 +42,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -61,6 +65,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SlowSyncManagerTest {
 
     @Test
@@ -77,7 +82,9 @@ class SlowSyncManagerTest {
         assertTrue(isCollected)
         verify(arrangement.slowSyncWorker)
             .suspendFunction(arrangement.slowSyncWorker::slowSyncStepsFlow)
+            .with(any())
             .wasInvoked(exactly = once)
+
         verify(arrangement.slowSyncRepository)
             .suspendFunction(arrangement.slowSyncRepository::setSlowSyncVersion)
             .with(any())
@@ -96,6 +103,7 @@ class SlowSyncManagerTest {
 
         verify(arrangement.slowSyncWorker)
             .suspendFunction(arrangement.slowSyncWorker::slowSyncStepsFlow)
+            .with(any())
             .wasInvoked(exactly = twice)
     }
 
@@ -110,6 +118,7 @@ class SlowSyncManagerTest {
 
         verify(arrangement.slowSyncWorker)
             .suspendFunction(arrangement.slowSyncWorker::slowSyncStepsFlow)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -176,11 +185,13 @@ class SlowSyncManagerTest {
     fun givenItWasCompletedRecentlyAndVersionIsOutdated_whenCriteriaAreMet_thenShouldUpdateSlowSyncVersion() =
         runTest(TestKaliumDispatcher.default) {
             val (arrangement, _) = Arrangement()
-                .withSatisfiedCriteria()
-                .withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
-                .withSlowSyncWorkerReturning(emptyFlow())
-                .withLastSlowSyncPerformedOnAnOldVersion()
-                .arrange()
+                .arrange{
+                    withSatisfiedCriteria()
+                    withLastSlowSyncPerformedAt(flowOf(DateTimeUtil.currentInstant()))
+                    withSlowSyncWorkerReturning(emptyFlow())
+                    withLastSlowSyncPerformedOnAnOldVersion()
+                    withSyncMigrationSteps(emptyList())
+                }
 
             advanceUntilIdle()
 
@@ -385,7 +396,7 @@ class SlowSyncManagerTest {
             .wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement: SyncMigrationStepsProviderArrangement by SyncMigrationStepsProviderArrangementImpl() {
 
         @Mock
         val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock(classOf<SlowSyncCriteriaProvider>())
@@ -438,7 +449,7 @@ class SlowSyncManagerTest {
         fun withSlowSyncWorkerReturning(stepFlow: Flow<SlowSyncStep>) = apply {
             given(slowSyncWorker)
                 .suspendFunction(slowSyncWorker::slowSyncStepsFlow)
-                .whenInvoked()
+                .whenInvokedWith(any())
                 .thenReturn(stepFlow)
         }
 
@@ -485,9 +496,12 @@ class SlowSyncManagerTest {
             networkStateObserver = networkStateObserver,
             kaliumDispatcher = TestKaliumDispatcher,
             exponentialDurationHelper = exponentialDurationHelper,
+            syncMigrationStepsProvider = { syncMigrationStepsProvider }
         )
 
-        fun arrange() = this to slowSyncManager
+        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let {
+            this to slowSyncManager
+        }
 
     }
 }

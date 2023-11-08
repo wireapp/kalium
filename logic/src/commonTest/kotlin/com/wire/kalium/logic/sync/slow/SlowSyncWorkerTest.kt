@@ -64,7 +64,7 @@ class SlowSyncWorkerTest {
             .withResolveOneOnOneConversationsSuccess()
             .arrange()
 
-        worker.slowSyncStepsFlow().collect()
+        worker.slowSyncStepsFlow(emptyList()).collect()
 
         assertAllUseCasesSuccessfulRun(arrangement)
     }
@@ -77,7 +77,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -102,7 +102,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -132,7 +132,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -168,7 +168,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -214,7 +214,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -266,7 +266,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -324,7 +324,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -389,7 +389,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(emptyList()).collect {
                 assertTrue {
                     it in steps
                 }
@@ -408,7 +408,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFails {
-            slowSyncWorker.slowSyncStepsFlow().collect()
+            slowSyncWorker.slowSyncStepsFlow(emptyList()).collect()
         }
 
         verify(arrangement.eventRepository)
@@ -424,7 +424,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFails {
-            slowSyncWorker.slowSyncStepsFlow().collect()
+            slowSyncWorker.slowSyncStepsFlow(emptyList()).collect()
         }
 
         verify(arrangement.eventRepository)
@@ -446,7 +446,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFails {
-            slowSyncWorker.slowSyncStepsFlow().collect()
+            slowSyncWorker.slowSyncStepsFlow(emptyList()).collect()
         }
 
         verify(arrangement.eventRepository)
@@ -473,7 +473,7 @@ class SlowSyncWorkerTest {
             .withResolveOneOnOneConversationsSuccess()
             .arrange()
 
-        slowSyncWorker.slowSyncStepsFlow().collect()
+        slowSyncWorker.slowSyncStepsFlow(emptyList()).collect()
 
         verify(arrangement.eventRepository)
             .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)

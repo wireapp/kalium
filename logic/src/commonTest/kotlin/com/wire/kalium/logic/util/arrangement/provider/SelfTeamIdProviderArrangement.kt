@@ -15,17 +15,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature
+package com.wire.kalium.logic.util.arrangement.provider
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
+import io.mockative.Mock
+import io.mockative.given
+import io.mockative.mock
 
-fun interface CurrentClientIdProvider {
-    suspend operator fun invoke(): Either<CoreFailure, ClientId>
+
+internal interface SelfTeamIdProviderArrangement {
+
+    val selfTeamIdProvider: SelfTeamIdProvider
+
+    fun withTeamId(teamId: Either<StorageFailure, TeamId?>)
 }
+internal class SelfTeamIdProviderArrangementImpl : SelfTeamIdProviderArrangement {
 
-internal fun interface SelfTeamIdProvider {
-    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
+    @Mock
+    override val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+
+    override fun withTeamId(teamId: Either<StorageFailure, TeamId?>) {
+        given(selfTeamIdProvider)
+            .suspendFunction(selfTeamIdProvider::invoke)
+            .whenInvoked().then { teamId }
+    }
 }

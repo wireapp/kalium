@@ -93,7 +93,7 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
             .apply {
                 for (step  in migrationSteps) {
-                    if(continueWithStep(SlowSyncStep.MIGRATION, step.migrate) is Either.Left) {
+                    if(continueWithStep(SlowSyncStep.MIGRATION, step::invoke) is Either.Left) {
                         break
                     }
                 }

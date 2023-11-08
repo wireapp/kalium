@@ -31,12 +31,12 @@ internal class SyncMigrationStep_6_7(
 ) : SyncMigrationStep {
 
     override val version: Int = 7
-
-    override val migrate: suspend () -> Either<CoreFailure, Unit> = {
+    override suspend fun invoke(): Either<CoreFailure, Unit> =
         selfTeamIdProvider().flatMap {
-            it?.let {
+            if (it?.value.isNullOrBlank()) {
                 accountRepository.value.updateSelfUserAvailabilityStatus(UserAvailabilityStatus.NONE)
-            } ?: Either.Right(Unit)
+            } else {
+                Either.Right(Unit)
+            }
         }
-    }
 }

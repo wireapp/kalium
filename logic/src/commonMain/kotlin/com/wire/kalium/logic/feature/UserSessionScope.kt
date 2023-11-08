@@ -375,6 +375,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
+import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
@@ -946,8 +947,8 @@ class UserSessionScope internal constructor(
     private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler
         get() = SlowSyncRecoveryHandlerImpl(logout)
 
-    private val syncMigrationStepsProvider = {
-        SyncMigrationStepsProvider(lazy { accountRepository }, selfTeamId)
+    private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider = {
+        SyncMigrationStepsProviderImpl(lazy { accountRepository }, selfTeamId)
     }
 
     private val slowSyncManager: SlowSyncManager by lazy {
