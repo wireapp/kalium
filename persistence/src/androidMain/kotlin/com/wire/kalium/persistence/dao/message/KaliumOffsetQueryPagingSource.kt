@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.properties.Delegates
 
+@Suppress("ComplexMethod")
 internal class KaliumOffsetQueryPagingSource<RowType : Any>(
     private val queryProvider: (limit: Int, offset: Int) -> Query<RowType>,
     private val countQuery: Query<Int>,
