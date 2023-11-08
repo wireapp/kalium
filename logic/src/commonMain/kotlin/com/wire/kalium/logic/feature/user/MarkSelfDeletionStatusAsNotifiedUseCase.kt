@@ -27,7 +27,7 @@ interface MarkSelfDeletionStatusAsNotifiedUseCase {
     suspend operator fun invoke()
 }
 
-class MarkSelfDeletionStatusAsNotifiedUseCaseImpl(
+internal class MarkSelfDeletionStatusAsNotifiedUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : MarkSelfDeletionStatusAsNotifiedUseCase {
     override suspend operator fun invoke() {

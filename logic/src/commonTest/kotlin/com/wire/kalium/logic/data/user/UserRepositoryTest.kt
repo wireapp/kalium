@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
@@ -50,7 +50,6 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
-import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO

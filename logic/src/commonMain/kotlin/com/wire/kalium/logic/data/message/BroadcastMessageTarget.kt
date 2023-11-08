@@ -15,17 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature
+package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.functional.Either
+sealed class BroadcastMessageTarget(open val limit: Int) {
 
-fun interface CurrentClientIdProvider {
-    suspend operator fun invoke(): Either<CoreFailure, ClientId>
-}
+    /** Broadcast the message to all users in contact list (teammates and others)
+     * @param limit message will be broadcasted only to the first [limit] Users (teammates are prioritized)
+     */
+    data class AllUsers(override val limit: Int) : BroadcastMessageTarget(limit)
 
-fun interface SelfTeamIdProvider {
-    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
+    /** Broadcast the message only to the teammates
+     * @param limit message will be broadcasted only to the first [limit] teammates.
+     */
+    data class OnlyTeam(override val limit: Int) : BroadcastMessageTarget(limit)
 }

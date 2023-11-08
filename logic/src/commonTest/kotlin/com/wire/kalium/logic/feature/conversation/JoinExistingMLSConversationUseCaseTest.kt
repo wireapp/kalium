@@ -23,7 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -50,7 +50,6 @@ import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class JoinExistingMLSConversationUseCaseTest {

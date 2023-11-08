@@ -36,7 +36,7 @@ interface IsAllowedToRegisterMLSClientUseCase {
 }
 
 @OptIn(DelicateKaliumApi::class)
-class IsAllowedToRegisterMLSClientUseCaseImpl(
+internal class IsAllowedToRegisterMLSClientUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val mlsPublicKeysRepository: MLSPublicKeysRepository,
 ) : IsAllowedToRegisterMLSClientUseCase {

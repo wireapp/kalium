@@ -28,7 +28,7 @@ interface ObserveArchivedUnreadConversationsCountUseCase {
     suspend operator fun invoke(): Flow<Long>
 }
 
-class ObserveArchivedUnreadConversationsCountUseCaseImpl(
+internal class ObserveArchivedUnreadConversationsCountUseCaseImpl(
     private val conversationRepository: ConversationRepository
 ) : ObserveArchivedUnreadConversationsCountUseCase {
 
