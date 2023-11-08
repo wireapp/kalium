@@ -268,7 +268,7 @@ internal class UserDataSource internal constructor(
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.ACCEPTED,  // this won't be updated, just to avoid a null value
+                    connectionState = ConnectionEntity.State.ACCEPTED, // this won't be updated, just to avoid a null value
                     userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
                         .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
                 )
