@@ -202,7 +202,7 @@ class UserRepositoryTest {
     @Test
     fun givenAnUserIdListWithDifferentDomain_whenApiReturnsFederationDisabledError_thenShouldTryToFetchOnlyUsersWithSelfDomain() = runTest {
         // given
-        val requestedUserIds = setOf(TestUser.OTHER_USER_ID, TestUser.OTHER_USER_ID_2)
+        val requestedUserIds = setOf(TestUser.OTHER_USER_ID, TestUser.OTHER_FEDERATED_USER_ID)
         val (arrangement, userRepository) = Arrangement()
             .withGetMultipleUsersApiRequestFederationNotEnabledError()
             .arrange()
@@ -211,8 +211,12 @@ class UserRepositoryTest {
         // then
         verify(arrangement.userDetailsApi)
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasInvoked(exactly = twice)
+            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi()))))
+            .wasInvoked(exactly = once)
     }
 
     @Test
