@@ -37,6 +37,9 @@ internal class SyncMigrationStepsProviderImpl(
     )
 
     override fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep> {
-        return steps.filter { it.key in (fromVersion + 1)..toVersion }.values.sortedBy { it.value.version }.map { it.value }
+        return steps
+            .filter { it.key in (fromVersion + 1)..toVersion }.values
+            .sortedBy { it.value.version }
+            .map { it.value }
     }
 }

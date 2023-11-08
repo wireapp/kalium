@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.provider
 
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
+import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderTest
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import io.mockative.Mock
 import io.mockative.any
