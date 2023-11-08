@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.user.UserId

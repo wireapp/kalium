@@ -15,13 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.functional.Either
 
-sealed class BroadcastMessageOption {
-    data object IgnoreAll : BroadcastMessageOption()
-    data object ReportAll : BroadcastMessageOption()
-    data class IgnoreSome(val userIDs: List<UserId>) : BroadcastMessageOption()
-    data class ReportSome(val userIDs: List<UserId>) : BroadcastMessageOption()
+fun interface CurrentClientIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, ClientId>
+}
+
+internal fun interface SelfTeamIdProvider {
+    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }

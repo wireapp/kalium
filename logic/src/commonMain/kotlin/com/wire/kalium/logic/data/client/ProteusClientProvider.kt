@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature
+package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral

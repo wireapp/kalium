@@ -218,8 +218,9 @@ interface UserDAO {
     /**
      * This will update all columns (or insert a new record), except:
      * - [ConnectionEntity.State]
-     * - [UserEntity.userType]
+     * - [UserAvailabilityStatusEntity]
      * - [UserEntity.activeOneOnOneConversationId]
+     * - [UserEntity.defederated]
      *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
@@ -229,8 +230,9 @@ interface UserDAO {
     /**
      * This will update all columns (or insert a new record), except:
      * - [ConnectionEntity.State]
-     * - [UserEntity.userType]
+     * - [UserAvailabilityStatusEntity]
      * - [UserEntity.activeOneOnOneConversationId]
+     * - [UserEntity.defederated]
      *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
@@ -297,5 +299,5 @@ interface UserDAO {
      */
     suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
 
-    suspend fun upsertConnectionStatus(userId: QualifiedIDEntity, status: ConnectionEntity.State)
+    suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>)
 }

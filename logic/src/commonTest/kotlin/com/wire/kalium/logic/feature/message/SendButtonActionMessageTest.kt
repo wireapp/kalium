@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.functional.Either

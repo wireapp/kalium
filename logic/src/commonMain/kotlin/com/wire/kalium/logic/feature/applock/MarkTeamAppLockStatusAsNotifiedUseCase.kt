@@ -15,17 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature
+package com.wire.kalium.logic.feature.applock
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.configuration.UserConfigRepository
 
-fun interface CurrentClientIdProvider {
-    suspend operator fun invoke(): Either<CoreFailure, ClientId>
+/**
+ * Mark the team app lock status as notified
+ * need to be called after notifying the user about the change
+ * e.g. after showing a dialog, or a toast etc.
+ */
+interface MarkTeamAppLockStatusAsNotifiedUseCase {
+    operator fun invoke()
 }
 
-internal fun interface SelfTeamIdProvider {
-    suspend operator fun invoke(): Either<CoreFailure, TeamId?>
+class MarkTeamAppLockStatusAsNotifiedUseCaseImpl internal constructor(
+    private val userConfigRepository: UserConfigRepository
+) : MarkTeamAppLockStatusAsNotifiedUseCase {
+    override operator fun invoke() {
+        userConfigRepository.setTeamAppLockAsNotified()
+    }
 }

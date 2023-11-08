@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature
 
@@ -48,6 +49,8 @@ import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProviderImpl
+import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.client.ProteusClientProviderImpl
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
@@ -72,9 +75,11 @@ import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
@@ -132,6 +137,8 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
+import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
+import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -160,14 +167,14 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
-import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCaseImpl
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
@@ -1240,7 +1247,7 @@ class UserSessionScope internal constructor(
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-            mlsClientProvider, conversationRepository, oneOnOneResolver
+            mlsClientProvider, conversationRepository, oneOnOneResolver, client.refillKeyPackages
         )
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
@@ -1589,7 +1596,10 @@ class UserSessionScope internal constructor(
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
     val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
-        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository, kaliumConfigs)
+
+    val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
+        get() = MarkTeamAppLockStatusAsNotifiedUseCaseImpl(userConfigRepository)
 
     val markSelfDeletingMessagesAsNotified: MarkSelfDeletionStatusAsNotifiedUseCase
         get() = MarkSelfDeletionStatusAsNotifiedUseCaseImpl(userConfigRepository)

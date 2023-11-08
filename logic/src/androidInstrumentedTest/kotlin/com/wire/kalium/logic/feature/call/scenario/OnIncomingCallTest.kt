@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
-import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation

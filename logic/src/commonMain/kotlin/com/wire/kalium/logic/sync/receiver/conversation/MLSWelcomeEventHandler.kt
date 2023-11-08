@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
+import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -46,7 +48,8 @@ interface MLSWelcomeEventHandler {
 internal class MLSWelcomeEventHandlerImpl(
     val mlsClientProvider: MLSClientProvider,
     val conversationRepository: ConversationRepository,
-    val oneOnOneResolver: OneOnOneResolver
+    val oneOnOneResolver: OneOnOneResolver,
+    val refillKeyPackages: RefillKeyPackagesUseCase
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider
@@ -56,18 +59,30 @@ internal class MLSWelcomeEventHandlerImpl(
                     client.processWelcomeMessage(event.message.decodeBase64Bytes())
                 }
             }.flatMap { groupID ->
-                conversationRepository.fetchConversationIfUnknown(event.conversationId)
-                    .flatMap {
-                        markConversationAsEstablished(GroupID(groupID))
-                    }.flatMap {
-                        resolveConversationIfOneOnOne(event.conversationId)
+                conversationRepository.fetchConversationIfUnknown(event.conversationId).map { groupID }
+            }.flatMap { groupID ->
+                markConversationAsEstablished(GroupID(groupID))
+            }.flatMap {
+                resolveConversationIfOneOnOne(event.conversationId)
+            }
+            .onSuccess {
+                val didSucceedRefillingKeyPackages = when (val refillResult = refillKeyPackages()) {
+                    is RefillKeyPackagesResult.Failure -> {
+                        val exception = (refillResult.failure as? CoreFailure.Unknown)?.rootCause
+                        kaliumLogger.w("Failed to refill key packages; Failure: ${refillResult.failure}", exception)
+                        false
                     }
-            }.onSuccess {
+
+                    RefillKeyPackagesResult.Success -> {
+                        true
+                    }
+                }
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
                         event,
-                        Pair("info", "Established mls conversation from welcome message")
+                        "info" to "Established mls conversation from welcome message",
+                        "didSucceedRefillingKeypackages" to didSucceedRefillingKeyPackages
                     )
             }.onFailure {
                 kaliumLogger

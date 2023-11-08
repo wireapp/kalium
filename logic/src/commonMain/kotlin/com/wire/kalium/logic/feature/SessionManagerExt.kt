@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
