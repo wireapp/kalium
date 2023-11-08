@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -37,12 +39,12 @@ import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
@@ -117,6 +119,7 @@ internal interface UserRepository {
      * when backends stops federating.
      */
     suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
+
     // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
@@ -155,12 +158,12 @@ internal class UserDataSource internal constructor(
 ) : UserRepository {
 
     /**
-     * In case of federated users, we need to refresh their info every time.
-     * Since the current backend implementation at wire does not emit user events across backends.
+     * Stores the last time a user's details were fetched from remote.
      *
-     * This is an in-memory cache, to help avoid unnecessary requests in a time window.
+     * @see Event.User.Update
+     * @see USER_DETAILS_MAX_AGE
      */
-    private val federatedUsersExpirationCache = ConcurrentMap<UserId, Instant>()
+    private val userDetailsRefreshInstantCache = ConcurrentMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { userDTO ->
@@ -186,20 +189,25 @@ internal class UserDataSource internal constructor(
             .map { userEntity ->
                 userEntity?.let { publicUserMapper.fromUserEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
-                processFederatedUserRefresh(userId, otherUser)
+                if (otherUser != null) {
+                    refreshUserDetailsIfNeeded(userId)
+                }
             }
 
     /**
-     * Only in case of federated users and if it's expired or not cached, we fetch and refresh the user info.
+     * Only refresh user profiles if it wasn't fetched recently.
+     *
+     * @see userDetailsRefreshInstantCache
+     * @see USER_DETAILS_MAX_AGE
      */
-    private suspend fun processFederatedUserRefresh(userId: UserId, otherUser: OtherUser?) {
-        if (otherUser != null && otherUser.userType.isFederated()
-            && federatedUsersExpirationCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
-        ) {
+    private suspend fun refreshUserDetailsIfNeeded(userId: UserId) {
+        val now = DateTimeUtil.currentInstant()
+        val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
+        if (!wasFetchedRecently) {
             fetchUserInfo(userId).also {
-                kaliumLogger.d("Federated user, refreshing user info from API after $FEDERATED_USER_TTL")
+                kaliumLogger.d("Federated user, refreshing user info from API after $USER_DETAILS_MAX_AGE")
             }
-            federatedUsersExpirationCache[userId] = DateTimeUtil.currentInstant().plus(FEDERATED_USER_TTL)
+            userDetailsRefreshInstantCache[userId] = now
         }
     }
 
@@ -235,6 +243,24 @@ internal class UserDataSource internal constructor(
                             usersFound = (acc.usersFound + it.usersFound).distinct(),
                             usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
                         )
+                    }
+                }
+                .flatMapLeft { error ->
+                    if (error is NetworkFailure.FederatedBackendFailure.FederationNotEnabled) {
+                        val domains = qualifiedUserIdList
+                            .filterNot { it.domain == selfUserId.domain }
+                            .map { it.domain.obfuscateDomain() }
+                            .toSet()
+                        val domainNames = domains.joinToString(separator = ", ")
+                        kaliumLogger.e("User ids contains different domains when federation is not enabled by backend: $domainNames")
+                        wrapApiRequest {
+                            userDetailsApi.getMultipleUsers(
+                                ListUserRequest.qualifiedIds(qualifiedUserIdList.filter { it.domain == selfUserId.domain }
+                                    .map { userId -> userId.toApi() })
+                            )
+                        }
+                    } else {
+                        Either.Left(error)
                     }
                 }
                 .flatMap { listUserProfileDTO ->
@@ -503,7 +529,16 @@ internal class UserDataSource internal constructor(
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
-        internal val FEDERATED_USER_TTL = 5.minutes
+
+        /**
+         * Maximum age for user details.
+         *
+         * The USER_DETAILS_MAX_AGE constant represents the maximum age in minutes that user details can be considered valid. After
+         * this duration, the user details should be refreshed.
+         *
+         * This is needed because some users don't get `user.update` events, so we need to refresh their details every so often.
+         */
+        internal val USER_DETAILS_MAX_AGE = 5.minutes
         internal const val BATCH_SIZE = 500
     }
 }

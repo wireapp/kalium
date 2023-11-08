@@ -36,6 +36,7 @@ import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
+import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -202,6 +203,26 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun givenAnUserIdListWithDifferentDomain_whenApiReturnsFederationDisabledError_thenShouldTryToFetchOnlyUsersWithSelfDomain() = runTest {
+        // given
+        val requestedUserIds = setOf(TestUser.OTHER_USER_ID, TestUser.OTHER_FEDERATED_USER_ID)
+        val (arrangement, userRepository) = Arrangement()
+            .withGetMultipleUsersApiRequestFederationNotEnabledError()
+            .arrange()
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldFail()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi()))))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenAnEmptyUserIdListFromSameDomainAsSelf_whenFetchingUsers_thenShouldNotFetchMultipleUsersAndSucceed() = runTest {
         // given
         val requestedUserIds = setOf(
@@ -356,9 +377,9 @@ class UserRepositoryTest {
     }
 
     @Test
-    fun givenAKnownNOTFederatedUser_whenGettingFromDb_thenShouldNotRefreshItsDataFromAPI() = runTest {
+    fun givenAKnownUser_whenGettingFromDb_thenShouldRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.STANDARD))
+            .withUserDaoReturning(TestUser.ENTITY)
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -368,22 +389,22 @@ class UserRepositoryTest {
             verify(arrangement.userDetailsApi)
                 .suspendFunction(arrangement.userDetailsApi::getUserInfo)
                 .with(any())
-                .wasNotInvoked()
+                .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertTeamMembers)
                 .with(any())
-                .wasNotInvoked()
+                .wasInvoked(exactly = once)
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::upsertUsers)
                 .with(any())
-                .wasNotInvoked()
+                .wasInvoked(exactly = once)
         }
     }
 
     @Test
-    fun givenAKnownFederatedUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
+    fun givenAKnownUser_whenGettingFromDbAndCacheValid_thenShouldNOTRefreshItsDataFromAPI() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.ENTITY.copy(userType = UserTypeEntity.FEDERATED))
+            .withUserDaoReturning(TestUser.ENTITY)
             .withSuccessfulGetUsersInfo()
             .arrange()
 
@@ -741,6 +762,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
+        }
+
+        fun withGetMultipleUsersApiRequestFederationNotEnabledError() = apply {
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Error(federationNotEnabled))
         }
 
         fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
