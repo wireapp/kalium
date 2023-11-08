@@ -34,7 +34,7 @@ sqldelight = "2.0.0"
 sqlcipher-android = "4.5.5"
 pbandk = "0.14.2"
 turbine = "1.0.0"
-avs = "9.4.14"
+avs = "9.5.4"
 jna = "5.13.0"
 core-crypto = "1.0.0-rc.17"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
@@ -51,11 +51,12 @@ annotation = "1.7.0"
 mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
 mockk = "1.13.5"
-faker = "1.14.0"
+faker = "1.15.0"
 robolectric = "4.9"
 stately = "2.0.0-rc3"
 micrometer = "1.11.3"
 bouncy-castle = "1.70"
+konsist = "0.13.0"
 
 [plugins]
 # Home-made convention plugins
@@ -167,6 +168,7 @@ mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockativ
 mockative-processor = { module = "io.mockative:mockative-processor", version.ref = "mockative" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 
 # detekt
 detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }

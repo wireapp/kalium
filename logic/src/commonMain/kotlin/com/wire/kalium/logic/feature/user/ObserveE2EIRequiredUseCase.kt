@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
@@ -48,30 +49,35 @@ interface ObserveE2EIRequiredUseCase {
 
 internal class ObserveE2EIRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
+    private val featureSupport: FeatureSupport,
     private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
 ) : ObserveE2EIRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun invoke(): Flow<E2EIRequiredResult> = userConfigRepository
-        .observeE2EINotificationTime()
-        .map { it.getOrNull() }
-        .filterNotNull()
-        .delayUntilNotifyTime()
-        .flatMapLatest {
-            observeE2EISettings().flatMapLatest { setting ->
-                if (!setting.isRequired)
-                    flowOf(E2EIRequiredResult.NotRequired)
-                else
-                    observeCurrentE2EICertificate().map { currentCertificate ->
-                        // TODO check here if current certificate needs to be renewed (soon, or now)
+    override fun invoke(): Flow<E2EIRequiredResult> {
+        if (!featureSupport.isMLSSupported) return flowOf(E2EIRequiredResult.NotRequired)
 
-                        if (setting.gracePeriodEnd == null || setting.gracePeriodEnd <= DateTimeUtil.currentInstant())
-                            E2EIRequiredResult.NoGracePeriod.Create
-                        else E2EIRequiredResult.WithGracePeriod.Create(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
-                    }
+        return userConfigRepository
+            .observeE2EINotificationTime()
+            .map { it.getOrNull() }
+            .filterNotNull()
+            .delayUntilNotifyTime()
+            .flatMapLatest {
+                observeE2EISettings().flatMapLatest { setting ->
+                    if (!setting.isRequired)
+                        flowOf(E2EIRequiredResult.NotRequired)
+                    else
+                        observeCurrentE2EICertificate().map { currentCertificate ->
+                            // TODO check here if current certificate needs to be renewed (soon, or now)
+
+                            if (setting.gracePeriodEnd == null || setting.gracePeriodEnd <= DateTimeUtil.currentInstant())
+                                E2EIRequiredResult.NoGracePeriod.Create
+                            else E2EIRequiredResult.WithGracePeriod.Create(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
+                        }
+                }
             }
-        }
-        .flowOn(dispatcher)
+            .flowOn(dispatcher)
+    }
 
     private fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
 

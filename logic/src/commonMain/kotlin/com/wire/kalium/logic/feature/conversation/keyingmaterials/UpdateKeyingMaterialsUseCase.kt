@@ -40,7 +40,7 @@ interface UpdateKeyingMaterialsUseCase {
     suspend operator fun invoke(): UpdateKeyingMaterialsResult
 }
 
-class UpdateKeyingMaterialsUseCaseImpl(
+internal class UpdateKeyingMaterialsUseCaseImpl(
     val mlsConversationRepository: MLSConversationRepository,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider
 ) : UpdateKeyingMaterialsUseCase {
