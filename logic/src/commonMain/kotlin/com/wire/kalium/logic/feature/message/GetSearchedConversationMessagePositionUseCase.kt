@@ -37,9 +37,9 @@ interface GetSearchedConversationMessagePositionUseCase {
         messageId: String
     ): Result
 
-    sealed class Result {
-        data class Success(val position: Int) : Result()
-        data class Failure(val storageFailure: StorageFailure) : Result()
+    sealed interface Result {
+        data class Success(val position: Int) : Result
+        data class Failure(val cause: StorageFailure) : Result
     }
 }
 
