@@ -637,6 +637,7 @@ class UserSessionScope internal constructor(
         userStorage.database.clientDAO,
         authenticatedNetworkContainer.selfApi,
         authenticatedNetworkContainer.userDetailsApi,
+        authenticatedNetworkContainer.teamsApi,
         globalScope.sessionRepository,
         userId,
         qualifiedIdMapper,
@@ -694,6 +695,7 @@ class UserSessionScope internal constructor(
             userStorage.database.userDAO,
             userStorage.database.metadataDAO,
             authenticatedNetworkContainer.userDetailsApi,
+            authenticatedNetworkContainer.teamsApi,
             userSearchApiWrapper
         )
 
