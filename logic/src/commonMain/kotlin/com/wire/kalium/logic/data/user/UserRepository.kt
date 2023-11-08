@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -42,6 +44,7 @@ import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
@@ -235,6 +238,24 @@ internal class UserDataSource internal constructor(
                             usersFound = (acc.usersFound + it.usersFound).distinct(),
                             usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
                         )
+                    }
+                }
+                .flatMapLeft { error ->
+                    if (error is NetworkFailure.FederatedBackendFailure.FederationNotEnabled) {
+                        val domains = qualifiedUserIdList
+                            .filterNot { it.domain == selfUserId.domain }
+                            .map { it.domain.obfuscateDomain() }
+                            .toSet()
+                        val domainNames = domains.joinToString(separator = ", ")
+                        kaliumLogger.e("User ids contains different domains when federation is not enabled by backend: $domainNames")
+                        wrapApiRequest {
+                            userDetailsApi.getMultipleUsers(
+                                ListUserRequest.qualifiedIds(qualifiedUserIdList.filter { it.domain == selfUserId.domain }
+                                    .map { userId -> userId.toApi() })
+                            )
+                        }
+                    } else {
+                        Either.Left(error)
                     }
                 }
                 .flatMap { listUserProfileDTO ->

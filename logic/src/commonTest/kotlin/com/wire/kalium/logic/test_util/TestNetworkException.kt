@@ -130,6 +130,10 @@ object TestNetworkException {
     val guestLinkDisables = KaliumException.InvalidRequestError(
         ErrorResponse(409, "Guest links are disabled", "guest-links-disabled")
     )
+
+    val federationNotEnabled = KaliumException.FederationError(
+        ErrorResponse(400, "no federator configured", "federation-not-enabled")
+    )
 }
 
 object TestNetworkResponseError {
