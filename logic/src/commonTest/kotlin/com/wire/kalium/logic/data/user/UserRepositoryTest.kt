@@ -36,7 +36,12 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
+<<<<<<< HEAD
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
+=======
+import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
+import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
+>>>>>>> 9b8b0e6937 (fix: handle federation not enabled [WPB-5237] (#2189))
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
@@ -179,6 +184,26 @@ class UserRepositoryTest {
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
             .with(any())
             .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAnUserIdListWithDifferentDomain_whenApiReturnsFederationDisabledError_thenShouldTryToFetchOnlyUsersWithSelfDomain() = runTest {
+        // given
+        val requestedUserIds = setOf(TestUser.OTHER_USER_ID, TestUser.OTHER_FEDERATED_USER_ID)
+        val (arrangement, userRepository) = Arrangement()
+            .withGetMultipleUsersApiRequestFederationNotEnabledError()
+            .arrange()
+        // when
+        userRepository.fetchUsersByIds(requestedUserIds).shouldFail()
+        // then
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            .wasInvoked(exactly = once)
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi()))))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -774,6 +799,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
+        }
+
+        fun withGetMultipleUsersApiRequestFederationNotEnabledError() = apply {
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Error(federationNotEnabled))
         }
 
         fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
