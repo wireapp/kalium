@@ -24,7 +24,7 @@ object FeatureConfigTest {
 
     @Suppress("LongParameterList")
     fun newModel(
-        appLockModel: AppLockModel = AppLockModel(AppLockConfigModel(false, 10), Status.ENABLED),
+        appLockModel: AppLockModel = AppLockModel(Status.ENABLED, 10),
         classifiedDomainsModel: ClassifiedDomainsModel = ClassifiedDomainsModel(
             ClassifiedDomainsConfigModel(listOf()),
             Status.ENABLED

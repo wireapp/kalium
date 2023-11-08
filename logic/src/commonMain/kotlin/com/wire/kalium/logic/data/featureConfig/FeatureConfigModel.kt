@@ -44,16 +44,13 @@ data class FeatureConfigModel(
 
 enum class Status {
     ENABLED,
-    DISABLED
+    DISABLED;
+
+    fun toBoolean(): Boolean = this == ENABLED
 }
 
 data class AppLockModel(
-    val config: AppLockConfigModel,
-    val status: Status
-)
-
-data class AppLockConfigModel(
-    val enforceAppLock: Boolean,
+    val status: Status,
     val inactivityTimeoutSecs: Second
 )
 
