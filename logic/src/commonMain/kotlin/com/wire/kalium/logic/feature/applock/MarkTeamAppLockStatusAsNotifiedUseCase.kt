@@ -28,7 +28,7 @@ interface MarkTeamAppLockStatusAsNotifiedUseCase {
     operator fun invoke()
 }
 
-class MarkTeamAppLockStatusAsNotifiedUseCaseImpl(
+class MarkTeamAppLockStatusAsNotifiedUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : MarkTeamAppLockStatusAsNotifiedUseCase {
     override operator fun invoke() {
