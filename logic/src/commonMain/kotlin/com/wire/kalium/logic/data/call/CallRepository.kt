@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
@@ -186,8 +187,8 @@ internal class CallDataSource(
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
     ) {
-        val conversation: Conversation =
-            conversationRepository.observeById(conversationId).onlyRight().first()
+        val conversation: ConversationDetails =
+            conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
 
         // in OnIncomingCall we get callerId without a domain,
         // to cover that case and have a valid UserId we have that workaround
@@ -200,13 +201,13 @@ internal class CallDataSource(
             id = uuid4().toString(),
             type = type,
             status = status,
-            conversationType = conversation.type,
+            conversationType = conversation.conversation.type,
             callerId = callerIdWithDomain
         )
 
         val metadata = CallMetadata(
-            conversationName = conversation.name,
-            conversationType = conversation.type,
+            conversationName = conversation.conversation.name,
+            conversationType = conversation.conversation.type,
             callerName = caller?.name,
             callerTeamName = team?.name,
             isMuted = isMuted,
@@ -214,7 +215,7 @@ internal class CallDataSource(
             isCbrEnabled = isCbrEnabled,
             establishedTime = null,
             callStatus = status,
-            protocol = conversation.protocol
+            protocol = conversation.conversation.protocol
         )
 
         val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId)
