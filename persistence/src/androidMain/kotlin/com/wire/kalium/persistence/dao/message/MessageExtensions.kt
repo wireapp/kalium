@@ -20,10 +20,8 @@ package com.wire.kalium.persistence.dao.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import com.wire.kalium.persistence.kaliumLogger
 import kotlin.coroutines.CoroutineContext
 
 actual interface MessageExtensions {
@@ -58,19 +56,19 @@ actual class MessageExtensionsImpl actual constructor(
     private fun getPagingSource(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
-        startingOffset: Int
+        initialOffset: Int
     ) =
-        QueryPagingSource(
-            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+        KaliumOffsetQueryPagingSource(
+            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities).toInt(),
             transacter = messagesQueries,
             context = coroutineContext,
+            initialOffset = initialOffset,
             queryProvider = { limit, offset ->
-                kaliumLogger.d("Querying messages for conversation limit=$limit offset=$offset")
                 messagesQueries.selectByConversationIdAndVisibility(
                     conversationId,
                     visibilities,
-                    limit,
-                    offset + startingOffset,
+                    limit.toLong(),
+                    offset.toLong(),
                     messageMapper::toEntityMessageFromView
                 )
             }
