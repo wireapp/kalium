@@ -50,5 +50,5 @@ internal class ValidateSSOCodeUseCaseImpl : ValidateSSOCodeUseCase {
 
 sealed class ValidateSSOCodeResult {
     data class Valid(val uuid: String) : ValidateSSOCodeResult()
-    object Invalid : ValidateSSOCodeResult()
+    data object Invalid : ValidateSSOCodeResult()
 }

@@ -32,6 +32,7 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
@@ -49,7 +50,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
@@ -185,7 +186,7 @@ class CallManagerImpl internal constructor(
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
                     .keepingStrongReference(),
                 constantBitRateStateChangeHandler = constantBitRateStateChangeHandler,
-                videoReceiveStateHandler = OnParticipantsVideoStateChanged(),
+                videoReceiveStateHandler = OnParticipantsVideoStateChanged().keepingStrongReference(),
                 arg = null
             )
             callingLogger.d("$TAG - wcall_create() called")

@@ -77,7 +77,7 @@ sealed interface ConferenceCallingResult {
     /**
      * Eligible to start conference/one on one calls
      */
-    object Enabled : ConferenceCallingResult
+    data object Enabled : ConferenceCallingResult
 
     /**
      * Not eligible to start a conference/one on one calls
@@ -86,16 +86,16 @@ sealed interface ConferenceCallingResult {
         /**
          * Established call is ongoing
          */
-        object Established : Disabled
+        data object Established : Disabled
 
         /**
          * There is an Ongoing Call
          */
-        object OngoingCall : Disabled
+        data object OngoingCall : Disabled
 
         /**
          * Conference Calling is unavailable due to team not having the paid plan
          */
-        object Unavailable : Disabled
+        data object Unavailable : Disabled
     }
 }

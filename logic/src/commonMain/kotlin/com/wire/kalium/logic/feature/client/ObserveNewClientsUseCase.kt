@@ -107,8 +107,8 @@ class ObserveNewClientsUseCaseImpl internal constructor(
 }
 
 sealed class NewClientResult {
-    object Error : NewClientResult()
-    object Empty : NewClientResult()
+    data object Error : NewClientResult()
+    data object Empty : NewClientResult()
     data class InCurrentAccount(val newClients: List<Client>, val userId: UserId) : NewClientResult()
     data class InOtherAccount(
         val newClients: List<Client>,

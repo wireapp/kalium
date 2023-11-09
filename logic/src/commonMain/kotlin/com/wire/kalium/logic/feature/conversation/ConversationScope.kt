@@ -27,20 +27,25 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
+import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
+import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserStorage
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
-import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCaseImpl
+import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
+import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
@@ -52,6 +57,7 @@ import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMa
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCase
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
@@ -86,6 +92,8 @@ class ConversationScope internal constructor(
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
+    private val userPropertyRepository: UserPropertyRepository,
+    private val oneOnOneResolver: OneOnOneResolver,
     private val scope: CoroutineScope
 ) {
 
@@ -140,7 +148,7 @@ class ConversationScope internal constructor(
     internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
         get() = NewGroupConversationSystemMessagesCreatorImpl(
             persistMessage,
-            isSelfATeamMember,
+            selfTeamIdProvider,
             qualifiedIdMapper,
             selfUserId
         )
@@ -152,7 +160,11 @@ class ConversationScope internal constructor(
         get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
 
     val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
-        get() = GetOrCreateOneToOneConversationUseCase(conversationRepository, conversationGroupRepository)
+        get() = GetOrCreateOneToOneConversationUseCaseImpl(
+            conversationRepository,
+            userRepository,
+            oneOnOneResolver
+        )
 
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
         get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
@@ -160,8 +172,15 @@ class ConversationScope internal constructor(
     val updateConversationArchivedStatus: UpdateConversationArchivedStatusUseCase
         get() = UpdateConversationArchivedStatusUseCaseImpl(conversationRepository)
 
+    @Deprecated(
+        "Name is misleading, and this field will be removed",
+        ReplaceWith("observePendingConnectionRequests")
+    )
     val observeConnectionList: ObserveConnectionListUseCase
-        get() = ObserveConnectionListUseCaseImpl(connectionRepository)
+        get() = observePendingConnectionRequests
+
+    val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
+        get() = ObservePendingConnectionRequestsUseCaseImpl(connectionRepository)
 
     val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
         get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
@@ -261,9 +280,31 @@ class ConversationScope internal constructor(
             selfUserId
         )
 
-    internal val typingIndicatorRepository = TypingIndicatorRepositoryImpl(ConcurrentMutableMap())
+    val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
+        get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
+
+    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler =
+        TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
+
+    internal val typingIndicatorIncomingRepository =
+        TypingIndicatorIncomingRepositoryImpl(
+            ConcurrentMutableMap(),
+            userPropertyRepository
+        )
+
+    internal val typingIndicatorOutgoingRepository =
+        TypingIndicatorOutgoingRepositoryImpl(
+            typingIndicatorSenderHandler,
+            userPropertyRepository
+        )
+
+    val sendTypingEvent: SendTypingEventUseCase
+        get() = SendTypingEventUseCaseImpl(typingIndicatorOutgoingRepository)
 
     val observeUsersTyping: ObserveUsersTypingUseCase
-        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorRepository)
+        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorIncomingRepository, userRepository)
+
+    val clearUsersTypingEvents: ClearUsersTypingEventsUseCase
+        get() = ClearUsersTypingEventsUseCaseImpl(typingIndicatorIncomingRepository)
 
 }

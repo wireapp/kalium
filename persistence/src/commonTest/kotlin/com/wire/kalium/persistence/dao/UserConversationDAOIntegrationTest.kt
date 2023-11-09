@@ -25,15 +25,15 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     private val user1 = newUserEntity(id = "1")
@@ -59,13 +59,13 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
     @Test
     fun givenUserExists_whenInsertingMember_thenOriginalUserDetailsAreKept() = runTest(dispatcher) {
-        userDAO.insertUser(user1)
+        userDAO.upsertUser(user1)
 
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(member1, conversationEntity1.id)
 
-        val result = userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(user1, result)
+        val result = userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(user1, result?.toSimpleEntity())
     }
 
     @Test
@@ -89,10 +89,10 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         )
 
         // when
-        userDAO.observeUsersNotInConversation(conversationId).test {
+        userDAO.observeUsersDetailsNotInConversation(conversationId).test {
             val result = awaitItem()
             // then
-            assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+            assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -117,7 +117,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         // when
 
-        userDAO.observeUsersNotInConversation(conversationId).test {
+        userDAO.observeUsersDetailsNotInConversation(conversationId).test {
             // then
             val result = awaitItem()
             assertTrue { result.isEmpty() }
@@ -135,10 +135,10 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         createTestConversation(conversationId, emptyList())
 
         // when
-        userDAO.observeUsersNotInConversation(conversationId).test {
+        userDAO.observeUsersDetailsNotInConversation(conversationId).test {
             // then
             val result = awaitItem()
-            assertTrue { result == listOf(user1, user2) }
+            assertEquals(listOf(user1, user2), result.map { it.toSimpleEntity() })
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -170,11 +170,11 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         // when
 
-        userDAO.getUsersNotInConversationByHandle(conversationId, "handleMatch")
+        userDAO.getUsersDetailsNotInConversationByHandle(conversationId, "handleMatch")
             .test {
                 // then
                 val result = awaitItem()
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
                 cancelAndIgnoreRemainingEvents()
             }
     }
@@ -206,11 +206,11 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         // when
 
-        userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "emailMatch")
+        userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(conversationId, "emailMatch")
             .test {
                 // then
                 val result = awaitItem()
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
                 cancelAndIgnoreRemainingEvents()
             }
     }
@@ -242,13 +242,36 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         // when
 
-        userDAO.getUsersNotInConversationByNameOrHandleOrEmail(conversationId, "nameMatch")
+        userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(conversationId, "nameMatch")
             .test {
                 // then
                 val result = awaitItem()
-                assertTrue { result == (allUsers - userThatIsPartOfConversation) }
+                assertEquals((allUsers - userThatIsPartOfConversation), result.map { it.toSimpleEntity() })
                 cancelAndIgnoreRemainingEvents()
             }
+    }
+
+    @Test
+    fun givenActiveOneOnOneWasSetForConversation_whenFetchingConversationView_thenActiveOneOnOneShouldMatch() = runTest {
+        userDAO.upsertUser(user1)
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.insertMember(member1, conversationEntity1.id)
+
+        userDAO.updateActiveOneOnOneConversation(user1.id, conversationEntity1.id)
+
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertEquals(conversationEntity1.id, result?.userActiveOneOnOneConversationId)
+    }
+
+    @Test
+    fun givenActiveOneOnOneWasNotSetForConversation_whenFetchingConversationView_thenActiveOneOnOneShouldBeNull() = runTest {
+        userDAO.upsertUser(user1)
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        assertNotNull(result)
+        assertNull(result.userActiveOneOnOneConversationId)
     }
 
     private suspend fun createTestConversation(conversationIDEntity: QualifiedIDEntity, members: List<MemberEntity>) {

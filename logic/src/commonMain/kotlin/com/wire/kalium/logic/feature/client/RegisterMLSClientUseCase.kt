@@ -35,7 +35,7 @@ interface RegisterMLSClientUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit>
 }
 
-class RegisterMLSClientUseCaseImpl(
+internal class RegisterMLSClientUseCaseImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val clientRepository: ClientRepository,
     private val keyPackageRepository: KeyPackageRepository,

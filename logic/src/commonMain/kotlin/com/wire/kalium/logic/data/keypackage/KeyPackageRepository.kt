@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
@@ -42,6 +42,10 @@ interface KeyPackageRepository {
     suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>>
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
+
+    suspend fun uploadKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
+
+    suspend fun deleteKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
     suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO>
 
@@ -85,6 +89,22 @@ class KeyPackageDataSource(
                     keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
                 }
             }
+        }
+
+    override suspend fun uploadKeyPackages(
+        clientId: ClientId,
+        keyPackages: List<ByteArray>
+    ): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+        }
+
+    override suspend fun deleteKeyPackages(
+        clientId: ClientId,
+        keyPackages: List<ByteArray>
+    ): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            keyPackageApi.deleteKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
         }
 
     override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =

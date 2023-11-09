@@ -192,7 +192,7 @@ class RestoreWebBackupUseCaseTest {
 
         fun arrange() = this to RestoreWebBackupUseCaseImpl(
             kaliumFileSystem = fakeFileSystem,
-            userId = selfUserId,
+            selfUserId = selfUserId,
             migrationDAO = migrationDAO,
             persistMigratedMessages = persistMigratedMessagesUseCase,
             restartSlowSyncProcessForRecovery = restartSlowSyncProcessForRecoveryUseCase

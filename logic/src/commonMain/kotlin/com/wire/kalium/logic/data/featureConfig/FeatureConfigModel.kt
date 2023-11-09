@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.featureConfig
 
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.util.time.Second
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import kotlinx.datetime.Instant
 
 data class FeatureConfigModel(
     val appLockModel: AppLockModel,
@@ -36,21 +38,19 @@ data class FeatureConfigModel(
     val ssoModel: ConfigsStatusModel,
     val validateSAMLEmailsModel: ConfigsStatusModel,
     val mlsModel: MLSModel,
-    val e2EIModel: E2EIModel
+    val e2EIModel: E2EIModel,
+    val mlsMigrationModel: MLSMigrationModel?
 )
 
 enum class Status {
     ENABLED,
-    DISABLED
+    DISABLED;
+
+    fun toBoolean(): Boolean = this == ENABLED
 }
 
 data class AppLockModel(
-    val config: AppLockConfigModel,
-    val status: Status
-)
-
-data class AppLockConfigModel(
-    val enforceAppLock: Boolean,
+    val status: Status,
     val inactivityTimeoutSecs: Second
 )
 
@@ -78,6 +78,14 @@ data class SelfDeletingMessagesConfigModel(
 
 data class MLSModel(
     val allowedUsers: List<PlainId>,
+    val defaultProtocol: SupportedProtocol,
+    val supportedProtocols: Set<SupportedProtocol>,
+    val status: Status
+)
+
+data class MLSMigrationModel(
+    val startTime: Instant?,
+    val endTime: Instant?,
     val status: Status
 )
 

@@ -159,7 +159,8 @@ class MessageMapperTest {
             recipientsFailedDeliveryList: List<QualifiedIDEntity>? = null,
             buttonsJson: String = "[]",
             federationDomainList: List<String>? = null,
-            federationType: MessageEntity.FederationType? = null
+            federationType: MessageEntity.FederationType? = null,
+            conversationProtocolChanged: ConversationEntity.Protocol? = null
         ): MessageEntity {
             return MessageMapper.toEntityMessageFromView(
                 id,
@@ -238,7 +239,8 @@ class MessageMapperTest {
                 recipientsFailedDeliveryList,
                 buttonsJson,
                 federationDomainList,
-                federationType
+                federationType,
+                conversationProtocolChanged
             )
         }
 

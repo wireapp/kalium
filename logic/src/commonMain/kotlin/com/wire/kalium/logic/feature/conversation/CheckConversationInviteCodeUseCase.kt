@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.conversation
 
@@ -52,6 +53,7 @@ class CheckConversationInviteCodeUseCase internal constructor(
                 when (failure) {
                     is NetworkFailure.NoNetworkConnection,
                     is NetworkFailure.FederatedBackendFailure,
+                    is NetworkFailure.FeatureNotSupported,
                     is NetworkFailure.ProxyError -> Result.Failure.Generic(failure)
 
                     is NetworkFailure.ServerMiscommunication -> handleServerMissCommunicationError(failure)

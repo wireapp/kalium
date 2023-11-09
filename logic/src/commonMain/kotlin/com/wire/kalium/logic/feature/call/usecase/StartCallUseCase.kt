@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
@@ -27,6 +28,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
@@ -38,6 +40,8 @@ class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
     private val syncManager: SyncManager,
     private val kaliumConfigs: KaliumConfigs,
+    private val callRepository: CallRepository,
+    private val answerCall: AnswerCallUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -46,14 +50,22 @@ class StartCallUseCase internal constructor(
         callType: CallType = CallType.AUDIO,
     ) = withContext(dispatchers.default) {
         syncManager.waitUntilLiveOrFailure().fold({
-            Result.SyncFailure
+            return@withContext Result.SyncFailure
         }, {
+            callRepository.incomingCallsFlow().first().run {
+                find {
+                    it.conversationId == conversationId
+                }?.apply {
+                    answerCall(conversationId)
+                    return@withContext Result.Success
+                }
+            }
             callManager.value.startCall(
                 conversationId = conversationId,
                 callType = callType,
                 isAudioCbr = kaliumConfigs.forceConstantBitrateCalls
             )
-            Result.Success
+            return@withContext Result.Success
         })
     }
 
@@ -61,11 +73,11 @@ class StartCallUseCase internal constructor(
         /**
          * Call started successfully
          */
-        object Success : Result
+        data object Success : Result
 
         /**
          * Failed to start a call as Sync is not yet performed
          */
-        object SyncFailure : Result
+        data object SyncFailure : Result
     }
 }

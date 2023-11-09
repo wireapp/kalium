@@ -21,8 +21,13 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.auth.Account
+import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.session.token.AccessToken
+import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -33,12 +38,10 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class AddAuthenticatedUserUseCaseTest {
 
     @Test
@@ -100,10 +103,16 @@ class AddAuthenticatedUserUseCaseTest {
 
     @Test
     fun givenUserWithAlreadyStoredSession_whenInvokedWithReplaceAndServerConfigAreTheSame_thenSuccessReturned() = runTest {
-        val oldSession = TEST_AUTH_TOKENS.copy(accessToken = "oldAccessToken", refreshToken = "oldRefreshToken")
+        val oldSession = TEST_AUTH_TOKENS.copy(
+            accessToken = AccessToken("oldAccessToken", TEST_AUTH_TOKENS.tokenType),
+            refreshToken = RefreshToken("oldRefreshToken")
+        )
         val oldSessionFullInfo = Account(AccountInfo.Valid(oldSession.userId), TEST_SERVER_CONFIG, TEST_SSO_ID)
 
-        val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
+        val newSession = TEST_AUTH_TOKENS.copy(
+            accessToken = AccessToken("newAccessToken", TEST_AUTH_TOKENS.tokenType),
+            refreshToken = RefreshToken("newRefreshToken")
+        )
 
         val proxyCredentials = PROXY_CREDENTIALS
 
@@ -146,10 +155,16 @@ class AddAuthenticatedUserUseCaseTest {
 
     @Test
     fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
-        val oldSession = TEST_AUTH_TOKENS.copy(accessToken = "oldAccessToken", refreshToken = "oldRefreshToken")
+        val oldSession = TEST_AUTH_TOKENS.copy(
+            accessToken = AccessToken("oldAccessToken", TEST_AUTH_TOKENS.tokenType),
+            refreshToken = RefreshToken("oldRefreshToken")
+        )
         val oldSessionServer = newServerConfig(id = 11)
 
-        val newSession = TEST_AUTH_TOKENS.copy(accessToken = "newAccessToken", refreshToken = "newRefreshToken")
+        val newSession = TEST_AUTH_TOKENS.copy(
+            accessToken = AccessToken("newAccessToken", TEST_AUTH_TOKENS.tokenType),
+            refreshToken = RefreshToken("newRefreshToken")
+        )
         val newSessionServer = newServerConfig(id = 22)
 
         val proxyCredentials = PROXY_CREDENTIALS
@@ -191,7 +206,7 @@ class AddAuthenticatedUserUseCaseTest {
     private companion object {
         val TEST_USERID = UserId("user_id", "domain.de")
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
-        val TEST_AUTH_TOKENS = AuthTokens(
+        val TEST_AUTH_TOKENS = AccountTokens(
             TEST_USERID,
             "access-token",
             "refresh-token",
@@ -246,11 +261,11 @@ class AddAuthenticatedUserUseCaseTest {
         suspend fun withStoreSessionResult(
             serverConfigId: String,
             ssoId: SsoId?,
-            authTokens: AuthTokens,
+            accountTokens: AccountTokens,
             proxyCredentials: ProxyCredentials?,
             result: Either<StorageFailure, Unit>
         ) = apply {
-            given(sessionRepository).coroutine { storeSession(serverConfigId, ssoId, authTokens, proxyCredentials) }.then { result }
+            given(sessionRepository).coroutine { storeSession(serverConfigId, ssoId, accountTokens, proxyCredentials) }.then { result }
         }
 
         suspend fun withUpdateCurrentSessionResult(

@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
@@ -66,7 +67,7 @@ class UserDatabaseDataGenerator(
 
         for (index in generatedMessagesCount + 1..amount) {
             val senderUser = generateUser()
-            userDatabaseBuilder.userDAO.insertUser(senderUser)
+            userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
             val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
 
@@ -111,7 +112,7 @@ class UserDatabaseDataGenerator(
 
         for (index in generatedAssetsCount + 1..amount) {
             val senderUser = generateUser()
-            userDatabaseBuilder.userDAO.insertUser(senderUser)
+            userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
             val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
 
@@ -193,7 +194,9 @@ class UserDatabaseDataGenerator(
             botService = null,
             hasIncompleteMetadata = false,
             expiresAt = null,
-            defederated = false
+            defederated = false,
+            supportedProtocols = null,
+            activeOneOnOneConversationId = null
         )
     }
 
@@ -207,7 +210,7 @@ class UserDatabaseDataGenerator(
 
         for (index in generatedMessagesCount + 1..amount) {
             val senderUser = generateUser()
-            userDatabaseBuilder.userDAO.insertUser(senderUser)
+            userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
             val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
 
@@ -279,7 +282,9 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -323,7 +328,9 @@ class UserDatabaseDataGenerator(
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -334,7 +341,7 @@ class UserDatabaseDataGenerator(
         val callPrefix = "${databasePrefix}Call${generatedCallsCount}"
 
         val userEntity = generateUser()
-        userDatabaseBuilder.userDAO.insertUser(userEntity)
+        userDatabaseBuilder.userDAO.upsertUser(userEntity)
 
         val conversationType = ConversationEntity.Type.values()[generatedCallsCount % ConversationEntity.Type.values().size]
         val type = CallEntity.Type.values()[generatedCallsCount % CallEntity.Type.values().size]
@@ -391,7 +398,9 @@ class UserDatabaseDataGenerator(
                 messageTimer = null,
                 userMessageTimer = null,
                 archived = false,
-                archivedInstant = null
+                archivedInstant = null,
+                mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -458,7 +467,9 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -503,7 +514,9 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 
@@ -538,14 +551,14 @@ class UserDatabaseDataGenerator(
         return members
     }
 
-    suspend fun generateAndInsertUsers(amount: Int): List<UserEntity> {
+    suspend fun generateAndInsertUsers(amount: Int): List<UserDetailsEntity> {
         for (index in generatedUsersCount + 1..amount) {
             val user = generateUser()
 
-            userDatabaseBuilder.userDAO.insertUser(user)
+            userDatabaseBuilder.userDAO.upsertUser(user)
         }
 
-        return userDatabaseBuilder.userDAO.getAllUsers().first()
+        return userDatabaseBuilder.userDAO.getAllUsersDetails().first()
     }
 
     @Suppress("StringTemplate")
@@ -617,7 +630,9 @@ class UserDatabaseDataGenerator(
                     messageTimer = null,
                     userMessageTimer = null,
                     archived = false,
-                    archivedInstant = null
+                    archivedInstant = null,
+                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                 )
             )
 

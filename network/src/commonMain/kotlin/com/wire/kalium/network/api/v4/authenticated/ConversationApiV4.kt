@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.AddConversati
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
 import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ApiModelMapper
@@ -107,8 +108,13 @@ internal open class ConversationApiV4 internal constructor(
             }
         }
 
-    companion object {
-        const val PATH_GROUP_INFO = "groupinfo"
-        const val PATH_SUBCONVERSATIONS = "subconversations"
-    }
+    override suspend fun sendTypingIndicatorNotification(
+        conversationId: ConversationId,
+        typingIndicatorMode: TypingIndicatorStatusDTO
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_TYPING_NOTIFICATION") {
+                setBody(typingIndicatorMode)
+            }
+        }
 }

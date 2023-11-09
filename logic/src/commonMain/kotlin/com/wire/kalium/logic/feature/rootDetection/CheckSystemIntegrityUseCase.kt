@@ -39,14 +39,14 @@ import com.wire.kalium.logic.kaliumLogger
 interface CheckSystemIntegrityUseCase {
 
     sealed class Result {
-        object Success : Result()
-        object Failed : Result()
+        data object Success : Result()
+        data object Failed : Result()
     }
 
     suspend fun invoke(): Result
 }
 
-class CheckSystemIntegrityUseCaseImpl(
+internal class CheckSystemIntegrityUseCaseImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val rootDetector: RootDetector,
     private val sessionRepository: SessionRepository,

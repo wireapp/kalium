@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.appVersioning
 
@@ -61,6 +62,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs
 ) : ObserveIfAppUpdateRequiredUseCase {
 
+    @Suppress("ComplexMethod", "LongMethod")
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(currentAppVersion: Int): Flow<Boolean> {
         val currentDate = DateTimeUtil.currentIsoDateTimeString()
@@ -105,7 +107,8 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                         proxyCredentials,
                                         serverConfigRepository,
                                         networkStateObserver,
-                                        kaliumConfigs::certPinningConfig
+                                        kaliumConfigs::certPinningConfig,
+                                        kaliumConfigs.kaliumMockEngine?.mockEngine
                                     )
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
                                 serverConfig.id to isUpdateRequired

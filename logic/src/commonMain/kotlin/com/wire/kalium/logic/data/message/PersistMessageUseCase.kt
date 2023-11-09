@@ -92,18 +92,23 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.NewConversationReceiptMode -> false
             is MessageContent.ConversationReceiptModeChanged -> false
             is MessageContent.HistoryLost -> false
+            is MessageContent.HistoryLostProtocolChanged -> false
             is MessageContent.ConversationMessageTimerChanged -> false
             is MessageContent.MemberChange.CreationAdded -> false
             is MessageContent.MemberChange.FailedToAdd -> false
             is MessageContent.ConversationCreated -> false
             is MessageContent.MLSWrongEpochWarning -> false
             MessageContent.ConversationDegradedMLS -> false
+            MessageContent.ConversationVerifiedMLS -> false
             MessageContent.ConversationDegradedProteus -> false
+            MessageContent.ConversationVerifiedProteus -> false
             is MessageContent.Composite -> true
             is MessageContent.ButtonAction -> false
             is MessageContent.ButtonActionConfirmation -> false
             is MessageContent.MemberChange.FederationRemoved -> false
             is MessageContent.FederationStopped.ConnectionRemoved -> false
             is MessageContent.FederationStopped.Removed -> false
+            is MessageContent.ConversationProtocolChanged -> false
+            is MessageContent.ConversationStartedUnverifiedWarning -> false
         }
 }

@@ -19,219 +19,76 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.E2EISettings
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
-import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
-import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer.Companion.SELF_DELETION_LOG_TAG
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.ZERO
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
+@Suppress("LongParameterList")
 internal class FeatureConfigEventReceiverImpl internal constructor(
-    private val userConfigRepository: UserConfigRepository,
-    private val kaliumConfigs: KaliumConfigs,
-    private val selfUserId: UserId
+    private val guestRoomConfigHandler: GuestRoomConfigHandler,
+    private val fileSharingConfigHandler: FileSharingConfigHandler,
+    private val mlsConfigHandler: MLSConfigHandler,
+    private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
+    private val classifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler,
+    private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
+    private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
+    private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
+    private val e2EIConfigHandler: E2EIConfigHandler,
+    private val appLockConfigHandler: AppLockConfigHandler
 ) : FeatureConfigEventReceiver {
 
-    override suspend fun onEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
         handleFeatureConfigEvent(event)
-        // TODO: Make sure errors are accounted for.
-        //       onEvent now requires Either, so we can propagate errors.
-        //       Returning Either.Right is the equivalent of how it was originally working.
-        return Either.Right(Unit)
-    }
-
-    @Suppress("LongMethod", "ComplexMethod")
-    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig) {
-        when (event) {
-            is Event.FeatureConfig.FileSharingUpdated -> {
-                val currentFileSharingStatus: Boolean = userConfigRepository
-                    .isFileSharingEnabled()
-                    .fold({ false }, {
-                        when (it.state) {
-                            FileSharingStatus.Value.Disabled -> false
-                            FileSharingStatus.Value.EnabledAll -> true
-                            is FileSharingStatus.Value.EnabledSome -> true
-                        }
-                    })
-
-                when (event.model.status) {
-                    Status.ENABLED -> userConfigRepository.setFileSharingStatus(
-                        status = true,
-                        isStatusChanged = !currentFileSharingStatus
+            .onSuccess {
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.SUCCESS,
+                    event
+                )
+            }
+            .onFailure {
+                if (it is CoreFailure.FeatureNotImplemented) {
+                    kaliumLogger.logEventProcessing(
+                        EventLoggingStatus.SKIPPED,
+                        event,
+                        Pair("info", "Ignoring unknown feature config update")
                     )
-
-                    Status.DISABLED -> userConfigRepository.setFileSharingStatus(
-                        status = false,
-                        isStatusChanged = currentFileSharingStatus
+                } else {
+                    kaliumLogger.logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("error", it)
                     )
                 }
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
             }
 
-            is Event.FeatureConfig.MLSUpdated -> {
-                val mlsEnabled = event.model.status == Status.ENABLED
-                val selfUserIsWhitelisted = event.model.allowedUsers.contains(selfUserId.toPlainID())
-                userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
-
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
-            }
-
-            is Event.FeatureConfig.ClassifiedDomainsUpdated -> {
-                val classifiedDomainsEnabled = event.model.status == Status.ENABLED
-                userConfigRepository.setClassifiedDomainsStatus(classifiedDomainsEnabled, event.model.config.domains)
-
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
-            }
-
-            is Event.FeatureConfig.ConferenceCallingUpdated -> {
-                val conferenceCallingEnabled = event.model.status == Status.ENABLED
-                userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
-
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
-            }
-
-            is Event.FeatureConfig.GuestRoomLinkUpdated -> {
-                handleGuestRoomLinkFeatureConfig(event.model.status)
-
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
-            }
-
-            is Event.FeatureConfig.SelfDeletingMessagesConfig -> {
-                handleSelfDeletingFeatureConfig(event.model)
-
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event,
-                    Pair("isDurationEnforced", (event.model.config.enforcedTimeoutSeconds ?: 0) > 0),
-                )
-            }
-
-            is Event.FeatureConfig.MLSE2EIUpdated -> {
-                val gracePeriodEndMs = event.model.config
-                    .verificationExpirationNS
-                    .toDuration(DurationUnit.NANOSECONDS)
-                    .inWholeMilliseconds
-
-                userConfigRepository.setE2EISettings(
-                    E2EISettings(
-                        isRequired = event.model.status == Status.ENABLED,
-                        discoverUrl = event.model.config.discoverUrl,
-                        gracePeriodEnd = Instant.fromEpochMilliseconds(gracePeriodEndMs)
-                    )
-                )
-                userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
-
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
-            }
-
-            is Event.FeatureConfig.UnknownFeatureUpdated -> {
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SKIPPED,
-                    event,
-                    Pair("info", "Ignoring unknown feature config update")
-                )
-            }
+    @Suppress("LongMethod", "ComplexMethod")
+    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
+        when (event) {
+            is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
+            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
+            is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
+            is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
+            is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
+            is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
+            is Event.FeatureConfig.SelfDeletingMessagesConfig -> selfDeletingMessagesConfigHandler.handle(event.model)
+            is Event.FeatureConfig.MLSE2EIUpdated -> e2EIConfigHandler.handle(event.model)
+            is Event.FeatureConfig.AppLockUpdated -> appLockConfigHandler.handle(event.model)
+            is Event.FeatureConfig.UnknownFeatureUpdated -> Either.Left(CoreFailure.FeatureNotImplemented)
         }
-    }
-
-    private fun handleGuestRoomLinkFeatureConfig(status: Status) {
-        if (!kaliumConfigs.guestRoomLink) {
-            userConfigRepository.setGuestRoomStatus(false, null)
-        } else {
-            val currentGuestRoomStatus: Boolean = userConfigRepository
-                .getGuestRoomLinkStatus()
-                .fold({ true }, { it.isGuestRoomLinkEnabled ?: true })
-
-            when (status) {
-                Status.ENABLED -> userConfigRepository.setGuestRoomStatus(
-                    status = true,
-                    isStatusChanged = !currentGuestRoomStatus
-                )
-
-                Status.DISABLED -> userConfigRepository.setGuestRoomStatus(
-                    status = false,
-                    isStatusChanged = currentGuestRoomStatus
-                )
-            }
-        }
-    }
-
-    private suspend fun handleSelfDeletingFeatureConfig(model: SelfDeletingMessagesModel) {
-        if (!kaliumConfigs.selfDeletingMessages) {
-            userConfigRepository.setTeamSettingsSelfDeletionStatus(
-                TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Disabled,
-                    hasFeatureChanged = null
-                )
-            )
-        } else {
-            val storedTeamSettingsSelfDeletionStatus = userConfigRepository.getTeamSettingsSelfDeletionStatus().fold({
-                TeamSettingsSelfDeletionStatus(hasFeatureChanged = null, enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled)
-            }, {
-                it
-            })
-            val selfDeletingMessagesEnabled = model.status == Status.ENABLED
-            val enforcedTimeout = model.config.enforcedTimeoutSeconds?.toDuration(DurationUnit.SECONDS) ?: ZERO
-            val newTeamSettingsTimer: TeamSelfDeleteTimer = when {
-                selfDeletingMessagesEnabled && enforcedTimeout > ZERO -> TeamSelfDeleteTimer.Enforced(enforcedTimeout)
-                selfDeletingMessagesEnabled -> TeamSelfDeleteTimer.Enabled
-                else -> TeamSelfDeleteTimer.Disabled
-            }
-            userConfigRepository.setTeamSettingsSelfDeletionStatus(
-                TeamSettingsSelfDeletionStatus(
-                    enforcedSelfDeletionTimer = newTeamSettingsTimer,
-                    // If there is an error fetching the previously stored value, we will always override it and mark it as changed
-                    hasFeatureChanged = storedTeamSettingsSelfDeletionStatus.hasFeatureChanged == null
-                            || storedTeamSettingsSelfDeletionStatus.enforcedSelfDeletionTimer != newTeamSettingsTimer
-                )
-            ).onFailure {
-                val logMap = mapOf(
-                    "value" to newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Failure"),
-                    "errorInfo" to "$it"
-                ).toJsonElement()
-                kaliumLogger.e("$SELF_DELETION_LOG_TAG: $logMap")
-            }.onSuccess {
-                val logMap = newTeamSettingsTimer.toLogMap(eventDescription = "Team Settings Self Deletion Update Success")
-                kaliumLogger.d("$SELF_DELETION_LOG_TAG: ${logMap.toJsonElement()}")
-            }
-        }
-    }
 }

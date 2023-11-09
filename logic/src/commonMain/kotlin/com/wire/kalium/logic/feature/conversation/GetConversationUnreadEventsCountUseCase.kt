@@ -35,7 +35,7 @@ interface GetConversationUnreadEventsCountUseCase {
     }
 }
 
-class GetConversationUnreadEventsCountUseCaseImpl(
+internal class GetConversationUnreadEventsCountUseCaseImpl(
     private val conversationRepository: ConversationRepository
 ) : GetConversationUnreadEventsCountUseCase {
 

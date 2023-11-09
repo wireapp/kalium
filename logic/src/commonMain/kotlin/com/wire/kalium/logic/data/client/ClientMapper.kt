@@ -71,7 +71,8 @@ class ClientMapper(
         model = client.model,
         isVerified = false,
         isValid = true,
-        mlsPublicKeys = client.mlsPublicKeys
+        mlsPublicKeys = client.mlsPublicKeys,
+        isMLSCapable = client.mlsPublicKeys?.isNotEmpty() ?: false
     )
 
     fun fromClientEntity(clientEntity: ClientEntity): Client = with(clientEntity) {
@@ -83,9 +84,10 @@ class ClientMapper(
             deviceType = deviceType?.let { fromDeviceTypeEntity(deviceType) },
             label = label,
             model = model,
-            isVerified = isVerified,
+            isVerified = isProteusVerified,
             isValid = isValid,
-            mlsPublicKeys = mlsPublicKeys
+            mlsPublicKeys = mlsPublicKeys,
+            isMLSCapable = isMLSCapable
         )
     }
 
@@ -100,7 +102,8 @@ class ClientMapper(
             model = model,
             isVerified = false,
             isValid = true,
-            mlsPublicKeys = null
+            mlsPublicKeys = null,
+            isMLSCapable = false
         )
     }
 
@@ -116,7 +119,8 @@ class ClientMapper(
                     model = null,
                     registrationDate = null,
                     lastActive = null,
-                    mlsPublicKeys = null
+                    mlsPublicKeys = null,
+                    isMLSCapable = false
                 )
             }
         }
@@ -132,7 +136,8 @@ class ClientMapper(
                 model = model,
                 registrationDate = Instant.parse(registrationTime),
                 lastActive = lastActive?.let { Instant.parse(it).coerceAtMost(Clock.System.now()) },
-                mlsPublicKeys = mlsPublicKeys
+                mlsPublicKeys = mlsPublicKeys,
+                isMLSCapable = mlsPublicKeys?.isNotEmpty() ?: false
             )
         }
 
@@ -147,7 +152,8 @@ class ClientMapper(
                 model = null,
                 registrationDate = null,
                 lastActive = null,
-                mlsPublicKeys = null
+                mlsPublicKeys = null,
+                isMLSCapable = false
             )
         }
 
@@ -161,7 +167,8 @@ class ClientMapper(
             model = event.client.model,
             registrationDate = event.client.registrationTime,
             lastActive = event.client.lastActive,
-            mlsPublicKeys = null
+            mlsPublicKeys = null,
+            isMLSCapable = event.client.isMLSCapable
         )
 
     private fun toClientTypeDTO(clientType: ClientType): ClientTypeDTO = when (clientType) {
@@ -192,7 +199,7 @@ class ClientMapper(
 
     fun fromOtherUsersClientsDTO(otherUsersClients: List<ClientEntity>): List<OtherUserClient> =
         otherUsersClients.map {
-            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isVerified)
+            OtherUserClient(fromDeviceTypeEntity(it.deviceType), it.id, it.isValid, it.isProteusVerified)
         }
 
     private fun toDeviceTypeDTO(deviceType: DeviceType): DeviceTypeDTO = when (deviceType) {

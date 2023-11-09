@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.utils.obfuscatePath
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -50,6 +51,7 @@ private val DisableLogging = AttributeKey<Unit>("DisableLogging")
 @Suppress("TooGenericExceptionCaught", "EmptyFinallyBlock")
 public class KaliumKtorCustomLogging private constructor(
     public val logger: Logger,
+    public val kaliumLogger: KaliumLogger,
     public var level: LogLevel,
     public var filters: List<(HttpRequestBuilder) -> Boolean> = emptyList()
 ) {
@@ -78,6 +80,11 @@ public class KaliumKtorCustomLogging private constructor(
          * log [LogLevel]
          */
         public var level: LogLevel = LogLevel.HEADERS
+
+        /**
+         * [KaliumLogger] instance to use
+         */
+        var kaliumLogger: KaliumLogger = com.wire.kalium.network.kaliumLogger
 
         /**
          * Log messages for calls matching a [predicate]
@@ -164,7 +171,7 @@ public class KaliumKtorCustomLogging private constructor(
     }
 
     private fun logRequest(request: HttpRequestBuilder): OutgoingContent? {
-        val logger = KaliumHttpLogger(level, logger)
+        val logger = KaliumHttpLogger(level, logger, kaliumLogger)
         request.attributes.put(KaliumHttpCustomLogger, logger)
 
         logger.logRequest(request)
@@ -179,7 +186,7 @@ public class KaliumKtorCustomLogging private constructor(
 
         override fun prepare(block: Config.() -> Unit): KaliumKtorCustomLogging {
             val config = Config().apply(block)
-            return KaliumKtorCustomLogging(config.logger, config.level, config.filters)
+            return KaliumKtorCustomLogging(config.logger, config.kaliumLogger, config.level, config.filters)
         }
 
         override fun install(plugin: KaliumKtorCustomLogging, scope: HttpClient) {

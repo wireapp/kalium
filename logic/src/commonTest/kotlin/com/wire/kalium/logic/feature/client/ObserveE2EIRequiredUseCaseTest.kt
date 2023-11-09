@@ -23,12 +23,15 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.E2EIRequiredResult
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
+import io.mockative.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -50,6 +53,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(MLS_E2EI_SETTING)
             .withE2EINotificationTime(null)
+            .withIsMLSSupported(true)
             .arrange()
 
         useCase().test {
@@ -66,6 +70,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
             .arrange()
 
         useCase().test {
@@ -82,6 +87,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
             .arrange()
 
         useCase().test {
@@ -99,6 +105,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant().plus(delayDuration))
+            .withIsMLSSupported(true)
             .arrange()
 
         useCase().test {
@@ -119,6 +126,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
             .arrange()
 
         useCase().test {
@@ -133,6 +141,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(MLS_E2EI_SETTING)
             .withE2EINotificationTime(null)
+            .withIsMLSSupported(true)
             .arrange()
 
         useCase().test {
@@ -146,6 +155,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val (_, useCase) = Arrangement()
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
             .arrange()
 
         useCase().test {
@@ -154,12 +164,38 @@ class ObserveE2EIRequiredUseCaseTest {
         }
     }
 
+    @Test
+    fun givenMLSFeatureIsDisabled_thenNotRequiredIsEmitted() = runTest {
+        val delayDuration = 10.minutes
+        val setting = MLS_E2EI_SETTING.copy(
+            gracePeriodEnd = DateTimeUtil.currentInstant()
+        )
+        val (arrangement, useCase) = Arrangement(TestKaliumDispatcher.io)
+            .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant().plus(delayDuration))
+            .withIsMLSSupported(false)
+            .arrange()
+
+        useCase().test {
+            advanceUntilIdle()
+            assertTrue { awaitItem() == E2EIRequiredResult.NotRequired }
+            awaitComplete()
+        }
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::observeE2EINotificationTime)
+            .wasNotInvoked()
+    }
+
     private class Arrangement(testDispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()) {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
+        @Mock
+        val featureSupport = mock(FeatureSupport::class)
+
         private var observeMLSEnabledUseCase: ObserveE2EIRequiredUseCase =
-            ObserveE2EIRequiredUseCaseImpl(userConfigRepository, testDispatcher)
+            ObserveE2EIRequiredUseCaseImpl(userConfigRepository, featureSupport, testDispatcher)
 
         fun withMLSE2EISetting(setting: E2EISettings) = apply {
             given(userConfigRepository)
@@ -167,11 +203,18 @@ class ObserveE2EIRequiredUseCaseTest {
                 .whenInvoked()
                 .then { flowOf(Either.Right(setting)) }
         }
+
         fun withE2EINotificationTime(instant: Instant?) = apply {
             given(userConfigRepository)
                 .function(userConfigRepository::observeE2EINotificationTime)
                 .whenInvoked()
                 .then { flowOf(Either.Right(instant)) }
+        }
+
+        fun withIsMLSSupported(supported: Boolean) = apply {
+            given(featureSupport)
+                .invocation { featureSupport.isMLSSupported }
+                .thenReturn(supported)
         }
 
         fun arrange() = this to observeMLSEnabledUseCase

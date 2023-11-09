@@ -43,9 +43,10 @@ import kotlinx.coroutines.launch
 interface LogoutUseCase {
     /**
      * @param reason the reason for the logout performed
+     * @param waitUntilCompletes if true, the logout suspend fun will wait until all the logout operations are completed
      * @see [LogoutReason]
      */
-    suspend operator fun invoke(reason: LogoutReason)
+    suspend operator fun invoke(reason: LogoutReason, waitUntilCompletes: Boolean = false)
 }
 
 internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
@@ -68,7 +69,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
     //                 the [LogoutRepository.observeLogout] and invalidating everything in [CoreLogic] level.
 
-    override suspend operator fun invoke(reason: LogoutReason) {
+    override suspend operator fun invoke(reason: LogoutReason, waitUntilCompletes: Boolean) {
         globalCoroutineScope.launch {
             deregisterTokenUseCase()
 
@@ -90,6 +91,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                         wipeTokenAndMetadata()
                     }
                 }
+
                 LogoutReason.SESSION_EXPIRED -> {
                     if (kaliumConfigs.wipeOnCookieInvalid) {
                         wipeAllData()
@@ -97,11 +99,12 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                         clearCurrentClientIdAndFirebaseTokenFlag()
                     }
                 }
+
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
             }
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
-        }
+        }.let { if (waitUntilCompletes) it.join() else it }
     }
 
     private suspend fun clearCurrentClientIdAndFirebaseTokenFlag() {

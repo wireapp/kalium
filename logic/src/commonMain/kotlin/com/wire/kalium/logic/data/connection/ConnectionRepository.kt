@@ -39,14 +39,10 @@ import com.wire.kalium.logic.data.user.ConnectionState.NOT_CONNECTED
 import com.wire.kalium.logic.data.user.ConnectionState.PENDING
 import com.wire.kalium.logic.data.user.ConnectionState.SENT
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
@@ -57,7 +53,6 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -75,7 +70,7 @@ interface ConnectionRepository {
     suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
     suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun observeConnectionList(): Flow<List<Connection>>
-    suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails>>
+    suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>>
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
@@ -88,15 +83,10 @@ internal class ConnectionDataSource(
     private val memberDAO: MemberDAO,
     private val connectionDAO: ConnectionDAO,
     private val connectionApi: ConnectionApi,
-    private val userDetailsApi: UserDetailsApi,
     private val userDAO: UserDAO,
-    private val selfUserId: UserId,
-    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val conversationRepository: ConversationRepository,
     private val connectionStatusMapper: ConnectionStatusMapper = MapperProvider.connectionStatusMapper(),
-    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper(),
-    private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
+    private val connectionMapper: ConnectionMapper = MapperProvider.connectionMapper()
 ) : ConnectionRepository {
 
     override suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit> {
@@ -148,7 +138,6 @@ internal class ConnectionDataSource(
             val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
             val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
             handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionStatus))
-            persistConnection(connectionModel)
             connectionModel
         }
     }
@@ -166,7 +155,7 @@ internal class ConnectionDataSource(
         observeConnectionRequestList()
     }
 
-    override suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails>> {
+    override suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>> {
         return connectionDAO.getConnectionRequests().map { connections ->
             connections
                 .map { connection ->
@@ -193,7 +182,7 @@ internal class ConnectionDataSource(
     }
 
     override suspend fun insertConnectionFromEvent(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
-        persistConnection(event.connection)
+        handleUserConnectionStatusPersistence(event.connection)
 
     override suspend fun observeConnectionList(): Flow<List<Connection>> {
         return connectionDAO.getConnections().map { connections ->
@@ -203,36 +192,16 @@ internal class ConnectionDataSource(
         }
     }
 
-    // TODO: Vitor : Instead of duplicating, we could pass selfUser.teamId from the UseCases to this function.
-    // This way, the UseCases can tie the different Repos together, calling these functions.
     private suspend fun persistConnection(connection: Connection) =
-        selfTeamIdProvider().flatMap { teamId ->
-            // This can fail, but the connection will be there and get synced in worst case scenario in next SlowSync
-            wrapApiRequest {
-                userDetailsApi.getUserInfo(connection.qualifiedToId.toApi())
-            }.fold({
-                wrapStorageRequest {
-                    connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
-                }
-            }, { userProfileDTO ->
-                wrapStorageRequest {
-                    val userEntity = userMapper.fromUserProfileDtoToUserEntity(
-                        userProfile = userProfileDTO,
-                        connectionState = connectionStatusMapper.toDaoModel(state = connection.status),
-                        userTypeEntity = userTypeEntityTypeMapper.fromTeamAndDomain(
-                            otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = teamId?.value,
-                            otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUserId.domain,
-                            isService = userProfileDTO.service != null
-                        )
-                    )
-                    insertConversationFromConnection(connection)
-                    // should we insert first user before creating conversation ?
-                    userDAO.insertUser(userEntity)
-                    connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
-                }
-            })
+        wrapStorageRequest {
+            val connectionStatus = connectionStatusMapper.toDaoModel(state = connection.status)
+            userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to connectionStatus))
+
+            insertConversationFromConnection(connection)
+
+            if (connection.status != ACCEPTED) {
+                connectionDAO.insertConnection(connectionMapper.modelToDao(connection))
+            }
         }
 
     private suspend fun insertConversationFromConnection(connection: Connection) {
@@ -258,16 +227,17 @@ internal class ConnectionDataSource(
                         messageTimer = null,
                         userMessageTimer = null,
                         archived = false,
-                        archivedInstant = null
+                        archivedInstant = null,
+                        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
                     )
                 )
             }
 
             ACCEPTED -> {
-                memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
+                memberDAO.updateOrInsertOneOnOneMember(
                     member = MemberEntity(user = connection.qualifiedToId.toDao(), MemberEntity.Role.Member),
-                    conversationID = connection.qualifiedConversationId.toDao(),
-                    status = connectionStatusMapper.toDaoModel(connection.status)
+                    conversationID = connection.qualifiedConversationId.toDao()
                 )
             }
 
@@ -282,26 +252,13 @@ internal class ConnectionDataSource(
         connectionDAO.deleteConnectionDataAndConversation(conversationId.toDao())
     }
 
-    private suspend fun updateConversationMemberFromConnection(connection: Connection) =
-        wrapStorageRequest {
-            memberDAO.updateOrInsertOneOnOneMemberWithConnectionStatus(
-                // TODO(IMPORTANT!!!!!!): setting a default value for member role is incorrect and can lead to unexpected behaviour
-                member = MemberEntity(user = connection.qualifiedToId.toDao(), MemberEntity.Role.Member),
-                status = connectionStatusMapper.toDaoModel(connection.status),
-                conversationID = connection.qualifiedConversationId.toDao()
-            )
-        }.onFailure {
-            kaliumLogger.e("There was an error when trying to persist the connection: $connection")
-        }
-
     /**
      * This will update the connection status on user table and will insert members only
      * if the [ConnectionDTO.status] is other than [ConnectionStateDTO.PENDING] or [ConnectionStateDTO.SENT]
      */
     private suspend fun handleUserConnectionStatusPersistence(connection: Connection): Either<CoreFailure, Unit> =
         when (connection.status) {
-            MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(connection)
+            ACCEPTED, MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(connection)
             CANCELLED -> deleteConnection(connection.qualifiedConversationId)
-            ACCEPTED -> updateConversationMemberFromConnection(connection)
         }
 }

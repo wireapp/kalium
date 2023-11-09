@@ -25,14 +25,35 @@ DELETE FROM Member WHERE conversation = ?;
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = :conversation;
 
-selectConversationByMember:
-SELECT * FROM Member
-JOIN ConversationDetails ON ConversationDetails.qualifiedId = Member.conversation
-WHERE ConversationDetails.type = 'ONE_ON_ONE' AND Member.user = ?
-LIMIT  1;
-
 selectConversationsByMember:
-SELECT * FROM Member
+SELECT
+    qualified_id,
+    name,
+    type,
+    team_id,
+    mls_group_id,
+    mls_group_state,
+    mls_epoch,
+    mls_proposal_timer,
+    protocol,
+    muted_status,
+    muted_time,
+    creator_id,
+    last_modified_date,
+    last_notified_date,
+    last_read_date,
+    access_list,
+    access_role_list,
+    mls_last_keying_material_update_date,
+    mls_cipher_suite,
+    receipt_mode,
+    message_timer,
+    user_message_timer,
+    archived,
+    archived_date_time,
+    verification_status,
+    proteus_verification_status
+FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;
 
@@ -62,3 +83,35 @@ SELECT mem.* FROM Member AS mem
 JOIN Conversation AS con ON con.qualified_id = mem.conversation
 JOIN User AS usr ON usr.qualified_id = mem.user
 WHERE con.type == 'ONE_ON_ONE' AND user LIKE ('%@' || :domain) AND usr.defederated == 0;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterMemeberChange
+AFTER INSERT ON Member
+BEGIN
+    UPDATE Conversation
+    SET proteus_verification_status =
+        (CASE (SELECT
+            (COUNT(*) = 1 + SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END) AND COUNT(*) > 1)
+            FROM Member AS mem
+            LEFT JOIN Client AS client ON client.user_id = mem.user
+            WHERE mem.conversation = new.conversation
+            GROUP BY mem.conversation)
+        WHEN 1 THEN "VERIFIED"
+        ELSE "DEGRADED" END)
+    WHERE qualified_id = new.conversation;
+END;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterMemeberDelete
+AFTER DELETE ON Member
+BEGIN
+    UPDATE Conversation
+    SET proteus_verification_status =
+        (CASE (SELECT
+            (COUNT(*) = 1 + SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END) AND COUNT(*) > 1)
+            FROM Member AS mem
+            LEFT JOIN Client AS client ON client.user_id = mem.user
+            WHERE mem.conversation = old.conversation
+            GROUP BY mem.conversation)
+        WHEN 1 THEN "VERIFIED"
+        ELSE "DEGRADED" END)
+    WHERE qualified_id = old.conversation;
+END;

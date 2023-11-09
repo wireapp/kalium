@@ -68,15 +68,15 @@ class AutoVersionAuthScopeUseCase(
         class Success(val authenticationScope: AuthenticationScope) : Result()
 
         sealed class Failure : Result() {
-            object UnknownServerVersion : Failure()
-            object TooNewVersion : Failure()
+            data object UnknownServerVersion : Failure()
+            data object TooNewVersion : Failure()
             data class Generic(val genericFailure: CoreFailure) : Failure()
         }
     }
 
     sealed interface ProxyAuthentication {
-        object None : ProxyAuthentication
+        data object None : ProxyAuthentication
 
-        class UsernameAndPassword(val proxyCredentials: ProxyCredentials) : ProxyAuthentication
+        data class UsernameAndPassword(val proxyCredentials: ProxyCredentials) : ProxyAuthentication
     }
 }

@@ -32,9 +32,9 @@ import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
-import com.wire.kalium.logic.feature.message.MessageTarget
+import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -125,7 +125,8 @@ class CallMapperImpl(
             Conversation.Type.GROUP -> {
                 when (conversation.protocol) {
                     is Conversation.ProtocolInfo.MLS -> ConversationType.ConferenceMls
-                    is Conversation.ProtocolInfo.Proteus -> ConversationType.Conference
+                    is Conversation.ProtocolInfo.Proteus,
+                    is Conversation.ProtocolInfo.Mixed -> ConversationType.Conference
                 }
             }
             Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne

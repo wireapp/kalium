@@ -34,15 +34,15 @@ interface DeregisterTokenUseCase {
     suspend operator fun invoke(): Result
 
     sealed class Result {
-        object Success : Result()
+        data object Success : Result()
         sealed class Failure : Result() {
-            object NotFound : Failure()
+            data object NotFound : Failure()
             data class Generic(val coreFailure: CoreFailure) : Failure()
         }
     }
 }
 
-class DeregisterTokenUseCaseImpl(
+internal class DeregisterTokenUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val notificationTokenRepository: NotificationTokenRepository
 ) : DeregisterTokenUseCase {

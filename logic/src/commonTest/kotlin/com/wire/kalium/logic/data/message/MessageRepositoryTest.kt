@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -27,11 +28,10 @@ import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.BroadcastMessageOption
-import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -55,7 +55,6 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -63,6 +62,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -428,6 +428,99 @@ class MessageRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenConversationIds_whenMovingMessages_thenShouldCallDAOWithCorrectParameters() = runTest {
+        val sourceConversationId = TEST_CONVERSATION_ID.copy(value = "source")
+        val targetConversationId = TEST_CONVERSATION_ID.copy(value = "target")
+
+        val (arrangement, messageRepository) = Arrangement()
+            .withMovingToAnotherConversationSucceeding()
+            .arrange()
+
+        messageRepository.moveMessagesToAnotherConversation(
+            sourceConversationId,
+            targetConversationId
+        ).shouldSucceed()
+
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::moveMessages)
+            .with(
+                eq(sourceConversationId.toDao()),
+                eq(targetConversationId.toDao())
+            )
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenDAOFails_whenMovingMessages_thenShouldPropagateFailure() = runTest {
+        val exception = IllegalArgumentException("Oopsie doopsie!")
+        val (_, messageRepository) = Arrangement()
+            .withMovingToAnotherConversationFailingWith(exception)
+            .arrange()
+        val sourceConversationId = TEST_CONVERSATION_ID.copy(value = "source")
+        val targetConversationId = TEST_CONVERSATION_ID.copy(value = "target")
+
+        messageRepository.moveMessagesToAnotherConversation(
+            sourceConversationId,
+            targetConversationId
+        ).shouldFail {
+            assertIs<StorageFailure.Generic>(it)
+            assertEquals(exception, it.rootCause)
+        }
+    }
+
+    @Test
+    fun givenConversationWithMessages_whenSearchingForSpecificMessages_thenReturnOnlyMetCriteriaMessages() = runTest {
+        // given
+        val qualifiedIdEntity = TEST_QUALIFIED_ID_ENTITY
+        val conversationId = TEST_CONVERSATION_ID
+        val searchTerm = "message 1"
+
+        val messageEntity1 = TEST_MESSAGE_ENTITY.copy(
+            id = "msg1",
+            conversationId = qualifiedIdEntity,
+            content = MessageEntityContent.Text("message 10")
+        )
+
+        val messages = listOf(messageEntity1)
+
+        val message1 = TEST_MESSAGE.copy(
+            id = "msg1",
+            conversationId = conversationId,
+            content = MessageContent.Text("message 10")
+        )
+
+        val expectedMessages = listOf(message1)
+
+        val (_, messageRepository) = Arrangement()
+            .withMessagesFromSearch(
+                searchTerm = searchTerm,
+                conversationId = qualifiedIdEntity,
+                messages = messages
+            )
+            .withMappedMessageModel(
+                result = message1,
+                param = messageEntity1
+            )
+            .arrange()
+
+        // when
+        val result = messageRepository.getConversationMessagesFromSearch(
+            searchQuery = searchTerm,
+            conversationId = conversationId
+        )
+
+        // then
+        assertEquals(
+            expectedMessages.size,
+            (result as Either.Right).value.size
+        )
+        assertEquals(
+            expectedMessages.first().id,
+            (result as Either.Right).value.first().id
+        )
+    }
+
     private class Arrangement {
 
         @Mock
@@ -467,6 +560,14 @@ class MessageRepositoryTest {
                 .function(messageMapper::fromEntityToMessage)
                 .whenInvokedWith(anything())
                 .then { message }
+            return this
+        }
+
+        fun withMappedMessageModel(result: Message.Regular, param: MessageEntity.Regular): Arrangement {
+            given(messageMapper)
+                .function(messageMapper::fromEntityToMessage)
+                .whenInvokedWith(eq(param))
+                .then { result }
             return this
         }
 
@@ -545,6 +646,31 @@ class MessageRepositoryTest {
                 .suspendFunction(messageDAO::promoteMessageToSentUpdatingServerTime)
                 .whenInvokedWith(anything(), anything(), anything(), anything())
                 .then { _, _, _, _ -> Unit }
+        }
+
+        fun withMovingToAnotherConversationSucceeding() = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::moveMessages)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
+        }
+
+        fun withMovingToAnotherConversationFailingWith(throwable: Throwable) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::moveMessages)
+                .whenInvokedWith(any())
+                .thenThrow(throwable)
+        }
+
+        fun withMessagesFromSearch(
+            searchTerm: String,
+            conversationId: QualifiedIDEntity,
+            messages: List<MessageEntity>
+        ) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getConversationMessagesFromSearch)
+                .whenInvokedWith(eq(searchTerm), eq(conversationId))
+                .thenReturn(messages)
         }
 
         fun arrange() = this to MessageDataSource(

@@ -25,7 +25,7 @@ sealed class ConversationMemberRemovedResponse {
     /**
      * The users requested to be removed were not members
      */
-    object Unchanged : ConversationMemberRemovedResponse()
+    data object Unchanged : ConversationMemberRemovedResponse()
 
     data class Changed(val event: EventContentDTO.Conversation.MemberLeaveDTO) : ConversationMemberRemovedResponse()
 

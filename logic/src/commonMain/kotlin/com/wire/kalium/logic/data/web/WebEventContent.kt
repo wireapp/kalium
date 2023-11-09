@@ -109,7 +109,7 @@ sealed class WebEventContent {
 
     @Serializable
     @SerialName("unknown")
-    object Unknown : WebEventContent()
+    data object Unknown : WebEventContent()
 }
 
 @Serializable

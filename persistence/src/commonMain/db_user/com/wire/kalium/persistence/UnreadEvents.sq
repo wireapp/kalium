@@ -12,12 +12,20 @@ CREATE TABLE UnreadEvent (
     PRIMARY KEY (id, conversation_id)
 );
 
+deleteUnreadEvent:
+DELETE FROM UnreadEvent WHERE id = ? AND conversation_id = ?;
+
 deleteUnreadEvents:
 DELETE FROM UnreadEvent WHERE creation_date <= ? AND conversation_id = ?;
 
 insertEvent:
 INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
 VALUES(?, ?, ?, ?);
+
+updateEvent:
+UPDATE OR IGNORE UnreadEvent
+SET type = :type
+WHERE id = :id AND conversation_id = :conversation_id;
 
 getUnreadEvents:
 SELECT conversation_id, type FROM UnreadEvent;
@@ -38,3 +46,8 @@ SELECT * FROM UnreadEvent LIMIT ? OFFSET ?;
 
 getConversationUnreadEventsCount:
 SELECT COUNT(*) FROM UnreadEvent WHERE  conversation_id = ?;
+
+getUnreadArchivedConversationsCount:
+SELECT COUNT(DISTINCT ue.conversation_id) FROM UnreadEvent ue
+INNER JOIN Conversation c ON ue.conversation_id = c.qualified_id
+WHERE c.archived = 1;

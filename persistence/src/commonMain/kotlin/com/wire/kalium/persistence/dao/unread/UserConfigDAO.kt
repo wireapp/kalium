@@ -17,9 +17,12 @@
  */
 package com.wire.kalium.persistence.dao.unread
 
+import com.wire.kalium.persistence.config.MLSMigrationEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.builtins.SetSerializer
 
 interface UserConfigDAO {
 
@@ -30,6 +33,12 @@ interface UserConfigDAO {
 
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified()
     suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?>
+
+    suspend fun getMigrationConfiguration(): MLSMigrationEntity?
+    suspend fun setMigrationConfiguration(configuration: MLSMigrationEntity)
+
+    suspend fun getSupportedProtocols(): Set<SupportedProtocolEntity>?
+    suspend fun setSupportedProtocols(protocols: Set<SupportedProtocolEntity>)
 }
 
 internal class UserConfigDAOImpl internal constructor(
@@ -37,23 +46,23 @@ internal class UserConfigDAOImpl internal constructor(
 ) : UserConfigDAO {
 
     override suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity? =
-        metadataDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.getSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
 
     override suspend fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity
     ) {
         metadataDAO.putSerializable(
-            key = SELF_DELETING_MESSAGES,
+            key = SELF_DELETING_MESSAGES_KEY,
             value = teamSettingsSelfDeletionStatusEntity,
             TeamSettingsSelfDeletionStatusEntity.serializer()
         )
     }
 
     override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified() {
-        metadataDAO.getSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.getSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
             ?.copy(isStatusChanged = false)?.let { newValue ->
                 metadataDAO.putSerializable(
-                    SELF_DELETING_MESSAGES,
+                    SELF_DELETING_MESSAGES_KEY,
                     newValue,
                     TeamSettingsSelfDeletionStatusEntity.serializer()
                 )
@@ -61,9 +70,23 @@ internal class UserConfigDAOImpl internal constructor(
     }
 
     override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
-        metadataDAO.observeSerializable(SELF_DELETING_MESSAGES, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.observeSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
+
+    override suspend fun getMigrationConfiguration(): MLSMigrationEntity? =
+        metadataDAO.getSerializable(MLS_MIGRATION_KEY, MLSMigrationEntity.serializer())
+
+    override suspend fun setMigrationConfiguration(configuration: MLSMigrationEntity) =
+        metadataDAO.putSerializable(MLS_MIGRATION_KEY, configuration, MLSMigrationEntity.serializer())
+
+    override suspend fun getSupportedProtocols(): Set<SupportedProtocolEntity>? =
+        metadataDAO.getSerializable(SUPPORTED_PROTOCOLS_KEY, SetSerializer(SupportedProtocolEntity.serializer()))
+
+    override suspend fun setSupportedProtocols(protocols: Set<SupportedProtocolEntity>) =
+        metadataDAO.putSerializable(SUPPORTED_PROTOCOLS_KEY, protocols, SetSerializer(SupportedProtocolEntity.serializer()))
 
     private companion object {
-        private const val SELF_DELETING_MESSAGES = "SELF_DELETING_MESSAGES"
+        private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
+        private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
+        private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
     }
 }

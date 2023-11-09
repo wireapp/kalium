@@ -57,12 +57,12 @@ object TestConversation {
     val ID = ConversationId(conversationValue, conversationDomain)
     fun id(suffix: Int = 0) = ConversationId("${conversationValue}_$suffix", conversationDomain)
 
-    val ONE_ON_ONE = Conversation(
+    fun ONE_ON_ONE(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
         ID.copy(value = "1O1 ID"),
         "ONE_ON_ONE Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.Proteus,
+        protocolInfo,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -75,7 +75,9 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun SELF(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -96,7 +98,9 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun GROUP(protocolInfo: ProtocolInfo = ProtocolInfo.Proteus) = Conversation(
@@ -117,7 +121,9 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     fun GROUP_VIEW_ENTITY(protocolInfo: ConversationEntity.ProtocolInfo = ConversationEntity.ProtocolInfo.Proteus) = ConversationViewEntity(
@@ -159,7 +165,11 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        userSupportedProtocols = null,
+        userActiveOneOnOneConversationId = null,
     )
 
     fun one_on_one(convId: ConversationId) = Conversation(
@@ -180,7 +190,9 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val NETWORK_ID = QualifiedID("valueConversation", "domainConversation")
@@ -270,7 +282,9 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedInstant = null
+        archivedInstant = null,
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
     )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
@@ -309,7 +323,29 @@ object TestConversation {
         userMessageTimer = null,
         userDefederated = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        userSupportedProtocols = null,
+        userActiveOneOnOneConversationId = null,
+    )
+
+    val MLS_PROTOCOL_INFO = ProtocolInfo.MLS(
+        GROUP_ID,
+        ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+        0UL,
+        Instant.parse("2021-03-30T15:36:00.000Z"),
+        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+    )
+
+    val PROTEUS_PROTOCOL_INFO = ProtocolInfo.Proteus
+
+    val MIXED_PROTOCOL_INFO = ProtocolInfo.Mixed(
+        GROUP_ID,
+        ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
+        0UL,
+        Instant.parse("2021-03-30T15:36:00.000Z"),
+        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )
 
     val CONVERSATION = Conversation(
@@ -330,7 +366,9 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val MLS_CONVERSATION = Conversation(
@@ -338,13 +376,7 @@ object TestConversation {
         "MLS Name",
         Conversation.Type.ONE_ON_ONE,
         TestTeam.TEAM_ID,
-        ProtocolInfo.MLS(
-            GROUP_ID,
-            ProtocolInfo.MLS.GroupState.PENDING_JOIN,
-            0UL,
-            Instant.parse("2021-03-30T15:36:00.000Z"),
-            cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-        ),
+        MLS_PROTOCOL_INFO,
         MutedConversationStatus.AllAllowed,
         null,
         null,
@@ -357,8 +389,13 @@ object TestConversation {
         messageTimer = null,
         userMessageTimer = null,
         archived = false,
-        archivedDateTime = null
+        archivedDateTime = null,
+        mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+        proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
     )
 
     val CONVERSATION_CODE_INFO: ConversationCodeInfo = ConversationCodeInfo("conv_id_value", "name")
+    val MIXED_CONVERSATION = MLS_CONVERSATION.copy(
+        protocol = MIXED_PROTOCOL_INFO
+    )
 }

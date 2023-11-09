@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.user.screenshotCensoring
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.flow.Flow
@@ -54,9 +54,9 @@ internal class ObserveScreenshotCensoringConfigUseCaseImpl(
 }
 
 sealed class ObserveScreenshotCensoringConfigResult {
-    object Disabled : ObserveScreenshotCensoringConfigResult()
+    data object Disabled : ObserveScreenshotCensoringConfigResult()
     sealed class Enabled : ObserveScreenshotCensoringConfigResult() {
-        object ChosenByUser : Enabled()
-        object EnforcedByTeamSelfDeletingSettings : Enabled()
+        data object ChosenByUser : Enabled()
+        data object EnforcedByTeamSelfDeletingSettings : Enabled()
     }
 }

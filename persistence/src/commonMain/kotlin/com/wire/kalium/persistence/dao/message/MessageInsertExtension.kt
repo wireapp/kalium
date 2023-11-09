@@ -203,6 +203,10 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            is MessageEntityContent.HistoryLostProtocolChanged -> {
+                /* no-op */
+            }
+
             is MessageEntityContent.ConversationReceiptModeChanged -> messagesQueries.insertConversationReceiptModeChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -231,7 +235,15 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            is MessageEntityContent.ConversationVerifiedMLS -> {
+                /* no-op */
+            }
+
             is MessageEntityContent.ConversationDegradedProteus -> {
+                /* no-op */
+            }
+
+            is MessageEntityContent.ConversationVerifiedProteus -> {
                 /* no-op */
             }
 
@@ -242,6 +254,16 @@ internal class MessageInsertExtensionImpl(
                     domain_list = content.domainList,
                     federation_type = content.type
                 )
+            }
+
+            is MessageEntityContent.ConversationProtocolChanged -> messagesQueries.insertConversationProtocolChanged(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                protocol = content.protocol
+            )
+
+            is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
+                /* no-op */
             }
         }
     }
@@ -286,18 +308,22 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.ConversationMessageTimerChanged,
                 is MessageEntityContent.ConversationReceiptModeChanged,
                 is MessageEntityContent.ConversationRenamed,
+                is MessageEntityContent.ConversationProtocolChanged,
                 MessageEntityContent.CryptoSessionReset,
                 MessageEntityContent.HistoryLost,
+                MessageEntityContent.HistoryLostProtocolChanged,
                 MessageEntityContent.MLSWrongEpochWarning,
                 is MessageEntityContent.MemberChange,
                 is MessageEntityContent.NewConversationReceiptMode,
                 is MessageEntityContent.Federation,
+                MessageEntityContent.ConversationDegradedMLS,
+                MessageEntityContent.ConversationVerifiedMLS,
+                MessageEntityContent.ConversationDegradedProteus,
+                MessageEntityContent.ConversationVerifiedProteus,
+                MessageEntityContent.ConversationStartedUnverifiedWarning,
                 is MessageEntityContent.TeamMemberRemoved -> {
                     /* no-op */
                 }
-
-                MessageEntityContent.ConversationDegradedMLS -> TODO()
-                MessageEntityContent.ConversationDegradedProteus -> TODO()
             }
         }
     }
@@ -376,12 +402,17 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.NewConversationReceiptMode -> MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE
         is MessageEntityContent.ConversationReceiptModeChanged -> MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED
         is MessageEntityContent.HistoryLost -> MessageEntity.ContentType.HISTORY_LOST
+        is MessageEntityContent.HistoryLostProtocolChanged -> MessageEntity.ContentType.HISTORY_LOST_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationMessageTimerChanged -> MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED
         is MessageEntityContent.ConversationCreated -> MessageEntity.ContentType.CONVERSATION_CREATED
         is MessageEntityContent.MLSWrongEpochWarning -> MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING
         is MessageEntityContent.ConversationDegradedMLS -> MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS
-        is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PREOTEUS
+        is MessageEntityContent.ConversationDegradedProteus -> MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS
         is MessageEntityContent.Composite -> MessageEntity.ContentType.COMPOSITE
         is MessageEntityContent.Federation -> MessageEntity.ContentType.FEDERATION
+        MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
+        MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS
+        is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
+        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
     }
 }

@@ -84,7 +84,9 @@ class ConversationMetaDataDAOTest : BaseDatabaseTest() {
             messageTimer = 5000L,
             userMessageTimer = null,
             archived = false,
-            archivedInstant = null
+            archivedInstant = null,
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
         )
     }
 }

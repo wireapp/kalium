@@ -17,30 +17,43 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.TypingIndicatorRepository
+import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 
 internal interface TypingIndicatorHandler {
     suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
 }
 
 internal class TypingIndicatorHandlerImpl(
-    private val typingIndicatorRepository: TypingIndicatorRepository
+    private val selfUserId: UserId,
+    private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository
 ) : TypingIndicatorHandler {
     override suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit> {
+        if (event.senderUserId == selfUserId) {
+            kaliumLogger.withFeatureId(EVENT_RECEIVER).logEventProcessing(EventLoggingStatus.SKIPPED, event)
+            return Either.Right(Unit)
+        }
+
         when (event.typingIndicatorMode) {
-            Conversation.TypingIndicatorMode.STARTED -> typingIndicatorRepository.addTypingUserInConversation(
+            Conversation.TypingIndicatorMode.STARTED -> typingIndicatorIncomingRepository.addTypingUserInConversation(
                 event.conversationId,
                 event.senderUserId
             )
 
-            Conversation.TypingIndicatorMode.STOPPED -> typingIndicatorRepository.removeTypingUserInConversation(
+            Conversation.TypingIndicatorMode.STOPPED -> typingIndicatorIncomingRepository.removeTypingUserInConversation(
                 event.conversationId,
                 event.senderUserId
             )
+        }.also {
+            kaliumLogger.withFeatureId(EVENT_RECEIVER).logEventProcessing(EventLoggingStatus.SUCCESS, event)
         }
 
         return Either.Right(Unit)

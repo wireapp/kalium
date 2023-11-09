@@ -27,6 +27,7 @@ import com.wire.kalium.logic.functional.fold
  * Marks conversations in one or all conversations as notified, so the notifications for these messages won't show up again.
  * @see GetNotificationsUseCase
  */
+@Suppress("konsist.classesWithUseCaseSuffixShouldHaveSinglePublicOperatorFunctionCalledInvoke")
 class MarkMessagesAsNotifiedUseCase internal constructor(
     private val conversationRepository: ConversationRepository
 ) {
@@ -46,12 +47,12 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
      * @param conversationsToUpdate which conversation(s) to be marked as notified.
      */
     suspend operator fun invoke(conversationsToUpdate: UpdateTarget): Result =
-            when (conversationsToUpdate) {
-                UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate()
+        when (conversationsToUpdate) {
+            UpdateTarget.AllConversations -> conversationRepository.updateAllConversationsNotificationDate()
 
-                is UpdateTarget.SingleConversation ->
-                    conversationRepository.updateConversationNotificationDate(conversationsToUpdate.conversationId)
-            }.fold({ Result.Failure(it) }) { Result.Success }
+            is UpdateTarget.SingleConversation ->
+                conversationRepository.updateConversationNotificationDate(conversationsToUpdate.conversationId)
+        }.fold({ Result.Failure(it) }) { Result.Success }
 
     /**
      * Specifies which conversations should be marked as notified
@@ -60,7 +61,7 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
         /**
          * All conversations should be marked as notified.
          */
-        object AllConversations : UpdateTarget
+        data object AllConversations : UpdateTarget
 
         /**
          * A specific conversation, represented by its [conversationId], should be marked as notified
@@ -70,6 +71,6 @@ class MarkMessagesAsNotifiedUseCase internal constructor(
 }
 
 sealed class Result {
-    object Success : Result()
+    data object Success : Result()
     data class Failure(val storageFailure: StorageFailure) : Result()
 }

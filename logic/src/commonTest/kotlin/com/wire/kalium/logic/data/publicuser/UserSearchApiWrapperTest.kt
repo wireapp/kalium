@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -348,12 +349,12 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
-                .then { flowOf(USER_ENTITY) }
+                .then { flowOf(TestUser.DETAILS_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromUserEntityToSelfUser)
+                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { selfUser }
 
@@ -381,12 +382,12 @@ class UserSearchApiWrapperTest {
                 .then { flowOf(JSON_QUALIFIED_ID) }
 
             given(userDAO)
-                .suspendFunction(userDAO::getUserByQualifiedID)
+                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
                 .whenInvokedWith(any())
-                .then { flowOf(USER_ENTITY) }
+                .then { flowOf(TestUser.DETAILS_ENTITY) }
 
             given(userMapper)
-                .function(userMapper::fromUserEntityToSelfUser)
+                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
                 .then { selfUser }
 
@@ -448,7 +449,8 @@ class UserSearchApiWrapperTest {
                     previewPicture = null,
                     completePicture = null,
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                    expiresAt = null
+                    expiresAt = null,
+                    supportedProtocols = null,
                 )
             }
 
@@ -464,7 +466,8 @@ class UserSearchApiWrapperTest {
                 previewPicture = null,
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.AVAILABLE,
-                expiresAt = null
+                expiresAt = null,
+                supportedProtocols = null
             )
 
             const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
@@ -485,7 +488,9 @@ class UserSearchApiWrapperTest {
                 botService = null,
                 deleted = false,
                 expiresAt = null,
-                defederated = false
+                defederated = false,
+                supportedProtocols = null,
+                activeOneOnOneConversationId = null
             )
         }
     }

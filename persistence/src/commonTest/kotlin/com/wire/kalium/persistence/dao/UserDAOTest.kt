@@ -22,8 +22,10 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.utils.stubs.TestStubs
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.test.TestResult
@@ -33,6 +35,7 @@ import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -54,87 +57,63 @@ class UserDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenUser_ThenUserCanBeInserted() = runTest(dispatcher) {
-        db.userDAO.insertUser(user1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(result, user1)
+        db.userDAO.upsertUser(user1)
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(result?.toSimpleEntity(), user1)
     }
 
     @Test
     fun givenListOfUsers_ThenMultipleUsersCanBeInsertedAtOnce() = runTest(dispatcher) {
         db.userDAO.upsertUsers(listOf(user1, user2, user3))
-        val result1 = db.userDAO.getUserByQualifiedID(user1.id).first()
-        val result2 = db.userDAO.getUserByQualifiedID(user2.id).first()
-        val result3 = db.userDAO.getUserByQualifiedID(user3.id).first()
-        assertEquals(result1, user1)
-        assertEquals(result2, user2)
-        assertEquals(result3, user3)
+        val result1 = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        val result2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id).first()
+        val result3 = db.userDAO.observeUserDetailsByQualifiedID(user3.id).first()
+        assertEquals(result1?.toSimpleEntity(), user1)
+        assertEquals(result2?.toSimpleEntity(), user2)
+        assertEquals(result3?.toSimpleEntity(), user3)
     }
 
     @Test
     fun givenExistingUser_ThenUserCanBeDeleted() = runTest(dispatcher) {
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
         db.userDAO.deleteUserByQualifiedID(user1.id)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNull(result)
     }
 
     @Test
     fun givenExistingUser_ThenUserCanBeUpdated() = runTest(dispatcher) {
-        db.userDAO.insertUser(user1)
-        val updatedUser1 = UserEntity(
-            user1.id,
-            "John Doe",
-            "johndoe",
-            "email1",
-            "phone1",
-            1,
-            "team",
-            ConnectionEntity.State.ACCEPTED,
-            UserAssetIdEntity("asset1", "domain"),
-            UserAssetIdEntity("asset1", "domain"),
-            UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.STANDARD,
-            botService = null,
-            deleted = false,
-            hasIncompleteMetadata = false,
-            expiresAt = null,
-            defederated = false
+        db.userDAO.upsertUser(user1)
+        val updatedUser1 = newUserEntity(user1.id).copy(
+            name = "John Doe",
+            handle = "johndoe",
+            email = "email1",
+            phone = "phone1",
+            accentId = 1
         )
-        db.userDAO.updateUser(updatedUser1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(result, updatedUser1)
+        db.userDAO.upsertUser(updatedUser1)
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(result?.toSimpleEntity(), updatedUser1)
     }
 
     @Test
     fun givenRetrievedUser_ThenUpdatesArePropagatedThroughFlow() = runTest(dispatcher) {
         val collectedValues = mutableListOf<UserEntity?>()
 
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
 
-        val updatedUser1 = UserEntity(
-            user1.id,
-            "John Doe",
-            "johndoe",
-            "email1",
-            "phone1",
-            1,
-            "team",
-            ConnectionEntity.State.ACCEPTED,
-            null,
-            null,
-            UserAvailabilityStatusEntity.NONE,
-            UserTypeEntity.STANDARD,
-            botService = null,
-            false,
-            hasIncompleteMetadata = false,
-            expiresAt = null,
-            defederated = false
+        val updatedUser1 = newUserEntity(user1.id).copy(
+            name = "John Doe",
+            handle = "johndoe",
+            email = "email1",
+            phone = "phone1",
+            accentId = 1
         )
 
-        db.userDAO.getUserByQualifiedID(user1.id).take(2).collect {
-            collectedValues.add(it)
+        db.userDAO.observeUserDetailsByQualifiedID(user1.id).take(2).collect {
+            collectedValues.add(it?.toSimpleEntity())
             if (collectedValues.size == 1) {
-                db.userDAO.updateUser(updatedUser1)
+                db.userDAO.upsertUser(updatedUser1)
             }
         }
         assertEquals(user1, collectedValues[0])
@@ -144,14 +123,14 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUser_WhenUpdateUserHandle_ThenUserHandleIsUpdated() = runTest(dispatcher) {
         // given
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
         val updatedHandle = "new-handle"
 
         // when
         db.userDAO.updateUserHandle(user1.id, updatedHandle)
 
         // then
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(updatedHandle, result?.handle)
     }
 
@@ -165,7 +144,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.updateUserHandle(nonExistingQualifiedID, updatedHandle)
 
         // then
-        val result = db.userDAO.getUserByQualifiedID(nonExistingQualifiedID).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(nonExistingQualifiedID).first()
         assertNull(result)
     }
 
@@ -178,13 +157,13 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(listOf(user1, user2, user3))
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
             user2.email!!,
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
             // then
             val searchResult = awaitItem()
-            assertEquals(searchResult, listOf(user2))
+            assertEquals(searchResult.map { it.toSimpleEntity() }, listOf(user2))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -199,14 +178,14 @@ class UserDAOTest : BaseDatabaseTest() {
             db.userDAO.upsertUsers(listOf(user1, user2, user3))
             // when
 
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+            db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
                 user3.handle!!,
                 listOf(ConnectionEntity.State.ACCEPTED)
             )
                 .test {
                     // then
                     val searchResult = awaitItem()
-                    assertEquals(searchResult, listOf(user3))
+                    assertEquals(searchResult.map { it.toSimpleEntity() }, listOf(user3))
                     cancelAndIgnoreRemainingEvents()
                 }
         }
@@ -221,10 +200,10 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(listOf(user1, user2, user3))
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(user1.name!!, listOf(ConnectionEntity.State.ACCEPTED))
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(user1.name!!, listOf(ConnectionEntity.State.ACCEPTED))
             .test {
                 val searchResult = awaitItem()
-                assertEquals(searchResult, listOf(user1))
+                assertEquals(searchResult.map { it.toSimpleEntity() }, listOf(user1))
                 cancelAndIgnoreRemainingEvents()
             }
     }
@@ -241,55 +220,25 @@ class UserDAOTest : BaseDatabaseTest() {
                 USER_ENTITY_3.copy(email = commonEmailPrefix + "u3@example.org")
             )
             val notCommonEmailUsers = listOf(
-                UserEntity(
-                    id = QualifiedIDEntity("4", "wire.com"),
-                    name = "testName4",
-                    handle = "testHandle4",
-                    email = "someDifferentEmail1@wire.com",
-                    phone = "testPhone4",
-                    accentId = 4,
-                    team = "testTeam4",
-                    ConnectionEntity.State.ACCEPTED,
-                    null,
-                    null,
-                    UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.STANDARD,
-                    botService = null,
-                    false,
-                    hasIncompleteMetadata = false,
-                    expiresAt = null,
-                    defederated = false
-                ),
-                UserEntity(
-                    id = QualifiedIDEntity("5", "wire.com"),
-                    name = "testName5",
-                    handle = "testHandle5",
-                    email = "someDifferentEmail2@wire.com",
-                    phone = "testPhone5",
-                    accentId = 5,
-                    team = "testTeam5",
-                    ConnectionEntity.State.ACCEPTED,
-                    null,
-                    null,
-                    UserAvailabilityStatusEntity.NONE,
-                    UserTypeEntity.STANDARD,
-                    botService = null,
-                    deleted = false,
-                    hasIncompleteMetadata = false,
-                    expiresAt = null,
-                    defederated = false
-                )
+                newUserEntity(QualifiedIDEntity("4", "wire.com"))
+                    .copy(
+                        email = "someDifferentEmail1@wire.com",
+                    ),
+                newUserEntity(QualifiedIDEntity("5", "wire.com"))
+                    .copy(
+                        email = "someDifferentEmail2@wire.com"
+                    )
             )
             val mockUsers = commonEmailUsers + notCommonEmailUsers
 
             db.userDAO.upsertUsers(mockUsers)
             // when
 
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonEmailPrefix, listOf(ConnectionEntity.State.ACCEPTED))
+            db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(commonEmailPrefix, listOf(ConnectionEntity.State.ACCEPTED))
                 .test {
                     // then
                     val searchResult = awaitItem()
-                    assertEquals(searchResult, commonEmailUsers)
+                    assertEquals(searchResult.map { it.toSimpleEntity() }, commonEmailUsers)
                     cancelAndIgnoreRemainingEvents()
                 }
         }
@@ -304,7 +253,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val nonExistingEmailQuery = "doesnotexist@wire.com"
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
             nonExistingEmailQuery,
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
@@ -324,7 +273,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(mockUsers)
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
             commonEmailPrefix,
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
@@ -346,7 +295,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(mockUsers)
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
             commonHandlePrefix,
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
@@ -368,7 +317,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(mockUsers)
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
             commonNamePrefix,
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
@@ -395,11 +344,11 @@ class UserDAOTest : BaseDatabaseTest() {
             db.userDAO.upsertUsers(mockUsers)
             // when
 
-            db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
+            db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
                 .test {
                     // then
                     val searchResult = awaitItem()
-                    assertEquals(mockUsers, searchResult)
+                    assertEquals(mockUsers, searchResult.map { it.toSimpleEntity() })
                     cancelAndIgnoreRemainingEvents()
                 }
         }
@@ -418,7 +367,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(mockUsers)
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
             commonPrefix,
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
@@ -446,7 +395,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(mockUsers)
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(commonPrefix, listOf(ConnectionEntity.State.ACCEPTED))
             .test {
                 // then
                 val searchResult = awaitItem()
@@ -475,13 +424,13 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUsers(mockUsers)
         // when
 
-        db.userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+        db.userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
             commonPrefix,
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
             // then
             val searchResult = awaitItem()
-            assertEquals(expectedResult, searchResult)
+            assertEquals(expectedResult, searchResult.map { it.toSimpleEntity() })
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -504,13 +453,13 @@ class UserDAOTest : BaseDatabaseTest() {
 
         // when
 
-        db.userDAO.getUserByHandleAndConnectionStates(
+        db.userDAO.getUserDetailsByHandleAndConnectionStates(
             "some",
             listOf(ConnectionEntity.State.ACCEPTED)
         ).test {
             // then
             val searchResult = awaitItem()
-            assertEquals(expectedResult, searchResult)
+            assertEquals(expectedResult, searchResult.map { it.toSimpleEntity() })
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -526,8 +475,8 @@ class UserDAOTest : BaseDatabaseTest() {
         val updatedUser3 = user3.copy(name = newNameB)
         db.userDAO.upsertUsers(listOf(updatedUser1, updatedUser3))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val updated3 = db.userDAO.getUserByQualifiedID(updatedUser3.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser1.id)
+        val updated3 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser3.id)
         assertEquals(newNameA, updated1.first()?.name)
         assertEquals(newNameB, updated3.first()?.name)
     }
@@ -536,42 +485,40 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenAExistingUsers_whenUpdatingTheirValuesAndRecordNotExists_ThenResultsOneUpdatedAnotherInserted() = runTest(dispatcher) {
         // given
         val newNameA = "new user naming a"
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
         // when
         val updatedUser1 = user1.copy(name = newNameA)
         db.userDAO.upsertUsers(listOf(updatedUser1, user2))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id)
         assertEquals(newNameA, updated1.first()?.name)
         assertNotNull(inserted2)
     }
 
     @Test
-    fun givenAExistingUsers_whenUpsertingTeamMembers_ThenResultsOneUpdatedAnotherInserted() = runTest(dispatcher) {
+    fun givenAExistingUsers_whenUpsertingTeamMembersUserTypes_ThenUserTypeIsUpdated() = runTest(dispatcher) {
         // given
-        val newTeamId = "new user team id"
-        db.userDAO.insertUser(user1)
+        val newUserType = UserTypeEntity.ADMIN
+        db.userDAO.upsertUser(user1)
         // when
-        val updatedUser1 = user1.copy(team = newTeamId)
-        db.userDAO.upsertTeamMembersTypes(listOf(updatedUser1, user2))
+        db.userDAO.upsertTeamMemberUserTypes(mapOf(user1.id to newUserType))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
-        assertEquals(newTeamId, updated1.first()?.team)
-        assertNotNull(inserted2)
+        val updated = db.userDAO.observeUserDetailsByQualifiedID(user1.id)
+        assertEquals(newUserType, updated.first()?.userType)
+        assertEquals(ConnectionEntity.State.ACCEPTED, updated.first()?.connectionStatus)
     }
 
     @Test
-    fun givenATeamMember_whenUpsertingTeamMember_ThenUserTypeShouldStayTheSame() = runTest(dispatcher) {
+    fun givenNotExistingUsers_whenUpsertingTeamMembersUserTypes_ThenUserIsInsertedWithCorrectUserType() = runTest(dispatcher) {
         // given
-        val externalMember = user1.copy(userType = UserTypeEntity.EXTERNAL)
-        db.userDAO.upsertTeamMembersTypes(listOf(externalMember))
+        val newUserType = UserTypeEntity.ADMIN
         // when
-        db.userDAO.upsertTeamMembers(listOf(user1))
+        db.userDAO.upsertTeamMemberUserTypes(mapOf(user1.id to newUserType))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(user1.id)
-        assertEquals(UserTypeEntity.EXTERNAL, updated1.first()?.userType)
+        val inserted = db.userDAO.observeUserDetailsByQualifiedID(user1.id)
+        assertEquals(newUserType, inserted.first()?.userType)
+        assertEquals(ConnectionEntity.State.ACCEPTED, inserted.first()?.connectionStatus)
     }
 
     @Test
@@ -584,7 +531,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.memberDAO.insertMember(MemberEntity(teamMember.id, MemberEntity.Role.Member), conversation.id)
 
         // then
-        db.userDAO.getAllUsers().first().also {
+        db.userDAO.getAllUsersDetails().first().also {
             assertNotNull(it)
             it.firstOrNull { it.id == teamMember.id }.also {
                 assertNotNull(it)
@@ -593,10 +540,10 @@ class UserDAOTest : BaseDatabaseTest() {
         }
 
         // when
-        db.userDAO.upsertTeamMembers(listOf(teamMember))
+        db.userDAO.upsertUsers(listOf(teamMember))
 
         // then
-        db.userDAO.getAllUsers().first().also {
+        db.userDAO.getAllUsersDetails().first().also {
             assertNotNull(it)
             it.firstOrNull { it.id == teamMember.id }.also {
                 assertNotNull(it)
@@ -609,13 +556,13 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenAExistingUsers_whenUpsertingUsers_ThenResultsOneUpdatedAnotherInsertedWithNoConnectionStatusOverride() = runTest(dispatcher) {
         // given
         val newTeamId = "new team id"
-        db.userDAO.insertUser(user1.copy(connectionStatus = ConnectionEntity.State.ACCEPTED))
+        db.userDAO.upsertUser(user1.copy(connectionStatus = ConnectionEntity.State.ACCEPTED))
         // when
         val updatedUser1 = user1.copy(team = newTeamId)
         db.userDAO.upsertUsers(listOf(updatedUser1, user2))
         // then
-        val updated1 = db.userDAO.getUserByQualifiedID(updatedUser1.id)
-        val inserted2 = db.userDAO.getUserByQualifiedID(user2.id)
+        val updated1 = db.userDAO.observeUserDetailsByQualifiedID(updatedUser1.id)
+        val inserted2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id)
         assertEquals(newTeamId, updated1.first()?.team)
         assertEquals(ConnectionEntity.State.ACCEPTED, updated1.first()?.connectionStatus)
         assertNotNull(inserted2)
@@ -626,19 +573,19 @@ class UserDAOTest : BaseDatabaseTest() {
         val users = listOf(user1, user2)
         val requestedIds = (users + user3).map { it.id }
         db.userDAO.upsertUsers(users)
-        val result = db.userDAO.getUsersByQualifiedIDList(requestedIds)
-        assertEquals(result, users)
-        assertTrue(!result.contains(user3))
+        val result = db.userDAO.getUsersDetailsByQualifiedIDList(requestedIds)
+        assertEquals(result.map { it.toSimpleEntity() }, users)
+        assertTrue(!result.map { it.toSimpleEntity() }.contains(user3))
     }
 
     @Test
     fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
         val user = user1
-        db.userDAO.insertUser(user)
+        db.userDAO.upsertUser(user)
         val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
         db.userDAO.markUserAsDeleted(user1.id)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(result, deletedUser)
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(result?.toSimpleEntity(), deletedUser)
 
     }
 
@@ -650,8 +597,8 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         db.userDAO.insertOrIgnoreUsers(usersToInsert)
         // then
-        val persistedUsers = db.userDAO.getAllUsers().first()
-        assertEquals(expected, persistedUsers)
+        val persistedUsers = db.userDAO.getAllUsersDetails().first()
+        assertEquals(expected, persistedUsers.map { it.toSimpleEntity() })
     }
 
     @Test
@@ -660,35 +607,35 @@ class UserDAOTest : BaseDatabaseTest() {
         val existingUser = user1
         val usersToInsert = listOf(user1.copy(name = "other name to make sure this one wasn't inserted nor edited"), user2)
         val expected = listOf(user1, user2)
-        db.userDAO.insertUser(existingUser)
+        db.userDAO.upsertUser(existingUser)
         // when
         db.userDAO.insertOrIgnoreUsers(usersToInsert)
         // then
-        val persistedUsers = db.userDAO.getAllUsers().first()
-        assertEquals(expected, persistedUsers)
+        val persistedUsers = db.userDAO.getAllUsersDetails().first()
+        assertEquals(expected, persistedUsers.map { it.toSimpleEntity() })
     }
 
     @Test
     fun givenAnExistingUser_whenUpdatingTheDisplayName_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
         // given
         val expectedNewDisplayName = "new user display name"
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
 
         // when
         db.userDAO.updateUserDisplayName(user1.id, expectedNewDisplayName)
 
         // then
-        val persistedUser = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(expectedNewDisplayName, persistedUser?.name)
     }
 
     @Test
     fun givenExistingUserWithoutMetadata_whenQueryingThem_thenShouldReturnUsersWithoutMetadata() = runTest(dispatcher) {
         // given
-        db.userDAO.insertUser(user1.copy(name = null, handle = null, hasIncompleteMetadata = true))
+        db.userDAO.upsertUser(user1.copy(name = null, handle = null, hasIncompleteMetadata = true))
 
         // when
-        val usersWithoutMetadata = db.userDAO.getUsersWithoutMetadata()
+        val usersWithoutMetadata = db.userDAO.getUsersDetailsWithoutMetadata()
 
         // then
         assertEquals(1, usersWithoutMetadata.size)
@@ -698,7 +645,7 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUser_WhenRemoveUserAsset_ThenUserAssetIsRemoved() = runTest(dispatcher) {
         // given
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
         val assetId = UserAssetIdEntity("asset1", "domain")
         val updatedUser1 = user1.copy(previewAssetId = assetId)
 
@@ -706,8 +653,8 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.removeUserAsset(assetId)
 
         // then
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
-        assertEquals(result, updatedUser1.copy(previewAssetId = null))
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(result?.toSimpleEntity(), updatedUser1.copy(previewAssetId = null))
     }
 
     @Test
@@ -719,7 +666,7 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.removeUserAsset(assetId)
 
         // when
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNull(result)
     }
 
@@ -730,10 +677,10 @@ class UserDAOTest : BaseDatabaseTest() {
         val user2 = newUserEntity().copy(id = UserIDEntity("user-2", "domain-2"))
         val user3 = newUserEntity().copy(id = UserIDEntity("user-3", "domain-1"))
 
-        db.userDAO.insertUser(selfUser)
-        db.userDAO.insertUser(user1)
-        db.userDAO.insertUser(user2)
-        db.userDAO.insertUser(user3)
+        db.userDAO.upsertUser(selfUser)
+        db.userDAO.upsertUser(user1)
+        db.userDAO.upsertUser(user2)
+        db.userDAO.upsertUser(user3)
 
         db.userDAO.allOtherUsersId().also { result ->
             assertFalse {
@@ -745,21 +692,135 @@ class UserDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenExistingUser_ThenUserCanBeDefederated() = runTest(dispatcher) {
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
         db.userDAO.markUserAsDefederated(user1.id)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNotNull(result)
         assertEquals(true, result.defederated)
+    }
+    @Test
+    fun givenAnExistingUser_whenUpdatingTheSupportedProtocols_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewSupportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS)
+        db.userDAO.upsertUser(user1)
+
+        // when
+        db.userDAO.updateUserSupportedProtocols(user1.id, expectedNewSupportedProtocols)
+
+        // then
+        val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(expectedNewSupportedProtocols, persistedUser?.supportedProtocols)
     }
 
     @Test
     fun givenExistingUserIsDefederated_ThenUserCanBeRefederatedAfterUpdate() = runTest(dispatcher) {
-        db.userDAO.insertUser(user1)
+        db.userDAO.upsertUser(user1)
         db.userDAO.markUserAsDefederated(user1.id)
-        db.userDAO.insertUser(user1)
-        val result = db.userDAO.getUserByQualifiedID(user1.id).first()
+        db.userDAO.upsertUser(user1)
+        val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertNotNull(result)
         assertEquals(false, result.defederated)
+    }
+
+    @Test
+    fun givenAnExistingUser_WhenUpdatingOneOnOneConversationId_ThenItIsUpdated() = runTest(dispatcher) {
+        // given
+        val expectedNewOneOnOneConversationId = TestStubs.conversationEntity1.id
+        db.userDAO.upsertUser(user1)
+
+        // when
+        db.userDAO.updateActiveOneOnOneConversation(user1.id, expectedNewOneOnOneConversationId)
+
+        // then
+        val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(expectedNewOneOnOneConversationId, persistedUser?.activeOneOnOneConversationId)
+    }
+
+    @Test
+    fun givenAnExistingUser_whenPerformingPartialUpdate_thenChangedFieldIsUpdatedOthersAreUnchanged() = runTest(dispatcher) {
+        // given
+        val expectedName = "new name"
+        val update = PartialUserEntity(name = expectedName)
+        db.userDAO.upsertUser(user1)
+
+        // when
+        db.userDAO.updateUser(user1.id, update)
+
+        // then
+        val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
+        assertEquals(expectedName, persistedUser?.name)
+        assertEquals(user1.handle, persistedUser?.handle)
+        assertEquals(user1.email, persistedUser?.email)
+        assertEquals(user1.accentId, persistedUser?.accentId)
+        assertEquals(user1.previewAssetId, persistedUser?.previewAssetId)
+        assertEquals(user1.completeAssetId, persistedUser?.completeAssetId)
+        assertEquals(user1.supportedProtocols, persistedUser?.supportedProtocols)
+    }
+
+    @Test
+    fun givenExistingUser_whenUpsertingIt_thenAllImportantFieldsAreProperlyUpdated() = runTest(dispatcher) {
+        val user = user1.copy(
+            name = "Name",
+            handle = "Handle",
+            email = "Email",
+            phone = "Phone",
+            accentId = 1,
+            team = "Team",
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = UserAssetIdEntity("PreviewAssetId", "PreviewAssetDomain"),
+            completeAssetId = UserAssetIdEntity("CompleteAssetId", "CompleteAssetDomain"),
+            availabilityStatus = UserAvailabilityStatusEntity.AVAILABLE,
+            userType = UserTypeEntity.STANDARD,
+            botService = BotIdEntity("BotService", "BotServiceDomain"),
+            deleted = false,
+            hasIncompleteMetadata = false,
+            expiresAt = null,
+            defederated = false,
+            supportedProtocols = setOf(SupportedProtocolEntity.MLS),
+            activeOneOnOneConversationId = null,
+        )
+        db.userDAO.upsertUser(user)
+        val updatedTeamMemberUser = user1.copy(
+            name = "newName",
+            handle = "newHandle",
+            email = "newEmail",
+            phone = "newPhone",
+            accentId = 2,
+            team = "newTeam",
+            connectionStatus = ConnectionEntity.State.PENDING,
+            previewAssetId = UserAssetIdEntity("newPreviewAssetId", "newPreviewAssetDomain"),
+            completeAssetId = UserAssetIdEntity("newCompleteAssetId", "newCompleteAssetDomain"),
+            availabilityStatus = UserAvailabilityStatusEntity.BUSY,
+            userType = UserTypeEntity.EXTERNAL,
+            botService = BotIdEntity("newBotService", "newBotServiceDomain"),
+            deleted = true,
+            hasIncompleteMetadata = true,
+            expiresAt = DateTimeUtil.currentInstant(),
+            defederated = true,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS),
+            activeOneOnOneConversationId = QualifiedIDEntity("newActiveOneOnOneConversationId", "newActiveOneOnOneConversationDomain")
+        )
+        db.userDAO.upsertUser(updatedTeamMemberUser)
+        val result = db.userDAO.getUsersDetailsByQualifiedIDList(listOf(user1.id)).firstOrNull()
+        assertNotNull(result)
+        assertEquals(updatedTeamMemberUser.name, result.name)
+        assertEquals(updatedTeamMemberUser.handle, result.handle)
+        assertEquals(updatedTeamMemberUser.email, result.email)
+        assertEquals(updatedTeamMemberUser.phone, result.phone)
+        assertEquals(updatedTeamMemberUser.accentId, result.accentId)
+        assertEquals(updatedTeamMemberUser.team, result.team)
+        assertEquals(updatedTeamMemberUser.previewAssetId, result.previewAssetId)
+        assertEquals(updatedTeamMemberUser.completeAssetId, result.completeAssetId)
+        assertEquals(updatedTeamMemberUser.userType, result.userType)
+        assertEquals(updatedTeamMemberUser.botService, result.botService)
+        assertEquals(updatedTeamMemberUser.deleted, result.deleted)
+        assertEquals(updatedTeamMemberUser.hasIncompleteMetadata, result.hasIncompleteMetadata)
+        assertEquals(updatedTeamMemberUser.expiresAt, result.expiresAt)
+        assertEquals(updatedTeamMemberUser.supportedProtocols, result.supportedProtocols)
+        assertNotEquals(updatedTeamMemberUser.connectionStatus, result.connectionStatus)
+        assertNotEquals(updatedTeamMemberUser.availabilityStatus, result.availabilityStatus)
+        assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
+        assertNotEquals(updatedTeamMemberUser.activeOneOnOneConversationId, result.activeOneOnOneConversationId)
     }
 
     private companion object {

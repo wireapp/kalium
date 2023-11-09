@@ -18,20 +18,22 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -40,11 +42,10 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FeatureConfigRepositoryTest {
 
     @Test
@@ -52,8 +53,8 @@ class FeatureConfigRepositoryTest {
         // Given
         val featureConfigModel = FeatureConfigModel(
             AppLockModel(
-                AppLockConfigModel(true, 0),
-                Status.ENABLED
+                status = Status.ENABLED,
+                inactivityTimeoutSecs = 0
             ),
             ClassifiedDomainsModel(
                 ClassifiedDomainsConfigModel(listOf()),
@@ -75,10 +76,17 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             MLSModel(
                 emptyList(),
+                SupportedProtocol.PROTEUS,
+                setOf(SupportedProtocol.PROTEUS),
                 Status.ENABLED
             ),
             E2EIModel(
                 E2EIConfigModel("url", 1000000L),
+                com.wire.kalium.logic.data.featureConfig.Status.ENABLED
+            ),
+            MLSMigrationModel(
+                Instant.DISTANT_FUTURE,
+                Instant.DISTANT_FUTURE,
                 Status.ENABLED
             )
         )
@@ -151,13 +159,18 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.MLS(
                 MLSConfigDTO(
                     emptyList(),
-                    ConvProtocol.MLS,
+                    SupportedProtocolDTO.PROTEUS,
+                    listOf(SupportedProtocolDTO.PROTEUS),
                     emptyList(),
                     1
                 ), FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.E2EI(
                 E2EIConfigDTO("url", 1000000L),
+                FeatureFlagStatusDTO.ENABLED
+            ),
+            FeatureConfigData.MLSMigration(
+                MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED
             )
         )

@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
-import com.wire.kalium.persistence.SelectConversationByMember
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
 import com.wire.kalium.persistence.ConversationDetails as SQLDelightConversationView
+
 internal class ConversationMapper {
     fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
         ConversationViewEntity(
@@ -66,7 +66,11 @@ internal class ConversationMapper {
             userMessageTimer = user_message_timer,
             userDefederated = userDefederated,
             archived = archived,
-            archivedDateTime = archived_date_time
+            archivedDateTime = archived_date_time,
+            mlsVerificationStatus = mls_verification_status,
+            userSupportedProtocols = userSupportedProtocols,
+            userActiveOneOnOneConversationId = otherUserActiveConversationId,
+            proteusVerificationStatus = proteus_verification_status
         )
     }
 
@@ -95,7 +99,9 @@ internal class ConversationMapper {
         messageTimer: Long?,
         userMessageTimer: Long?,
         archived: Boolean,
-        archivedDateTime: Instant?
+        archivedDateTime: Instant?,
+        mlsVerificationStatus: ConversationEntity.VerificationStatus,
+        proteusVerificationStatus: ConversationEntity.VerificationStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -121,58 +127,10 @@ internal class ConversationMapper {
         messageTimer = messageTimer,
         userMessageTimer = userMessageTimer,
         archived = archived,
-        archivedInstant = archivedDateTime
+        archivedInstant = archivedDateTime,
+        mlsVerificationStatus = mlsVerificationStatus,
+        proteusVerificationStatus = proteusVerificationStatus
     )
-
-    fun fromOneToOneToModel(conversation: SelectConversationByMember?): ConversationViewEntity? {
-        return conversation?.run {
-            ConversationViewEntity(
-                id = qualifiedId,
-                name = name,
-                type = type,
-                teamId = teamId,
-                protocolInfo = mapProtocolInfo(
-                    protocol,
-                    mls_group_id,
-                    mls_group_state,
-                    mls_epoch,
-                    mls_last_keying_material_update_date,
-                    mls_cipher_suite
-                ),
-                isCreator = isCreator,
-                mutedStatus = mutedStatus,
-                mutedTime = muted_time,
-                creatorId = creator_id,
-                lastNotificationDate = lastNotifiedMessageDate,
-                lastModifiedDate = last_modified_date,
-                lastReadDate = lastReadDate,
-                accessList = access_list,
-                accessRoleList = access_role_list,
-                protocol = protocol,
-                mlsCipherSuite = mls_cipher_suite,
-                mlsEpoch = mls_epoch,
-                mlsGroupId = mls_group_id,
-                mlsLastKeyingMaterialUpdateDate = mls_last_keying_material_update_date,
-                mlsGroupState = mls_group_state,
-                mlsProposalTimer = mls_proposal_timer,
-                callStatus = callStatus,
-                previewAssetId = previewAssetId,
-                userAvailabilityStatus = userAvailabilityStatus,
-                userType = userType,
-                botService = botService,
-                userDeleted = userDeleted,
-                connectionStatus = connectionStatus,
-                otherUserId = otherUserId,
-                selfRole = selfRole,
-                receiptMode = receipt_mode,
-                messageTimer = message_timer,
-                userMessageTimer = user_message_timer,
-                userDefederated = userDefederated,
-                archived = archived,
-                archivedDateTime = archived_date_time
-            )
-        }
-    }
 
     @Suppress("LongParameterList")
     fun mapProtocolInfo(
@@ -181,7 +139,7 @@ internal class ConversationMapper {
         mlsGroupState: ConversationEntity.GroupState,
         mlsEpoch: Long,
         mlsLastKeyingMaterialUpdate: Instant,
-        mlsCipherSuite: ConversationEntity.CipherSuite,
+        mlsCipherSuite: ConversationEntity.CipherSuite
     ): ConversationEntity.ProtocolInfo {
         return when (protocol) {
             ConversationEntity.Protocol.MLS -> ConversationEntity.ProtocolInfo.MLS(
@@ -192,7 +150,22 @@ internal class ConversationMapper {
                 mlsCipherSuite
             )
 
+            ConversationEntity.Protocol.MIXED -> ConversationEntity.ProtocolInfo.Mixed(
+                mlsGroupId ?: "",
+                mlsGroupState,
+                mlsEpoch.toULong(),
+                mlsLastKeyingMaterialUpdate,
+                mlsCipherSuite
+            )
+
             ConversationEntity.Protocol.PROTEUS -> ConversationEntity.ProtocolInfo.Proteus
         }
     }
+
+    fun toE2EIConversationClient(
+        mlsGroupId: String,
+        userId: QualifiedIDEntity,
+        clientId: String
+    ) = E2EIConversationClientInfoEntity(userId, mlsGroupId, clientId)
+
 }

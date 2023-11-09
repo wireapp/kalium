@@ -18,21 +18,26 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -41,19 +46,23 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.Duration.Companion.seconds
 
 class UserEventReceiverTest {
 
     @Test
     fun givenRemoveClientEvent_whenTheClientIdIsEqualCurrentClient_SoftLogoutInvoked() = runTest {
         val event = TestEvent.clientRemove(EVENT_ID, CLIENT_ID1)
-        val (arrangement, eventReceiver) = Arrangement()
-            .withCurrentClientIdIs(CLIENT_ID1)
-            .withLogoutUseCaseSucceed()
-            .arrange()
+        val (arrangement, eventReceiver) = arrange {
+            withCurrentClientIdIs(CLIENT_ID1)
+            withLogoutUseCaseSucceed()
+        }
 
         eventReceiver.onEvent(event)
 
@@ -66,10 +75,10 @@ class UserEventReceiverTest {
     @Test
     fun givenRemoveClientEvent_whenTheClientIdIsNotEqualCurrentClient_SoftLogoutNotInvoked() = runTest {
         val event = TestEvent.clientRemove(EVENT_ID, CLIENT_ID1)
-        val (arrangement, eventReceiver) = Arrangement()
-            .withCurrentClientIdIs(CLIENT_ID2)
-            .withLogoutUseCaseSucceed()
-            .arrange()
+        val (arrangement, eventReceiver) = arrange {
+            withCurrentClientIdIs(CLIENT_ID2)
+            withLogoutUseCaseSucceed()
+        }
 
         eventReceiver.onEvent(event)
 
@@ -82,9 +91,9 @@ class UserEventReceiverTest {
     @Test
     fun givenDeleteAccountEvent_SoftLogoutInvoked() = runTest {
         val event = TestEvent.userDelete(userId = SELF_USER_ID)
-        val (arrangement, eventReceiver) = Arrangement()
-            .withLogoutUseCaseSucceed()
-            .arrange()
+        val (arrangement, eventReceiver) = arrange {
+            withLogoutUseCaseSucceed()
+        }
 
         eventReceiver.onEvent(event)
 
@@ -97,10 +106,11 @@ class UserEventReceiverTest {
     @Test
     fun givenUserDeleteEvent_RepoAndPersisMessageAreInvoked() = runTest {
         val event = TestEvent.userDelete(userId = OTHER_USER_ID)
-        val (arrangement, eventReceiver) = Arrangement()
-            .withUserDeleteSuccess()
-            .withConversationIdsByUserId(listOf(TestConversation.ID))
-            .arrange()
+        val (arrangement, eventReceiver) = arrange {
+            withRemoveUserSuccess()
+            withDeleteUserFromConversationsSuccess()
+            withConversationsByUserId(listOf(TestConversation.CONVERSATION))
+        }
 
         eventReceiver.onEvent(event)
 
@@ -118,9 +128,9 @@ class UserEventReceiverTest {
     @Test
     fun givenUserUpdateEvent_RepoIsInvoked() = runTest {
         val event = TestEvent.updateUser(userId = SELF_USER_ID)
-        val (arrangement, eventReceiver) = Arrangement()
-            .withUpdateUserSuccess()
-            .arrange()
+        val (arrangement, eventReceiver) = arrange {
+            withUpdateUserSuccess()
+        }
 
         val result = eventReceiver.onEvent(event)
 
@@ -134,9 +144,9 @@ class UserEventReceiverTest {
     @Test
     fun givenUserUpdateEvent_whenUserIsNotFoundInLocalDB_thenShouldIgnoreThisEventFailure() = runTest {
         val event = TestEvent.updateUser(userId = OTHER_USER_ID)
-        val (_, eventReceiver) = Arrangement()
-            .withUpdateUserFailure(StorageFailure.DataNotFound)
-            .arrange()
+        val (_, eventReceiver) = arrange {
+            withUpdateUserFailure(StorageFailure.DataNotFound)
+        }
 
         val result = eventReceiver.onEvent(event)
 
@@ -146,9 +156,9 @@ class UserEventReceiverTest {
     @Test
     fun givenUserUpdateEvent_whenFailsWitOtherError_thenShouldFail() = runTest {
         val event = TestEvent.updateUser(userId = OTHER_USER_ID)
-        val (_, eventReceiver) = Arrangement()
-            .withUpdateUserFailure(StorageFailure.Generic(Throwable("error")))
-            .arrange()
+        val (_, eventReceiver) = arrange {
+            withUpdateUserFailure(StorageFailure.Generic(Throwable("error")))
+        }
 
         val result = eventReceiver.onEvent(event)
 
@@ -158,8 +168,7 @@ class UserEventReceiverTest {
     @Test
     fun givenNewClientEvent_NewClientManagerInvoked() = runTest {
         val event = TestEvent.newClient()
-        val (arrangement, eventReceiver) = Arrangement()
-            .arrange()
+        val (arrangement, eventReceiver) = arrange { }
 
         eventReceiver.onEvent(event)
 
@@ -169,15 +178,87 @@ class UserEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenNewConnectionEvent_thenConnectionIsPersisted() = runTest {
+        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
+        val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
+            withInsertConnectionFromEventSucceeding()
+            withPersistUnverifiedWarningMessageSuccess()
+        }
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::insertConnectionFromEvent)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewConnectionEventWithStatusPending_thenActiveOneOnOneConversationIsNotResolved() = runTest {
+        val event = TestEvent.newConnection(status = ConnectionState.PENDING).copy()
+        val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
+            withInsertConnectionFromEventSucceeding()
+            withPersistUnverifiedWarningMessageSuccess()
+        }
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduled() = runTest {
+        val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy()
+        val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Right(Unit))
+            withInsertConnectionFromEventSucceeding()
+            withScheduleResolveOneOnOneConversationWithUserId()
+            withPersistUnverifiedWarningMessageSuccess()
+        }
+
+        eventReceiver.onEvent(event)
+
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
+            .with(eq(event.connection.qualifiedToId), eq(ZERO))
+            .wasInvoked(exactly = once)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenLiveNewConnectionEventWithStatusAccepted_thenResolveActiveOneOnOneConversationIsScheduledWithDelay() =
+        runTest(TestKaliumDispatcher.default) {
+            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED).copy(live = true)
+            val (arrangement, eventReceiver) = arrange {
+                withFetchUserInfoReturning(Either.Right(Unit))
+                withInsertConnectionFromEventSucceeding()
+                withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
+            }
+
+            eventReceiver.onEvent(event)
+            advanceUntilIdle()
+
+            verify(arrangement.oneOnOneResolver)
+                .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
+                .with(eq(event.connection.qualifiedToId), eq(3.seconds))
+                .wasInvoked(exactly = once)
+        }
+
+    private class Arrangement(private val block: Arrangement.() -> Unit) :
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         @Mock
         val connectionRepository = mock(classOf<ConnectionRepository>())
 
         @Mock
         val logoutUseCase = mock(classOf<LogoutUseCase>())
-
-        @Mock
-        val userRepository = mock(classOf<UserRepository>())
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -188,18 +269,37 @@ class UserEventReceiverTest {
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
+        @Mock
+        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
             conversationRepository,
             userRepository,
             logoutUseCase,
+            oneOnOneResolver,
             SELF_USER_ID,
-            currentClientIdProvider
+            currentClientIdProvider,
+            lazy { newGroupConversationSystemMessagesCreator }
         )
 
         init {
             withSaveNewClientSucceeding()
+        }
+
+        fun withInsertConnectionFromEventSucceeding() = apply {
+            given(connectionRepository)
+                .suspendFunction(connectionRepository::insertConnectionFromEvent)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withPersistUnverifiedWarningMessageSuccess() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .whenInvokedWith(any())
+                .then { Either.Right(Unit) }
         }
 
         fun withSaveNewClientSucceeding() = apply {
@@ -220,31 +320,25 @@ class UserEventReceiverTest {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
         }
 
-        fun withUpdateUserSuccess() = apply {
-            given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any()).thenReturn(Either.Right(Unit))
-        }
-
-        fun withUpdateUserFailure(coreFailure: CoreFailure) = apply {
-            given(userRepository).suspendFunction(userRepository::updateUserFromEvent)
-                .whenInvokedWith(any()).thenReturn(Either.Left(coreFailure))
-        }
-
-        fun withUserDeleteSuccess() = apply {
-            given(userRepository).suspendFunction(userRepository::removeUser)
-                .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+        fun withDeleteUserFromConversationsSuccess() = apply {
             given(conversationRepository).suspendFunction(conversationRepository::deleteUserFromConversations)
                 .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
-        fun withConversationIdsByUserId(conversationIds: List<ConversationId>) = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::getConversationIdsByUserId)
+        fun withConversationsByUserId(conversationIds: List<Conversation>) = apply {
+            given(conversationRepository).suspendFunction(conversationRepository::getConversationsByUserId)
                 .whenInvokedWith(any()).thenReturn(Either.Right(conversationIds))
         }
 
-        fun arrange() = this to userEventReceiver
+        fun arrange() = run {
+            block()
+            this@Arrangement to userEventReceiver
+        }
     }
 
     companion object {
+        private fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+
         const val EVENT_ID = "1234"
         val SELF_USER_ID = UserId("alice", "wonderland")
         val OTHER_USER_ID = UserId("john", "public")

@@ -45,7 +45,8 @@ class CodeUpdateHandlerTest {
             code = "code",
             key = "key",
             id = "event-id",
-            transient = false
+            transient = false,
+            live = false
         )
 
         handler.handle(event)

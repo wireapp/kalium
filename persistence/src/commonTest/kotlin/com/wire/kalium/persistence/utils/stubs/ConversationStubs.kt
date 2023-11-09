@@ -39,7 +39,9 @@ fun newConversationEntity(id: String = "test") = ConversationEntity(
     messageTimer = null,
     userMessageTimer = null,
     archived = false,
-    archivedInstant = null
+    archivedInstant = null,
+    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
 )
 
 fun newConversationEntity(
@@ -62,5 +64,7 @@ fun newConversationEntity(
     messageTimer = null,
     userMessageTimer = null,
     archived = false,
-    archivedInstant = null
+    archivedInstant = null,
+    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
 )

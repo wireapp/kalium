@@ -23,15 +23,18 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
-import com.wire.kalium.logic.feature.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
@@ -56,11 +59,13 @@ internal class SlowSyncWorkerImpl(
     private val eventRepository: EventRepository,
     private val syncSelfUser: SyncSelfUserUseCase,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
+    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase,
     private val syncConversations: SyncConversationsUseCase,
     private val syncConnections: SyncConnectionsUseCase,
     private val syncSelfTeam: SyncSelfTeamUseCase,
     private val syncContacts: SyncContactsUseCase,
-    private val joinMLSConversations: JoinExistingMLSConversationsUseCase
+    private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
+    private val oneOnOneResolver: OneOnOneResolver,
 ) : SlowSyncWorker {
 
     private val logger = kaliumLogger.withFeatureId(SYNC)
@@ -78,11 +83,13 @@ internal class SlowSyncWorkerImpl(
 
         performStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
             .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
+            .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().map { } }
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
             .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
             .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
+            .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
             .flatMap {
                 saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
             }

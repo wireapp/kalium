@@ -22,9 +22,9 @@ import com.wire.kalium.logic.CoreFailure
 
 sealed interface SlowSyncStatus {
 
-    object Pending : SlowSyncStatus
+    data object Pending : SlowSyncStatus
 
-    object Complete : SlowSyncStatus
+    data object Complete : SlowSyncStatus
 
     data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
 
@@ -34,9 +34,11 @@ sealed interface SlowSyncStatus {
 enum class SlowSyncStep {
     SELF_USER,
     FEATURE_FLAGS,
+    UPDATE_SUPPORTED_PROTOCOLS,
     CONVERSATIONS,
     CONNECTIONS,
     SELF_TEAM,
     CONTACTS,
-    JOINING_MLS_CONVERSATIONS
+    JOINING_MLS_CONVERSATIONS,
+    RESOLVE_ONE_ON_ONE_PROTOCOLS
 }

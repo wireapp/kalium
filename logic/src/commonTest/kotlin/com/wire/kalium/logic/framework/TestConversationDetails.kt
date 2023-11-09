@@ -38,7 +38,7 @@ object TestConversationDetails {
     )
 
     val CONVERSATION_ONE_ONE = ConversationDetails.OneOne(
-        TestConversation.ONE_ON_ONE,
+        TestConversation.ONE_ON_ONE(),
         TestUser.OTHER,
         LegalHoldStatus.DISABLED,
         UserType.EXTERNAL,

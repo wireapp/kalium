@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.days
 
 data class RegisterClientParam(
     val password: String?,
@@ -59,8 +61,13 @@ data class Client(
     val deviceType: DeviceType?,
     val label: String?,
     val model: String?,
-    val mlsPublicKeys: Map<String, String>?
-)
+    val mlsPublicKeys: Map<String, String>?,
+    val isMLSCapable: Boolean
+) {
+    companion object {
+        val INACTIVE_DURATION = 28.days
+    }
+}
 
 enum class ClientType {
     Temporary,
@@ -84,5 +91,14 @@ data class OtherUserClient(
     val deviceType: DeviceType,
     val id: String,
     val isValid: Boolean,
-    val isVerified: Boolean
+    val isProteusVerified: Boolean
 )
+
+/**
+ * True if the client is considered to be in active use.
+ *
+ * A client is considered active if it has connected to the backend within
+ * the `INACTIVE_DURATION`.
+ */
+val Client.isActive: Boolean
+    get() = lastActive?.let { (Clock.System.now() - it) < Client.INACTIVE_DURATION } ?: false

@@ -21,14 +21,15 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -54,11 +55,13 @@ internal interface NewGroupConversationSystemMessagesCreator {
         conversationId: ConversationId,
         userIdList: Set<UserId>
     ): Either<CoreFailure, Unit>
+
+    suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
     private val persistMessage: PersistMessageUseCase,
-    private val isSelfATeamMember: IsSelfATeamMemberUseCase,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val selfUserId: UserId,
     private val memberMapper: MemberMapper = MapperProvider.memberMapper()
@@ -116,7 +119,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 
         persistReadReceiptSystemMessage(
             conversationId = conversation.id.toModel(),
-            creatorId = qualifiedIdMapper.fromStringToQualifiedID(conversation.creator),
+            creatorId = conversation.creator?.let { qualifiedIdMapper.fromStringToQualifiedID(it) } ?: selfUserId,
             receiptMode = conversation.receiptMode == ReceiptMode.ENABLED
         )
     }
@@ -196,4 +199,20 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         }
 
     }
+
+    override suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        persistMessage(
+            Message.System(
+                uuid4().toString(),
+                MessageContent.ConversationStartedUnverifiedWarning,
+                conversationId,
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.Sent,
+                Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+        )
+
+    private suspend fun isSelfATeamMember() = selfTeamIdProvider().fold({ false }, { it != null })
 }

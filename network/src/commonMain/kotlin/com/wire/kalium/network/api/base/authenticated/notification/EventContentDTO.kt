@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicat
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
@@ -266,6 +267,14 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             @SerialName("data") val message: String,
             @SerialName("from") val from: String
+        ) : Conversation()
+
+        @Serializable
+        @SerialName("conversation.protocol-update")
+        data class ProtocolUpdate(
+            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
+            @SerialName("data") val data: ConversationProtocolDTO,
+            @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 
     }
