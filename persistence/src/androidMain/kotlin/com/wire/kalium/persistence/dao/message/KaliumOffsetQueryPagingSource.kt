@@ -37,6 +37,10 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlin.properties.Delegates
 
+/**
+ * This class is duplicated from sqlDelight []OffsetQueryPagingSource] so we can pass an initial offset instead of depending
+ * only on the offset result coming from the queryProvider callback.
+ */
 @Suppress("ComplexMethod")
 internal class KaliumOffsetQueryPagingSource<RowType : Any>(
     private val queryProvider: (limit: Int, offset: Int) -> Query<RowType>,
