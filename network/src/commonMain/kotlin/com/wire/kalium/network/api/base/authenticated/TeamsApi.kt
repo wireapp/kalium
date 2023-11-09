@@ -53,6 +53,11 @@ interface TeamsApi {
         @SerialName("self") val own: Int
     )
 
+    @Serializable
+    data class TeamMemberIdList(
+        @SerialName("user_ids") val userIds: List<NonQualifiedUserId>
+    )
+
     sealed interface GetTeamsOptionsInterface
 
     /**
@@ -80,6 +85,7 @@ interface TeamsApi {
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
 
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
+    suspend fun getTeamMembersByIds(teamId: TeamId, teamMemberIdList: TeamMemberIdList): NetworkResponse<TeamMemberList>
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
     suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>

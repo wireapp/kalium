@@ -30,6 +30,8 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 
 internal open class TeamsApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -60,6 +62,15 @@ internal open class TeamsApiV0 internal constructor(
             }
         }
 
+    override suspend fun getTeamMembersByIds(
+        teamId: TeamId,
+        teamMemberIdList: TeamsApi.TeamMemberIdList
+    ): NetworkResponse<TeamsApi.TeamMemberList> = wrapKaliumResponse {
+        httpClient.post("$PATH_TEAMS/$teamId/$PATH_MEMBERS_BY_IDS") {
+            setBody(teamMemberIdList)
+        }
+    }
+
     override suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamsApi.TeamMemberDTO> =
         wrapKaliumResponse {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
@@ -69,6 +80,7 @@ internal open class TeamsApiV0 internal constructor(
         const val PATH_TEAMS = "teams"
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_MEMBERS = "members"
+        const val PATH_MEMBERS_BY_IDS = "get-members-by-ids-using-post"
         const val PATH_SERVICES = "services"
         const val PATH_WHITELISTED = "whitelisted"
     }

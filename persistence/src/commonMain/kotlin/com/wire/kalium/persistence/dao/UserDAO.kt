@@ -208,6 +208,7 @@ interface UserDAO {
     suspend fun insertOrIgnoreUsers(users: List<UserEntity>)
 
     /**
+<<<<<<< HEAD
      * Perform a partial update of an existing user. Only non-null values will be updated otherwise
      * the existing value is kept.
      *
@@ -234,6 +235,15 @@ interface UserDAO {
      * - [UserEntity.activeOneOnOneConversationId]
      * - [UserEntity.defederated]
      *
+=======
+     * This will update all columns, except:
+     * - [ConnectionEntity.State]
+     * - [UserEntity.availabilityStatus]
+     * - [UserEntity.deleted]
+     * - [UserEntity.defederated]
+     * and set [UserEntity.hasIncompleteMetadata] to false
+     * or insert a new record with given values except [UserEntity.defederated] (this will be set to false).
+>>>>>>> 1f72f1909a (fix(rc): persist proper team members user types [WPB-5343] (#2211))
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */

@@ -76,6 +76,14 @@ class UserEntityTypeMapperTest {
     }
 
     @Test
+    fun givenServiceTeamMember_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsService() {
+        // when
+        val result = userTypeMapper.teamRoleCodeToUserType(TeamRole.Member.value, true)
+        // then
+        assertEquals(UserTypeEntity.SERVICE, result)
+    }
+
+    @Test
     fun givenCommonNotTheSameDomainAndDifferentTeam_whenMappingToConversationDetails_ThenConversationDetailsUserTypeIsFederated() {
         // given
         val result = userTypeMapper.fromTeamAndDomain(
