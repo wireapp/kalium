@@ -83,3 +83,35 @@ SELECT mem.* FROM Member AS mem
 JOIN Conversation AS con ON con.qualified_id = mem.conversation
 JOIN User AS usr ON usr.qualified_id = mem.user
 WHERE con.type == 'ONE_ON_ONE' AND user LIKE ('%@' || :domain) AND usr.defederated == 0;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterMemeberChange
+AFTER INSERT ON Member
+BEGIN
+    UPDATE Conversation
+    SET proteus_verification_status =
+        (CASE (SELECT
+            (COUNT(*) = 1 + SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END) AND COUNT(*) > 1)
+            FROM Member AS mem
+            LEFT JOIN Client AS client ON client.user_id = mem.user
+            WHERE mem.conversation = new.conversation
+            GROUP BY mem.conversation)
+        WHEN 1 THEN "VERIFIED"
+        ELSE "DEGRADED" END)
+    WHERE qualified_id = new.conversation;
+END;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterMemeberDelete
+AFTER DELETE ON Member
+BEGIN
+    UPDATE Conversation
+    SET proteus_verification_status =
+        (CASE (SELECT
+            (COUNT(*) = 1 + SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END) AND COUNT(*) > 1)
+            FROM Member AS mem
+            LEFT JOIN Client AS client ON client.user_id = mem.user
+            WHERE mem.conversation = old.conversation
+            GROUP BY mem.conversation)
+        WHEN 1 THEN "VERIFIED"
+        ELSE "DEGRADED" END)
+    WHERE qualified_id = old.conversation;
+END;

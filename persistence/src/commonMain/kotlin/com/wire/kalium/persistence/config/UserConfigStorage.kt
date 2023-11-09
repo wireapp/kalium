@@ -40,7 +40,8 @@ interface UserConfigStorage {
      */
     fun persistAppLockStatus(
         isEnforced: Boolean,
-        inactivityTimeoutSecs: Second
+        inactivityTimeoutSecs: Second,
+        isStatusChanged: Boolean?
     )
 
     /**
@@ -52,6 +53,8 @@ interface UserConfigStorage {
      * returns a Flow of the saved App Lock status
      */
     fun appLockFlow(): Flow<AppLockConfigEntity?>
+
+    fun setTeamAppLockAsNotified()
 
     /**
      * Save flag from the file sharing api, and if the status changes
@@ -206,7 +209,8 @@ data class E2EISettingsEntity(
 @Serializable
 data class AppLockConfigEntity(
     @SerialName("inactivityTimeoutSecs") val inactivityTimeoutSecs: Second,
-    @SerialName("enforceAppLock") val enforceAppLock: Boolean
+    @SerialName("enforceAppLock") val enforceAppLock: Boolean,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
 )
 
 @Serializable
@@ -266,11 +270,25 @@ class UserConfigStorageImpl(
 
     override fun persistAppLockStatus(
         isEnforced: Boolean,
-        inactivityTimeoutSecs: Second
+        inactivityTimeoutSecs: Second,
+        isStatusChanged: Boolean?
     ) {
         kaliumPreferences.putSerializable(
             APP_LOCK,
-            AppLockConfigEntity(inactivityTimeoutSecs, isEnforced),
+            AppLockConfigEntity(inactivityTimeoutSecs, isEnforced, isStatusChanged),
+            AppLockConfigEntity.serializer(),
+        ).also {
+            appLockFlow.tryEmit(Unit)
+        }
+    }
+
+    override fun setTeamAppLockAsNotified() {
+        val newValue =
+            kaliumPreferences.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())?.copy(isStatusChanged = false)
+                ?: return
+        kaliumPreferences.putSerializable(
+            APP_LOCK,
+            newValue,
             AppLockConfigEntity.serializer()
         ).also {
             appLockFlow.tryEmit(Unit)

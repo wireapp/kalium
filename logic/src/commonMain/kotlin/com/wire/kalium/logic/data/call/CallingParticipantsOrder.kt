@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.fold
 
 internal interface CallingParticipantsOrder {

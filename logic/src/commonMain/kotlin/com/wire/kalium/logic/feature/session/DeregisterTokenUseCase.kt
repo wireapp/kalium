@@ -42,7 +42,7 @@ interface DeregisterTokenUseCase {
     }
 }
 
-class DeregisterTokenUseCaseImpl(
+internal class DeregisterTokenUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val notificationTokenRepository: NotificationTokenRepository
 ) : DeregisterTokenUseCase {

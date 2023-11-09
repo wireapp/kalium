@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("MatchingDeclarationName")
+
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
@@ -25,7 +27,9 @@ import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner
+import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
+import okhttp3.TlsVersion
 import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
@@ -37,7 +41,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-private object OkHttpSingleton {
+internal object OkHttpSingleton {
     private val sharedClient = OkHttpClient.Builder().apply {
 
         // OkHttp doesn't support configuring ping intervals dynamically,
@@ -94,6 +98,8 @@ actual fun defaultHttpEngine(
             proxy(proxy)
         }
 
+        connectionSpecs(supportedConnectionSpecs())
+
     }.also {
         preconfigured = it
         webSocketFactory = KaliumWebSocketFactory(it)
@@ -114,4 +120,12 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
 
     sslSocketFactory(insecureSocketFactory, naiveTrustManager)
     hostnameVerifier { _, _ -> true }
+}
+
+private fun supportedConnectionSpecs(): List<ConnectionSpec> {
+    val wireSpec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+        .tlsVersions(TlsVersion.TLS_1_2)
+        .build()
+
+    return listOf(wireSpec, ConnectionSpec.CLEARTEXT)
 }

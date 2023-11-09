@@ -18,14 +18,14 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -61,7 +61,7 @@ internal interface ConversationRepositoryArrangement {
     fun withFetchConversation(result: Either<CoreFailure, Unit>)
     fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 
-    fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>)
+    fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>)
 
     fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
@@ -217,11 +217,11 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .thenReturn(flowOf(result))
     }
 
-    override fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>) {
+    override fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::observeConversationDetailsById)
             .whenInvokedWith(any())
-            .thenReturn(flowOf(result))
+            .thenReturn(flowOf(*results))
     }
 
     override fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>) {

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
-import com.wire.kalium.logic.feature.selfDeletingMessages.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
