@@ -75,7 +75,7 @@ class SlowSyncWorkerTest {
 
     @Test
     fun givenSyncSelfUserFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
-        val steps = hashSetOf(SlowSyncStep.SELF_USER)
+        val steps = hashSetOf(SlowSyncStep.MIGRATION, SlowSyncStep.SELF_USER)
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserFailure()
             .arrange()
