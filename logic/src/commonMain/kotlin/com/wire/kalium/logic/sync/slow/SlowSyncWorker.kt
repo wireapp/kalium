@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
@@ -82,7 +83,12 @@ internal class SlowSyncWorkerImpl(
 
         val lastProcessedEventIdToSaveOnSuccess = getLastProcessedEventIdToSaveOnSuccess()
 
-        performStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
+        performStep(SlowSyncStep.MIGRATION) {
+            migrationSteps.foldToEitherWhileRight(Unit) { step, _ ->
+                step()
+            }
+        }
+            .continueWithStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
             .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
             .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().map { } }
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
@@ -91,13 +97,6 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
             .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
-            .apply {
-                for (step in migrationSteps) {
-                    if (continueWithStep(SlowSyncStep.MIGRATION, step::invoke) is Either.Left) {
-                        break
-                    }
-                }
-            }
             .flatMap {
                 saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
             }
