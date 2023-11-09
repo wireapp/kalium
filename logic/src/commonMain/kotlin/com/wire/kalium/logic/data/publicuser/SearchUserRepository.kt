@@ -27,11 +27,13 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
@@ -41,7 +43,6 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserEntity
-import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -93,10 +94,12 @@ internal class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val userDetailsApi: UserDetailsApi,
+    private val teamsApi: TeamsApi,
     private val userSearchAPiWrapper: UserSearchApiWrapper,
     private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
+    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
+    private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
@@ -152,42 +155,56 @@ internal class SearchUserRepositoryImpl(
             searchUsersOptions
         ).flatMap {
             val qualifiedIdList = it.documents.map { it.qualifiedID }
-            val response =
+            val usersResponse =
                 if (qualifiedIdList.isEmpty()) Either.Right(listOf())
                 else wrapApiRequest {
                     userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(qualifiedIdList))
                 }.map { listUsersDTO -> listUsersDTO.usersFound }
-            response.map { userProfileDTOList ->
-                val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
-                    val selfUser = getSelfUser()
-                    val (teamMembers, otherUsers) = userProfileDTOList
-                        .partition { it.isTeamMember(selfUser.teamId?.value, selfUser.id.domain) }
 
+            usersResponse.flatMap { userProfileDTOList ->
+                if (userProfileDTOList.isEmpty())
+                    return Either.Right(UserSearchResult(emptyList()))
+
+                val selfUser = getSelfUser()
+                val (teamMembers, otherUsers) = userProfileDTOList
+                    .partition { it.isTeamMember(selfUser.teamId?.value, selfUser.id.domain) }
+                val teamMembersResponse =
+                    if (selfUser.teamId == null || teamMembers.isEmpty()) Either.Right(emptyMap())
+                    else wrapApiRequest {
+                        teamsApi.getTeamMembersByIds(selfUser.teamId.value, TeamsApi.TeamMemberIdList(teamMembers.map { it.id.value }))
+                    }.map { teamMemberList -> teamMemberList.members.associateBy { it.nonQualifiedUserId } }
+
+                teamMembersResponse.map { teamMemberMap ->
                     // We need to store all found team members locally and not return them as they will be "known" users from now on.
-                    userDAO.upsertTeamMembers(
-                        teamMembers.map { userProfileDTO ->
-                            userMapper.fromUserProfileDtoToUserEntity(
-                                userProfile = userProfileDTO,
-                                connectionState = ConnectionEntity.State.ACCEPTED,
-                                userTypeEntity = UserTypeEntity.STANDARD
+                    teamMembers.map { userProfileDTO ->
+                        userMapper.fromUserProfileDtoToUserEntity(
+                            userProfile = userProfileDTO,
+                            connectionState = ConnectionEntity.State.ACCEPTED,
+                            userTypeEntity = userEntityTypeMapper.teamRoleCodeToUserType(
+                                permissionCode = teamMemberMap[userProfileDTO.id.value]?.permissions?.own,
+                                isService = userProfileDTO.service != null
+                            )
+                        )
+                    }.let {
+                        userDAO.upsertTeamMembers(it)
+                        userDAO.upsertTeamMembersTypes(it)
+                    }
+
+                    UserSearchResult(
+                        otherUsers.map { userProfileDTO ->
+                            publicUserMapper.fromUserProfileDtoToOtherUser(
+                                userDetailResponse = userProfileDTO,
+                                userType = userTypeMapper.fromTeamAndDomain(
+                                    otherUserDomain = userProfileDTO.id.domain,
+                                    selfUserTeamId = selfUser.teamId?.value,
+                                    otherUserTeamId = userProfileDTO.teamId,
+                                    selfUserDomain = selfUser.id.domain,
+                                    isService = userProfileDTO.service != null,
+                                )
                             )
                         }
                     )
-
-                    otherUsers.map { userProfileDTO ->
-                        publicUserMapper.fromUserProfileDtoToOtherUser(
-                            userDetailResponse = userProfileDTO,
-                            userType = userTypeMapper.fromTeamAndDomain(
-                                otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = selfUser.teamId?.value,
-                                otherUserTeamId = userProfileDTO.teamId,
-                                selfUserDomain = selfUser.id.domain,
-                                isService = userProfileDTO.service != null,
-                            )
-                        )
-                    }
                 }
-                UserSearchResult(otherUserList)
             }
         }
 
@@ -221,5 +238,4 @@ internal class SearchUserRepositoryImpl(
             UserSearchResult(it.map(publicUserMapper::fromUserEntityToOtherUser))
         }
     }
-
 }
