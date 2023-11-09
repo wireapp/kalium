@@ -38,6 +38,7 @@ import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep

@@ -100,23 +100,28 @@ internal class SlowSyncManager(
     }
 
     private suspend fun isSlowSyncNeededFlow(): Flow<SlowSyncParam> = slowSyncRepository.observeLastSlowSyncCompletionInstant()
-        .map { lastTimeSlowSyncWasPerformed ->
-            lastTimeSlowSyncWasPerformed?.let {
-                val currentTime = DateTimeUtil.currentInstant()
-                logger.i("Last SlowSync was performed on '$lastTimeSlowSyncWasPerformed'")
-                val nextSlowSyncDateTime = lastTimeSlowSyncWasPerformed + MIN_TIME_BETWEEN_SLOW_SYNCS
-                logger.i("Next SlowSync should be performed on '$nextSlowSyncDateTime'")
-                val lastVersion = slowSyncRepository.getSlowSyncVersion()
-                logger.i("Last saved SlowSync version is $lastVersion, current is $CURRENT_VERSION")
-
-                if (currentTime > nextSlowSyncDateTime) {
-                    SlowSyncParam.LastSlowSyncTooOld
-                } else if (CURRENT_VERSION > lastVersion) {
+        .map { latestSlowSync ->
+            logger.i("Last SlowSync was performed on '$latestSlowSync'")
+            val lastVersion = slowSyncRepository.getSlowSyncVersion()
+            when {
+                (lastVersion != null) && (CURRENT_VERSION > lastVersion) -> {
+                    logger.i("Last saved SlowSync version is $lastVersion, current is $CURRENT_VERSION")
                     SlowSyncParam.MigrationNeeded(oldVersion = lastVersion, newVersion = CURRENT_VERSION)
-                } else {
+                }
+
+                latestSlowSync == null -> {
+                    SlowSyncParam.NotPerformedBefore
+                }
+
+                DateTimeUtil.currentInstant() > (latestSlowSync + MIN_TIME_BETWEEN_SLOW_SYNCS) -> {
+                    logger.i("Slow sync too old - last slow sync was performed on '$latestSlowSync'")
+                    SlowSyncParam.LastSlowSyncTooOld
+                }
+
+                else -> {
                     SlowSyncParam.Success
                 }
-            } ?: SlowSyncParam.NotPerformedBefore
+            }
         }
 
     private fun startMonitoring() {
@@ -140,15 +145,10 @@ internal class SlowSyncManager(
             when (isSlowSyncNeeded) {
                 SlowSyncParam.LastSlowSyncTooOld,
                 SlowSyncParam.NotPerformedBefore -> {
-                    logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
                     performSlowSync(emptyList())
-                    logger.i("SlowSync completed. Updating last completion instant")
-                    slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
-                    slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
                 }
 
                 is SlowSyncParam.MigrationNeeded -> {
-                    logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
                     val migrationSteps = syncMigrationStepsProvider()
                         .getMigrationSteps(
                             isSlowSyncNeeded.oldVersion,
@@ -157,9 +157,6 @@ internal class SlowSyncManager(
                     performSlowSync(
                         migrationSteps = migrationSteps
                     )
-                    logger.i("SlowSync completed. Updating last completion instant")
-                    slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
-                    slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
                 }
 
                 SlowSyncParam.Success -> {
@@ -177,10 +174,14 @@ internal class SlowSyncManager(
     }
 
     private suspend fun performSlowSync(migrationSteps: List<SyncMigrationStep>) {
+        logger.i("Starting SlowSync as all criteria are met and it wasn't performed recently")
         slowSyncWorker.slowSyncStepsFlow(migrationSteps).cancellable().collect { step ->
             logger.i("Performing SlowSyncStep $step")
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Ongoing(step))
         }
+        logger.i("SlowSync completed. Updating last completion instant")
+        slowSyncRepository.setSlowSyncVersion(CURRENT_VERSION)
+        slowSyncRepository.setLastSlowSyncCompletionInstant(DateTimeUtil.currentInstant())
     }
 
     private companion object {
