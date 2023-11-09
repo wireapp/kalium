@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -39,7 +40,7 @@ interface GetSearchedConversationMessagePositionUseCase {
 
     sealed interface Result {
         data class Success(val position: Int) : Result
-        data class Failure(val cause: StorageFailure) : Result
+        data class Failure(val cause: CoreFailure) : Result
     }
 }
 
