@@ -531,12 +531,12 @@ class MessageRepositoryTest {
             conversationId = qualifiedIdEntity,
             content = MessageEntityContent.Text("message 1")
         )
-        val expectedResult = 113
+        val expectedMessagePosition = 113
         val (_, messageRepository) = Arrangement()
             .withSelectedMessagePosition(
                 conversationId = conversationId.toDao(),
                 messageId = message.id,
-                result = expectedResult
+                result = expectedMessagePosition
             )
             .arrange()
 
@@ -548,7 +548,7 @@ class MessageRepositoryTest {
 
         // then
         assertEquals(
-            expectedResult,
+            expectedMessagePosition,
             (result as Either.Right).value
         )
     }

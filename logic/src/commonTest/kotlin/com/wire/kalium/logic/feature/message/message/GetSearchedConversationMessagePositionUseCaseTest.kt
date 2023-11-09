@@ -84,12 +84,12 @@ class GetSearchedConversationMessagePositionUseCaseTest {
 
     @Test
     fun givenRepositorySucceeds_whenInvokingUseCase_thenShouldPropagateTheSuccess() = runTest {
-        val expectedPosition = 113
+        val expectedMessagePosition = 113
         val (_, getSearchedConversationMessagePosition) = Arrangement()
             .withRepositoryMessagePositionReturning(
                 conversationId = CONVERSATION_ID,
                 messageId = MESSAGE_ID,
-                response = Either.Right(expectedPosition)
+                response = Either.Right(expectedMessagePosition)
             )
             .arrange()
 
@@ -99,7 +99,7 @@ class GetSearchedConversationMessagePositionUseCaseTest {
         )
 
         assertIs<GetSearchedConversationMessagePositionUseCase.Result.Success>(result)
-        assertEquals(expectedPosition, result.position)
+        assertEquals(expectedMessagePosition, result.position)
     }
 
     private inner class Arrangement {
