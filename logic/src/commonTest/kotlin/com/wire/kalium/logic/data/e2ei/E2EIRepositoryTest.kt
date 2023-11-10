@@ -905,7 +905,8 @@ class E2EIRepositoryTest {
 
             val ACME_CHALLENGE = AcmeChallenge(
                 delegate = RANDOM_BYTE_ARRAY,
-                url = RANDOM_URL
+                url = RANDOM_URL,
+                target = RANDOM_URL
             )
 
             val ACME_AUTHZ = NewAcmeAuthz(
