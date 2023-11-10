@@ -28,7 +28,7 @@ data class ErrorResponse(
     @SerialName("label") val label: String,
     @SerialName("data") val cause: Cause? = null,
 ) {
-    fun isFederationError() = cause?.type == "federation"
+    fun isFederationError() = cause?.type == "federation" || label.contains("federation")
 }
 
 @Serializable

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
+import com.wire.kalium.network.exceptions.isFederationNotEnabled
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -154,6 +155,7 @@ sealed class NetworkFailure : CoreFailure {
 
         data class General(val label: String) : FederatedBackendFailure()
         data class FederationDenied(val label: String) : FederatedBackendFailure()
+        data class FederationNotEnabled(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
 
@@ -221,6 +223,8 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
                 exception is KaliumException.FederationError -> {
                     if (exception.isFederationDenied()) {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
+                    } else if (exception.isFederationNotEnabled()) {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationNotEnabled(exception.errorResponse.label))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
                     }
