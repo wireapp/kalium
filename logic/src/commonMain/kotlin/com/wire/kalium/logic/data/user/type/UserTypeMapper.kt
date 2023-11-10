@@ -129,13 +129,14 @@ interface UserTypeMapper<T> {
 
     private fun selfUserIsTeamMember(selfUserTeamId: String?) = selfUserTeamId != null
 
-    fun teamRoleCodeToUserType(permissionCode: Int?): T = when (permissionCode) {
-        TeamRole.ExternalPartner.value -> external
-        TeamRole.Member.value -> standard
-        TeamRole.Admin.value -> admin
-        TeamRole.Owner.value -> owner
-        null -> standard
-        else -> guest
-    }
-
+    fun teamRoleCodeToUserType(permissionCode: Int?, isService: Boolean = false): T =
+        if (isService) service
+        else when (permissionCode) {
+            TeamRole.ExternalPartner.value -> external
+            TeamRole.Member.value -> standard
+            TeamRole.Admin.value -> admin
+            TeamRole.Owner.value -> owner
+            null -> standard
+            else -> guest
+        }
 }
