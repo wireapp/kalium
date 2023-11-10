@@ -148,8 +148,13 @@ interface UserDAO {
     suspend fun insertOrIgnoreUsers(users: List<UserEntity>)
 
     /**
-     * This will update all columns, except [ConnectionEntity.State] or insert a new record with default value
-     * [ConnectionEntity.State.NOT_CONNECTED]
+     * This will update all columns, except:
+     * - [ConnectionEntity.State]
+     * - [UserEntity.availabilityStatus]
+     * - [UserEntity.deleted]
+     * - [UserEntity.defederated]
+     * and set [UserEntity.hasIncompleteMetadata] to false
+     * or insert a new record with given values except [UserEntity.defederated] (this will be set to false).
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
      */
