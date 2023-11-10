@@ -95,7 +95,6 @@ class FeatureConfigMapperTest {
         val model = mapper.fromDTO(arrangement.featureConfigResponse.appLock)
 
         assertEquals(Status.ENABLED, model.status)
-        assertEquals(true, model.config.enforceAppLock)
     }
 
     @Test

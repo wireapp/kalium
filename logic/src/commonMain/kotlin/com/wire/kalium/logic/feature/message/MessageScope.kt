@@ -38,8 +38,10 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.ProteusClientProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.message.SessionEstablisher
+import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
@@ -324,6 +326,11 @@ class MessageScope internal constructor(
 
     val getConversationMessagesFromSearchQuery: GetConversationMessagesFromSearchQueryUseCase
         get() = GetConversationMessagesFromSearchQueryUseCaseImpl(
+            messageRepository = messageRepository
+        )
+
+    val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
+        get() = GetSearchedConversationMessagePositionUseCaseImpl(
             messageRepository = messageRepository
         )
 }

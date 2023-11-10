@@ -35,8 +35,6 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
-import com.wire.kalium.logic.feature.message.BroadcastMessageOption
-import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -223,6 +221,11 @@ interface MessageRepository {
         searchQuery: String,
         conversationId: ConversationId
     ): Either<CoreFailure, List<Message.Standalone>>
+
+    suspend fun getSearchedConversationMessagePosition(
+        conversationId: ConversationId,
+        messageId: String
+    ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
 }
@@ -650,5 +653,15 @@ class MessageDataSource(
             searchQuery = searchQuery,
             conversationId = conversationId.toDao()
         ).map(messageMapper::fromEntityToMessage)
+    }
+
+    override suspend fun getSearchedConversationMessagePosition(
+        conversationId: ConversationId,
+        messageId: String
+    ): Either<StorageFailure, Int> = wrapStorageRequest {
+        messageDAO.getSearchedConversationMessagePosition(
+            conversationId = conversationId.toDao(),
+            messageId = messageId
+        )
     }
 }

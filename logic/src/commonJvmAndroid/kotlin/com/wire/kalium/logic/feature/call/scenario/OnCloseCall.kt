@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.data.call.CallStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 

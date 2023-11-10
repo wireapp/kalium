@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.given

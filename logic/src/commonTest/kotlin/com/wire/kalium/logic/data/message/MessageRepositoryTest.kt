@@ -28,8 +28,6 @@ import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.BroadcastMessageOption
-import com.wire.kalium.logic.feature.message.MessageTarget
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.functional.Either
@@ -523,6 +521,38 @@ class MessageRepositoryTest {
         )
     }
 
+    @Test
+    fun givenSearchedMessages_whenMessageIsSelected_thenReturnMessagePosition() = runTest {
+        // given
+        val qualifiedIdEntity = TEST_QUALIFIED_ID_ENTITY
+        val conversationId = TEST_CONVERSATION_ID
+        val message = TEST_MESSAGE_ENTITY.copy(
+            id = "msg1",
+            conversationId = qualifiedIdEntity,
+            content = MessageEntityContent.Text("message 1")
+        )
+        val expectedMessagePosition = 113
+        val (_, messageRepository) = Arrangement()
+            .withSelectedMessagePosition(
+                conversationId = conversationId.toDao(),
+                messageId = message.id,
+                result = expectedMessagePosition
+            )
+            .arrange()
+
+        // when
+        val result = messageRepository.getSearchedConversationMessagePosition(
+            conversationId = conversationId,
+            messageId = message.id
+        )
+
+        // then
+        assertEquals(
+            expectedMessagePosition,
+            (result as Either.Right).value
+        )
+    }
+
     private class Arrangement {
 
         @Mock
@@ -673,6 +703,17 @@ class MessageRepositoryTest {
                 .suspendFunction(messageDAO::getConversationMessagesFromSearch)
                 .whenInvokedWith(eq(searchTerm), eq(conversationId))
                 .thenReturn(messages)
+        }
+
+        fun withSelectedMessagePosition(
+            conversationId: QualifiedIDEntity,
+            messageId: String,
+            result: Int
+        ) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getSearchedConversationMessagePosition)
+                .whenInvokedWith(eq(conversationId), eq(messageId))
+                .thenReturn(result)
         }
 
         fun arrange() = this to MessageDataSource(
