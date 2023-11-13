@@ -28,6 +28,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.USER_PROFILE_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
@@ -35,6 +36,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
@@ -326,9 +328,14 @@ class SearchUserRepositoryTest {
                 USER_PROFILE_DTO.copy(id = UserId("teamUser", TestUser.SELF.id.domain), teamId = TestUser.SELF.teamId?.value),
             )
         )
+        val teamMembersResponse = TeamsApi.TeamMemberList(
+            hasMore = false,
+            members = listOf(TEAM_MEMBER_DTO.copy(nonQualifiedUserId = "teamUser"))
+        )
         val (arrangement, searchUserRepository) = Arrangement()
             .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
             .withGetMultipleUsersResult(NetworkResponse.Success(userListResponse, mapOf(), 200))
+            .withGetTeamMembersByIdsResult(NetworkResponse.Success(teamMembersResponse, mapOf(), 200))
             .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
             .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
             .withFromUserDetailsEntityToSelfUser(TestUser.SELF)
@@ -348,6 +355,10 @@ class SearchUserRepositoryTest {
             .suspendFunction(arrangement.userDAO::upsertUsers)
             .with(eq(listOf(TestUser.ENTITY)))
             .wasInvoked()
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertConnectionStatuses)
+            .with(eq(mapOf(TestUser.ENTITY.id to ConnectionEntity.State.ACCEPTED)))
+            .wasInvoked()
     }
 
     internal class Arrangement {
@@ -357,6 +368,9 @@ class SearchUserRepositoryTest {
 
         @Mock
         internal val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
+
+        @Mock
+        internal val teamsApi: TeamsApi = mock(classOf<TeamsApi>())
 
         @Mock
         internal val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
@@ -372,6 +386,7 @@ class SearchUserRepositoryTest {
                 userDAO,
                 metadataDAO,
                 userDetailsApi,
+                teamsApi,
                 userSearchApiWrapper,
                 userMapper,
             )
@@ -389,6 +404,13 @@ class SearchUserRepositoryTest {
         fun withGetMultipleUsersResult(result: NetworkResponse<ListUsersDTO>) = apply {
             given(userDetailsApi)
                 .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withGetTeamMembersByIdsResult(result: NetworkResponse<TeamsApi.TeamMemberList>) = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::getTeamMembersByIds)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
@@ -500,6 +522,14 @@ class SearchUserRepositoryTest {
             returned = 0,
             searchPolicy = SearchPolicyDTO.FULL_SEARCH,
             took = 0,
+        )
+
+        val TEAM_MEMBER_DTO = TeamsApi.TeamMemberDTO(
+            nonQualifiedUserId = "value",
+            createdBy = null,
+            legalHoldStatus = null,
+            createdAt = null,
+            permissions = null,
         )
 
         val USER_RESPONSE = ListUsersDTO(usersFailed = emptyList(), usersFound = listOf(USER_PROFILE_DTO))
