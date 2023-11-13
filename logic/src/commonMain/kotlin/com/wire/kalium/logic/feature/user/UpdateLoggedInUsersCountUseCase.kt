@@ -26,7 +26,7 @@ interface UpdateLoggedInUsersCountUseCase {
     suspend operator fun invoke(count: Int)
 }
 
-class UpdateLoggedInUsersCountUseCaseImpl(
+class UpdateLoggedInUsersCountUseCaseImpl internal constructor(
     private val accessRepository: AccessRepository
 ) : UpdateLoggedInUsersCountUseCase {
     override suspend fun invoke(count: Int) {

@@ -28,7 +28,7 @@ interface IsUserLoggedInUseCase {
     suspend operator fun invoke(): Boolean
 }
 
-class IsUserLoggedInUseCaseImpl(
+class IsUserLoggedInUseCaseImpl internal constructor(
     private val accessRepository: AccessRepository
 ) : IsUserLoggedInUseCase {
     override suspend fun invoke(): Boolean {
