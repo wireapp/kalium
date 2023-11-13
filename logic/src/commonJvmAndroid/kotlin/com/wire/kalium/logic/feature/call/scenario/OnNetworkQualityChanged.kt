@@ -38,7 +38,7 @@ class OnNetworkQualityChanged : NetworkQualityChangedHandler {
         // Not yet implemented
         callingLogger.i(
             "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +
-                    " | UserId: ${userId.obfuscateId()} | Quality: $quality"
+                    " | UserId: ${userId?.obfuscateId()} | Quality: $quality"
         )
     }
 }
