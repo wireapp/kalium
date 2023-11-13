@@ -496,6 +496,7 @@ class EventMapper(
         else -> MutedConversationStatus.AllAllowed
     }
 
+    @Suppress("LongMethod")
     private fun featureConfig(
         id: String,
         featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO,
