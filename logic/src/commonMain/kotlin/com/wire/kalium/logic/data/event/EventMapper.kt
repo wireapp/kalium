@@ -565,7 +565,13 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AppLock)
         )
 
-        else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient, live)
+        is FeatureConfigData.DigitalSignatures,
+        is FeatureConfigData.Legalhold,
+        is FeatureConfigData.SSO,
+        is FeatureConfigData.SearchVisibility,
+        is FeatureConfigData.SecondFactorPasswordChallenge,
+        is FeatureConfigData.Unknown,
+        is FeatureConfigData.ValidateSAMLEmails -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient, live)
     }
 
     private fun conversationDeleted(
