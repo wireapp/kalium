@@ -123,7 +123,8 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
         conversationId = CONVERSATION_ID,
         visibilities = MessageEntity.Visibility.values().toList(),
-        pagingConfig = PagingConfig(PAGE_SIZE)
+        pagingConfig = PagingConfig(PAGE_SIZE),
+        startingOffset = 0
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.refresh() = load(

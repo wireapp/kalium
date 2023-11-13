@@ -35,7 +35,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserConfigStorageTest {
     private val settings: Settings = MapSettings()
 
@@ -147,9 +146,14 @@ class UserConfigStorageTest {
     fun givenAppLockConfig_whenStoring_thenItCanBeRead() = runTest {
         val expected = AppLockConfigEntity(
             enforceAppLock = true,
-            inactivityTimeoutSecs = 60
+            inactivityTimeoutSecs = 60,
+            isStatusChanged = false
         )
-        userConfigStorage.persistAppLockStatus(expected.enforceAppLock, expected.inactivityTimeoutSecs)
+        userConfigStorage.persistAppLockStatus(
+            expected.enforceAppLock,
+            expected.inactivityTimeoutSecs,
+            expected.isStatusChanged
+        )
         assertEquals(expected, userConfigStorage.appLockStatus())
     }
 
@@ -162,18 +166,28 @@ class UserConfigStorageTest {
             }
             val expected1 = AppLockConfigEntity(
                 enforceAppLock = true,
-                inactivityTimeoutSecs = 60
+                inactivityTimeoutSecs = 60,
+                isStatusChanged = true
             )
-            userConfigStorage.persistAppLockStatus(expected1.enforceAppLock, expected1.inactivityTimeoutSecs)
+            userConfigStorage.persistAppLockStatus(
+                expected1.enforceAppLock,
+                expected1.inactivityTimeoutSecs,
+                expected1.isStatusChanged
+            )
             awaitItem().also {
                 assertEquals(expected1, it)
             }
 
             val expected2 = AppLockConfigEntity(
                 enforceAppLock = false,
-                inactivityTimeoutSecs = 60
+                inactivityTimeoutSecs = 60,
+                isStatusChanged = false
             )
-            userConfigStorage.persistAppLockStatus(expected2.enforceAppLock, expected2.inactivityTimeoutSecs)
+            userConfigStorage.persistAppLockStatus(
+                expected2.enforceAppLock,
+                expected2.inactivityTimeoutSecs,
+                expected2.isStatusChanged
+            )
             awaitItem().also {
                 assertEquals(expected2, it)
             }
@@ -182,16 +196,12 @@ class UserConfigStorageTest {
 
     @Test
     fun givenDefaultProtocolIsNotSet_whenGettingItsValue_thenItShouldBeProteus() {
-        userConfigStorage.defaultProtocol().let {
-            assertEquals(SupportedProtocolEntity.PROTEUS, it)
-        }
+        assertEquals(SupportedProtocolEntity.PROTEUS, userConfigStorage.defaultProtocol())
     }
 
     @Test
     fun givenDefaultProtocolIsSetToMls_whenGettingItsValue_thenItShouldBeMls() {
         userConfigStorage.persistDefaultProtocol(SupportedProtocolEntity.MLS)
-        userConfigStorage.defaultProtocol().let {
-            assertEquals(SupportedProtocolEntity.MLS, it)
-        }
+        assertEquals(SupportedProtocolEntity.MLS, userConfigStorage.defaultProtocol())
     }
 }

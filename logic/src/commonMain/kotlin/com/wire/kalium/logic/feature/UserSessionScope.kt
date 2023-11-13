@@ -137,6 +137,8 @@ import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
+import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
+import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -673,6 +675,7 @@ class UserSessionScope internal constructor(
         userStorage.database.clientDAO,
         authenticatedNetworkContainer.selfApi,
         authenticatedNetworkContainer.userDetailsApi,
+        authenticatedNetworkContainer.teamsApi,
         globalScope.sessionRepository,
         userId,
         selfTeamId
@@ -726,6 +729,7 @@ class UserSessionScope internal constructor(
             userStorage.database.userDAO,
             userStorage.database.metadataDAO,
             authenticatedNetworkContainer.userDetailsApi,
+            authenticatedNetworkContainer.teamsApi,
             userSearchApiWrapper
         )
 
@@ -1586,7 +1590,10 @@ class UserSessionScope internal constructor(
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
     val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
-        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository, kaliumConfigs)
+
+    val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
+        get() = MarkTeamAppLockStatusAsNotifiedUseCaseImpl(userConfigRepository)
 
     val markSelfDeletingMessagesAsNotified: MarkSelfDeletionStatusAsNotifiedUseCase
         get() = MarkSelfDeletionStatusAsNotifiedUseCaseImpl(userConfigRepository)

@@ -142,6 +142,7 @@ internal class TeamDataSource(
                             userTypeEntity = userTypeEntityTypeMapper.teamRoleCodeToUserType(member.permissions?.own)
                         )
                         userDAO.upsertUser(userEntity)
+                        userDAO.upsertConnectionStatuses(mapOf(userEntity.id to userEntity.connectionStatus))
                     }
                 }
         }

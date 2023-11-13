@@ -222,6 +222,11 @@ interface MessageRepository {
         conversationId: ConversationId
     ): Either<CoreFailure, List<Message.Standalone>>
 
+    suspend fun getSearchedConversationMessagePosition(
+        conversationId: ConversationId,
+        messageId: String
+    ): Either<StorageFailure, Int>
+
     val extensions: MessageRepositoryExtensions
 }
 
@@ -648,5 +653,15 @@ class MessageDataSource(
             searchQuery = searchQuery,
             conversationId = conversationId.toDao()
         ).map(messageMapper::fromEntityToMessage)
+    }
+
+    override suspend fun getSearchedConversationMessagePosition(
+        conversationId: ConversationId,
+        messageId: String
+    ): Either<StorageFailure, Int> = wrapStorageRequest {
+        messageDAO.getSearchedConversationMessagePosition(
+            conversationId = conversationId.toDao(),
+            messageId = messageId
+        )
     }
 }
