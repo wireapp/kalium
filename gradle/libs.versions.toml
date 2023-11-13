@@ -25,7 +25,7 @@ androidx-sqlite = "2.4.0"
 benasher-uuid = "0.8.0"
 ktx-datetime = { strictly = "0.4.1" }
 ktx-serialization = "1.5.1"
-ktx-atomicfu = "0.21.0"
+ktx-atomicfu = "0.20.0"
 kover = "0.7.1"
 multiplatform-settings = "1.0.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
