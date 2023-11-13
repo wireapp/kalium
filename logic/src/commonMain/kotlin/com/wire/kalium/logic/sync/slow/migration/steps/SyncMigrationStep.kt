@@ -20,6 +20,16 @@ package com.wire.kalium.logic.sync.slow.migration.steps
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either
 
+/**
+ * Migration step.
+ * this interface provide a way to migrate the sync version of the user.
+ * the logic is executed before sync itself
+ * keep in mind this logic can run multiple times
+ * since it runs before sync then if one of the sync steps after it failed,
+ * and we need to retry sync then this logic will run again
+ * @property version The sync version after executing this migration step.
+ * @property invoke The migration step itself
+ */
 internal interface SyncMigrationStep {
     val version: Int
     suspend operator fun invoke(): Either<CoreFailure, Unit>
