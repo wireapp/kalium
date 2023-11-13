@@ -220,7 +220,7 @@ interface UserDAO {
      * - [ConnectionEntity.State]
      * - [UserAvailabilityStatusEntity]
      * - [UserEntity.activeOneOnOneConversationId]
-     * - [UserEntity.defederated]
+     * - [UserEntity.defederated] (this will be set to false)
      *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
@@ -232,7 +232,7 @@ interface UserDAO {
      * - [ConnectionEntity.State]
      * - [UserAvailabilityStatusEntity]
      * - [UserEntity.activeOneOnOneConversationId]
-     * - [UserEntity.defederated]
+     * - [UserEntity.defederated] (this will be set to false)
      *
      * An upsert operation is a one that tries to update a record and if fails (not rows affected by change) inserts instead.
      * In this case as the transaction can be executed many times, we need to take care for not deleting old data.
