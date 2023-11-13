@@ -26,12 +26,15 @@ import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INV
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_EXTENSION
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.acceptedFileNames
 import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.BackupIOFailure
 import com.wire.kalium.logic.feature.backup.RestoreBackupResult.BackupRestoreFailure.DecryptionFailure
@@ -43,6 +46,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.mapLeft
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.tools.KtxSerializer
@@ -208,7 +212,11 @@ internal class RestoreBackupUseCaseImpl(
         }
 
     private fun extractFiles(inputSource: Source, extractedBackupRootPath: Path) =
-        extractCompressedFile(inputSource, extractedBackupRootPath, kaliumFileSystem)
+        extractCompressedFile(
+            inputSource, extractedBackupRootPath, ExtractFilesParam.Only(
+                acceptedFileNames()
+            ), kaliumFileSystem
+        )
 
     private suspend fun getDbPathAndImport(
         extractedBackupRootPath: Path,
