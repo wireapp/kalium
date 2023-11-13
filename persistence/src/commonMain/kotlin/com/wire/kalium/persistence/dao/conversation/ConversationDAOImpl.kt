@@ -373,6 +373,18 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
 
+    override suspend fun updateInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean) =
+        withContext(coroutineContext) {
+            conversationQueries.updateInformAboutVerificationBeforeMessagingFlag(updateFlag, conversationId)
+        }
+
+    override suspend fun observeInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedIDEntity): Flow<Boolean> =
+        conversationQueries.selectInformAboutVerificationBeforeMessagingFlag(conversationId)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { it ?: false }
+            .flowOn(coroutineContext)
+
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
     }

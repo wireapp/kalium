@@ -282,6 +282,11 @@ interface ConversationRepository {
      */
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 
+    suspend fun observeInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedID): Flow<Boolean>
+    suspend fun updateInformAboutVerificationBeforeMessagingFlag(
+        conversationId: QualifiedID,
+        updateFlag: Boolean
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1055,6 +1060,19 @@ internal class ConversationDataSource internal constructor(
                 }
             }
         }
+
+    override suspend fun updateInformAboutVerificationBeforeMessagingFlag(
+        conversationId: QualifiedID,
+        updateFlag: Boolean
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateInformAboutVerificationBeforeMessagingFlag(conversationId.toDao(), updateFlag)
+        }
+
+    override suspend fun observeInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedID): Flow<Boolean> =
+        conversationDAO.observeInformAboutVerificationBeforeMessagingFlag(conversationId.toDao())
+            .wrapStorageRequest()
+            .mapToRightOr(false)
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
