@@ -41,8 +41,9 @@ class GetPaginatedFlowOfAssetMessagesByConversationUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList(),
+        startingOffset: Int,
         pagingConfig: PagingConfig
-    ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibilityAndContentType(
-        conversationId, visibility, listOf(MessageEntity.ContentType.ASSET), pagingConfig
+    ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedAssetMessagesByConversationIdAndVisibility(
+        conversationId, visibility, pagingConfig, startingOffset
     ).flowOn(dispatcher.io)
 }

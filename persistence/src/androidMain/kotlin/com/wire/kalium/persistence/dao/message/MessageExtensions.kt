@@ -29,68 +29,98 @@ actual interface MessageExtensions {
     fun getPagerForConversation(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
-        contentTypes: Collection<MessageEntity.ContentType>?,
         pagingConfig: PagingConfig,
+        startingOffset: Int
+    ): KaliumPager<MessageEntity>
+
+    fun getPagerForConversationAssets(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Int
     ): KaliumPager<MessageEntity>
 }
 
 actual class MessageExtensionsImpl actual constructor(
     private val messagesQueries: MessagesQueries,
     private val messageMapper: MessageMapper,
-    private val coroutineContext: CoroutineContext
+    private val coroutineContext: CoroutineContext,
 ) : MessageExtensions {
 
     override fun getPagerForConversation(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
-        contentTypes: Collection<MessageEntity.ContentType>?,
-        pagingConfig: PagingConfig
+        pagingConfig: PagingConfig,
+        startingOffset: Int
     ): KaliumPager<MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
         return KaliumPager(
-            Pager(pagingConfig) { getPagingSource(conversationId, visibilities, contentTypes) },
-            getPagingSource(conversationId, visibilities, contentTypes),
-            coroutineContext,
+            Pager(pagingConfig) { getPagingConversationSource(conversationId, visibilities, startingOffset) },
+            getPagingConversationSource(conversationId, visibilities, startingOffset),
+            coroutineContext
         )
     }
 
-    private fun getPagingSource(
+    override fun getPagerForConversationAssets(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
-        contentTypes: Collection<MessageEntity.ContentType>?
+        pagingConfig: PagingConfig,
+        startingOffset: Int
+    ): KaliumPager<MessageEntity> {
+        return KaliumPager(
+            Pager(pagingConfig) { getPagingConversationAssetsSource(conversationId, visibilities, startingOffset) },
+            getPagingConversationAssetsSource(conversationId, visibilities, startingOffset),
+            coroutineContext
+        )
+    }
+
+    private fun getPagingConversationSource(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>,
+        initialOffset: Int
     ) =
-        QueryPagingSource(
-            countQuery = if (contentTypes != null) {
-                messagesQueries.countAssetMessagesByConversationIdAndMimeTypes(conversationId,   listOf(
-                    "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
-                ),)
-            } else {
-                messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities)
-            },
+        KaliumOffsetQueryPagingSource(
+            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities).toInt(),
             transacter = messagesQueries,
             context = coroutineContext,
+            initialOffset = initialOffset,
             queryProvider = { limit, offset ->
-                if (contentTypes != null) {
-                    messagesQueries.selectAssetMessagesByConversationIdAndMimeTypes(
-                        conversationId,
-                        visibilities,
-                        contentTypes,
-                        listOf(
-                            "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
-                        ),
-                        limit,
-                        offset,
-                        messageMapper::toEntityMessageFromView
-                    )
-                } else {
-                    messagesQueries.selectByConversationIdAndVisibility(
-                        conversationId,
-                        visibilities,
-                        limit,
-                        offset,
-                        messageMapper::toEntityMessageFromView
-                    )
-                }
+                messagesQueries.selectByConversationIdAndVisibility(
+                    conversationId,
+                    visibilities,
+                    limit.toLong(),
+                    offset.toLong(),
+                    messageMapper::toEntityMessageFromView
+                )
+            }
+        )
+
+    private fun getPagingConversationAssetsSource(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>,
+        initialOffset: Int
+    ) =
+        KaliumOffsetQueryPagingSource(
+            countQuery = messagesQueries.countAssetMessagesByConversationIdAndMimeTypes(
+                conversationId, listOf(
+                    "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
+                )
+            ).toInt(),
+            transacter = messagesQueries,
+            context = coroutineContext,
+            initialOffset = initialOffset,
+            queryProvider = { limit, offset ->
+                messagesQueries.selectAssetMessagesByConversationIdAndMimeTypes(
+                    conversationId,
+                    visibilities,
+                    listOf(MessageEntity.ContentType.ASSET),
+                    listOf(
+                        "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
+                    ),
+                    limit.toLong(),
+                    offset.toLong(),
+                    messageMapper::toEntityMessageFromView
+                )
             }
         )
 }

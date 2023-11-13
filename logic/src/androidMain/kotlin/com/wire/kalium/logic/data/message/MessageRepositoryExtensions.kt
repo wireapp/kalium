@@ -34,13 +34,14 @@ actual interface MessageRepositoryExtensions {
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
+        startingOffset: Int
     ): Flow<PagingData<Message.Standalone>>
 
-    suspend fun getPaginatedMessagesByConversationIdAndVisibilityAndContentType(
+    suspend fun getPaginatedAssetMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
-        contentTypes: List<MessageEntity.ContentType>,
         pagingConfig: PagingConfig,
+        startingOffset: Int
     ): Flow<PagingData<Message.Standalone>>
 }
 
@@ -53,12 +54,13 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
+        startingOffset: Int
     ): Flow<PagingData<Message.Standalone>> {
         val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
             conversationId.toDao(),
             visibility.map { it.toEntityVisibility() },
-            null,
-            pagingConfig
+            pagingConfig,
+            startingOffset
         )
 
         return pager.pagingDataFlow.map { pagingData: PagingData<MessageEntity> ->
@@ -66,21 +68,21 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
         }
     }
 
-    override suspend fun getPaginatedMessagesByConversationIdAndVisibilityAndContentType(
-        conversationId: ConversationId,
-        visibility: List<Message.Visibility>,
-        contentTypes: List<MessageEntity.ContentType>,
-        pagingConfig: PagingConfig
-    ): Flow<PagingData<Message.Standalone>> {
-        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
-            conversationId.toDao(),
-            visibility.map { it.toEntityVisibility() },
-            contentTypes,
-            pagingConfig
-        )
+        override suspend fun getPaginatedAssetMessagesByConversationIdAndVisibility(
+            conversationId: ConversationId,
+            visibility: List<Message.Visibility>,
+            pagingConfig: PagingConfig,
+            startingOffset: Int
+        ): Flow<PagingData<Message.Standalone>> {
+            val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversationAssets(
+                conversationId.toDao(),
+                visibility.map { it.toEntityVisibility() },
+                pagingConfig,
+                startingOffset
+            )
 
-        return pager.pagingDataFlow.map { pagingData: PagingData<MessageEntity> ->
-            pagingData.map(messageMapper::fromEntityToMessage)
-        }
+            return pager.pagingDataFlow.map { pagingData: PagingData<MessageEntity> ->
+                pagingData.map(messageMapper::fromEntityToMessage)
+            }
     }
 }

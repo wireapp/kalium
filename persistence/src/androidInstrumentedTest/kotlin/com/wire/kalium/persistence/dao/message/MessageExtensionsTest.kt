@@ -124,7 +124,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         conversationId = CONVERSATION_ID,
         visibilities = MessageEntity.Visibility.values().toList(),
         pagingConfig = PagingConfig(PAGE_SIZE),
-        contentTypes = null
+        startingOffset = 0
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.refresh() = load(

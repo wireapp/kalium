@@ -534,3 +534,10 @@ WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
 AND contentType = 'TEXT'
 ORDER BY date DESC;
+
+selectSearchedConversationMessagePosition:
+SELECT COUNT(*) FROM Message
+WHERE
+conversation_id = :conversationId
+AND creation_date >= (SELECT creation_date FROM Message WHERE id = :messageId LIMIT 1)
+ORDER BY creation_date DESC;
