@@ -307,4 +307,9 @@ class ConversationScope internal constructor(
     val clearUsersTypingEvents: ClearUsersTypingEventsUseCase
         get() = ClearUsersTypingEventsUseCaseImpl(typingIndicatorIncomingRepository)
 
+    val setUserInformedAboutVerificationBeforeMessagingUseCase: SetUserInformedAboutVerificationUseCase
+        get() = SetUserInformedAboutVerificationUseCaseImpl(conversationRepository)
+    val observeInformAboutVerificationBeforeMessagingFlagUseCase: ObserveDegradedConversationNotifiedUseCase
+        get() = ObserveDegradedConversationNotifiedUseCaseImpl(conversationRepository)
+
 }
