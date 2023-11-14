@@ -24,6 +24,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
+import com.wire.kalium.network.exceptions.isFederationNotEnabled
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -99,6 +100,12 @@ sealed interface CoreFailure {
      */
     data object SyncEventOrClientNotFound : FeatureFailure()
 
+    /**
+     * The desired event was not found when fetching pending events.
+     * This can happen when this client is old and the server have new event types
+     * that the client does not know how to handle.
+     * the event is skipped and the sync continues
+     */
     data object FeatureNotImplemented : FeatureFailure()
     /**
      * No common Protocol found in order to establish a conversation between parties.
@@ -154,6 +161,7 @@ sealed class NetworkFailure : CoreFailure {
 
         data class General(val label: String) : FederatedBackendFailure()
         data class FederationDenied(val label: String) : FederatedBackendFailure()
+        data class FederationNotEnabled(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
 
@@ -206,7 +214,11 @@ sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
 
 sealed class StorageFailure : CoreFailure {
     data object DataNotFound : StorageFailure()
-    data class Generic(val rootCause: Throwable) : StorageFailure()
+    data class Generic(val rootCause: Throwable) : StorageFailure() {
+        override fun toString(): String {
+            return "Generic(rootCause = ${rootCause.stackTraceToString()})"
+        }
+    }
 }
 
 private const val SOCKS_EXCEPTION = "socks"
@@ -221,6 +233,8 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
                 exception is KaliumException.FederationError -> {
                     if (exception.isFederationDenied()) {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
+                    } else if (exception.isFederationNotEnabled()) {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationNotEnabled(exception.errorResponse.label))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
                     }

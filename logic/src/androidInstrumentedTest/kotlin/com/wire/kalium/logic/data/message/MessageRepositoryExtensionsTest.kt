@@ -55,6 +55,7 @@ class MessageRepositoryExtensionsTest {
     fun givenParameters_whenPaginatedMessagesByConversation_thenShouldCallDaoExtensionsWithRightParameters() = runTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
+        val startingOffset = 0
 
         val kaliumPager = KaliumPager(pager, fakePagingSource, StandardTestDispatcher())
         val (arrangement, messageRepositoryExtensions) = Arrangement()
@@ -65,7 +66,8 @@ class MessageRepositoryExtensionsTest {
         messageRepositoryExtensions.getPaginatedMessagesByConversationIdAndVisibility(
             TestConversation.ID,
             visibilities,
-            pagingConfig
+            pagingConfig,
+            startingOffset
         )
 
         verify(arrangement.messageDaoExtensions)
