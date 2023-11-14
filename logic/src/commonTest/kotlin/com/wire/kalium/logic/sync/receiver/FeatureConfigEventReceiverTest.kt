@@ -297,7 +297,6 @@ class FeatureConfigEventReceiverTest {
                 MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
-                SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository)

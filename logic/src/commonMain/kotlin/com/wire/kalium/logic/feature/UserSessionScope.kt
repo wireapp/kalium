@@ -675,6 +675,7 @@ class UserSessionScope internal constructor(
         userStorage.database.clientDAO,
         authenticatedNetworkContainer.selfApi,
         authenticatedNetworkContainer.userDetailsApi,
+        authenticatedNetworkContainer.teamsApi,
         globalScope.sessionRepository,
         userId,
         selfTeamId
@@ -728,6 +729,7 @@ class UserSessionScope internal constructor(
             userStorage.database.userDAO,
             userStorage.database.metadataDAO,
             authenticatedNetworkContainer.userDetailsApi,
+            authenticatedNetworkContainer.teamsApi,
             userSearchApiWrapper
         )
 
@@ -1359,7 +1361,6 @@ class UserSessionScope internal constructor(
             mlsMigrationConfigHandler,
             classifiedDomainsConfigHandler,
             conferenceCallingConfigHandler,
-            secondFactorPasswordChallengeConfigHandler,
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
             appLockConfigHandler

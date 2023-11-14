@@ -24,10 +24,13 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.time.Second
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
 
@@ -289,5 +292,21 @@ object TestEvent {
         live = false,
         protocol = Conversation.Protocol.MIXED,
         senderUserId = TestUser.OTHER_USER_ID
+    )
+
+    fun newFeatureConfigEvent() = Event.FeatureConfig.AppLockUpdated(
+        id = "eventId",
+        transient = false,
+        live = false,
+        model = AppLockModel(
+            inactivityTimeoutSecs = 60,
+            status = Status.ENABLED
+        )
+    )
+
+    fun newUnknownFeatureUpdate() = Event.FeatureConfig.UnknownFeatureUpdated(
+        id = "eventId",
+        transient = false,
+        live = false
     )
 }

@@ -30,7 +30,6 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
@@ -47,7 +46,6 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
     private val classifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler,
     private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
-    private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
     private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
     private val e2EIConfigHandler: E2EIConfigHandler,
     private val appLockConfigHandler: AppLockConfigHandler
@@ -75,7 +73,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                         Pair("error", it)
                     )
                 }
-            }
+    }
 
     @Suppress("LongMethod", "ComplexMethod")
     private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
