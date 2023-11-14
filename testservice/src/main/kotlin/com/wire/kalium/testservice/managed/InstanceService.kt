@@ -143,7 +143,7 @@ class InstanceService(
                 File.separator + ".testservice" + File.separator + instanceId
         log.info("Instance $instanceId: Creating $instancePath")
         val kaliumConfigs = KaliumConfigs(
-            developmentApiEnabled = instanceRequest.developmentApiEnabled?: false
+            developmentApiEnabled = instanceRequest.developmentApiEnabled ?: false
         )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
         CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE, KaliumLogWriter(instanceId))
