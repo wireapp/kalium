@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
