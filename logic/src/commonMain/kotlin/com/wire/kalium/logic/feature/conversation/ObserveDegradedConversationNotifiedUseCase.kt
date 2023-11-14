@@ -21,14 +21,21 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
-interface ObserveInformAboutVerificationBeforeMessagingFlagUseCase {
+/**
+ * UseCase for observing if User was notified about verification degrading of conversation
+ */
+interface ObserveDegradedConversationNotifiedUseCase {
+    /**
+     * @return [Flow] of [Boolean], false means conversation's verification degraded and user needs to be notified
+     * true in other cases.
+     */
     suspend operator fun invoke(conversationId: ConversationId): Flow<Boolean>
 }
 
-class ObserveInformAboutVerificationBeforeMessagingFlagUseCaseImpl internal constructor(
+class ObserveDegradedConversationNotifiedUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
-) : ObserveInformAboutVerificationBeforeMessagingFlagUseCase {
+) : ObserveDegradedConversationNotifiedUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Flow<Boolean> =
-        conversationRepository.observeInformAboutVerificationBeforeMessagingFlag(conversationId)
+        conversationRepository.observeDegradedConversationNotified(conversationId)
 }

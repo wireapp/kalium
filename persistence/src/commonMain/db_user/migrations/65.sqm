@@ -1,7 +1,7 @@
 import kotlin.Boolean;
 
 ALTER TABLE Conversation
-ADD COLUMN should_inform_about_verification_before_messaging INTEGER AS Boolean NOT NULL DEFAULT 0;
+ADD COLUMN degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1;
 
 DROP TRIGGER IF EXISTS addMessageAfterProteusVerificationStatusChange;
 
@@ -28,6 +28,6 @@ BEGIN
     );
 
     UPDATE Conversation
-    SET should_inform_about_verification_before_messaging = new.proteus_verification_status  = "DEGRADED"
+    SET degraded_conversation_notified = (new.proteus_verification_status != "DEGRADED")
     WHERE qualified_id = new.qualified_id;
 END;

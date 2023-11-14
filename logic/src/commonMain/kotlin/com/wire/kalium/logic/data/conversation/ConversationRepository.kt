@@ -282,10 +282,10 @@ interface ConversationRepository {
      */
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 
-    suspend fun observeInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedID): Flow<Boolean>
-    suspend fun updateInformAboutVerificationBeforeMessagingFlag(
+    suspend fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean>
+    suspend fun setDegradedConversationNotifiedFlag(
         conversationId: QualifiedID,
-        updateFlag: Boolean
+        value: Boolean
     ): Either<CoreFailure, Unit>
 }
 
@@ -1061,18 +1061,18 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-    override suspend fun updateInformAboutVerificationBeforeMessagingFlag(
+    override suspend fun setDegradedConversationNotifiedFlag(
         conversationId: QualifiedID,
-        updateFlag: Boolean
+        value: Boolean
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            conversationDAO.updateInformAboutVerificationBeforeMessagingFlag(conversationId.toDao(), updateFlag)
+            conversationDAO.updateDegradedConversationNotifiedFlag(conversationId.toDao(), value)
         }
 
-    override suspend fun observeInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedID): Flow<Boolean> =
-        conversationDAO.observeInformAboutVerificationBeforeMessagingFlag(conversationId.toDao())
+    override suspend fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean> =
+        conversationDAO.observeDegradedConversationNotified(conversationId.toDao())
             .wrapStorageRequest()
-            .mapToRightOr(false)
+            .mapToRightOr(true)
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

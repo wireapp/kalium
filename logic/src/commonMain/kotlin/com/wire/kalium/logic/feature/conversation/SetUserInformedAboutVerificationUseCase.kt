@@ -20,16 +20,20 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
-interface SetUserInformedAboutVerificationBeforeMessagingUseCase {
+/**
+ * UseCase for setting DegradedConversationNotified flag to true,
+ * means user was notified about verification changes and no need to do it again.
+ */
+interface SetUserInformedAboutVerificationUseCase {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 
-class SetUserInformedAboutVerificationBeforeMessagingUseCaseImpl internal constructor(
+class SetUserInformedAboutVerificationUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
-) : SetUserInformedAboutVerificationBeforeMessagingUseCase {
+) : SetUserInformedAboutVerificationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId) {
-        conversationRepository.updateInformAboutVerificationBeforeMessagingFlag(conversationId, false)
+        conversationRepository.setDegradedConversationNotifiedFlag(conversationId, true)
     }
 
 }

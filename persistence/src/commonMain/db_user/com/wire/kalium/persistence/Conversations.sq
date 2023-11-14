@@ -43,7 +43,7 @@ CREATE TABLE Conversation (
     -- mls_verification_status
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
-    should_inform_about_verification_before_messaging INTEGER AS Boolean NOT NULL DEFAULT 0
+    degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -142,9 +142,9 @@ UPDATE Conversation
 SET mls_degraded_notified = ?
 WHERE qualified_id = :qualified_id;
 
-updateInformAboutVerificationBeforeMessagingFlag:
+updateDegradedConversationNotifiedFlag:
 UPDATE Conversation
-SET should_inform_about_verification_before_messaging = ?
+SET degraded_conversation_notified = ?
 WHERE qualified_id = :qualified_id;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
@@ -407,8 +407,8 @@ UPDATE Conversation
 SET verification_status = :status
 WHERE qualified_id = :conversationId;
 
-selectInformAboutVerificationBeforeMessagingFlag:
-SELECT should_inform_about_verification_before_messaging FROM Conversation
+selectDegradedConversationNotified:
+SELECT degraded_conversation_notified FROM Conversation
 WHERE qualified_id = :conversationId;
 
 clearContent {
@@ -442,6 +442,6 @@ BEGIN
     );
 
     UPDATE Conversation
-    SET should_inform_about_verification_before_messaging = new.proteus_verification_status  = "DEGRADED"
+    SET degraded_conversation_notified = (new.proteus_verification_status != "DEGRADED")
     WHERE qualified_id = new.qualified_id;
 END;

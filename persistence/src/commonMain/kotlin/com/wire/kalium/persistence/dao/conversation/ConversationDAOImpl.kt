@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOne
+import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -373,16 +374,15 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
 
-    override suspend fun updateInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean) =
+    override suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean) =
         withContext(coroutineContext) {
-            conversationQueries.updateInformAboutVerificationBeforeMessagingFlag(updateFlag, conversationId)
+            conversationQueries.updateDegradedConversationNotifiedFlag(updateFlag, conversationId)
         }
 
-    override suspend fun observeInformAboutVerificationBeforeMessagingFlag(conversationId: QualifiedIDEntity): Flow<Boolean> =
-        conversationQueries.selectInformAboutVerificationBeforeMessagingFlag(conversationId)
+    override suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean> =
+        conversationQueries.selectDegradedConversationNotified(conversationId)
             .asFlow()
-            .mapToOneOrNull()
-            .map { it ?: false }
+            .mapToOneOrDefault(true)
             .flowOn(coroutineContext)
 
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
