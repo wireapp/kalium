@@ -15,31 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.data.sync
+package com.wire.kalium.logic.sync.slow.migration.steps
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.functional.Either
 
-sealed interface SlowSyncStatus {
-
-    data object Pending : SlowSyncStatus
-
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure) : SlowSyncStatus
-}
-
-enum class SlowSyncStep {
-    SELF_USER,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    MIGRATION
+/**
+ * Migration step.
+ * this interface provide a way to migrate the sync version of the user.
+ * the logic is executed before sync itself
+ * keep in mind this logic can run multiple times
+ * since it runs before sync then if one of the sync steps after it failed,
+ * and we need to retry sync then this logic will run again
+ * @property version The sync version after executing this migration step.
+ * @property invoke The migration step itself
+ */
+internal interface SyncMigrationStep {
+    val version: Int
+    suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
