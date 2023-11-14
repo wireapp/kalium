@@ -20,10 +20,10 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
@@ -33,12 +33,14 @@ import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +53,7 @@ internal interface SlowSyncWorker {
      * Performs all [SlowSyncStep] in the correct order,
      * emits the current ongoing step.
      */
-    suspend fun slowSyncStepsFlow(): Flow<SlowSyncStep>
+    suspend fun slowSyncStepsFlow(migrationSteps: List<SyncMigrationStep>): Flow<SlowSyncStep>
 }
 
 @Suppress("LongParameterList")
@@ -70,7 +72,7 @@ internal class SlowSyncWorkerImpl(
 
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    override suspend fun slowSyncStepsFlow(): Flow<SlowSyncStep> = flow {
+    override suspend fun slowSyncStepsFlow(migrationSteps: List<SyncMigrationStep>): Flow<SlowSyncStep> = flow {
 
         suspend fun Either<CoreFailure, Unit>.continueWithStep(
             slowSyncStep: SlowSyncStep,
@@ -81,7 +83,12 @@ internal class SlowSyncWorkerImpl(
 
         val lastProcessedEventIdToSaveOnSuccess = getLastProcessedEventIdToSaveOnSuccess()
 
-        performStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
+        performStep(SlowSyncStep.MIGRATION) {
+            migrationSteps.foldToEitherWhileRight(Unit) { step, _ ->
+                step()
+            }
+        }
+            .continueWithStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
             .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
             .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().map { } }
             .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -43,7 +44,7 @@ internal interface AccountRepository {
      */
     suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
     suspend fun updateLocalSelfUserHandle(handle: String): Either<CoreFailure, Unit>
-    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus)
+    suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus): Either<StorageFailure, Unit>
 }
 
 internal class AccountRepositoryImpl(
@@ -76,7 +77,7 @@ internal class AccountRepositoryImpl(
         userDAO.updateUserHandle(selfUserId.toDao(), handle)
     }
 
-    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) {
+    override suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus) = wrapStorageRequest {
         userDAO.updateUserAvailabilityStatus(
             selfUserId.toDao(),
             availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
