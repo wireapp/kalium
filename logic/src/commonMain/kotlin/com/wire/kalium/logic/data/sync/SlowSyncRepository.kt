@@ -40,7 +40,7 @@ internal interface SlowSyncRepository {
     suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?>
     fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus)
     suspend fun setSlowSyncVersion(version: Int)
-    suspend fun getSlowSyncVersion(): Int
+    suspend fun getSlowSyncVersion(): Int?
 }
 
 internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : SlowSyncRepository {
@@ -97,9 +97,7 @@ internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : Sl
         metadataDao.insertValue(value = version.toString(), key = SLOW_SYNC_VERSION_KEY)
     }
 
-    override suspend fun getSlowSyncVersion(): Int {
-        return metadataDao.valueByKey(key = SLOW_SYNC_VERSION_KEY)?.toIntOrNull() ?: 0
-    }
+    override suspend fun getSlowSyncVersion(): Int? = metadataDao.valueByKey(key = SLOW_SYNC_VERSION_KEY)?.toInt()
 
     companion object {
         const val LAST_SLOW_SYNC_INSTANT_KEY = "lastSlowSyncInstant"
