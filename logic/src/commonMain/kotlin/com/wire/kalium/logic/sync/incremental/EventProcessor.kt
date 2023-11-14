@@ -75,35 +75,29 @@ internal class EventProcessorImpl(
 
     override var disableEventProcessing: Boolean = false
 
-    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> =
+    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> {
         if (disableEventProcessing) {
             logger.w("Skipping processing of $event due to debug option")
-            Either.Right(Unit)
-        } else {
-            when (event) {
-                is Event.Conversation -> conversationEventReceiver.onEvent(event)
-                is Event.User -> userEventReceiver.onEvent(event)
-                is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-                is Event.Unknown -> {
-                    kaliumLogger
-                        .logEventProcessing(
-                            EventLoggingStatus.SKIPPED,
-                            event
-                        )
-                    // Skipping event = success
-                    Either.Right(Unit)
-                }
+            return Either.Right(Unit)
+        }
 
-                is Event.Team -> teamEventReceiver.onEvent(event)
-                is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
-                is Event.Federation -> federationEventReceiver.onEvent(event)
-            }
-        }.flatMapLeft {
-            if (it is CoreFailure.FeatureNotImplemented) {
+        return when (event) {
+            is Event.Conversation -> conversationEventReceiver.onEvent(event)
+            is Event.User -> userEventReceiver.onEvent(event)
+            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
+            is Event.Unknown -> {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SKIPPED,
+                        event
+                    )
+                // Skipping event = success
                 Either.Right(Unit)
-            } else {
-                Either.Left(it)
             }
+
+            is Event.Team -> teamEventReceiver.onEvent(event)
+            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
+            is Event.Federation -> federationEventReceiver.onEvent(event)
         }.onSuccess {
             val logMap = mapOf<String, Any>(
                 "event" to event.toLogMap()
@@ -115,6 +109,7 @@ internal class EventProcessorImpl(
                 logger.i("Skipping update of lastProcessedEventId: ${logMap.toJsonElement()}")
             }
         }
+    }
 
     private fun Event.shouldUpdateLastProcessedEventId(): Boolean = !transient
 }
