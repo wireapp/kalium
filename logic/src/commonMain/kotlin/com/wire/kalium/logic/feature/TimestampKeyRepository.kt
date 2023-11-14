@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
 package com.wire.kalium.logic.feature
 
@@ -57,5 +58,6 @@ class TimestampKeyRepositoryImpl(
 enum class TimestampKeys {
     LAST_KEYING_MATERIAL_UPDATE_CHECK,
     LAST_KEY_PACKAGE_COUNT_CHECK,
-    LAST_MISSING_METADATA_SYNC_CHECK
+    LAST_MISSING_METADATA_SYNC_CHECK,
+    LAST_MLS_MIGRATION_CHECK
 }

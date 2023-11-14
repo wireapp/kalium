@@ -83,10 +83,12 @@ internal class PrekeyApiV0Test : ApiTest() {
     @Test
     fun givenPreKeyAndClientId_whenUploadingPreKeys_thenTheRequestIsConfiguredCorrectly() = runTest {
         val preKeyDTO = PreKeyDTO(42, "testKey")
+        val clientId = "testClientId"
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = "",
             statusCode = HttpStatusCode.OK,
             assertion = {
+                assertPathEqual("/clients/$clientId")
                 assertJson()
                 assertJsonBodyContent(
                     """
@@ -103,7 +105,7 @@ internal class PrekeyApiV0Test : ApiTest() {
             }
         )
         val preKeyApi: PreKeyApi = PreKeyApiV0(networkClient)
-        val response = preKeyApi.uploadNewPrekeys("clientId", listOf(preKeyDTO))
+        val response = preKeyApi.uploadNewPrekeys(clientId, listOf(preKeyDTO))
         assertTrue(response.isSuccessful())
     }
 

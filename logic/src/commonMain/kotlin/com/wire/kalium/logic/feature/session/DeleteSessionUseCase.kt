@@ -44,7 +44,7 @@ class DeleteSessionUseCase internal constructor(
         })
 
     sealed class Result {
-        object Success : Result()
+        data object Success : Result()
         data class Failure(val cause: StorageFailure) : Result()
     }
 }

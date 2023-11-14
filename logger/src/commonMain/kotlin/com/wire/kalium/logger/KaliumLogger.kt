@@ -19,8 +19,9 @@
 package com.wire.kalium.logger
 
 import co.touchlab.kermit.LogWriter
+import co.touchlab.kermit.LoggerConfig
+import co.touchlab.kermit.MutableLoggerConfig
 import co.touchlab.kermit.Severity
-import co.touchlab.kermit.StaticConfig
 import co.touchlab.kermit.platformLogWriter
 import co.touchlab.kermit.Logger as KermitLogger
 
@@ -61,96 +62,179 @@ enum class KaliumLogLevel {
     DISABLED
 }
 
+fun KaliumLogLevel.toMinSeverity(): Severity = when (this) {
+    KaliumLogLevel.VERBOSE -> Severity.Verbose
+    KaliumLogLevel.DEBUG -> Severity.Debug
+    KaliumLogLevel.INFO -> Severity.Info
+    KaliumLogLevel.WARN -> Severity.Warn
+    KaliumLogLevel.ERROR -> Severity.Error
+    KaliumLogLevel.DISABLED -> Severity.Assert
+}
+
+fun Severity.toKaliumLogLevel(): KaliumLogLevel = when (this) {
+    Severity.Verbose -> KaliumLogLevel.VERBOSE
+    Severity.Debug -> KaliumLogLevel.DEBUG
+    Severity.Info -> KaliumLogLevel.INFO
+    Severity.Warn -> KaliumLogLevel.WARN
+    Severity.Error -> KaliumLogLevel.ERROR
+    Severity.Assert -> KaliumLogLevel.DISABLED
+}
+
 /**
- * the logWriter is to create a custom writer other than the existing log writers from kermit to intercept the logs
- * in the android case we use it to write the logs on file
- *
+ * Custom logger writer which uses multiplatform [KermitLogger] underneath to allow to customize log message or tag.
+ * @param config the [Config] object which contains the configuration of the logger
+ * @param tag the [Tag] object which identifies the source of the log message. Can combine multiple data and turns it
+ * into structured String used by the [KermitLogger] so that it can be parsed back again to the [Tag] object.
+ * To know more how it behaves and what are the possibilities, take a look at the [Tag] sealed class and its subtypes.
  */
-class KaliumLogger(private val config: Config, vararg logWriters: LogWriter = arrayOf()) {
+class KaliumLogger(
+    private val config: Config = Config.DEFAULT,
+    private val tag: Tag = Tag.Text("KaliumLogger")
+) {
 
-    private var kermitLogger: KermitLogger
+    constructor(
+        config: Config = Config.DEFAULT,
+        tag: String = "KaliumLogger"
+    ) : this(config, Tag.Text(tag))
+    private val kermitLogger: KermitLogger = KermitLogger(
+        config = config.kermitConfig()
+    )
 
-    init {
-        kermitLogger = if (logWriters.isEmpty()) {
-            KermitLogger(
-                config = StaticConfig(
-                    minSeverity = config.severityLevel, listOf(platformLogWriter())
-                ),
-                tag = config.tag
-            )
-        } else {
-            KermitLogger(
-                config = StaticConfig(
-                    minSeverity = config.severityLevel, logWriters.asList()
-                ),
-                tag = config.tag
-            )
+    private fun tag(): String = tag.tagString()
+
+    fun logLevel(): KaliumLogLevel = config.logLevel()
+
+    /**
+     * Creates a new logger with custom tag that replaces the old tag and allows to specify which specific app flow,
+     * one of [ApplicationFlow], the logs sent by this logger relate to.
+     * When the logger already contains [Tag.UserClientText] type of logs, then user-related tag data will still be included,
+     * and this featureId tag part will be added as a prefix, to keep the standard pattern of the tag: "tag[userId|clientId]".
+     * In this case it will become "featureId:featureName[userId|clientId]".
+     * When current type of tag is [Tag.Text], then it will just replace it with the new one: "featureId:featureName".
+     */
+    @Suppress("unused")
+    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger = KaliumLogger(
+        config = config,
+        tag = "featureId:${featureId.name.lowercase()}".let {
+            when (tag) {
+                is Tag.Text -> Tag.Text(it)
+                is Tag.UserClientText -> Tag.UserClientText(it, tag.data)
+            }
         }
-    }
+    )
 
-    val severity = config.severity
+    /**
+     * Creates a new logger with custom tag that replaces the old tag and allows to add user-related data to the tag.
+     * When the logger already contains [Tag.UserClientText] type of tag, then user-related tag data part will be replaced,
+     * and if it contained already some text tag prefix part, then the same prefix will be also included in the new one,
+     * to keep the standard pattern of the tag: "tag[userId|clientId]".
+     */
+    @Suppress("unused")
+    fun withUserDeviceData(data: () -> UserClientData): KaliumLogger = KaliumLogger(
+        config = config,
+        tag = when (tag) {
+            is Tag.Text -> Tag.UserClientText(tag.text, data)
+            is Tag.UserClientText -> Tag.UserClientText(tag.prefix, data)
+        }
+    )
 
     @Suppress("unused")
-    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger {
-        val currentLogger = this
-        currentLogger.kermitLogger = kermitLogger.withTag("featureId:${featureId.name.lowercase()}")
-        return currentLogger
-    }
+    fun v(message: String, throwable: Throwable? = null, tag: String = this.tag()) =
+        kermitLogger.v(message, throwable, tag)
 
     @Suppress("unused")
-    fun v(message: String, throwable: Throwable? = null) =
-        throwable?.let {
-            kermitLogger.v(message, throwable)
-        } ?: kermitLogger.v(message)
+    fun d(message: String, throwable: Throwable? = null, tag: String = this.tag()) =
+        kermitLogger.d(message, throwable, tag)
 
     @Suppress("unused")
-    fun d(message: String, throwable: Throwable? = null) =
-        throwable?.let {
-            kermitLogger.d(message, throwable)
-        } ?: kermitLogger.d(message)
+    fun i(message: String, throwable: Throwable? = null, tag: String = this.tag()) =
+        kermitLogger.i(message, throwable, tag)
 
     @Suppress("unused")
-    fun i(message: String, throwable: Throwable? = null) =
-        throwable?.let {
-            kermitLogger.i(message, throwable)
-        } ?: kermitLogger.i(message)
+    fun w(message: String, throwable: Throwable? = null, tag: String = this.tag()) =
+        kermitLogger.w(message, throwable, tag)
 
     @Suppress("unused")
-    fun w(message: String, throwable: Throwable? = null) =
-        throwable?.let {
-            kermitLogger.w(message, throwable)
-        } ?: kermitLogger.w(message)
-
-    @Suppress("unused")
-    fun e(message: String, throwable: Throwable? = null) =
-        throwable?.let {
-            kermitLogger.e(message, throwable)
-        } ?: kermitLogger.e(message)
+    fun e(message: String, throwable: Throwable? = null, tag: String = this.tag()) =
+        kermitLogger.e(message, throwable, tag)
 
     class Config(
-        val severity: KaliumLogLevel,
-        val tag: String
+        val initialLevel: KaliumLogLevel,
+        val initialLogWriterList: List<LogWriter> = listOf(platformLogWriter())
     ) {
-        val severityLevel: Severity = when (severity) {
-            KaliumLogLevel.VERBOSE -> Severity.Verbose
-            KaliumLogLevel.DEBUG -> Severity.Debug
-            KaliumLogLevel.INFO -> Severity.Info
-            KaliumLogLevel.WARN -> Severity.Warn
-            KaliumLogLevel.ERROR -> Severity.Error
-            KaliumLogLevel.DISABLED -> Severity.Assert
+        private val mutableKermitConfig = object : MutableLoggerConfig {
+            override var logWriterList: List<LogWriter> = initialLogWriterList
+            override var minSeverity: Severity = initialLevel.toMinSeverity()
+        }
+
+        fun logLevel(): KaliumLogLevel = mutableKermitConfig.minSeverity.toKaliumLogLevel()
+
+        fun kermitConfig(): LoggerConfig = mutableKermitConfig
+
+        @Suppress("unused")
+        fun setLogLevel(level: KaliumLogLevel) {
+            mutableKermitConfig.minSeverity = level.toMinSeverity()
+        }
+
+        @Suppress("unused")
+        fun setLogWriterList(logWriterList: List<LogWriter>) {
+            mutableKermitConfig.logWriterList = logWriterList
         }
 
         companion object {
-            val DISABLED = Config(
-                severity = KaliumLogLevel.DISABLED,
-                tag = "KaliumLogger"
+            val DEFAULT = disabled()
+            fun disabled(): Config = Config(
+                initialLevel = KaliumLogLevel.DISABLED,
+                initialLogWriterList = listOf(platformLogWriter()),
             )
+        }
+    }
+
+    /**
+     * Defined types of tags that can be provided to the [KaliumLogger] as a String text.
+     */
+    sealed class Tag {
+        abstract fun tagString(): String
+
+        /**
+         * Simple String text tag.
+         */
+        data class Text(val text: String) : Tag() {
+            override fun tagString(): String = text
+        }
+
+        /**
+         * User-related data tag. Contains String text prefix and [UserClientData] (userId and clientId).
+         * It will be added to the tag in the standard pattern: "tag[userId|clientId]",
+         * so it can be combined with a [Tag.Text] type by adding the tag text as a prefix in this one.
+         */
+        data class UserClientText(val prefix: String, val data: () -> UserClientData) : Tag() {
+            override fun tagString(): String = data().let { "$prefix[${it.userId}|${it.clientId}]" }
+        }
+    }
+
+    data class UserClientData(val userId: String, val clientId: String) {
+
+        companion object {
+            private val regex = Regex("^.*\\[.+\\|.+\\]\$")
+
+            /**
+             * Parses the user-related data from the String tag in the standard pattern: "tag[userId|clientId]".
+             * Returns null if the tag doesn't match the pattern, which means it does not contain user-related data.
+             */
+            @Suppress("unused")
+            fun getFromTag(tag: String): UserClientData? =
+                if (tag.matches(regex)) {
+                    tag.substringAfterLast("[").substringBefore("]").split("|")
+                        .let { data -> UserClientData(data[0], data[1]) }
+                } else null
         }
     }
 
     companion object {
         fun disabled(): KaliumLogger = KaliumLogger(
-            config = Config.DISABLED
+            config = Config.disabled(),
+            tag = "KaliumLogger"
         )
 
         enum class ApplicationFlow {

@@ -55,8 +55,8 @@ fun isProxyRequired(serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?): Boolean
 sealed class ApiVersionDTO(open val version: Int) {
 
     sealed class Invalid(override val version: Int) : ApiVersionDTO(version) {
-        object New : Invalid(NEW_API_VERSION_NUMBER)
-        object Unknown : Invalid(UNKNOWN_API_VERSION_NUMBER)
+        data object New : Invalid(NEW_API_VERSION_NUMBER)
+        data object Unknown : Invalid(UNKNOWN_API_VERSION_NUMBER)
     }
 
     data class Valid(override val version: Int) : ApiVersionDTO(version)

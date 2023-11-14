@@ -47,10 +47,8 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -633,7 +631,8 @@ internal class CallDataSource(
                         ).flattenConcat()
                     }
                 } ?: Either.Left(CoreFailure.NotSupportedByProteus)
-                is Conversation.ProtocolInfo.Proteus -> Either.Left(CoreFailure.NotSupportedByProteus)
+                is Conversation.ProtocolInfo.Proteus,
+                is Conversation.ProtocolInfo.Mixed -> Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
 

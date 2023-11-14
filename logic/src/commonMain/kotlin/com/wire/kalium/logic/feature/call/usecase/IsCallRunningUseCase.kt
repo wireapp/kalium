@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.feature.call.CallStatus
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.call.usecase.IsCallRunningUseCase.Companion.runningCalls
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

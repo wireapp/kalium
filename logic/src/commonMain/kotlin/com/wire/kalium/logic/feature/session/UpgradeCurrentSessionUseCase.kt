@@ -15,17 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.session
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 
@@ -36,20 +36,16 @@ interface UpgradeCurrentSessionUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit>
 }
 
-class UpgradeCurrentSessionUseCaseImpl(
+internal class UpgradeCurrentSessionUseCaseImpl(
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer,
-    private val accessTokenApi: AccessTokenApi,
+    private val accessTokenRefresher: AccessTokenRefresher,
     private val sessionManager: SessionManager
 ) : UpgradeCurrentSessionUseCase {
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, Unit> =
         wrapStorageRequest { sessionManager.session()?.refreshToken }
-            .flatMap { refreshToken ->
-                wrapApiRequest {
-                    accessTokenApi.getToken(refreshToken, clientId.value)
-                }.flatMap {
-                    wrapStorageRequest { sessionManager.updateLoginSession(it.first, it.second) }
-                }.map {
-                    authenticatedNetworkContainer.clearCachedToken()
-                }
+            .flatMap { currentRefreshToken ->
+                accessTokenRefresher.refreshTokenAndPersistSession(currentRefreshToken, clientId.value)
+            }.map {
+                authenticatedNetworkContainer.clearCachedToken()
             }
-    }
+}

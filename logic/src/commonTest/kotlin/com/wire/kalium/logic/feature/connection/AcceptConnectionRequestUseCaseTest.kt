@@ -19,100 +19,146 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import io.mockative.Mock
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
+import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.any
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class AcceptConnectionRequestUseCaseTest {
 
-    @Mock
-    private val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
-
-    @Mock
-    private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-
-    lateinit var acceptConnectionRequestUseCase: AcceptConnectionRequestUseCase
-
-    @BeforeTest
-    fun setUp() {
-        acceptConnectionRequestUseCase = AcceptConnectionRequestUseCaseImpl(connectionRepository, conversationRepository)
-    }
-
     @Test
-    fun givenAConnectionRequest_whenInvokingAcceptConnectionRequestAndOk_thenShouldReturnsASuccessResult() = runTest {
+    fun givenSuccess_whenInvokingUseCase_thenShouldUpdateConnectionStatusToAccepted() = runTest {
         // given
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .whenInvokedWith(eq(userId), eq(ConnectionState.ACCEPTED))
-            .thenReturn(Either.Right(connection))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::fetchConversation)
-            .whenInvokedWith(eq(conversationId))
-            .thenReturn(Either.Right(Unit))
-
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationModifiedDate)
-            .whenInvokedWith(eq(conversationId), any())
-            .thenReturn(Either.Right(Unit))
+        val (arrangement, acceptConnectionRequestUseCase) = arrange {
+            withUpdateConnectionStatus(Either.Right(CONNECTION))
+            withFetchConversation(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+        }
 
         // when
-        val resultOk = acceptConnectionRequestUseCase(userId)
+        val result = acceptConnectionRequestUseCase(USER_ID)
 
         // then
-        assertEquals(AcceptConnectionRequestUseCaseResult.Success, resultOk)
-        verify(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .with(eq(userId), eq(ConnectionState.ACCEPTED))
+        assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::updateConnectionStatus)
+            .with(eq(USER_ID), eq(ConnectionState.ACCEPTED))
             .wasInvoked(once)
     }
 
     @Test
-    fun givenAConnectionRequest_whenInvokingAcceptConnectionRequestAndFails_thenShouldReturnsAFailureResult() = runTest {
+    fun givenSuccess_whenInvokingUseCase_thenShouldUpdateConversationModifiedDate() = runTest {
         // given
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .whenInvokedWith(eq(userId), eq(ConnectionState.ACCEPTED))
-            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+        val (arrangement, acceptConnectionRequestUseCase) = arrange {
+            withUpdateConnectionStatus(Either.Right(CONNECTION))
+            withFetchConversation(Either.Right(Unit))
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+        }
 
         // when
-        val resultFailure = acceptConnectionRequestUseCase(userId)
+        val result = acceptConnectionRequestUseCase(USER_ID)
+
+        // then
+        assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
+            .with(eq(CONNECTION.qualifiedConversationId), any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenSuccess_whenInvokingUseCase_thenShouldResolveActiveOneOnOneConversation() = runTest {
+        // given
+        val (arrangement, acceptConnectionRequestUseCase) = arrange {
+            withUpdateConnectionStatus(Either.Right(CONNECTION))
+            withFetchConversation(Either.Right(Unit))
+            withPersistUnverifiedWarningMessageSuccess()
+            withUpdateConversationModifiedDate(Either.Right(Unit))
+            withResolveOneOnOneConversationWithUserIdReturning(Either.Right(TestConversation.ID))
+        }
+
+        // when
+        val result = acceptConnectionRequestUseCase(USER_ID)
+
+        // then
+        assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
+        verify(arrangement.oneOnOneResolver)
+            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
+            .with(eq(CONNECTION.qualifiedToId))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenFailure_whenInvokingUseCase_thenShouldReturnsAFailureResult() = runTest {
+        // given
+        val failure = CoreFailure.Unknown(RuntimeException("Some error"))
+        val (arrangement, acceptConnectionRequestUseCase) = arrange {
+            withUpdateConnectionStatus(Either.Left(failure))
+        }
+
+        // when
+        val resultFailure = acceptConnectionRequestUseCase(USER_ID)
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
-        verify(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .with(eq(userId), eq(ConnectionState.ACCEPTED))
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::updateConnectionStatus)
+            .with(eq(USER_ID), eq(ConnectionState.ACCEPTED))
             .wasInvoked(once)
     }
 
+    private class Arrangement(private val block: Arrangement.() -> Unit) :
+        ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
+        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
+        fun arrange() = run {
+            block()
+            this@Arrangement to AcceptConnectionRequestUseCaseImpl(
+                connectionRepository = connectionRepository,
+                conversationRepository = conversationRepository,
+                oneOnOneResolver = oneOnOneResolver,
+                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
+            )
+        }
+    }
+
     private companion object {
-        val userId = UserId("some_user", "some_domain")
-        val conversationId = ConversationId("someId", "someDomain")
-        val connection = Connection(
+        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+
+        val USER_ID = UserId("some_user", "some_domain")
+        val CONVERSATION_ID = ConversationId("someId", "someDomain")
+        val CONNECTION = Connection(
             "someId",
             "from",
             "lastUpdate",
-            conversationId,
-            conversationId,
+            CONVERSATION_ID,
+            CONVERSATION_ID,
             ConnectionState.ACCEPTED,
             "toId",
             null
         )
     }
+
 }

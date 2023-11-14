@@ -17,11 +17,14 @@
  */
 package com.wire.kalium.logic.data.featureConfig
 
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import kotlinx.datetime.Instant
+
 object FeatureConfigTest {
 
     @Suppress("LongParameterList")
     fun newModel(
-        appLockModel: AppLockModel = AppLockModel(AppLockConfigModel(false, 10), Status.ENABLED),
+        appLockModel: AppLockModel = AppLockModel(Status.ENABLED, 10),
         classifiedDomainsModel: ClassifiedDomainsModel = ClassifiedDomainsModel(
             ClassifiedDomainsConfigModel(listOf()),
             Status.ENABLED
@@ -40,8 +43,13 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         ssoModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         validateSAMLEmailsModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
-        mlsModel: MLSModel = MLSModel(listOf(), Status.ENABLED),
-        e2EIModel: E2EIModel = E2EIModel(E2EIConfigModel("url", 10000L), Status.ENABLED)
+        mlsModel: MLSModel = MLSModel(listOf(), SupportedProtocol.PROTEUS, setOf(SupportedProtocol.PROTEUS), Status.ENABLED),
+        e2EIModel: E2EIModel = E2EIModel(E2EIConfigModel("url", 10000L), Status.ENABLED),
+        mlsMigrationModel: MLSMigrationModel? = MLSMigrationModel(
+            Instant.DISTANT_FUTURE,
+            Instant.DISTANT_FUTURE,
+            Status.ENABLED
+        )
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -57,6 +65,7 @@ object FeatureConfigTest {
         ssoModel,
         validateSAMLEmailsModel,
         mlsModel,
-        e2EIModel
+        e2EIModel,
+        mlsMigrationModel
     )
 }

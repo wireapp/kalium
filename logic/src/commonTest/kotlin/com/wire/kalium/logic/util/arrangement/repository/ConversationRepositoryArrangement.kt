@@ -20,17 +20,19 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
+import kotlinx.coroutines.flow.flowOf
 
 internal interface ConversationRepositoryArrangement {
     val conversationRepository: ConversationRepository
@@ -48,9 +50,58 @@ internal interface ConversationRepositoryArrangement {
     fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = any())
     fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = any())
     fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION)
+    fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
+    fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangementImpl
+    fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
+    fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
+    fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
+    fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
+    fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
+    fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
+    fun withFetchConversation(result: Either<CoreFailure, Unit>)
+    fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
+
+    fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>)
+
+    fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
+
+    fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
+
+    fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>)
+
+    fun withGetConversationByIdReturning(result: Conversation?)
+
+    fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Left(coreFailure))
+    }
+
+    fun withFetchConversationIfUnknownSucceeding() {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
+            .whenInvokedWith(any())
+            .thenReturn(Either.Right(Unit))
+    }
+
+    fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationGroupState)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
+
+    fun withUpdateConversationModifiedDate(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateConversationModifiedDate)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
+
     @Mock
     override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
@@ -95,4 +146,110 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .whenInvokedWith(any())
             .thenReturn(conversation)
     }
+
+    override fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::isInformedAboutDegradedMLSVerification)
+            .whenInvokedWith(any())
+            .thenReturn(isInformed)
+    }
+
+    override fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateMlsVerificationStatus)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>) = apply {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationDetailsByMLSGroupId)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::updateProtocolLocally)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
+
+    override fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationsByUserId)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchMlsOneToOneConversation)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withFetchConversation(result: Either<CoreFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::fetchConversation)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(result))
+    }
+
+    override fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationDetailsById)
+            .whenInvokedWith(any())
+            .thenReturn(flowOf(*results))
+    }
+
+    override fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationIds)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getOneOnOneConversationsWithOtherUser)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationProtocolInfo)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetConversationByIdReturning(result: Conversation?) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getConversationById)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
 }

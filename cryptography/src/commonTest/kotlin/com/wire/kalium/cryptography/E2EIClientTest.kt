@@ -23,8 +23,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@IgnoreJS
 @IgnoreIOS
+@IgnoreJS
 class E2EIClientTest : BaseMLSClientTest() {
     data class SampleUser(
         val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String
@@ -153,7 +153,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     companion object {
 
         val ALICE1 = SampleUser(
-            CryptoQualifiedID("t6wRpI8BRSeviBwwiFp5MQ", "wire.com"), CryptoClientId("fb4b58152e20"), "Alice", "Alice_wire"
+            CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "elna.wire.link"), CryptoClientId("fb4b58152e20"), "Mojtaba Chenani", "mojtaba_wire"
         )
 
         val ACME_DIRECTORY_API_RESPONSE = """
@@ -187,7 +187,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                "identifiers":[
                   {
                      "type":"wireapp-id",
-                     "value":"{\"name\":\"mojtaba chenani staging\",\"domain\":\"staging.zinfra.io\",\"client-id\":\"im:wireapp=ZTE1Mjc0MzEyNDQ0NGJhY2E1NWZmNjA2ZTk1MjIyMzM/4eedbfe16d25bbf3@staging.zinfra.io\",\"handle\":\"im:wireapp=mjstaging\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                   }
                ],
                "notBefore":"2023-05-07T12:00:50.1666Z",
@@ -219,7 +219,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "expires": "3000-06-07T10:22:49Z",
                 "identifier": {
                     "type": "wireapp-id",
-                    "value": "{\"name\":\"Mojtaba Chenani\",\"domain\":\"anta.wire.link\",\"client-id\":\"im:wireapp=ZTk5ZjQ1NGNmNjdiNDQwMjhhNGUwYWVjZmNjZjBmMDU/89f1c4056c99edcb@anta.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                 },
                 "status": "pending",
                 "wildcard": false
@@ -259,7 +259,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "identifiers": [
                     {
                         "type": "wireapp-id",
-                        "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                     }
                 ],
                 "authorizations": [
@@ -277,7 +277,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                 "identifiers": [
                     {
                         "type": "wireapp-id",
-                        "value": "{\"name\":\"Smith, Alice M (QA)\",\"domain\":\"example.com\",\"client-id\":\"impp:wireapp=NjJiYTRjMTIyODJjNDY5YmE5NGZmMjhhNjFkODA0Njk/d2ba2c1a57588ee4@example.com\",\"handle\":\"impp:wireapp=alice.smith.qa@example.com\"}"
+                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
                     }
                 ],
                 "authorizations": [

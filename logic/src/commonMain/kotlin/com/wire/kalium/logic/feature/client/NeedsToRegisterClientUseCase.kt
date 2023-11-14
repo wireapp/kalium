@@ -20,9 +20,9 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.ProteusClientProvider
-import com.wire.kalium.logic.feature.auth.AccountInfo
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -32,7 +32,7 @@ interface NeedsToRegisterClientUseCase {
     suspend operator fun invoke(): Boolean
 }
 
-class NeedsToRegisterClientUseCaseImpl(
+internal class NeedsToRegisterClientUseCaseImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val sessionRepository: SessionRepository,
     private val proteusClientProvider: ProteusClientProvider,

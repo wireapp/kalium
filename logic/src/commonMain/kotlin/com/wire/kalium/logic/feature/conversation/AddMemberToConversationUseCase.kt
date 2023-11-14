@@ -36,12 +36,12 @@ interface AddMemberToConversationUseCase {
     suspend operator fun invoke(conversationId: ConversationId, userIdList: List<UserId>): Result
 
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(val cause: CoreFailure) : Result
     }
 }
 
-class AddMemberToConversationUseCaseImpl(
+internal class AddMemberToConversationUseCaseImpl(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : AddMemberToConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>): AddMemberToConversationUseCase.Result {

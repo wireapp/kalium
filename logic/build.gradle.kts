@@ -96,9 +96,14 @@ kotlin {
             dependencies {
                 implementation(libs.jna)
                 implementation(libs.coreCryptoJvm)
+                implementation(libs.bouncy.castle)
             }
         }
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.konsist)
+            }
+        }
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {

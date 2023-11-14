@@ -40,7 +40,8 @@ import java.io.File
 actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
-    userAgent: String
+    userAgent: String,
+    useInMemoryStorage: Boolean = false,
 ) : CoreLogicCommon(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
@@ -64,7 +65,7 @@ actual class CoreLogic(
 
     override val globalCallManager: GlobalCallManager = GlobalCallManager(PlatformContext())
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
-    override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
+    override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
@@ -75,7 +76,8 @@ actual class CoreLogic(
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
-            userAgent
+            userAgent,
+            useInMemoryStorage
         )
     }
 }

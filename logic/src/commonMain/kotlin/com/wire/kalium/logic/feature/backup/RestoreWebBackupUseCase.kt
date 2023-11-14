@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
 package com.wire.kalium.logic.feature.backup
 
@@ -63,12 +64,12 @@ interface RestoreWebBackupUseCase {
 @Suppress("TooManyFunctions", "LongParameterList", "NestedBlockDepth")
 internal class RestoreWebBackupUseCaseImpl(
     private val kaliumFileSystem: KaliumFileSystem,
-    private val userId: UserId,
+    private val selfUserId: UserId,
     private val persistMigratedMessages: PersistMigratedMessagesUseCase,
     private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
     private val migrationDAO: MigrationDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper()
+    private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId)
 ) : RestoreWebBackupUseCase {
 
     override suspend operator fun invoke(backupRootPath: Path, metadata: BackupMetadata): RestoreBackupResult =
@@ -100,7 +101,7 @@ internal class RestoreWebBackupUseCaseImpl(
                     while (iterator.hasNext()) {
                         try {
                             val webConversation = iterator.next()
-                            val migratedConversation = webConversation.toConversation(userId)
+                            val migratedConversation = webConversation.toConversation(selfUserId)
                             if (migratedConversation != null) {
                                 migratedConversations.add(migratedConversation)
                             }
@@ -128,7 +129,7 @@ internal class RestoreWebBackupUseCaseImpl(
                     while (iterator.hasNext()) {
                         try {
                             val webContent = iterator.next()
-                            val migratedMessage = webContent.toMigratedMessage(userId.domain)
+                            val migratedMessage = webContent.toMigratedMessage(selfUserId.domain)
                             if (migratedMessage != null) {
                                 migratedMessagesBatch.add(migratedMessage)
                             }

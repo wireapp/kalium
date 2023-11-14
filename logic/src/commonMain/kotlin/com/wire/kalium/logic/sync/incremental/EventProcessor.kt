@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
@@ -40,6 +41,12 @@ import com.wire.kalium.util.serialization.toJsonElement
  * @see [Event]
  */
 internal interface EventProcessor {
+
+    /**
+     * When enabled events will be consumed but no event processing will occur.
+     */
+    var disableEventProcessing: Boolean
+
     /**
      * Process the [event], and persist the last processed event ID if the event
      * is not transient.
@@ -66,34 +73,48 @@ internal class EventProcessorImpl(
         kaliumLogger.withFeatureId(EVENT_RECEIVER)
     }
 
-    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> = when (event) {
-        is Event.Conversation -> conversationEventReceiver.onEvent(event)
-        is Event.User -> userEventReceiver.onEvent(event)
-        is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
-        is Event.Unknown -> {
-            kaliumLogger
-                .logEventProcessing(
-                    EventLoggingStatus.SKIPPED,
-                    event
-                )
-            // Skipping event = success
-            Either.Right(Unit)
-        }
+    override var disableEventProcessing: Boolean = false
 
-        is Event.Team -> teamEventReceiver.onEvent(event)
-        is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
-        is Event.Federation -> federationEventReceiver.onEvent(event)
-    }.onSuccess {
-        val logMap = mapOf<String, Any>(
-            "event" to event.toLogMap()
-        )
-        if (event.shouldUpdateLastProcessedEventId()) {
-            eventRepository.updateLastProcessedEventId(event.id)
-            logger.i("Updated lastProcessedEventId: ${logMap.toJsonElement()}")
+    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> =
+        if (disableEventProcessing) {
+            logger.w("Skipping processing of $event due to debug option")
+            Either.Right(Unit)
         } else {
-            logger.i("Skipping update of lastProcessedEventId: ${logMap.toJsonElement()}")
+            when (event) {
+                is Event.Conversation -> conversationEventReceiver.onEvent(event)
+                is Event.User -> userEventReceiver.onEvent(event)
+                is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
+                is Event.Unknown -> {
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.SKIPPED,
+                            event
+                        )
+                    // Skipping event = success
+                    Either.Right(Unit)
+                }
+
+                is Event.Team -> teamEventReceiver.onEvent(event)
+                is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
+                is Event.Federation -> federationEventReceiver.onEvent(event)
+            }
+        }.flatMapLeft {
+            if (it is CoreFailure.FeatureNotImplemented) {
+                Either.Right(Unit)
+            } else {
+                Either.Left(it)
+            }
+        }.onSuccess {
+            val logMap = mapOf<String, Any>(
+                "event" to event.toLogMap()
+            )
+            if (event.shouldUpdateLastProcessedEventId()) {
+                eventRepository.updateLastProcessedEventId(event.id)
+                logger.i("Updated lastProcessedEventId: ${logMap.toJsonElement()}")
+            } else {
+                logger.i("Skipping update of lastProcessedEventId: ${logMap.toJsonElement()}")
+            }
         }
-    }
 
     private fun Event.shouldUpdateLastProcessedEventId(): Boolean = !transient
 }

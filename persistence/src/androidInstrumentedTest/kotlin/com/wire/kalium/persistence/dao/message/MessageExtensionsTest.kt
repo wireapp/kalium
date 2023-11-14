@@ -123,7 +123,8 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
         conversationId = CONVERSATION_ID,
         visibilities = MessageEntity.Visibility.values().toList(),
-        pagingConfig = PagingConfig(PAGE_SIZE)
+        pagingConfig = PagingConfig(PAGE_SIZE),
+        startingOffset = 0
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.refresh() = load(
@@ -136,7 +137,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
     private suspend fun populateMessageData() {
         val userId = UserIDEntity("user", "domain")
-        userDAO.insertUser(newUserEntity(qualifiedID = userId))
+        userDAO.upsertUser(newUserEntity(qualifiedID = userId))
         conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
         val messages = buildList<MessageEntity> {
             repeat(MESSAGE_COUNT) {

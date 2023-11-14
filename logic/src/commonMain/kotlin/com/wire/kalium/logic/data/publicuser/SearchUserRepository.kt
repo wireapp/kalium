@@ -26,20 +26,22 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
+import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
@@ -82,7 +84,7 @@ data class SearchUsersOptions(
 }
 
 sealed class ConversationMemberExcludedOptions {
-    object None : ConversationMemberExcludedOptions()
+    data object None : ConversationMemberExcludedOptions()
     data class ConversationExcluded(val conversationId: QualifiedID) : ConversationMemberExcludedOptions()
 }
 
@@ -91,10 +93,10 @@ internal class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
     private val metadataDAO: MetadataDAO,
     private val userDetailsApi: UserDetailsApi,
+    private val teamsApi: TeamsApi,
     private val userSearchAPiWrapper: UserSearchApiWrapper,
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
+    private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
 ) : SearchUserRepository {
 
     override suspend fun searchKnownUsersByNameOrHandleOrEmail(
@@ -104,13 +106,13 @@ internal class SearchUserRepositoryImpl(
         handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
-                userDAO.getUsersNotInConversationByNameOrHandleOrEmail(
+                userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(
                     conversationId = conversationId.toDao(),
                     searchQuery = searchQuery
                 )
             },
             default = {
-                userDAO.getUserByNameOrHandleOrEmailAndConnectionStates(
+                userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
                     searchQuery = searchQuery,
                     connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )
@@ -124,13 +126,13 @@ internal class SearchUserRepositoryImpl(
         handleSearchUsersOptions(
             searchUsersOptions,
             excluded = { conversationId ->
-                userDAO.getUsersNotInConversationByHandle(
+                userDAO.getUsersDetailsNotInConversationByHandle(
                     conversationId = conversationId.toDao(),
                     handle = handle
                 )
             },
             default = {
-                userDAO.getUserByHandleAndConnectionStates(
+                userDAO.getUserDetailsByHandleAndConnectionStates(
                     handle = handle,
                     connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
                 )
@@ -150,28 +152,50 @@ internal class SearchUserRepositoryImpl(
             searchUsersOptions
         ).flatMap {
             val qualifiedIdList = it.documents.map { it.qualifiedID }
-            val response =
+            val usersResponse =
                 if (qualifiedIdList.isEmpty()) Either.Right(listOf())
                 else wrapApiRequest {
                     userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(qualifiedIdList))
                 }.map { listUsersDTO -> listUsersDTO.usersFound }
-            response.map { userProfileDTOList ->
-                val otherUserList = if (userProfileDTOList.isEmpty()) emptyList() else {
-                    val selfUser = getSelfUser()
-                    userProfileDTOList.map { userProfileDTO ->
-                        publicUserMapper.fromUserProfileDtoToOtherUser(
-                            userDetailResponse = userProfileDTO,
-                            userType = userTypeMapper.fromTeamAndDomain(
-                                otherUserDomain = userProfileDTO.id.domain,
-                                selfUserTeamId = selfUser.teamId?.value,
-                                otherUserTeamId = userProfileDTO.teamId,
-                                selfUserDomain = selfUser.id.domain,
-                                isService = userProfileDTO.service != null,
+
+            usersResponse.flatMap { userProfileDTOList ->
+                if (userProfileDTOList.isEmpty())
+                    return Either.Right(UserSearchResult(emptyList()))
+
+                val selfUser = getSelfUser()
+                val (teamMembers, otherUsers) = userProfileDTOList
+                    .partition { it.isTeamMember(selfUser.teamId?.value, selfUser.id.domain) }
+
+                val teamMembersResponse =
+                    if (selfUser.teamId == null || teamMembers.isEmpty()) Either.Right(emptyMap())
+                    else wrapApiRequest {
+                        teamsApi.getTeamMembersByIds(selfUser.teamId.value, TeamsApi.TeamMemberIdList(teamMembers.map { it.id.value }))
+                    }.map { teamMemberList -> teamMemberList.members.associateBy { it.nonQualifiedUserId } }
+
+                teamMembersResponse.map { teamMemberMap ->
+                    // We need to store all found team members locally and not return them as they will be "known" users from now on.
+                    teamMembers.map { userProfileDTO ->
+                        userMapper.fromUserProfileDtoToUserEntity(
+                            userProfile = userProfileDTO,
+                            connectionState = ConnectionEntity.State.ACCEPTED,
+                            userTypeEntity = userEntityTypeMapper.teamRoleCodeToUserType(
+                                permissionCode = teamMemberMap[userProfileDTO.id.value]?.permissions?.own,
+                                isService = userProfileDTO.service != null
                             )
                         )
+                    }.let {
+                        if (it.isNotEmpty()) {
+                            userDAO.upsertUsers(it)
+                            userDAO.upsertConnectionStatuses(it.associate { it.id to it.connectionStatus })
+                        }
                     }
+
+                    UserSearchResult(
+                        otherUsers.map { userProfileDTO ->
+                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
+                        }
+                    )
                 }
-                UserSearchResult(otherUserList)
             }
         }
 
@@ -185,16 +209,16 @@ internal class SearchUserRepositoryImpl(
             .flatMapMerge { encodedValue ->
                 val selfUserID: QualifiedIDEntity = Json.decodeFromString(string = encodedValue)
 
-                userDAO.getUserByQualifiedID(selfUserID)
+                userDAO.observeUserDetailsByQualifiedID(selfUserID)
                     .filterNotNull()
-                    .map(userMapper::fromUserEntityToSelfUser)
+                    .map(userMapper::fromUserDetailsEntityToSelfUser)
             }.firstOrNull() ?: throw IllegalStateException()
     }
 
     private suspend fun handleSearchUsersOptions(
         localSearchUserOptions: SearchUsersOptions,
-        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserEntity>>,
-        default: suspend () -> Flow<List<UserEntity>>
+        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserDetailsEntity>>,
+        default: suspend () -> Flow<List<UserDetailsEntity>>
     ): Flow<UserSearchResult> {
         val listFlow = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
             ConversationMemberExcludedOptions.None -> default()
@@ -202,7 +226,7 @@ internal class SearchUserRepositoryImpl(
         }
 
         return listFlow.map {
-            UserSearchResult(it.map(publicUserMapper::fromUserEntityToOtherUser))
+            UserSearchResult(it.map(userMapper::fromUserDetailsEntityToOtherUser))
         }
     }
 

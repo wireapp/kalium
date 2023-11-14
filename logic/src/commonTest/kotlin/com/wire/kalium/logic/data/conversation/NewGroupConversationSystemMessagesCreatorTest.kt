@@ -18,12 +18,14 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -342,12 +344,32 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenAGroupConversation_whenPersistingAndValid_ThenShouldCreateAStartedUnverifiedSystemMessage() = runTest {
+        val (arrangement, sysMessageCreator) = Arrangement()
+            .withPersistMessageSuccess()
+            .arrange()
+
+        val result = sysMessageCreator.conversationStartedUnverifiedWarning(
+            TestConversation.ENTITY.copy(type = ConversationEntity.Type.GROUP).id.toModel()
+        )
+
+        result.shouldSucceed()
+
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching {
+                (it.content is MessageContent.System && it.content is MessageContent.ConversationStartedUnverifiedWarning)
+            })
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val isSelfATeamMember = mock(IsSelfATeamMemberUseCase::class)
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
@@ -366,16 +388,15 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .then { Either.Right(Unit) }
         }
 
-        fun withIsASelfTeamMember(isMember: Boolean = true) = apply {
-            given(isSelfATeamMember)
-                .suspendFunction(isSelfATeamMember::invoke)
-                .whenInvoked()
-                .then { isMember }
+        suspend fun withIsASelfTeamMember(isMember: Boolean = true) = apply {
+            given(selfTeamIdProvider)
+                .coroutine { invoke() }
+                .then { if (isMember) Either.Right(TestTeam.TEAM_ID) else Either.Right(null) }
         }
 
         fun arrange() = this to NewGroupConversationSystemMessagesCreatorImpl(
             persistMessage,
-            isSelfATeamMember,
+            selfTeamIdProvider,
             qualifiedIdMapper,
             TestUser.SELF.id,
         )

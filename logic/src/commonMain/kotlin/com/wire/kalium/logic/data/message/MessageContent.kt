@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
@@ -135,9 +136,9 @@ sealed class MessageContent {
             val assetMimeType: String
         ) : Content
 
-        object Deleted : Content
+        data object Deleted : Content
 
-        object Invalid : Content
+        data object Invalid : Content
     }
 
     data class Asset(val value: AssetContent) : Regular()
@@ -244,7 +245,7 @@ sealed class MessageContent {
 
     data class TeamMemberRemoved(val userName: String) : System()
 
-    object MissedCall : System()
+    data object MissedCall : System()
 
     data class Reaction(
         val messageId: String,
@@ -273,8 +274,12 @@ sealed class MessageContent {
         val messageTimer: Long?
     ) : System()
 
+    data class ConversationProtocolChanged(
+        val protocol: Conversation.Protocol
+    ) : System()
+
     // we can add other types to be processed, but signaling ones shouldn't be persisted
-    object Ignored : Signaling() // messages that aren't processed in any way
+    data object Ignored : Signaling() // messages that aren't processed in any way
 
     data class FailedDecryption(
         val encodedData: ByteArray? = null,
@@ -283,16 +288,21 @@ sealed class MessageContent {
         val clientId: ClientId? = null
     ) : Regular()
 
-    object MLSWrongEpochWarning : System()
+    data object MLSWrongEpochWarning : System()
 
-    object ClientAction : Signaling()
+    data object ClientAction : Signaling()
 
-    object CryptoSessionReset : System()
+    data object CryptoSessionReset : System()
 
-    object HistoryLost : System()
-    object ConversationCreated : System()
-    object ConversationDegradedMLS : System()
-    object ConversationDegradedProteus : System()
+    data object HistoryLostProtocolChanged : System()
+
+    data object HistoryLost : System()
+    data object ConversationCreated : System()
+    data object ConversationStartedUnverifiedWarning : System()
+    data object ConversationDegradedMLS : System()
+    data object ConversationVerifiedMLS : System()
+    data object ConversationDegradedProteus : System()
+    data object ConversationVerifiedProteus : System()
     sealed class FederationStopped : System() {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
@@ -326,6 +336,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationRenamed -> "ConversationRenamed"
     is MessageContent.CryptoSessionReset -> "CryptoSessionReset"
     is MessageContent.HistoryLost -> "HistoryLost"
+    is MessageContent.HistoryLostProtocolChanged -> "HistoryLostProtocolChanged"
     is MessageContent.MemberChange.Added -> "MemberChange.Added"
     is MessageContent.MemberChange.Removed -> "MemberChange.Removed"
     is MessageContent.MissedCall -> "MissedCall"
@@ -343,7 +354,11 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
     is MessageContent.FederationStopped.ConnectionRemoved -> "Federation.ConnectionRemoved"
     is MessageContent.FederationStopped.Removed -> "Federation.Removed"
+    is MessageContent.ConversationProtocolChanged -> "ConversationProtocolChanged"
     is MessageContent.Unknown -> "Unknown"
+    MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
+    MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
+    is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
     null -> "null"
 }
 
@@ -407,8 +422,15 @@ sealed interface MessagePreviewContent {
         val otherUserIdList: List<UserId>
     ) : MessagePreviewContent
 
-    object CryptoSessionReset : MessagePreviewContent
+    data object CryptoSessionReset : MessagePreviewContent
 
-    object Unknown : MessagePreviewContent
+    data object Unknown : MessagePreviewContent
+
+    sealed class VerificationChanged : MessagePreviewContent {
+        data object VerifiedMls : VerificationChanged()
+        data object VerifiedProteus : VerificationChanged()
+        data object DegradedMls : VerificationChanged()
+        data object DegradedProteus : VerificationChanged()
+    }
 
 }

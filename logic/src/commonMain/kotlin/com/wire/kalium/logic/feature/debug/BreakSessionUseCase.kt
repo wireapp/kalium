@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.ProteusClientProvider
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
@@ -75,6 +75,6 @@ internal class BreakSessionUseCaseImpl internal constructor(
 }
 
 sealed class BreakSessionResult {
-    object Success : BreakSessionResult()
+    data object Success : BreakSessionResult()
     data class Failure(val coreFailure: CoreFailure) : BreakSessionResult()
 }

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
@@ -50,7 +51,7 @@ class UploadUserAvatarUseCaseTest {
 
     @Test
     fun givenValidParams_whenUploadingUserAvatar_thenShouldReturnsASuccessResult() = runTest {
-        val expected = UploadedAssetId("some_key")
+        val expected = UploadedAssetId("some_key", "some_domain")
         val avatarImage = "An Avatar Image (:".encodeToByteArray()
         val avatarPath = "some-image-asset".toPath()
         val (arrangement, uploadUserAvatar) = Arrangement()
@@ -61,7 +62,7 @@ class UploadUserAvatarUseCaseTest {
         val actual = uploadUserAvatar(avatarPath, avatarImage.size.toLong())
 
         assertEquals(UploadAvatarResult.Success::class, actual::class)
-        assertEquals("value2", (actual as UploadAvatarResult.Success).userAssetId.value)
+        assertEquals(expected.key, (actual as UploadAvatarResult.Success).userAssetId.value)
 
         with(arrangement) {
             verify(assetRepository)
@@ -129,7 +130,9 @@ class UploadUserAvatarUseCaseTest {
             ConnectionState.ACCEPTED,
             UserAssetId("value1", "domain"),
             UserAssetId("value2", "domain"),
-            UserAvailabilityStatus.NONE
+            UserAvailabilityStatus.NONE,
+            null,
+            setOf(SupportedProtocol.PROTEUS)
         )
 
         fun withStoredData(data: ByteArray, dataNamePath: Path): Arrangement {
@@ -149,7 +152,7 @@ class UploadUserAvatarUseCaseTest {
             given(userRepository)
                 .suspendFunction(userRepository::updateSelfUser)
                 .whenInvokedWith(eq(null), eq(null), eq(expectedResponse.key))
-                .thenReturn(Either.Right(dummySelfUser))
+                .thenReturn(Either.Right(Unit))
             return this
         }
 

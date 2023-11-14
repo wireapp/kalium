@@ -50,9 +50,9 @@ class DatabaseExporterTest : BaseDatabaseTest() {
 
         runTest {
             with(localDB.userDAO) {
-                insertUser(SELF_USER)
-                insertUser(OTHER_USER)
-                insertUser(OTHER_USER_2)
+                upsertUser(SELF_USER)
+                upsertUser(OTHER_USER)
+                upsertUser(OTHER_USER_2)
             }
 
             with(localDB.conversationDAO) {

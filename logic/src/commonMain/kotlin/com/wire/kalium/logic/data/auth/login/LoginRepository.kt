@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.AuthTokens
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -36,14 +36,14 @@ internal interface LoginRepository {
         label: String?,
         shouldPersistClient: Boolean,
         secondFactorVerificationCode: String? = null,
-    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
+    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>>
 
     suspend fun loginWithHandle(
         handle: String,
         password: String,
         label: String?,
         shouldPersistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>>
+    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>>
 }
 
 internal class LoginRepositoryImpl internal constructor(
@@ -58,7 +58,7 @@ internal class LoginRepositoryImpl internal constructor(
         label: String?,
         shouldPersistClient: Boolean,
         secondFactorVerificationCode: String?,
-    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
+    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> =
         login(
             LoginApi.LoginParam.LoginWithEmail(email, password, label, secondFactorVerificationCode),
             shouldPersistClient
@@ -69,7 +69,7 @@ internal class LoginRepositoryImpl internal constructor(
         password: String,
         label: String?,
         shouldPersistClient: Boolean,
-    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> =
+    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> =
         login(
             LoginApi.LoginParam.LoginWithHandle(handle, password, label),
             shouldPersistClient
@@ -78,7 +78,7 @@ internal class LoginRepositoryImpl internal constructor(
     private suspend fun login(
         loginParam: LoginApi.LoginParam,
         persistClient: Boolean
-    ): Either<NetworkFailure, Pair<AuthTokens, SsoId?>> = wrapApiRequest {
+    ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> = wrapApiRequest {
         loginApi.login(param = loginParam, persist = persistClient)
     }.map {
         Pair(sessionMapper.fromSessionDTO(it.first), idMapper.toSsoId(it.second.ssoID))

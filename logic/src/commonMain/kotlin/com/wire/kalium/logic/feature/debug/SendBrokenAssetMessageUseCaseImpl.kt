@@ -34,7 +34,7 @@ import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -213,8 +213,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
 }
 
 sealed class SendBrokenAssetMessageResult {
-    object Success : SendBrokenAssetMessageResult()
-    class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
+    data object Success : SendBrokenAssetMessageResult()
+    data class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
 }
 
 private data class AssetMessageMetadata(

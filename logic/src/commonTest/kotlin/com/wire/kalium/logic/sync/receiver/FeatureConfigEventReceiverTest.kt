@@ -24,12 +24,22 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
-import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSelfDeleteTimer
-import com.wire.kalium.logic.feature.selfDeletingMessages.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -48,53 +58,6 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 class FeatureConfigEventReceiverTest {
-
-    @Test
-    fun givenMLSUpdatedEventGrantingAccessForSelfUser_whenProcessingEvent_ThenSetMLSEnabledToTrue() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSettingMLSEnabledSuccessful()
-            .arrange()
-
-        featureConfigEventReceiver.onEvent(
-            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), Status.ENABLED))
-        )
-
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setMLSEnabled)
-            .with(eq(true))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenMLSUpdatedEventRemovingAccessForSelfUser_whenProcessingEvent_ThenSetMLSEnabledToFalse() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSettingMLSEnabledSuccessful()
-            .arrange()
-
-        featureConfigEventReceiver.onEvent(arrangement.newMLSUpdatedEvent(MLSModel(emptyList(), Status.ENABLED)))
-
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setMLSEnabled)
-            .with(eq(false))
-            .wasInvoked(once)
-    }
-
-    @Suppress("MaxLineLength")
-    @Test
-    fun givenMLSUpdatedEventGrantingAccessForSelfUserButStatusIsDisabled_whenProcessingEvent_ThenSetMLSEnabledToFalse() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSettingMLSEnabledSuccessful()
-            .arrange()
-
-        featureConfigEventReceiver.onEvent(
-            arrangement.newMLSUpdatedEvent(MLSModel(listOf(TestUser.SELF.id.toPlainID()), Status.DISABLED))
-        )
-
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setMLSEnabled)
-            .with(eq(false))
-            .wasInvoked(once)
-    }
 
     @Test
     fun givenFileSharingUpdatedEventWithStatusEnabled_whenProcessingEvent_ThenSetFileSharingStatusToTrue() = runTest {
@@ -270,7 +233,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer !is TeamSelfDeleteTimer.Disabled
+                    it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer !is TeamSelfDeleteTimer.Disabled
                 })
                 .wasInvoked(once)
         }
@@ -291,7 +254,7 @@ class FeatureConfigEventReceiverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
                 .with(matching<TeamSettingsSelfDeletionStatus> {
-                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
+                    it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
                 })
                 .wasInvoked(once)
         }
@@ -323,19 +286,21 @@ class FeatureConfigEventReceiverTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
+        @Mock
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
+
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {
             FeatureConfigEventReceiverImpl(
-                userConfigRepository,
-                kaliumConfigs,
-                TestUser.SELF.id
+                GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
+                FileSharingConfigHandler(userConfigRepository),
+                MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, TestUser.SELF.id),
+                MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
+                ClassifiedDomainsConfigHandler(userConfigRepository),
+                ConferenceCallingConfigHandler(userConfigRepository),
+                SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
+                E2EIConfigHandler(userConfigRepository),
+                AppLockConfigHandler(userConfigRepository)
             )
-        }
-
-        fun withSettingMLSEnabledSuccessful() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::setMLSEnabled)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
         }
 
         fun withSettingFileSharingEnabledSuccessful() = apply {
@@ -389,21 +354,17 @@ class FeatureConfigEventReceiverTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun newMLSUpdatedEvent(
-            model: MLSModel
-        ) = Event.FeatureConfig.MLSUpdated("eventId", false, model)
-
         fun newFileSharingUpdatedEvent(
             model: ConfigsStatusModel
-        ) = Event.FeatureConfig.FileSharingUpdated("eventId", false, model)
+        ) = Event.FeatureConfig.FileSharingUpdated("eventId", false, false, model)
 
         fun newConferenceCallingUpdatedEvent(
             model: ConferenceCallingModel
-        ) = Event.FeatureConfig.ConferenceCallingUpdated("eventId", false, model)
+        ) = Event.FeatureConfig.ConferenceCallingUpdated("eventId", false, false, model)
 
         fun newSelfDeletingMessagesUpdatedEvent(
             model: SelfDeletingMessagesModel
-        ) = Event.FeatureConfig.SelfDeletingMessagesConfig("eventId", false, model)
+        ) = Event.FeatureConfig.SelfDeletingMessagesConfig("eventId", false, false, model)
 
         fun arrange() = this to featureConfigEventReceiver
     }

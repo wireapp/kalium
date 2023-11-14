@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.conversation
 
@@ -47,14 +48,14 @@ internal class RenameConversationUseCaseImpl(
     val persistMessage: PersistMessageUseCase,
     private val renamedConversationEventHandler: RenamedConversationEventHandler,
     val selfUserId: UserId,
-    private val eventMapper: EventMapper = MapperProvider.eventMapper()
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId)
 ) : RenameConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, conversationName: String): RenamingResult {
         return conversationRepository.changeConversationName(conversationId, conversationName)
             .onSuccess { response ->
                 if (response is ConversationRenameResponse.Changed)
                     renamedConversationEventHandler.handle(
-                        eventMapper.conversationRenamed(LocalId.generate(), response.event, true)
+                        eventMapper.conversationRenamed(LocalId.generate(), response.event, true, false)
                     )
             }
             .fold({
@@ -66,6 +67,6 @@ internal class RenameConversationUseCaseImpl(
 }
 
 sealed class RenamingResult {
-    object Success : RenamingResult()
+    data object Success : RenamingResult()
     data class Failure(val coreFailure: CoreFailure) : RenamingResult()
 }

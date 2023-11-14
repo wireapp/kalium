@@ -18,23 +18,22 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.*
-import com.wire.kalium.cryptography.utils.generateRandomAES256Key
-import com.wire.kalium.logic.data.client.E2EClientProvider
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_CHALLENGE
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_DIRECTORIES
-import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_DIRECTORIES_RESPONSE
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ACCESS_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ID_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_NONCE
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_URL
-import com.wire.kalium.logic.data.featureConfig.*
-import com.wire.kalium.logic.feature.CurrentClientIdProvider
+import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.TEST_FAILURE
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.*
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
@@ -42,14 +41,10 @@ import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.util.serialization.toJsonElement
-import io.ktor.util.*
 import io.mockative.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 class E2EIRepositoryTest {
     @Test
@@ -612,6 +607,67 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenCertificate_whenCallingRotateKeysAndMigrateConversation_thenItSuccess() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withCurrentClientIdProviderSuccessful()
+            .withGetE2EIClientSuccessful()
+            .withRotateKeysAndMigrateConversationsReturns(Either.Right(Unit))
+            .arrange()
+
+        // When
+        val result = e2eiRepository.rotateKeysAndMigrateConversations("")
+
+        // Then
+        result.shouldSucceed()
+
+        verify(arrangement.e2eiClientProvider)
+            .suspendFunction(arrangement.e2eiClientProvider::getE2EIClient)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
+            .wasInvoked(once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::rotateKeysAndMigrateConversations)
+            .with(anything(), anything(), anything())
+            .wasInvoked(once)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenCertificate_whenCallingRotateKeysAndMigrateConversationFails_thenReturnFailure() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withCurrentClientIdProviderSuccessful()
+            .withGetE2EIClientSuccessful()
+            .withRotateKeysAndMigrateConversationsReturns(TEST_FAILURE)
+            .arrange()
+
+        // When
+        val result = e2eiRepository.rotateKeysAndMigrateConversations("")
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.e2eiClientProvider)
+            .suspendFunction(arrangement.e2eiClientProvider::getE2EIClient)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(arrangement.currentClientIdProvider)
+            .suspendFunction(arrangement.currentClientIdProvider::invoke)
+            .wasInvoked(once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::rotateKeysAndMigrateConversations)
+            .with(anything(), anything(), anything())
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         fun withGetE2EIClientSuccessful() = apply {
@@ -669,6 +725,21 @@ class E2EIRepositoryTest {
                 .whenInvokedWith(anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
+
+        fun withRotateKeysAndMigrateConversationsReturns(result: Either<CoreFailure, Unit>) = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::rotateKeysAndMigrateConversations)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(result)
+        }
+
+        fun withCurrentClientIdProviderSuccessful() = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(TestClient.CLIENT_ID))
+        }
+
 
         fun withFinalizeResponseSuccessful() = apply {
             given(e2eiClient)
@@ -768,7 +839,7 @@ class E2EIRepositoryTest {
         val acmeApi: ACMEApi = mock(classOf<ACMEApi>())
 
         @Mock
-        val e2eiClientProvider: E2EClientProvider = mock(classOf<E2EClientProvider>())
+        val e2eiClientProvider: E2EIClientProvider = mock(classOf<E2EIClientProvider>())
 
         @Mock
         val e2eiClient = mock(classOf<E2EIClient>())
@@ -777,15 +848,26 @@ class E2EIRepositoryTest {
         val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
 
         @Mock
+        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+
+        @Mock
         val mlsClient = mock(classOf<MLSClient>())
 
         @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         fun arrange() =
-            this to E2EIRepositoryImpl(e2eiApi, acmeApi, e2eiClientProvider, mlsClientProvider, currentClientIdProvider)
+            this to E2EIRepositoryImpl(
+                e2eiApi,
+                acmeApi,
+                e2eiClientProvider,
+                mlsClientProvider,
+                currentClientIdProvider,
+                mlsConversationRepository
+            )
 
         companion object {
+            val TEST_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()
             val RANDOM_NONCE = "xxxxx"

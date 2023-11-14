@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -62,6 +62,7 @@ class NewConversationEventHandlerTest {
             id = "eventId",
             conversationId = TestConversation.ID,
             transient = false,
+            live = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
             senderUserId = TestUser.SELF.id
@@ -80,6 +81,7 @@ class NewConversationEventHandlerTest {
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
@@ -103,7 +105,8 @@ class NewConversationEventHandlerTest {
         val event = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
-            false,
+            transient = false,
+            live = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE,
             senderUserId = TestUser.SELF.id
@@ -122,6 +125,7 @@ class NewConversationEventHandlerTest {
             .withFetchUsersIfUnknownIds(members)
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
             .withConversationResolvedMembersSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
@@ -142,6 +146,7 @@ class NewConversationEventHandlerTest {
             id = "eventId",
             conversationId = TestConversation.ID,
             transient = false,
+            live = false,
             timestampIso = "timestamp",
             conversation = TestConversation.CONVERSATION_RESPONSE.copy(
                 creator = "creatorId@creatorDomain",
@@ -164,6 +169,7 @@ class NewConversationEventHandlerTest {
             .withSelfUserTeamId(Either.Right(teamId))
             .withConversationStartedSystemMessage()
             .withConversationResolvedMembersSystemMessage()
+            .withConversationUnverifiedWarningSystemMessage()
             .withReadReceiptsSystemMessage()
             .withQualifiedId(creatorQualifiedId)
             .arrange()
@@ -192,6 +198,11 @@ class NewConversationEventHandlerTest {
             )
             .with(eq(event.conversation))
             .wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+            .with(eq(event.conversation.id.toModel()))
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -202,6 +213,7 @@ class NewConversationEventHandlerTest {
                 id = "eventId",
                 conversationId = TestConversation.ID,
                 transient = false,
+                live = false,
                 timestampIso = "timestamp",
                 conversation = TestConversation.CONVERSATION_RESPONSE.copy(
                     creator = "creatorId@creatorDomain",
@@ -307,6 +319,13 @@ class NewConversationEventHandlerTest {
                 .suspendFunction(
                     newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed
                 )
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withConversationUnverifiedWarningSystemMessage() = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

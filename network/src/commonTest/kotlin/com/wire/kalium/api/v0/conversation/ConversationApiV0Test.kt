@@ -27,12 +27,15 @@ import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
 import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.model.conversation.CreateConversationRequestJson
 import com.wire.kalium.model.conversation.MemberUpdateRequestJson
+import com.wire.kalium.model.conversation.SendTypingStatusNotificationRequestJson
 import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
+import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -42,14 +45,17 @@ import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV0
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
+import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -415,6 +421,39 @@ internal class ConversationApiV0Test : ApiTest() {
         assertIs<NetworkResponse.Success<Unit>>(response)
     }
 
+    @Test
+    fun givenTypingNotificationRequest_whenSendingStatus_thenTheRequestShouldBeConfiguredCorrectly() = runTest {
+        // given
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val request = TypingIndicatorStatusDTO(TypingIndicatorStatus.STOPPED)
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            ByteArray(0),
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertPathEqual("${PATH_CONVERSATIONS}/${conversationId.value}/${PATH_TYPING_NOTIFICATION}")
+                assertJsonBodyContent(SendTypingStatusNotificationRequestJson.createValid(TypingIndicatorStatus.STOPPED).rawJson)
+            }
+        )
+        val conversationApi = ConversationApiV0(networkClient)
+
+        // when
+        val response = conversationApi.sendTypingIndicatorNotification(conversationId, request)
+
+        // then
+        assertIs<NetworkResponse.Success<Unit>>(response)
+    }
+
+    @Test
+    fun givenRequest_whenFetchingMlsOneToOneConversation_thenRequestShouldFail() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(responseBody = "", statusCode = HttpStatusCode.OK)
+        val conversationApi = ConversationApiV0(networkClient)
+        val response = conversationApi.fetchMlsOneToOneConversation(UserId("domain", "id"))
+
+        assertFalse(response.isSuccessful())
+    }
+
     private companion object {
         const val PATH_CONVERSATIONS = "/conversations"
         const val PATH_CONVERSATIONS_LIST_V2 = "/conversations/list/v2"
@@ -425,6 +464,7 @@ internal class ConversationApiV0Test : ApiTest() {
         const val PATH_JOIN = "join"
         const val PATH_RECEIPT_MODE = "receipt-mode"
         const val PATH_CODE = "code"
+        const val PATH_TYPING_NOTIFICATION = "typing"
         val CREATE_CONVERSATION_RESPONSE = ConversationResponseJson.v0.rawJson
         val CREATE_CONVERSATION_REQUEST = CreateConversationRequestJson.v0
         val CREATE_CONVERSATION_IDS_REQUEST = ConversationListIdsResponseJson.validRequestIds

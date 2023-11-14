@@ -36,12 +36,12 @@ interface RemoveMemberFromConversationUseCase {
      */
     suspend operator fun invoke(conversationId: ConversationId, userIdToRemove: UserId): Result
     sealed interface Result {
-        object Success : Result
+        data object Success : Result
         data class Failure(val cause: CoreFailure) : Result
     }
 }
 
-class RemoveMemberFromConversationUseCaseImpl(
+internal class RemoveMemberFromConversationUseCaseImpl(
     private val conversationGroupRepository: ConversationGroupRepository
 ) : RemoveMemberFromConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId): RemoveMemberFromConversationUseCase.Result {

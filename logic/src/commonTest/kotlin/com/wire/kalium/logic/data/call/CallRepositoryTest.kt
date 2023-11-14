@@ -45,10 +45,8 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.feature.call.Call
-import com.wire.kalium.logic.feature.call.CallStatus
-import com.wire.kalium.logic.feature.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -1752,7 +1750,7 @@ class CallRepositoryTest {
 
             val mlsProtocolInfo = Conversation.ProtocolInfo.MLS(
                 groupId,
-                Conversation.ProtocolInfo.MLS.GroupState.ESTABLISHED,
+                Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 1UL,
                 Clock.System.now(),
                 Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519

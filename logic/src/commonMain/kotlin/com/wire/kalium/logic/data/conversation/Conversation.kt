@@ -18,6 +18,11 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.conversation.Conversation.Access
+import com.wire.kalium.logic.data.conversation.Conversation.AccessRole
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
+import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
+import com.wire.kalium.logic.data.conversation.Conversation.Type
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PlainId
@@ -70,7 +75,9 @@ data class Conversation(
     val messageTimer: Duration?,
     val userMessageTimer: Duration?,
     val archived: Boolean,
-    val archivedDateTime: Instant?
+    val archivedDateTime: Instant?,
+    val mlsVerificationStatus: VerificationStatus,
+    val proteusVerificationStatus: VerificationStatus
 ) {
 
     companion object {
@@ -175,8 +182,16 @@ data class Conversation(
         CODE;
     }
 
+    enum class Protocol {
+        PROTEUS,
+        MIXED,
+        MLS
+    }
+
     enum class ReceiptMode { DISABLED, ENABLED }
     enum class TypingIndicatorMode { STARTED, STOPPED }
+
+    enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {
@@ -187,7 +202,8 @@ data class Conversation(
         MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
         MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
         MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
-        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7);
+        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7),
+        MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519(61489);
 
         companion object {
             fun fromTag(tag: Int): CipherSuite = values().first { type -> type.tag == tag }
@@ -197,32 +213,48 @@ data class Conversation(
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
-    sealed class ProtocolInfo {
-        object Proteus : ProtocolInfo() {
+    sealed interface ProtocolInfo {
+        data object Proteus : ProtocolInfo {
             override fun name() = "Proteus"
         }
 
         data class MLS(
-            val groupId: GroupID,
-            val groupState: GroupState,
-            val epoch: ULong,
-            val keyingMaterialLastUpdate: Instant,
-            val cipherSuite: CipherSuite
-        ) : ProtocolInfo() {
-            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
-
+            override val groupId: GroupID,
+            override val groupState: MLSCapable.GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: CipherSuite
+        ) : MLSCapable {
             override fun name() = "MLS"
         }
 
-        abstract fun name(): String
-    }
+        data class Mixed(
+            override val groupId: GroupID,
+            override val groupState: MLSCapable.GroupState,
+            override val epoch: ULong,
+            override val keyingMaterialLastUpdate: Instant,
+            override val cipherSuite: CipherSuite
+        ) : MLSCapable {
+            override fun name() = "Mixed"
+        }
 
-    enum class Protocol { PROTEUS, MLS }
+        sealed interface MLSCapable : ProtocolInfo {
+            val groupId: GroupID
+            val groupState: GroupState
+            val epoch: ULong
+            val keyingMaterialLastUpdate: Instant
+            val cipherSuite: CipherSuite
+
+            enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED }
+        }
+
+        fun name(): String
+    }
 
     data class Member(val id: UserId, val role: Role) {
         sealed class Role {
-            object Member : Role()
-            object Admin : Role()
+            data object Member : Role()
+            data object Admin : Role()
             data class Unknown(val name: String) : Role()
 
             override fun toString(): String =
@@ -242,7 +274,6 @@ data class Conversation(
             "role" to "$role"
         )
     }
-
 }
 
 sealed class ConversationDetails(open val conversation: Conversation) {
@@ -300,7 +331,9 @@ sealed class ConversationDetails(open val conversation: Conversation) {
             messageTimer = null,
             userMessageTimer = null,
             archived = false,
-            archivedDateTime = null
+            archivedDateTime = null,
+            mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
         )
     )
 }

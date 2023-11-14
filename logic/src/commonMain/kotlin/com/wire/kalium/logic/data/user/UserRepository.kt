@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.data.user
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -28,35 +30,37 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.publicuser.PublicUserMapper
+import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamMapper
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
-import com.wire.kalium.logic.data.user.type.isFederated
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.feature.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.base.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -66,7 +70,6 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
@@ -79,7 +82,7 @@ import kotlinx.serialization.json.Json
 import kotlin.time.Duration.Companion.minutes
 
 @Suppress("TooManyFunctions")
-internal interface UserRepository {
+interface UserRepository {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
 
     /**
@@ -90,11 +93,12 @@ internal interface UserRepository {
     suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit>
     suspend fun observeSelfUser(): Flow<SelfUser>
     suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>>
-    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, SelfUser>
+    suspend fun updateSelfUser(newName: String? = null, newAccent: Int? = null, newAssetId: String? = null): Either<CoreFailure, Unit>
     suspend fun getSelfUser(): SelfUser?
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
     suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
+    suspend fun getUsersWithOneOnOneConversation(): List<OtherUser>
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
     suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus)
@@ -113,6 +117,7 @@ internal interface UserRepository {
      * when backends stops federating.
      */
     suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit>
+
     // TODO: move to migration repo
     suspend fun insertUsersIfUnknown(users: List<User>): Either<StorageFailure, Unit>
     suspend fun fetchUserInfo(userId: UserId): Either<CoreFailure, Unit>
@@ -126,6 +131,15 @@ internal interface UserRepository {
      * Removes broken user asset to avoid fetching it until next sync.
      */
     suspend fun removeUserBrokenAsset(qualifiedID: QualifiedID): Either<CoreFailure, Unit>
+
+    /**
+     * Gets users summary by their ids.
+     */
+    suspend fun getUsersSummaryByIds(userIds: List<QualifiedID>): Either<StorageFailure, List<UserSummary>>
+
+    suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit>
+
+    suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -135,27 +149,25 @@ internal class UserDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
+    private val teamsApi: TeamsApi,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
-    private val qualifiedIdMapper: QualifiedIdMapper,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
-    private val publicUserMapper: PublicUserMapper = MapperProvider.publicUserMapper(),
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper()
 ) : UserRepository {
 
     /**
-     * In case of federated users, we need to refresh their info every time.
-     * Since the current backend implementation at wire does not emit user events across backends.
+     * Stores the last time a user's details were fetched from remote.
      *
-     * This is an in-memory cache, to help avoid unnecessary requests in a time window.
+     * @see Event.User.Update
+     * @see USER_DETAILS_MAX_AGE
      */
-    private val federatedUsersExpirationCache = ConcurrentMutableMap<UserId, Instant>()
+    private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
         .flatMap { userDTO ->
@@ -165,7 +177,7 @@ internal class UserDataSource internal constructor(
                 updateSelfUserProviderAccountInfo(userDTO)
                     .map { userMapper.fromSelfUserDtoToUserEntity(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
                     .flatMap { userEntity ->
-                        wrapStorageRequest { userDAO.insertUser(userEntity) }
+                        wrapStorageRequest { userDAO.upsertUser(userEntity) }
                             .flatMap {
                                 wrapStorageRequest { metadataDAO.insertValue(Json.encodeToString(userEntity.id), SELF_USER_ID_KEY) }
                             }
@@ -177,24 +189,34 @@ internal class UserDataSource internal constructor(
         sessionRepository.updateSsoIdAndScimInfo(userDTO.id.toModel(), idMapper.toSsoId(userDTO.ssoID), userDTO.managedByDTO)
 
     override suspend fun getKnownUser(userId: UserId): Flow<OtherUser?> =
-        userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
+        userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
-                userEntity?.let { publicUserMapper.fromUserEntityToOtherUser(userEntity) }
+                userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }.onEach { otherUser ->
-                processFederatedUserRefresh(userId, otherUser)
+                if (otherUser != null) {
+                    refreshUserDetailsIfNeeded(userId)
+                }
             }
 
+    override suspend fun getUsersWithOneOnOneConversation(): List<OtherUser> {
+        return userDAO.getUsersWithOneOnOneConversation()
+            .map(userMapper::fromUserEntityToOtherUser)
+    }
+
     /**
-     * Only in case of federated users and if it's expired or not cached, we fetch and refresh the user info.
+     * Only refresh user profiles if it wasn't fetched recently.
+     *
+     * @see userDetailsRefreshInstantCache
+     * @see USER_DETAILS_MAX_AGE
      */
-    private suspend fun processFederatedUserRefresh(userId: UserId, otherUser: OtherUser?) {
-        if (otherUser != null && otherUser.userType.isFederated()
-            && federatedUsersExpirationCache[userId]?.let { DateTimeUtil.currentInstant() > it } != false
-        ) {
+    private suspend fun refreshUserDetailsIfNeeded(userId: UserId) {
+        val now = DateTimeUtil.currentInstant()
+        val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
+        if (!wasFetchedRecently) {
             fetchUserInfo(userId).also {
-                kaliumLogger.d("Federated user, refreshing user info from API after $FEDERATED_USER_TTL")
+                kaliumLogger.d("Federated user, refreshing user info from API after $USER_DETAILS_MAX_AGE")
             }
-            federatedUsersExpirationCache[userId] = DateTimeUtil.currentInstant().plus(FEDERATED_USER_TTL)
+            userDetailsRefreshInstantCache[userId] = now
         }
     }
 
@@ -206,54 +228,105 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
-            .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
-
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> {
-        if (qualifiedUserIdList.isEmpty()) {
-            return Either.Right(Unit)
-        }
-
-        return wrapApiRequest {
-            userDetailsApi.getMultipleUsers(
-                ListUserRequest.qualifiedIds(qualifiedUserIdList.map { userId -> userId.toApi() })
-            )
-        }.flatMap { listUserProfileDTO ->
-            if (listUserProfileDTO.usersFailed.isNotEmpty()) {
-                kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
-                persistIncompleteUsers(listUserProfileDTO.usersFailed)
+            .flatMap { userProfileDTO ->
+                fetchTeamMembersByIds(listOf(userProfileDTO))
+                    .flatMap { persistUsers(listOf(userProfileDTO), it) }
             }
-            persistUsers(listUserProfileDTO.usersFound)
+
+    @Suppress("MagicNumber")
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
+        if (qualifiedUserIdList.isEmpty()) {
+            Either.Right(Unit)
+        } else {
+            qualifiedUserIdList
+                .chunked(BATCH_SIZE)
+                .foldToEitherWhileRight(ListUsersDTO(emptyList(), emptyList())) { chunk, acc ->
+                    wrapApiRequest {
+                        kaliumLogger.d("Fetching ${chunk.size} users")
+                        userDetailsApi.getMultipleUsers(
+                            ListUserRequest.qualifiedIds(chunk.map { userId -> userId.toApi() })
+                        )
+                    }.map {
+                        kaliumLogger.d("Found ${it.usersFound.size} users and ${it.usersFailed.size} failed users")
+                        acc.copy(
+                            usersFound = (acc.usersFound + it.usersFound).distinct(),
+                            usersFailed = (acc.usersFailed + it.usersFailed).distinct(),
+                        )
+                    }
+                }
+                .flatMapLeft { error ->
+                    if (error is NetworkFailure.FederatedBackendFailure.FederationNotEnabled) {
+                        val domains = qualifiedUserIdList
+                            .filterNot { it.domain == selfUserId.domain }
+                            .map { it.domain.obfuscateDomain() }
+                            .toSet()
+                        val domainNames = domains.joinToString(separator = ", ")
+                        kaliumLogger.e("User ids contains different domains when federation is not enabled by backend: $domainNames")
+                        wrapApiRequest {
+                            userDetailsApi.getMultipleUsers(
+                                ListUserRequest.qualifiedIds(qualifiedUserIdList.filter { it.domain == selfUserId.domain }
+                                    .map { userId -> userId.toApi() })
+                            )
+                        }
+                    } else {
+                        Either.Left(error)
+                    }
+                }
+                .flatMap { listUserProfileDTO ->
+                    if (listUserProfileDTO.usersFailed.isNotEmpty()) {
+                        kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
+                        persistIncompleteUsers(listUserProfileDTO.usersFailed)
+                    }
+                    fetchTeamMembersByIds(listUserProfileDTO.usersFound)
+                        .flatMap { persistUsers(listUserProfileDTO.usersFound, it) }
+                }
         }
+
+    private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
+        val selfUserDomain = selfUserId.domain
+        val selfUserTeamId = selfTeamIdProvider().getOrNull()
+        val teamMemberIds = userProfileList.filter { it.isTeamMember(selfUserTeamId?.value, selfUserDomain) }.map { it.id.value }
+        return if (selfUserTeamId == null || teamMemberIds.isEmpty()) Either.Right(emptyList())
+        else teamMemberIds
+            .chunked(BATCH_SIZE)
+            .foldToEitherWhileRight(emptyList()) { chunk, acc ->
+                wrapApiRequest {
+                    kaliumLogger.d("Fetching ${chunk.size} team members")
+                    teamsApi.getTeamMembersByIds(selfUserTeamId.value, TeamsApi.TeamMemberIdList(chunk))
+                }.map {
+                    kaliumLogger.d("Found ${it.members.size} team members")
+                    (acc + it.members).distinct()
+                }
+            }
     }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
-        usersFailed.map { userMapper.fromFailedUserToEntity(it) }.forEach {
-            userDAO.insertUser(it)
-        }
+        userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
     }
 
-    private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
-        val selfUserDomain = selfUserId.domain
+    private suspend fun persistUsers(
+        listUserProfileDTO: List<UserProfileDTO>,
+        listTeamMemberDTO: List<TeamsApi.TeamMemberDTO>,
+    ) = wrapStorageRequest {
+        val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
-            .filter { userProfileDTO -> isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
-        val otherUsers = listUserProfileDTO
-            .filter { userProfileDTO -> !isTeamMember(selfUserTeamId, userProfileDTO, selfUserDomain) }
-        userDAO.upsertTeamMembers(
-            teamMembers.map { userProfileDTO ->
+            .filter { userProfileDTO -> mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
+            .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.ACCEPTED,
-                    userTypeEntity = UserTypeEntity.STANDARD
+                    userTypeEntity =
+                        if (userProfileDTO.service != null) UserTypeEntity.SERVICE
+                        else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
                 )
             }
-        )
-
-        userDAO.upsertUsers(
-            otherUsers.map { userProfileDTO ->
+        val otherUsers = listUserProfileDTO
+            .filter { userProfileDTO -> !mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
+            .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.NOT_CONNECTED,
+                    connectionState = ConnectionEntity.State.NOT_CONNECTED, // this won't be updated, just to avoid a null value
                     userTypeEntity = userTypeEntityMapper.fromTeamAndDomain(
                         otherUserDomain = userProfileDTO.id.domain,
                         selfUserTeamId = selfUserTeamId,
@@ -263,20 +336,18 @@ internal class UserDataSource internal constructor(
                     )
                 )
             }
-        )
+        if (teamMembers.isNotEmpty()) {
+            userDAO.upsertUsers(teamMembers)
+            userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
+        }
+        if (otherUsers.isNotEmpty()) {
+            userDAO.upsertUsers(otherUsers)
+        }
     }
-
-    private fun isTeamMember(
-        selfUserTeamId: String?,
-        userProfileDTO: UserProfileDTO,
-        selfUserDomain: String?
-    ) = (selfUserTeamId != null &&
-            userProfileDTO.teamId == selfUserTeamId &&
-            userProfileDTO.id.domain == selfUserDomain)
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
         val qualifiedIDList = ids.map { it.toDao() }
-        val knownUsers = userDAO.getUsersByQualifiedIDList(ids.map { it.toDao() })
+        val knownUsers = userDAO.getUsersDetailsByQualifiedIDList(ids.map { it.toDao() })
         // TODO we should differentiate users with incomplete data not by checking if name isNullOrBlank
         // TODO but add separate property (when federated backend is down)
         qualifiedIDList.filterNot { knownUsers.any { userEntity -> userEntity.id == it && !userEntity.name.isNullOrBlank() } }
@@ -300,20 +371,20 @@ internal class UserDataSource internal constructor(
             }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserByQualifiedID(selfUserID)
+            userDAO.observeUserDetailsByQualifiedID(selfUserID)
                 .filterNotNull()
-                .map(userMapper::fromUserEntityToSelfUser)
+                .map(userMapper::fromUserDetailsEntityToSelfUser)
         }
     }
 
-    @OptIn(FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-            userDAO.getUserWithTeamByQualifiedID(selfUserID)
+            userDAO.getUserDetailsWithTeamByQualifiedID(selfUserID)
                 .filterNotNull()
                 .map { (user, team) ->
-                    userMapper.fromUserEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
+                    userMapper.fromUserDetailsEntityToSelfUser(user) to team?.let { teamMapper.fromDaoModelToTeam(it) }
                 }
         }
     }
@@ -323,16 +394,15 @@ internal class UserDataSource internal constructor(
         replaceWith = ReplaceWith("eg: updateSelfDisplayName(displayName: String)")
     )
     // FIXME(refactor): create a dedicated function to update avatar, as this is the only usage of this function.
-    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, SelfUser> {
-        val user = getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
-        val updateRequest = userMapper.fromModelToUpdateApiModel(user, newName, newAccent, newAssetId)
+    override suspend fun updateSelfUser(newName: String?, newAccent: Int?, newAssetId: String?): Either<CoreFailure, Unit> {
+        val updateRequest = userMapper.fromModelToUpdateApiModel(newName, newAccent, newAssetId)
         return wrapApiRequest { selfApi.updateSelf(updateRequest) }
-            .map { userMapper.fromUpdateRequestToDaoModel(user, updateRequest) }
-            .flatMap { userEntity ->
+            .map { userMapper.fromUpdateRequestToPartialUserEntity(updateRequest, selfUserId) }
+            .flatMap { partialUserEntity ->
                 wrapStorageRequest {
-                    userDAO.updateUser(userEntity)
-                }.map { userMapper.fromUserEntityToSelfUser(userEntity) }
-            }
+                    userDAO.updateUser(selfUserId.toDao(), partialUserEntity)
+                }
+            }.map { }
     }
 
     // TODO: replace the flow with selfUser and cache it
@@ -341,70 +411,73 @@ internal class UserDataSource internal constructor(
 
     override suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>> {
         val selfUserId = selfUserId.toDao()
-        return userDAO.observeAllUsersByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
+        return userDAO.observeAllUsersDetailsByConnectionStatus(connectionState = ConnectionEntity.State.ACCEPTED)
             .wrapStorageRequest()
             .mapRight { users ->
                 users
                     .filter { it.id != selfUserId && !it.deleted && !it.hasIncompleteMetadata }
-                    .map { userEntity -> publicUserMapper.fromUserEntityToOtherUser(userEntity) }
+                    .map { userEntity -> userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
             }
     }
 
     override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
         qualifiedID = userId.toDao()
     )?.let {
-        publicUserMapper.fromUserEntityToOtherUserMinimized(it)
+        userMapper.fromUserEntityToOtherUserMinimized(it)
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =
-        userDAO.getUserByQualifiedID(qualifiedID = userId.toDao())
+        userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
                 // TODO: cache SelfUserId so it's not fetched from DB every single time
                 if (userId == selfUserId) {
-                    userEntity?.let { userMapper.fromUserEntityToSelfUser(userEntity) }
+                    userEntity?.let { userMapper.fromUserDetailsEntityToSelfUser(userEntity) }
                 } else {
-                    userEntity?.let { publicUserMapper.fromUserEntityToOtherUser(userEntity) }
+                    userEntity?.let { userMapper.fromUserDetailsEntityToOtherUser(userEntity) }
                 }
             }
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
-            getSelfUser()?.teamId.let { selfTeamId ->
+            getSelfUser()?.let { selfUser ->
                 Either.Right(
-                    publicUserMapper.fromUserProfileDtoToOtherUser(
-                        userDetailResponse = userProfileDTO,
-                        userType = userTypeMapper.fromTeamAndDomain(
-                            otherUserDomain = userProfileDTO.id.domain,
-                            selfUserTeamId = selfTeamId?.value,
-                            otherUserTeamId = userProfileDTO.teamId,
-                            selfUserDomain = selfUserId.domain,
-                            isService = userProfileDTO.service != null
-                        )
-                    )
+                    userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
                 )
-            }
+            } ?: Either.Left(StorageFailure.DataNotFound)
         }
 
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
         userDAO.updateUserAvailabilityStatus(userId.toDao(), availabilityStatusMapper.fromModelAvailabilityStatusToDao(status))
     }
 
+    override suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit> {
+        return wrapApiRequest { selfApi.updateSupportedProtocols(protocols.map { it.toApi() }) }
+            .flatMap {
+                wrapStorageRequest {
+                    userDAO.updateUserSupportedProtocols(selfUserId.toDao(), protocols.map { it.toDao() }.toSet())
+                }
+            }
+    }
+
+    override suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
+        wrapStorageRequest { userDAO.updateActiveOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
+
     override fun observeAllKnownUsersNotInConversation(
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, List<OtherUser>>> {
-        return userDAO.observeUsersNotInConversation(conversationId.toDao())
+        return userDAO.observeUsersDetailsNotInConversation(conversationId.toDao())
             .wrapStorageRequest()
             .mapRight { users ->
                 users
                     .filter { !it.deleted && !it.hasIncompleteMetadata }
-                    .map { publicUserMapper.fromUserEntityToOtherUser(it) }
+                    .map { userMapper.fromUserDetailsEntityToOtherUser(it) }
             }
     }
 
     override suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>> =
         selfTeamIdProvider().flatMap { teamId ->
             val teamMateIds = teamId?.value?.let { selfTeamId ->
-                wrapStorageRequest { userDAO.getAllUsersByTeam(selfTeamId).map { it.id.toModel() } }
+                wrapStorageRequest { userDAO.getAllUsersDetailsByTeam(selfTeamId).map { it.id.toModel() } }
             }?.getOrNull() ?: listOf()
 
             wrapStorageRequest {
@@ -421,10 +494,13 @@ internal class UserDataSource internal constructor(
         }
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
-        val userId = qualifiedIdMapper.fromStringToQualifiedID(event.userId)
-        val user =
-            userDAO.getUserByQualifiedID(userId.toDao()).firstOrNull() ?: return Either.Left(StorageFailure.DataNotFound)
-        userDAO.updateUser(userMapper.fromUserUpdateEventToUserEntity(event, user))
+        userDAO.updateUser(event.userId.toDao(), userMapper.fromUserUpdateEventToPartialUserEntity(event))
+    }.flatMap { updated ->
+        if (!updated) {
+            Either.Left(StorageFailure.DataNotFound)
+        } else {
+            Either.Right(Unit)
+        }
     }
 
     override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {
@@ -444,7 +520,7 @@ internal class UserDataSource internal constructor(
             userDAO.insertOrIgnoreUsers(
                 users.map { user ->
                     when (user) {
-                        is OtherUser -> publicUserMapper.fromOtherToUserEntity(user)
+                        is OtherUser -> userMapper.fromOtherToUserEntity(user)
                         is SelfUser -> userMapper.fromSelfUserToUserEntity(user)
                     }
                 }
@@ -452,7 +528,7 @@ internal class UserDataSource internal constructor(
         }
 
     override suspend fun syncUsersWithoutMetadata(): Either<CoreFailure, Unit> = wrapStorageRequest {
-        userDAO.getUsersWithoutMetadata()
+        userDAO.getUsersDetailsWithoutMetadata()
     }.flatMap { usersWithoutMetadata ->
         kaliumLogger.d("Numbers of users to refresh: ${usersWithoutMetadata.size}")
         val userIds = usersWithoutMetadata.map { it.id.toModel() }.toSet()
@@ -463,8 +539,25 @@ internal class UserDataSource internal constructor(
         userDAO.removeUserAsset(qualifiedID.toDao())
     }
 
+    override suspend fun getUsersSummaryByIds(userIds: List<QualifiedID>): Either<StorageFailure, List<UserSummary>> =
+        wrapStorageRequest {
+            userDAO.getUsersDetailsByQualifiedIDList(userIds.map { it.toDao() }).map {
+                userMapper.fromEntityToUserSummary(it.toSimpleEntity())
+            }
+        }
+
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"
-        internal val FEDERATED_USER_TTL = 5.minutes
+
+        /**
+         * Maximum age for user details.
+         *
+         * The USER_DETAILS_MAX_AGE constant represents the maximum age in minutes that user details can be considered valid. After
+         * this duration, the user details should be refreshed.
+         *
+         * This is needed because some users don't get `user.update` events, so we need to refresh their details every so often.
+         */
+        internal val USER_DETAILS_MAX_AGE = 5.minutes
+        internal const val BATCH_SIZE = 500
     }
 }

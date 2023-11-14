@@ -34,7 +34,7 @@ class UpdateCurrentSessionUseCase internal constructor(private val sessionReposi
         sessionRepository.updateCurrentSession(userId).fold({ Result.Failure(it) }, { Result.Success })
 
     sealed class Result {
-        object Success : Result()
+        data object Success : Result()
         data class Failure(val cause: StorageFailure) : Result()
     }
 }

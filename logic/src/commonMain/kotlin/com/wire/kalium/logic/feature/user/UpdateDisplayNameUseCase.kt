@@ -50,6 +50,6 @@ internal class UpdateDisplayNameUseCaseImpl(
 }
 
 sealed class DisplayNameUpdateResult {
-    object Success : DisplayNameUpdateResult()
+    data object Success : DisplayNameUpdateResult()
     data class Failure(val coreFailure: CoreFailure) : DisplayNameUpdateResult()
 }

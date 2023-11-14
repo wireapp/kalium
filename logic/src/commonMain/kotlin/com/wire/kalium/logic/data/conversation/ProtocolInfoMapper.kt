@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 interface ProtocolInfoMapper {
     fun fromEntity(protocolInfo: ConversationEntity.ProtocolInfo): Conversation.ProtocolInfo
     fun toEntity(protocolInfo: Conversation.ProtocolInfo): ConversationEntity.ProtocolInfo
-    fun fromInfoToProtocol(protocolInfo: Conversation.ProtocolInfo): Conversation.Protocol
 }
 
 class ProtocolInfoMapperImpl(
@@ -36,7 +35,14 @@ class ProtocolInfoMapperImpl(
             is ConversationEntity.ProtocolInfo.Proteus -> Conversation.ProtocolInfo.Proteus
             is ConversationEntity.ProtocolInfo.MLS -> Conversation.ProtocolInfo.MLS(
                 idMapper.fromGroupIDEntity(protocolInfo.groupId),
-                Conversation.ProtocolInfo.MLS.GroupState.valueOf(protocolInfo.groupState.name),
+                Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.epoch,
+                protocolInfo.keyingMaterialLastUpdate,
+                Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
+            )
+            is ConversationEntity.ProtocolInfo.Mixed -> Conversation.ProtocolInfo.Mixed(
+                idMapper.fromGroupIDEntity(protocolInfo.groupId),
+                Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
                 Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
@@ -53,11 +59,12 @@ class ProtocolInfoMapperImpl(
                 protocolInfo.keyingMaterialLastUpdate,
                 ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
             )
-        }
-
-    override fun fromInfoToProtocol(protocolInfo: Conversation.ProtocolInfo): Conversation.Protocol =
-        when (protocolInfo) {
-            is Conversation.ProtocolInfo.Proteus -> Conversation.Protocol.PROTEUS
-            is Conversation.ProtocolInfo.MLS -> Conversation.Protocol.MLS
+            is Conversation.ProtocolInfo.Mixed -> ConversationEntity.ProtocolInfo.Mixed(
+                idMapper.toGroupIDEntity(protocolInfo.groupId),
+                ConversationEntity.GroupState.valueOf(protocolInfo.groupState.name),
+                protocolInfo.epoch,
+                protocolInfo.keyingMaterialLastUpdate,
+                ConversationEntity.CipherSuite.fromTag(protocolInfo.cipherSuite.tag)
+            )
         }
 }

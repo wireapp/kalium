@@ -40,6 +40,6 @@ class RevokeGuestRoomLinkUseCaseImpl internal constructor(
 }
 
 sealed interface RevokeGuestRoomLinkResult {
-    object Success : RevokeGuestRoomLinkResult
+    data object Success : RevokeGuestRoomLinkResult
     data class Failure(val cause: CoreFailure) : RevokeGuestRoomLinkResult
 }
