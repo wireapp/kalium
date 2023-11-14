@@ -1369,7 +1369,6 @@ class UserSessionScope internal constructor(
             mlsMigrationConfigHandler,
             classifiedDomainsConfigHandler,
             conferenceCallingConfigHandler,
-            secondFactorPasswordChallengeConfigHandler,
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
             appLockConfigHandler
