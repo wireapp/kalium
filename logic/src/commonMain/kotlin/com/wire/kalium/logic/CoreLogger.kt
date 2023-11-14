@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic
 
+import co.touchlab.kermit.LogWriter
 import com.wire.kalium.cryptography.CryptographyLogger
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
@@ -40,7 +41,9 @@ object CoreLogger {
         CryptographyLogger.init(config = config)
         PersistenceLogger.init(config = config)
     }
-    fun setLoggingLevel(level: KaliumLogLevel) {
+
+    fun setLoggingLevel(level: KaliumLogLevel, vararg logWriters: LogWriter = emptyArray()) {
         kaliumLoggerConfig.setLogLevel(level)
+        kaliumLoggerConfig.setLogWriterList(logWriters.asList())
     }
 }
