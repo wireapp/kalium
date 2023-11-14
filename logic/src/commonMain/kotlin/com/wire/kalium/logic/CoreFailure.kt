@@ -108,6 +108,7 @@ sealed interface CoreFailure {
      * the event is skipped and the sync continues
      */
     data object FeatureNotImplemented : FeatureFailure()
+
     /**
      * No common Protocol found in order to establish a conversation between parties.
      * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
@@ -197,11 +198,11 @@ interface MLSFailure : CoreFailure {
     }
 }
 
-interface E2EIFailure: CoreFailure {
+interface E2EIFailure : CoreFailure {
     data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
-    data class FailedOAuth(val reason: String): E2EIFailure
-    data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep): E2EIFailure
-    data object FailedRotationAndMigration: E2EIFailure
+    data class FailedOAuth(val reason: String) : E2EIFailure
+    data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
+    data object FailedRotationAndMigration : E2EIFailure
 
     class Generic(internal val exception: Exception) : E2EIFailure {
         val rootCause: Throwable get() = exception
