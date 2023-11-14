@@ -225,6 +225,9 @@ class InstanceService(
                             val clientId = result.client.id.value
                             log.info("Instance $instanceId: Device $clientId successfully registered")
 
+                            val startTime = System.currentTimeMillis()
+                            val startupTime = startTime - before
+
                             val instance = Instance(
                                 instanceRequest.backend,
                                 clientId,
@@ -233,8 +236,8 @@ class InstanceService(
                                 coreLogic,
                                 instancePath,
                                 instanceRequest.password,
-                                System.currentTimeMillis() - before,
-                                System.currentTimeMillis()
+                                startupTime,
+                                startTime
                             )
                             instances.put(instanceId, instance)
 
