@@ -42,7 +42,8 @@ CREATE TABLE Conversation (
     archived_date_time INTEGER AS Instant,
     -- mls_verification_status
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
-    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED"
+    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
+    degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -139,6 +140,11 @@ WHERE qualified_id = :qualified_id;
 updateInformedAboutDegradedMLSVerification:
 UPDATE Conversation
 SET mls_degraded_notified = ?
+WHERE qualified_id = :qualified_id;
+
+updateDegradedConversationNotifiedFlag:
+UPDATE Conversation
+SET degraded_conversation_notified = ?
 WHERE qualified_id = :qualified_id;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
@@ -401,6 +407,10 @@ UPDATE Conversation
 SET verification_status = :status
 WHERE qualified_id = :conversationId;
 
+selectDegradedConversationNotified:
+SELECT degraded_conversation_notified FROM Conversation
+WHERE qualified_id = :conversationId;
+
 clearContent {
 DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
 DELETE FROM Message WHERE conversation_id = :conversationId;
@@ -430,4 +440,8 @@ BEGIN
         "SENT",
         "VISIBLE"
     );
+
+    UPDATE Conversation
+    SET degraded_conversation_notified = (new.proteus_verification_status != "DEGRADED")
+    WHERE qualified_id = new.qualified_id;
 END;
