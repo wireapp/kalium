@@ -100,6 +100,12 @@ sealed interface CoreFailure {
      */
     data object SyncEventOrClientNotFound : FeatureFailure()
 
+    /**
+     * The desired event was not found when fetching pending events.
+     * This can happen when this client is old and the server have new event types
+     * that the client does not know how to handle.
+     * the event is skipped and the sync continues
+     */
     data object FeatureNotImplemented : FeatureFailure()
     /**
      * No common Protocol found in order to establish a conversation between parties.
@@ -208,7 +214,11 @@ sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
 
 sealed class StorageFailure : CoreFailure {
     data object DataNotFound : StorageFailure()
-    data class Generic(val rootCause: Throwable) : StorageFailure()
+    data class Generic(val rootCause: Throwable) : StorageFailure() {
+        override fun toString(): String {
+            return "Generic(rootCause = ${rootCause.stackTraceToString()})"
+        }
+    }
 }
 
 private const val SOCKS_EXCEPTION = "socks"

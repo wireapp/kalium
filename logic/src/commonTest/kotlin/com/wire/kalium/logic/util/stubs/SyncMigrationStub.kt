@@ -15,31 +15,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.data.sync
+package com.wire.kalium.logic.util.stubs
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
+import kotlin.test.fail
 
-sealed interface SlowSyncStatus {
+class SuccessSyncMigration(
+    override val version: Int
 
-    data object Pending : SlowSyncStatus
+): SyncMigrationStep {
+    override suspend fun invoke(): Either<CoreFailure, Unit> = Either.Right(Unit)
 
-    data object Complete : SlowSyncStatus
-
-    data class Ongoing(val currentStep: SlowSyncStep) : SlowSyncStatus
-
-    data class Failed(val failure: CoreFailure) : SlowSyncStatus
 }
 
-enum class SlowSyncStep {
-    SELF_USER,
-    FEATURE_FLAGS,
-    UPDATE_SUPPORTED_PROTOCOLS,
-    CONVERSATIONS,
-    CONNECTIONS,
-    SELF_TEAM,
-    CONTACTS,
-    JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    MIGRATION
+class FailureSyncMigration(
+    override val version: Int
+
+): SyncMigrationStep {
+    override suspend fun invoke(): Either<CoreFailure, Unit> = Either.Left(CoreFailure.Unknown(IllegalStateException()))
+}
+
+class MigrationCrashStep(
+    override val version: Int,
+    private val message: String
+): SyncMigrationStep {
+    override suspend fun invoke(): Either<CoreFailure, Unit> = fail(message)
 }
