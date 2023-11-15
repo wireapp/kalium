@@ -23,11 +23,15 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.NetworkErrorLabel
 
 object CustomErrors {
+
+    private const val MISSING_REFRESH_TOKEN_CODE = -1
+    private const val MISSING_NONCE_CODE = -2
+
     val MISSING_REFRESH_TOKEN =
         NetworkResponse.Error(
             KaliumException.ServerError(
                 ErrorResponse(
-                    -1,
+                    MISSING_REFRESH_TOKEN_CODE,
                     "no cookie was found",
                     NetworkErrorLabel.KaliumCustom.MISSING_REFRESH_TOKEN
                 )
@@ -38,10 +42,11 @@ object CustomErrors {
         NetworkResponse.Error(
             KaliumException.ServerError(
                 ErrorResponse(
-                    -2,
+                    MISSING_NONCE_CODE,
                     "no nonce found",
                     NetworkErrorLabel.KaliumCustom.MISSING_NONCE
                 )
             )
         )
+
 }
