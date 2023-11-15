@@ -381,6 +381,8 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandler
 import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
+import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
+import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
@@ -675,6 +677,7 @@ class UserSessionScope internal constructor(
         userStorage.database.clientDAO,
         authenticatedNetworkContainer.selfApi,
         authenticatedNetworkContainer.userDetailsApi,
+        authenticatedNetworkContainer.teamsApi,
         globalScope.sessionRepository,
         userId,
         selfTeamId
@@ -728,6 +731,7 @@ class UserSessionScope internal constructor(
             userStorage.database.userDAO,
             userStorage.database.metadataDAO,
             authenticatedNetworkContainer.userDetailsApi,
+            authenticatedNetworkContainer.teamsApi,
             userSearchApiWrapper
         )
 
@@ -952,13 +956,19 @@ class UserSessionScope internal constructor(
     private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler
         get() = SlowSyncRecoveryHandlerImpl(logout)
 
+    private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider = {
+        SyncMigrationStepsProviderImpl(lazy { accountRepository }, selfTeamId)
+    }
+
     private val slowSyncManager: SlowSyncManager by lazy {
         SlowSyncManager(
             slowSyncCriteriaProvider,
             slowSyncRepository,
             slowSyncWorker,
             slowSyncRecoveryHandler,
-            networkStateObserver
+            networkStateObserver,
+            syncMigrationStepsProvider
+
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
@@ -1359,7 +1369,6 @@ class UserSessionScope internal constructor(
             mlsMigrationConfigHandler,
             classifiedDomainsConfigHandler,
             conferenceCallingConfigHandler,
-            secondFactorPasswordChallengeConfigHandler,
             selfDeletingMessagesConfigHandler,
             e2eiConfigHandler,
             appLockConfigHandler

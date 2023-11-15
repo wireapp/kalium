@@ -25,6 +25,6 @@ fun interface CurrentClientIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, ClientId>
 }
 
-fun interface SelfTeamIdProvider {
+internal fun interface SelfTeamIdProvider {
     suspend operator fun invoke(): Either<CoreFailure, TeamId?>
 }

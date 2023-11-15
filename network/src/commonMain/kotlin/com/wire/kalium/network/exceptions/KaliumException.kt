@@ -32,6 +32,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_NOT_ENABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.GUEST_LINKS_DISABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.HANDLE_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CODE
@@ -224,3 +225,4 @@ val KaliumException.InvalidRequestError.authenticationCodeFailure: Authenticatio
     }
 
 fun KaliumException.FederationError.isFederationDenied() = errorResponse.label == FEDERATION_DENIED
+fun KaliumException.FederationError.isFederationNotEnabled() = errorResponse.label == FEDERATION_NOT_ENABLED
