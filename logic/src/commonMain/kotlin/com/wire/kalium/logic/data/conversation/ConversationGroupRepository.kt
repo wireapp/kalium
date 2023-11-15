@@ -24,13 +24,13 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -185,14 +185,18 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.Mixed ->
                         tryAddMembersToCloudAndStorage(userIdList, conversationId)
                             .flatMap {
-                                mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
+                                tryAddMembersToMLSGroup(protocol.groupId, userIdList)
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
-                        mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
+                        tryAddMembersToMLSGroup(protocol.groupId, userIdList)
                     }
                 }
             }
+
+    private suspend fun tryAddMembersToMLSGroup(groupId: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+        mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)
+
 
     override suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
