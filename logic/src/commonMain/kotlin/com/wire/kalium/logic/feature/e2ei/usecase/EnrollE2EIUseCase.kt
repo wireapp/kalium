@@ -25,7 +25,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.delay
 
 /**
  * Issue an E2EI certificate and re-initiate the MLSClient
@@ -102,7 +101,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.WireNonce, it).toEitherLeft()
         }
 
-        val dpopToken = e2EIRepository.getDPoPToken(wireNonce).getOrFail{
+        val dpopToken = e2EIRepository.getDPoPToken(wireNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPToken, it).toEitherLeft()
         }
 
