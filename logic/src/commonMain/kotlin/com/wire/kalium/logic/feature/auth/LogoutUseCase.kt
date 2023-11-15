@@ -77,7 +77,10 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 endCallUseCase(it.conversationId)
             }
 
-            logoutRepository.logout()
+            if(reason != LogoutReason.SESSION_EXPIRED) {
+                logoutRepository.logout()
+            }
+
             sessionRepository.logout(userId = userId, reason)
             logoutRepository.onLogout(reason)
             userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()

@@ -27,7 +27,7 @@ object CustomErrors {
         NetworkResponse.Error(
             KaliumException.ServerError(
                 ErrorResponse(
-                    500,
+                    -1,
                     "no cookie was found",
                     NetworkErrorLabel.KaliumCustom.MISSING_REFRESH_TOKEN
                 )
@@ -38,7 +38,7 @@ object CustomErrors {
         NetworkResponse.Error(
             KaliumException.ServerError(
                 ErrorResponse(
-                    500,
+                    -2,
                     "no nonce found",
                     NetworkErrorLabel.KaliumCustom.MISSING_NONCE
                 )
