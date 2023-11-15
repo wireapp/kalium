@@ -21,18 +21,24 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.cryptography.backup.BackupCoder
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Encryptor.encryptBackupFile
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_ENCRYPTED_FILE_NAME
+import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_USER_DB_NAME
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.createCompressedFile
+import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.util.DateTimeUtil
@@ -48,14 +54,15 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.Path
+import okio.Source
 import okio.buffer
 import okio.use
 import kotlin.test.Ignore
 import kotlin.test.Test
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @IgnoreIOS // TODO re-enable when BackupUtils is implemented on Darwin
-@OptIn(ExperimentalCoroutinesApi::class)
 class RestoreBackupUseCaseTest {
 
     private val fakeFileSystem = FakeKaliumFileSystem()
@@ -76,7 +83,7 @@ class RestoreBackupUseCaseTest {
         val result = useCase(backupPath, "")
 
         // then
-        assertTrue(result is RestoreBackupResult.Success)
+        assertIs<RestoreBackupResult.Success>(result)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
             .with(any(), any())
@@ -99,8 +106,8 @@ class RestoreBackupUseCaseTest {
         val result = useCase(backupPath, "")
 
         // then
-        assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
+        assertIs<RestoreBackupResult.Failure>(result)
+        assertIs<RestoreBackupResult.BackupRestoreFailure.InvalidUserId>(result.failure)
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
@@ -122,8 +129,8 @@ class RestoreBackupUseCaseTest {
         val result = useCase(backupPath, "")
 
         // then
-        assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup)
+        assertIs<RestoreBackupResult.Failure>(result)
+        assertIs<RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup>(result.failure)
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
@@ -148,7 +155,7 @@ class RestoreBackupUseCaseTest {
         val result = useCase(backupPath, password)
 
         // then
-        assertTrue(result is RestoreBackupResult.Success)
+        assertIs<RestoreBackupResult.Success>(result)
 
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
@@ -225,8 +232,8 @@ class RestoreBackupUseCaseTest {
         val result = useCase(backupPath, password)
 
         // then
-        assertTrue(result is RestoreBackupResult.Failure)
-        assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.BackupIOFailure)
+        assertIs<RestoreBackupResult.Failure>(result)
+        assertIs<RestoreBackupResult.BackupRestoreFailure.BackupIOFailure>(result.failure)
         verify(arrangement.databaseImporter)
             .suspendFunction(arrangement.databaseImporter::importFromFile)
             .with(any(), any())
@@ -247,7 +254,7 @@ class RestoreBackupUseCaseTest {
         @Mock
         val userRepository = mock(classOf<UserRepository>())
 
-        val fakeDBFileName = "fakeDBFile.db"
+        val fakeDBFileName = BACKUP_USER_DB_NAME
         private val selfUserId = currentTestUserId
         private val fakeDBData = fakeDBFileName.encodeToByteArray()
         private val idMapper = MapperProvider.idMapper()
@@ -317,7 +324,7 @@ class RestoreBackupUseCaseTest {
 
         suspend fun withEncryptedBackup(path: Path, userId: UserId, password: String) = apply {
             with(fakeFileSystem) {
-                val encryptedBackupPath = fakeFileSystem.tempFilePath("backup.cc20")
+                val encryptedBackupPath = fakeFileSystem.tempFilePath(BACKUP_ENCRYPTED_FILE_NAME)
                 createEncryptedBackup(encryptedBackupPath, userId, password)
                 val outputSink = sink(path)
                 createCompressedFile(listOf(source(encryptedBackupPath) to encryptedBackupPath.name), outputSink)
@@ -351,6 +358,22 @@ class RestoreBackupUseCaseTest {
                 .whenInvoked()
                 .thenReturn(selfUser)
         }
+
+        lateinit var extractZipFile: (
+        inputSource: Source,
+        outputRootPath: Path,
+        param: ExtractFilesParam,
+        fileSystem: KaliumFileSystem
+        ) -> Either<CoreFailure, Long>
+
+        fun withSuccessfulExtractZipFile() = apply {
+            extractZipFile = { _, _, _, _ -> Either.Right(10L) }
+        }
+
+        fun withDefaultExtractZipFile() = apply {
+            extractZipFile = ::extractCompressedFile
+        }
+
 
         fun arrange() = this to RestoreBackupUseCaseImpl(
             databaseImporter = databaseImporter,

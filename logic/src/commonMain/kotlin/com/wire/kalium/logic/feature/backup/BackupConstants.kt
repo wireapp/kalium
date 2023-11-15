@@ -21,6 +21,9 @@ package com.wire.kalium.logic.feature.backup
 object BackupConstants {
     const val BACKUP_FILE_NAME_PREFIX = "WBX"
     const val BACKUP_ENCRYPTED_FILE_NAME = "user-backup.cc20"
+
+    // BACKUP_METADATA_FILE_NAME and BACKUP_USER_DB_NAME must not be changed
+    // if there is a need to change them, please create a new file names and add it to the list of acceptedFileNames()
     const val BACKUP_USER_DB_NAME = "user-backup-database.db"
     const val BACKUP_METADATA_FILE_NAME = "export.json"
     const val BACKUP_ENCRYPTED_EXTENSION = "cc20"
@@ -29,6 +32,16 @@ object BackupConstants {
     const val BACKUP_WEB_EXTENSION = "desktop_wbu"
     const val BACKUP_WEB_EVENTS_FILE_NAME = "events.json"
     const val BACKUP_WEB_CONVERSATIONS_FILE_NAME = "conversations.json"
+
+    /**
+     * list of accepted file names for the backup file
+     * this is used when extracting data from the zip file
+     */
+    fun acceptedFileNames() = setOf(
+        BACKUP_USER_DB_NAME,
+        BACKUP_METADATA_FILE_NAME,
+        BACKUP_ENCRYPTED_FILE_NAME
+    )
 
     fun createBackupFileName(userHandle: String?, timestampIso: String) = // file names cannot have special characters
         "$BACKUP_FILE_NAME_PREFIX-$userHandle-${timestampIso.replace(":", "-")}.zip"

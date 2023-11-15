@@ -30,6 +30,7 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.BACKUP_METADATA_FILE
 import com.wire.kalium.logic.framework.TestUser.SELF
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
@@ -107,7 +108,7 @@ class CreateBackupUseCaseTest {
         with(fakeFileSystem) {
             val extractedFilesPath = tempFilePath()
             createDirectory(extractedFilesPath)
-            extractCompressedFile(source(result.backupFilePath), extractedFilesPath, fakeFileSystem)
+            extractCompressedFile(source(result.backupFilePath), extractedFilesPath, ExtractFilesParam.All, fakeFileSystem)
 
             assertTrue(listDirectories(extractedFilesPath).firstOrNull { it.name == BACKUP_METADATA_FILE_NAME } != null)
             val extractedDB = listDirectories(extractedFilesPath).firstOrNull {
@@ -174,7 +175,7 @@ class CreateBackupUseCaseTest {
         with(fakeFileSystem) {
             val extractedFilesPath = tempFilePath()
             createDirectory(extractedFilesPath)
-            extractCompressedFile(source(result.backupFilePath), extractedFilesPath, fakeFileSystem)
+            extractCompressedFile(source(result.backupFilePath), extractedFilesPath, ExtractFilesParam.All, fakeFileSystem)
             val extractedDBPath = listDirectories(extractedFilesPath).firstOrNull { it.name.contains(".cc20") }
             assertEquals(BACKUP_ENCRYPTED_FILE_NAME, extractedDBPath?.name)
         }

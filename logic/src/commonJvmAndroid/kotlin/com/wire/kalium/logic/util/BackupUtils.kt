@@ -68,20 +68,43 @@ private fun addToCompressedFile(zipOutputStream: ZipOutputStream, fileSource: So
 }
 
 @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
-actual fun extractCompressedFile(inputSource: Source, outputRootPath: Path, fileSystem: KaliumFileSystem): Either<CoreFailure, Long> = try {
+actual fun extractCompressedFile(
+    inputSource: Source,
+    outputRootPath: Path,
+    param: ExtractFilesParam,
+    fileSystem: KaliumFileSystem
+): Either<CoreFailure, Long> = try {
     var totalExtractedFilesSize = 0L
     ZipInputStream(inputSource.buffer().inputStream()).use { zipInputStream ->
         var entry: ZipEntry? = zipInputStream.nextEntry
         while (entry != null) {
-            readCompressedEntry(zipInputStream, outputRootPath, fileSystem, entry).let {
-                totalExtractedFilesSize += it.first
-                entry = it.second
+            totalExtractedFilesSize += when (param) {
+                is ExtractFilesParam.All -> readCompressedEntry(zipInputStream, outputRootPath, fileSystem, entry)
+                is ExtractFilesParam.Only -> readAndExtractIfMatch(zipInputStream, outputRootPath, fileSystem, entry, param.files)
             }
+            zipInputStream.closeEntry()
+            entry = zipInputStream.nextEntry
         }
     }
     Either.Right(totalExtractedFilesSize)
 } catch (e: Exception) {
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to extract the provided compressed file", e)))
+}
+
+private fun readAndExtractIfMatch(
+    zipInputStream: ZipInputStream,
+    outputRootPath: Path,
+    fileSystem: KaliumFileSystem,
+    entry: ZipEntry,
+    fileNames: Set<String>
+): Long {
+    return entry.name.let {
+        if (fileNames.contains(it)) {
+            readCompressedEntry(zipInputStream, outputRootPath, fileSystem, entry)
+        } else {
+            0L
+        }
+    }
 }
 
 @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
@@ -121,11 +144,7 @@ private fun readCompressedEntry(
     outputRootPath: Path,
     fileSystem: KaliumFileSystem,
     entry: ZipEntry
-): Pair<Long, ZipEntry?> {
-    if (isInvalidEntryPathDestination(entry.name)) {
-        throw RuntimeException("The provided zip file is invalid or has invalid data")
-    }
-
+): Long {
     var totalExtractedFilesSize = 0L
     var byteCount: Int
     val entryPathName = "$outputRootPath/${entry.name}"
@@ -137,8 +156,7 @@ private fun readCompressedEntry(
         }
         output.write(zipInputStream.readBytes())
     }
-    zipInputStream.closeEntry()
-    return totalExtractedFilesSize to zipInputStream.nextEntry
+    return totalExtractedFilesSize
 }
 
 /**
