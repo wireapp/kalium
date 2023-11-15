@@ -24,6 +24,7 @@ import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -69,15 +70,20 @@ class E2EIRepositoryImpl(
     private val e2EIClientProvider: E2EIClientProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val mlsConversationRepository: MLSConversationRepository
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val userConfigRepository: UserConfigRepository
 ) : E2EIRepository {
 
-    override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = wrapApiRequest {
-        acmeApi.getACMEDirectories()
-    }.flatMap { directories ->
-        e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            wrapE2EIRequest {
-                e2eiClient.directoryResponse(Json.encodeToString(directories).encodeToByteArray())
+    override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = userConfigRepository.getE2EISettings().flatMap {
+        wrapApiRequest {
+            // todo: remove after testing e2ei
+            val discoverUrl = "https://acme.elna.wire.link/acme/defaultteams"
+            acmeApi.getACMEDirectories(discoverUrl)
+        }.flatMap { directories ->
+            e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+                wrapE2EIRequest {
+                    e2eiClient.directoryResponse(Json.encodeToString(directories).encodeToByteArray())
+                }
             }
         }
     }

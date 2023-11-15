@@ -604,7 +604,8 @@ class UserSessionScope internal constructor(
             e2EIClientProvider,
             mlsClientProvider,
             clientIdProvider,
-            mlsConversationRepository
+            mlsConversationRepository,
+            userConfigRepository
         )
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {

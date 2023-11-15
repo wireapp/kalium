@@ -36,7 +36,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
 interface ACMEApi {
-    suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse>
+    suspend fun getACMEDirectories(baseUrl: String): NetworkResponse<AcmeDirectoriesResponse>
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
@@ -47,8 +47,8 @@ class ACMEApiImpl internal constructor(
     private val unboundNetworkClient: UnboundNetworkClient
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
-    override suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
-        httpClient.get("$BASE_URL/$PATH_ACME_DIRECTORIES")
+    override suspend fun getACMEDirectories(baseUrl: String): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
+        httpClient.get("$baseUrl/$PATH_ACME_DIRECTORIES")
     }
 
     override suspend fun getACMENonce(url: String): NetworkResponse<String> =
@@ -114,9 +114,6 @@ class ACMEApiImpl internal constructor(
         }
 
     private companion object {
-        const val BASE_URL = "https://acme.diya.wire.link/acme/defaultteams"
-
-        // TODO: the ACME url will be provided by the backend later
         const val PATH_ACME_DIRECTORIES = "directory"
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"

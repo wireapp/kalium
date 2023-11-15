@@ -92,7 +92,7 @@ class GetE2eiCertificateUseCaseTest {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::getClientIdentity)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Left(E2EIFailure(Exception())))
+                .thenReturn(Either.Left(E2EIFailure.Generic(Exception())))
         }
 
         fun withRepositoryValidCertificate() = apply {
