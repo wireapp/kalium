@@ -77,7 +77,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 endCallUseCase(it.conversationId)
             }
 
-            if(reason != LogoutReason.SESSION_EXPIRED) {
+            if (reason != LogoutReason.SESSION_EXPIRED) {
                 logoutRepository.logout()
             }
 

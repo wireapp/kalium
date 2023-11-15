@@ -201,7 +201,7 @@ internal class AuthenticatedHttpClientProviderImpl(
     }
 
     private val loadToken: suspend () -> BearerTokens? = {
-        sessionManager.session()?.let {session ->
+        sessionManager.session()?.let { session ->
             BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
         }
     }
