@@ -39,7 +39,8 @@ object BackupConstants {
      */
     fun acceptedFileNames() = setOf(
         BACKUP_USER_DB_NAME,
-        BACKUP_METADATA_FILE_NAME
+        BACKUP_METADATA_FILE_NAME,
+        BACKUP_ENCRYPTED_FILE_NAME
     )
 
     fun createBackupFileName(userHandle: String?, timestampIso: String) = // file names cannot have special characters

@@ -25,6 +25,7 @@ import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INV
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.IdMapper
@@ -194,27 +195,19 @@ internal class RestoreBackupUseCaseImpl(
         when (decodingError) {
             INVALID_USER_ID -> InvalidUserId
             INVALID_VERSION -> IncompatibleBackup("The provided backup version is lower than the minimum supported version")
-            INVALID_FORMAT -> IncompatibleBackup("The provided backup format is not supported")
+            INVALID_FORMAT -> IncompatibleBackup("mappedDecodingError: The provided backup format is not supported")
         }
 
     private suspend fun checkIsValidEncryption(extractedBackupPath: Path): Either<Failure, Path> =
         with(kaliumFileSystem) {
-            val encryptedFilePath = listDirectories(extractedBackupPath).firstOrNull {
-                it.name.substringAfterLast('.', "") == BACKUP_ENCRYPTED_EXTENSION
-            }
-            return if (encryptedFilePath == null) {
-                Either.Left(Failure(DecryptionFailure("No encrypted backup file found")))
-            } else {
-                Either.Right(encryptedFilePath)
-            }
+            listDirectories(extractedBackupPath)
+                .firstOrNull { it.name.endsWith(".$BACKUP_ENCRYPTED_EXTENSION") }?.let {
+                    Either.Right(it)
+                } ?: Either.Left(Failure(DecryptionFailure("No encrypted backup file found")))
         }
 
     private fun extractFiles(inputSource: Source, extractedBackupRootPath: Path) =
-        extractCompressedFile(
-            inputSource, extractedBackupRootPath, ExtractFilesParam.Only(
-                acceptedFileNames()
-            ), kaliumFileSystem
-        )
+        extractCompressedFile(inputSource, extractedBackupRootPath, ExtractFilesParam.Only(acceptedFileNames()), kaliumFileSystem)
 
     private suspend fun getDbPathAndImport(
         extractedBackupRootPath: Path,
@@ -236,14 +229,15 @@ internal class RestoreBackupUseCaseImpl(
     private suspend fun backupMetadata(extractedBackupPath: Path): Either<Failure, BackupMetadata> =
         kaliumFileSystem.listDirectories(extractedBackupPath)
             .firstOrNull { it.name == BackupConstants.BACKUP_METADATA_FILE_NAME }
-            ?.let { metadataFile ->
+            .let { it ?: return Either.Left(Failure(IncompatibleBackup("backupMetadata: No metadata file found"))) }
+            .let { metadataFile ->
                 try {
                     kaliumFileSystem.source(metadataFile).buffer()
                         .use { Either.Right(KtxSerializer.json.decodeFromString(it.readUtf8())) }
                 } catch (e: SerializationException) {
                     Either.Left(Failure(IncompatibleBackup(e.toString())))
                 }
-            } ?: Either.Left(Failure(IncompatibleBackup("The provided backup format is not supported")))
+            }
 
     private fun isValidBackupAuthor(metadata: BackupMetadata): Either<Failure, BackupMetadata> =
         if (metadata.userId == userId.toString() || metadata.userId == userId.value) {
