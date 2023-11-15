@@ -25,7 +25,6 @@ import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INV
 import com.wire.kalium.cryptography.backup.BackupHeader.HeaderDecodingErrors.INVALID_VERSION
 import com.wire.kalium.cryptography.backup.Passphrase
 import com.wire.kalium.cryptography.utils.ChaCha20Decryptor.decryptBackupFile
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.IdMapper
