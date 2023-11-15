@@ -64,6 +64,7 @@ interface E2EIRepository {
     suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 class E2EIRepositoryImpl(
     private val e2EIApi: E2EIApi,
     private val acmeApi: ACMEApi,

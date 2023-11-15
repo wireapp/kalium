@@ -106,7 +106,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPToken, it).toEitherLeft()
         }, { it })
 
-        delay(5000)
         val wireAccessToken = e2EIRepository.getWireAccessToken(dpopToken).fold({
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.WireAccessToken, it).toEitherLeft()
         }, { it })
