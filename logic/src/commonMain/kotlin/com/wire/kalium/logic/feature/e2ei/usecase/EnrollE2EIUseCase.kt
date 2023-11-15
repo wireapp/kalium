@@ -22,7 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.delay
@@ -50,27 +50,27 @@ class EnrollE2EIUseCaseImpl internal constructor(
     override suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult> {
         kaliumLogger.i("start E2EI Enrollment Initialization")
 
-        val acmeDirectories = e2EIRepository.loadACMEDirectories().fold({
+        val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
-        }, { it })
+        }
 
-        var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).fold({
+        var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNonce, it).toEitherLeft()
-        }, { it })
+        }
 
-        prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).fold({
+        prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAccount, it).toEitherLeft()
-        }, { it })
+        }
 
-        val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).fold({
+        val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewOrder, it).toEitherLeft()
-        }, { it })
+        }
 
         prevNonce = newOrderResponse.second
 
-        val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).fold({
+        val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
-        }, { it })
+        }
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
             authzResponse.first.wireOidcChallenge!!.target, authzResponse.first, authzResponse.second, newOrderResponse.third
@@ -98,49 +98,49 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val authz = initializationResult.authz
         val orderLocation = initializationResult.orderLocation
 
-        val wireNonce = e2EIRepository.getWireNonce().fold({
+        val wireNonce = e2EIRepository.getWireNonce().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.WireNonce, it).toEitherLeft()
-        }, { it })
+        }
 
-        val dpopToken = e2EIRepository.getDPoPToken(wireNonce).fold({
+        val dpopToken = e2EIRepository.getDPoPToken(wireNonce).getOrFail{
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPToken, it).toEitherLeft()
-        }, { it })
+        }
 
-        val wireAccessToken = e2EIRepository.getWireAccessToken(dpopToken).fold({
+        val wireAccessToken = e2EIRepository.getWireAccessToken(dpopToken).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.WireAccessToken, it).toEitherLeft()
-        }, { it })
+        }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
             wireAccessToken.token, prevNonce, authz.wireDpopChallenge!!
-        ).fold({
+        ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPChallenge, it).toEitherLeft()
-        }, { it })
+        }
 
         prevNonce = dpopChallengeResponse.nonce
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
             idToken, prevNonce, authz.wireOidcChallenge!!
-        ).fold({
+        ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it).toEitherLeft()
-        }, { it })
+        }
 
         prevNonce = oidcChallengeResponse.nonce
 
-        val orderResponse = e2EIRepository.checkOrderRequest(orderLocation, prevNonce).fold({
+        val orderResponse = e2EIRepository.checkOrderRequest(orderLocation, prevNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.CheckOrderRequest, it).toEitherLeft()
-        }, { it })
+        }
 
         prevNonce = orderResponse.first.nonce
 
-        val finalizeResponse = e2EIRepository.finalize(orderResponse.second, prevNonce).fold({
+        val finalizeResponse = e2EIRepository.finalize(orderResponse.second, prevNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.FinalizeRequest, it).toEitherLeft()
-        }, { it })
+        }
 
         prevNonce = finalizeResponse.first.nonce
 
-        val certificateRequest = e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).fold({
+        val certificateRequest = e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.Certificate, it).toEitherLeft()
-        }, { it })
+        }
 
         e2EIRepository.rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString()).onFailure {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
