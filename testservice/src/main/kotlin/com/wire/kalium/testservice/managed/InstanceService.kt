@@ -21,6 +21,7 @@ package com.wire.kalium.testservice.managed
 import com.codahale.metrics.Gauge
 import com.codahale.metrics.MetricRegistry
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -146,7 +147,7 @@ class InstanceService(
             developmentApiEnabled = instanceRequest.developmentApiEnabled ?: false
         )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
-        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE, KaliumLogWriter(instanceId))
+        CoreLogger.init(KaliumLogger.Config(KaliumLogLevel.VERBOSE, listOf(KaliumLogWriter(instanceId))))
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(
