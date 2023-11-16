@@ -101,13 +101,6 @@ sealed interface CoreFailure {
     data object SyncEventOrClientNotFound : FeatureFailure()
 
     /**
-     * The desired event was not found when fetching pending events.
-     * This can happen when this client is old and the server have new event types
-     * that the client does not know how to handle.
-     * the event is skipped and the sync continues
-     */
-    data object FeatureNotImplemented : FeatureFailure()
-    /**
      * No common Protocol found in order to establish a conversation between parties.
      * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
      */
