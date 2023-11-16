@@ -49,6 +49,8 @@ import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
+import com.wire.kalium.persistence.dao.config.MLSConfigDAO
+import com.wire.kalium.persistence.dao.config.MLSConfigDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
@@ -67,8 +69,8 @@ import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import com.wire.kalium.persistence.dao.reaction.ReactionDAOImpl
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAOImpl
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
-import com.wire.kalium.persistence.dao.unread.UserConfigDAOImpl
+import com.wire.kalium.persistence.dao.config.UserConfigDAO
+import com.wire.kalium.persistence.dao.config.UserConfigDAOImpl
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -171,6 +173,9 @@ class UserDatabaseBuilder internal constructor(
 
     val userConfigDAO: UserConfigDAO
         get() = UserConfigDAOImpl(metadataDAO)
+
+    val mlsConfigDAO: MLSConfigDAO
+        get() = MLSConfigDAOImpl(metadataDAO)
 
     val connectionDAO: ConnectionDAO
         get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries, queriesContext)

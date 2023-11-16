@@ -15,23 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.applock
+package com.wire.kalium.persistence.dao.config.model
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
-/**
- * Mark the team app lock status as notified
- * need to be called after notifying the user about the change
- * e.g. after showing a dialog, or a toast etc.
- */
-interface MarkTeamAppLockStatusAsNotifiedUseCase {
-    suspend operator fun invoke()
-}
-
-class MarkTeamAppLockStatusAsNotifiedUseCaseImpl internal constructor(
-    private val userConfigRepository: UserConfigRepository
-) : MarkTeamAppLockStatusAsNotifiedUseCase {
-    override suspend operator fun invoke() {
-        userConfigRepository.setTeamAppLockAsNotified()
-    }
-}
+@Serializable
+data class MLSMigrationEntity(
+    @Serializable val status: Boolean,
+    @Serializable val startTime: Instant?,
+    @Serializable val endTime: Instant?,
+)

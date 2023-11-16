@@ -30,14 +30,14 @@ import kotlin.time.Duration.Companion.seconds
  * observe app lock feature flag of the team
  */
 interface AppLockTeamFeatureConfigObserver {
-    operator fun invoke(): Flow<AppLockTeamConfig>
+    suspend operator fun invoke(): Flow<AppLockTeamConfig>
 }
 
 class AppLockTeamFeatureConfigObserverImpl(
     private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs
 ) : AppLockTeamFeatureConfigObserver {
-    override fun invoke(): Flow<AppLockTeamConfig> {
+    override suspend fun invoke(): Flow<AppLockTeamConfig> {
         if (kaliumConfigs.teamAppLock) {
             return flowOf(
                 AppLockTeamConfig(

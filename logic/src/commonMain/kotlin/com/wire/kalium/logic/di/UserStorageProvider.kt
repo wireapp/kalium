@@ -22,16 +22,14 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 
-data class UserStorage(val database: UserDatabaseBuilder, val preferences: UserPrefBuilder)
 abstract class UserStorageProvider {
-    private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserStorage> = ConcurrentMutableMap()
+    private val inMemoryUserStorage: ConcurrentMutableMap<UserId, UserDatabaseBuilder> = ConcurrentMutableMap()
     fun getOrCreate(
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
         shouldEncryptData: Boolean = true
-    ): UserStorage = inMemoryUserStorage.safeComputeIfAbsent(userId) {
+    ): UserDatabaseBuilder = inMemoryUserStorage.safeComputeIfAbsent(userId) {
         create(userId, shouldEncryptData, platformUserStorageProperties)
     }
 
@@ -39,7 +37,7 @@ abstract class UserStorageProvider {
         userId: UserId,
         shouldEncryptData: Boolean,
         platformProperties: PlatformUserStorageProperties
-    ): UserStorage
+    ): UserDatabaseBuilder
 
     fun clearInMemoryUserStorage(userId: UserId) = inMemoryUserStorage.remove(userId)
 }

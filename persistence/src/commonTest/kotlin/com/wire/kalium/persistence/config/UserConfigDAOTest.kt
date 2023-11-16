@@ -19,10 +19,17 @@ package com.wire.kalium.persistence.config
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.config.UserConfigDAO
+import com.wire.kalium.persistence.dao.config.model.AppLockConfigEntity
+import com.wire.kalium.persistence.dao.config.model.ClassifiedDomainsEntity
+import com.wire.kalium.persistence.dao.config.model.IsFileSharingEnabledEntity
+import com.wire.kalium.persistence.dao.config.model.SelfDeletionTimerEntity
+import com.wire.kalium.persistence.dao.config.model.TeamSettingsSelfDeletionStatusEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.BeforeTest
@@ -122,5 +129,159 @@ class UserConfigDAOTest : BaseDatabaseTest() {
             val thirdValue = awaitItem()
             assertEquals(thirdExpectedValue, thirdValue)
         }
+    }
+
+    @Test
+    fun givenAFileSharingStatusValue_whenCAllPersistItSaveAnd_thenCanRestoreTheValueLocally() = runTest {
+        userConfigDAO.persistFileSharingStatus(true, null)
+        assertEquals(IsFileSharingEnabledEntity(true, null), userConfigDAO.isFileSharingEnabled())
+
+        userConfigDAO.persistFileSharingStatus(false, null)
+        assertEquals(IsFileSharingEnabledEntity(false, null), userConfigDAO.isFileSharingEnabled())
+    }
+
+    @Test
+    fun givenAClassifiedDomainsStatusValue_whenCAllPersistItSaveAndThenCanRestoreTheValueLocally() = runTest {
+        userConfigDAO.persistClassifiedDomainsStatus(true, listOf("bella.com", "anta.wire"))
+        assertEquals(
+            ClassifiedDomainsEntity(true, listOf("bella.com", "anta.wire")),
+            userConfigDAO.isClassifiedDomainsEnabledFlow().first()
+        )
+    }
+
+    @Test
+    fun givenAConferenceCallingStatusValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
+        userConfigDAO.persistConferenceCalling(true)
+        assertEquals(
+            true,
+            userConfigDAO.isConferenceCallingEnabled()
+        )
+    }
+
+    @Test
+    fun givenAReadReceiptsSetValue_whenPersistingIt_saveAndThenRestoreTheValueLocally() = runTest {
+        userConfigDAO.persistReadReceipts(true)
+        assertTrue(userConfigDAO.areReadReceiptsEnabled().first())
+    }
+
+    @Test
+    fun whenMarkingFileSharingAsNotified_thenIsChangedIsSetToFalse() = runTest {
+        userConfigDAO.persistFileSharingStatus(true, true)
+        userConfigDAO.setFileSharingAsNotified()
+        assertEquals(IsFileSharingEnabledEntity(true, false), userConfigDAO.isFileSharingEnabled())
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        assertFalse {
+            userConfigDAO.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
+        userConfigDAO.persistSecondFactorPasswordChallengeStatus(false)
+        assertFalse {
+            userConfigDAO.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenPasswordChallengeRequirementIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigDAO.persistSecondFactorPasswordChallengeStatus(true)
+        assertTrue {
+            userConfigDAO.isSecondFactorPasswordChallengeRequired()
+        }
+    }
+
+    @Test
+    fun givenGuestRoomLinkStatusIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
+        userConfigDAO.persistGuestRoomLinkFeatureFlag(status = false, isStatusChanged = false)
+        userConfigDAO.isGuestRoomLinkEnabled()?.status?.let {
+            assertFalse { it }
+        }
+    }
+
+    @Test
+    fun givenGuestRoomLinkStatusIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigDAO.persistGuestRoomLinkFeatureFlag(status = true, isStatusChanged = false)
+        userConfigDAO.isGuestRoomLinkEnabled()?.status?.let {
+            assertTrue { it }
+        }
+    }
+
+    @Test
+    fun givenScreenshotCensoringConfigIsSetToFalse_whenGettingItsValue_thenItShouldBeFalse() = runTest {
+        userConfigDAO.persistScreenshotCensoring(enabled = false)
+        assertEquals(false, userConfigDAO.isScreenshotCensoringEnabledFlow().first())
+    }
+
+    @Test
+    fun givenScreenshotCensoringConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigDAO.persistScreenshotCensoring(enabled = true)
+        assertEquals(true, userConfigDAO.isScreenshotCensoringEnabledFlow().first())
+    }
+
+    @Test
+    fun givenAppLockConfig_whenStoring_thenItCanBeRead() = runTest {
+        val expected = AppLockConfigEntity(
+            enforceAppLock = true,
+            inactivityTimeoutSecs = 60,
+            isStatusChanged = false
+        )
+        userConfigDAO.persistAppLockStatus(
+            expected.enforceAppLock,
+            expected.inactivityTimeoutSecs,
+            expected.isStatusChanged
+        )
+        assertEquals(expected, userConfigDAO.appLockStatus())
+    }
+
+    @Test
+    fun givenNewAppLockValueStored_whenObservingFlow_thenNewValueIsEmitted() = runTest {
+        userConfigDAO.appLockFlow().test {
+
+            awaitItem().also {
+                assertNull(it)
+            }
+            val expected1 = AppLockConfigEntity(
+                enforceAppLock = true,
+                inactivityTimeoutSecs = 60,
+                isStatusChanged = true
+            )
+            userConfigDAO.persistAppLockStatus(
+                expected1.enforceAppLock,
+                expected1.inactivityTimeoutSecs,
+                expected1.isStatusChanged
+            )
+            awaitItem().also {
+                assertEquals(expected1, it)
+            }
+
+            val expected2 = AppLockConfigEntity(
+                enforceAppLock = false,
+                inactivityTimeoutSecs = 60,
+                isStatusChanged = false
+            )
+            userConfigDAO.persistAppLockStatus(
+                expected2.enforceAppLock,
+                expected2.inactivityTimeoutSecs,
+                expected2.isStatusChanged
+            )
+            awaitItem().also {
+                assertEquals(expected2, it)
+            }
+        }
+    }
+
+    @Test
+    fun givenDefaultProtocolIsNotSet_whenGettingItsValue_thenItShouldBeProteus() = runTest {
+        assertEquals(SupportedProtocolEntity.PROTEUS, userConfigDAO.defaultProtocol())
+    }
+
+    @Test
+    fun givenDefaultProtocolIsSetToMls_whenGettingItsValue_thenItShouldBeMls() = runTest {
+        userConfigDAO.persistDefaultProtocol(SupportedProtocolEntity.MLS)
+        assertEquals(SupportedProtocolEntity.MLS, userConfigDAO.defaultProtocol())
     }
 }

@@ -24,10 +24,10 @@ import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
 
-class FileSharingConfigHandler(
+internal class FileSharingConfigHandler internal constructor(
     private val userConfigRepository: UserConfigRepository,
 ) {
-    fun handle(fileSharingConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
+    suspend fun handle(fileSharingConfig: ConfigsStatusModel): Either<CoreFailure, Unit> {
         val newStatus: Boolean = fileSharingConfig.status == Status.ENABLED
         val currentStatus = userConfigRepository.isFileSharingEnabled()
         val isStatusChanged: Boolean = when (currentStatus) {

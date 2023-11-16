@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.dao.config.model
 
-package com.wire.kalium.persistence.kmmSettings
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage
-import com.wire.kalium.persistence.config.UserConfigStorage
-
-expect class UserPrefBuilder {
-    val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
-    val userConfigStorage: UserConfigStorage
-    fun clear()
-}
+@Serializable
+data class E2EISettingsEntity(
+    @SerialName("status") val status: Boolean,
+    @SerialName("discoverUrl") val discoverUrl: String,
+    @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
+)

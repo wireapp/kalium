@@ -60,7 +60,7 @@ internal class IsEligibleToStartCallUseCaseImpl(
         else -> ConferenceCallingResult.Disabled.Unavailable
     }
 
-    private fun isConferenceCallingEnabled(): Boolean = userConfigRepository
+    private suspend fun isConferenceCallingEnabled(): Boolean = userConfigRepository
         .isConferenceCallingEnabled()
         .fold({
             DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE

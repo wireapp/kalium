@@ -40,7 +40,6 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
@@ -64,10 +63,10 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import kotlinx.coroutines.CoroutineScope
 
 @Suppress("LongParameterList")
@@ -89,10 +88,9 @@ class ConversationScope internal constructor(
     private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val serverConfigRepository: ServerConfigRepository,
-    private val userStorage: UserStorage,
-    private val userPropertyRepository: UserPropertyRepository,
+    private val database: UserDatabaseBuilder,
+    userPropertyRepository: UserPropertyRepository,
     private val oneOnOneResolver: OneOnOneResolver,
     private val scope: CoroutineScope
 ) {
@@ -248,7 +246,7 @@ class ConversationScope internal constructor(
     val generateGuestRoomLink: GenerateGuestRoomLinkUseCase
         get() = GenerateGuestRoomLinkUseCaseImpl(
             conversationGroupRepository,
-            CodeUpdateHandlerImpl(userStorage.database.conversationDAO)
+            CodeUpdateHandlerImpl(database.conversationDAO)
         )
 
     val revokeGuestRoomLink: RevokeGuestRoomLinkUseCase

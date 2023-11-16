@@ -25,7 +25,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
-import com.wire.kalium.persistence.config.MLSMigrationEntity
+import com.wire.kalium.persistence.dao.config.model.MLSMigrationEntity
 
 interface FeatureConfigMapper {
     fun fromDTO(featureConfigResponse: FeatureConfigResponse): FeatureConfigModel

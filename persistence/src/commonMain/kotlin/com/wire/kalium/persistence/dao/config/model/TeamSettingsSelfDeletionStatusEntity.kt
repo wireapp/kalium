@@ -15,20 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.dao.config.model
 
-package com.wire.kalium.persistence.kmmSettings
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import com.wire.kalium.persistence.client.LastRetrievedNotificationEventStorage
-import com.wire.kalium.persistence.config.UserConfigStorage
-
-actual class UserPrefBuilder {
-    actual val lastRetrievedNotificationEventStorage: LastRetrievedNotificationEventStorage
-        get() = TODO("Not yet implemented")
-
-    actual fun clear() {
-        TODO("Not yet implemented")
-    }
-
-    actual val userConfigStorage: UserConfigStorage
-        get() = TODO("Not yet implemented")
-}
+@Serializable
+data class TeamSettingsSelfDeletionStatusEntity(
+    @SerialName("selfDeletionTimer") val selfDeletionTimerEntity: SelfDeletionTimerEntity,
+    @SerialName("isStatusChanged") val isStatusChanged: Boolean?
+)

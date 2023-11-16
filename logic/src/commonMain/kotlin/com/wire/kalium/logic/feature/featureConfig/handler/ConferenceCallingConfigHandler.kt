@@ -23,10 +23,10 @@ import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
 
-class ConferenceCallingConfigHandler(
+internal class ConferenceCallingConfigHandler internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) {
-    fun handle(conferenceCallingConfig: ConferenceCallingModel): Either<CoreFailure, Unit> {
+    suspend fun handle(conferenceCallingConfig: ConferenceCallingModel): Either<CoreFailure, Unit> {
         val conferenceCallingEnabled = conferenceCallingConfig.status == Status.ENABLED
         return userConfigRepository.setConferenceCallingEnabled(conferenceCallingEnabled)
     }

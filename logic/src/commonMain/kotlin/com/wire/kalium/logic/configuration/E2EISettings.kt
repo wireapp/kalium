@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.configuration
 
-import com.wire.kalium.persistence.config.E2EISettingsEntity
+import com.wire.kalium.persistence.dao.config.model.E2EISettingsEntity
 import kotlinx.datetime.Instant
 
 data class E2EISettings(

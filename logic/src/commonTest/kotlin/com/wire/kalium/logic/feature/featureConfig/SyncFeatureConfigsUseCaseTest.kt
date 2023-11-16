@@ -53,7 +53,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
-import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.dao.config.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf

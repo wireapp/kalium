@@ -22,11 +22,11 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.di.UserStorage
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.PersistMigratedMessagesUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.SecurityHelperImpl
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
@@ -35,7 +35,7 @@ class BackupScope internal constructor(
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
     private val kaliumFileSystem: KaliumFileSystem,
-    private val userStorage: UserStorage,
+    private val database: UserDatabaseBuilder,
     private val persistMigratedMessages: PersistMigratedMessagesUseCase,
     private val restartSlowSyncProcessForRecovery: RestartSlowSyncProcessForRecoveryUseCase,
     val globalPreferences: GlobalPrefProvider,
@@ -46,7 +46,7 @@ class BackupScope internal constructor(
             clientIdProvider,
             userRepository,
             kaliumFileSystem,
-            userStorage.database.databaseExporter,
+            database.databaseExporter,
             securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
         )
 
@@ -59,12 +59,12 @@ class BackupScope internal constructor(
             userId,
             persistMigratedMessages,
             restartSlowSyncProcessForRecovery,
-            userStorage.database.migrationDAO
+            database.migrationDAO
         )
 
     val restore: RestoreBackupUseCase
         get() = RestoreBackupUseCaseImpl(
-            userStorage.database.databaseImporter,
+            database.databaseImporter,
             kaliumFileSystem,
             userId,
             userRepository,

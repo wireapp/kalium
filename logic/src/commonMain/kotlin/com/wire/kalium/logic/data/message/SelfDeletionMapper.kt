@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.persistence.config.SelfDeletionTimerEntity
+import com.wire.kalium.persistence.dao.config.model.SelfDeletionTimerEntity
 
 internal object SelfDeletionMapper { // TODO rename and refactor
     fun TeamSelfDeleteTimer.toSelfDeletionTimerEntity(): SelfDeletionTimerEntity = when (this) {

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import com.wire.kalium.logic.di.UserStorage
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 
 /**
  * Clears the user data from the local storage, except for the client id
@@ -28,7 +28,7 @@ interface ClearUserDataUseCase {
 }
 
 internal class ClearUserDataUseCaseImpl internal constructor(
-    private val userStorage: UserStorage
+    private val database: UserDatabaseBuilder
 ) : ClearUserDataUseCase {
 
     override suspend operator fun invoke() {
@@ -36,8 +36,6 @@ internal class ClearUserDataUseCaseImpl internal constructor(
     }
 
     private fun clearUserStorage() {
-        userStorage.database.nuke()
-        // exclude clientId clear from this step
-        userStorage.preferences.clear()
+        database.nuke()
     }
 }

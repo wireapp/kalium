@@ -26,6 +26,10 @@ interface MetadataDAO {
     suspend fun deleteValue(key: String)
     suspend fun valueByKeyFlow(key: String): Flow<String?>
     suspend fun valueByKey(key: String): String?
+    suspend fun insertBooleanValue(key: String, value: Boolean)
+    suspend fun <T> modifySerriedValue(key: String, newValueBlock: (oldValue: T) -> T, kSerializer: KSerializer<T>)
+    suspend fun getBooleanValue(key: String): Boolean?
+    suspend fun observeBooleanValue(key: String, defaultValue: Boolean): Flow<Boolean>
     suspend fun clear(keysToKeep: List<String>?)
     suspend fun <T> putSerializable(key: String, value: T, kSerializer: KSerializer<T>)
     suspend fun <T> getSerializable(key: String, kSerializer: KSerializer<T>): T?

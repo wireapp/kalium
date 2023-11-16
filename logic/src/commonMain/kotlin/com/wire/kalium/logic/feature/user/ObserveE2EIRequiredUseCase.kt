@@ -44,7 +44,7 @@ interface ObserveE2EIRequiredUseCase {
     /**
      * @return [Flow] of [E2EIRequiredResult]
      */
-    operator fun invoke(): Flow<E2EIRequiredResult>
+    suspend operator fun invoke(): Flow<E2EIRequiredResult>
 }
 
 internal class ObserveE2EIRequiredUseCaseImpl(
@@ -54,7 +54,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
 ) : ObserveE2EIRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun invoke(): Flow<E2EIRequiredResult> {
+    override suspend fun invoke(): Flow<E2EIRequiredResult> {
         if (!featureSupport.isMLSSupported) return flowOf(E2EIRequiredResult.NotRequired)
 
         return userConfigRepository
@@ -79,7 +79,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
             .flowOn(dispatcher)
     }
 
-    private fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
+    private suspend fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
 
     private fun observeCurrentE2EICertificate(): Flow<Unit> {
         // TODO get current client E2EI certificate data here

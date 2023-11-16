@@ -15,23 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.applock
+package com.wire.kalium.persistence.dao.config.model
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlin.time.Duration
 
-/**
- * Mark the team app lock status as notified
- * need to be called after notifying the user about the change
- * e.g. after showing a dialog, or a toast etc.
- */
-interface MarkTeamAppLockStatusAsNotifiedUseCase {
-    suspend operator fun invoke()
-}
+@Serializable
+sealed class SelfDeletionTimerEntity {
 
-class MarkTeamAppLockStatusAsNotifiedUseCaseImpl internal constructor(
-    private val userConfigRepository: UserConfigRepository
-) : MarkTeamAppLockStatusAsNotifiedUseCase {
-    override suspend operator fun invoke() {
-        userConfigRepository.setTeamAppLockAsNotified()
-    }
+    @Serializable
+    @SerialName("disabled")
+    data object Disabled : SelfDeletionTimerEntity()
+
+    @Serializable
+    @SerialName("enabled")
+    data object Enabled : SelfDeletionTimerEntity()
+
+    @Serializable
+    @SerialName("enforced")
+    data class Enforced(val enforcedDuration: Duration) : SelfDeletionTimerEntity()
 }

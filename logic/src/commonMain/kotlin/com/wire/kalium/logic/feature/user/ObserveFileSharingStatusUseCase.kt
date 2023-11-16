@@ -32,12 +32,12 @@ import kotlinx.coroutines.flow.map
  */
 
 interface ObserveFileSharingStatusUseCase {
-    operator fun invoke(): Flow<FileSharingStatus>
+    suspend operator fun invoke(): Flow<FileSharingStatus>
 }
 
 internal class ObserveFileSharingStatusUseCaseImpl(private val userConfigRepository: UserConfigRepository) :
     ObserveFileSharingStatusUseCase {
-    override operator fun invoke(): Flow<FileSharingStatus> =
+    override suspend operator fun invoke(): Flow<FileSharingStatus> =
         userConfigRepository.isFileSharingEnabledFlow().map { fileSharingStatusFlow ->
             fileSharingStatusFlow.fold({
                 when (it) {

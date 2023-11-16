@@ -57,7 +57,7 @@ internal class ObserveOtherUserSecurityClassificationLabelUseCaseImpl(
         }
     }
 
-    private fun getClassifiedDomainsStatus(): Flow<List<String>?> = userConfigRepository.getClassifiedDomainsStatus()
+    private suspend fun getClassifiedDomainsStatus(): Flow<List<String>?> = userConfigRepository.getClassifiedDomainsStatus()
         .mapToRightOr(null)
         .map { classifiedDomainsStatus ->
             if (classifiedDomainsStatus == null || !classifiedDomainsStatus.isClassifiedDomainsEnabled) {

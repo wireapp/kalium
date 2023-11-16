@@ -33,7 +33,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlin.coroutines.CoroutineContext
 
-class MetadataDAOImpl internal constructor(
+@Suppress("TooManyFunctions")
+internal class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
     private val metadataCache: Cache<String, Flow<String?>>,
     private val databaseScope: CoroutineScope,
@@ -58,6 +59,41 @@ class MetadataDAOImpl internal constructor(
 
     override suspend fun valueByKey(key: String): String? = withContext(queriesContext) {
         metadataQueries.selectValueByKey(key).executeAsOneOrNull()
+    }
+
+    override suspend fun insertBooleanValue(key: String, value: Boolean) = withContext(queriesContext) {
+        metadataQueries.insertValue(key, booleanToString(value))
+    }
+
+    override suspend fun <T> modifySerriedValue(key: String, newValueBlock: (oldValue: T) -> T, kSerializer: KSerializer<T>) =
+        withContext(queriesContext) {
+            metadataQueries.transaction {
+                val oldValue = metadataQueries.selectValueByKey(key).executeAsOneOrNull()?.let {
+                    JsonSerializer().decodeFromString(kSerializer, it)
+                } ?: return@transaction
+
+                val newValue = newValueBlock(oldValue).let {
+                    JsonSerializer().encodeToString(kSerializer, it)
+                }
+
+                metadataQueries.insertValue(key = key, stringValue = newValue)
+            }
+        }
+
+    override suspend fun getBooleanValue(key: String): Boolean? = withContext(queriesContext) {
+        metadataQueries.selectValueByKey(key).executeAsOneOrNull()?.let {
+            stringToBoolean(it)
+        }
+    }
+
+    override suspend fun observeBooleanValue(key: String, defaultValue: Boolean): Flow<Boolean> = withContext(queriesContext) {
+        metadataQueries.selectValueByKey(key)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { value -> value?.let { stringToBoolean(it) } ?: defaultValue }
+            .distinctUntilChanged()
+            .shareIn(databaseScope, SharingStarted.Lazily, 1)
+
     }
 
     override suspend fun clear(keysToKeep: List<String>?) = withContext(queriesContext) {
@@ -91,5 +127,20 @@ class MetadataDAOImpl internal constructor(
             }
             .distinctUntilChanged()
             .shareIn(databaseScope, SharingStarted.Lazily, 1)
+    }
+
+    private fun stringToBoolean(value: String): Boolean? {
+        return when (value) {
+            "true" -> true
+            "false" -> false
+            else -> null
+        }
+    }
+
+    private fun booleanToString(value: Boolean): String {
+        return when (value) {
+            true -> "true"
+            false -> "false"
+        }
     }
 }
