@@ -21,6 +21,7 @@ package com.wire.kalium.testservice.managed
 import com.codahale.metrics.Gauge
 import com.codahale.metrics.MetricRegistry
 import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -39,6 +40,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.testservice.KaliumLogWriter
 import com.wire.kalium.testservice.TestserviceConfiguration
 import com.wire.kalium.testservice.models.FingerprintResponse
 import com.wire.kalium.testservice.models.Instance
@@ -134,18 +136,18 @@ class InstanceService(
         )
     }
 
-    @Suppress("LongMethod", "ThrowsCount")
-    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Instance {
+    @Suppress("LongMethod", "ThrowsCount", "ComplexMethod")
+    suspend fun createInstance(instanceId: String, instanceRequest: InstanceRequest): Any {
         val userAgent = "KaliumTestService/${System.getProperty("http.agent")}"
         val before = System.currentTimeMillis()
         val instancePath = System.getProperty("user.home") +
                 File.separator + ".testservice" + File.separator + instanceId
         log.info("Instance $instanceId: Creating $instancePath")
         val kaliumConfigs = KaliumConfigs(
-            developmentApiEnabled = false
+            developmentApiEnabled = instanceRequest.developmentApiEnabled ?: false
         )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
-        CoreLogger.setLoggingLevel(KaliumLogLevel.VERBOSE)
+        CoreLogger.init(KaliumLogger.Config(KaliumLogLevel.VERBOSE, listOf(KaliumLogWriter(instanceId))))
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             ServerConfig.Links(
@@ -208,10 +210,8 @@ class InstanceService(
             loginResult.authData.userId
         }
 
-        var clientId: String? = null
-
         log.info("Instance $instanceId: Register client device")
-        runBlocking {
+        val response = runBlocking {
             coreLogic.sessionScope(userId) {
                 if (client.needsToRegisterClient()) {
                     when (val result = client.getOrRegister(
@@ -222,33 +222,50 @@ class InstanceService(
                             model = instanceRequest.deviceName
                         )
                     )) {
-                        is RegisterClientResult.Failure ->
-                            throw WebApplicationException("Instance $instanceId: Client registration failed")
-
                         is RegisterClientResult.Success -> {
-                            clientId = result.client.id.value
+                            val clientId = result.client.id.value
                             log.info("Instance $instanceId: Device $clientId successfully registered")
-                            syncManager.waitUntilLive()
+
+                            val startTime = System.currentTimeMillis()
+                            val startupTime = startTime - before
+
+                            val instance = Instance(
+                                instanceRequest.backend,
+                                clientId,
+                                instanceId,
+                                instanceRequest.name,
+                                coreLogic,
+                                instancePath,
+                                instanceRequest.password,
+                                startupTime,
+                                startTime
+                            )
+                            instances.put(instanceId, instance)
+
+                            syncManager.waitUntilLiveOrFailure().onFailure {
+                                log.error("Instance $instanceId: Sync failed with $it")
+                            }
+
+                            return@runBlocking instance
                         }
+                        is RegisterClientResult.Failure.TooManyClients ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
+                        is RegisterClientResult.Failure.InvalidCredentials.Invalid2FA ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, invalid 2FA code")
+                        is RegisterClientResult.Failure.InvalidCredentials.InvalidPassword ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, invalid password")
+                        is RegisterClientResult.Failure.InvalidCredentials.Missing2FA ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, 2FA code needed for account")
+                        is RegisterClientResult.Failure.PasswordAuthRequired ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed, missing password")
+                        is RegisterClientResult.Failure.Generic ->
+                            throw WebApplicationException("Instance $instanceId: Client registration failed")
                     }
                 }
             }
         }
 
-        val instance = Instance(
-            instanceRequest.backend,
-            clientId,
-            instanceId,
-            instanceRequest.name,
-            coreLogic,
-            instancePath,
-            instanceRequest.password,
-            System.currentTimeMillis() - before,
-            System.currentTimeMillis()
-        )
-        instances.put(instanceId, instance)
-
-        return instance
+        return response
     }
 
     fun deleteInstance(id: String) {

@@ -40,6 +40,7 @@ import javax.ws.rs.container.AsyncResponse
 import javax.ws.rs.container.ConnectionCallback
 import javax.ws.rs.container.Suspended
 import javax.ws.rs.core.MediaType
+import javax.ws.rs.core.Response
 
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
@@ -69,14 +70,23 @@ class InstanceLifecycle(
         // handles unresponsive instances
         ar.setTimeout(timeout, TimeUnit.SECONDS)
         ar.setTimeoutHandler { asyncResponse: AsyncResponse ->
-            log.error("Async create instance request timed out after $timeout seconds")
-            asyncResponse.cancel()
-            instanceService.deleteInstance(instanceId)
+            log.error("Instance $instanceId: Async create instance request timed out after $timeout seconds")
+            asyncResponse.resume(
+                Response
+                    .status(Response.Status.GATEWAY_TIMEOUT)
+                    .entity("Instance $instanceId: Async create instance request timed out after $timeout seconds")
+                    .build()
+            )
+            if (instanceService.getInstance(instanceId) != null) {
+                instanceService.deleteInstance(instanceId)
+            }
         }
         // handles client disconnect
         ar.register(ConnectionCallback { disconnected: AsyncResponse? ->
-            log.error("Client disconnected from async create instance request")
-            instanceService.deleteInstance(instanceId)
+            log.error("Instance $instanceId: Client disconnected from async create instance request")
+            if (instanceService.getInstance(instanceId) != null) {
+                instanceService.deleteInstance(instanceId)
+            }
         })
 
         val createdInstance = try {
@@ -86,7 +96,7 @@ class InstanceLifecycle(
         } catch (we: WebApplicationException) {
             throw we
         } catch (e: Exception) {
-            log.error("Could not create instance: " + e.message, e)
+            log.error("Instance $instanceId: Could not create instance: " + e.message, e)
             throw WebApplicationException("Could not create instance: " + e.message)
         }
 
