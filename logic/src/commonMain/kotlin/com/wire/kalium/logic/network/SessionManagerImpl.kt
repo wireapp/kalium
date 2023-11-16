@@ -66,18 +66,14 @@ class SessionManagerImpl internal constructor(
 
     private var serverConfig: ServerConfigDTO? = null
 
-    override suspend fun session(): SessionDTO = withContext(coroutineContext) {
+    override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
         wrapStorageRequest { tokenStorage.getToken(userId.toDao()) }
             .map { sessionMapper.fromEntityToSessionDTO(it) }
-            .fold(
+            .nullableFold(
                 {
-                    error(
-                        """SESSION MANAGER: 
-                    |"error": "missing user session",
-                    |"cause": "$it" """.trimMargin()
-                    )
+                    logout(LogoutReason.SESSION_EXPIRED)
+                    null
                 }, { session ->
-                    kaliumLogger.i("_TOKEN_ FOUND SESSION = $session")
                     session
                 }
             )
