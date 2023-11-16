@@ -27,6 +27,9 @@ import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner
+import okhttp3.CipherSuite.Companion.TLS_AES_128_GCM_SHA256
+import okhttp3.CipherSuite.Companion.TLS_AES_256_GCM_SHA384
+import okhttp3.CipherSuite.Companion.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.TlsVersion
@@ -51,7 +54,7 @@ internal object OkHttpSingleton {
             .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-    }.build()
+    }.connectionSpecs(supportedConnectionSpecs()).build()
 
     fun createNew(block: OkHttpClient.Builder.() -> Unit): OkHttpClient {
         return sharedClient.newBuilder().apply(block).build()
@@ -98,8 +101,6 @@ actual fun defaultHttpEngine(
             proxy(proxy)
         }
 
-        connectionSpecs(supportedConnectionSpecs())
-
     }.also {
         preconfigured = it
         webSocketFactory = KaliumWebSocketFactory(it)
@@ -125,6 +126,11 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
 private fun supportedConnectionSpecs(): List<ConnectionSpec> {
     val wireSpec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
         .tlsVersions(TlsVersion.TLS_1_2)
+        .cipherSuites(
+            TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+            TLS_AES_128_GCM_SHA256,
+            TLS_AES_256_GCM_SHA384
+        )
         .build()
 
     return listOf(wireSpec, ConnectionSpec.CLEARTEXT)
