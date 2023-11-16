@@ -78,7 +78,7 @@ internal class RestoreWebBackupUseCaseImpl(
             if (metadata.version == "19") {
                 importWebBackup(backupRootPath, this)
             } else {
-                Either.Left(IncompatibleBackup("The provided backup format is not supported"))
+                Either.Left(IncompatibleBackup("invoke: The provided backup format is not supported"))
             }.fold({ RestoreBackupResult.Failure(it) }, { RestoreBackupResult.Success })
         }
 

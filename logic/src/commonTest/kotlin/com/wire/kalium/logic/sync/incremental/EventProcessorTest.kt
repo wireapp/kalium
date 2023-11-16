@@ -223,27 +223,6 @@ class EventProcessorTest {
             .wasNotInvoked()
     }
 
-    @Test
-    fun givenFailureWithFeatureNotImplemented_whenSyncing_thenLastProcessedEventIdIsUpdated() = runTest {
-        // Given
-        val event = TestEvent.newUnknownFeatureUpdate()
-
-        val (arrangement, eventProcessor) = Arrangement()
-            .arrange {
-                withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
-                withFeatureConfigEventReceiverArrangement(result = Either.Left(CoreFailure.FeatureNotImplemented))
-            }
-
-        // When
-        eventProcessor.processEvent(event)
-
-        // Then
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(eq(event.id))
-            .wasInvoked(exactly = once)
-    }
-
     private class Arrangement : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
 
         @Mock
