@@ -21,9 +21,9 @@ package com.wire.kalium.logic.di
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.db.userDatabaseBuilder
-import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 import com.wire.kalium.util.KaliumDispatcherImpl
 
 internal actual class PlatformUserStorageProvider : UserStorageProvider() {
@@ -31,9 +31,8 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
         userId: UserId,
         shouldEncryptData: Boolean,
         platformProperties: PlatformUserStorageProperties
-    ): UserStorage {
+    ): UserDatabaseBuilder {
         val userIdEntity = userId.toDao()
-        val pref = UserPrefBuilder(userIdEntity, platformProperties.rootPath, shouldEncryptData)
 
         val databaseInfo = platformProperties.databaseInfo
         val database = when (databaseInfo) {
@@ -51,6 +50,6 @@ internal actual class PlatformUserStorageProvider : UserStorageProvider() {
                 inMemoryDatabase(userIdEntity, KaliumDispatcherImpl.io)
             }
         }
-        return UserStorage(database, pref)
+        return database
     }
 }
