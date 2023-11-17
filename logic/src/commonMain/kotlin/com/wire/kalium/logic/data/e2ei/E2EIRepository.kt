@@ -205,7 +205,7 @@ class E2EIRepositoryImpl(
             }
         }
 
-    companion object{
+    companion object {
         // todo: remove after testing e2ei
         const val TEMP_ACME_DISCOVER_URL = "https://acme.elna.wire.link/acme/defaultteams"
     }
