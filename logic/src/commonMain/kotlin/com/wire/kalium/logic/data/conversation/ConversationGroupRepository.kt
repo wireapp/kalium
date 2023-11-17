@@ -194,6 +194,10 @@ internal class ConversationGroupRepositoryImpl(
                 }
             }
 
+    /**
+     * Handle the error cases and retry for claimPackages offline and out of packages.
+     * Handle error case and retry for sendingCommit unreachable.
+     */
     private suspend fun tryAddMembersToMLSGroup(groupId: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)
 

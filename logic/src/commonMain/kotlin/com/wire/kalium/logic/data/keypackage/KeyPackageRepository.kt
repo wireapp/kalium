@@ -70,7 +70,7 @@ class KeyPackageDataSource(
                     )
                 }.flatMap {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
-                        Either.Left(CoreFailure.NoKeyPackagesAvailable(userId))
+                        Either.Left(CoreFailure.NoKeyPackagesAvailable(userId)) // todo, handle similar to unreachable with list of users
                     } else {
                         Either.Right(it.keyPackages)
                     }
