@@ -201,7 +201,6 @@ internal class ConversationGroupRepositoryImpl(
     private suspend fun tryAddMembersToMLSGroup(groupId: String, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)
 
-
     override suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
             .flatMap { protocol ->
