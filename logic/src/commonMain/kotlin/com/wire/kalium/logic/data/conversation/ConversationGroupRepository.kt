@@ -198,11 +198,17 @@ internal class ConversationGroupRepositoryImpl(
      * Handle the error cases and retry for claimPackages offline and out of packages.
      * Handle error case and retry for sendingCommit unreachable.
      */
-    private suspend fun tryAddMembersToMLSGroup(groupId: String, userIdList: List<UserId>): Either<CoreFailure, Unit> {
-        val operationResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)
-        when (operationResult) {
-            is Either.Left -> TODO("retry for claimPackages and offline sendCommit cases")
-            is Either.Right -> TODO("=)")
+    private suspend fun tryAddMembersToMLSGroup(
+        groupId: String,
+        userIdList: List<UserId>,
+        failedUsersList: Set<UserId> = emptySet()
+    ): Either<CoreFailure, Unit> {
+        return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
+            is Either.Right -> addingMemberResult
+            is Either.Left -> {
+
+                TODO("retry for claimPackages and offline sendCommit cases")
+            }
         }
     }
 

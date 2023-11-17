@@ -61,6 +61,7 @@ class KeyPackageDataSource(
     private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : KeyPackageRepository {
 
+    // todo(ym) make it federation aware and  make it to return list of failed users, aka accumulate responses.
     override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>> =
         currentClientIdProvider().flatMap { selfClientId ->
             userIds.map { userId ->
