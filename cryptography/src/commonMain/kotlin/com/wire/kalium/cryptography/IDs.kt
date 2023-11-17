@@ -74,11 +74,11 @@ data class CryptoQualifiedClientId(
 }
 
 data class WireIdentity(
-    var clientId: String,
-    var handle: String,
-    var displayName: String,
-    var domain: String,
-    var certificate: String
+    val clientId: String,
+    val handle: String,
+    val displayName: String,
+    val domain: String,
+    val certificate: String
 )
 
 @Suppress("MagicNumber")

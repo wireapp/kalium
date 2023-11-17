@@ -20,6 +20,7 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
@@ -189,9 +190,15 @@ interface MLSFailure : CoreFailure {
     }
 }
 
-class E2EIFailure(internal val exception: Exception) : CoreFailure {
+interface E2EIFailure : CoreFailure {
+    data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
+    data class FailedOAuth(val reason: String) : E2EIFailure
+    data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
+    data object FailedRotationAndMigration : E2EIFailure
 
-    val rootCause: Throwable get() = exception
+    class Generic(internal val exception: Exception) : E2EIFailure {
+        val rootCause: Throwable get() = exception
+    }
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
@@ -299,7 +306,7 @@ internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailur
         Either.Right(e2eiRequest())
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(E2EIFailure(e))
+        Either.Left(E2EIFailure.Generic(e))
     }
 }
 
