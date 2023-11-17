@@ -60,7 +60,7 @@ class IsEligibleToStartCallUseCaseTest {
             .thenReturn(null)
 
         given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
+            .suspendFunction(userConfigRepository::isConferenceCallingEnabled)
             .whenInvoked()
             .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
@@ -83,7 +83,7 @@ class IsEligibleToStartCallUseCaseTest {
             .thenReturn(null)
 
         given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
+            .suspendFunction(userConfigRepository::isConferenceCallingEnabled)
             .whenInvoked()
             .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
@@ -107,7 +107,7 @@ class IsEligibleToStartCallUseCaseTest {
                 .thenReturn(establishedCallConversationId)
 
             given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
+                .suspendFunction(userConfigRepository::isConferenceCallingEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
@@ -131,7 +131,7 @@ class IsEligibleToStartCallUseCaseTest {
                 .thenReturn(establishedCallConversationId)
 
             given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
+                .suspendFunction(userConfigRepository::isConferenceCallingEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Right(true))
 
@@ -155,7 +155,7 @@ class IsEligibleToStartCallUseCaseTest {
                 .thenReturn(conversationId)
 
             given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
+                .suspendFunction(userConfigRepository::isConferenceCallingEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Right(true))
 

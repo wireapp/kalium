@@ -44,7 +44,6 @@ import io.mockative.once
 import io.mockative.verify
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -279,7 +278,7 @@ class AssetMessageHandlerTest {
 
         fun withSuccessfulFileSharingFlag(value: FileSharingStatus.Value) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
+                .suspendFunction(userConfigRepository::isFileSharingEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Right(FileSharingStatus(state = value, isStatusChanged = false)))
         }

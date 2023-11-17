@@ -93,14 +93,14 @@ class ObserveOtherUserSecurityClassificationLabelUseCaseTest {
 
         fun withGettingClassifiedDomainsDisabled() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::getClassifiedDomainsStatus)
+                .suspendFunction(userConfigRepository::getClassifiedDomainsStatus)
                 .whenInvoked()
                 .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun withGettingClassifiedDomains() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::getClassifiedDomainsStatus)
+                .suspendFunction(userConfigRepository::getClassifiedDomainsStatus)
                 .whenInvoked()
                 .thenReturn(flowOf(Either.Right(ClassifiedDomainsStatus(true, listOf("wire.com", "bella.com")))))
         }

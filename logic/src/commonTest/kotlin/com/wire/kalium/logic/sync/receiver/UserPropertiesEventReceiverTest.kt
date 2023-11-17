@@ -43,7 +43,7 @@ class UserPropertiesEventReceiverTest {
         eventReceiver.onEvent(event)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setReadReceiptsStatus)
+            .suspendFunction(arrangement.userConfigRepository::setReadReceiptsStatus)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -59,7 +59,7 @@ class UserPropertiesEventReceiverTest {
 
         fun withUpdateReadReceiptsSuccess() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setReadReceiptsStatus)
+                .suspendFunction(userConfigRepository::setReadReceiptsStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

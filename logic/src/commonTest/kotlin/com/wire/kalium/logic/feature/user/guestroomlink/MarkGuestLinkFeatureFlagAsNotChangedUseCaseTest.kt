@@ -29,6 +29,7 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -45,30 +46,30 @@ class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryReturnsFailure_whenInvokingUseCase_thenDoNotUpdateGuestStatus() {
-        given(userConfigRepository).invocation { getGuestRoomLinkStatus() }
+    fun givenRepositoryReturnsFailure_whenInvokingUseCase_thenDoNotUpdateGuestStatus() = runTest {
+        given(userConfigRepository).coroutine { getGuestRoomLinkStatus() }
             .thenReturn(Either.Left(StorageFailure.DataNotFound))
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        verify(userConfigRepository).function(userConfigRepository::getGuestRoomLinkStatus)
+        verify(userConfigRepository).suspendFunction(userConfigRepository::getGuestRoomLinkStatus)
             .wasInvoked(exactly = once)
 
-        verify(userConfigRepository).function(userConfigRepository::setGuestRoomStatus).with(any(), eq(false)).wasNotInvoked()
+        verify(userConfigRepository).suspendFunction(userConfigRepository::setGuestRoomStatus).with(any(), eq(false)).wasNotInvoked()
     }
 
     @Test
-    fun givenRepositoryReturnsSuccess_whenInvokingUseCase_thenUpdateGuestStatus() {
-        given(userConfigRepository).invocation { getGuestRoomLinkStatus() }
+    fun givenRepositoryReturnsSuccess_whenInvokingUseCase_thenUpdateGuestStatus() = runTest {
+        given(userConfigRepository).coroutine { getGuestRoomLinkStatus() }
             .thenReturn(Either.Right(GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false)))
-        given(userConfigRepository).invocation { setGuestRoomStatus(status = false, isStatusChanged = false) }
+        given(userConfigRepository).coroutine { setGuestRoomStatus(status = false, isStatusChanged = false) }
             .thenReturn(Either.Right(Unit))
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        verify(userConfigRepository).function(userConfigRepository::getGuestRoomLinkStatus)
+        verify(userConfigRepository).suspendFunction(userConfigRepository::getGuestRoomLinkStatus)
             .wasInvoked(exactly = once)
-        verify(userConfigRepository).function(userConfigRepository::setGuestRoomStatus).with(any(), eq(false)).wasInvoked(once)
+        verify(userConfigRepository).suspendFunction(userConfigRepository::setGuestRoomStatus).with(any(), eq(false)).wasInvoked(once)
 
     }
 }

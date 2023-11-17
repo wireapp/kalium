@@ -32,13 +32,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserPropertyRepositoryTest {
 
     @Test
@@ -93,7 +91,7 @@ class UserPropertyRepositoryTest {
 
         assertFalse(result)
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isReadReceiptsEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isReadReceiptsEnabled)
             .wasInvoked(exactly = once)
     }
 
@@ -123,14 +121,14 @@ class UserPropertyRepositoryTest {
 
         fun withUpdateReadReceiptsLocallySuccess() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setReadReceiptsStatus)
+                .suspendFunction(userConfigRepository::setReadReceiptsStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withNullReadReceiptsStatus() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isReadReceiptsEnabled)
+                .suspendFunction(userConfigRepository::isReadReceiptsEnabled)
                 .whenInvoked()
                 .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }

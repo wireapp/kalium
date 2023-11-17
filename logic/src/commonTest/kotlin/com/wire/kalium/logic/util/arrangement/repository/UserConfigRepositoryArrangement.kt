@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
@@ -59,14 +58,14 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override fun withSetDefaultProtocolSuccessful() {
         given(userConfigRepository)
-            .function(userConfigRepository::setDefaultProtocol)
+            .suspendFunction(userConfigRepository::setDefaultProtocol)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
     }
 
     override fun withSetMLSEnabledSuccessful() {
         given(userConfigRepository)
-            .function(userConfigRepository::setMLSEnabled)
+            .suspendFunction(userConfigRepository::setMLSEnabled)
             .whenInvokedWith(any())
             .thenReturn(Either.Right(Unit))
     }

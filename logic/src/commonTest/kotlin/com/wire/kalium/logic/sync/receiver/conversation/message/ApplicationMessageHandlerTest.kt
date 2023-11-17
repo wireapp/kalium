@@ -199,7 +199,7 @@ class ApplicationMessageHandlerTest {
 
         fun withFileSharingEnabled() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
+                .suspendFunction(userConfigRepository::isFileSharingEnabled)
                 .whenInvoked()
                 .thenReturn(
                     Either.Right(

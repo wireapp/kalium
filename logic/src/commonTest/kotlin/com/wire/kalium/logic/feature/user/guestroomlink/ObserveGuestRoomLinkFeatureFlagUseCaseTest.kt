@@ -49,7 +49,7 @@ class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsFailure_whenRunningUseCase_thenEmitStatusWithNullValues() = runTest {
-        given(userConfigRepository).invocation { observeGuestRoomLinkFeatureFlag() }
+        given(userConfigRepository).coroutine { observeGuestRoomLinkFeatureFlag() }
             .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
 
         val result = observeGuestRoomLinkFeatureFlag()
@@ -63,7 +63,7 @@ class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
     fun givenRepositoryEmitsValidValues_whenRunningUseCase_thenEmitThoseValidValues() = runTest {
         val expectedStatus = GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false)
 
-        given(userConfigRepository).invocation { observeGuestRoomLinkFeatureFlag() }
+        given(userConfigRepository).coroutine { observeGuestRoomLinkFeatureFlag() }
             .thenReturn(flowOf(Either.Right(expectedStatus)))
 
         val result = observeGuestRoomLinkFeatureFlag()

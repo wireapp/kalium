@@ -30,13 +30,14 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
 class AppLockConfigHandlerTest {
 
     @Test
-    fun givenConfigRepositoryReturnsFailureWithStatusDisabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {
+    fun givenConfigRepositoryReturnsFailureWithStatusDisabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() = runTest {
         val appLockModel = AppLockModel(Status.DISABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withUserConfigRepositoryFailure()
@@ -45,7 +46,7 @@ class AppLockConfigHandlerTest {
         appLockConfigHandler.handle(appLockModel)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isTeamAppLockEnabled)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userConfigRepository)
@@ -59,7 +60,7 @@ class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenConfigRepositoryReturnsFailureWithStatusEnabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
+    fun givenConfigRepositoryReturnsFailureWithStatusEnabled_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() = runTest {
         val appLockModel = AppLockModel(Status.ENABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withUserConfigRepositoryFailure()
@@ -68,7 +69,7 @@ class AppLockConfigHandlerTest {
         appLockConfigHandler.handle(appLockModel)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isTeamAppLockEnabled)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userConfigRepository)
@@ -82,7 +83,7 @@ class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenNewStatusSameAsCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {
+    fun givenNewStatusSameAsCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() = runTest {
         val appLockModel = AppLockModel(Status.ENABLED, 44)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withAppLocked()
@@ -91,7 +92,7 @@ class AppLockConfigHandlerTest {
         appLockConfigHandler.handle(appLockModel)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isTeamAppLockEnabled)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userConfigRepository)
@@ -105,7 +106,7 @@ class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenStatusEnabledAndTimeoutDifferentFromCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
+    fun givenStatusEnabledAndTimeoutDifferentFromCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() = runTest {
         val appLockModel = AppLockModel(Status.ENABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withAppLocked()
@@ -114,7 +115,7 @@ class AppLockConfigHandlerTest {
         appLockConfigHandler.handle(appLockModel)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isTeamAppLockEnabled)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userConfigRepository)
@@ -128,7 +129,7 @@ class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenNewStatusDifferentThenCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
+    fun givenNewStatusDifferentThenCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() = runTest {
         val appLockModel = AppLockModel(Status.ENABLED, 20)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withAppNotLocked()
@@ -137,7 +138,7 @@ class AppLockConfigHandlerTest {
         appLockConfigHandler.handle(appLockModel)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isTeamAppLockEnabled)
             .wasInvoked(exactly = once)
 
         verify(arrangement.userConfigRepository)
@@ -163,28 +164,28 @@ class AppLockConfigHandlerTest {
 
         init {
             given(userConfigRepository)
-                .function(userConfigRepository::setAppLockStatus)
+                .suspendFunction(userConfigRepository::setAppLockStatus)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withUserConfigRepositoryFailure() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isTeamAppLockEnabled)
+                .suspendFunction(userConfigRepository::isTeamAppLockEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withAppLocked() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isTeamAppLockEnabled)
+                .suspendFunction(userConfigRepository::isTeamAppLockEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Right(appLockTeamConfigEnabled))
         }
 
         fun withAppNotLocked() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isTeamAppLockEnabled)
+                .suspendFunction(userConfigRepository::isTeamAppLockEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Right(appLockTeamConfigDisabled))
         }

@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
@@ -35,16 +37,12 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
-import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
@@ -317,21 +315,21 @@ class FeatureConfigEventReceiverTest {
 
         fun withSettingFileSharingEnabledSuccessful() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setFileSharingStatus)
+                .suspendFunction(userConfigRepository::setFileSharingStatus)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withSettingConferenceCallingEnabledSuccessful() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setConferenceCallingEnabled)
+                .suspendFunction(userConfigRepository::setConferenceCallingEnabled)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
+                .suspendFunction(userConfigRepository::isFileSharingEnabled)
                 .whenInvoked()
                 .thenReturn(result)
         }

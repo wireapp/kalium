@@ -25,12 +25,13 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
 
     @Test
-    fun givenAppLockStatusChanged_whenMarkingAsNotified_thenSetAppLockAsNotified() {
+    fun givenAppLockStatusChanged_whenMarkingAsNotified_thenSetAppLockAsNotified() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withSuccess()
             .arrange()
@@ -38,7 +39,7 @@ class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
         useCase.invoke()
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamAppLockAsNotified)
+            .suspendFunction(arrangement.userConfigRepository::setTeamAppLockAsNotified)
             .wasInvoked(once)
     }
 
@@ -53,7 +54,7 @@ class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
 
         fun withSuccess() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setTeamAppLockAsNotified)
+                .suspendFunction(userConfigRepository::setTeamAppLockAsNotified)
                 .whenInvoked()
                 .thenReturn(Either.Right(Unit))
         }

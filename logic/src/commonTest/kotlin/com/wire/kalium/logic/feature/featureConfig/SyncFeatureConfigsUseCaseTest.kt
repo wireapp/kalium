@@ -19,19 +19,20 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
-import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigDataSource
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
+import com.wire.kalium.logic.data.featureConfig.E2EIConfigModel
+import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
-import com.wire.kalium.logic.data.featureConfig.E2EIConfigModel
-import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
+import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
@@ -42,8 +43,6 @@ import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
-import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.BuildFileRestrictionState
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -51,9 +50,11 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+import com.wire.kalium.persistence.dao.config.MLSConfigDAO
 import com.wire.kalium.persistence.dao.config.UserConfigDAO
+import com.wire.kalium.persistence.dao.config.model.IsFileSharingEnabledEntity
+import com.wire.kalium.persistence.dao.config.model.IsGuestRoomLinkEnabledEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -281,8 +282,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.ENABLED))
             )
             .withGuestRoomLinkEnabledReturning(
-                GuestRoomLinkStatus(
-                    isGuestRoomLinkEnabled = true,
+                IsGuestRoomLinkEnabledEntity(
+                    status = true,
                     isStatusChanged = false
                 )
             )
@@ -304,8 +305,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.DISABLED))
             )
             .withGuestRoomLinkEnabledReturning(
-                GuestRoomLinkStatus(
-                    isGuestRoomLinkEnabled = false,
+                IsGuestRoomLinkEnabledEntity(
+                    status = false,
                     isStatusChanged = false
                 )
             )
@@ -327,8 +328,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.DISABLED))
             )
             .withGuestRoomLinkEnabledReturning(
-                GuestRoomLinkStatus(
-                    isGuestRoomLinkEnabled = true,
+                IsGuestRoomLinkEnabledEntity(
+                    status = true,
                     isStatusChanged = false
                 )
             )
@@ -351,8 +352,8 @@ class SyncFeatureConfigsUseCaseTest {
                 FeatureConfigTest.newModel(guestRoomLink = ConfigsStatusModel(Status.ENABLED))
             )
             .withGuestRoomLinkEnabledReturning(
-                GuestRoomLinkStatus(
-                    isGuestRoomLinkEnabled = false,
+                IsGuestRoomLinkEnabledEntity(
+                    status = false,
                     isStatusChanged = false
                 )
             )
@@ -627,16 +628,17 @@ class SyncFeatureConfigsUseCaseTest {
 
     private class Arrangement {
 
-        private val inMemoryStorage = inMemoryUserConfigStorage()
-
         var kaliumConfigs = KaliumConfigs()
 
         @Mock
         val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
 
+        @Mock
+        val mlsConfigDAO: MLSConfigDAO = mock(MLSConfigDAO::class)
+
         var userConfigRepository: UserConfigRepository = UserConfigDataSource(
-            inMemoryStorage,
             userConfigDAO,
+            mlsConfigDAO,
             kaliumConfigs
         )
             private set
@@ -656,8 +658,8 @@ class SyncFeatureConfigsUseCaseTest {
 //                isStatusChanged = false
 //            )
             withGuestRoomLinkEnabledReturning(
-                GuestRoomLinkStatus(
-                    isGuestRoomLinkEnabled = true,
+                IsGuestRoomLinkEnabledEntity(
+                    status = true,
                     isStatusChanged = false
                 )
             )
@@ -668,8 +670,8 @@ class SyncFeatureConfigsUseCaseTest {
         ) = apply {
             kaliumConfigs = kaliumConfigs.copy(fileRestrictionState = state)
             userConfigRepository = UserConfigDataSource(
-                inMemoryStorage,
                 userConfigDAO,
+                mlsConfigDAO,
                 kaliumConfigs
             )
         }
@@ -688,16 +690,17 @@ class SyncFeatureConfigsUseCaseTest {
             status: Boolean,
             isStatusChanged: Boolean?
         ) = apply {
-            userConfigRepository.setFileSharingStatus(
-                status, isStatusChanged
-            )
+            given(userConfigDAO)
+                .suspendFunction(userConfigDAO::isFileSharingEnabled)
+                .whenInvoked()
+                .then { IsFileSharingEnabledEntity(status, isStatusChanged) }
         }
 
-        fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: GuestRoomLinkStatus) = apply {
-            inMemoryStorage.persistGuestRoomLinkFeatureFlag(
-                guestRoomLinkStatus.isGuestRoomLinkEnabled ?: false,
-                guestRoomLinkStatus.isStatusChanged
-            )
+        fun withGuestRoomLinkEnabledReturning(guestRoomLinkStatus: IsGuestRoomLinkEnabledEntity) = apply {
+            given(userConfigDAO)
+                .suspendFunction(userConfigDAO::isGuestRoomLinkEnabled)
+                .whenInvoked()
+                .then { guestRoomLinkStatus }
         }
 
         fun withGetTeamSettingsSelfDeletionStatusSuccessful() = apply {

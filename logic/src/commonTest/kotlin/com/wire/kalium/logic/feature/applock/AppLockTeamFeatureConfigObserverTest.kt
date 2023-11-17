@@ -53,7 +53,7 @@ class AppLockTeamFeatureConfigObserverTest {
             val result = observer.invoke()
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeAppLockConfig)
+                .suspendFunction(arrangement.userConfigRepository::observeAppLockConfig)
                 .wasNotInvoked()
             assertEquals(expectedAppLockValue, result.first())
         }
@@ -73,7 +73,7 @@ class AppLockTeamFeatureConfigObserverTest {
             val result = observer.invoke()
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeAppLockConfig)
+                .suspendFunction(arrangement.userConfigRepository::observeAppLockConfig)
                 .wasInvoked(exactly = once)
             assertEquals(expectedAppLockValue, result.first())
         }
@@ -93,7 +93,7 @@ class AppLockTeamFeatureConfigObserverTest {
             val result = observer.invoke()
 
             verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeAppLockConfig)
+                .suspendFunction(arrangement.userConfigRepository::observeAppLockConfig)
                 .wasInvoked(exactly = once)
             assertEquals(expectedAppLockValue, result.first())
         }
@@ -108,14 +108,14 @@ class AppLockTeamFeatureConfigObserverTest {
 
         fun withFailure(): Arrangement = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeAppLockConfig)
+                .suspendFunction(userConfigRepository::observeAppLockConfig)
                 .whenInvoked()
                 .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun withSuccess(): Arrangement = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeAppLockConfig)
+                .suspendFunction(userConfigRepository::observeAppLockConfig)
                 .whenInvoked()
                 .thenReturn(flowOf(Either.Right(appLockTeamConfig)))
         }

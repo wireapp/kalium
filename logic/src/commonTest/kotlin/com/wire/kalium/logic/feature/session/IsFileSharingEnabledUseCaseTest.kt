@@ -48,7 +48,7 @@ class IsFileSharingEnabledUseCaseTest {
         val actual = isFileSharingEnabledUseCase.invoke()
         assertEquals(expectedValue, actual)
 
-        verify(arrangement.userConfigRepository).invocation { isFileSharingEnabled() }
+        verify(arrangement.userConfigRepository).coroutine { isFileSharingEnabled() }
             .wasInvoked(exactly = once)
     }
 
@@ -64,7 +64,7 @@ class IsFileSharingEnabledUseCaseTest {
         isFileSharingEnabledUseCase.invoke()
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isFileSharingEnabled)
+            .suspendFunction(arrangement.userConfigRepository::isFileSharingEnabled)
             .wasInvoked(exactly = once)
     }
 
@@ -76,7 +76,7 @@ class IsFileSharingEnabledUseCaseTest {
 
         fun withSuccessfulResponse(expectedValue: FileSharingStatus): Arrangement {
             given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
+                .suspendFunction(userConfigRepository::isFileSharingEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Right(expectedValue))
 
@@ -85,7 +85,7 @@ class IsFileSharingEnabledUseCaseTest {
 
         fun withIsFileSharingEnabledErrorResponse(storageFailure: StorageFailure): Arrangement {
             given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
+                .suspendFunction(userConfigRepository::isFileSharingEnabled)
                 .whenInvoked()
                 .thenReturn(Either.Left(storageFailure))
             return this

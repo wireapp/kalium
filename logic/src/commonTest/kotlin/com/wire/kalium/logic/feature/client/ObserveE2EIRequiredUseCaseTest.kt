@@ -28,7 +28,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
@@ -183,7 +182,7 @@ class ObserveE2EIRequiredUseCaseTest {
         }
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::observeE2EINotificationTime)
+            .suspendFunction(arrangement.userConfigRepository::observeE2EINotificationTime)
             .wasNotInvoked()
     }
 
@@ -199,14 +198,14 @@ class ObserveE2EIRequiredUseCaseTest {
 
         fun withMLSE2EISetting(setting: E2EISettings) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeE2EISettings)
+                .suspendFunction(userConfigRepository::observeE2EISettings)
                 .whenInvoked()
                 .then { flowOf(Either.Right(setting)) }
         }
 
         fun withE2EINotificationTime(instant: Instant?) = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::observeE2EINotificationTime)
+                .suspendFunction(userConfigRepository::observeE2EINotificationTime)
                 .whenInvoked()
                 .then { flowOf(Either.Right(instant)) }
         }
