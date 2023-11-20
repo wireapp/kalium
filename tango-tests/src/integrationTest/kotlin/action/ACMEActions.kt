@@ -31,7 +31,7 @@ object ACMEActions {
 
     suspend fun acmeDirectoriesErrorNotConnected(coreLogic: CoreLogic) = coreLogic.getGlobalScope()
         .unboundNetworkContainer
-        .acmeApi.getACMEDirectories().also { actual ->
+        .acmeApi.getACMEDirectories(ACME_BASE_URL).also { actual ->
             assertIs<NetworkResponse.Error>(actual)
             assertIs<KaliumException.NoNetwork>(actual.kException.cause)
         }
@@ -39,13 +39,13 @@ object ACMEActions {
     suspend fun acmeDirectoriesSuccess(coreLogic: CoreLogic, expected: AcmeDirectoriesResponse = ACME_DIRECTORIES_SAMPLE) =
         coreLogic.getGlobalScope()
             .unboundNetworkContainer
-            .acmeApi.getACMEDirectories().also { actual ->
+            .acmeApi.getACMEDirectories(ACME_BASE_URL).also { actual ->
                 assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
                 assertEquals(expected, actual.value)
             }
 
     suspend fun acmeDirectoriesConnectNoInternet(coreLogic: CoreLogic) = coreLogic.getGlobalScope().unboundNetworkContainer
-        .acmeApi.getACMEDirectories().also { actual ->
+        .acmeApi.getACMEDirectories(ACME_BASE_URL).also { actual ->
             assertIs<NetworkResponse.Error>(actual)
             assertIs<KaliumException.NoNetwork>(actual.kException.cause)
         }
@@ -53,6 +53,7 @@ object ACMEActions {
     /**
      * URL Paths
      */
+    private const val ACME_BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android/"
     private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
 
     /**

@@ -30,4 +30,5 @@ data class InstanceRequest(
     val name: String = "",
     val password: String = "",
     val verificationCode: String? = null,
+    val developmentApiEnabled: Boolean? = false,
 )
