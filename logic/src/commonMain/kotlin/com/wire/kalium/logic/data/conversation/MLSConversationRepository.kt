@@ -399,9 +399,11 @@ internal class MLSConversationDataSource(
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
-                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
+                keyPackageRepository.claimKeyPackages(userIdList).flatMap { claimedKeyPackages ->
+                    // if (claimedKeyPackages.failedUsers.isNotEmpty())
+
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        val clientKeyPackageList = keyPackages.keyPackages
+                        val clientKeyPackageList = claimedKeyPackages.keyPackages
                             .map {
                                 Pair(
                                     CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),

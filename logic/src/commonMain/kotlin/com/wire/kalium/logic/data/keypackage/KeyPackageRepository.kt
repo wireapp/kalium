@@ -74,7 +74,8 @@ class KeyPackageDataSource(
                 }
             }
 
-            if (keyPackages.isEmpty() && failedUsers.isNotEmpty()) {
+            val noKeyPackagesForOtherUsers = keyPackages.isEmpty() && failedUsers.isNotEmpty()
+            if (noKeyPackagesForOtherUsers) {
                 Either.Left(CoreFailure.NoKeyPackagesAvailable(failedUsers))
             } else {
                 Either.Right(ClaimedKeyPackages(keyPackages, failedUsers))
