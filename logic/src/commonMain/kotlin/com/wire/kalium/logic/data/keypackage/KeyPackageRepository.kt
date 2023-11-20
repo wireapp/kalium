@@ -74,7 +74,7 @@ class KeyPackageDataSource(
                 }
             }
 
-            if (keyPackages.isEmpty()) {
+            if (keyPackages.isEmpty() && failedUsers.isNotEmpty()) {
                 Either.Left(CoreFailure.NoKeyPackagesAvailable(failedUsers))
             } else {
                 Either.Right(ClaimedKeyPackages(keyPackages, failedUsers))
