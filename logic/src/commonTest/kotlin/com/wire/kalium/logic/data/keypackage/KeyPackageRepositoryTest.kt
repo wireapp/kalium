@@ -94,8 +94,8 @@ class KeyPackageRepositoryTest {
 
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
 
-        result.shouldSucceed { keyPackages ->
-            assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackages)
+        result.shouldSucceed { claimedKeyPackages ->
+            assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), claimedKeyPackages.keyPackages)
         }
     }
 
@@ -124,8 +124,8 @@ class KeyPackageRepositoryTest {
 
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID))
 
-        result.shouldSucceed() { keyPackages ->
-            assertEquals(emptyList(), keyPackages)
+        result.shouldSucceed { claimedKeyPackages ->
+            assertEquals(emptyList(), claimedKeyPackages.keyPackages)
         }
     }
 

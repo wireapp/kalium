@@ -401,7 +401,7 @@ internal class MLSConversationDataSource(
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        val clientKeyPackageList = keyPackages
+                        val clientKeyPackageList = keyPackages.keyPackages
                             .map {
                                 Pair(
                                     CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),

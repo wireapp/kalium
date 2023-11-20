@@ -23,10 +23,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -39,7 +37,7 @@ import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {
 
-    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>>
+    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, ClaimedKeyPackages>
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
 
@@ -58,10 +56,9 @@ class KeyPackageDataSource(
     private val keyPackageApi: KeyPackageApi,
     private val mlsClientProvider: MLSClientProvider,
     private val selfUserId: UserId,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : KeyPackageRepository {
 
-    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>> =
+    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, ClaimedKeyPackages> =
         currentClientIdProvider().flatMap { selfClientId ->
             val failedUsers = mutableSetOf<UserId>()
             val keyPackages = mutableListOf<KeyPackageDTO>()
@@ -77,10 +74,10 @@ class KeyPackageDataSource(
                 }
             }
 
-            if (failedUsers.isNotEmpty()) {
+            if (keyPackages.isEmpty()) {
                 Either.Left(CoreFailure.NoKeyPackagesAvailable(failedUsers))
             } else {
-                Either.Right(keyPackages)
+                Either.Right(ClaimedKeyPackages(keyPackages, failedUsers))
             }
         }
 

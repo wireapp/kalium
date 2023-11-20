@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
+import com.wire.kalium.logic.data.keypackage.ClaimedKeyPackages
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
 import com.wire.kalium.logic.data.mlspublickeys.KeyType
@@ -1388,7 +1389,7 @@ class MLSConversationRepositoryTest {
             given(keyPackageRepository)
                 .suspendFunction(keyPackageRepository::claimKeyPackages)
                 .whenInvokedWith(anything())
-                .then { Either.Right(keyPackages) }
+                .then { Either.Right(ClaimedKeyPackages(keyPackages, emptySet())) }
         }
 
         fun withUploadKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
