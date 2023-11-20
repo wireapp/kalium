@@ -23,14 +23,16 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -58,15 +60,7 @@ class NewConversationEventHandlerTest {
 
     @Test
     fun givenNewConversationOriginatedFromEvent_whenHandlingIt_thenPersistConversationShouldBeCalled() = runTest {
-        val event = Event.Conversation.NewConversation(
-            id = "eventId",
-            conversationId = TestConversation.ID,
-            transient = false,
-            live = false,
-            timestampIso = "timestamp",
-            conversation = TestConversation.CONVERSATION_RESPONSE,
-            senderUserId = TestUser.SELF.id
-        )
+        val event = testNewConversationEvent()
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamIdValue = "teamId"
         val teamId = TeamId(teamIdValue)
@@ -102,16 +96,7 @@ class NewConversationEventHandlerTest {
 
     @Test
     fun givenNewConversationEvent_whenHandlingIt_thenConversationLastModifiedShouldBeUpdated() = runTest {
-        val event = Event.Conversation.NewConversation(
-            id = "eventId",
-            conversationId = TestConversation.ID,
-            transient = false,
-            live = false,
-            timestampIso = "timestamp",
-            conversation = TestConversation.CONVERSATION_RESPONSE,
-            senderUserId = TestUser.SELF.id
-        )
-
+        val event = testNewConversationEvent()
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamId = TestTeam.TEAM_ID
         val creatorQualifiedId = QualifiedID(
@@ -142,19 +127,12 @@ class NewConversationEventHandlerTest {
     @Test
     fun givenNewGroupConversationEvent_whenHandlingIt_thenPersistTheSystemMessagesForNewConversation() = runTest {
         // given
-        val event = Event.Conversation.NewConversation(
-            id = "eventId",
-            conversationId = TestConversation.ID,
-            transient = false,
-            live = false,
-            timestampIso = "timestamp",
+        val event = testNewConversationEvent(
             conversation = TestConversation.CONVERSATION_RESPONSE.copy(
                 creator = "creatorId@creatorDomain",
                 receiptMode = ReceiptMode.ENABLED
             ),
-            senderUserId = TestUser.SELF.id
         )
-
         val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
         val teamId = TestTeam.TEAM_ID
         val creatorQualifiedId = QualifiedID(
@@ -209,19 +187,12 @@ class NewConversationEventHandlerTest {
     fun givenNewGroupConversationEvent_whenHandlingItAndAlreadyPresent_thenShouldSkipPersistingTheSystemMessagesForNewConversation() =
         runTest {
             // given
-            val event = Event.Conversation.NewConversation(
-                id = "eventId",
-                conversationId = TestConversation.ID,
-                transient = false,
-                live = false,
-                timestampIso = "timestamp",
+            val event = testNewConversationEvent(
                 conversation = TestConversation.CONVERSATION_RESPONSE.copy(
                     creator = "creatorId@creatorDomain",
                     receiptMode = ReceiptMode.ENABLED
                 ),
-                senderUserId = TestUser.SELF.id
             )
-
             val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
             val teamId = TestTeam.TEAM_ID
             val creatorQualifiedId = QualifiedID(
@@ -266,6 +237,78 @@ class NewConversationEventHandlerTest {
                 .wasNotInvoked()
         }
 
+    @Test
+    fun givenNewGroupConversationEvent_whenHandlingIt_thenShouldSkipExecutingOneOnOneResolver() =
+        runTest {
+            // given
+            val event = testNewConversationEvent(
+                conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
+            )
+            val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+            val teamId = TestTeam.TEAM_ID
+            val creatorQualifiedId = QualifiedID("creatorId", "creatorDomain")
+            val (arrangement, eventHandler) = Arrangement()
+                .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+                .withPersistingConversations(Either.Right(false))
+                .withFetchUsersIfUnknownIds(members)
+                .withSelfUserTeamId(Either.Right(teamId))
+                .withConversationStartedSystemMessage()
+                .withConversationResolvedMembersSystemMessage()
+                .withReadReceiptsSystemMessage()
+                .withQualifiedId(creatorQualifiedId)
+                .arrange()
+
+            // when
+            eventHandler.handle(event)
+
+            // then
+            verify(arrangement.oneOnOneResolver)
+                .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.oneOnOneResolver)
+                .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.oneOnOneResolver)
+                .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
+                .with(any())
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenNewOneOnOneConversationEvent_whenHandlingIt_thenShouldExecuteOneOnOneResolver() =
+        runTest {
+            // given
+            val event = testNewConversationEvent(
+                conversation = TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
+            )
+            val members = event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+            val otherUserId = members.first()
+            val teamId = TestTeam.TEAM_ID
+            val creatorQualifiedId = QualifiedID("creatorId", "creatorDomain")
+            val (arrangement, eventHandler) = Arrangement()
+                .withUpdateConversationModifiedDateReturning(Either.Right(Unit))
+                .withPersistingConversations(Either.Right(false))
+                .withFetchUsersIfUnknownIds(members)
+                .withSelfUserTeamId(Either.Right(teamId))
+                .withConversationStartedSystemMessage()
+                .withConversationResolvedMembersSystemMessage()
+                .withReadReceiptsSystemMessage()
+                .withQualifiedId(creatorQualifiedId)
+                .withResolveOneOnOneConversationWithUserId(Either.Right(event.conversationId))
+                .arrange()
+
+            // when
+            eventHandler.handle(event)
+
+            // then
+            verify(arrangement.oneOnOneResolver)
+                .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
+                .with(eq(otherUserId))
+                .wasInvoked(exactly = once)
+        }
+
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
@@ -282,12 +325,16 @@ class NewConversationEventHandlerTest {
         @Mock
         private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
 
+        @Mock
+        val oneOnOneResolver = mock(classOf<OneOnOneResolver>())
+
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
             conversationRepository,
             userRepository,
             selfTeamIdProvider,
-            newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator,
+            oneOnOneResolver
         )
 
         fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
@@ -330,7 +377,7 @@ class NewConversationEventHandlerTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        suspend fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {
+        fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {
             given(userRepository)
                 .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
                 .whenInvokedWith(eq(members))
@@ -358,7 +405,28 @@ class NewConversationEventHandlerTest {
                 .thenReturn(qualifiedId)
         }
 
+        fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
+            given(oneOnOneResolver)
+                .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUserId)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
         fun arrange() = this to newConversationEventHandler
+    }
+
+    companion object {
+        private fun testNewConversationEvent(
+            conversation: ConversationResponse = TestConversation.CONVERSATION_RESPONSE,
+        ) = Event.Conversation.NewConversation(
+            id = "eventId",
+            conversationId = TestConversation.ID,
+            transient = false,
+            live = false,
+            timestampIso = "timestamp",
+            conversation = conversation,
+            senderUserId = TestUser.SELF.id
+        )
     }
 
 }
