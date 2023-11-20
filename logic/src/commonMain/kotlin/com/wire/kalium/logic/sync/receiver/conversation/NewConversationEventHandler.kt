@@ -19,17 +19,15 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
-import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -38,8 +36,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.flow.first
 
 interface NewConversationEventHandler {
     suspend fun handle(event: Event.Conversation.NewConversation)
@@ -57,7 +55,7 @@ internal class NewConversationEventHandlerImpl(
         conversationRepository
             .persistConversation(event.conversation, selfTeamIdProvider().getOrNull()?.value, true)
             .flatMap { isNewUnhandledConversation ->
-                resolveConversationIfOneOnOne(event.conversationId)
+                resolveConversationIfOneOnOne(event)
                     .flatMap {
                         conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
                     }
@@ -73,16 +71,11 @@ internal class NewConversationEventHandlerImpl(
             }
     }
 
-    private suspend fun resolveConversationIfOneOnOne(conversationId: ConversationId): Either<CoreFailure, Unit> =
-        conversationRepository.observeConversationDetailsById(conversationId)
-            .first()
-            .flatMap {
-                if (it is ConversationDetails.OneOne) {
-                    oneOnOneResolver.resolveOneOnOneConversationWithUser(it.otherUser).map { Unit }
-                } else {
-                    Either.Right(Unit)
-                }
-            }
+    private suspend fun resolveConversationIfOneOnOne(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> =
+        if (event.conversation.type == ConversationResponse.Type.ONE_TO_ONE) {
+            val otherUserId = event.conversation.members.otherMembers.first().id.toModel()
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(otherUserId).map { Unit }
+        } else Either.Right(Unit)
 
     /**
      * Creates system messages for new conversation.
