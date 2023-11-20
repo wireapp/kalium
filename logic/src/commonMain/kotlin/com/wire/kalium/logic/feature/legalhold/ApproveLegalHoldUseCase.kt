@@ -30,7 +30,17 @@ import com.wire.kalium.network.exceptions.isAccessDenied
 import com.wire.kalium.network.exceptions.isBadRequest
 import io.ktor.http.HttpStatusCode
 
+/**
+ * Use Case that allows the user to accept a requested legal hold.
+ */
 interface ApproveLegalHoldUseCase {
+
+    /**
+     * Use case [ApproveLegalHoldUseCase] operation
+     *
+     * @param password password for the user account to confirm the action, can be empty for sso users
+     * @return a [ApproveLegalHoldUseCase.Result] indicating the operation result
+     */
     suspend operator fun invoke(password: String?): Result
 
     sealed class Result {
