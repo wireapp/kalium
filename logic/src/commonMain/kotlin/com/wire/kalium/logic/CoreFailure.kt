@@ -56,7 +56,7 @@ sealed interface CoreFailure {
      * A user has no key packages available which prevents him/her from being added
      * to an existing or new conversation.
      */
-    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure
+    data class NoKeyPackagesAvailable(val userId: Set<UserId>) : CoreFailure
 
     /**
      * It's not allowed to run the application with development API enabled when
@@ -107,6 +107,7 @@ sealed interface CoreFailure {
      * the event is skipped and the sync continues
      */
     data object FeatureNotImplemented : FeatureFailure()
+
     /**
      * No common Protocol found in order to establish a conversation between parties.
      * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
