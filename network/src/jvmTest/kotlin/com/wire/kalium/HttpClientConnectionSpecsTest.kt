@@ -32,29 +32,39 @@ class HttpClientConnectionSpecsTest {
     // This test conforms to the following testing standards:
     // @SF.Channel @TSFI.RESTfulAPI @S0.2 @S0.3 @S3
     fun givenTheHttpClientIsCreated_ThenEnsureOnlySupportedSpecsArePresent() {
-        val connectionSpecs = OkHttpSingleton.createNew {}.connectionSpecs
-        with(connectionSpecs[0]) {
-            tlsVersions?.let {
-                assertTrue { validTlsVersions.containsAll(it) }
-                assertFalse { notValidTlsVersions.containsAll(it) }
-            }
-
-            cipherSuites?.let {
-                assertTrue { it.containsAll(validCipherSuites) }
-            }
-        }
-
-        assertEquals(connectionSpecs[1], ConnectionSpec.CLEARTEXT)
-    }
-
-    private companion object {
+        // given
         val validTlsVersions = listOf(TlsVersion.TLS_1_3, TlsVersion.TLS_1_2)
         val notValidTlsVersions = listOf(TlsVersion.TLS_1_1, TlsVersion.TLS_1_0, TlsVersion.SSL_3_0)
-
         val validCipherSuites = listOf(
             CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
             CipherSuite.TLS_AES_128_GCM_SHA256,
             CipherSuite.TLS_AES_256_GCM_SHA384
         )
+        val notValidCipherSuites = listOf(
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+            CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
+            CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA
+        )
+
+        // when
+        val connectionSpecs = OkHttpSingleton.createNew {}.connectionSpecs
+
+        // then
+        with(connectionSpecs[0]) {
+            tlsVersions?.let {
+                assertTrue { it.containsAll(validTlsVersions) }
+                assertFalse { it.containsAll(notValidTlsVersions) }
+            }
+
+            cipherSuites?.let {
+                assertTrue { it.containsAll(validCipherSuites) }
+                assertFalse { it.containsAll(notValidCipherSuites) }
+            }
+        }
+        assertEquals(connectionSpecs[1], ConnectionSpec.CLEARTEXT)
     }
 }
