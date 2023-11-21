@@ -41,7 +41,6 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
-import com.wire.kalium.persistence.config.LegalHoldRequestEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO

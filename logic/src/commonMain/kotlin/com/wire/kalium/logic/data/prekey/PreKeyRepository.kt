@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
+@Suppress("TooManyFunctions")
 interface PreKeyRepository {
     /**
      * Fetches the IDs of the prekeys currently available on the backend.
