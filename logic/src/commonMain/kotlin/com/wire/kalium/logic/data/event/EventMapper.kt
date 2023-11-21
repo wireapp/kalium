@@ -54,7 +54,7 @@ import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.serializer
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 class EventMapper(
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper,
@@ -367,7 +367,7 @@ class EventMapper(
         transient: Boolean,
         live: Boolean,
         eventContentDTO: EventContentDTO.User.NewLegalHoldRequestDTO
-    ) : Event.User.LegalHoldRequest {
+    ): Event.User.LegalHoldRequest {
         return Event.User.LegalHoldRequest(
             transient = transient,
             live = live,
@@ -383,7 +383,7 @@ class EventMapper(
         transient: Boolean,
         live: Boolean,
         eventContentDTO: EventContentDTO.User.LegalHoldEnabledDTO
-    ) : Event.User.LegalHoldEnabled {
+    ): Event.User.LegalHoldEnabled {
         return Event.User.LegalHoldEnabled(
             transient,
             live,
@@ -397,7 +397,7 @@ class EventMapper(
         transient: Boolean,
         live: Boolean,
         eventContentDTO: EventContentDTO.User.LegalHoldDisabledDTO
-    ) : Event.User.LegalHoldDisabled {
+    ): Event.User.LegalHoldDisabled {
         return Event.User.LegalHoldDisabled(
             transient,
             live,

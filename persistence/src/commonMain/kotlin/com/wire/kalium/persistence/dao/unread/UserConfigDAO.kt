@@ -21,7 +21,6 @@ import com.wire.kalium.persistence.config.LastPreKey
 import com.wire.kalium.persistence.config.LegalHoldRequestEntity
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
-import com.wire.kalium.persistence.config.UserConfigStorageImpl
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import kotlinx.coroutines.flow.Flow
@@ -104,7 +103,6 @@ internal class UserConfigDAOImpl internal constructor(
 
     override suspend fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?> =
         metadataDAO.observeSerializable(LEGAL_HOLD_REQUEST, LegalHoldRequestEntity.serializer())
-
 
     private companion object {
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"

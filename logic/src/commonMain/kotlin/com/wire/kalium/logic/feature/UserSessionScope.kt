@@ -1320,12 +1320,12 @@ class UserSessionScope internal constructor(
         userConfigRepository = userConfigRepository
     )
 
-    private val fetchSelfClientsFromRemote : FetchSelfClientsFromRemoteUseCase
+    private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase
         get() = FetchSelfClientsFromRemoteUseCaseImpl(
             clientRepository = clientRepository,
             provideClientId = clientIdProvider
         )
-    private val persistOtherUserClients : PersistOtherUserClientsUseCase
+    private val persistOtherUserClients: PersistOtherUserClientsUseCase
         get() = PersistOtherUserClientsUseCaseImpl(
             clientRemoteRepository = clientRemoteRepository,
             clientRepository = clientRepository
