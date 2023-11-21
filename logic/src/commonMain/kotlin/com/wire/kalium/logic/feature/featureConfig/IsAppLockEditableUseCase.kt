@@ -21,6 +21,11 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.functional.fold
 
+/**
+ * Checks if the app lock is editable.
+ * The app lock is editable if there is no enforced app lock on any of the user's accounts.
+ * If there is an enforced app lock on any of the user's accounts, the app lock is not editable.
+ */
 class IsAppLockEditableUseCase internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val sessionRepository: SessionRepository
