@@ -1230,7 +1230,8 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             selfTeamId,
-            conversations.newGroupConversationSystemMessagesCreator
+            conversations.newGroupConversationSystemMessagesCreator,
+            oneOnOneResolver,
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(

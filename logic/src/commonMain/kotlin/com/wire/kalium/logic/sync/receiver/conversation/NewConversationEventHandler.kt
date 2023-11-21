@@ -18,21 +18,25 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
 
 interface NewConversationEventHandler {
@@ -44,17 +48,21 @@ internal class NewConversationEventHandlerImpl(
     private val userRepository: UserRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val oneOnOneResolver: OneOnOneResolver,
 ) : NewConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.NewConversation) {
         conversationRepository
             .persistConversation(event.conversation, selfTeamIdProvider().getOrNull()?.value, true)
             .flatMap { isNewUnhandledConversation ->
-                conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
-                Either.Right(isNewUnhandledConversation)
-            }.flatMap { isNewUnhandledConversation ->
-                userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
-                Either.Right(isNewUnhandledConversation)
+                resolveConversationIfOneOnOne(event)
+                    .flatMap {
+                        conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
+                    }
+                    .flatMap {
+                        userRepository.fetchUsersIfUnknownByIds(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet())
+                    }
+                    .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
                 createSystemMessagesForNewConversation(isNewUnhandledConversation, event)
                 kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
@@ -62,6 +70,12 @@ internal class NewConversationEventHandlerImpl(
                 kaliumLogger.logEventProcessing(EventLoggingStatus.FAILURE, event, Pair("errorInfo", "$it"))
             }
     }
+
+    private suspend fun resolveConversationIfOneOnOne(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> =
+        if (event.conversation.type == ConversationResponse.Type.ONE_TO_ONE) {
+            val otherUserId = event.conversation.members.otherMembers.first().id.toModel()
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(otherUserId).map { Unit }
+        } else Either.Right(Unit)
 
     /**
      * Creates system messages for new conversation.
