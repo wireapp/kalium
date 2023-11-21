@@ -21,7 +21,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ClientIdDTO (
+data class ClientIdDTO(
     @SerialName("id")
     val clientId: String
 )

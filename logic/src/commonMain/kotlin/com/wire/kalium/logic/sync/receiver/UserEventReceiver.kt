@@ -70,9 +70,9 @@ internal class UserEventReceiverImpl internal constructor(
             is Event.User.UserDelete -> handleUserDelete(event)
             is Event.User.Update -> handleUserUpdate(event)
             is Event.User.NewClient -> handleNewClient(event)
-            is Event.User.LegalHoldRequest-> legalHoldRequestHandler.handle(event)
-            is Event.User.LegalHoldEnabled-> legalHoldHandler.handleEnable(event)
-            is Event.User.LegalHoldDisabled-> legalHoldHandler.handleDisable(event)
+            is Event.User.LegalHoldRequest -> legalHoldRequestHandler.handle(event)
+            is Event.User.LegalHoldEnabled -> legalHoldHandler.handleEnable(event)
+            is Event.User.LegalHoldDisabled -> legalHoldHandler.handleDisable(event)
         }
     }
 
