@@ -1,0 +1,75 @@
+/*
+ * Wire
+ * Copyright (C) 2023 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.logic.feature.legalhold
+
+import com.wire.kalium.cryptography.PreKeyCrypto
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.prekey.PreKeyRepository
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
+import io.ktor.utils.io.charsets.Charsets
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+interface LegalHoldRequestObserver {
+    operator fun invoke(): Flow<LegalHoldRequestObserverResult>
+}
+
+internal class LegalHoldRequestObserverImpl internal constructor(
+    val userConfigRepository: UserConfigRepository,
+    val preKeyRepository: PreKeyRepository
+) : LegalHoldRequestObserver {
+    override fun invoke(): Flow<LegalHoldRequestObserverResult> =
+        userConfigRepository.observeLegalHoldRequest().map {
+            it.fold(
+                { failure ->
+                    if (failure is StorageFailure.DataNotFound) {
+                        kaliumLogger.i("No legal hold request found")
+                        LegalHoldRequestObserverResult.NoLegalHoldRequest
+                    } else {
+                        kaliumLogger.i("Legal hold request failure: $failure")
+                        LegalHoldRequestObserverResult.Failure(failure)
+                    }
+                },
+                { request ->
+                    val preKeyCrypto = PreKeyCrypto(request.lastPreKey.id, request.lastPreKey.key)
+                    val result = preKeyRepository.getFingerprintForPreKey(preKeyCrypto)
+                    result.fold(
+                        { failure ->
+                            kaliumLogger.i("Legal hold request fingerprint failure: $failure")
+                            LegalHoldRequestObserverResult.Failure(failure)
+                        },
+                        { fingerprint ->
+                            val fingerprintDecoded = fingerprint.toString(Charsets.UTF_8)
+                            LegalHoldRequestObserverResult.LegalHoldRequestAvailable(
+                                fingerprintDecoded
+                            )
+                        }
+                    )
+                }
+            )
+        }
+}
+
+sealed class LegalHoldRequestObserverResult {
+    data class LegalHoldRequestAvailable(val fingerprint: String) : LegalHoldRequestObserverResult()
+    data object NoLegalHoldRequest : LegalHoldRequestObserverResult()
+    data class Failure(val failure: CoreFailure) : LegalHoldRequestObserverResult()
+}

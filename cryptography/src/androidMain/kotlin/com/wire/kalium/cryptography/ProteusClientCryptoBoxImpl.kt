@@ -20,13 +20,16 @@ package com.wire.kalium.cryptography
 
 import android.util.Base64
 import com.wire.cryptobox.CryptoBox
+import com.wire.cryptobox.CryptoBox.getFingerprintFromPrekey
 import com.wire.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
+import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.CoroutineContext
+import com.wire.cryptobox.PreKey as CryptoBoxPreKey
 
 @Suppress("TooManyFunctions")
 class ProteusClientCryptoBoxImpl constructor(
@@ -53,6 +56,13 @@ class ProteusClientCryptoBoxImpl constructor(
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = withContext(defaultContext) {
         wrapException { box.getSession(sessionId.value).remoteFingerprint }
     }
+
+    override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray =
+        withContext(defaultContext) {
+            kaliumLogger.i("getFingerprintFromPreKey: called from Android")
+            val cryptoBoxPreKey = CryptoBoxPreKey(preKey.id, preKey.encodedData.decodeBase64Bytes())
+            getFingerprintFromPrekey(cryptoBoxPreKey)
+        }
 
     /**
      * Create the crypto files if missing and call box.open

@@ -43,7 +43,7 @@ interface UserConfigDAO {
     suspend fun setSupportedProtocols(protocols: Set<SupportedProtocolEntity>)
     suspend fun persistLegalHoldRequest(clientId: String, lastPreKeyId: Int, lastPreKey: String)
     suspend fun clearLegalHoldRequest()
-    suspend fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
+    fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
 }
 
 internal class UserConfigDAOImpl internal constructor(
@@ -101,7 +101,7 @@ internal class UserConfigDAOImpl internal constructor(
         metadataDAO.deleteValue(LEGAL_HOLD_REQUEST)
     }
 
-    override suspend fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?> =
+    override fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?> =
         metadataDAO.observeSerializable(LEGAL_HOLD_REQUEST, LegalHoldRequestEntity.serializer())
 
     private companion object {

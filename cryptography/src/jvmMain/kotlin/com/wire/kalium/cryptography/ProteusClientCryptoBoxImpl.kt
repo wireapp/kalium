@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.bots.cryptobox.CryptoBox
+import com.wire.bots.cryptobox.CryptoBox.getFingerprintFromPrekey
 import com.wire.bots.cryptobox.CryptoException
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import java.io.File
@@ -61,6 +62,11 @@ class ProteusClientCryptoBoxImpl constructor(
 
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
         TODO("get session is private in Cryptobox4j")
+    }
+
+    override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray = wrapException {
+        kaliumLogger.i("getFingerprintFromPreKey: called from JVM")
+        getFingerprintFromPrekey(toPreKey(preKey))
     }
 
     override suspend fun newLastResortPreKey(): PreKeyCrypto {

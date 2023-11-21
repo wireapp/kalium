@@ -19,9 +19,12 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.toEntity
 import com.wire.kalium.logic.data.featureConfig.toModel
+import com.wire.kalium.logic.data.legalhold.LastPreKey
+import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
@@ -38,6 +41,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
+import com.wire.kalium.persistence.config.LegalHoldRequestEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
@@ -112,6 +116,8 @@ interface UserConfigRepository {
         lastPreKeyId: Int,
         lastPreKey: String
     ): Either<StorageFailure, Unit>
+
+    fun observeLegalHoldRequest(): Flow<Either<StorageFailure, LegalHoldRequest>>
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
 }
 
@@ -398,7 +404,19 @@ class UserConfigDataSource(
         userConfigDAO.persistLegalHoldRequest(clientId, lastPreKeyId, lastPreKey)
     }
 
-    override suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigDAO.clearLegalHoldRequest()
-    }
+    override fun observeLegalHoldRequest(): Flow<Either<StorageFailure, LegalHoldRequest>> =
+        userConfigDAO.observeLegalHoldRequest().wrapStorageRequest().mapRight {
+            LegalHoldRequest(
+                clientId = ClientId(it.clientId),
+                lastPreKey = LastPreKey(
+                    it.lastPreKey.id,
+                    it.lastPreKey.key
+                )
+            )
+        }
+
+    override suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.clearLegalHoldRequest()
+        }
 }

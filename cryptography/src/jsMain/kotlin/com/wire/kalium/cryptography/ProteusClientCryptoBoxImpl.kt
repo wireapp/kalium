@@ -26,6 +26,7 @@ import com.wire.kalium.cryptography.externals.PreKeyBundle
 import io.ktor.util.InternalAPI
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
+import io.ktor.utils.io.core.toByteArray
 import kotlinx.coroutines.await
 import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Int8Array
@@ -55,6 +56,11 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
 
     override suspend fun getLocalFingerprint(): ByteArray {
         return box.identity.public_key.fingerprint().encodeToByteArray()
+    }
+
+    override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray {
+        // TODO ("we need to expose the fingerprint from the core")
+        "".toByteArray()
     }
 
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {

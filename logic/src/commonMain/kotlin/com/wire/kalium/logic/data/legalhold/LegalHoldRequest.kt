@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.logic.data.legalhold
 
-data class LastPreKey(
-    val id: Int,
-    val key: String
+import com.wire.kalium.logic.data.conversation.ClientId
+
+data class LegalHoldRequest(
+    val clientId: ClientId,
+    val lastPreKey: LastPreKey
 )

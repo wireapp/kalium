@@ -121,6 +121,8 @@ interface PreKeyRepository {
     suspend fun establishSessions(
         missingContactClients: Map<UserId, List<ClientId>>
     ): Either<CoreFailure, UsersWithoutSessions>
+
+    suspend fun getFingerprintForPreKey(preKeyCrypto: PreKeyCrypto): Either<CoreFailure, ByteArray>
 }
 
 @Suppress("LongParameterList")
@@ -217,6 +219,13 @@ class PreKeyDataSource(
                     }
             }
     }
+
+    override suspend fun getFingerprintForPreKey(preKeyCrypto: PreKeyCrypto): Either<CoreFailure, ByteArray> =
+        proteusClientProvider.getOrError().flatMap { proteusClient ->
+            wrapProteusRequest {
+                proteusClient.getFingerprintFromPreKey(preKeyCrypto)
+            }
+        }
 
     internal suspend fun preKeysOfClientsByQualifiedUsers(
         qualifiedIdsMap: Map<UserId, List<ClientId>>
