@@ -15,12 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.logic.feature.featureConfig
 
-import kotlin.time.Duration
+class IsAppLockEditableUseCaseTest {
 
-data class AppLockTeamConfig(
-    val isEnforced: Boolean,
-    val timeout: Duration,
-    val isStatusChanged: Boolean?
-)
+
+    private class Arrangement {
+
+
+        private val useCase: IsAppLockEditableUseCase = IsAppLockEditableUseCase(
+            userSessionScopeProvider = mock(),
+            sessionRepository = mock()
+        )
+    }
+}
