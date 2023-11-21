@@ -61,6 +61,14 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCaseImpl
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
@@ -167,14 +175,6 @@ import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCaseImpl
-import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
-import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
@@ -208,9 +208,9 @@ import com.wire.kalium.logic.feature.featureConfig.handler.E2EIConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
+import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
@@ -540,7 +540,7 @@ class UserSessionScope internal constructor(
         mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
 
-    private val userConfigRepository: UserConfigRepository
+    internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
             userStorage.preferences.userConfigStorage,
             userStorage.database.userConfigDAO,
@@ -1599,7 +1599,7 @@ class UserSessionScope internal constructor(
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
     val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
-        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository, kaliumConfigs)
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
 
     val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
         get() = MarkTeamAppLockStatusAsNotifiedUseCaseImpl(userConfigRepository)
