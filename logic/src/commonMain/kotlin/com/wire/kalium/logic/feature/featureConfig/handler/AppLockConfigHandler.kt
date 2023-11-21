@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.nullableFold
-import kotlin.time.Duration.Companion.seconds
 
 class AppLockConfigHandler(
     private val userConfigRepository: UserConfigRepository
@@ -37,8 +36,8 @@ class AppLockConfigHandler(
             },
             {
                 val newStatus = appLockConfig.status == Status.ENABLED
-                ((it.isEnabled != newStatus) ||
-                        (newStatus && it.timeout != appLockConfig.inactivityTimeoutSecs.seconds))
+                if (it.isEnabled != newStatus) true
+                else it.isStatusChanged
             }
         )
         return userConfigRepository.setAppLockStatus(
