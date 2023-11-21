@@ -610,7 +610,8 @@ class UserSessionScope internal constructor(
             e2EIClientProvider,
             mlsClientProvider,
             clientIdProvider,
-            mlsConversationRepository
+            mlsConversationRepository,
+            userConfigRepository
         )
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
@@ -1235,7 +1236,8 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             selfTeamId,
-            conversations.newGroupConversationSystemMessagesCreator
+            conversations.newGroupConversationSystemMessagesCreator,
+            oneOnOneResolver,
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
