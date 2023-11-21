@@ -29,12 +29,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
-interface LegalHoldHandler {
-    fun handleEnable(legalHoldEnable: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
-    fun handleDisable(legalHoldEnable: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
+internal interface LegalHoldHandler {
+    suspend fun handleEnable(legalHoldEnable: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
+    suspend fun handleDisable(legalHoldEnable: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
 }
 
-class LegalHoldHandlerImpl internal constructor(
+internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val persistOtherUserClients: PersistOtherUserClientsUseCase,
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase,
@@ -42,19 +42,19 @@ class LegalHoldHandlerImpl internal constructor(
     private val coroutineContext: CoroutineContext,
     private val coroutineScope: CoroutineScope = CoroutineScope(coroutineContext)
 ) : LegalHoldHandler {
-    override fun handleEnable(legalHoldEnable: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit> {
+    override suspend fun handleEnable(legalHoldEnable: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit> {
         kaliumLogger.i("legal hold enabled for user ${legalHoldEnable.userId.toLogString()}")
         processEvent(selfUserId, legalHoldEnable.userId)
         return Either.Right(Unit)
     }
 
-    override fun handleDisable(legalHoldEnable: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit> {
+    override suspend fun handleDisable(legalHoldEnable: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit> {
         kaliumLogger.i("legal hold disabled for user ${legalHoldEnable.userId.toLogString()}")
         processEvent(selfUserId, legalHoldEnable.userId)
         return Either.Right(Unit)
     }
 
-    private fun processEvent(selfUserId: UserId, userId: UserId) {
+    private suspend fun processEvent(selfUserId: UserId, userId: UserId) {
         if (selfUserId == userId) {
             userConfigRepository.deleteLegalHoldRequest()
             coroutineScope.launch {

@@ -24,15 +24,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 
-interface LegalHoldRequestHandler {
-    fun handle(legalHoldRequest: Event.User.LegalHoldRequest): Either<CoreFailure, Unit>
+internal interface LegalHoldRequestHandler {
+    suspend fun handle(legalHoldRequest: Event.User.LegalHoldRequest): Either<CoreFailure, Unit>
 }
 
-class LegalHoldRequestHandlerImpl internal constructor(
+internal class LegalHoldRequestHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val userConfigRepository: UserConfigRepository
 ) : LegalHoldRequestHandler {
-    override fun handle(legalHoldRequest: Event.User.LegalHoldRequest): Either<CoreFailure, Unit> {
+    override suspend fun handle(legalHoldRequest: Event.User.LegalHoldRequest): Either<CoreFailure, Unit> {
         if (selfUserId == legalHoldRequest.userId) {
             kaliumLogger.i("Legal hold request received, storing it locally..")
             userConfigRepository.setLegalHoldRequest(

@@ -31,12 +31,13 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class LegalHoldRequestHandlerTest {
 
     @Test
-    fun givenLegalHoldRequestEvent_whenUserIdIsSelfUser_thenStoreRequestLocally() {
+    fun givenLegalHoldRequestEvent_whenUserIdIsSelfUser_thenStoreRequestLocally() = runTest {
         val (arrangement, handler) = Arrangement()
             .withSetLegalHoldSuccess()
             .arrange()
@@ -45,7 +46,7 @@ class LegalHoldRequestHandlerTest {
 
         result.shouldSucceed()
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setLegalHoldRequest)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldRequest)
             .with(
                 eq(legalHoldRequestSelfUser.clientId.value),
                 eq(legalHoldRequestSelfUser.lastPreKey.id),
@@ -55,7 +56,7 @@ class LegalHoldRequestHandlerTest {
     }
 
     @Test
-    fun givenLegalHoldRequestEvent_whenUserIdIsNotIsSelfUser_thenIgnoreEvent() {
+    fun givenLegalHoldRequestEvent_whenUserIdIsNotIsSelfUser_thenIgnoreEvent() = runTest {
         val (arrangement, handler) = Arrangement()
             .arrange()
 
@@ -63,7 +64,7 @@ class LegalHoldRequestHandlerTest {
 
         result.shouldSucceed()
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setLegalHoldRequest)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldRequest)
             .with(any(), any(), any())
             .wasNotInvoked()
     }
@@ -78,7 +79,7 @@ class LegalHoldRequestHandlerTest {
 
         fun withSetLegalHoldSuccess() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::setLegalHoldRequest)
+                .suspendFunction(userConfigRepository::setLegalHoldRequest)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(Unit))
         }

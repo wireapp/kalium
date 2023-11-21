@@ -59,7 +59,7 @@ class LegalHoldHandlerTest {
         handler.handleEnable(legalHoldEventEnabled)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::deleteLegalHoldRequest)
+            .suspendFunction(arrangement.userConfigRepository::deleteLegalHoldRequest)
             .wasInvoked(once)
 
         advanceUntilIdle()
@@ -77,7 +77,7 @@ class LegalHoldHandlerTest {
         handler.handleDisable(legalHoldEventDisabled)
 
         verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::deleteLegalHoldRequest)
+            .suspendFunction(arrangement.userConfigRepository::deleteLegalHoldRequest)
             .wasNotInvoked()
 
         advanceUntilIdle()
@@ -109,7 +109,7 @@ class LegalHoldHandlerTest {
 
         fun withDeleteLegalHoldSuccess() = apply {
             given(userConfigRepository)
-                .function(userConfigRepository::deleteLegalHoldRequest)
+                .suspendFunction(userConfigRepository::deleteLegalHoldRequest)
                 .whenInvoked()
                 .thenReturn(Either.Right(Unit))
         }

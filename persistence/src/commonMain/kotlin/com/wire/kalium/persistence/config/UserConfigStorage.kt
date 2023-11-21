@@ -173,11 +173,6 @@ interface UserConfigStorage {
     fun setE2EINotificationTime(timeStamp: Long)
     fun getE2EINotificationTime(): Long?
     fun e2EINotificationTimeFlow(): Flow<Long?>
-    fun persistLegalHoldRequest(clientId: String, lastPreKeyId: Int, lastPreKey: String)
-    fun clearLegalHoldRequest()
-    fun getLegalHoldRequest(): LegalHoldRequestEntity?
-    fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
-
 }
 
 @Serializable
@@ -545,36 +540,6 @@ class UserConfigStorageImpl(
         }
     }
 
-    override fun persistLegalHoldRequest(
-        clientId: String,
-        lastPreKeyId: Int,
-        lastPreKey: String
-    ) {
-        kaliumPreferences.putSerializable(
-            LEGAL_HOLD_REQUEST,
-            LegalHoldRequestEntity(clientId, LastPreKey(lastPreKeyId, lastPreKey)),
-            LegalHoldRequestEntity.serializer(),
-        ).also {
-            legalHoldRequestFlow.tryEmit(Unit)
-        }
-    }
-
-    override fun getLegalHoldRequest(): LegalHoldRequestEntity? {
-        return kaliumPreferences.getSerializable(
-            LEGAL_HOLD_REQUEST,
-            LegalHoldRequestEntity.serializer()
-        )
-    }
-
-    override fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?> = legalHoldRequestFlow
-        .map { getLegalHoldRequest() }
-        .onStart { emit(getLegalHoldRequest()) }
-        .distinctUntilChanged()
-
-    override fun clearLegalHoldRequest() {
-        kaliumPreferences.remove(LEGAL_HOLD_REQUEST)
-    }
-
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
@@ -591,6 +556,5 @@ class UserConfigStorageImpl(
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
         const val APP_LOCK = "app_lock"
         const val DEFAULT_PROTOCOL = "default_protocol"
-        const val LEGAL_HOLD_REQUEST = "legal_hold_request"
     }
 }

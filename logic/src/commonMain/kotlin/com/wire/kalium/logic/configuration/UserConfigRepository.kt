@@ -107,12 +107,12 @@ interface UserConfigRepository {
     fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit>
     suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel>
     suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit>
-    fun setLegalHoldRequest(
+    suspend fun setLegalHoldRequest(
         clientId: String,
         lastPreKeyId: Int,
         lastPreKey: String
     ): Either<StorageFailure, Unit>
-    fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
+    suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
@@ -390,15 +390,15 @@ class UserConfigDataSource(
             userConfigDAO.setMigrationConfiguration(configuration.toEntity())
         }
 
-    override fun setLegalHoldRequest(
+    override suspend fun setLegalHoldRequest(
         clientId: String,
         lastPreKeyId: Int,
         lastPreKey: String
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigStorage.persistLegalHoldRequest(clientId, lastPreKeyId, lastPreKey)
+        userConfigDAO.persistLegalHoldRequest(clientId, lastPreKeyId, lastPreKey)
     }
 
-    override fun deleteLegalHoldRequest(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigStorage.clearLegalHoldRequest()
+    override suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userConfigDAO.clearLegalHoldRequest()
     }
 }
