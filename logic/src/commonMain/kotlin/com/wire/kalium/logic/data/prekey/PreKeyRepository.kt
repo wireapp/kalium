@@ -126,7 +126,7 @@ interface PreKeyRepository {
     suspend fun getFingerprintForPreKey(preKeyCrypto: PreKeyCrypto): Either<CoreFailure, ByteArray>
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class PreKeyDataSource(
     private val preKeyApi: PreKeyApi,
     private val proteusClientProvider: ProteusClientProvider,
