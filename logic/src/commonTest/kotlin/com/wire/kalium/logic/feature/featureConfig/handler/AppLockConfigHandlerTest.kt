@@ -82,7 +82,7 @@ class AppLockConfigHandlerTest {
     }
 
     @Test
-    fun givenNewStatusSameAsCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedFalse() {
+    fun givenNewStatusSameAsCurrent_whenHandlingTheEvent_ThenSetAppLockWithOldStatusChangedValue() {
         val appLockModel = AppLockModel(Status.ENABLED, 44)
         val (arrangement, appLockConfigHandler) = Arrangement()
             .withAppLocked()
@@ -99,30 +99,7 @@ class AppLockConfigHandlerTest {
             .with(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
-                eq(false)
-            )
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStatusEnabledAndTimeoutDifferentFromCurrent_whenHandlingTheEvent_ThenSetAppLockWithStatusChangedTrue() {
-        val appLockModel = AppLockModel(Status.ENABLED, 20)
-        val (arrangement, appLockConfigHandler) = Arrangement()
-            .withAppLocked()
-            .arrange()
-
-        appLockConfigHandler.handle(appLockModel)
-
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setAppLockStatus)
-            .with(
-                eq(appLockModel.status.toBoolean()),
-                eq(appLockModel.inactivityTimeoutSecs),
-                eq(true)
+                eq(appLockTeamConfigEnabled.isStatusChanged)
             )
             .wasInvoked(exactly = once)
     }
