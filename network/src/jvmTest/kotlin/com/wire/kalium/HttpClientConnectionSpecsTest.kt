@@ -35,12 +35,13 @@ class HttpClientConnectionSpecsTest {
         val connectionSpecs = OkHttpSingleton.createNew {}.connectionSpecs
         with(connectionSpecs[0]) {
             tlsVersions?.let {
-                assertTrue { validTlsVersions.containsAll(it) }
-                assertFalse { notValidTlsVersions.containsAll(it) }
+                assertTrue { it.containsAll(validTlsVersions) }
+                assertFalse { it.containsAll(notValidTlsVersions) }
             }
 
             cipherSuites?.let {
                 assertTrue { it.containsAll(validCipherSuites) }
+                assertFalse { it.containsAll(notValidCipherSuites) }
             }
         }
 
@@ -55,6 +56,16 @@ class HttpClientConnectionSpecsTest {
             CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
             CipherSuite.TLS_AES_128_GCM_SHA256,
             CipherSuite.TLS_AES_256_GCM_SHA384
+        )
+
+        val notValidCipherSuites = listOf(
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+            CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
+            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
+            CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA
         )
     }
 }
