@@ -238,6 +238,8 @@ private fun toStatusCodeBasedKaliumException(
 /**
  * Wrap and handles federation aware endpoints that can send errors responses
  * And raise proper federated exceptions
+ *
+ * @delegatedHandler the fallback handler when the response is not a federation error
  */
 suspend fun <T : Any> wrapFederationResponse(
     response: HttpResponse,
