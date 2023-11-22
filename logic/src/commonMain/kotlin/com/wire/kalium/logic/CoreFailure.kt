@@ -55,17 +55,26 @@ sealed interface CoreFailure {
     data object MissingClientRegistration : CoreFailure
 
     /**
-     * One or All users has no key packages available which prevents him/her from being added
+     * Key packages requested not available which prevents them from being added
      * to an existing or new conversation.
      */
     interface NoKeyPackagesAvailable : CoreFailure {
         val failedUserIds: Set<UserId>
     }
 
+    /**
+     * All users have no key packages available which prevents him/her from being added
+     * to an existing or new conversation.
+     */
     data class CompleteKeyPackagesUnAvailable(override val failedUserIds: Set<UserId>) : NoKeyPackagesAvailable
+
+    /**
+     * Some users have no key packages available which prevents him/her from being added.
+     * Claimed key packages are
+     */
     data class PartialKeyPackagesUnAvailable(
         override val failedUserIds: Set<UserId>,
-        val claimedKeyPackages: List<KeyPackageDTO>
+        val claimedKeyPackages: List<KeyPackageDTO> // todo(enhancement): this be a list KeyPackage domain model.
     ) : NoKeyPackagesAvailable
 
     /**

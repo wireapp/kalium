@@ -200,15 +200,22 @@ internal class ConversationGroupRepositoryImpl(
      */
     private suspend fun tryAddMembersToMLSGroup(
         groupId: String,
-        userIdList: List<UserId>,
-        failedUsersList: Set<UserId> = emptySet()
+        userIdList: List<UserId>
     ): Either<CoreFailure, Unit> {
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
             is Either.Right -> addingMemberResult
             is Either.Left -> {
-                if (addingMemberResult.value.isRetryable && addingMemberResult.value.hasUnreachableDomainsError)
-                    (addingMemberResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure).domains
-                TODO() // do retry stuff
+                when (val failure = addingMemberResult.value) {
+                    is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
+                        mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)
+                    }
+
+                    is CoreFailure.PartialKeyPackagesUnAvailable -> {
+                        mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList, failure.claimedKeyPackages)
+                    }
+
+                    else -> addingMemberResult
+                }
             }
         }
     }
