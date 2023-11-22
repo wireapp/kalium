@@ -22,10 +22,10 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -95,7 +95,7 @@ class KeyPackageRepositoryTest {
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
 
         result.shouldSucceed { claimedKeyPackages ->
-            assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), claimedKeyPackages.keyPackages)
+            assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), claimedKeyPackages)
         }
     }
 
@@ -110,7 +110,7 @@ class KeyPackageRepositoryTest {
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
 
         result.shouldFail { failure ->
-            assertEquals(CoreFailure.NoKeyPackagesAvailable(setOf(Arrangement.USER_ID)), failure)
+            assertEquals(CoreFailure.CompleteKeyPackagesUnAvailable(setOf(Arrangement.USER_ID)), failure)
         }
     }
 
@@ -125,7 +125,7 @@ class KeyPackageRepositoryTest {
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID))
 
         result.shouldSucceed { claimedKeyPackages ->
-            assertEquals(emptyList(), claimedKeyPackages.keyPackages)
+            assertEquals(emptyList(), claimedKeyPackages)
         }
     }
 

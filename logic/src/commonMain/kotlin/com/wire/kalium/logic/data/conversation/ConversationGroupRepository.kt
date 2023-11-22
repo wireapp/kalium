@@ -206,8 +206,9 @@ internal class ConversationGroupRepositoryImpl(
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
             is Either.Right -> addingMemberResult
             is Either.Left -> {
-
-                TODO("retry for claimPackages and offline sendCommit cases")
+                if (addingMemberResult.value.isRetryable && addingMemberResult.value.hasUnreachableDomainsError)
+                    (addingMemberResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure).domains
+                TODO() // do retry stuff
             }
         }
     }

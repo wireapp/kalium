@@ -37,7 +37,7 @@ import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {
 
-    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, ClaimedKeyPackages>
+    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>>
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
 
@@ -58,10 +58,10 @@ class KeyPackageDataSource(
     private val selfUserId: UserId,
 ) : KeyPackageRepository {
 
-    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, ClaimedKeyPackages> =
+    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>> =
         currentClientIdProvider().flatMap { selfClientId ->
             val failedUsers = mutableSetOf<UserId>()
-            val keyPackages = mutableListOf<KeyPackageDTO>()
+            val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
             userIds.forEach { userId ->
                 wrapApiRequest {
                     keyPackageApi.claimKeyPackages(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value))
@@ -69,16 +69,23 @@ class KeyPackageDataSource(
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
                         failedUsers.add(userId)
                     } else {
-                        keyPackages.addAll(it.keyPackages)
+                        claimedKeyPackages.addAll(it.keyPackages)
                     }
                 }
             }
 
-            val noKeyPackagesForOtherUsers = keyPackages.isEmpty() && failedUsers.isNotEmpty()
-            if (noKeyPackagesForOtherUsers) {
-                Either.Left(CoreFailure.NoKeyPackagesAvailable(failedUsers))
-            } else {
-                Either.Right(ClaimedKeyPackages(keyPackages, failedUsers))
+            when {
+                claimedKeyPackages.isEmpty() && failedUsers.isNotEmpty() -> {
+                    Either.Left(CoreFailure.CompleteKeyPackagesUnAvailable(failedUsers))
+                }
+
+                claimedKeyPackages.isNotEmpty() && failedUsers.isNotEmpty() -> {
+                    Either.Left(CoreFailure.PartialKeyPackagesUnAvailable(failedUsers, claimedKeyPackages))
+                }
+
+                else -> {
+                    Either.Right(claimedKeyPackages)
+                }
             }
         }
 

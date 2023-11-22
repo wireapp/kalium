@@ -399,12 +399,9 @@ internal class MLSConversationDataSource(
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
-                keyPackageRepository.claimKeyPackages(userIdList).flatMap { claimedKeyPackages ->
-                    // todo. acc and bubble up the failed users if they are.
-                    val failedUsers = claimedKeyPackages.failedUsers
-
+                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        val clientKeyPackageList = claimedKeyPackages.keyPackages
+                        val clientKeyPackageList = keyPackages
                             .map {
                                 Pair(
                                     CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),

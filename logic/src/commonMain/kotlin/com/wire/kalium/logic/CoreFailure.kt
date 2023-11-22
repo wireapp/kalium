@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
@@ -54,10 +55,18 @@ sealed interface CoreFailure {
     data object MissingClientRegistration : CoreFailure
 
     /**
-     * A user has no key packages available which prevents him/her from being added
+     * One or All users has no key packages available which prevents him/her from being added
      * to an existing or new conversation.
      */
-    data class NoKeyPackagesAvailable(val userId: Set<UserId>) : CoreFailure
+    interface NoKeyPackagesAvailable : CoreFailure {
+        val failedUserIds: Set<UserId>
+    }
+
+    data class CompleteKeyPackagesUnAvailable(override val failedUserIds: Set<UserId>) : NoKeyPackagesAvailable
+    data class PartialKeyPackagesUnAvailable(
+        override val failedUserIds: Set<UserId>,
+        val claimedKeyPackages: List<KeyPackageDTO>
+    ) : NoKeyPackagesAvailable
 
     /**
      * It's not allowed to run the application with development API enabled when
