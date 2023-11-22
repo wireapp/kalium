@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -92,8 +91,7 @@ class ClientDataSource(
     private val newClientDAO: NewClientDAO,
     private val selfUserID: UserId,
     private val clientApi: ClientApi,
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
-    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) : ClientRepository {
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)

@@ -33,6 +33,8 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
@@ -272,6 +274,11 @@ class UserEventReceiverTest {
         @Mock
         val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
 
+        @Mock
+        val legalHoldRequestHandler = mock(classOf<LegalHoldRequestHandler>())
+        @Mock
+        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
@@ -281,7 +288,9 @@ class UserEventReceiverTest {
             oneOnOneResolver,
             SELF_USER_ID,
             currentClientIdProvider,
-            lazy { newGroupConversationSystemMessagesCreator }
+            lazy { newGroupConversationSystemMessagesCreator },
+            legalHoldRequestHandler,
+            legalHoldHandler
         )
 
         init {
