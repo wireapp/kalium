@@ -34,7 +34,10 @@ internal class LegalHoldRequestHandlerImpl internal constructor(
 ) : LegalHoldRequestHandler {
     override suspend fun handle(legalHoldRequest: Event.User.LegalHoldRequest): Either<CoreFailure, Unit> {
         if (selfUserId == legalHoldRequest.userId) {
-            kaliumLogger.i("Legal hold request received, storing it locally..")
+            kaliumLogger.i(
+                "Legal hold request received for user ${legalHoldRequest.userId.toLogString()}," +
+                        " storing it locally.."
+            )
             userConfigRepository.setLegalHoldRequest(
                 legalHoldRequest.clientId.value,
                 legalHoldRequest.lastPreKey.id,

@@ -93,7 +93,7 @@ internal class UserConfigDAOImpl internal constructor(
         metadataDAO.putSerializable(
             LEGAL_HOLD_REQUEST,
             LegalHoldRequestEntity(clientId, LastPreKey(lastPreKeyId, lastPreKey)),
-            LegalHoldRequestEntity.serializer(),
+            LegalHoldRequestEntity.serializer()
         )
     }
 
