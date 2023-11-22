@@ -53,9 +53,6 @@ jobs:
             make db/verify-all-migrations
 
       - name: Test with Gradle
-        env:
-            GITHUB_USER: ${{ github.actor }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest
