@@ -59,7 +59,6 @@ class ProteusClientCryptoBoxImpl constructor(
 
     override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray =
         withContext(defaultContext) {
-            kaliumLogger.i("getFingerprintFromPreKey: called from Android")
             val cryptoBoxPreKey = CryptoBoxPreKey(preKey.id, preKey.encodedData.decodeBase64Bytes())
             getFingerprintFromPrekey(cryptoBoxPreKey)
         }

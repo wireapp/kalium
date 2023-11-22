@@ -60,7 +60,7 @@ class ProteusClientCryptoBoxImpl : ProteusClient {
 
     override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray {
         // TODO ("we need to expose the fingerprint from the core")
-        "".toByteArray()
+        return "".toByteArray()
     }
 
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray {
