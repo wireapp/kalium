@@ -34,6 +34,18 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+data class MessageAssetEntity(
+    val time: Instant,
+    val username: String?,
+    val messageId: String,
+    val conversationId: QualifiedIDEntity,
+    val assetId: String,
+    val width: Int,
+    val height: Int,
+    val downloadStatus: MessageEntity.DownloadStatus,
+    val decodedAssetPath: String?
+)
+
 @Suppress("LongParameterList")
 sealed interface MessageEntity {
     val id: String
@@ -179,7 +191,12 @@ sealed interface MessageEntity {
         /**
          * The last attempt at fetching and saving this asset's data failed.
          */
-        FAILED
+        FAILED,
+
+        /**
+         * Asset was not found on the server
+         */
+        NOT_FOUND
     }
 
     enum class ConfirmationType {
@@ -285,6 +302,9 @@ sealed class MessageEntityContent {
         val assetHeight: Int? = null,
         val assetDurationMs: Long? = null,
         val assetNormalizedLoudness: ByteArray? = null,
+
+        // decoded asset path
+        val decodedAssetPath: String?
     ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()

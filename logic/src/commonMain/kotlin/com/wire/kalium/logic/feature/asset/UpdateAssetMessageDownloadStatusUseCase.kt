@@ -32,12 +32,14 @@ interface UpdateAssetMessageDownloadStatusUseCase {
      * @param downloadStatus the new download status to update the asset message
      * @param conversationId the conversation identifier
      * @param messageId the message identifier
+     * @param decodedAssetPath decoded asset path when asset is already downloaded
      * @return [UpdateDownloadStatusResult] sealed class with either a Success state in case of success or [CoreFailure] on failure
      */
     suspend operator fun invoke(
         downloadStatus: DownloadStatus,
         conversationId: ConversationId,
-        messageId: String
+        messageId: String,
+        decodedAssetPath: String?
     ): UpdateDownloadStatusResult
 }
 
@@ -48,9 +50,10 @@ internal class UpdateAssetMessageDownloadStatusUseCaseImpl(
     override suspend operator fun invoke(
         downloadStatus: DownloadStatus,
         conversationId: ConversationId,
-        messageId: String
+        messageId: String,
+        decodedAssetPath: String?
     ): UpdateDownloadStatusResult {
-        return messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId).fold({
+        return messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId, decodedAssetPath).fold({
             UpdateDownloadStatusResult.Failure(it)
         }, {
             UpdateDownloadStatusResult.Success

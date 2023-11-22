@@ -121,7 +121,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOAD_IN_PROGRESS,
-                        brokenState
+                        brokenState,
+                        assetDataPath.toString()
                     )
                 ),
                 conversationId = conversationId,
@@ -133,7 +134,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 isSelfMessage = true
             )
 
-            uploadAssetAndUpdateMessage(message, brokenState)
+            uploadAssetAndUpdateMessage(message, brokenState, assetDataPath.toString())
         }.fold({
             SendBrokenAssetMessageResult.Failure(it)
         }, { SendBrokenAssetMessageResult.Success })
@@ -142,7 +143,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     @Suppress("MaxLineLength")
     private suspend fun uploadAssetAndUpdateMessage(
         message: Message.Regular,
-        brokenState: BrokenState
+        brokenState: BrokenState,
+        decodedAssetPath: String?
     ): Either<CoreFailure, Unit> =
         // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
         assetDataSource.uploadAndPersistPrivateAsset(
@@ -156,7 +158,12 @@ internal class SendBrokenAssetMessageUseCaseImpl(
             val updatedMessage = message.copy(
                 // We update the upload status to UPLOADED as the upload succeeded
                 content = MessageContent.Asset(
-                    provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED, brokenState)
+                    provideAssetMessageContent(
+                        currentAssetMessageContent,
+                        Message.UploadStatus.UPLOADED,
+                        brokenState,
+                        decodedAssetPath
+                    )
                 )
             )
             prepareAndSendAssetMessage(updatedMessage)
@@ -179,6 +186,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
         assetMessageMetadata: AssetMessageMetadata,
         uploadStatus: Message.UploadStatus,
         brokenState: BrokenState,
+        decodedAssetPath: String?,
     ): AssetContent {
         with(assetMessageMetadata) {
             val manipulatedSha256KeyData = if (brokenState.invalidHash) {
@@ -202,7 +210,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     assetToken = assetId.assetToken
                 ),
                 downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
-                uploadStatus = uploadStatus
+                uploadStatus = uploadStatus,
+                decodedAssetPath = decodedAssetPath
             )
         }
     }

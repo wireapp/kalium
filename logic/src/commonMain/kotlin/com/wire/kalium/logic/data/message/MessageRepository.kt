@@ -103,7 +103,8 @@ interface MessageRepository {
     suspend fun updateAssetMessageDownloadStatus(
         downloadStatus: Message.DownloadStatus,
         conversationId: ConversationId,
-        messageUuid: String
+        messageUuid: String,
+        decodedAssetPath: String?
     ): Either<CoreFailure, Unit>
 
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
@@ -228,6 +229,7 @@ interface MessageRepository {
     ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
+    suspend fun getAssetMessagesByConversationId(conversationId: ConversationId, limit: Int, offset: Int): List<AssetMessage>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -259,6 +261,17 @@ class MessageDataSource(
             offset,
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
+
+    override suspend fun getAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessage> =
+        messageDAO.getMessageAssets(
+            conversationId.toDao(),
+            limit,
+            offset
+        ).map(messageMapper::fromAssetEntityToMessage)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
@@ -380,13 +393,15 @@ class MessageDataSource(
     override suspend fun updateAssetMessageDownloadStatus(
         downloadStatus: Message.DownloadStatus,
         conversationId: ConversationId,
-        messageUuid: String
+        messageUuid: String,
+        decodedAssetPath: String?
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateAssetDownloadStatus(
                 assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
                 messageUuid,
-                conversationId.toDao()
+                conversationId.toDao(),
+                decodedAssetPath
             )
         }
 

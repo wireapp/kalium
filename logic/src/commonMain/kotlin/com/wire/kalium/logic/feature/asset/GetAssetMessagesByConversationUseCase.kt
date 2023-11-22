@@ -16,34 +16,32 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.feature.asset
 
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.AssetMessage
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 
 /**
  * This use case will observe and return a flow of paginated asset messages for a given conversation.
- * @see PagingData
+ * // TODO KBX
  * @see Message
  */
-class GetPaginatedFlowOfAssetMessagesByConversationUseCase internal constructor(
+class GetAssetMessagesByConversationUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository,
 ) {
 
     suspend operator fun invoke(
         conversationId: ConversationId,
-        visibility: List<Message.Visibility> = Message.Visibility.values().toList(),
-        startingOffset: Int,
-        pagingConfig: PagingConfig
-    ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedAssetMessagesByConversationIdAndVisibility(
-        conversationId, visibility, pagingConfig, startingOffset
-    ).flowOn(dispatcher.io)
+        limit: Int,
+        offset: Int,
+    ): List<AssetMessage> = withContext(dispatcher.io) {
+        messageRepository.getAssetMessagesByConversationId(
+            conversationId, limit, offset
+        )
+    }
 }

@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import kotlin.coroutines.CoroutineContext
@@ -33,12 +32,6 @@ actual interface MessageExtensions {
         startingOffset: Int
     ): KaliumPager<MessageEntity>
 
-    fun getPagerForConversationAssets(
-        conversationId: ConversationIDEntity,
-        visibilities: Collection<MessageEntity.Visibility>,
-        pagingConfig: PagingConfig,
-        startingOffset: Int
-    ): KaliumPager<MessageEntity>
 }
 
 actual class MessageExtensionsImpl actual constructor(
@@ -61,19 +54,6 @@ actual class MessageExtensionsImpl actual constructor(
         )
     }
 
-    override fun getPagerForConversationAssets(
-        conversationId: ConversationIDEntity,
-        visibilities: Collection<MessageEntity.Visibility>,
-        pagingConfig: PagingConfig,
-        startingOffset: Int
-    ): KaliumPager<MessageEntity> {
-        return KaliumPager(
-            Pager(pagingConfig) { getPagingConversationAssetsSource(conversationId, visibilities, startingOffset) },
-            getPagingConversationAssetsSource(conversationId, visibilities, startingOffset),
-            coroutineContext
-        )
-    }
-
     private fun getPagingConversationSource(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
@@ -88,35 +68,6 @@ actual class MessageExtensionsImpl actual constructor(
                 messagesQueries.selectByConversationIdAndVisibility(
                     conversationId,
                     visibilities,
-                    limit.toLong(),
-                    offset.toLong(),
-                    messageMapper::toEntityMessageFromView
-                )
-            }
-        )
-
-    private fun getPagingConversationAssetsSource(
-        conversationId: ConversationIDEntity,
-        visibilities: Collection<MessageEntity.Visibility>,
-        initialOffset: Int
-    ) =
-        KaliumOffsetQueryPagingSource(
-            countQuery = messagesQueries.countAssetMessagesByConversationIdAndMimeTypes(
-                conversationId, listOf(
-                    "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
-                )
-            ).toInt(),
-            transacter = messagesQueries,
-            context = coroutineContext,
-            initialOffset = initialOffset,
-            queryProvider = { limit, offset ->
-                messagesQueries.selectAssetMessagesByConversationIdAndMimeTypes(
-                    conversationId,
-                    visibilities,
-                    listOf(MessageEntity.ContentType.ASSET),
-                    listOf(
-                        "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
-                    ),
                     limit.toLong(),
                     offset.toLong(),
                     messageMapper::toEntityMessageFromView

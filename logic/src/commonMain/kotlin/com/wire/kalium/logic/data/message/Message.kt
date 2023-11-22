@@ -22,6 +22,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
@@ -29,7 +30,20 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import okio.Path
 import kotlin.time.Duration
+
+data class AssetMessage(
+    val time: String,
+    val username: String?,
+    val messageId: String,
+    val conversationId: QualifiedID,
+    val assetId: String,
+    val width: Int,
+    val height: Int,
+    val downloadStatus: Message.DownloadStatus,
+    val decodedAssetPath: Path?
+)
 
 @Suppress("LongParameterList")
 sealed interface Message {
@@ -550,7 +564,12 @@ sealed interface Message {
         /**
          * The last attempt at fetching and saving this asset's data failed.
          */
-        FAILED_DOWNLOAD
+        FAILED_DOWNLOAD,
+
+        /**
+         * Asset was not found on the server
+         */
+        NOT_FOUND
     }
 
     enum class Visibility {

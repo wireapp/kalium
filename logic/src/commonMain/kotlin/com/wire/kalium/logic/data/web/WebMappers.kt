@@ -107,7 +107,8 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                                     else -> null
                                 },
                                 uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
+                                decodedAssetPath = null
                             ),
                         ),
                         data.expectsReadConfirmation

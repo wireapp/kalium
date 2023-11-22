@@ -1,0 +1,65 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntityContent;
+import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
+import kotlin.Boolean;
+import kotlin.Int;
+import kotlin.collections.List;
+import kotlinx.datetime.Instant;
+
+CREATE VIEW IF NOT EXISTS MessageAssetView
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
+    User.name AS senderName,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    AssetContent.asset_id AS assetId,
+    AssetContent.asset_mime_type AS assetMimeType,
+    AssetContent.asset_height AS assetHeight,
+    AssetContent.asset_width AS assetWidth,
+    AssetContent.asset_download_status AS assetDownloadStatus,
+    AssetContent.decoded_asset_path AS decodedAssetPath
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id;
+
+selectAssetMessagesByConversationIdAndMimeTypes:
+SELECT * FROM MessageAssetView WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND contentType IN :contentTypes
+AND assetMimeType IN :mimeTypes
+AND assetWidth > 0
+AND assetHeight > 0
+AND assetId IS NOT NULL
+ORDER BY date DESC
+LIMIT :limit OFFSET :offset;
+
+getAssetMessagesByConversationIdAndMimeTypes:
+SELECT * FROM MessageAssetView WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND contentType IN :contentTypes
+AND assetMimeType IN :mimeTypes
+AND assetWidth > 0
+AND assetHeight > 0
+AND assetId IS NOT NULL
+ORDER BY date DESC
+LIMIT :limit
+OFFSET :offset;
+
+countAssetMessagesByConversationIdAndMimeTypes:
+SELECT count(*) FROM MessageAssetView WHERE conversationId = :conversatonId
+AND visibility IN :visibility
+AND contentType IN :contentTypes
+AND assetMimeType IN :mimeTypes
+AND assetWidth > 0
+AND assetHeight > 0
+AND assetId IS NOT NULL;

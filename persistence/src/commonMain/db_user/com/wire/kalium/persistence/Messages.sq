@@ -102,6 +102,9 @@ CREATE TABLE MessageAssetContent (
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
 
+      -- decoded path for faster loading
+      decoded_asset_path TEXT,
+
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
@@ -403,7 +406,7 @@ SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;
 
 updateAssetDownloadStatus:
 UPDATE MessageAssetContent
-SET asset_download_status = ?
+SET asset_download_status = ?, decoded_asset_path = ?
 WHERE message_id = ? AND conversation_id = ?;
 
 updateAssetContent {

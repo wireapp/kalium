@@ -36,55 +36,52 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNotFound
 import com.wire.kalium.util.KaliumDispatcher
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import okio.Path
 
-interface GetMessageAssetUseCase {
+interface GetMessageAssetUseCase2 { // TODO rename
     /**
      * Function that enables fetching a message asset locally or if it doesn't exist, downloading it from the server, decrypting it and
-     * saving it locally. The function returns a [Deferred] result to the path where the decrypted asset was stored. The caller is
-     * responsible for deciding whether to wait for the result or not.
-     *
+     * saving it locally.
      * @param conversationId the conversation ID the asset message belongs to
      * @param messageId the message Identifier
-     * @return a [Deferred] [MessageAssetResult] with the [Path] and size of the decrypted asset in case of success or [CoreFailure] if any
+     * @return [MessageAssetResult] with the [Path] and size of the decrypted asset in case of success or [CoreFailure] if any
      * failure occurred.
      */
     suspend operator fun invoke(
         conversationId: ConversationId,
         messageId: String,
-    ): Deferred<MessageAssetResult>
+    ): MessageAssetResult
 }
 
 // TODO: refactor this use case or find a way to centralize [Message.DownloadStatus] management
-internal class GetMessageAssetUseCaseImpl(
+internal class GetMessageAssetUseCaseImpl2(
     private val assetDataSource: AssetRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase,
-    private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher
-) : GetMessageAssetUseCase {
+) : GetMessageAssetUseCase2 {
 
     @Suppress("LongMethod", "ComplexMethod")
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): Deferred<MessageAssetResult> =
+    ): MessageAssetResult = withContext(dispatcher.io) {
         messageRepository.getMessageById(conversationId = conversationId, messageUuid = messageId).fold({
             kaliumLogger.e("There was an error retrieving the asset message ${messageId.obfuscateId()}")
-            CompletableDeferred(MessageAssetResult.Failure(it, false))
+            MessageAssetResult.Failure(it, false)
         }, { message ->
             when (val content = message.content) {
                 is MessageContent.Asset -> {
                     val assetDownloadStatus = content.value.downloadStatus
                     val assetUploadStatus = content.value.uploadStatus
-                    val wasDownloaded: Boolean = (assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY) &&
-                            content.value.decodedAssetPath != null
+                    val wasDownloaded: Boolean =
+                        (assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY)
+                                && content.value.decodedAssetPath != null
                     // assets uploaded by other clients have upload status NOT_UPLOADED
                     val alreadyUploaded: Boolean = (assetUploadStatus == NOT_UPLOADED && content.value.shouldBeDisplayed)
                             || assetUploadStatus == UPLOADED
@@ -104,62 +101,60 @@ internal class GetMessageAssetUseCaseImpl(
                     if (!wasDownloaded && alreadyUploaded)
                         updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId, null)
 
-                    scope.async(dispatcher.io) {
-                        assetDataSource.fetchPrivateDecodedAsset(
-                            assetId = assetMetadata.assetKey,
-                            assetDomain = assetMetadata.assetKeyDomain,
-                            assetName = assetMetadata.assetName,
-                            mimeType = content.value.mimeType,
-                            assetToken = assetMetadata.assetToken,
-                            encryptionKey = assetMetadata.encryptionKey,
-                            assetSHA256Key = assetMetadata.assetSHA256Key,
-                            downloadIfNeeded = alreadyUploaded
-                        ).fold({
-                            kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
-                            // This should be called if there is an issue while downloading the asset
-                            updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId, null)
-                            when {
-                                it.isInvalidRequestError -> {
-                                    assetMetadata.assetKeyDomain?.let { domain ->
-                                        userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
-                                    }
-                                    MessageAssetResult.Failure(it, false)
-                                }
+                    assetDataSource.fetchPrivateDecodedAsset(
+                        assetId = assetMetadata.assetKey,
+                        assetDomain = assetMetadata.assetKeyDomain,
+                        assetName = assetMetadata.assetName,
+                        mimeType = content.value.mimeType,
+                        assetToken = assetMetadata.assetToken,
+                        encryptionKey = assetMetadata.encryptionKey,
+                        assetSHA256Key = assetMetadata.assetSHA256Key,
+                        downloadIfNeeded = alreadyUploaded
+                    ).fold({
+                        kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
+                        // This should be called if there is an issue while downloading the asset
 
-                                it is NetworkFailure.FederatedBackendFailure -> MessageAssetResult.Failure(it, false)
-                                it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
-                                else -> MessageAssetResult.Failure(it, true)
+                        if (it is NetworkFailure.ServerMiscommunication) {
+                            if (it.kaliumException is KaliumException.InvalidRequestError && it.kaliumException.isNotFound()) {
+                                kaliumLogger.d("KBX update status not found for asset ${assetMetadata.assetKey}")
+                                updateAssetMessageDownloadStatus(Message.DownloadStatus.NOT_FOUND, conversationId, messageId, null)
                             }
-                        }, { decodedAssetPath ->
-                            // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded
-                            // while running this specific use case. Otherwise, recursive loop as described above kicks in.
-                            if (!wasDownloaded)
-                                updateAssetMessageDownloadStatus(
-                                    Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId,
-                                    decodedAssetPath.toString()
-                                )
+                        } else {
+                            updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId, null)
+                        }
+                        when {
+                            it.isInvalidRequestError -> {
+                                assetMetadata.assetKeyDomain?.let { domain ->
+                                    userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
+                                }
+                                MessageAssetResult.Failure(it, false)
+                            }
 
-                            MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
-                        })
-                    }
+                            it is NetworkFailure.FederatedBackendFailure -> MessageAssetResult.Failure(it, false)
+                            it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
+                            else -> MessageAssetResult.Failure(it, true)
+                        }
+                    }, { decodedAssetPath ->
+                        // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded
+                        // while running this specific use case. Otherwise, recursive loop as described above kicks in.
+                        if (!wasDownloaded)
+                            updateAssetMessageDownloadStatus(
+                                Message.DownloadStatus.SAVED_INTERNALLY,
+                                conversationId,
+                                messageId,
+                                decodedAssetPath.toString()
+                            )
+
+                        MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
+                    })
                 }
+
                 // This should never happen
-                else -> return@fold CompletableDeferred(
-                    MessageAssetResult.Failure(
-                        CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message")),
-                        isRetryNeeded = false
-                    )
+                else -> MessageAssetResult.Failure(
+                    CoreFailure.Unknown(IllegalStateException("The message associated to this id, was not an asset message")),
+                    isRetryNeeded = false
                 )
             }
         })
-}
-
-sealed class MessageAssetResult {
-    class Success(
-        val decodedAssetPath: Path,
-        val assetSize: Long,
-        val assetName: String
-    ) : MessageAssetResult()
-
-    class Failure(val coreFailure: CoreFailure, val isRetryNeeded: Boolean) : MessageAssetResult()
+    }
 }

@@ -117,7 +117,8 @@ class AssetMapperImpl(
                     }
                 ),
                 uploadStatus = fromUploadStatusEntityToLogicModel(assetUploadStatus),
-                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
+                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus),
+                decodedAssetPath = decodedAssetPath
             )
         }
     }
@@ -192,7 +193,8 @@ class AssetMapperImpl(
                     }
                 } ?: defaultRemoteData,
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED
+                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
+                decodedAssetPath = null
             )
         }
     }
@@ -262,6 +264,7 @@ class AssetMapperImpl(
             Message.DownloadStatus.SAVED_INTERNALLY -> MessageEntity.DownloadStatus.SAVED_INTERNALLY
             Message.DownloadStatus.SAVED_EXTERNALLY -> MessageEntity.DownloadStatus.SAVED_EXTERNALLY
             Message.DownloadStatus.FAILED_DOWNLOAD -> MessageEntity.DownloadStatus.FAILED
+            Message.DownloadStatus.NOT_FOUND -> MessageEntity.DownloadStatus.NOT_FOUND
         }
     }
 
@@ -272,6 +275,7 @@ class AssetMapperImpl(
             MessageEntity.DownloadStatus.SAVED_INTERNALLY -> Message.DownloadStatus.SAVED_INTERNALLY
             MessageEntity.DownloadStatus.SAVED_EXTERNALLY -> Message.DownloadStatus.SAVED_EXTERNALLY
             MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED_DOWNLOAD
+            MessageEntity.DownloadStatus.NOT_FOUND -> Message.DownloadStatus.NOT_FOUND
             null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
     }

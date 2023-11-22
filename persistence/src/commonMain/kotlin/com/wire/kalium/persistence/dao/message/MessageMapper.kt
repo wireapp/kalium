@@ -365,6 +365,37 @@ object MessageMapper {
         lastEdit?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
+    fun toEntityAssetMessageFromView(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType,
+        date: Instant,
+        visibility: MessageEntity.Visibility,
+        senderUserId: QualifiedIDEntity,
+        isEphemeral: Boolean,
+        senderName: String?,
+        selfUserId: QualifiedIDEntity?,
+        isSelfMessage: Boolean,
+        assetId: String?,
+        assetMimeType: String?,
+        assetHeight: Int?,
+        assetWidth: Int?,
+        assetDownloadStatus: MessageEntity.DownloadStatus?,
+        decodedAssetPath: String?
+    ): MessageAssetEntity {
+        return MessageAssetEntity(
+            time = date,
+            username = senderName,
+            messageId = id,
+            conversationId = conversationId,
+            assetId = assetId!!,
+            width = assetWidth!!,
+            height = assetHeight!!,
+            downloadStatus =assetDownloadStatus ?: MessageEntity.DownloadStatus.NOT_DOWNLOADED,
+            decodedAssetPath = decodedAssetPath
+        )
+    }
+
     @Suppress("LongMethod", "ComplexMethod", "UNUSED_PARAMETER")
     fun toEntityMessageFromView(
         id: String,
@@ -411,6 +442,7 @@ object MessageMapper {
         assetHeight: Int?,
         assetDuration: Long?,
         assetNormalizedLoudness: ByteArray?,
+        decodedAssetPath: String?,
         callerId: QualifiedIDEntity?,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
@@ -488,6 +520,7 @@ object MessageMapper {
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
                 assetNormalizedLoudness = assetNormalizedLoudness,
+                decodedAssetPath = decodedAssetPath
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)

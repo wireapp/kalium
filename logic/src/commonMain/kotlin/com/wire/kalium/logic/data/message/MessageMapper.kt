@@ -37,6 +37,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
+import com.wire.kalium.persistence.dao.message.MessageAssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -45,12 +46,14 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
+    fun fromAssetEntityToMessage(message: MessageAssetEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
@@ -123,6 +126,20 @@ class MessageMapperImpl(
             is MessageEntity.Regular -> mapRegularMessage(message)
             is MessageEntity.System -> mapSystemMessage(message)
         }
+    }
+
+    override fun fromAssetEntityToMessage(message: MessageAssetEntity): AssetMessage {
+        return AssetMessage(
+            message.time.toIsoDateTimeString(),
+            message.username,
+            message.messageId,
+            message.conversationId.toModel(),
+            message.assetId,
+            message.width,
+            message.height,
+            assetMapper.fromDownloadStatusEntityToLogicModel(message.downloadStatus),
+            decodedAssetPath = message.decodedAssetPath?.toPath()
+        )
     }
 
     private fun mapRegularMessage(message: MessageEntity.Regular) = Message.Regular(
@@ -304,6 +321,7 @@ class MessageMapperImpl(
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
                 assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
+                decodedAssetPath = decodedAssetPath
             )
         }
 
@@ -378,6 +396,7 @@ class MessageMapperImpl(
             MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
             MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
         }
+
         is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
     }

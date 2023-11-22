@@ -1,13 +1,4 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -131,6 +122,20 @@ IFNULL(
 FederationTerminatedContent.domain_list AS federationDomainList,
 FederationTerminatedContent.federation_type AS federationType,
 ConversationProtocolChangedContent.protocol AS conversationProtocolChanged
+-- IFNULL(
+--         (
+--             SELECT '[' || GROUP_CONCAT(
+--                 '{"id":"' || User.qualified_id || '",' ||
+--                 '"name":"' || User.name || '",' ||
+--                 '}')
+--             FROM User
+--             JOIN MessageMemberChangeContent ON User.qualified_id = MessageMemberChangeContent.member_change_list
+--             WHERE MessageMemberChangeContent.message_id = Message.id
+--             AND MessageMemberChangeContent.conversation_id = Message.conversation_id
+--             GROUP BY MessageMemberChangeContent.message_id
+--         ),
+--         '[]'
+--     ) AS memberChangeUsersJson
 
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id

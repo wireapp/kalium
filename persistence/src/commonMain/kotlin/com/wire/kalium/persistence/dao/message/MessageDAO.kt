@@ -31,7 +31,12 @@ import kotlinx.datetime.Instant
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
     suspend fun updateAssetUploadStatus(uploadStatus: MessageEntity.UploadStatus, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
+    suspend fun updateAssetDownloadStatus(
+        downloadStatus: MessageEntity.DownloadStatus,
+        id: String,
+        conversationId: QualifiedIDEntity,
+        decodedAssetPath: String?
+    )
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()
 
@@ -146,4 +151,9 @@ interface MessageDAO {
     ): Int
 
     val platformExtensions: MessageExtensions
+    suspend fun getMessageAssets(
+        conversationId: QualifiedIDEntity,
+        limit: Int,
+        offset: Int
+    ): List<MessageAssetEntity>
 }

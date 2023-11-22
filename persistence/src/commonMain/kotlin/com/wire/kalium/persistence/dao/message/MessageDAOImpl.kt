@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.NotificationQueries
@@ -48,6 +49,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class MessageDAOImpl internal constructor(
     private val queries: MessagesQueries,
+    private val assetViewQueries: MessageAssetViewQueries,
     private val notificationQueries: NotificationQueries,
     private val conversationsQueries: ConversationsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
@@ -208,9 +210,10 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,
         id: String,
-        conversationId: QualifiedIDEntity
+        conversationId: QualifiedIDEntity,
+        decodedAssetPath: String?
     ) = withContext(coroutineContext) {
-        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
+        queries.updateAssetDownloadStatus(downloadStatus,decodedAssetPath, id, conversationId)
     }
 
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
@@ -231,6 +234,25 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(coroutineContext) {
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
+
+    override suspend fun getMessageAssets(
+        conversationId: QualifiedIDEntity,
+        limit: Int,
+        offset: Int
+    ): List<MessageAssetEntity> =
+        withContext(coroutineContext) {
+            assetViewQueries.getAssetMessagesByConversationIdAndMimeTypes(
+                conversationId,
+                listOf(MessageEntity.Visibility.VISIBLE),
+                listOf(MessageEntity.ContentType.ASSET),
+                listOf(
+                    "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
+                ),
+                limit.toLong(),
+                offset.toLong(),
+                mapper::toEntityAssetMessageFromView
+            ).executeAsList()
+        }
 
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
