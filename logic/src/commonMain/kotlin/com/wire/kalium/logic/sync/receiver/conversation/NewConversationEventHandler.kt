@@ -18,13 +18,14 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserRepository
@@ -36,7 +37,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 
 interface NewConversationEventHandler {
@@ -52,10 +53,11 @@ internal class NewConversationEventHandlerImpl(
 ) : NewConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.NewConversation) {
+        val selfUserTeamId = selfTeamIdProvider().getOrNull()
         conversationRepository
-            .persistConversation(event.conversation, selfTeamIdProvider().getOrNull()?.value, true)
+            .persistConversation(event.conversation, selfUserTeamId?.value, true)
             .flatMap { isNewUnhandledConversation ->
-                resolveConversationIfOneOnOne(event)
+                resolveConversationIfOneOnOne(selfUserTeamId, event)
                     .flatMap {
                         conversationRepository.updateConversationModifiedDate(event.conversationId, DateTimeUtil.currentInstant())
                     }
@@ -71,8 +73,8 @@ internal class NewConversationEventHandlerImpl(
             }
     }
 
-    private suspend fun resolveConversationIfOneOnOne(event: Event.Conversation.NewConversation): Either<CoreFailure, Unit> =
-        if (event.conversation.type == ConversationResponse.Type.ONE_TO_ONE) {
+    private suspend fun resolveConversationIfOneOnOne(selfUserTeamId: TeamId?, event: Event.Conversation.NewConversation) =
+        if (event.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
             val otherUserId = event.conversation.members.otherMembers.first().id.toModel()
             oneOnOneResolver.resolveOneOnOneConversationWithUserId(otherUserId).map { Unit }
         } else Either.Right(Unit)
