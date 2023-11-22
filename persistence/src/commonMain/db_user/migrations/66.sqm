@@ -1,1 +1,2 @@
 ALTER TABLE MessageAssetContent ADD COLUMN decoded_asset_path TEXT;
+

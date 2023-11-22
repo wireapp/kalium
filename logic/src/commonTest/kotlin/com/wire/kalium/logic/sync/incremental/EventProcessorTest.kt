@@ -29,6 +29,8 @@ import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
+import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
@@ -221,17 +223,13 @@ class EventProcessorTest {
             .wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
 
         @Mock
         val eventRepository = configure(mock(EventRepository::class)) { stubsUnitByDefault = true }
 
         @Mock
         val conversationEventReceiver = mock(ConversationEventReceiver::class)
-
-        @Mock
-        private val featureConfigEventReceiver: FeatureConfigEventReceiver =
-            mock(FeatureConfigEventReceiver::class)
 
         @Mock
         val userEventReceiver = mock(UserEventReceiver::class)
@@ -252,9 +250,10 @@ class EventProcessorTest {
             withUserPropertiesEventReceiverSucceeding()
         }
 
-        suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
+        fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
             given(eventRepository)
-                .coroutine { eventRepository.updateLastProcessedEventId(eventId) }
+                .suspendFunction(eventRepository::updateLastProcessedEventId)
+                .whenInvokedWith(eq(eventId))
                 .then { result }
         }
 
@@ -310,14 +309,16 @@ class EventProcessorTest {
             Either.Left(failure)
         )
 
-        fun arrange() = this to EventProcessorImpl(
-            eventRepository,
-            conversationEventReceiver,
-            userEventReceiver,
-            teamEventReceiver,
-            featureConfigEventReceiver,
-            userPropertiesEventReceiver,
-            federationEventReceiver
-        )
+        fun arrange(block: Arrangement.() -> Unit = {}) = apply(block).let {
+            this to EventProcessorImpl(
+                eventRepository,
+                conversationEventReceiver,
+                userEventReceiver,
+                teamEventReceiver,
+                featureConfigEventReceiver,
+                userPropertiesEventReceiver,
+                federationEventReceiver
+            )
+        }
     }
 }

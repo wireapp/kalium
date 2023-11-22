@@ -282,6 +282,11 @@ interface ConversationRepository {
      */
     suspend fun updateProtocolLocally(conversationId: ConversationId, protocol: Conversation.Protocol): Either<CoreFailure, Boolean>
 
+    suspend fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean>
+    suspend fun setDegradedConversationNotifiedFlag(
+        conversationId: QualifiedID,
+        value: Boolean
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1055,6 +1060,19 @@ internal class ConversationDataSource internal constructor(
                 }
             }
         }
+
+    override suspend fun setDegradedConversationNotifiedFlag(
+        conversationId: QualifiedID,
+        value: Boolean
+    ): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateDegradedConversationNotifiedFlag(conversationId.toDao(), value)
+        }
+
+    override suspend fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean> =
+        conversationDAO.observeDegradedConversationNotified(conversationId.toDao())
+            .wrapStorageRequest()
+            .mapToRightOr(true)
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

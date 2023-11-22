@@ -37,6 +37,8 @@ fun newRegularMessageEntity(
     visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE,
     senderName: String = "senderName",
     expectsReadConfirmation: Boolean = false,
+    expireAfterMs: Long? = null,
+    selfDeletionStartDate: Instant? = null,
 ) = MessageEntity.Regular(
     id = id,
     content = content,
@@ -49,7 +51,9 @@ fun newRegularMessageEntity(
     visibility = visibility,
     senderName = senderName,
     expectsReadConfirmation = expectsReadConfirmation,
-    readCount = 0
+    readCount = 0,
+    expireAfterMs = expireAfterMs,
+    selfDeletionStartDate = selfDeletionStartDate,
 )
 
 @Suppress("LongParameterList")

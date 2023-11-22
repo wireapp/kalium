@@ -192,4 +192,51 @@ class EitherTest {
 
         assertEquals(callCount, 0)
     }
+
+    @Test
+    fun givenGetOrFailIsCalled_whenEitherIsRight_returnsRValue() {
+        val expected = "Expected"
+        val either = Either.Right(expected)
+        val result = either.getOrFail {
+            fail("Shouldn't be executed")
+        }
+        assertSame(result, expected)
+    }
+
+    @Test
+    fun givenGetOrFailIsCalled_whenEitherIsLeft_returnsUniValueAndRunFL() {
+        val expected = "Expected"
+        val either = Either.Left(expected)
+        val result = either.getOrFail {
+            assertSame(it, expected)
+        }
+        assertSame(result, Unit)
+    }
+
+    @Test
+    fun givenGetOrFailIsCalledInBlock_whenEitherIsLeft_innerReturnCalled() {
+        val expected = "Expected"
+        val either = Either.Left(expected)
+        val failReturn: String = run {
+            either.getOrFail {
+                assertSame(it, expected)
+                return@run it
+            }
+            fail("Shouldn't be executed")
+        }
+        assertSame(failReturn, expected)
+    }
+
+    @Test
+    fun givenGetOrFailIsCalledInBlock_whenEitherIsRight_innerReturnNotCalled() {
+        val expected = "Expected"
+        val either = Either.Right(expected)
+        val result: String = run {
+            val value = either.getOrFail {
+                fail("Shouldn't be executed")
+            }
+            return@run value
+        }
+        assertSame(result, expected)
+    }
 }

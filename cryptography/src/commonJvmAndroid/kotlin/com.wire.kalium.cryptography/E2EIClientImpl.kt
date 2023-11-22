@@ -86,7 +86,9 @@ class E2EIClientImpl(
         )
 
         private fun toAcmeChallenge(value: com.wire.crypto.AcmeChallenge) = AcmeChallenge(
-            value.delegate.toUByteArray().asByteArray(), value.url
+            value.delegate.toUByteArray().asByteArray(),
+            value.url,
+            value.target
         )
 
         fun toNewAcmeAuthz(value: com.wire.crypto.NewAcmeAuthz) = NewAcmeAuthz(

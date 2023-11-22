@@ -536,6 +536,7 @@ SELECT * FROM MessageDetailsView
 WHERE text LIKE ('%' || :searchQuery || '%')
 AND conversationId = :conversationId
 AND contentType = 'TEXT'
+AND expireAfterMillis IS NULL
 ORDER BY date DESC;
 
 selectSearchedConversationMessagePosition:
@@ -543,4 +544,5 @@ SELECT COUNT(*) FROM Message
 WHERE
 conversation_id = :conversationId
 AND creation_date >= (SELECT creation_date FROM Message WHERE id = :messageId LIMIT 1)
+AND expire_after_millis IS NULL
 ORDER BY creation_date DESC;
