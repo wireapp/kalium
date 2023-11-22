@@ -103,7 +103,7 @@ internal class ConversationMapperImpl(
     ): ConversationEntity = ConversationEntity(
         id = idMapper.fromApiToDao(apiModel.id),
         name = apiModel.name,
-        type = apiModel.getConversationType(selfUserTeamId),
+        type = apiModel.toConversationType(selfUserTeamId),
         teamId = apiModel.teamId,
         protocolInfo = apiModel.getProtocolInfo(mlsGroupState),
         mutedStatus = conversationStatusMapper.fromMutedStatusApiToDaoModel(apiModel.members.self.otrMutedStatus),
@@ -430,33 +430,32 @@ internal class ConversationMapperImpl(
         }
     }
 
-    private fun ConversationResponse.getConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
-        return when (type) {
-            ConversationResponse.Type.SELF -> ConversationEntity.Type.SELF
-            ConversationResponse.Type.GROUP -> {
-                // Fake team 1:1 conversations
-                val onlyOneOtherMember = members.otherMembers.size == 1
-                val noCustomName = name.isNullOrBlank()
-                val belongsToSelfTeam = selfUserTeamId != null && selfUserTeamId.value == teamId
-                val isTeamOneOne = onlyOneOtherMember && noCustomName && belongsToSelfTeam
-                if (isTeamOneOne) {
-                    ConversationEntity.Type.ONE_ON_ONE
-                } else {
-                    ConversationEntity.Type.GROUP
-                }
-            }
-
-            ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
-            ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
-        }
-    }
-
     override fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus) =
         Conversation.VerificationStatus.valueOf(verificationStatus.name)
 
     override fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus) =
         ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 
+}
+
+internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
+    return when (type) {
+        ConversationResponse.Type.SELF -> ConversationEntity.Type.SELF
+        ConversationResponse.Type.GROUP -> {
+            // Fake team 1:1 conversations
+            val onlyOneOtherMember = members.otherMembers.size == 1
+            val noCustomName = name.isNullOrBlank()
+            val belongsToSelfTeam = selfUserTeamId != null && selfUserTeamId.value == teamId
+            val isTeamOneOne = onlyOneOtherMember && noCustomName && belongsToSelfTeam
+            if (isTeamOneOne) {
+                ConversationEntity.Type.ONE_ON_ONE
+            } else {
+                ConversationEntity.Type.GROUP
+            }
+        }
+        ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
+        ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
+    }
 }
 
 private fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = when (this) {

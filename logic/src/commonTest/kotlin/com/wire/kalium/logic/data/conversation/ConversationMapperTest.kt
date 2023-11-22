@@ -196,6 +196,33 @@ class ConversationMapperTest {
         assertEquals(ConversationEntity.Type.GROUP, result.type)
     }
 
+    @Test
+    fun givenAFakeTeamOneOnOneConversationResponse_whenMappingFromConversationResponseToDaoType_thenShouldMapToOneOnOneType() {
+        val response = CONVERSATION_RESPONSE.copy(
+            // Looks like a Group
+            type = ConversationResponse.Type.GROUP,
+            // No Name
+            name = null,
+            // Only one other participant
+            members = CONVERSATION_RESPONSE.members.copy(otherMembers = listOf(OTHER_MEMBERS.first())),
+            // Same team as user
+            teamId = SELF_USER_TEAM_ID.value
+        )
+        val result = response.toConversationType(SELF_USER_TEAM_ID)
+        assertEquals(ConversationEntity.Type.ONE_ON_ONE, result)
+    }
+
+    @Test
+    fun givenAGroupConversationResponseWithoutName_whenMappingFromConversationResponseToDaoType_thenShouldMapToGroupType() {
+        val response = CONVERSATION_RESPONSE.copy(
+            type = ConversationResponse.Type.GROUP,
+            name = null,
+            teamId = null
+        )
+        val result = response.toConversationType(SELF_USER_TEAM_ID)
+        assertEquals(ConversationEntity.Type.GROUP, result)
+    }
+
     private companion object {
         val ORIGINAL_CONVERSATION_ID = ConversationId("original", "oDomain")
         val SELF_USER_TEAM_ID = TeamId("teamID")
