@@ -164,10 +164,14 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClientScope
+import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
+import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
+import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCaseImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -372,6 +376,8 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -1307,6 +1313,31 @@ class UserSessionScope internal constructor(
             protocolUpdateEventHandler
         )
     }
+    override val coroutineContext: CoroutineContext = SupervisorJob()
+
+    private val legalHoldRequestHandler = LegalHoldRequestHandlerImpl(
+        selfUserId = userId,
+        userConfigRepository = userConfigRepository
+    )
+
+    private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase
+        get() = FetchSelfClientsFromRemoteUseCaseImpl(
+            clientRepository = clientRepository,
+            provideClientId = clientIdProvider
+        )
+    private val persistOtherUserClients: PersistOtherUserClientsUseCase
+        get() = PersistOtherUserClientsUseCaseImpl(
+            clientRemoteRepository = clientRemoteRepository,
+            clientRepository = clientRepository
+        )
+
+    private val legalHoldHandler = LegalHoldHandlerImpl(
+        selfUserId = userId,
+        persistOtherUserClients = persistOtherUserClients,
+        fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
+        userConfigRepository = userConfigRepository,
+        coroutineContext = coroutineContext
+    )
 
     private val userEventReceiver: UserEventReceiver
         get() = UserEventReceiverImpl(
@@ -1318,7 +1349,9 @@ class UserSessionScope internal constructor(
             oneOnOneResolver,
             userId,
             clientIdProvider,
-            lazy { conversations.newGroupConversationSystemMessagesCreator }
+            lazy { conversations.newGroupConversationSystemMessagesCreator },
+            legalHoldRequestHandler,
+            legalHoldHandler
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver
@@ -1457,9 +1490,7 @@ class UserSessionScope internal constructor(
             authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository,
             cachedClientIdClearer,
-            updateSupportedProtocolsAndResolveOneOnOnes,
-            conversationRepository,
-            persistMessage
+            updateSupportedProtocolsAndResolveOneOnOnes
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(
@@ -1711,8 +1742,6 @@ class UserSessionScope internal constructor(
     private fun createPushTokenUpdater() = PushTokenUpdater(
         clientRepository, notificationTokenRepository, pushTokenRepository
     )
-
-    override val coroutineContext: CoroutineContext = SupervisorJob()
 
     private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
         MLSConversationsVerificationStatusesHandlerImpl(conversationRepository, persistMessage, mlsConversationRepository, userId)
