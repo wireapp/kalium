@@ -384,6 +384,7 @@ com.wire.kalium.logic.data.event
 com.wire.kalium.logic.data.featureConfig
 com.wire.kalium.logic.data.id
 com.wire.kalium.logic.data.keypackage
+com.wire.kalium.logic.data.legalhold
 com.wire.kalium.logic.data.logout
 com.wire.kalium.logic.data.message
 com.wire.kalium.logic.data.message.mention
@@ -468,6 +469,7 @@ com.wire.kalium.logic.sync.receiver.asset
 com.wire.kalium.logic.sync.receiver.conversation
 com.wire.kalium.logic.sync.receiver.conversation.message
 com.wire.kalium.logic.sync.receiver.handler
+com.wire.kalium.logic.sync.receiver.handler.legalhold
 com.wire.kalium.logic.sync.slow
 com.wire.kalium.logic.sync.slow.migration
 com.wire.kalium.logic.sync.slow.migration.steps
