@@ -214,6 +214,18 @@ data class AppLockConfigEntity(
 )
 
 @Serializable
+data class LegalHoldRequestEntity(
+    @SerialName("clientId") val clientId: String,
+    @SerialName("lastPrekey") val lastPreKey: LastPreKey,
+)
+
+@Serializable
+data class LastPreKey(
+    @SerialName("id") val id: Int,
+    @SerialName("key") val key: String,
+)
+
+@Serializable
 sealed class SelfDeletionTimerEntity {
 
     @Serializable
@@ -242,31 +254,64 @@ class UserConfigStorageImpl(
 ) : UserConfigStorage {
 
     private val areReadReceiptsEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val isTypingIndicatorEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val isFileSharingEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val isClassifiedDomainsEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val isGuestRoomLinkEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val e2EIFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val e2EINotificationFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val isScreenshotCensoringEnabledFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     private val appLockFlow =
-        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+
+    private val legalHoldRequestFlow =
+        MutableSharedFlow<Unit>(
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
 
     override fun persistAppLockStatus(
         isEnforced: Boolean,
@@ -284,7 +329,8 @@ class UserConfigStorageImpl(
 
     override fun setTeamAppLockAsNotified() {
         val newValue =
-            kaliumPreferences.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())?.copy(isStatusChanged = false)
+            kaliumPreferences.getSerializable(APP_LOCK, AppLockConfigEntity.serializer())
+                ?.copy(isStatusChanged = false)
                 ?: return
         kaliumPreferences.putSerializable(
             APP_LOCK,
@@ -320,14 +366,16 @@ class UserConfigStorageImpl(
     override fun isFileSharingEnabled(): IsFileSharingEnabledEntity? =
         kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
 
-    override fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?> = isFileSharingEnabledFlow
-        .map { isFileSharingEnabled() }
-        .onStart { emit(isFileSharingEnabled()) }
-        .distinctUntilChanged()
+    override fun isFileSharingEnabledFlow(): Flow<IsFileSharingEnabledEntity?> =
+        isFileSharingEnabledFlow
+            .map { isFileSharingEnabled() }
+            .onStart { emit(isFileSharingEnabled()) }
+            .distinctUntilChanged()
 
     override fun setFileSharingAsNotified() {
         val newValue =
-            kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())?.copy(isStatusChanged = false)
+            kaliumPreferences.getSerializable(FILE_SHARING, IsFileSharingEnabledEntity.serializer())
+                ?.copy(isStatusChanged = false)
                 ?: return
         kaliumPreferences.putSerializable(
             FILE_SHARING,
@@ -341,7 +389,10 @@ class UserConfigStorageImpl(
     override fun isClassifiedDomainsEnabledFlow(): Flow<ClassifiedDomainsEntity> {
         return isClassifiedDomainsEnabledFlow
             .map {
-                kaliumPreferences.getSerializable(ENABLE_CLASSIFIED_DOMAINS, ClassifiedDomainsEntity.serializer())!!
+                kaliumPreferences.getSerializable(
+                    ENABLE_CLASSIFIED_DOMAINS,
+                    ClassifiedDomainsEntity.serializer()
+                )!!
             }.onStart {
                 emit(
                     kaliumPreferences.getSerializable(
@@ -425,7 +476,10 @@ class UserConfigStorageImpl(
     }
 
     override fun isConferenceCallingEnabled(): Boolean =
-        kaliumPreferences.getBoolean(ENABLE_CONFERENCE_CALLING, DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE)
+        kaliumPreferences.getBoolean(
+            ENABLE_CONFERENCE_CALLING,
+            DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
+        )
 
     override fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
         .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS, true) }
@@ -463,7 +517,10 @@ class UserConfigStorageImpl(
     }
 
     override fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity? =
-        kaliumPreferences.getSerializable(GUEST_ROOM_LINK, IsGuestRoomLinkEnabledEntity.serializer())
+        kaliumPreferences.getSerializable(
+            GUEST_ROOM_LINK,
+            IsGuestRoomLinkEnabledEntity.serializer()
+        )
 
     override fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?> =
         isGuestRoomLinkEnabledFlow
@@ -471,10 +528,11 @@ class UserConfigStorageImpl(
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
 
-    override fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> = isScreenshotCensoringEnabledFlow
-        .map { kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false) }
-        .onStart { emit(kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false)) }
-        .distinctUntilChanged()
+    override fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> =
+        isScreenshotCensoringEnabledFlow
+            .map { kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false) }
+            .onStart { emit(kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING, false)) }
+            .distinctUntilChanged()
 
     override fun persistScreenshotCensoring(enabled: Boolean) {
         kaliumPreferences.putBoolean(ENABLE_SCREENSHOT_CENSORING, enabled).also {
@@ -492,7 +550,8 @@ class UserConfigStorageImpl(
         const val ENABLE_CONFERENCE_CALLING = "enable_conference_calling"
         const val ENABLE_READ_RECEIPTS = "enable_read_receipts"
         const val DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE = false
-        const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE = "require_second_factor_password_challenge"
+        const val REQUIRE_SECOND_FACTOR_PASSWORD_CHALLENGE =
+            "require_second_factor_password_challenge"
         const val ENABLE_SCREENSHOT_CENSORING = "enable_screenshot_censoring"
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
         const val APP_LOCK = "app_lock"
