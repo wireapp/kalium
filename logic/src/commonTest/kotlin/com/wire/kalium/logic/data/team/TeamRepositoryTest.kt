@@ -260,6 +260,19 @@ class TeamRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenTeamIdAndUserIdAndPassword_whenFetchingTeamMember_thenTeamMemberShouldBeSuccessful() = runTest {
+        // given
+        val (_, teamRepository) = Arrangement()
+            .withApiApproveLegalHoldSuccess()
+            .withGetUsersInfoSuccess()
+            .arrange()
+        // when
+        val result = teamRepository.approveLegalHold(teamId = TeamId(value = "teamId"), password = "password")
+        // then
+        result.shouldSucceed()
+    }
+
     private class Arrangement {
         @Mock
         val teamDAO = configure(mock(classOf<TeamDAO>())) {
@@ -324,6 +337,13 @@ class TeamRepositoryTest {
                 .suspendFunction(teamsApi::whiteListedServices)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Success(value = SERVICE_DETAILS_RESPONSE, headers = mapOf(), httpCode = 200))
+        }
+
+        fun withApiApproveLegalHoldSuccess() = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::approveLegalHold)
+                .whenInvokedWith(any(), any())
+                .thenReturn(NetworkResponse.Success(value = Unit, headers = mapOf(), httpCode = 200))
         }
 
         fun arrange() = this to teamRepository
