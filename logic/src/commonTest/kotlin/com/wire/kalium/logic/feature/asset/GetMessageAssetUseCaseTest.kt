@@ -170,7 +170,7 @@ class GetMessageAssetUseCaseTest {
 
             verify(arrangement.updateAssetMessageDownloadStatus)
                 .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
-                .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
+                .with(matching { it == Message.DownloadStatus.NOT_FOUND }, eq(someConversationId), eq(someMessageId))
                 .wasInvoked(exactly = once)
 
             verify(arrangement.userRepository)
