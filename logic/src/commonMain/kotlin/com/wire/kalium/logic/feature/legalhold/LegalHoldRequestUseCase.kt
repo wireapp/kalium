@@ -27,6 +27,9 @@ import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * Use case that observes the legal hold request.
+ */
 interface LegalHoldRequestUseCase {
     operator fun invoke(): Flow<LegalHoldRequestObserverResult>
 }
