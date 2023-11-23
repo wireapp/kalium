@@ -24,18 +24,17 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
-import io.ktor.utils.io.charsets.Charsets
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-interface LegalHoldRequestObserver {
+interface LegalHoldRequestUseCase {
     operator fun invoke(): Flow<LegalHoldRequestObserverResult>
 }
 
-internal class LegalHoldRequestObserverImpl internal constructor(
+internal class LegalHoldRequestUseCaseImpl internal constructor(
     val userConfigRepository: UserConfigRepository,
     val preKeyRepository: PreKeyRepository
-) : LegalHoldRequestObserver {
+) : LegalHoldRequestUseCase {
     override fun invoke(): Flow<LegalHoldRequestObserverResult> =
         userConfigRepository.observeLegalHoldRequest().map {
             it.fold(
@@ -57,9 +56,8 @@ internal class LegalHoldRequestObserverImpl internal constructor(
                             LegalHoldRequestObserverResult.Failure(failure)
                         },
                         { fingerprint ->
-                            val fingerprintDecoded = fingerprint.toString(Charsets.UTF_8)
                             LegalHoldRequestObserverResult.LegalHoldRequestAvailable(
-                                fingerprintDecoded
+                                fingerprint
                             )
                         }
                     )
@@ -69,7 +67,21 @@ internal class LegalHoldRequestObserverImpl internal constructor(
 }
 
 sealed class LegalHoldRequestObserverResult {
-    data class LegalHoldRequestAvailable(val fingerprint: String) : LegalHoldRequestObserverResult()
+    data class LegalHoldRequestAvailable(val fingerprint: ByteArray) : LegalHoldRequestObserverResult() {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other == null || this::class != other::class) return false
+
+            other as LegalHoldRequestAvailable
+
+            return fingerprint.contentEquals(other.fingerprint)
+        }
+
+        override fun hashCode(): Int {
+            return fingerprint.contentHashCode()
+        }
+    }
+
     data object NoLegalHoldRequest : LegalHoldRequestObserverResult()
     data class Failure(val failure: CoreFailure) : LegalHoldRequestObserverResult()
 }

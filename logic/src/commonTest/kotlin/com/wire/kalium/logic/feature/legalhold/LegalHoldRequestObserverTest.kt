@@ -129,7 +129,7 @@ class LegalHoldRequestObserverTest {
                 .thenReturn(Either.Right(fingerPrint))
         }
 
-        fun arrange() = this to LegalHoldRequestObserverImpl(
+        fun arrange() = this to LegalHoldRequestUseCaseImpl(
             userConfigRepository = userConfigRepository,
             preKeyRepository = preKeyRepository
         )
