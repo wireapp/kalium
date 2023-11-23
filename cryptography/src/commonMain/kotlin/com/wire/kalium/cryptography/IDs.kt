@@ -86,7 +86,7 @@ data class E2EIQualifiedClientId(
     val value: String,
     val userId: CryptoQualifiedID
 ) {
-    fun getEncodedUserID(): String{
+    fun getEncodedUserID(): String {
         val sourceUUID = uuidFrom(userId.value)
 
         // Convert the UUID to bytes
@@ -102,6 +102,7 @@ data class E2EIQualifiedClientId(
         // Base64url encode the UUID bytes without padding
         return uuidBytes.encodeBase64().removeSuffix("==")
     }
+
     override fun toString(): String {
         return "${getEncodedUserID()}:${value}@${userId.domain}"
     }
