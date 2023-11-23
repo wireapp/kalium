@@ -18,12 +18,10 @@
 
 package com.wire.kalium.logic.featureFlags
 
-import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl.Companion.DEFAULT_TIMEOUT
 import com.wire.kalium.logic.util.KaliumMockEngine
 import com.wire.kalium.network.NetworkStateObserver
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.DurationUnit
 
 data class KaliumConfigs(
     val forceConstantBitrateCalls: Boolean = false,
@@ -46,9 +44,7 @@ data class KaliumConfigs(
     val kaliumMockEngine: KaliumMockEngine? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null,
     // Interval between attempts to advance the proteus to MLS migration
-    val mlsMigrationInterval: Duration = 24.hours,
-    val teamAppLock: Boolean = false,
-    val teamAppLockTimeout: Int = DEFAULT_TIMEOUT.toInt(DurationUnit.SECONDS),
+    val mlsMigrationInterval: Duration = 24.hours
 )
 
 sealed interface BuildFileRestrictionState {

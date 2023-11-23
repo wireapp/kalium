@@ -20,7 +20,7 @@ package com.wire.kalium.logic.configuration
 import kotlin.time.Duration
 
 data class AppLockTeamConfig(
-    val isEnabled: Boolean,
+    val isEnforced: Boolean,
     val timeout: Duration,
     val isStatusChanged: Boolean?
 )

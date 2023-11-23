@@ -546,7 +546,7 @@ class UserSessionScope internal constructor(
         mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
 
-    private val userConfigRepository: UserConfigRepository
+    internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
             userStorage.preferences.userConfigStorage,
             userStorage.database.userConfigDAO,
@@ -1630,7 +1630,7 @@ class UserSessionScope internal constructor(
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
     val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
-        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository, kaliumConfigs)
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
 
     val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
         get() = MarkTeamAppLockStatusAsNotifiedUseCaseImpl(userConfigRepository)
