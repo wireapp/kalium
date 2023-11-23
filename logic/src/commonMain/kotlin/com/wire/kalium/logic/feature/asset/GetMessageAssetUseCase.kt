@@ -36,6 +36,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNotFound
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -116,7 +118,15 @@ internal class GetMessageAssetUseCaseImpl(
                         ).fold({
                             kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
                             // This should be called if there is an issue while downloading the asset
-                            updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
+                            if (it is NetworkFailure.ServerMiscommunication &&
+                                it.kaliumException is KaliumException.InvalidRequestError
+                                && it.kaliumException.isNotFound()
+                            ) {
+                                updateAssetMessageDownloadStatus(Message.DownloadStatus.NOT_FOUND, conversationId, messageId)
+                            } else {
+                                updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
+                            }
+
                             when {
                                 it.isInvalidRequestError -> {
                                     assetMetadata.assetKeyDomain?.let { domain ->

@@ -550,7 +550,12 @@ sealed interface Message {
         /**
          * The last attempt at fetching and saving this asset's data failed.
          */
-        FAILED_DOWNLOAD
+        FAILED_DOWNLOAD,
+
+        /**
+         * Asset was not found on the server
+         */
+        NOT_FOUND
     }
 
     enum class Visibility {
