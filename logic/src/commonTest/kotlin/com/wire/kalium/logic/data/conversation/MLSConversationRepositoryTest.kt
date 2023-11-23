@@ -1257,7 +1257,7 @@ class MLSConversationRepositoryTest {
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdSucceed_thenReturnsIdentity() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(listOf(WIRE_IDENTITY))
+            .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
@@ -1278,7 +1278,7 @@ class MLSConversationRepositoryTest {
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdFails_thenReturnsError() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(listOf(WIRE_IDENTITY))
+            .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(null)
             .arrange()
 
@@ -1299,7 +1299,7 @@ class MLSConversationRepositoryTest {
     fun givenGetClientId_whenGetUserIdentitiesFails_thenReturnsError() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(emptyList())
+            .withGetDeviceIdentitiesReturn(emptyList())
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
@@ -1433,9 +1433,9 @@ class MLSConversationRepositoryTest {
                 .thenReturn(ROTATE_BUNDLE)
         }
 
-        fun withGetUserIdentitiesReturn(identities: List<WireIdentity>) = apply {
+        fun withGetDeviceIdentitiesReturn(identities: List<WireIdentity>) = apply {
             given(mlsClient)
-                .suspendFunction(mlsClient::getUserIdentities)
+                .suspendFunction(mlsClient::getDeviceIdentities)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(identities)
         }
