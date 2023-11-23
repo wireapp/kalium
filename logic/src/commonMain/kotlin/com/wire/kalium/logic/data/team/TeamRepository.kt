@@ -52,6 +52,7 @@ interface TeamRepository {
     suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
     suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
+    suspend fun approveLegalHold(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -171,5 +172,10 @@ internal class TeamDataSource(
         wrapStorageRequest {
             serviceDAO.insertMultiple(it)
         }
+    }
+
+    override suspend fun approveLegalHold(teamId: TeamId, password: String?): Either<CoreFailure, Unit> = wrapApiRequest {
+        teamsApi.approveLegalHold(teamId.value, selfUserId.value, password)
+        // TODO: should we update the legal hold status for the current user in the database?
     }
 }
