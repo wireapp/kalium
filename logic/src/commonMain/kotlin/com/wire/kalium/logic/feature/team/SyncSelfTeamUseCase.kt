@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
@@ -41,14 +42,11 @@ internal class SyncSelfTeamUseCaseImpl(
         val user = userRepository.observeSelfUser().first()
 
         return user.teamId?.let { teamId ->
-            teamRepository.fetchTeamById(teamId = teamId).flatMap {
-                teamRepository.fetchMembersByTeamId(
-                    teamId = teamId,
-                    userDomain = user.id.domain
-                )
-            }.onSuccess {
-                teamRepository.syncServices(teamId = teamId)
-            }
+            teamRepository.fetchTeamById(teamId = teamId)
+                .map {  }
+                .onSuccess {
+                    teamRepository.syncServices(teamId = teamId)
+                }
         } ?: run {
             kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
             Either.Right(Unit)
