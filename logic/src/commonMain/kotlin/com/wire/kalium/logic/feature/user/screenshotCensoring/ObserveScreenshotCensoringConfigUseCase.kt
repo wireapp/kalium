@@ -39,10 +39,10 @@ internal class ObserveScreenshotCensoringConfigUseCaseImpl(
     override suspend fun invoke(): Flow<ObserveScreenshotCensoringConfigResult> {
         return combine(
             userConfigRepository.observeScreenshotCensoringConfig()
-                .mapToRightOr(true), // for safety it's set to true if we can't determine it
+                .mapToRightOr(false),
             userConfigRepository.observeTeamSettingsSelfDeletingStatus()
                 .mapRight { it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Enforced }
-                .mapToRightOr(true), // for safety it's set to true if we can't determine it
+                .mapToRightOr(false)
         ) { screenshotCensoringEnabled, teamSelfDeletingEnforced ->
             when {
                 teamSelfDeletingEnforced -> ObserveScreenshotCensoringConfigResult.Enabled.EnforcedByTeamSelfDeletingSettings
