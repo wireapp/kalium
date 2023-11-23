@@ -217,6 +217,10 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordC
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
@@ -1319,6 +1323,12 @@ class UserSessionScope internal constructor(
         selfUserId = userId,
         userConfigRepository = userConfigRepository
     )
+
+    val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
+        get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
+
+    val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
+        get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
 
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase
         get() = FetchSelfClientsFromRemoteUseCaseImpl(
