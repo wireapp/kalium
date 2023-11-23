@@ -223,8 +223,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                             provideAssetMessageContent(
                                 assetMessageMetadata = currentAssetMessageContent,
                                 // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                                uploadStatus = Message.UploadStatus.UPLOAD_IN_PROGRESS,
-                                decodedAssetPath = null
+                                uploadStatus = Message.UploadStatus.UPLOAD_IN_PROGRESS
                             )
                         ),
                         conversationId = conversationId,
@@ -271,8 +270,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 content = MessageContent.Asset(
                     value = provideAssetMessageContent(
                         updatedAssetMessageContent,
-                        Message.UploadStatus.UPLOADED,
-                        decodedAssetPath = currentAssetMessageContent.assetDataPath.toString()
+                        Message.UploadStatus.UPLOADED
                     )
                 ),
                 expectsReadConfirmation = expectsReadConfirmation
@@ -306,8 +304,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     @Suppress("LongParameterList")
     private fun provideAssetMessageContent(
         assetMessageMetadata: AssetMessageMetadata,
-        uploadStatus: Message.UploadStatus,
-        decodedAssetPath: String?
+        uploadStatus: Message.UploadStatus
     ): AssetContent {
         with(assetMessageMetadata) {
             return AssetContent(
@@ -339,8 +336,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
                 // will only be treated as "SAVED_INTERNALLY"
                 downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
-                uploadStatus = uploadStatus,
-                decodedAssetPath = decodedAssetPath
+                uploadStatus = uploadStatus
             )
         }
     }

@@ -320,8 +320,7 @@ class MessageMapperImpl(
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDurationMs,
-                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null,
-                decodedAssetPath = decodedAssetPath
+                assetNormalizedLoudness = if (metadata is Audio) metadata.normalizedLoudness else null
             )
         }
 

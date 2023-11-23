@@ -53,7 +53,7 @@ internal class UpdateAssetMessageDownloadStatusUseCaseImpl(
         messageId: String,
         decodedAssetPath: String?
     ): UpdateDownloadStatusResult {
-        return messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId, decodedAssetPath).fold({
+        return messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId).fold({
             UpdateDownloadStatusResult.Failure(it)
         }, {
             UpdateDownloadStatusResult.Success

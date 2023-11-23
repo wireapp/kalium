@@ -27,8 +27,7 @@ INSERT INTO MessageAssetContent
            local_db.MessageAssetContent.asset_width,
            local_db.MessageAssetContent.asset_height,
            local_db.MessageAssetContent.asset_duration_ms,
-           local_db.MessageAssetContent.asset_normalized_loudness,
-           local_db.MessageAssetContent.decoded_asset_path
+           local_db.MessageAssetContent.asset_normalized_loudness
     FROM local_db.MessageAssetContent
     LEFT JOIN selfdelete_message_id
        ON local_db.MessageAssetContent.message_id = selfdelete_message_id.id

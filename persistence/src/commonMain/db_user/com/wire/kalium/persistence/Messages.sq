@@ -102,9 +102,6 @@ CREATE TABLE MessageAssetContent (
       asset_duration_ms INTEGER,
       asset_normalized_loudness BLOB,
 
-      -- decoded path for faster loading
-      decoded_asset_path TEXT,
-
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
 );
@@ -406,7 +403,7 @@ SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;
 
 updateAssetDownloadStatus:
 UPDATE MessageAssetContent
-SET asset_download_status = ?, decoded_asset_path = ?
+SET asset_download_status = ?
 WHERE message_id = ? AND conversation_id = ?;
 
 updateAssetContent {
@@ -440,22 +437,6 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER
 
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
-
-countAssetMessagesByConversationIdAndMimeTypes:
-SELECT count(*) FROM MessageAssetContent WHERE conversation_id = :conversatonId
-AND asset_mime_type IN :mimeTypes
-AND asset_width > 0
-AND asset_height > 0;
-
-selectAssetMessagesByConversationIdAndMimeTypes:
-SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId
-AND visibility IN :visibility
-AND contentType IN :contentTypes
-AND assetMimeType IN :mimeTypes
-AND assetWidth > 0
-AND assetHeight > 0
-ORDER BY date DESC
-LIMIT :limit OFFSET :offset;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;

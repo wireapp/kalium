@@ -210,10 +210,9 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,
         id: String,
-        conversationId: QualifiedIDEntity,
-        decodedAssetPath: String?
+        conversationId: QualifiedIDEntity
     ) = withContext(coroutineContext) {
-        queries.updateAssetDownloadStatus(downloadStatus,decodedAssetPath, id, conversationId)
+        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
     }
 
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =

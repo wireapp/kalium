@@ -34,8 +34,7 @@ interface MessageDAO {
     suspend fun updateAssetDownloadStatus(
         downloadStatus: MessageEntity.DownloadStatus,
         id: String,
-        conversationId: QualifiedIDEntity,
-        decodedAssetPath: String?
+        conversationId: QualifiedIDEntity
     )
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()

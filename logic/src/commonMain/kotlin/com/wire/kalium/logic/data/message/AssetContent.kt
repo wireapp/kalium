@@ -27,8 +27,7 @@ data class AssetContent(
     val metadata: AssetMetadata? = null,
     val remoteData: RemoteData,
     val uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED,
-    val downloadStatus: Message.DownloadStatus,
-    val decodedAssetPath: String?
+    val downloadStatus: Message.DownloadStatus
 ) {
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()

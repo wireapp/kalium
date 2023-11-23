@@ -79,9 +79,7 @@ internal class GetMessageAssetUseCaseImpl2(
                 is MessageContent.Asset -> {
                     val assetDownloadStatus = content.value.downloadStatus
                     val assetUploadStatus = content.value.uploadStatus
-                    val wasDownloaded: Boolean =
-                        (assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY)
-                                && content.value.decodedAssetPath != null
+                    val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
                     // assets uploaded by other clients have upload status NOT_UPLOADED
                     val alreadyUploaded: Boolean = (assetUploadStatus == NOT_UPLOADED && content.value.shouldBeDisplayed)
                             || assetUploadStatus == UPLOADED

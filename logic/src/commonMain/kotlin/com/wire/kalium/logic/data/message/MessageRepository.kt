@@ -103,8 +103,7 @@ interface MessageRepository {
     suspend fun updateAssetMessageDownloadStatus(
         downloadStatus: Message.DownloadStatus,
         conversationId: ConversationId,
-        messageUuid: String,
-        decodedAssetPath: String?
+        messageUuid: String
     ): Either<CoreFailure, Unit>
 
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
@@ -393,15 +392,13 @@ class MessageDataSource(
     override suspend fun updateAssetMessageDownloadStatus(
         downloadStatus: Message.DownloadStatus,
         conversationId: ConversationId,
-        messageUuid: String,
-        decodedAssetPath: String?
+        messageUuid: String
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateAssetDownloadStatus(
                 assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
                 messageUuid,
-                conversationId.toDao(),
-                decodedAssetPath
+                conversationId.toDao()
             )
         }
 

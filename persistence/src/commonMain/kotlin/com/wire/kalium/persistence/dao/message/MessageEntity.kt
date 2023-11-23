@@ -301,10 +301,8 @@ sealed class MessageEntityContent {
         val assetWidth: Int? = null,
         val assetHeight: Int? = null,
         val assetDurationMs: Long? = null,
-        val assetNormalizedLoudness: ByteArray? = null,
+        val assetNormalizedLoudness: ByteArray? = null
 
-        // decoded asset path
-        val decodedAssetPath: String?
     ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()

@@ -66,8 +66,7 @@ INSERT OR IGNORE INTO MessageAssetContent SELECT
     asset_width,
     asset_height,
     asset_duration_ms,
-    asset_normalized_loudness,
-    NULL
+    asset_normalized_loudness
     FROM backup_db.MessageAssetContent;
 
 importMessageRestrictedAssetContentTable:

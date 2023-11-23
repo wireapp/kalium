@@ -117,8 +117,7 @@ class AssetMapperImpl(
                     }
                 ),
                 uploadStatus = fromUploadStatusEntityToLogicModel(assetUploadStatus),
-                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus),
-                decodedAssetPath = decodedAssetPath
+                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
             )
         }
     }
@@ -193,8 +192,7 @@ class AssetMapperImpl(
                     }
                 } ?: defaultRemoteData,
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                decodedAssetPath = null
+                uploadStatus = Message.UploadStatus.NOT_UPLOADED
             )
         }
     }

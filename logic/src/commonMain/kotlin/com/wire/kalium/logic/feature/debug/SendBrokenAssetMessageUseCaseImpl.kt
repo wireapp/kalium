@@ -121,8 +121,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOAD_IN_PROGRESS,
-                        brokenState,
-                        assetDataPath.toString()
+                        brokenState
                     )
                 ),
                 conversationId = conversationId,
@@ -161,8 +160,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
                         Message.UploadStatus.UPLOADED,
-                        brokenState,
-                        decodedAssetPath
+                        brokenState
                     )
                 )
             )
@@ -185,8 +183,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     private fun provideAssetMessageContent(
         assetMessageMetadata: AssetMessageMetadata,
         uploadStatus: Message.UploadStatus,
-        brokenState: BrokenState,
-        decodedAssetPath: String?,
+        brokenState: BrokenState
     ): AssetContent {
         with(assetMessageMetadata) {
             val manipulatedSha256KeyData = if (brokenState.invalidHash) {
@@ -210,8 +207,7 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     assetToken = assetId.assetToken
                 ),
                 downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
-                uploadStatus = uploadStatus,
-                decodedAssetPath = decodedAssetPath
+                uploadStatus = uploadStatus
             )
         }
     }

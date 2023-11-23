@@ -442,7 +442,6 @@ object MessageMapper {
         assetHeight: Int?,
         assetDuration: Long?,
         assetNormalizedLoudness: ByteArray?,
-        decodedAssetPath: String?,
         callerId: QualifiedIDEntity?,
         memberChangeList: List<QualifiedIDEntity>?,
         memberChangeType: MessageEntity.MemberChangeType?,
@@ -519,8 +518,7 @@ object MessageMapper {
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
-                assetNormalizedLoudness = assetNormalizedLoudness,
-                decodedAssetPath = decodedAssetPath
+                assetNormalizedLoudness = assetNormalizedLoudness
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
