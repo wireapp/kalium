@@ -206,14 +206,18 @@ internal class ConversationGroupRepositoryImpl(
             is Either.Right -> addingMemberResult
             is Either.Left -> {
                 when (val failure = addingMemberResult.value) {
-                    is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
-                        mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)
-                    }
-
+                    // claiming key packages offline or out of packages
                     is CoreFailure.NoKeyPackagesAvailable -> {
                         mlsConversationRepository.addMemberToMLSGroup(
                             GroupID(groupId),
                             userIdList.filterNot { failure.failedUserIds.contains(it) })
+                    }
+
+                    // sending commit unreachable
+                    is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
+                        mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList.filterNot {
+                            !failure.domains.contains(it.domain)
+                        })
                     }
 
                     else -> addingMemberResult
