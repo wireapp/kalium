@@ -65,7 +65,6 @@ class ProteusClientCryptoBoxImpl constructor(
     }
 
     override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray = wrapException {
-        kaliumLogger.i("getFingerprintFromPreKey: called from JVM")
         getFingerprintFromPrekey(toPreKey(preKey))
     }
 
