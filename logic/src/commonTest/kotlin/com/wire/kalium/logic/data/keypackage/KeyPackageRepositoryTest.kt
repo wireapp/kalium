@@ -110,7 +110,7 @@ class KeyPackageRepositoryTest {
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
 
         result.shouldFail { failure ->
-            assertEquals(CoreFailure.CompleteKeyPackagesUnAvailable(setOf(Arrangement.USER_ID)), failure)
+            assertEquals(CoreFailure.NoKeyPackagesAvailable(setOf(Arrangement.USER_ID)), failure)
         }
     }
 

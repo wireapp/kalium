@@ -57,7 +57,6 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -100,11 +99,7 @@ interface MLSConversationRepository {
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
-    suspend fun addMemberToMLSGroup(
-        groupID: GroupID,
-        userIdList: List<UserId>,
-        preClaimedKeysList: List<KeyPackageDTO> = emptyList()
-    ): Either<CoreFailure, Unit>
+    suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
 
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<QualifiedClientID>): Either<CoreFailure, Unit>
@@ -395,24 +390,19 @@ internal class MLSConversationDataSource(
         return epochsFlow
     }
 
-    override suspend fun addMemberToMLSGroup(
-        groupID: GroupID,
-        userIdList: List<UserId>,
-        preClaimedKeysList: List<KeyPackageDTO>
-    ): Either<CoreFailure, Unit> =
-        internalAddMemberToMLSGroup(groupID, userIdList, preClaimedKeysList, retryOnStaleMessage = true)
+    override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+        internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
 
     private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>,
-        preClaimedKeysList: List<KeyPackageDTO>,
         retryOnStaleMessage: Boolean
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        val clientKeyPackageList = (keyPackages + preClaimedKeysList).toSet()
+                        val clientKeyPackageList = keyPackages
                             .map {
                                 Pair(
                                     CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
@@ -516,7 +506,7 @@ internal class MLSConversationDataSource(
                     }
                 }
             }.flatMap {
-                internalAddMemberToMLSGroup(groupID, members, emptyList(), retryOnStaleMessage = false).onFailure {
+                internalAddMemberToMLSGroup(groupID, members, retryOnStaleMessage = false).onFailure {
                     wrapMLSRequest {
                         mlsClient.wipeConversation(groupID.toCrypto())
                     }

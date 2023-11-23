@@ -74,18 +74,10 @@ class KeyPackageDataSource(
                 }
             }
 
-            when {
-                claimedKeyPackages.isEmpty() && failedUsers.isNotEmpty() -> {
-                    Either.Left(CoreFailure.CompleteKeyPackagesUnAvailable(failedUsers))
-                }
-
-                claimedKeyPackages.isNotEmpty() && failedUsers.isNotEmpty() -> {
-                    Either.Left(CoreFailure.PartialKeyPackagesUnAvailable(failedUsers, claimedKeyPackages))
-                }
-
-                else -> {
-                    Either.Right(claimedKeyPackages)
-                }
+            if (failedUsers.isNotEmpty()) {
+                Either.Left(CoreFailure.NoKeyPackagesAvailable(failedUsers))
+            } else {
+                Either.Right(claimedKeyPackages)
             }
         }
 

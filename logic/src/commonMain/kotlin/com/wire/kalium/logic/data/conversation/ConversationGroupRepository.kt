@@ -210,8 +210,10 @@ internal class ConversationGroupRepositoryImpl(
                         mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)
                     }
 
-                    is CoreFailure.PartialKeyPackagesUnAvailable -> {
-                        mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList, failure.claimedKeyPackages)
+                    is CoreFailure.NoKeyPackagesAvailable -> {
+                        mlsConversationRepository.addMemberToMLSGroup(
+                            GroupID(groupId),
+                            userIdList.filterNot { failure.failedUserIds.contains(it) })
                     }
 
                     else -> addingMemberResult
