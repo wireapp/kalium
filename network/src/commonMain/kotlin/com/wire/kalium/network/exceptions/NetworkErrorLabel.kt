@@ -48,6 +48,7 @@ internal object NetworkErrorLabel {
     const val GUEST_LINKS_DISABLED = "guest-links-disabled"
     const val ACCESS_DENIED = "access-denied"
     const val WRONG_CONVERSATION_PASSWORD = "invalid-conversation-password"
+    const val NOT_FOUND = "not-found"
 
     // Federation
     const val FEDERATION_FAILURE = "federation-remote-error"

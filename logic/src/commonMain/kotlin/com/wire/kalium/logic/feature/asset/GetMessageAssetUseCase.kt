@@ -37,7 +37,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
+import com.wire.kalium.network.exceptions.isNotFoundLabel
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -120,7 +120,7 @@ internal class GetMessageAssetUseCaseImpl(
                             // This should be called if there is an issue while downloading the asset
                             if (it is NetworkFailure.ServerMiscommunication &&
                                 it.kaliumException is KaliumException.InvalidRequestError
-                                && it.kaliumException.isNotFound()
+                                && it.kaliumException.isNotFoundLabel()
                             ) {
                                 updateAssetMessageDownloadStatus(Message.DownloadStatus.NOT_FOUND, conversationId, messageId)
                             } else {
