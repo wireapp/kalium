@@ -15,12 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.network.api.base.authenticated.client
 
-import kotlin.time.Duration
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-data class AppLockTeamConfig(
-    val isEnforced: Boolean,
-    val timeout: Duration,
-    val isStatusChanged: Boolean?
+@Serializable
+data class ClientIdDTO(
+    @SerialName("id")
+    val clientId: String
 )
