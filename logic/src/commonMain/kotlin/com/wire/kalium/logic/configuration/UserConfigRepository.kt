@@ -121,7 +121,7 @@ interface UserConfigRepository {
 }
 
 @Suppress("TooManyFunctions")
-class UserConfigDataSource(
+internal class UserConfigDataSource internal constructor(
     private val userConfigStorage: UserConfigStorage,
     private val userConfigDAO: UserConfigDAO,
     private val kaliumConfigs: KaliumConfigs
@@ -362,7 +362,7 @@ class UserConfigDataSource(
             userConfigStorage.appLockFlow().map {
                 it?.let { config ->
                     AppLockTeamConfig(
-                        isEnabled = config.enforceAppLock,
+                        isEnforced = config.enforceAppLock,
                         timeout = config.inactivityTimeoutSecs.seconds,
                         isStatusChanged = config.isStatusChanged
                     )
@@ -370,16 +370,16 @@ class UserConfigDataSource(
             }
         }
 
-    override fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig> {
-        val serverSideConfig = wrapStorageRequest { userConfigStorage.appLockStatus() }
-        return serverSideConfig.map {
+    override fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig> =
+        wrapStorageRequest {
+            userConfigStorage.appLockStatus()
+        }.map {
             AppLockTeamConfig(
-                isEnabled = it.enforceAppLock,
+                isEnforced = it.enforceAppLock,
                 timeout = it.inactivityTimeoutSecs.seconds,
                 isStatusChanged = it.isStatusChanged
             )
         }
-    }
 
     override fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.setTeamAppLockAsNotified()
