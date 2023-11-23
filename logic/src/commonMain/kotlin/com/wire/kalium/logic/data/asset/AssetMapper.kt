@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcFileMd5
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -33,13 +34,16 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import okio.Path
+import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
 interface AssetMapper {
@@ -275,4 +279,18 @@ class AssetMapperImpl(
             null -> Message.DownloadStatus.NOT_DOWNLOADED
         }
     }
+}
+
+fun AssetMessageEntity.toModel(): AssetMessage {
+    return AssetMessage(
+        time.toIsoDateTimeString(),
+        username,
+        messageId,
+        conversationId.toModel(),
+        assetId,
+        width,
+        height,
+        downloadStatus.toModel(),
+        decodedAssetPath = decodedAssetPath?.toPath()
+    )
 }
