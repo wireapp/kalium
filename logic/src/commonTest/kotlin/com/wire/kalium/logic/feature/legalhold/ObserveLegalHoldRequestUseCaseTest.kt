@@ -36,54 +36,54 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class LegalHoldRequestObserverTest {
+class ObserveLegalHoldRequestUseCaseTest {
 
     @Test
     fun givenUserConfigRepositoryDataNotFoundFailure_whenObserving_thenPropagateNoLegalHoldRequest() =
         runTest {
-            val (_, legalHoldRequestObserver) = Arrangement()
+            val (_, useCase) = Arrangement()
                 .withUserConfigRepositoryDataNotFound()
                 .arrange()
 
-            val result = legalHoldRequestObserver()
+            val result = useCase()
 
-            assertTrue(result.first() is LegalHoldRequestObserverResult.NoLegalHoldRequest)
+            assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.NoObserveLegalHoldRequest)
         }
 
     @Test
     fun givenUserConfigRepositoryOtherFailure_whenObserving_thenPropagateFailure() = runTest {
-        val (_, legalHoldRequestObserver) = Arrangement()
+        val (_, useCase) = Arrangement()
             .withUserConfigRepositoryFailure()
             .arrange()
 
-        val result = legalHoldRequestObserver()
+        val result = useCase()
 
-        assertTrue(result.first() is LegalHoldRequestObserverResult.Failure)
+        assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.Failure)
     }
 
     @Test
     fun givenPreKeyRepositoryFailure_whenObserving_thenPropagateFailure() = runTest {
-        val (_, legalHoldRequestObserver) = Arrangement()
+        val (_, useCase) = Arrangement()
             .withUserConfigRepositorySuccess()
             .withPreKeyRepositoryFailure()
             .arrange()
 
-        val result = legalHoldRequestObserver()
+        val result = useCase()
 
-        assertTrue(result.first() is LegalHoldRequestObserverResult.Failure)
+        assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.Failure)
     }
 
     @Test
     fun givenPreKeyRepositorySuccess_whenObserving_thenPropagateLegalHoldRequestAvailable() =
         runTest {
-            val (_, legalHoldRequestObserver) = Arrangement()
+            val (_, useCase) = Arrangement()
                 .withUserConfigRepositorySuccess()
                 .withPreKeyRepositorySuccess()
                 .arrange()
 
-            val result = legalHoldRequestObserver()
+            val result = useCase()
 
-            assertTrue(result.first() is LegalHoldRequestObserverResult.LegalHoldRequestAvailable)
+            assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.ObserveLegalHoldRequestAvailable)
         }
 
     private class Arrangement {
@@ -129,7 +129,7 @@ class LegalHoldRequestObserverTest {
                 .thenReturn(Either.Right(fingerPrint))
         }
 
-        fun arrange() = this to LegalHoldRequestUseCaseImpl(
+        fun arrange() = this to ObserveLegalHoldRequestUseCaseImpl(
             userConfigRepository = userConfigRepository,
             preKeyRepository = preKeyRepository
         )

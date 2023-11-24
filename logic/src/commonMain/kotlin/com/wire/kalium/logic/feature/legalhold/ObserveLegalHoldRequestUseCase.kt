@@ -30,24 +30,24 @@ import kotlinx.coroutines.flow.map
 /**
  * Use case that observes the legal hold request.
  */
-interface LegalHoldRequestUseCase {
-    operator fun invoke(): Flow<LegalHoldRequestObserverResult>
+interface ObserveLegalHoldRequestUseCase {
+    operator fun invoke(): Flow<ObserveLegalHoldRequestUseCaseResult>
 }
 
-internal class LegalHoldRequestUseCaseImpl internal constructor(
+internal class ObserveLegalHoldRequestUseCaseImpl internal constructor(
     val userConfigRepository: UserConfigRepository,
     val preKeyRepository: PreKeyRepository
-) : LegalHoldRequestUseCase {
-    override fun invoke(): Flow<LegalHoldRequestObserverResult> =
+) : ObserveLegalHoldRequestUseCase {
+    override fun invoke(): Flow<ObserveLegalHoldRequestUseCaseResult> =
         userConfigRepository.observeLegalHoldRequest().map {
             it.fold(
                 { failure ->
                     if (failure is StorageFailure.DataNotFound) {
                         kaliumLogger.i("No legal hold request found")
-                        LegalHoldRequestObserverResult.NoLegalHoldRequest
+                        ObserveLegalHoldRequestUseCaseResult.NoObserveLegalHoldRequest
                     } else {
                         kaliumLogger.i("Legal hold request failure: $failure")
-                        LegalHoldRequestObserverResult.Failure(failure)
+                        ObserveLegalHoldRequestUseCaseResult.Failure(failure)
                     }
                 },
                 { request ->
@@ -56,10 +56,10 @@ internal class LegalHoldRequestUseCaseImpl internal constructor(
                     result.fold(
                         { failure ->
                             kaliumLogger.i("Legal hold request fingerprint failure: $failure")
-                            LegalHoldRequestObserverResult.Failure(failure)
+                            ObserveLegalHoldRequestUseCaseResult.Failure(failure)
                         },
                         { fingerprint ->
-                            LegalHoldRequestObserverResult.LegalHoldRequestAvailable(
+                            ObserveLegalHoldRequestUseCaseResult.ObserveLegalHoldRequestAvailable(
                                 fingerprint
                             )
                         }
@@ -69,13 +69,13 @@ internal class LegalHoldRequestUseCaseImpl internal constructor(
         }
 }
 
-sealed class LegalHoldRequestObserverResult {
-    data class LegalHoldRequestAvailable(val fingerprint: ByteArray) : LegalHoldRequestObserverResult() {
+sealed class ObserveLegalHoldRequestUseCaseResult {
+    data class ObserveLegalHoldRequestAvailable(val fingerprint: ByteArray) : ObserveLegalHoldRequestUseCaseResult() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
 
-            other as LegalHoldRequestAvailable
+            other as ObserveLegalHoldRequestAvailable
 
             return fingerprint.contentEquals(other.fingerprint)
         }
@@ -85,6 +85,6 @@ sealed class LegalHoldRequestObserverResult {
         }
     }
 
-    data object NoLegalHoldRequest : LegalHoldRequestObserverResult()
-    data class Failure(val failure: CoreFailure) : LegalHoldRequestObserverResult()
+    data object NoObserveLegalHoldRequest : ObserveLegalHoldRequestUseCaseResult()
+    data class Failure(val failure: CoreFailure) : ObserveLegalHoldRequestUseCaseResult()
 }

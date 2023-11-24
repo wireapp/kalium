@@ -217,8 +217,8 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordC
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
-import com.wire.kalium.logic.feature.legalhold.LegalHoldRequestUseCase
-import com.wire.kalium.logic.feature.legalhold.LegalHoldRequestUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
@@ -1748,8 +1748,8 @@ class UserSessionScope internal constructor(
         }
     }
 
-    val legalHoldRequestUseCase: LegalHoldRequestUseCase
-        get() = LegalHoldRequestUseCaseImpl(
+    val observeLegalHoldRequestUseCase: ObserveLegalHoldRequestUseCase
+        get() = ObserveLegalHoldRequestUseCaseImpl(
             userConfigRepository = userConfigRepository,
             preKeyRepository = preKeyRepository
         )
