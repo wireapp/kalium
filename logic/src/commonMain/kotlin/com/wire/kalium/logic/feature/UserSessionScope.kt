@@ -217,6 +217,8 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordC
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
+import com.wire.kalium.logic.feature.legalhold.LegalHoldRequestUseCase
+import com.wire.kalium.logic.feature.legalhold.LegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
@@ -550,7 +552,7 @@ class UserSessionScope internal constructor(
         mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
 
-    private val userConfigRepository: UserConfigRepository
+    internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
             userStorage.preferences.userConfigStorage,
             userStorage.database.userConfigDAO,
@@ -1640,7 +1642,7 @@ class UserSessionScope internal constructor(
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
     val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
-        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository, kaliumConfigs)
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
 
     val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
         get() = MarkTeamAppLockStatusAsNotifiedUseCaseImpl(userConfigRepository)
@@ -1745,6 +1747,12 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
+
+    val legalHoldRequestUseCase: LegalHoldRequestUseCase
+        get() = LegalHoldRequestUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+            preKeyRepository = preKeyRepository
+        )
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)

@@ -19,48 +19,22 @@ package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.nullableFold
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * observe app lock feature flag of the team
  */
 interface AppLockTeamFeatureConfigObserver {
-    operator fun invoke(): Flow<AppLockTeamConfig>
+    operator fun invoke(): Flow<AppLockTeamConfig?>
 }
 
-class AppLockTeamFeatureConfigObserverImpl(
+internal class AppLockTeamFeatureConfigObserverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
-    private val kaliumConfigs: KaliumConfigs
 ) : AppLockTeamFeatureConfigObserver {
-    override fun invoke(): Flow<AppLockTeamConfig> {
-        if (kaliumConfigs.teamAppLock) {
-            return flowOf(
-                AppLockTeamConfig(
-                    isEnabled = true,
-                    timeout = kaliumConfigs.teamAppLockTimeout.seconds,
-                    isStatusChanged = false
-                )
-            )
+    override fun invoke(): Flow<AppLockTeamConfig?> =
+        userConfigRepository.observeAppLockConfig().map {
+            it.nullableFold({ null }, { it })
         }
-        return userConfigRepository.observeAppLockConfig().map {
-            it.fold({
-                AppLockTeamConfig(
-                    isEnabled = false,
-                    timeout = DEFAULT_TIMEOUT,
-                    isStatusChanged = false
-                )
-            }, { appLock ->
-                appLock
-            })
-        }
-    }
-
-    companion object {
-        val DEFAULT_TIMEOUT = 60.seconds
-    }
 }

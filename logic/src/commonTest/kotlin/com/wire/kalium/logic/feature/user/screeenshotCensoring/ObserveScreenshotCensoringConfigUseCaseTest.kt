@@ -36,6 +36,7 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -56,7 +57,7 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
 
         result.test {
             val item = awaitItem()
-            assertTrue { item == expectedResult }
+            assertEquals(expectedResult, item)
 
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::observeScreenshotCensoringConfig)
@@ -89,11 +90,11 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
         )
 
     @Test
-    fun givenSSCensoringDisabledAndTeamSelfDeletingFailure_whenInvoking_thenShouldReturnEnabledEnforcedByTeamSelfDeletingSettings() =
+    fun givenSSCensoringDisabledAndTeamSelfDeletingFailure_whenInvoking_thenShouldReturnDisabled() =
         runTestWithParametersAndExpectedResult(
             observeScreenshotCensoringConfigResult = Either.Right(false),
             observeTeamSelfDeletingStatusResult = Either.Left(StorageFailure.DataNotFound),
-            expectedResult = ObserveScreenshotCensoringConfigResult.Enabled.EnforcedByTeamSelfDeletingSettings
+            expectedResult = ObserveScreenshotCensoringConfigResult.Disabled
         )
 
     @Test
@@ -113,19 +114,19 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
         )
 
     @Test
-    fun givenSSCensoringEnabledAndTeamSelfDeletingFailure_whenInvoking_thenShouldReturnEnabledEnforcedByTeamSelfDeletingSettings() =
+    fun givenSSCensoringEnabledAndTeamSelfDeletingFailure_whenInvoking_thenShouldReturnEnabledChosenByUser() =
         runTestWithParametersAndExpectedResult(
             observeScreenshotCensoringConfigResult = Either.Right(true),
             observeTeamSelfDeletingStatusResult = Either.Left(StorageFailure.DataNotFound),
-            expectedResult = ObserveScreenshotCensoringConfigResult.Enabled.EnforcedByTeamSelfDeletingSettings
+            expectedResult = ObserveScreenshotCensoringConfigResult.Enabled.ChosenByUser
         )
 
     @Test
-    fun givenSSCensoringFailureAndTeamSelfDeletingNotEnforced_whenInvoking_thenShouldReturnEnabledChosenByUser() =
+    fun givenSSCensoringFailureAndTeamSelfDeletingNotEnforced_whenInvoking_thenShouldReturnDisabled() =
         runTestWithParametersAndExpectedResult(
             observeScreenshotCensoringConfigResult = Either.Left(StorageFailure.DataNotFound),
             observeTeamSelfDeletingStatusResult = Either.Right(TeamSelfDeleteTimer.Enabled),
-            expectedResult = ObserveScreenshotCensoringConfigResult.Enabled.ChosenByUser
+            expectedResult = ObserveScreenshotCensoringConfigResult.Disabled
         )
 
     @Test
@@ -137,11 +138,11 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
         )
 
     @Test
-    fun givenSSCensoringFailureAndTeamSelfDeletingFailure_whenInvoking_thenShouldReturnEnabledEnforcedByTeamSelfDeletingSettings() =
+    fun givenSSCensoringFailureAndTeamSelfDeletingFailure_whenInvoking_thenShouldReturnDisabled() =
         runTestWithParametersAndExpectedResult(
             observeScreenshotCensoringConfigResult = Either.Left(StorageFailure.DataNotFound),
             observeTeamSelfDeletingStatusResult = Either.Left(StorageFailure.DataNotFound),
-            expectedResult = ObserveScreenshotCensoringConfigResult.Enabled.EnforcedByTeamSelfDeletingSettings
+            expectedResult = ObserveScreenshotCensoringConfigResult.Disabled
         )
 
     private class Arrangement {
