@@ -557,7 +557,7 @@ internal class MLSConversationDataSource(
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    mlsClient.getUserIdentities(
+                    mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(E2EIQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
                     ).first() // todo: ask if it's possible that's a client has more than one identity?
