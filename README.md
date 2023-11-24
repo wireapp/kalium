@@ -16,7 +16,7 @@
 
 ### Supported Platforms
 
-- Android (see the [Android Reloaded](https://github.com/wireapp/wire-android-reloaded) module)
+- Android (see the [Android](https://github.com/wireapp/wire-android) module)
 - JVM (see the [cli](https://github.com/wireapp/kalium/tree/develop/cli) module)
 - iOS (partially)
 - JavaScript (just a tiny bit)
