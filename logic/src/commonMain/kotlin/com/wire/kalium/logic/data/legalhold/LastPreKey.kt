@@ -15,12 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.logic.data.legalhold
 
-import kotlin.time.Duration
-
-data class AppLockTeamConfig(
-    val isEnforced: Boolean,
-    val timeout: Duration,
-    val isStatusChanged: Boolean?
+data class LastPreKey(
+    val id: Int,
+    val key: String
 )

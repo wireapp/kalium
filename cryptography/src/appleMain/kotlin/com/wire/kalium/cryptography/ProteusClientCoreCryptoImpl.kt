@@ -45,6 +45,11 @@ class ProteusClientCoreCryptoImpl private constructor(private val coreCrypto: Co
         return wrapException { coreCrypto.proteusFingerprintRemote(sessionId.value).toByteArray() }
     }
 
+    override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray {
+        // TODO this is a hack, we need to expose the fingerprint from the core
+        return "".toByteArray()
+    }
+
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {
         return wrapException {
             from.until(from + count).map {

@@ -15,12 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.configuration
+package com.wire.kalium.logic.data.legalhold
 
-import kotlin.time.Duration
+import com.wire.kalium.logic.data.conversation.ClientId
 
-data class AppLockTeamConfig(
-    val isEnforced: Boolean,
-    val timeout: Duration,
-    val isStatusChanged: Boolean?
+data class LegalHoldRequest(
+    val clientId: ClientId,
+    val lastPreKey: LastPreKey
 )

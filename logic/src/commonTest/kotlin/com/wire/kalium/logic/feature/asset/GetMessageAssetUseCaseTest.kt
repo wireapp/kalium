@@ -150,7 +150,7 @@ class GetMessageAssetUseCaseTest {
                     ErrorResponse(
                         404,
                         "asset not found",
-                        "asset-not-found"
+                        "not-found"
                     )
                 )
             )
