@@ -35,37 +35,15 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.seconds
 
 class AppLockTeamFeatureConfigObserverTest {
 
     @Test
-    fun givenAppLockedByKaliumConfig_whenObservingAppLock_thenReturnAppLockWithStatusEnabled() =
+    fun givenRepositoryFailure_whenObservingAppLock_thenEmitNull() =
         runTest {
-            val expectedAppLockValue = AppLockTeamConfig(
-                true,
-                50.seconds,
-                false
-            )
-            val (arrangement, observer) = Arrangement()
-                .arrangeWithCustomKaliumConfig()
 
-            val result = observer.invoke()
-
-            verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeAppLockConfig)
-                .wasNotInvoked()
-            assertEquals(expectedAppLockValue, result.first())
-        }
-
-    @Test
-    fun givenRepositoryFailure_whenObservingAppLock_thenEmitAppLockConfigWithDisabledStatus() =
-        runTest {
-            val expectedAppLockValue = AppLockTeamConfig(
-                false,
-                AppLockTeamFeatureConfigObserverImpl.DEFAULT_TIMEOUT,
-                false
-            )
             val (arrangement, observer) = Arrangement()
                 .withFailure()
                 .arrange()
@@ -75,7 +53,7 @@ class AppLockTeamFeatureConfigObserverTest {
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::observeAppLockConfig)
                 .wasInvoked(exactly = once)
-            assertEquals(expectedAppLockValue, result.first())
+            assertNull(result.first())
         }
 
     @Test
@@ -104,8 +82,6 @@ class AppLockTeamFeatureConfigObserverTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        val kaliumConfigs = KaliumConfigs()
-
         fun withFailure(): Arrangement = apply {
             given(userConfigRepository)
                 .function(userConfigRepository::observeAppLockConfig)
@@ -121,13 +97,7 @@ class AppLockTeamFeatureConfigObserverTest {
         }
 
         fun arrange() = this to AppLockTeamFeatureConfigObserverImpl(
-            userConfigRepository = userConfigRepository,
-            kaliumConfigs = kaliumConfigs
-        )
-
-        fun arrangeWithCustomKaliumConfig() = this to AppLockTeamFeatureConfigObserverImpl(
-            userConfigRepository = userConfigRepository,
-            kaliumConfigs = KaliumConfigs(teamAppLock = true, teamAppLockTimeout = 50)
+            userConfigRepository = userConfigRepository
         )
     }
 

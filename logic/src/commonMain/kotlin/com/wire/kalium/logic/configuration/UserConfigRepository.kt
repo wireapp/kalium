@@ -19,9 +19,12 @@
 package com.wire.kalium.logic.configuration
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.toEntity
 import com.wire.kalium.logic.data.featureConfig.toModel
+import com.wire.kalium.logic.data.legalhold.LastPreKey
+import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
@@ -112,11 +115,13 @@ interface UserConfigRepository {
         lastPreKeyId: Int,
         lastPreKey: String
     ): Either<StorageFailure, Unit>
+
+    fun observeLegalHoldRequest(): Flow<Either<StorageFailure, LegalHoldRequest>>
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
 }
 
 @Suppress("TooManyFunctions")
-class UserConfigDataSource(
+internal class UserConfigDataSource internal constructor(
     private val userConfigStorage: UserConfigStorage,
     private val userConfigDAO: UserConfigDAO,
     private val kaliumConfigs: KaliumConfigs
@@ -357,7 +362,7 @@ class UserConfigDataSource(
             userConfigStorage.appLockFlow().map {
                 it?.let { config ->
                     AppLockTeamConfig(
-                        isEnabled = config.enforceAppLock,
+                        isEnforced = config.enforceAppLock,
                         timeout = config.inactivityTimeoutSecs.seconds,
                         isStatusChanged = config.isStatusChanged
                     )
@@ -365,16 +370,16 @@ class UserConfigDataSource(
             }
         }
 
-    override fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig> {
-        val serverSideConfig = wrapStorageRequest { userConfigStorage.appLockStatus() }
-        return serverSideConfig.map {
+    override fun isTeamAppLockEnabled(): Either<StorageFailure, AppLockTeamConfig> =
+        wrapStorageRequest {
+            userConfigStorage.appLockStatus()
+        }.map {
             AppLockTeamConfig(
-                isEnabled = it.enforceAppLock,
+                isEnforced = it.enforceAppLock,
                 timeout = it.inactivityTimeoutSecs.seconds,
                 isStatusChanged = it.isStatusChanged
             )
         }
-    }
 
     override fun setTeamAppLockAsNotified(): Either<StorageFailure, Unit> = wrapStorageRequest {
         userConfigStorage.setTeamAppLockAsNotified()
@@ -398,7 +403,19 @@ class UserConfigDataSource(
         userConfigDAO.persistLegalHoldRequest(clientId, lastPreKeyId, lastPreKey)
     }
 
-    override suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit> = wrapStorageRequest {
-        userConfigDAO.clearLegalHoldRequest()
-    }
+    override fun observeLegalHoldRequest(): Flow<Either<StorageFailure, LegalHoldRequest>> =
+        userConfigDAO.observeLegalHoldRequest().wrapStorageRequest().mapRight {
+            LegalHoldRequest(
+                clientId = ClientId(it.clientId),
+                lastPreKey = LastPreKey(
+                    it.lastPreKey.id,
+                    it.lastPreKey.key
+                )
+            )
+        }
+
+    override suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.clearLegalHoldRequest()
+        }
 }
