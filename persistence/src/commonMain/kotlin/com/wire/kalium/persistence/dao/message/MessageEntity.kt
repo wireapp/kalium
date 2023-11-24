@@ -179,7 +179,12 @@ sealed interface MessageEntity {
         /**
          * The last attempt at fetching and saving this asset's data failed.
          */
-        FAILED
+        FAILED,
+
+        /**
+         * Asset was not found on the server
+         */
+        NOT_FOUND
     }
 
     enum class ConfirmationType {

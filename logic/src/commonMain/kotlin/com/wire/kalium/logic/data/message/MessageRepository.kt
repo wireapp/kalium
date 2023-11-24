@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
@@ -371,7 +372,7 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateAssetUploadStatus(
-                assetMapper.fromUploadStatusToDaoModel(uploadStatus),
+                uploadStatus.toDao(),
                 messageUuid,
                 conversationId.toDao()
             )
@@ -384,7 +385,7 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateAssetDownloadStatus(
-                assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
+                downloadStatus.toDao(),
                 messageUuid,
                 conversationId.toDao()
             )
