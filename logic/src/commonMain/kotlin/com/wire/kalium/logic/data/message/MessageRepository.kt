@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -229,6 +230,7 @@ interface MessageRepository {
     ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
+    suspend fun getAssetMessagesByConversationId(conversationId: ConversationId, limit: Int, offset: Int): List<AssetMessage>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -260,6 +262,13 @@ class MessageDataSource(
             offset,
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
+
+    override suspend fun getAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessage> = messageDAO.getMessageAssets(conversationId.toDao(), limit, offset)
+        .map(messageMapper::fromAssetEntityToMessage)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(

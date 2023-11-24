@@ -42,6 +42,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.asset.GetAssetMessagesByConversationUseCase
+import com.wire.kalium.logic.feature.asset.GetAssetMessagesByConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
@@ -219,6 +221,12 @@ class MessageScope internal constructor(
             updateAssetMessageDownloadStatus,
             scope,
             dispatcher
+        )
+
+    val getAssetMessagesByConversation: GetAssetMessagesByConversationUseCase
+        get() = GetAssetMessagesByConversationUseCaseImpl(
+            dispatcher,
+            messageRepository
         )
 
     val getRecentMessages: GetRecentMessagesUseCase

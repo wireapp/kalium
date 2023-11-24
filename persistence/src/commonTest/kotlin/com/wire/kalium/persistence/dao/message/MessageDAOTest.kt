@@ -22,6 +22,8 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
@@ -58,6 +60,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
     private lateinit var receiptDao: ReceiptDAO
+    private lateinit var assetDao: AssetDAO
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val conversationEntity2 = newConversationEntity("Test2")
@@ -73,6 +76,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
         receiptDao = db.receiptDAO
+        assetDao = db.assetDAO
     }
 
     @Test
@@ -435,6 +439,61 @@ class MessageDAOTest : BaseDatabaseTest() {
             .first()
         // then
         assertContains(messageTypes, UnreadEventTypeEntity.MESSAGE)
+    }
+
+    @Test
+    fun givenAssetMessage_WhenAssetMessages_ThenListShouldContainAssetMessage() = runTest {
+        // given
+        val domain = "domain"
+        val conversationId = QualifiedIDEntity("1", domain)
+        val assetId = "assetId"
+        val messageId = "assetMessage"
+        conversationDAO.insertConversation(
+            newConversationEntity(id = conversationId)
+        )
+
+        userDAO.upsertUser(userEntity1)
+
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                newRegularMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "image/png",
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                    )
+                )
+            )
+        )
+
+        assetDao.insertAsset(
+            AssetEntity(
+                key = assetId,
+                dataSize = 123,
+                dataPath = "dataPath",
+                domain = domain,
+                downloadedDate = null
+            )
+        )
+
+        // when
+        val assetMessages = messageDAO.getMessageAssets(conversationId, 100, 0)
+
+        // then
+        assertEquals(1, assetMessages.size)
     }
 
     @Test

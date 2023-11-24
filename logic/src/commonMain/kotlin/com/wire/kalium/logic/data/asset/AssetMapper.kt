@@ -289,6 +289,6 @@ fun AssetMessageEntity.toModel(): AssetMessage {
         width,
         height,
         downloadStatus.toModel(),
-        decodedAssetPath = decodedAssetPath?.toPath()
+        assetPath = assetPath?.toPath()
     )
 }

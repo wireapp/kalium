@@ -30,5 +30,5 @@ data class AssetMessage(
     val width: Int,
     val height: Int,
     val downloadStatus: Message.DownloadStatus,
-    val decodedAssetPath: Path?
+    val assetPath: Path?
 )
