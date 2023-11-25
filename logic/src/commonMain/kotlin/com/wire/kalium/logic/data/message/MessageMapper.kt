@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.toDao
 import com.wire.kalium.logic.data.conversation.toModel
@@ -292,8 +293,8 @@ class MessageMapperImpl(
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
-                assetUploadStatus = assetMapper.fromUploadStatusToDaoModel(uploadStatus),
-                assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
+                assetUploadStatus = uploadStatus.toDao(),
+                assetDownloadStatus = downloadStatus.toDao(),
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
                 assetId = remoteData.assetId,

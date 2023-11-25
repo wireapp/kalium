@@ -80,7 +80,7 @@ class MetadataDAOImpl internal constructor(
         }
     }
 
-    override suspend fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
+    override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
         return metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
