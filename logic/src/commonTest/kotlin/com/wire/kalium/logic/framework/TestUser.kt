@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.model.AssetSizeDTO
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserAssetDTO
@@ -144,7 +144,7 @@ object TestUser {
         handle = "handle",
         email = "email",
         accentId = 0,
-        legalHoldStatus = LegalHoldStatusResponse.DISABLED,
+        legalHoldStatus = LegalHoldStatusDTO.DISABLED,
         teamId = "teamId",
         assets = listOf(
             UserAssetDTO("value1", AssetSizeDTO.PREVIEW, UserAssetTypeDTO.IMAGE),

@@ -21,6 +21,7 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.client.PasswordRequest
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.ServiceDetailResponse
@@ -83,6 +84,11 @@ internal open class TeamsApiV0 internal constructor(
             httpClient.put("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId/$PATH_APPROVE") {
                 setBody(PasswordRequest(password))
             }
+        }
+
+    override suspend fun fetchLegalHoldStatus(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<LegalHoldStatusResponse> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId")
         }
 
     private companion object {

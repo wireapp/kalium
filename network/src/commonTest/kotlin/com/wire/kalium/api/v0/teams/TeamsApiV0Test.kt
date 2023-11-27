@@ -149,6 +149,23 @@ internal class TeamsApiV0Test : ApiTest() {
     fun givenAValidTeamIdAndUserIdAndNoPassword_whenApprovingLegalHold_theRequestShouldBeConfiguredCorrectly() =
         testApprovingLegalHold(DUMMY_TEAM_ID, DUMMY_USER_ID, null)
 
+    @Test
+    fun givenAValidTeamIdAndUserId_whenFetchingLegalHoldStatus_thenRequestShouldBeConfiguredCorrectly() = runTest {
+        val teamId = DUMMY_TEAM_ID
+        val userId = DUMMY_USER_ID
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertNoQueryParams()
+                assertPathEqual("/$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId")
+            }
+        )
+        val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+        teamsApi.fetchLegalHoldStatus(teamId, userId)
+    }
+
     private companion object {
         const val PATH_TEAMS = "teams"
         const val PATH_CONVERSATIONS = "conversations"

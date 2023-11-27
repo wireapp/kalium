@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated
 
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
@@ -42,7 +43,7 @@ interface TeamsApi {
     data class TeamMemberDTO(
         @SerialName("user") val nonQualifiedUserId: NonQualifiedUserId,
         @SerialName("created_by") val createdBy: NonQualifiedUserId?,
-        @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse?,
+        @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO?,
         @SerialName("created_at") val createdAt: String?,
         val permissions: Permissions?
     )
@@ -94,6 +95,7 @@ interface TeamsApi {
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
     suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>
     suspend fun approveLegalHold(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit>
+    suspend fun fetchLegalHoldStatus(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<LegalHoldStatusResponse>
 
     companion object {
         const val DEFAULT_SERVICES_SIZE = 100 // this number is copied from the web client
