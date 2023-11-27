@@ -55,7 +55,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         useCase.invoke()
         // then
         verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::approveLegalHold)
+            .suspendFunction(arrangement.teamRepository::fetchLegalHoldStatus)
             .with(eq(selfTeamId))
             .wasInvoked(once)
     }
@@ -78,9 +78,23 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
     }
 
     @Test
+    fun givenSelfUserIsNotInATeam_whenFetching_thenNoConsentResultShouldBeReturned() = runTest {
+        // given
+        val status = LegalHoldStatus.NO_CONSENT
+        val (_, useCase) = Arrangement()
+            .withGetSelfTeamResult(Either.Right(null))
+            .arrange()
+        // when
+        val result = useCase.invoke()
+        // then
+        result.shouldSucceed() {
+            assertEquals(status, it)
+        }
+    }
+
+    @Test
     fun givenGetSelfTeamIdFailure_whenFetching_thenDataNotFoundErrorShouldBeReturned() = runTest {
         // given
-        val password = "password"
         val (_, useCase) = Arrangement()
             .withGetSelfTeamResult(Either.Left(StorageFailure.DataNotFound))
             .arrange()
@@ -105,7 +119,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         val result = useCase()
         // then
         result.shouldFail() {
-            assertEquals(StorageFailure.DataNotFound, it)
+            assertEquals(failure, it)
         }
     }
 
