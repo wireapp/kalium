@@ -217,6 +217,12 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordC
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
@@ -546,7 +552,7 @@ class UserSessionScope internal constructor(
         mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
 
-    private val userConfigRepository: UserConfigRepository
+    internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
             userStorage.preferences.userConfigStorage,
             userStorage.database.userConfigDAO,
@@ -1320,6 +1326,12 @@ class UserSessionScope internal constructor(
         userConfigRepository = userConfigRepository
     )
 
+    val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
+        get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
+
+    val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
+        get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
+
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase
         get() = FetchSelfClientsFromRemoteUseCaseImpl(
             clientRepository = clientRepository,
@@ -1630,7 +1642,7 @@ class UserSessionScope internal constructor(
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
     val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
-        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository, kaliumConfigs)
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
 
     val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
         get() = MarkTeamAppLockStatusAsNotifiedUseCaseImpl(userConfigRepository)
@@ -1735,6 +1747,12 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
+
+    val observeLegalHoldRequestUseCase: ObserveLegalHoldRequestUseCase
+        get() = ObserveLegalHoldRequestUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+            preKeyRepository = preKeyRepository
+        )
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)

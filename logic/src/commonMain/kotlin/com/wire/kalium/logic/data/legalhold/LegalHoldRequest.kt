@@ -15,14 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.legalhold
 
-package com.wire.kalium.network.api.base.model
+import com.wire.kalium.logic.data.conversation.ClientId
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class LocationResponse(
-    @SerialName("lat") val latitude: String,
-    @SerialName("lon") val longitude: String
+data class LegalHoldRequest(
+    val clientId: ClientId,
+    val lastPreKey: LastPreKey
 )

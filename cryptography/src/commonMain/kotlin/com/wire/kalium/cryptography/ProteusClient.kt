@@ -67,6 +67,9 @@ interface ProteusClient {
     @Throws(ProteusException::class, CancellationException::class)
     suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray
 
+    @Throws(ProteusException::class, CancellationException::class)
+    suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray
+
     suspend fun newPreKeys(from: Int, count: Int): List<PreKeyCrypto>
 
     @Throws(ProteusException::class, CancellationException::class)

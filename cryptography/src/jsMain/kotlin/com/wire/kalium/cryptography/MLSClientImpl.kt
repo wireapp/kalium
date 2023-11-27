@@ -144,7 +144,11 @@ class MLSClientImpl : MLSClient {
         TODO("Not supported on js")
     }
 
-    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): Map<String, List<WireIdentity>> {
         TODO("Not yet implemented")
     }
 }

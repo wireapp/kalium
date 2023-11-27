@@ -15,9 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.legalhold
+package com.wire.kalium.logic.feature.legalhold
 
-data class LastPreKey(
-    val id: Int,
-    val key: String
-)
+import com.wire.kalium.logic.data.user.UserId
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Use case that allows to observe the legal hold state for the self user.
+ */
+interface ObserveLegalHoldForSelfUserUseCase {
+    suspend operator fun invoke(): Flow<LegalHoldState>
+}
+
+internal class ObserveLegalHoldForSelfUserUseCaseImpl internal constructor(
+    private val selfUserId: UserId,
+    private val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
+) : ObserveLegalHoldForSelfUserUseCase {
+    override suspend fun invoke(): Flow<LegalHoldState> = observeLegalHoldStateForUser(
+        userId = selfUserId
+    )
+}
