@@ -37,7 +37,7 @@ class IsAppLockEditableUseCase internal constructor(
                 accounts.map { session ->
                     userSessionScopeProvider.getOrCreate(session.userId).let { userSessionScope ->
                         userSessionScope.userConfigRepository.isTeamAppLockEnabled().fold({
-                            true
+                            false
                         }, { appLockConfig ->
                             appLockConfig.isEnforced
                         })
