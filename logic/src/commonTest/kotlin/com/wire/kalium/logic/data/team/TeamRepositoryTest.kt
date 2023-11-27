@@ -216,7 +216,7 @@ class TeamRepositoryTest {
             .withGetUsersInfoSuccess()
             .arrange()
         // when
-        val result = teamRepository.approveLegalHold(teamId = TeamId(value = "teamId"), password = "password")
+        val result = teamRepository.approveLegalHoldRequest(teamId = TeamId(value = "teamId"), password = "password")
         // then
         result.shouldSucceed()
         verify(arrangement.userConfigDAO)
@@ -298,7 +298,7 @@ class TeamRepositoryTest {
 
         fun withApiApproveLegalHoldSuccess() = apply {
             given(teamsApi)
-                .suspendFunction(teamsApi::approveLegalHold)
+                .suspendFunction(teamsApi::approveLegalHoldRequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Success(value = Unit, headers = mapOf(), httpCode = 200))
         }

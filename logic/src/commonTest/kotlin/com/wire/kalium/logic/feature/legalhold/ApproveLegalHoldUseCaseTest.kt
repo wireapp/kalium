@@ -55,7 +55,7 @@ class ApproveLegalHoldUseCaseTest {
         useCase.invoke(password)
         // then
         verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::approveLegalHold)
+            .suspendFunction(arrangement.teamRepository::approveLegalHoldRequest)
             .with(eq(selfTeamId), eq(password))
             .wasInvoked(once)
     }
@@ -157,7 +157,7 @@ class ApproveLegalHoldUseCaseTest {
 
         fun withApproveLegalHoldResult(result: Either<CoreFailure, Unit>) = apply {
             given(teamRepository)
-                .suspendFunction(teamRepository::approveLegalHold)
+                .suspendFunction(teamRepository::approveLegalHoldRequest)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }

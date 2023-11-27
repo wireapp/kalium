@@ -64,7 +64,7 @@ class ApproveLegalHoldUseCaseImpl internal constructor(
                 else Either.Right(it)
             }
             .flatMap { teamId ->
-                teamRepository.approveLegalHold(teamId, password)
+                teamRepository.approveLegalHoldRequest(teamId, password)
             }
             .fold({ handleError(it) }, { ApproveLegalHoldUseCase.Result.Success })
     }
