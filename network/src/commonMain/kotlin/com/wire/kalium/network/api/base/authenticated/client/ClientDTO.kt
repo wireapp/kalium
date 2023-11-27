@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.api.base.authenticated.client
 
-import com.wire.kalium.network.api.base.model.LocationResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -27,7 +26,6 @@ data class ClientDTO(
     @SerialName("cookie") val cookie: String?,
     @SerialName("time") val registrationTime: String, // yyyy-mm-ddThh:MM:ss.qqq
     @SerialName("last_active") val lastActive: String?, // yyyy-mm-ddThh:MM:ss.qqq
-    @SerialName("location") val location: LocationResponse?,
     @SerialName("model") val model: String?,
     @SerialName("id") val clientId: String,
     @SerialName("type") val type: ClientTypeDTO,

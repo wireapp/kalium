@@ -54,6 +54,13 @@ data class ConversationResponse(
     @SerialName("epoch")
     val epoch: ULong?,
 
+    @Deprecated(
+        "For team 1on1 it can be a false group type",
+        ReplaceWith(
+            "this.toConversationType(selfUserTeamId)",
+            "com.wire.kalium.logic.data.conversation.toConversationType",
+        )
+    )
     @Serializable(with = ConversationTypeSerializer::class)
     val type: Type,
 

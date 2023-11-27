@@ -23,7 +23,6 @@ import com.wire.kalium.model.conversation.ConversationResponseJson
 import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -38,7 +37,6 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.LocationResponse
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import kotlinx.serialization.InternalSerializationApi
@@ -73,7 +71,6 @@ object NotificationEventsResponseJson {
             ClientDTO(
                 cookie = null,
                 clientId = "id",
-                location = LocationResponse("23.2", "43.2"),
                 registrationTime = "2022-02-15T12:54:30Z",
                 lastActive = "2022-02-15T12:54:30Z",
                 model = "Firefox (Temporary)",
