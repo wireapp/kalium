@@ -209,7 +209,7 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenTeamIdAndUserIdAndPassword_whenFetchingTeamMember_thenTeamMemberShouldBeSuccessful() = runTest {
+    fun givenTeamIdAndUserIdAndPassword_whenApprovingLegalHoldRequest_thenItShouldSucceedAndClearRequestLocally() = runTest {
         // given
         val (arrangement, teamRepository) = Arrangement()
             .withApiApproveLegalHoldSuccess()
