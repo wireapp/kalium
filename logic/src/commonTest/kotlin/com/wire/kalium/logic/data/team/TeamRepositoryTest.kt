@@ -39,6 +39,7 @@ import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -210,7 +211,7 @@ class TeamRepositoryTest {
     @Test
     fun givenTeamIdAndUserIdAndPassword_whenFetchingTeamMember_thenTeamMemberShouldBeSuccessful() = runTest {
         // given
-        val (_, teamRepository) = Arrangement()
+        val (arrangement, teamRepository) = Arrangement()
             .withApiApproveLegalHoldSuccess()
             .withGetUsersInfoSuccess()
             .arrange()
@@ -218,6 +219,9 @@ class TeamRepositoryTest {
         val result = teamRepository.approveLegalHold(teamId = TeamId(value = "teamId"), password = "password")
         // then
         result.shouldSucceed()
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::clearLegalHoldRequest)
+            .wasInvoked(once)
     }
 
     private class Arrangement {
@@ -228,6 +232,11 @@ class TeamRepositoryTest {
 
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) {
+            stubsUnitByDefault = true
+        }
+
+        @Mock
+        val userConfigDAO = configure(mock(classOf<UserConfigDAO>())) {
             stubsUnitByDefault = true
         }
 
@@ -253,6 +262,7 @@ class TeamRepositoryTest {
             teamsApi = teamsApi,
             userDetailsApi = userDetailsApi,
             userDAO = userDAO,
+            userConfigDAO = userConfigDAO,
             userMapper = userMapper,
             selfUserId = TestUser.USER_ID,
             serviceDAO = serviceDAO
