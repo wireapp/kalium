@@ -1523,7 +1523,6 @@ class UserSessionScope internal constructor(
             messages.sendConfirmation,
             renamedConversationHandler,
             qualifiedIdMapper,
-            team.isSelfATeamMember,
             globalScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,

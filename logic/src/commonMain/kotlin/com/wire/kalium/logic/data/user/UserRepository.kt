@@ -248,7 +248,6 @@ internal class UserDataSource internal constructor(
                     .flatMap { persistUsers(listOf(userProfileDTO), it) }
             }
 
-    @Suppress("MagicNumber")
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         if (qualifiedUserIdList.isEmpty()) {
             Either.Right(Unit)
