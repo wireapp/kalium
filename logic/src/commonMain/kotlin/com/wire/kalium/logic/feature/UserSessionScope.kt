@@ -711,6 +711,7 @@ class UserSessionScope internal constructor(
     private val teamRepository: TeamRepository
         get() = TeamDataSource(
             userStorage.database.userDAO,
+            userStorage.database.userConfigDAO,
             userStorage.database.teamDAO,
             authenticatedNetworkContainer.teamsApi,
             authenticatedNetworkContainer.userDetailsApi,

@@ -138,7 +138,7 @@ internal class TeamsApiV0Test : ApiTest() {
             }
         )
         val teamsApi: TeamsApi = TeamsApiV0(networkClient)
-        teamsApi.approveLegalHold(teamId, userId, password)
+        teamsApi.approveLegalHoldRequest(teamId, userId, password)
     }
 
     @Test

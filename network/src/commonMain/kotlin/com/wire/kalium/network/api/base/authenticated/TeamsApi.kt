@@ -94,7 +94,7 @@ interface TeamsApi {
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
     suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>
-    suspend fun approveLegalHold(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit>
+    suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit>
     suspend fun fetchLegalHoldStatus(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<LegalHoldStatusResponse>
 
     companion object {
