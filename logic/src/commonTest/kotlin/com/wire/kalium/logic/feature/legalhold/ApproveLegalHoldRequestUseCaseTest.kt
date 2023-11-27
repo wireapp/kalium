@@ -40,7 +40,7 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.test.assertSame
 
-class ApproveLegalHoldUseCaseTest {
+class ApproveLegalHoldRequestUseCaseTest {
 
     @Test
     fun givenApproveLegalHoldParams_whenApproving_thenTheRepositoryShouldBeCalledWithCorrectParameters() = runTest {
@@ -55,7 +55,7 @@ class ApproveLegalHoldUseCaseTest {
         useCase.invoke(password)
         // then
         verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::approveLegalHold)
+            .suspendFunction(arrangement.teamRepository::approveLegalHoldRequest)
             .with(eq(selfTeamId), eq(password))
             .wasInvoked(once)
     }
@@ -70,7 +70,7 @@ class ApproveLegalHoldUseCaseTest {
         // when
         val result = useCase.invoke(password)
         // then
-        assertIs<ApproveLegalHoldUseCase.Result.Failure.GenericFailure>(result)
+        assertIs<ApproveLegalHoldRequestUseCase.Result.Failure.GenericFailure>(result)
         assertSame(StorageFailure.DataNotFound, result.coreFailure)
     }
 
@@ -87,7 +87,7 @@ class ApproveLegalHoldUseCaseTest {
         // when
         val result = useCase(password)
         // then
-        assertIs<ApproveLegalHoldUseCase.Result.Failure.GenericFailure>(result)
+        assertIs<ApproveLegalHoldRequestUseCase.Result.Failure.GenericFailure>(result)
         assertSame(failure, result.coreFailure)
     }
 
@@ -104,7 +104,7 @@ class ApproveLegalHoldUseCaseTest {
         // when
         val result = useCase(password)
         // then
-        assertIs<ApproveLegalHoldUseCase.Result.Failure.InvalidPassword>(result)
+        assertIs<ApproveLegalHoldRequestUseCase.Result.Failure.InvalidPassword>(result)
     }
 
     @Test
@@ -119,7 +119,7 @@ class ApproveLegalHoldUseCaseTest {
         // when
         val result = useCase(null)
         // then
-        assertIs<ApproveLegalHoldUseCase.Result.Failure.PasswordRequired>(result)
+        assertIs<ApproveLegalHoldRequestUseCase.Result.Failure.PasswordRequired>(result)
     }
 
     @Test
@@ -134,7 +134,7 @@ class ApproveLegalHoldUseCaseTest {
         // when
         val result = useCase(password)
         // then
-        assertIs<ApproveLegalHoldUseCase.Result.Success>(result)
+        assertIs<ApproveLegalHoldRequestUseCase.Result.Success>(result)
     }
 
     private class Arrangement {
@@ -144,7 +144,7 @@ class ApproveLegalHoldUseCaseTest {
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
-        val useCase: ApproveLegalHoldUseCase by lazy { ApproveLegalHoldUseCaseImpl(teamRepository, selfTeamIdProvider) }
+        val useCase: ApproveLegalHoldRequestUseCase by lazy { ApproveLegalHoldRequestUseCaseImpl(teamRepository, selfTeamIdProvider) }
 
         fun arrange() = this to useCase
 
@@ -157,7 +157,7 @@ class ApproveLegalHoldUseCaseTest {
 
         fun withApproveLegalHoldResult(result: Either<CoreFailure, Unit>) = apply {
             given(teamRepository)
-                .suspendFunction(teamRepository::approveLegalHold)
+                .suspendFunction(teamRepository::approveLegalHoldRequest)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }
