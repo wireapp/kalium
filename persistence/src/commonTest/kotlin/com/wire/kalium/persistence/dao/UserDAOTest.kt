@@ -475,7 +475,6 @@ class UserDAOTest : BaseDatabaseTest() {
         val deletedUser = mockUser.copy(name = null, deleted = true, email = null)
         db.userDAO.upsertUser(deletedUser)
 
-
         // when
         db.userDAO.getUsersDetailsByQualifiedIDList(listOf(USER_ENTITY_1.id, USER_ENTITY_2.id)).also {
             db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
