@@ -31,6 +31,7 @@ internal interface ClientRepositoryArrangement {
 
     fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>): ClientRepositoryArrangementImpl
     fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>): ClientRepositoryArrangementImpl
+    fun withRemoveClientsAndReturnUsersWithNoClients(result: Either<StorageFailure, List<String>>): ClientRepositoryArrangementImpl
 }
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {

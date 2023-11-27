@@ -51,7 +51,6 @@ import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageSendFailureHandlerTest {
 
     @Test

@@ -22,6 +22,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneNotNull
 import kotlinx.coroutines.flow.Flow
@@ -96,6 +97,17 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun insertClients(clients: List<InsertClientParam>) = withContext(queriesContext) {
         clientsQueries.transaction {
             clients.forEach { client -> insert(client) }
+        }
+    }
+
+    override suspend fun removeClientsAndReturnUsersWithNoClients(redundantClientsOfUsers: Map<UserIDEntity, List<String>>) = withContext(queriesContext) {
+        clientsQueries.transactionWithResult {
+            redundantClientsOfUsers.entries.forEach {
+                val userId = it.key
+                val clients = it.value
+                clientsQueries.deeteCliuentsOfUser(userId, clients)
+            }
+            clientsQueries.usersWithNotClients(redundantClientsOfUsers.keys).executeAsList()
         }
     }
 
