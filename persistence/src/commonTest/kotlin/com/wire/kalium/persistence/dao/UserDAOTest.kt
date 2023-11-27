@@ -465,6 +465,27 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenDeletedUser_whenInserting_thenDoNotOverrideOldData() = runTest(dispatcher) {
+        // given
+        val commonPrefix = "common"
+
+        val mockUser = USER_ENTITY_1.copy(name = commonPrefix + "u1", email = "test@wire.com")
+        db.userDAO.upsertUser(mockUser)
+
+        val deletedUser = mockUser.copy(name = null, deleted = true, email = null)
+        db.userDAO.upsertUser(deletedUser)
+
+
+        // when
+        db.userDAO.getUsersDetailsByQualifiedIDList(listOf(USER_ENTITY_1.id, USER_ENTITY_2.id)).also {
+            db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
+                // then
+                assertEquals(mockUser.copy(deleted = true, team = null), searchResult?.toSimpleEntity())
+            }
+        }
+    }
+
+    @Test
     fun givenAExistingUsers_whenUpdatingTheirValues_ThenResultsIsEqualToThatUserButWithFieldsModified() = runTest(dispatcher) {
         // given
         val newNameA = "new user naming a"

@@ -37,24 +37,31 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(
+    qualified_id, name, handle, email, phone, accent_id, team, connection_status,
+    preview_asset_id, complete_asset_id, user_type, bot_service, deleted,
+    incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id
+)
+VALUES(
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+)
 ON CONFLICT(qualified_id) DO UPDATE SET
-name = excluded.name,
-handle = excluded.handle,
-email = excluded.email,
-phone = excluded.phone,
-accent_id = excluded.accent_id,
-team = excluded.team,
-preview_asset_id = excluded.preview_asset_id,
-complete_asset_id = excluded.complete_asset_id,
-user_type = excluded.user_type,
-bot_service = excluded.bot_service,
-deleted = excluded.deleted,
-incomplete_metadata = excluded.incomplete_metadata,
-expires_at = excluded.expires_at,
-defederated = 0,
-supported_protocols = excluded.supported_protocols;
+    name = CASE WHEN excluded.deleted = 1 THEN name ELSE excluded.name END,
+    handle = CASE WHEN excluded.deleted = 1 THEN handle ELSE excluded.handle END,
+    email = CASE WHEN excluded.deleted = 1 THEN email ELSE excluded.email END,
+    phone = CASE WHEN excluded.deleted = 1 THEN phone ELSE excluded.phone END,
+    accent_id = CASE WHEN excluded.deleted = 1 THEN accent_id ELSE excluded.accent_id END,
+    team = CASE WHEN excluded.deleted = 1 THEN NULL ELSE excluded.team END,
+    preview_asset_id = CASE WHEN excluded.deleted = 1 THEN NULL ELSE excluded.preview_asset_id END,
+    complete_asset_id = CASE WHEN excluded.deleted = 1 THEN NULL ELSE excluded.complete_asset_id END,
+    user_type = excluded.user_type,
+    bot_service = CASE WHEN excluded.deleted = 1 THEN bot_service ELSE excluded.bot_service END,
+    deleted = excluded.deleted,
+    incomplete_metadata = CASE WHEN excluded.deleted = 1 THEN incomplete_metadata ELSE excluded.incomplete_metadata END,
+    expires_at = CASE WHEN excluded.deleted = 1 THEN expires_at ELSE excluded.expires_at END,
+    defederated = 0,
+    supported_protocols = CASE WHEN excluded.deleted = 1 THEN supported_protocols ELSE excluded.supported_protocols END,
+    active_one_on_one_conversation_id = CASE WHEN excluded.deleted = 1 THEN active_one_on_one_conversation_id ELSE excluded.active_one_on_one_conversation_id END;
 
 insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
