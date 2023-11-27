@@ -800,7 +800,7 @@ class UserDAOTest : BaseDatabaseTest() {
             activeOneOnOneConversationId = null,
         )
         db.userDAO.upsertUser(user)
-        val updatedTeamMemberUser = user1.copy(
+        val updatedTeamMemberUser = user.copy(
             name = "newName",
             handle = "newHandle",
             email = "newEmail",
@@ -813,7 +813,7 @@ class UserDAOTest : BaseDatabaseTest() {
             availabilityStatus = UserAvailabilityStatusEntity.BUSY,
             userType = UserTypeEntity.EXTERNAL,
             botService = BotIdEntity("newBotService", "newBotServiceDomain"),
-            deleted = true,
+            deleted = false,
             hasIncompleteMetadata = true,
             expiresAt = DateTimeUtil.currentInstant(),
             defederated = true,
@@ -839,7 +839,7 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(updatedTeamMemberUser.supportedProtocols, result.supportedProtocols)
         assertNotEquals(updatedTeamMemberUser.connectionStatus, result.connectionStatus)
         assertNotEquals(updatedTeamMemberUser.availabilityStatus, result.availabilityStatus)
-        assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
+         assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
         assertNotEquals(updatedTeamMemberUser.activeOneOnOneConversationId, result.activeOneOnOneConversationId)
     }
 

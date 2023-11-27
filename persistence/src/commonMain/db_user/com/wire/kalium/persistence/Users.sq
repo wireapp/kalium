@@ -55,13 +55,12 @@ ON CONFLICT(qualified_id) DO UPDATE SET
     preview_asset_id = CASE WHEN excluded.deleted = 1 THEN NULL ELSE excluded.preview_asset_id END,
     complete_asset_id = CASE WHEN excluded.deleted = 1 THEN NULL ELSE excluded.complete_asset_id END,
     user_type = excluded.user_type,
-    bot_service = CASE WHEN excluded.deleted = 1 THEN bot_service ELSE excluded.bot_service END,
+    bot_service = excluded.bot_service,
     deleted = excluded.deleted,
     incomplete_metadata = CASE WHEN excluded.deleted = 1 THEN incomplete_metadata ELSE excluded.incomplete_metadata END,
     expires_at = CASE WHEN excluded.deleted = 1 THEN expires_at ELSE excluded.expires_at END,
     defederated = 0,
-    supported_protocols = CASE WHEN excluded.deleted = 1 THEN supported_protocols ELSE excluded.supported_protocols END,
-    active_one_on_one_conversation_id = CASE WHEN excluded.deleted = 1 THEN active_one_on_one_conversation_id ELSE excluded.active_one_on_one_conversation_id END;
+    supported_protocols = CASE WHEN excluded.deleted = 1 THEN supported_protocols ELSE excluded.supported_protocols END;
 
 insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
