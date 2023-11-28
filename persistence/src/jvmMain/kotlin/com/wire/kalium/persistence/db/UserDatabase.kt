@@ -121,14 +121,14 @@ fun inMemoryDatabase(
     UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storageData), false)
 }
 
-fun clearInMemoryDatabase(userId: UserIDEntity) {
-    InMemoryDatabaseCache.clearEntry(userId)
+fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
+    return InMemoryDatabaseCache.clearEntry(userId)
 }
 
 internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean = when (val storageData = platformDatabaseData.storageData) {
-    StorageData.InMemory -> InMemoryDatabaseCache.clearEntry(userId)
+    StorageData.InMemory -> clearInMemoryDatabase(userId)
     is StorageData.FileBacked -> storageData.file.resolve(DATABASE_NAME).delete()
 }
