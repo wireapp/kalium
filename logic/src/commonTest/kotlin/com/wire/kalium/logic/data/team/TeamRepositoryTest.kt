@@ -28,7 +28,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.ServiceDetailDTO
 import com.wire.kalium.network.api.base.model.ServiceDetailResponse
@@ -169,27 +168,6 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenTeamIdAndUserId_whenFetchingTeamMember_thenTeamMemberShouldBeSuccessful() = runTest {
-        val teamMemberDTO = TestTeam.memberDTO(
-            nonQualifiedUserId = "teamMember1"
-        )
-
-        val (arrangement, teamRepository) = Arrangement()
-            .withApiGetTeamMemberSuccess(teamMemberDTO)
-            .withGetUsersInfoSuccess()
-            .arrange()
-
-        val result = teamRepository.fetchTeamMember("teamId", "userId")
-
-        result.shouldSucceed()
-
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertUser)
-            .with(any())
-            .wasInvoked(once)
-    }
-
-    @Test
     fun givenTeamId_whenSyncingWhitelistedServices_thenInsertIntoDatabase() = runTest {
         // given
         val (arrangement, teamRepository) = Arrangement()
@@ -213,7 +191,6 @@ class TeamRepositoryTest {
         // given
         val (arrangement, teamRepository) = Arrangement()
             .withApiApproveLegalHoldSuccess()
-            .withGetUsersInfoSuccess()
             .arrange()
         // when
         val result = teamRepository.approveLegalHoldRequest(teamId = TeamId(value = "teamId"), password = "password")
@@ -243,13 +220,7 @@ class TeamRepositoryTest {
         val teamMapper = MapperProvider.teamMapper()
 
         @Mock
-        val userMapper = MapperProvider.userMapper()
-
-        @Mock
         val teamsApi = mock(classOf<TeamsApi>())
-
-        @Mock
-        val userDetailsApi = mock(classOf<UserDetailsApi>())
 
         @Mock
         val serviceDAO = configure(mock(classOf<ServiceDAO>())) {
@@ -260,10 +231,8 @@ class TeamRepositoryTest {
             teamDAO = teamDAO,
             teamMapper = teamMapper,
             teamsApi = teamsApi,
-            userDetailsApi = userDetailsApi,
             userDAO = userDAO,
             userConfigDAO = userConfigDAO,
-            userMapper = userMapper,
             selfUserId = TestUser.USER_ID,
             serviceDAO = serviceDAO
         )
@@ -273,13 +242,6 @@ class TeamRepositoryTest {
                 .suspendFunction(teamsApi::getTeamInfo)
                 .whenInvokedWith(oneOf(teamDTO.id))
                 .then { NetworkResponse.Success(value = teamDTO, headers = mapOf(), httpCode = 200) }
-        }
-
-        fun withGetUsersInfoSuccess() = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getUserInfo)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(TestUser.USER_PROFILE_DTO, mapOf(), 200))
         }
 
         fun withApiGetTeamMemberSuccess(teamMemberDTO: TeamsApi.TeamMemberDTO) = apply {
