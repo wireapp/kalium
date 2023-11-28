@@ -208,6 +208,7 @@ internal class ConversationGroupRepositoryImpl(
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
             is Either.Right -> handleMLSMembersAdded(conversationId, userIdList, failedUsersList)
             is Either.Left -> {
+                // todo, cleanup, extract to a function and try to reuse
                 if (remainingAttempts >= 0) {
                     when (val failure = addingMemberResult.value) {
                         // claiming key packages offline or out of packages
