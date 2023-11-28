@@ -17,6 +17,7 @@
  */
 
 @file:Suppress("MatchingDeclarationName")
+
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
