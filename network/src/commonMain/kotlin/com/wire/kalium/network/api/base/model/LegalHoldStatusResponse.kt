@@ -35,6 +35,7 @@ enum class LegalHoldStatusDTO {
     NO_CONSENT
 }
 
+@Serializable
 data class LegalHoldStatusResponse(
     @SerialName("status") val legalHoldStatusDTO: LegalHoldStatusDTO,
     @SerialName("client") val clientId: ClientIdDTO?,
