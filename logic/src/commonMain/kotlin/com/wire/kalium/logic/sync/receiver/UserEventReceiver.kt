@@ -182,6 +182,8 @@ internal class UserEventReceiverImpl internal constructor(
             logout(LogoutReason.DELETED_ACCOUNT)
             Either.Right(Unit)
         } else {
+            // TODO: those 2 steps must be done in one transaction
+            // userRepo.markAsDeleted(event.userId) will ma
             userRepository.removeUser(event.userId)
                 .onSuccess {
                     conversationRepository.deleteUserFromConversations(event.userId)
