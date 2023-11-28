@@ -362,7 +362,7 @@ class EventMapper(
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
-    private fun legalHoldRequest(
+    internal fun legalHoldRequest(
         id: String,
         transient: Boolean,
         live: Boolean,
@@ -372,13 +372,13 @@ class EventMapper(
             transient = transient,
             live = live,
             id = id,
-            clientId = ClientId(eventContentDTO.id),
+            clientId = ClientId(eventContentDTO.clientId.clientId),
             lastPreKey = LastPreKey(eventContentDTO.lastPreKey.id, eventContentDTO.lastPreKey.key),
             userId = qualifiedIdMapper.fromStringToQualifiedID(eventContentDTO.id)
         )
     }
 
-    private fun legalHoldEnabled(
+    internal fun legalHoldEnabled(
         id: String,
         transient: Boolean,
         live: Boolean,
@@ -392,7 +392,7 @@ class EventMapper(
         )
     }
 
-    private fun legalHoldDisabled(
+    internal fun legalHoldDisabled(
         id: String,
         transient: Boolean,
         live: Boolean,
