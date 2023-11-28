@@ -268,7 +268,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
             val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
                 otherMembersIds,
-                setOf(TestUser.USER_ID)
+                listOf(TestUser.USER_ID)
             )
 
             result.shouldSucceed()
@@ -305,8 +305,8 @@ class NewGroupConversationSystemMessagesCreatorTest {
                             "wire_admin"
                         ), emptyList()
                     )
-                ).members.otherMembers.map { it.id.toModel() }.toSet(),
-                setOf(TestUser.USER_ID)
+                ).members.otherMembers.map { it.id.toModel() },
+                listOf(TestUser.USER_ID)
             )
 
             result.shouldSucceed()
@@ -403,7 +403,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
         )
 
         companion object {
-            val otherMembersIds = TestConversation.CONVERSATION_RESPONSE.members.otherMembers.map { it.id.toModel() }.toSet()
+            val otherMembersIds = TestConversation.CONVERSATION_RESPONSE.members.otherMembers.map { it.id.toModel() }
         }
     }
 

@@ -257,7 +257,7 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId, userIdList: List<UserId>, failedUsersList: Set<UserId>
     ): Either<CoreFailure, Unit> {
         return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
-            conversationId.toDao(), userIdList.toSet(), failedUsersList.toSet()
+            conversationId.toDao(), userIdList, failedUsersList.toList()
         ).flatMap {
             Either.Right(Unit)
         }

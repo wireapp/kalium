@@ -46,8 +46,8 @@ internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
     suspend fun conversationResolvedMembersAddedAndFailed(
         conversationId: ConversationIDEntity,
-        validUsers: Set<UserId>,
-        failedUsersList: Set<UserId> = emptySet()
+        validUsers: List<UserId>,
+        failedUsersList: List<UserId> = emptyList()
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationFailedToAddMembers(
@@ -141,8 +141,8 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 
     override suspend fun conversationResolvedMembersAddedAndFailed(
         conversationId: ConversationIDEntity,
-        validUsers: Set<UserId>,
-        failedUsersList: Set<UserId>
+        validUsers: List<UserId>,
+        failedUsersList: List<UserId>
     ): Either<CoreFailure, Unit> = run {
         if (validUsers.isNotEmpty()) {
             persistMessage(
@@ -167,7 +167,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         userIdList: Set<UserId>
     ): Either<CoreFailure, Unit> = run {
         if (userIdList.isNotEmpty()) {
-            return persistMessage(
+            persistMessage(
                 Message.System(
                     uuid4().toString(),
                     MessageContent.MemberChange.FailedToAdd(userIdList.toList()),
@@ -183,11 +183,11 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         Either.Right(Unit)
     }
 
-    private suspend fun createFailedToAddSystemMessage(conversationId: ConversationIDEntity, failedUsersList: Set<UserId>) {
+    private suspend fun createFailedToAddSystemMessage(conversationId: ConversationIDEntity, failedUsersList: List<UserId>) {
         if (failedUsersList.isNotEmpty()) {
             val messageStartedWithFailedMembers = Message.System(
                 uuid4().toString(),
-                MessageContent.MemberChange.FailedToAdd(failedUsersList.toList()),
+                MessageContent.MemberChange.FailedToAdd(failedUsersList),
                 conversationId.toModel(),
                 DateTimeUtil.currentIsoDateTimeString(),
                 selfUserId,

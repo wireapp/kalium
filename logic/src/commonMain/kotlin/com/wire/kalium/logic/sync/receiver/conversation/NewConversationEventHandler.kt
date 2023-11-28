@@ -94,7 +94,7 @@ internal class NewConversationEventHandlerImpl(
             newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation)
             newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
                 event.conversationId.toDao(),
-                event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()
+                event.conversation.members.otherMembers.map { it.id.toModel() }
             )
             newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation)
             newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(event.conversation.id.toModel())

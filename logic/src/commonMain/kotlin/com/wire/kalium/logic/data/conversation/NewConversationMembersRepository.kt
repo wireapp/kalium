@@ -60,8 +60,8 @@ internal class NewConversationMembersRepositoryImpl(
     }.flatMap {
         newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
             conversationId,
-            conversationResponse.members.otherMembers.map { it.id.toModel() }.toSet(),
-            failedUsersList.toSet()
+            conversationResponse.members.otherMembers.map { it.id.toModel() },
+            failedUsersList
         )
     }
 
