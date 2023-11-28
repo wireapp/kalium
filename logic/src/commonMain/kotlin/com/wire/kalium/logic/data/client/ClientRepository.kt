@@ -69,7 +69,10 @@ interface ClientRepository {
     suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
     suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
     suspend fun storeMapOfUserToClientId(userToClientMap: Map<UserId, List<ClientId>>): Either<StorageFailure, Unit>
-    suspend fun  removeClientsAndReturnUsersWithNoClients (redundantClientsOfUsers: Map<UserId, List<ClientId>>): Either<StorageFailure, List<UserId>>
+    suspend fun removeClientsAndReturnUsersWithNoClients(
+        redundantClientsOfUsers: Map<UserId, List<ClientId>>
+    ): Either<StorageFailure, List<UserId>>
+
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
@@ -190,19 +193,26 @@ class ClientDataSource(
             clientRegistrationStorage.hasRegisteredMLSClient()
         }
 
-    override suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit> =
+    override suspend fun storeUserClientIdList(
+        userId: UserId,
+        clients: List<ClientId>
+    ): Either<StorageFailure, Unit> =
         clientMapper.toInsertClientParam(userId, clients).let { clientEntityList ->
             wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
         }
 
-    override suspend fun storeMapOfUserToClientId(userToClientMap: Map<UserId, List<ClientId>>): Either<StorageFailure, Unit> =
+    override suspend fun storeMapOfUserToClientId(
+        userToClientMap: Map<UserId, List<ClientId>>
+    ): Either<StorageFailure, Unit> =
         userToClientMap.flatMap { (userId, clients) ->
             clientMapper.toInsertClientParam(userId, clients)
         }.let { insertClientParamList ->
             wrapStorageRequest { clientDAO.insertClients(insertClientParamList) }
         }
 
-    override suspend fun removeClientsAndReturnUsersWithNoClients(redundantClientsOfUsers: Map<UserId, List<ClientId>>): Either<StorageFailure, List<UserId>> =
+    override suspend fun removeClientsAndReturnUsersWithNoClients(
+        redundantClientsOfUsers: Map<UserId, List<ClientId>>
+    ): Either<StorageFailure, List<UserId>> =
         redundantClientsOfUsers.mapKeys { it.key.toDao() }
             .mapValues { it.value.map { clientId -> clientId.value } }
             .let { redundantClientsOfUsersDao ->

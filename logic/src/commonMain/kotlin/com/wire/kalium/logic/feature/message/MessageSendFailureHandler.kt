@@ -25,15 +25,12 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -84,17 +81,17 @@ class MessageSendFailureHandlerImpl internal constructor(
             }
 
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
-        return if (deletedClient.isEmpty())  Either.Right(emptySet())
+        return if (deletedClient.isEmpty()) Either.Right(emptySet())
         else clientRepository.removeClientsAndReturnUsersWithNoClients(deletedClient).map { it.toSet() }
     }
 
     private suspend fun syncUserIds(userId: Set<UserId>): Either<CoreFailure, Unit> {
-        return if (userId.isEmpty())  Either.Right(Unit)
+        return if (userId.isEmpty()) Either.Right(Unit)
         else userRepository.fetchUsersByIds(userId)
     }
 
     private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> {
-        return if (missingClients.isEmpty())  Either.Right(Unit)
+        return if (missingClients.isEmpty()) Either.Right(Unit)
         else clientRepository.storeMapOfUserToClientId(missingClients)
     }
 

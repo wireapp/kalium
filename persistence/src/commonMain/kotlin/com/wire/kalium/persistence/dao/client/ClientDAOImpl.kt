@@ -100,7 +100,9 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun removeClientsAndReturnUsersWithNoClients(redundantClientsOfUsers: Map<UserIDEntity, List<String>>) = withContext(queriesContext) {
+    override suspend fun removeClientsAndReturnUsersWithNoClients(
+        redundantClientsOfUsers: Map<UserIDEntity, List<String>>
+    ) = withContext(queriesContext) {
         clientsQueries.transactionWithResult {
             redundantClientsOfUsers.entries.forEach {
                 val userId = it.key
