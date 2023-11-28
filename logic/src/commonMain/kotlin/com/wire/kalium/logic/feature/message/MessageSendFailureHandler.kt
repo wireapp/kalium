@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -73,14 +74,29 @@ class MessageSendFailureHandlerImpl internal constructor(
 
     override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
         // TODO(optimization): add/remove members to/from conversation
-        clientRepository.removeClientsAndReturnUsersWithNoClients(sendFailure.deletedClientsOfUsers)
+        handleDeletedClients(sendFailure.deletedClientsOfUsers)
             .map { usersWithNoClientsRemaining ->
-                sendFailure.missingClientsOfUsers.keys + usersWithNoClientsRemaining.toSet()
+                sendFailure.missingClientsOfUsers.keys + usersWithNoClientsRemaining
             }.flatMap { usersThatNeedInfoRefresh ->
-                userRepository.fetchUsersByIds(usersThatNeedInfoRefresh)
+                syncUserIds(usersThatNeedInfoRefresh)
             }.flatMap {
-                clientRepository.storeMapOfUserToClientId(sendFailure.missingClientsOfUsers)
+                addMissingClients(sendFailure.missingClientsOfUsers)
             }
+
+    private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
+        return if (deletedClient.isEmpty())  Either.Right(emptySet())
+        else clientRepository.removeClientsAndReturnUsersWithNoClients(deletedClient).map { it.toSet() }
+    }
+
+    private suspend fun syncUserIds(userId: Set<UserId>): Either<CoreFailure, Unit> {
+        return if (userId.isEmpty())  Either.Right(Unit)
+        else userRepository.fetchUsersByIds(userId)
+    }
+
+    private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> {
+        return if (missingClients.isEmpty())  Either.Right(Unit)
+        else clientRepository.storeMapOfUserToClientId(missingClients)
+    }
 
     override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,
