@@ -29,6 +29,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -39,6 +40,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -51,12 +53,13 @@ interface TeamRepository {
     suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
     suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
-    suspend fun approveLegalHold(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
+    suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
 internal class TeamDataSource(
     private val userDAO: UserDAO,
+    private val userConfigDAO: UserConfigDAO,
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
     private val userDetailsApi: UserDetailsApi,
@@ -149,8 +152,9 @@ internal class TeamDataSource(
         }
     }
 
-    override suspend fun approveLegalHold(teamId: TeamId, password: String?): Either<CoreFailure, Unit> = wrapApiRequest {
-        teamsApi.approveLegalHold(teamId.value, selfUserId.value, password)
-        // TODO: should we update the legal hold status for the current user in the database?
+    override suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit> = wrapApiRequest {
+        teamsApi.approveLegalHoldRequest(teamId.value, selfUserId.value, password)
+    }.onSuccess {
+        userConfigDAO.clearLegalHoldRequest()
     }
 }
