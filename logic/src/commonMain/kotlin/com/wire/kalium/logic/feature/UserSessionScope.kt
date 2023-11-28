@@ -1340,13 +1340,13 @@ class UserSessionScope internal constructor(
     val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
         get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
 
-    val observeLegalHoldRequestUseCase: ObserveLegalHoldRequestUseCase
+    val observeLegalHoldRequest: ObserveLegalHoldRequestUseCase
         get() = ObserveLegalHoldRequestUseCaseImpl(
             userConfigRepository = userConfigRepository,
             preKeyRepository = preKeyRepository
         )
 
-    val approveLegalHoldRequestUseCase: ApproveLegalHoldRequestUseCase
+    val approveLegalHoldRequest: ApproveLegalHoldRequestUseCase
         get() = ApproveLegalHoldRequestUseCaseImpl(
             teamRepository = teamRepository,
             selfTeamIdProvider = selfTeamId,
