@@ -24,8 +24,8 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -443,38 +443,6 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
                 teamIdKey to teamId,
                 "icon" to icon,
                 "name" to name,
-            )
-        }
-
-        data class MemberJoin(
-            override val id: String,
-            override val teamId: String,
-            override val transient: Boolean,
-            override val live: Boolean,
-            val memberId: String,
-        ) : Team(id, teamId, transient, live) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "Team.MemberJoin",
-                idKey to id.obfuscateId(),
-                teamIdKey to teamId.obfuscateId(),
-                memberIdKey to memberId.obfuscateId(),
-            )
-        }
-
-        data class MemberLeave(
-            override val id: String,
-            override val transient: Boolean,
-            override val live: Boolean,
-            override val teamId: String,
-            val memberId: String,
-            val timestampIso: String,
-        ) : Team(id, teamId, transient, live) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "Team.MemberLeave",
-                idKey to id.obfuscateId(),
-                teamIdKey to teamId.obfuscateId(),
-                timestampIsoKey to timestampIso,
-                memberIdKey to memberId.obfuscateId(),
             )
         }
 

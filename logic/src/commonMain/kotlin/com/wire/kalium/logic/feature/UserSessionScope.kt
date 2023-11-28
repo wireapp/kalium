@@ -217,10 +217,10 @@ import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordC
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManager
 import com.wire.kalium.logic.feature.keypackage.KeyPackageManagerImpl
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
@@ -712,7 +712,6 @@ class UserSessionScope internal constructor(
             userStorage.database.userConfigDAO,
             userStorage.database.teamDAO,
             authenticatedNetworkContainer.teamsApi,
-            authenticatedNetworkContainer.userDetailsApi,
             userId,
             userStorage.database.serviceDAO
         )
@@ -1377,7 +1376,7 @@ class UserSessionScope internal constructor(
         )
 
     private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
+        get() = TeamEventReceiverImpl(teamRepository)
 
     private val guestRoomConfigHandler
         get() = GuestRoomConfigHandler(userConfigRepository, kaliumConfigs)
