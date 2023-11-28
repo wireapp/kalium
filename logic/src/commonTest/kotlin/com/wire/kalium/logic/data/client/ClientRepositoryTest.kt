@@ -255,8 +255,7 @@ class ClientRepositoryTest {
                     model = "Mac ox",
                     capabilities = null,
                     mlsPublicKeys = null,
-                    cookie = null,
-                    location = null
+                    cookie = null
                 ),
                 ClientDTO(
                     clientId = "client_id_2",
@@ -268,8 +267,7 @@ class ClientRepositoryTest {
                     model = "iphone 15",
                     capabilities = null,
                     mlsPublicKeys = null,
-                    cookie = null,
-                    location = null
+                    cookie = null
                 )
             ),
             mapOf(),

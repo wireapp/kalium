@@ -78,7 +78,7 @@ internal open class TeamsApiV0 internal constructor(
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
         }
 
-    override suspend fun approveLegalHold(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit> =
+    override suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.put("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId/$PATH_APPROVE") {
                 setBody(PasswordRequest(password))

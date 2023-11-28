@@ -15,14 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.legalhold
 
-package com.wire.kalium.network.api.base.model
+import com.wire.kalium.logic.data.user.UserId
+import kotlinx.coroutines.flow.Flow
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+/**
+ * Use case that allows to observe the legal hold state for the self user.
+ */
+interface ObserveLegalHoldForSelfUserUseCase {
+    suspend operator fun invoke(): Flow<LegalHoldState>
+}
 
-@Serializable
-data class LocationResponse(
-    @SerialName("lat") val latitude: String,
-    @SerialName("lon") val longitude: String
-)
+internal class ObserveLegalHoldForSelfUserUseCaseImpl internal constructor(
+    private val selfUserId: UserId,
+    private val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
+) : ObserveLegalHoldForSelfUserUseCase {
+    override suspend fun invoke(): Flow<LegalHoldState> = observeLegalHoldStateForUser(
+        userId = selfUserId
+    )
+}
