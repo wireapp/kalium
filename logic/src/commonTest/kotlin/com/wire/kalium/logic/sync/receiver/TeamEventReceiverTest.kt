@@ -77,11 +77,6 @@ class TeamEventReceiverTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withMemberJoinSuccess() = apply {
-            given(teamRepository).suspendFunction(teamRepository::fetchTeamMember)
-                .whenInvokedWith(any(), any()).thenReturn(Either.Right(Unit))
-        }
-
         fun withMemberUpdateSuccess() = apply {
             given(teamRepository).suspendFunction(teamRepository::updateMemberRole)
                 .whenInvokedWith(any(), any(), any()).thenReturn(Either.Right(Unit))
