@@ -166,7 +166,7 @@ class NewConversationEventHandlerTest {
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
             .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-            .with(eq(event.conversationId.toDao()), eq(event.conversation))
+            .with(eq(event.conversationId.toDao()), eq(event.conversation.members.otherMembers.map { it.id.toModel() }.toSet()), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)

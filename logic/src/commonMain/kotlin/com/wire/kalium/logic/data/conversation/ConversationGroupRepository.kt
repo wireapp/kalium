@@ -185,11 +185,11 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.Mixed ->
                         tryAddMembersToCloudAndStorage(userIdList, conversationId)
                             .flatMap {
-                                tryAddMembersToMLSGroup(protocol.groupId, userIdList)
+                                tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList)
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
-                        tryAddMembersToMLSGroup(protocol.groupId, userIdList)
+                        tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList)
                     }
                 }
             }
@@ -199,30 +199,67 @@ internal class ConversationGroupRepositoryImpl(
      * Handle error case and retry for sendingCommit unreachable.
      */
     private suspend fun tryAddMembersToMLSGroup(
+        conversationId: ConversationId,
         groupId: String,
-        userIdList: List<UserId>
+        userIdList: List<UserId>,
+        failedUsersList: Set<UserId> = emptySet(),
+        remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
-            is Either.Right -> addingMemberResult
+            is Either.Right -> handleMLSMembersAdded(conversationId, userIdList, failedUsersList)
             is Either.Left -> {
-                when (val failure = addingMemberResult.value) {
-                    // claiming key packages offline or out of packages
-                    is CoreFailure.NoKeyPackagesAvailable -> {
-                        mlsConversationRepository.addMemberToMLSGroup(
-                            GroupID(groupId),
-                            userIdList.filterNot { failure.failedUserIds.contains(it) })
-                    }
+                if (remainingAttempts >= 0) {
+                    when (val failure = addingMemberResult.value) {
+                        // claiming key packages offline or out of packages
+                        is CoreFailure.NoKeyPackagesAvailable -> {
+                            val (validUsers, failedUsers) = userIdList.partition { !failure.failedUserIds.contains(it) }
+                            tryAddMembersToMLSGroup(
+                                conversationId = conversationId,
+                                groupId = groupId,
+                                userIdList = validUsers,
+                                failedUsersList = (failedUsersList + failedUsers).toSet(),
+                                remainingAttempts = remainingAttempts - 1
+                            )
+                        }
 
-                    // sending commit unreachable
-                    is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
-                        mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList.filterNot {
-                            !failure.domains.contains(it.domain)
-                        })
-                    }
+                        // sending commit unreachable
+                        is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
+                            val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(userIdList, failure)
+                            tryAddMembersToMLSGroup(
+                                conversationId = conversationId,
+                                groupId = groupId,
+                                userIdList = validUsers,
+                                failedUsersList = (failedUsersList + failedUsers).toSet(),
+                                remainingAttempts = remainingAttempts - 1
+                            )
+                        }
 
-                    else -> addingMemberResult
+                        else -> {
+                            newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                                conversationId, (failedUsersList + userIdList)
+                            ).flatMap {
+                                Either.Left(addingMemberResult.value)
+                            }
+                        }
+                    }
+                } else {
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationId, (failedUsersList + userIdList)
+                    ).flatMap {
+                        Either.Left(addingMemberResult.value)
+                    }
                 }
             }
+        }
+    }
+
+    private suspend fun handleMLSMembersAdded(
+        conversationId: ConversationId, userIdList: List<UserId>, failedUsersList: Set<UserId>
+    ): Either<CoreFailure, Unit> {
+        return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
+            conversationId.toDao(), userIdList.toSet(), failedUsersList.toSet()
+        ).flatMap {
+            Either.Right(Unit)
         }
     }
 

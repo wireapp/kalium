@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorTest.Arrangement.Companion.otherMembersIds
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
@@ -236,7 +237,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
-                TestConversation.CONVERSATION_RESPONSE
+                otherMembersIds
             )
 
             result.shouldSucceed()
@@ -266,8 +267,8 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
-                TestConversation.CONVERSATION_RESPONSE,
-                listOf(TestUser.USER_ID)
+                otherMembersIds,
+                setOf(TestUser.USER_ID)
             )
 
             result.shouldSucceed()
@@ -302,10 +303,10 @@ class NewGroupConversationSystemMessagesCreatorTest {
                         ConversationMemberDTO.Self(
                             TestUser.SELF.id.toApi(),
                             "wire_admin"
-                        ), listOf()
+                        ), emptyList()
                     )
-                ),
-                listOf(TestUser.USER_ID)
+                ).members.otherMembers.map { it.id.toModel() }.toSet(),
+                setOf(TestUser.USER_ID)
             )
 
             result.shouldSucceed()
@@ -400,6 +401,10 @@ class NewGroupConversationSystemMessagesCreatorTest {
             qualifiedIdMapper,
             TestUser.SELF.id,
         )
+
+        companion object {
+            val otherMembersIds = TestConversation.CONVERSATION_RESPONSE.members.otherMembers.map { it.id.toModel() }.toSet()
+        }
     }
 
 }
