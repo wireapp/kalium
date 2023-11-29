@@ -22,7 +22,6 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO

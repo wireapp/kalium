@@ -26,6 +26,11 @@ import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 
+/**
+ * This use case will observe and return a flow of paginated searched messages for a given conversation.
+ * @see PagingData
+ * @see Message
+ */
 class GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository
