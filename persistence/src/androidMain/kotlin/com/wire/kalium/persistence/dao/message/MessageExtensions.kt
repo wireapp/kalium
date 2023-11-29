@@ -31,6 +31,14 @@ actual interface MessageExtensions {
         pagingConfig: PagingConfig,
         startingOffset: Int
     ): KaliumPager<MessageEntity>
+
+    fun getPagerForMessagesSearch(
+        searchQuery: String,
+        conversationId: ConversationIDEntity,
+        pagingConfig: PagingConfig,
+        messageId: String,
+        startingOffset: Int
+    ): KaliumPager<MessageEntity>
 }
 
 actual class MessageExtensionsImpl actual constructor(
@@ -53,6 +61,21 @@ actual class MessageExtensionsImpl actual constructor(
         )
     }
 
+    override fun getPagerForMessagesSearch(
+        searchQuery: String,
+        conversationId: ConversationIDEntity,
+        pagingConfig: PagingConfig,
+        messageId: String,
+        startingOffset: Int
+    ): KaliumPager<MessageEntity> {
+        // We could return a Flow directly, but having the PagingSource is the only way to test this
+        return KaliumPager(
+            Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId, messageId, startingOffset) },
+            getMessagesSearchPagingSource(searchQuery, conversationId, messageId, startingOffset),
+            coroutineContext
+        )
+    }
+
     private fun getPagingSource(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
@@ -67,6 +90,28 @@ actual class MessageExtensionsImpl actual constructor(
                 messagesQueries.selectByConversationIdAndVisibility(
                     conversationId,
                     visibilities,
+                    limit.toLong(),
+                    offset.toLong(),
+                    messageMapper::toEntityMessageFromView
+                )
+            }
+        )
+
+    private fun getMessagesSearchPagingSource(
+        searchQuery: String,
+        conversationId: ConversationIDEntity,
+        messageId: String,
+        initialOffset: Int
+    ) =
+        KaliumOffsetQueryPagingSource(
+            countQuery = messagesQueries.selectSearchedConversationMessagePosition(conversationId, messageId).toInt(),
+            transacter = messagesQueries,
+            context = coroutineContext,
+            initialOffset = initialOffset,
+            queryProvider = { limit, offset ->
+                messagesQueries.selectConversationMessagesFromSearch(
+                    searchQuery,
+                    conversationId,
                     limit.toLong(),
                     offset.toLong(),
                     messageMapper::toEntityMessageFromView
