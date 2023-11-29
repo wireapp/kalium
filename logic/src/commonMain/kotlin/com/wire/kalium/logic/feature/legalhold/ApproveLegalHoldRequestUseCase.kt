@@ -33,13 +33,13 @@ import io.ktor.http.HttpStatusCode
 /**
  * Use Case that allows the user to accept a requested legal hold.
  */
-interface ApproveLegalHoldUseCase {
+interface ApproveLegalHoldRequestUseCase {
 
     /**
-     * Use case [ApproveLegalHoldUseCase] operation
+     * Use case [ApproveLegalHoldRequestUseCase] operation
      *
      * @param password password for the user account to confirm the action, can be empty for sso users
-     * @return a [ApproveLegalHoldUseCase.Result] indicating the operation result
+     * @return a [ApproveLegalHoldRequestUseCase.Result] indicating the operation result
      */
     suspend operator fun invoke(password: String?): Result
 
@@ -53,32 +53,32 @@ interface ApproveLegalHoldUseCase {
     }
 }
 
-class ApproveLegalHoldUseCaseImpl internal constructor(
+class ApproveLegalHoldRequestUseCaseImpl internal constructor(
     private val teamRepository: TeamRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-) : ApproveLegalHoldUseCase {
-    override suspend fun invoke(password: String?): ApproveLegalHoldUseCase.Result {
+) : ApproveLegalHoldRequestUseCase {
+    override suspend fun invoke(password: String?): ApproveLegalHoldRequestUseCase.Result {
         return selfTeamIdProvider()
             .flatMap {
                 if (it == null) Either.Left(StorageFailure.DataNotFound)
                 else Either.Right(it)
             }
             .flatMap { teamId ->
-                teamRepository.approveLegalHold(teamId, password)
+                teamRepository.approveLegalHoldRequest(teamId, password)
             }
-            .fold({ handleError(it) }, { ApproveLegalHoldUseCase.Result.Success })
+            .fold({ handleError(it) }, { ApproveLegalHoldRequestUseCase.Result.Success })
     }
 
-    private fun handleError(failure: CoreFailure): ApproveLegalHoldUseCase.Result.Failure =
+    private fun handleError(failure: CoreFailure): ApproveLegalHoldRequestUseCase.Result.Failure =
         if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError)
             failure.kaliumException.let { error: KaliumException.InvalidRequestError ->
                 when {
                     error.errorResponse.code == HttpStatusCode.BadRequest.value && error.isBadRequest() ->
-                        ApproveLegalHoldUseCase.Result.Failure.InvalidPassword
+                        ApproveLegalHoldRequestUseCase.Result.Failure.InvalidPassword
                      error.errorResponse.code == HttpStatusCode.Forbidden.value && error.isAccessDenied() ->
-                        ApproveLegalHoldUseCase.Result.Failure.PasswordRequired
-                    else -> ApproveLegalHoldUseCase.Result.Failure.GenericFailure(failure)
+                        ApproveLegalHoldRequestUseCase.Result.Failure.PasswordRequired
+                    else -> ApproveLegalHoldRequestUseCase.Result.Failure.GenericFailure(failure)
                 }
             }
-        else ApproveLegalHoldUseCase.Result.Failure.GenericFailure(failure)
+        else ApproveLegalHoldRequestUseCase.Result.Failure.GenericFailure(failure)
 }

@@ -18,11 +18,13 @@
 
 package com.wire.kalium.network.api.base.model
 
+import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class LegalHoldStatusResponse {
+enum class LegalHoldStatusDTO {
     @SerialName("enabled")
     ENABLED,
     @SerialName("pending")
@@ -32,3 +34,10 @@ enum class LegalHoldStatusResponse {
     @SerialName("no_consent")
     NO_CONSENT
 }
+
+@Serializable
+data class LegalHoldStatusResponse(
+    @SerialName("status") val legalHoldStatusDTO: LegalHoldStatusDTO,
+    @SerialName("client") val clientId: ClientIdDTO?,
+    @SerialName("last_prekey") val lastPreKey: LastPreKeyDTO?,
+)

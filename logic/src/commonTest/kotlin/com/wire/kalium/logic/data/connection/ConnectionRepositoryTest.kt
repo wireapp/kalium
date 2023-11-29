@@ -38,7 +38,7 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionRespo
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -359,7 +359,7 @@ class ConnectionRepositoryTest {
             handle = "handle",
             id = QualifiedID(value = "value", domain = "domain"),
             name = "name",
-            legalHoldStatus = LegalHoldStatusResponse.ENABLED,
+            legalHoldStatus = LegalHoldStatusDTO.ENABLED,
             teamId = "team",
             assets = emptyList(),
             deleted = null,
