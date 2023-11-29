@@ -20,22 +20,21 @@ package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import java.io.File
 import java.nio.file.Files
 
-@OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
     actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
 
-    val UserIDEntity.databaseFile
+    private val UserIDEntity.databaseFile
         get() = Files.createTempDirectory("test-storage").toFile().resolve("test-$domain-$value.db")
 
     actual fun databasePath(
@@ -66,5 +65,7 @@ actual open class BaseDatabaseTest actual constructor() {
         )
     }
 
-    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(userId.databaseFile)
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(
+        StorageData.FileBacked(userId.databaseFile)
+    )
 }

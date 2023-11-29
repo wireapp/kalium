@@ -19,6 +19,9 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
+import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.service.ServiceMapper
@@ -29,16 +32,23 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.message.LocalId
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -51,21 +61,27 @@ interface TeamRepository {
     suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
     suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
-    suspend fun approveLegalHold(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
+    suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
+    suspend fun fetchLegalHoldStatus(teamId: TeamId): Either<CoreFailure, LegalHoldStatus>
 }
 
 @Suppress("LongParameterList")
 internal class TeamDataSource(
     private val userDAO: UserDAO,
+    private val userConfigDAO: UserConfigDAO,
     private val teamDAO: TeamDAO,
     private val teamsApi: TeamsApi,
     private val userDetailsApi: UserDetailsApi,
     private val selfUserId: UserId,
     private val serviceDAO: ServiceDAO,
+    private val legalHoldHandler: LegalHoldHandler,
+    private val legalHoldRequestHandler: LegalHoldRequestHandler,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
     private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper(),
-    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper()
+    private val userTypeEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
+    private val legalHoldStatusMapper: LegalHoldStatusMapper = MapperProvider.legalHoldStatusMapper(),
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
 ) : TeamRepository {
 
     override suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
@@ -149,8 +165,46 @@ internal class TeamDataSource(
         }
     }
 
-    override suspend fun approveLegalHold(teamId: TeamId, password: String?): Either<CoreFailure, Unit> = wrapApiRequest {
-        teamsApi.approveLegalHold(teamId.value, selfUserId.value, password)
-        // TODO: should we update the legal hold status for the current user in the database?
+    override suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit> = wrapApiRequest {
+        teamsApi.approveLegalHoldRequest(teamId.value, selfUserId.value, password)
+    }.onSuccess {
+        userConfigDAO.clearLegalHoldRequest()
+    }
+
+    override suspend fun fetchLegalHoldStatus(teamId: TeamId): Either<CoreFailure, LegalHoldStatus> = wrapApiRequest {
+        teamsApi.fetchLegalHoldStatus(teamId.value, selfUserId.value)
+    }.flatMap { response ->
+        when (response.legalHoldStatusDTO) {
+            LegalHoldStatusDTO.ENABLED -> legalHoldHandler.handleEnable(
+                eventMapper.legalHoldEnabled(
+                    id = LocalId.generate(),
+                    transient = true,
+                    live = false,
+                    eventContentDTO = EventContentDTO.User.LegalHoldEnabledDTO(id = selfUserId.toString())
+                )
+            )
+            LegalHoldStatusDTO.DISABLED -> legalHoldHandler.handleDisable(
+                eventMapper.legalHoldDisabled(
+                    id = LocalId.generate(),
+                    transient = true,
+                    live = false,
+                    eventContentDTO = EventContentDTO.User.LegalHoldDisabledDTO(id = selfUserId.toString())
+                )
+            )
+            LegalHoldStatusDTO.PENDING ->
+                legalHoldRequestHandler.handle(
+                    eventMapper.legalHoldRequest(
+                        id = LocalId.generate(),
+                        transient = true,
+                        live = false,
+                        eventContentDTO = EventContentDTO.User.NewLegalHoldRequestDTO(
+                            clientId = response.clientId!!,
+                            lastPreKey = response.lastPreKey!!,
+                            id = selfUserId.toString()
+                        )
+                    )
+                )
+            LegalHoldStatusDTO.NO_CONSENT -> Either.Right(Unit)
+        }.map { legalHoldStatusMapper.fromApiModel(response.legalHoldStatusDTO) }
     }
 }
