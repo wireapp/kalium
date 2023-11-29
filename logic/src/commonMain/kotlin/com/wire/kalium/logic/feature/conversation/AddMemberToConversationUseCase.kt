@@ -61,7 +61,7 @@ internal class AddMemberToConversationUseCaseImpl(
                         }
                     }
 
-                    else -> { }
+                    else -> { /* do nothing */ }
                 }
             }
             .fold({
