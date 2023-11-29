@@ -183,7 +183,7 @@ internal class UserEventReceiverImpl internal constructor(
             Either.Right(Unit)
         } else {
             // TODO: those 2 steps must be done in one transaction
-            // userRepo.markAsDeleted(event.userId) will ma
+            //  userRepo.markAsDeleted(event.userId) will mark user as deleted and remove from the group conversations
             userRepository.removeUser(event.userId)
                 .onSuccess {
                     conversationRepository.deleteUserFromConversations(event.userId)
