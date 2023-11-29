@@ -216,7 +216,8 @@ class EndCallOnConversationChangeUseCaseTest {
             archived = false,
             archivedDateTime = null,
             mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
         )
 
         val otherUser = OtherUser(
