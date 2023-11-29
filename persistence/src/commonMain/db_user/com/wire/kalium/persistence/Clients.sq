@@ -30,6 +30,15 @@ DELETE FROM User;
 deleteClient:
 DELETE FROM Client WHERE user_id = ? AND id = ?;
 
+deeteCliuentsOfUser:
+DELETE FROM Client WHERE user_id = :userId AND id IN :clientIds;
+
+usersWithNotClients:
+SELECT U.qualified_id
+FROM User U
+LEFT JOIN Client C ON U.qualified_id = C.user_id
+WHERE U.qualified_id IN :userIds AND C.user_id IS NULL;
+
 deleteClientsOfUser:
 DELETE FROM Client WHERE user_id = ?;
 
