@@ -650,10 +650,11 @@ class MessageDataSource(
         searchQuery: String,
         conversationId: ConversationId
     ): Either<CoreFailure, List<Message.Standalone>> = wrapStorageRequest {
-        messageDAO.getConversationMessagesFromSearch(
-            searchQuery = searchQuery,
-            conversationId = conversationId.toDao()
-        ).map(messageMapper::fromEntityToMessage)
+//         messageDAO.getConversationMessagesFromSearch(
+//             searchQuery = searchQuery,
+//             conversationId = conversationId.toDao()
+//         ).map(messageMapper::fromEntityToMessage)
+        return Either.Right(listOf<Message.Standalone>())
     }
 
     override suspend fun getSearchedConversationMessagePosition(
