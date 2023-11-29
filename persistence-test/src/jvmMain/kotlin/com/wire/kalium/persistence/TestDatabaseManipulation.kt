@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
 
@@ -30,7 +31,7 @@ internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDis
 }
 
 internal actual fun deleteTestDatabase(userId: UserIDEntity) {
-    getTempDatabaseFile(getTempDatabaseFileNameForUser(userId)).delete()
+    clearInMemoryDatabase(userId)
 }
 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseProvider {
