@@ -522,6 +522,14 @@ ORDER BY date DESC
 LIMIT :limit
 OFFSET :offset;
 
+countBySearchedMessageAndConversationId:
+SELECT COUNT(*) FROM MessageDetailsView
+WHERE text LIKE ('%' || :searchQuery || '%')
+AND conversationId = :conversationId
+AND contentType = 'TEXT'
+AND expireAfterMillis IS NULL
+ORDER BY date DESC;
+
 selectSearchedConversationMessagePosition:
 SELECT COUNT(*) FROM Message
 WHERE conversation_id = :conversationId

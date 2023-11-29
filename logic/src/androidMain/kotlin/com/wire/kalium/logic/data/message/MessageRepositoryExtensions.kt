@@ -41,7 +41,6 @@ actual interface MessageRepositoryExtensions {
     suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
         searchQuery: String,
         conversationId: ConversationId,
-        messageId: String,
         pagingConfig: PagingConfig,
         startingOffset: Int
     ): Flow<PagingData<Message.Standalone>>
@@ -73,14 +72,12 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
     override suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
         searchQuery: String,
         conversationId: ConversationId,
-        messageId: String,
         pagingConfig: PagingConfig,
         startingOffset: Int
     ): Flow<PagingData<Message.Standalone>> {
         val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForMessagesSearch(
             searchQuery = searchQuery,
             conversationId = conversationId.toDao(),
-            messageId = messageId,
             pagingConfig = pagingConfig,
             startingOffset = startingOffset
         )

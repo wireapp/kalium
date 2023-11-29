@@ -36,7 +36,6 @@ actual interface MessageExtensions {
         searchQuery: String,
         conversationId: ConversationIDEntity,
         pagingConfig: PagingConfig,
-        messageId: String,
         startingOffset: Int
     ): KaliumPager<MessageEntity>
 }
@@ -65,13 +64,12 @@ actual class MessageExtensionsImpl actual constructor(
         searchQuery: String,
         conversationId: ConversationIDEntity,
         pagingConfig: PagingConfig,
-        messageId: String,
         startingOffset: Int
     ): KaliumPager<MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
         return KaliumPager(
-            Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId, messageId, startingOffset) },
-            getMessagesSearchPagingSource(searchQuery, conversationId, messageId, startingOffset),
+            Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset) },
+            getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset),
             coroutineContext
         )
     }
@@ -100,11 +98,10 @@ actual class MessageExtensionsImpl actual constructor(
     private fun getMessagesSearchPagingSource(
         searchQuery: String,
         conversationId: ConversationIDEntity,
-        messageId: String,
         initialOffset: Int
     ) =
         KaliumOffsetQueryPagingSource(
-            countQuery = messagesQueries.selectSearchedConversationMessagePosition(conversationId, messageId).toInt(),
+            countQuery = messagesQueries.countBySearchedMessageAndConversationId(searchQuery, conversationId).toInt(),
             transacter = messagesQueries,
             context = coroutineContext,
             initialOffset = initialOffset,
