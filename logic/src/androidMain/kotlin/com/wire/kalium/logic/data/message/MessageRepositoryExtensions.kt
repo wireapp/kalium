@@ -22,6 +22,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -33,6 +34,14 @@ actual interface MessageRepositoryExtensions {
     suspend fun getPaginatedMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Int
+    ): Flow<PagingData<Message.Standalone>>
+
+    suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
+        searchQuery: String,
+        conversationId: ConversationId,
+        messageId: String,
         pagingConfig: PagingConfig,
         startingOffset: Int
     ): Flow<PagingData<Message.Standalone>>
@@ -54,6 +63,26 @@ actual class MessageRepositoryExtensionsImpl actual constructor(
             visibility.map { it.toEntityVisibility() },
             pagingConfig,
             startingOffset
+        )
+
+        return pager.pagingDataFlow.map { pagingData: PagingData<MessageEntity> ->
+            pagingData.map(messageMapper::fromEntityToMessage)
+        }
+    }
+
+    override suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
+        searchQuery: String,
+        conversationId: ConversationId,
+        messageId: String,
+        pagingConfig: PagingConfig,
+        startingOffset: Int
+    ): Flow<PagingData<Message.Standalone>> {
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForMessagesSearch(
+            searchQuery = searchQuery,
+            conversationId = conversationId.toDao(),
+            messageId = messageId,
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset
         )
 
         return pager.pagingDataFlow.map { pagingData: PagingData<MessageEntity> ->
