@@ -210,8 +210,7 @@ class UserDAOImpl internal constructor(
             for (user: UserEntity in users) {
                 if (user.deleted) {
                     // mark as deleted and remove from groups
-                    userQueries.markUserAsDeleted(user.id, user.userType)
-                    userQueries.deleteUserFromGroupConversations(user.id)
+                    safeMarkAsDeleted(user.id)
                 } else {
                     userQueries.insertUser(
                         qualified_id = user.id,
@@ -307,9 +306,13 @@ class UserDAOImpl internal constructor(
 
     override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
         userQueries.transaction {
-            userQueries.markUserAsDeleted(qualifiedID, UserTypeEntity.NONE)
-            userQueries.deleteUserFromGroupConversations(qualifiedID)
+            safeMarkAsDeleted(qualifiedID)
         }
+    }
+
+    private fun safeMarkAsDeleted(qualifiedID: QualifiedIDEntity) {
+        userQueries.markUserAsDeleted(qualifiedID, UserTypeEntity.NONE)
+        userQueries.deleteUserFromGroupConversations(qualifiedID)
     }
 
     override suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity) {

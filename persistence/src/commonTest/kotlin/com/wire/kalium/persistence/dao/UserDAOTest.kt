@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.TestStubs
@@ -517,6 +518,70 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingUsers_whenMarkUserAsDeletedAndRemoveFromGroupConv_thenRetainBasicInformation() = runTest {
+        val user = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
+        val groupConversation = newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
+        val oneOnOneConversation = newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        db.userDAO.upsertUsers(listOf(user))
+        db.conversationDAO.insertConversation(groupConversation)
+        db.conversationDAO.insertConversation(oneOnOneConversation)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), groupConversation.id)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), oneOnOneConversation.id)
+        // when
+        db.userDAO.markUserAsDeletedAndRemoveFromGroupConv(user.id)
+
+        // then
+        db.userDAO.getAllUsersDetails().first().firstOrNull { it.id == user.id }.also {
+            assertNotNull(it)
+            assertTrue { it.deleted }
+            assertEquals(user.name, it.name)
+            assertEquals(user.handle, it.handle)
+            assertEquals(user.email, it.email)
+            assertEquals(user.phone, it.phone)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  groupConversation.id).first().also {
+            assertFalse(it)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  oneOnOneConversation.id).first().also {
+            assertTrue(it)
+        }
+    }
+
+    @Test
+    fun givenExistingUsers_whenUpsertToDeleted_thenRetainBasicInformation() = runTest {
+        val user = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
+        val groupConversation = newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
+        val oneOnOneConversation = newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        db.userDAO.upsertUsers(listOf(user))
+        db.conversationDAO.insertConversation(groupConversation)
+        db.conversationDAO.insertConversation(oneOnOneConversation)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), groupConversation.id)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), oneOnOneConversation.id)
+        // when
+        db.userDAO.upsertUser(user.copy(deleted = true))
+
+        // then
+        db.userDAO.getAllUsersDetails().first().firstOrNull { it.id == user.id }.also {
+            assertNotNull(it)
+            assertTrue { it.deleted }
+            assertEquals(user.name, it.name)
+            assertEquals(user.handle, it.handle)
+            assertEquals(user.email, it.email)
+            assertEquals(user.phone, it.phone)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  groupConversation.id).first().also {
+            assertFalse(it)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  oneOnOneConversation.id).first().also {
+            assertTrue(it)
+        }
+    }
+
+    @Test
     fun givenAExistingUsers_whenUpsertingTeamMembersUserTypes_ThenUserTypeIsUpdated() = runTest(dispatcher) {
         // given
         val newUserType = UserTypeEntity.ADMIN
@@ -718,6 +783,7 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotNull(result)
         assertEquals(true, result.defederated)
     }
+
     @Test
     fun givenAnExistingUser_whenUpdatingTheSupportedProtocols_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
         // given
@@ -839,7 +905,7 @@ class UserDAOTest : BaseDatabaseTest() {
         assertEquals(updatedTeamMemberUser.supportedProtocols, result.supportedProtocols)
         assertNotEquals(updatedTeamMemberUser.connectionStatus, result.connectionStatus)
         assertNotEquals(updatedTeamMemberUser.availabilityStatus, result.availabilityStatus)
-         assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
+        assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
         assertNotEquals(updatedTeamMemberUser.activeOneOnOneConversationId, result.activeOneOnOneConversationId)
     }
 
