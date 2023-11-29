@@ -603,7 +603,7 @@ class UserDAOTest : BaseDatabaseTest() {
         val user = user1
         db.userDAO.upsertUser(user)
         val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
-        db.userDAO.markUserAsDeleted(user1.id)
+        db.userDAO.markUserAsDeletedAndRemoveFromGroupConv(user1.id)
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result?.toSimpleEntity(), deletedUser)
 

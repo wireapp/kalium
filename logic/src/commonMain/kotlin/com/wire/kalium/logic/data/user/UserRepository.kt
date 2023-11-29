@@ -113,7 +113,7 @@ interface UserRepository {
      */
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
-    suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit>
+    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit>
 
     /**
      * Marks federated user as defederated in order to hold conversation history
@@ -240,7 +240,7 @@ internal class UserDataSource internal constructor(
                 if (it is NetworkFailure.ServerMiscommunication &&
                     it.kaliumException is KaliumException.InvalidRequestError &&
                     it.kaliumException.isNotFound()) {
-                    wrapStorageRequest { userDAO.markUserAsDeleted(userId.toDao()) }
+                    wrapStorageRequest { userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao()) }
                 }
             }
             .flatMap { userProfileDTO ->
@@ -518,9 +518,9 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun removeUser(userId: UserId): Either<CoreFailure, Unit> {
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
-            userDAO.markUserAsDeleted(userId.toDao())
+            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
         }
     }
 
