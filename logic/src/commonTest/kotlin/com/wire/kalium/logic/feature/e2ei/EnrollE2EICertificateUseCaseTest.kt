@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.functional.Either
@@ -47,7 +48,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withLoadACMEDirectoriesResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
         result.shouldFail()
@@ -125,7 +126,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
         result.shouldFail()
@@ -205,7 +206,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCreateNewAccountResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
         result.shouldFail()
@@ -287,7 +288,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCreateNewOrderResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
         result.shouldFail()
@@ -371,7 +372,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCreateAuthzResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
         result.shouldFail()
@@ -457,36 +458,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetWireNonceResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -545,36 +521,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetDPoPTokenResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -636,36 +587,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetWireAccessTokenResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -728,36 +654,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withValidateDPoPChallengeResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -822,36 +723,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withValidateOIDCChallengeResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -918,36 +794,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCheckOrderRequestResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1017,36 +868,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withFinalizeResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1111,36 +937,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withRotateKeysAndMigrateConversations(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1204,36 +1005,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCertificateRequestResulting(TEST_EITHER_LEFT)
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldFail()
         assertTrue(result is Either.Left)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1298,36 +1074,11 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withRotateKeysAndMigrateConversations(Either.Right(Unit))
 
         // when
-        val result = enrollE2EICertificateUseCase.invoke(RANDOM_ID_TOKEN)
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, INITIALIZATION_RESULT)
 
         // then
         result.shouldSucceed()
         assertTrue(result is Either.Right)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with(any<String>(), any<String>())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1504,7 +1255,8 @@ class EnrollE2EICertificateUseCaseTest {
 
         val ACME_CHALLENGE = AcmeChallenge(
             delegate = RANDOM_BYTE_ARRAY,
-            url = RANDOM_LOCATION
+            url = RANDOM_LOCATION,
+            target = RANDOM_LOCATION
         )
 
         val ACME_AUTHZ = NewAcmeAuthz(
@@ -1531,6 +1283,13 @@ class EnrollE2EICertificateUseCaseTest {
             nonce = RANDOM_NONCE,
             location = RANDOM_LOCATION,
             response = RANDOM_BYTE_ARRAY
+        )
+
+        val INITIALIZATION_RESULT = E2EIEnrollmentResult.Initialized(
+            target = ACME_CHALLENGE.target,
+            ACME_AUTHZ,
+            lastNonce = RANDOM_NONCE,
+            orderLocation = RANDOM_LOCATION
         )
 
     }

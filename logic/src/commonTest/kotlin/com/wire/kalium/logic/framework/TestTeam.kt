@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.TeamDTO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.network.api.base.model.TeamId as TeamIdDTO
@@ -56,7 +56,7 @@ object TestTeam {
     fun memberDTO(
         nonQualifiedUserId: NonQualifiedUserId = "id",
         createdBy: NonQualifiedUserId? = null,
-        legalHoldStatus: LegalHoldStatusResponse? = null,
+        legalHoldStatus: LegalHoldStatusDTO? = null,
         createdAt: String? = null,
         permissions: TeamsApi.Permissions? = null
     ): TeamsApi.TeamMemberDTO = TeamsApi.TeamMemberDTO(

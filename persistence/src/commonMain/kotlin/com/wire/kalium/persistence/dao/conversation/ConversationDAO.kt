@@ -107,4 +107,6 @@ interface ConversationDAO {
     suspend fun updateMlsVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
     suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
+    suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
+    suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean)
 }

@@ -15,14 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.network.api.base.model
+package com.wire.kalium.network.api.base.authenticated.client
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LocationResponse(
-    @SerialName("lat") val latitude: String,
-    @SerialName("lon") val longitude: String
+data class ClientIdDTO(
+    @SerialName("id")
+    val clientId: String
 )

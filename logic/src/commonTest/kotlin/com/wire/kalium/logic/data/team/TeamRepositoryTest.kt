@@ -20,16 +20,24 @@ package com.wire.kalium.logic.data.team
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.ServiceDetailDTO
 import com.wire.kalium.network.api.base.model.ServiceDetailResponse
 import com.wire.kalium.network.api.base.model.TeamDTO
@@ -39,24 +47,23 @@ import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TeamRepositoryTest {
     @Test
     fun givenSelfUserExists_whenFetchingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
@@ -91,56 +98,6 @@ class TeamRepositoryTest {
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
         val result = teamRepository.fetchTeamById(teamId = TeamId("teamId"))
-
-        result.shouldFail {
-            assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
-        }
-    }
-
-    @Test
-    fun givenTeamIdAndUserDomain_whenFetchingTeamMembers_thenTeamMembersShouldBeSuccessful() = runTest {
-        val teamMember = TestTeam.memberDTO(
-            nonQualifiedUserId = "teamMember1"
-        )
-
-        val teamMembersList = TeamsApi.TeamMemberList(
-            hasMore = false,
-            members = listOf(
-                teamMember
-            )
-        )
-
-        val (arrangement, teamRepository) = Arrangement()
-            .arrange()
-
-        given(arrangement.teamsApi)
-            .suspendFunction(arrangement.teamsApi::getTeamMembers)
-            .whenInvokedWith(oneOf("teamId"), oneOf(null))
-            .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
-
-        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
-
-        // Verifies that userDAO insertUsers was called with the correct mapped values
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertTeamMemberUserTypes)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        // Verifies that when fetching members by team id, it succeeded
-        result.shouldSucceed()
-    }
-
-    @Test
-    fun givenTeamApiFails_whenFetchingTeamMembers_thenTheFailureIsPropagated() = runTest {
-        val (arrangement, teamRepository) = Arrangement()
-            .arrange()
-
-        given(arrangement.teamsApi)
-            .suspendFunction(arrangement.teamsApi::getTeamMembers)
-            .whenInvokedWith(any(), anything())
-            .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
-
-        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
@@ -260,6 +217,124 @@ class TeamRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenTeamIdAndUserIdAndPassword_whenApprovingLegalHoldRequest_thenItShouldSucceedAndClearRequestLocally() = runTest {
+        // given
+        val (arrangement, teamRepository) = Arrangement()
+            .withApiApproveLegalHoldSuccess()
+            .withGetUsersInfoSuccess()
+            .arrange()
+        // when
+        val result = teamRepository.approveLegalHoldRequest(teamId = TeamId(value = "teamId"), password = "password")
+        // then
+        result.shouldSucceed()
+        verify(arrangement.userConfigDAO)
+            .suspendFunction(arrangement.userConfigDAO::clearLegalHoldRequest)
+            .wasInvoked(once)
+    }
+
+    private fun testFetchingLegalHoldStatus(
+        response: LegalHoldStatusResponse,
+        expected: LegalHoldStatus,
+        verification: (Arrangement) -> Unit,
+    ) = runTest {
+        // given
+        val (arrangement, teamRepository) = Arrangement()
+            .withApiFetchLegalHoldStatusSuccess(response)
+            .withHandleLegalHoldSuccesses()
+            .arrange()
+        // when
+        val result = teamRepository.fetchLegalHoldStatus(teamId = TeamId(value = "teamId"))
+        // then
+        result.shouldSucceed() { assertEquals(expected, it) }
+        verification(arrangement)
+    }
+
+    @Test
+    fun givenTeamIdAndUserIdAndStatusNoConsent_whenFetchingLegalHoldStatus_thenItShouldSucceed() =
+        testFetchingLegalHoldStatus(
+            response = LegalHoldStatusResponse(LegalHoldStatusDTO.NO_CONSENT, null, null),
+            expected = LegalHoldStatus.NO_CONSENT,
+        ) { arrangement ->
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleEnable)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleDisable)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.legalHoldRequestHandler)
+                .suspendFunction(arrangement.legalHoldRequestHandler::handle)
+                .with(any())
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenTeamIdAndUserIdAndStatusPending_whenFetchingLegalHoldStatus_thenItShouldSucceedAndHandlePendingLegalHold() {
+        val clientId = ClientIdDTO("clientId")
+        val lastPreKey = LastPreKeyDTO(1, "key")
+        testFetchingLegalHoldStatus(
+            response = LegalHoldStatusResponse(LegalHoldStatusDTO.PENDING, ClientIdDTO("clientId"), LastPreKeyDTO(1, "key")),
+            expected = LegalHoldStatus.PENDING,
+        ) { arrangement ->
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleEnable)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleDisable)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.legalHoldRequestHandler)
+                .suspendFunction(arrangement.legalHoldRequestHandler::handle)
+                .with(matching {
+                    it.clientId.value == clientId.clientId && it.lastPreKey.id == lastPreKey.id && it.lastPreKey.key == lastPreKey.key
+                })
+                .wasInvoked()
+        }
+    }
+
+    @Test
+    fun givenTeamIdAndUserIdAndStatusEnabled_whenFetchingLegalHoldStatus_thenItShouldSucceedAndHandleEnabledLegalHold() =
+    testFetchingLegalHoldStatus(
+    response = LegalHoldStatusResponse(LegalHoldStatusDTO.ENABLED, null, null),
+    expected = LegalHoldStatus.ENABLED,
+    ) { arrangement ->
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleEnable)
+            .with(any())
+            .wasInvoked()
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleDisable)
+            .with(any())
+            .wasNotInvoked()
+        verify(arrangement.legalHoldRequestHandler)
+            .suspendFunction(arrangement.legalHoldRequestHandler::handle)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenTeamIdAndUserIdAndStatusDisabled_whenFetchingLegalHoldStatus_thenItShouldSucceedAndHandleDisabledLegalHold() =
+        testFetchingLegalHoldStatus(
+            response = LegalHoldStatusResponse(LegalHoldStatusDTO.DISABLED, null, null),
+            expected = LegalHoldStatus.DISABLED,
+        ) { arrangement ->
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleEnable)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleDisable)
+                .with(any())
+                .wasInvoked()
+            verify(arrangement.legalHoldRequestHandler)
+                .suspendFunction(arrangement.legalHoldRequestHandler::handle)
+                .with(any())
+                .wasNotInvoked()
+        }
+
     private class Arrangement {
         @Mock
         val teamDAO = configure(mock(classOf<TeamDAO>())) {
@@ -268,6 +343,11 @@ class TeamRepositoryTest {
 
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) {
+            stubsUnitByDefault = true
+        }
+
+        @Mock
+        val userConfigDAO = configure(mock(classOf<UserConfigDAO>())) {
             stubsUnitByDefault = true
         }
 
@@ -287,15 +367,24 @@ class TeamRepositoryTest {
             stubsUnitByDefault = true
         }
 
+        @Mock
+        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+
+        @Mock
+        val legalHoldRequestHandler = mock(classOf<LegalHoldRequestHandler>())
+
         val teamRepository: TeamRepository = TeamDataSource(
             teamDAO = teamDAO,
             teamMapper = teamMapper,
             teamsApi = teamsApi,
             userDetailsApi = userDetailsApi,
             userDAO = userDAO,
+            userConfigDAO = userConfigDAO,
             userMapper = userMapper,
             selfUserId = TestUser.USER_ID,
-            serviceDAO = serviceDAO
+            serviceDAO = serviceDAO,
+            legalHoldHandler = legalHoldHandler,
+            legalHoldRequestHandler = legalHoldRequestHandler,
         )
 
         fun withApiGetTeamInfoSuccess(teamDTO: TeamDTO) = apply {
@@ -324,6 +413,35 @@ class TeamRepositoryTest {
                 .suspendFunction(teamsApi::whiteListedServices)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Success(value = SERVICE_DETAILS_RESPONSE, headers = mapOf(), httpCode = 200))
+        }
+
+        fun withApiApproveLegalHoldSuccess() = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::approveLegalHoldRequest)
+                .whenInvokedWith(any(), any())
+                .thenReturn(NetworkResponse.Success(value = Unit, headers = mapOf(), httpCode = 200))
+        }
+
+        fun withApiFetchLegalHoldStatusSuccess(result: LegalHoldStatusResponse) = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::fetchLegalHoldStatus)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Success(value = result, headers = mapOf(), httpCode = 200))
+        }
+
+        fun withHandleLegalHoldSuccesses() = apply {
+            given(legalHoldHandler)
+                .suspendFunction(legalHoldHandler::handleEnable)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+            given(legalHoldHandler)
+                .suspendFunction(legalHoldHandler::handleDisable)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+            given(legalHoldRequestHandler)
+                .suspendFunction(legalHoldRequestHandler::handle)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to teamRepository

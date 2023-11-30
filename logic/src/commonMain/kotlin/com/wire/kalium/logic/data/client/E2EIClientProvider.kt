@@ -89,7 +89,7 @@ internal class EI2EIClientProviderImpl(
     private suspend fun getSelfUserInfo(): Either<CoreFailure, Pair<String, String>> {
         val selfUser = userRepository.getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         return if (selfUser.name == null || selfUser.handle == null)
-            Either.Left(E2EIFailure(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
+            Either.Left(E2EIFailure.Generic(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
         else Either.Right(Pair(selfUser.name, selfUser.handle))
     }
 

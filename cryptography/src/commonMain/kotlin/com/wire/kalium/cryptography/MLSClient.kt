@@ -343,5 +343,15 @@ interface MLSClient {
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity>
+    suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity>
+
+    /**
+     * Get the identity of given users in the given conversation
+     *
+     * @param clients a list of clients of the requested users
+     * @param groupId MLS group ID for an existing conversation
+     *
+     * @return the exist identities for requested clients
+     */
+    suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): Map<String, List<WireIdentity>>
 }

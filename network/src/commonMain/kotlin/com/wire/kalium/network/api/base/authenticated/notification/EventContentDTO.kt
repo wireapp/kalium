@@ -19,6 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.notification
 
 import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
@@ -33,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
 import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
 import com.wire.kalium.network.api.base.authenticated.notification.team.PermissionsData
 import com.wire.kalium.network.api.base.authenticated.notification.team.TeamMemberIdData
@@ -341,6 +343,26 @@ sealed class EventContentDTO {
         @SerialName("user.connection")
         data class NewConnectionDTO(
             @SerialName("connection") val connection: ConnectionDTO,
+        ) : User()
+
+        @Serializable
+        @SerialName("user.legalhold-request")
+        data class NewLegalHoldRequestDTO(
+            @SerialName("client") val clientId: ClientIdDTO,
+            @SerialName("last_prekey") val lastPreKey: LastPreKeyDTO,
+            @SerialName("id") val id: String,
+        ) : User()
+
+        @Serializable
+        @SerialName("user.legalhold-enable")
+        data class LegalHoldEnabledDTO(
+            @SerialName("id") val id: String
+        ) : User()
+
+        @Serializable
+        @SerialName("user.legalhold-disable")
+        data class LegalHoldDisabledDTO(
+            @SerialName("id") val id: String
         ) : User()
 
         // TODO user.push-remove

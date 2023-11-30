@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 

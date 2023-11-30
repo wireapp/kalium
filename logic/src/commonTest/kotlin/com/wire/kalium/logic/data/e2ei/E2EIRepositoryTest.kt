@@ -19,10 +19,14 @@ package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.*
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.E2EISettings
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.ACME_CHALLENGE
+import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.E2EI_TEAM_SETTINGS
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ACCESS_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ID_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_NONCE
@@ -41,6 +45,7 @@ import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -48,10 +53,45 @@ import kotlin.test.Test
 
 class E2EIRepositoryTest {
     @Test
+    fun givenGettingE2EITeamSettingsFails_whenLoadAcmeDirectories_thenItFail() = runTest {
+        // Given
+
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
+            .withAcmeDirectoriesApiFails()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withE2EIClientLoadDirectoriesSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.loadACMEDirectories()
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
+            .with()
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::getACMEDirectories)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.e2eiClient)
+            .suspendFunction(arrangement.e2eiClient::directoryResponse)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenACMEDirectoriesApiSucceed_whenLoadAcmeDirectories_thenItSucceed() = runTest {
         // Given
 
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
             .withAcmeDirectoriesApiSucceed()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -64,8 +104,14 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
+            .with()
+            .wasInvoked(once)
+
         verify(arrangement.acmeApi)
             .suspendFunction(arrangement.acmeApi::getACMEDirectories)
+            .with(any())
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
@@ -79,6 +125,7 @@ class E2EIRepositoryTest {
         // Given
 
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
             .withAcmeDirectoriesApiFails()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -91,8 +138,14 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
+            .with()
+            .wasInvoked(once)
+
         verify(arrangement.acmeApi)
             .suspendFunction(arrangement.acmeApi::getACMEDirectories)
+            .with(any())
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
@@ -790,16 +843,23 @@ class E2EIRepositoryTest {
                 .thenReturn(Either.Right(mlsClient))
         }
 
+        fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::getE2EISettings)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
         fun withAcmeDirectoriesApiSucceed() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::getACMEDirectories)
-                .whenInvoked()
+                .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(ACME_DIRECTORIES_RESPONSE, mapOf(), 200))
         }
 
         fun withAcmeDirectoriesApiFails() = apply {
             given(acmeApi)
-                .suspendFunction(acmeApi::getACMEDirectories).whenInvoked()
+                .suspendFunction(acmeApi::getACMEDirectories).whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
@@ -856,6 +916,9 @@ class E2EIRepositoryTest {
         @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
+        @Mock
+        val userConfigRepository = mock(classOf<UserConfigRepository>())
+
         fun arrange() =
             this to E2EIRepositoryImpl(
                 e2eiApi,
@@ -863,7 +926,8 @@ class E2EIRepositoryTest {
                 e2eiClientProvider,
                 mlsClientProvider,
                 currentClientIdProvider,
-                mlsConversationRepository
+                mlsConversationRepository,
+                userConfigRepository
             )
 
         companion object {
@@ -905,7 +969,8 @@ class E2EIRepositoryTest {
 
             val ACME_CHALLENGE = AcmeChallenge(
                 delegate = RANDOM_BYTE_ARRAY,
-                url = RANDOM_URL
+                url = RANDOM_URL,
+                target = RANDOM_URL
             )
 
             val ACME_AUTHZ = NewAcmeAuthz(
@@ -922,6 +987,9 @@ class E2EIRepositoryTest {
                 nonce = "nonce"
             )
 
+            val E2EI_TEAM_SETTINGS = E2EISettings(
+                true, RANDOM_URL, DateTimeUtil.currentInstant()
+            )
         }
     }
 }

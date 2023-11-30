@@ -36,7 +36,7 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
 interface ACMEApi {
-    suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse>
+    suspend fun getACMEDirectories(baseUrl: String): NetworkResponse<AcmeDirectoriesResponse>
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
@@ -47,8 +47,8 @@ class ACMEApiImpl internal constructor(
     private val unboundNetworkClient: UnboundNetworkClient
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
-    override suspend fun getACMEDirectories(): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
-        httpClient.get("$BASE_URL:$ACME_PORT/$PATH_ACME_DIRECTORIES")
+    override suspend fun getACMEDirectories(baseUrl: String): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
+        httpClient.get("$baseUrl/$PATH_ACME_DIRECTORIES")
     }
 
     override suspend fun getACMENonce(url: String): NetworkResponse<String> =
@@ -114,14 +114,7 @@ class ACMEApiImpl internal constructor(
         }
 
     private companion object {
-        const val BASE_URL = "https://balderdash.hogwash.work"
-        const val ACME_PORT = "9000"
-        const val DEX_PORT = "5556"
-
-        const val PATH_DEX_CONFIGURATION = "dex/.well-known/openid-configuration"
-        // TODO: the ACME url will be provided by the backend later
-        // TODO: we need to make sure we have separated url or all-platform supported links
-        const val PATH_ACME_DIRECTORIES = "acme/google-android/directory"
+        const val PATH_ACME_DIRECTORIES = "directory"
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
         const val LOCATION_HEADER_KEY = "location"
