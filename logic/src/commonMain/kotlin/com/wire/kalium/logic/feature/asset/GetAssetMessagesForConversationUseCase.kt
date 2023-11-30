@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.withContext
 
-interface GetAssetMessagesByConversationUseCase {
+interface GetAssetMessagesForConversationUseCase {
     /**
      * This use case will return asset messages for a given [conversationId]
      * paginated by [limit] and [offset]
@@ -37,10 +37,10 @@ interface GetAssetMessagesByConversationUseCase {
     ): List<AssetMessage>
 }
 
-class GetAssetMessagesByConversationUseCaseImpl internal constructor(
+class GetAssetMessagesForConversationUseCaseImpl internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository,
-) : GetAssetMessagesByConversationUseCase {
+) : GetAssetMessagesForConversationUseCase {
 
     override suspend operator fun invoke(
         conversationId: ConversationId,

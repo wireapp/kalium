@@ -237,6 +237,7 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun getMessageAssets(
         conversationId: QualifiedIDEntity,
+        mimeTypes: Set<String>,
         limit: Int,
         offset: Int
     ): List<AssetMessageEntity> =
@@ -245,9 +246,7 @@ internal class MessageDAOImpl internal constructor(
                 conversationId,
                 listOf(MessageEntity.Visibility.VISIBLE),
                 listOf(MessageEntity.ContentType.ASSET),
-                listOf(
-                    "image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp"
-                ),
+                mimeTypes,
                 limit.toLong(),
                 offset.toLong(),
                 mapper::toEntityAssetMessageFromView

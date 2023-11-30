@@ -141,7 +141,8 @@ class MessageMapperImpl(
             message.width,
             message.height,
             message.downloadStatus.toModel(),
-            message.assetPath?.toPath()
+            message.assetPath?.toPath(),
+            message.isSelfAsset
         )
     }
 

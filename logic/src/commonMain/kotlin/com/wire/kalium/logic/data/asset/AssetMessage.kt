@@ -30,5 +30,6 @@ data class AssetMessage(
     val width: Int,
     val height: Int,
     val downloadStatus: Message.DownloadStatus,
-    val assetPath: Path?
+    val assetPath: Path?,
+    val isSelfAsset: Boolean
 )

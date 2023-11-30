@@ -393,7 +393,8 @@ object MessageMapper {
             width = assetWidth!!,
             height = assetHeight!!,
             downloadStatus = assetDownloadStatus ?: MessageEntity.DownloadStatus.NOT_DOWNLOADED,
-            assetPath = decodedAssetPath
+            assetPath = decodedAssetPath,
+            isSelfAsset = isSelfMessage
         )
     }
 

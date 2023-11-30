@@ -23,6 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
+import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -267,7 +268,12 @@ class MessageDataSource(
         conversationId: ConversationId,
         limit: Int,
         offset: Int
-    ): List<AssetMessage> = messageDAO.getMessageAssets(conversationId.toDao(), limit, offset)
+    ): List<AssetMessage> = messageDAO.getMessageAssets(
+        conversationId.toDao(),
+        mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+        limit,
+        offset
+    )
         .map(messageMapper::fromAssetEntityToMessage)
 
     @OptIn(ExperimentalCoroutinesApi::class)

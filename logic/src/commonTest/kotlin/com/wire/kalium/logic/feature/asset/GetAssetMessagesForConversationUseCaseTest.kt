@@ -35,7 +35,7 @@ import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertContains
 
-class GetAssetMessagesByConversationUseCaseTest {
+class GetAssetMessagesForConversationUseCaseTest {
 
     @Test
     fun givenConversationId_whenFetchingAssetMessages_thenShouldReturnCorrectAssets() = runTest(testDispatcher.default) {
@@ -53,7 +53,8 @@ class GetAssetMessagesByConversationUseCaseTest {
             width = 640,
             height = 480,
             downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
-            assetPath = "asset/path".toPath()
+            assetPath = "asset/path".toPath(),
+            isSelfAsset = false
         )
 
         val (arrangement, getAssetMessages) = Arrangement()
@@ -82,7 +83,7 @@ class GetAssetMessagesByConversationUseCaseTest {
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
 
-        val getAssetMessagesByConversationUseCase = GetAssetMessagesByConversationUseCaseImpl(
+        val getAssetMessagesByConversationUseCase = GetAssetMessagesForConversationUseCaseImpl(
             testDispatcher,
             messageRepository
         )

@@ -149,6 +149,7 @@ interface MessageDAO {
     val platformExtensions: MessageExtensions
     suspend fun getMessageAssets(
         conversationId: QualifiedIDEntity,
+        mimeTypes: Set<String>,
         limit: Int,
         offset: Int
     ): List<AssetMessageEntity>

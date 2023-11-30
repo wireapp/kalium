@@ -819,7 +819,8 @@ class MessageRepositoryTest {
             width = 640,
             height = 480,
             downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
-            assetPath = "asset/path".toPath()
+            assetPath = "asset/path".toPath(),
+            isSelfAsset = false
         )
 
         val TEST_FAILED_DELIVERY_USERS: Map<String, Map<String, List<String>>> = mapOf(

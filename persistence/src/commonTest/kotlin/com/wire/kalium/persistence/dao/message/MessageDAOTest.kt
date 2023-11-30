@@ -442,12 +442,13 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenAssetMessage_WhenAssetMessages_ThenListShouldContainAssetMessage() = runTest {
+    fun givenAssetMessageWithMimeType_WhenGettingAssetMessages_ThenListShouldContainAssetMessageWithMimeType() = runTest {
         // given
         val domain = "domain"
         val conversationId = QualifiedIDEntity("1", domain)
         val assetId = "assetId"
         val messageId = "assetMessage"
+        val mimeType = "image/png"
         conversationDAO.insertConversation(
             newConversationEntity(id = conversationId)
         )
@@ -456,11 +457,55 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         messageDAO.insertOrIgnoreMessages(
             listOf(
+                // only valid asset
                 newRegularMessageEntity(
                     id = messageId,
                     date = "2000-01-01T13:00:00.000Z".toInstant(),
                     conversationId = conversationId,
                     senderUserId = userEntity1.id,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = mimeType,
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                    )
+                ),
+                // asset with different mime type
+                newRegularMessageEntity(
+                    id = messageId + "1",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "image/jpeg",
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                    )
+                ),
+                // ephemeral message asset
+                newRegularMessageEntity(
+                    id = messageId + "2",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    expireAfterMs = 2000,
                     content = MessageEntityContent.Asset(
                         1000,
                         assetName = "test name",
@@ -475,7 +520,29 @@ class MessageDAOTest : BaseDatabaseTest() {
                         assetWidth = 111,
                         assetHeight = 111,
                     )
-                )
+                ),
+                // asset with null or 0 width/height
+                newRegularMessageEntity(
+                    id = messageId + "3",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    expireAfterMs = 2000,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "image/png",
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = null,
+                        assetHeight = 0,
+                    )
+                ),
             )
         )
 
@@ -490,10 +557,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        val assetMessages = messageDAO.getMessageAssets(conversationId, 100, 0)
+        val assetMessages = messageDAO.getMessageAssets(conversationId, setOf(mimeType), 100, 0)
 
         // then
         assertEquals(1, assetMessages.size)
+        assertEquals(assetId, assetMessages.first().assetId)
     }
 
     @Test

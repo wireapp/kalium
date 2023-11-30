@@ -289,6 +289,7 @@ fun AssetMessageEntity.toModel(): AssetMessage {
         width,
         height,
         downloadStatus.toModel(),
-        assetPath = assetPath?.toPath()
+        assetPath = assetPath?.toPath(),
+        isSelfAsset = isSelfAsset
     )
 }
