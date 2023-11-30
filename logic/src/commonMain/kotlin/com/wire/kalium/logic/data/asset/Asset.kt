@@ -65,5 +65,7 @@ fun isAudioMimeType(mimeType: String): Boolean = mimeType in SUPPORTED_AUDIO_ASS
 fun isVideoMimeType(mimeType: String): Boolean = mimeType in SUPPORTED_VIDEO_ASSET_MIME_TYPES
 
 val SUPPORTED_IMAGE_ASSET_MIME_TYPES = setOf("image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp")
-val SUPPORTED_AUDIO_ASSET_MIME_TYPES = setOf("audio/mp3", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/x-pn-wav")
+val SUPPORTED_AUDIO_ASSET_MIME_TYPES = setOf(
+    "audio/mp3", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/x-pn-wav"
+)
 val SUPPORTED_VIDEO_ASSET_MIME_TYPES = setOf("video/mp4", "video/webm", "video/3gpp", "video/mkv")
