@@ -82,6 +82,20 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenInsertedMessages_whenGettingFirstPage_thenItShouldContainTheCorrectValues() = runTest {
+        populateMessageData(prefix = "message")
+
+        val result = getSearchMessagesPager(searchQuery = "message 1").pagingSource.refresh()
+
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        // Assuming the first page was fetched containing only 3 results [message1, message10 and message100],
+        // itemsAfter should be the remaining ones : 0
+        assertEquals(0, result.itemsAfter)
+        // No items before the first page
+        assertEquals(0, result.itemsBefore)
+    }
+
+    @Test
     fun givenInsertedMessages_whenGettingFirstPage_thenItShouldContainTheFirstPageOfItems() = runTest {
         populateMessageData()
 
@@ -95,10 +109,34 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenInsertedMessages_whenGettingSearchedMessagesFirstPage_thenItShouldContainTheFirstPageOfItems() = runTest {
+        populateMessageData(prefix = "message")
+
+        val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
+
+        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+
+        result.data.forEachIndexed { index, message ->
+            assertEquals(index.toString(), message.id)
+        }
+    }
+
+    @Test
     fun givenInsertedMessages_whenGettingFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest {
         populateMessageData()
 
         val result = getPager().pagingSource.refresh()
+
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        // First page fetched, second page starts at the end of the first one
+        assertEquals(PAGE_SIZE, result.nextKey)
+    }
+
+    @Test
+    fun givenInsertedMessages_whenGettingSearchedMessagesFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest {
+        populateMessageData(prefix = "message")
+
+        val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
 
         assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
         // First page fetched, second page starts at the end of the first one
@@ -120,9 +158,31 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenInsertedMessages_whenGettingSearchedMessagesSecondPage_thenShouldContainTheCorrectItems() = runTest {
+        populateMessageData(prefix = "message")
+
+        val pagingSource = getSearchMessagesPager(searchQuery = "message").pagingSource
+        val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
+
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
+        assertFalse { secondPageResult.data.isEmpty() }
+        assertTrue { secondPageResult.data.size <= PAGE_SIZE }
+        secondPageResult.data.forEachIndexed { index, message ->
+            assertEquals((index + PAGE_SIZE).toString(), message.id)
+        }
+    }
+
     private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
         conversationId = CONVERSATION_ID,
-        visibilities = MessageEntity.Visibility.values().toList(),
+        visibilities = MessageEntity.Visibility.entries.toList(),
+        pagingConfig = PagingConfig(PAGE_SIZE),
+        startingOffset = 0
+    )
+
+    private fun getSearchMessagesPager(searchQuery: String): KaliumPager<MessageEntity> = messageExtensions.getPagerForMessagesSearch(
+        searchQuery = searchQuery,
+        conversationId = CONVERSATION_ID,
         pagingConfig = PagingConfig(PAGE_SIZE),
         startingOffset = 0
     )
@@ -135,7 +195,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         PagingSource.LoadParams.Append(key, PAGE_SIZE, true)
     )
 
-    private suspend fun populateMessageData() {
+    private suspend fun populateMessageData(prefix: String = "") {
         val userId = UserIDEntity("user", "domain")
         userDAO.upsertUser(newUserEntity(qualifiedID = userId))
         conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
@@ -146,6 +206,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                         id = it.toString(),
                         conversationId = CONVERSATION_ID,
                         senderUserId = userId,
+                        content = MessageEntityContent.Text("message $it"),
                         // Ordered by date - Inserting with decreasing date is important to assert pagination
                         date = Instant.fromEpochSeconds(MESSAGE_COUNT - it.toLong())
                     )
