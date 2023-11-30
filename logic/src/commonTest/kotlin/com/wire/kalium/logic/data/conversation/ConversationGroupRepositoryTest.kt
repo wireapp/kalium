@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -1188,7 +1189,7 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenNoPackagesAvailable_whenAddingMembers_thenCreateRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
+    fun givenNoPackagesAvailable_whenAddingMembers_thenRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
         // given
         val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
         val (arrangement, conversationGroupRepository) = Arrangement()
@@ -1197,7 +1198,47 @@ class ConversationGroupRepositoryTest {
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .withAddingMemberToMlsGroupResults(
-                Either.Left(CoreFailure.NoKeyPackagesAvailable(setOf(expectedInitialUsers.last()))),
+                KEY_PACKAGES_NOT_AVAILABLE_FAILURE,
+                Either.Right(Unit)
+            )
+            .withInsertAddedAndFailedSystemMessageSuccess()
+            .arrange()
+
+        // when
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+
+        // then
+        val expectedFullUserIdsForRequestCount = 2
+        val expectedValidUsersWithKeyPackagesCount = 1
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == expectedFullUserIdsForRequestCount
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            .with(anything(), matching { it.size == 1 }, matching { it.size == 1 })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSendCommitFederatedFailure_whenAddingMembers_thenRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
+        // given
+        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .withAddMemberAPISucceedChanged()
+            .withSuccessfulAddMemberToMLSGroup()
+            .withAddingMemberToMlsGroupResults(
+                COMMIT_BUNDLE_FEDERATED_FAILURE,
                 Either.Right(Unit)
             )
             .withInsertAddedAndFailedSystemMessageSuccess()
@@ -1711,5 +1752,8 @@ class ConversationGroupRepositoryTest {
             mapOf(),
             HttpStatusCode.OK.value
         )
+
+        val COMMIT_BUNDLE_FEDERATED_FAILURE = Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("otherDomain")))
+        val KEY_PACKAGES_NOT_AVAILABLE_FAILURE = Either.Left(CoreFailure.NoKeyPackagesAvailable(setOf(TestUser.OTHER_FEDERATED_USER_ID)))
     }
 }
