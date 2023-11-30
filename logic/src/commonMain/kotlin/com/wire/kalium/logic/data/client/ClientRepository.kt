@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -67,6 +68,11 @@ interface ClientRepository {
     suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
     suspend fun storeUserClientListAndRemoveRedundantClients(clients: List<InsertClientParam>): Either<StorageFailure, Unit>
     suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit>
+    suspend fun storeMapOfUserToClientId(userToClientMap: Map<UserId, List<ClientId>>): Either<StorageFailure, Unit>
+    suspend fun removeClientsAndReturnUsersWithNoClients(
+        redundantClientsOfUsers: Map<UserId, List<ClientId>>
+    ): Either<StorageFailure, List<UserId>>
+
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
@@ -187,10 +193,34 @@ class ClientDataSource(
             clientRegistrationStorage.hasRegisteredMLSClient()
         }
 
-    override suspend fun storeUserClientIdList(userId: UserId, clients: List<ClientId>): Either<StorageFailure, Unit> =
+    override suspend fun storeUserClientIdList(
+        userId: UserId,
+        clients: List<ClientId>
+    ): Either<StorageFailure, Unit> =
         clientMapper.toInsertClientParam(userId, clients).let { clientEntityList ->
             wrapStorageRequest { clientDAO.insertClients(clientEntityList) }
         }
+
+    override suspend fun storeMapOfUserToClientId(
+        userToClientMap: Map<UserId, List<ClientId>>
+    ): Either<StorageFailure, Unit> =
+        userToClientMap.flatMap { (userId, clients) ->
+            clientMapper.toInsertClientParam(userId, clients)
+        }.let { insertClientParamList ->
+            wrapStorageRequest { clientDAO.insertClients(insertClientParamList) }
+        }
+
+    override suspend fun removeClientsAndReturnUsersWithNoClients(
+        redundantClientsOfUsers: Map<UserId, List<ClientId>>
+    ): Either<StorageFailure, List<UserId>> =
+        redundantClientsOfUsers.mapKeys { it.key.toDao() }
+            .mapValues { it.value.map { clientId -> clientId.value } }
+            .let { redundantClientsOfUsersDao ->
+                wrapStorageRequest { clientDAO.removeClientsAndReturnUsersWithNoClients(redundantClientsOfUsersDao) }
+                    .map {
+                        it.map { userId -> userId.toModel() }
+                    }
+            }
 
     override suspend fun storeUserClientListAndRemoveRedundantClients(
         clients: List<InsertClientParam>
