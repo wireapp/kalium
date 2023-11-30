@@ -47,9 +47,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
-import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.UserProfileDTO
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -693,33 +691,6 @@ class UserRepositoryTest {
             .wasNotInvoked()
     }
 
-    @Test
-    fun givenNotFoundError_whenFetchingAUserInfo_thenMarkAsDeleted() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(team = TestTeam.TEAM_ID.value))
-            .withErrorGetUsersInfo(
-                NetworkResponse.Error(
-                    KaliumException.InvalidRequestError(
-                        ErrorResponse(404, "Not found", "not-found")
-                    )
-                )
-            )
-            .arrange()
-
-        val result = userRepository.fetchUserInfo(TestUser.USER_ID)
-        result.shouldFail()
-
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::markUserAsDeletedAndRemoveFromGroupConv)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
@@ -809,13 +780,6 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getUserInfo)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), 200))
-        }
-
-        fun withErrorGetUsersInfo(error: NetworkResponse.Error) = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getUserInfo)
-                .whenInvokedWith(any())
-                .thenReturn(error)
         }
 
         fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {

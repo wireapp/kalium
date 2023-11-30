@@ -20,11 +20,13 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
+import io.mockative.matchers.Matcher
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
@@ -50,6 +52,11 @@ internal interface UserRepositoryArrangement {
     fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>)
 
     fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>)
+
+    fun withFetchUsersByIdReturning(
+        result: Either<CoreFailure, Unit>,
+        userIdList: Matcher<Set<UserId>> = any()
+    )
 }
 
 internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
@@ -120,5 +127,16 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
             .whenInvokedWith(any())
             .thenReturn(result)
     }
+
+    override fun withFetchUsersByIdReturning(
+        result: Either<CoreFailure, Unit>,
+        userIdList: Matcher<Set<UserId>>
+        ) {
+        given(userRepository)
+            .suspendFunction(userRepository::fetchUsersByIds)
+            .whenInvokedWith(userIdList)
+            .thenReturn(result)
+    }
+
 
 }
