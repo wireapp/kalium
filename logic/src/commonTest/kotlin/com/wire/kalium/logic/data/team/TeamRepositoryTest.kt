@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.team
 
-import app.cash.turbine.test
+import  app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.id.TeamId
@@ -330,8 +330,6 @@ class TeamRepositoryTest {
             stubsUnitByDefault = true
         }
 
-        val teamMapper = MapperProvider.teamMapper()
-
         @Mock
         val teamsApi = mock(classOf<TeamsApi>())
 
@@ -355,6 +353,8 @@ class TeamRepositoryTest {
             serviceDAO = serviceDAO,
             legalHoldHandler = legalHoldHandler,
             legalHoldRequestHandler = legalHoldRequestHandler,
+            userConfigDAO = userConfigDAO
+
         )
 
         fun withApiGetTeamInfoSuccess(teamDTO: TeamDTO) = apply {

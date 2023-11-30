@@ -477,11 +477,9 @@ class UserDAOTest : BaseDatabaseTest() {
         db.userDAO.upsertUser(deletedUser)
 
         // when
-        db.userDAO.getUsersDetailsByQualifiedIDList(listOf(USER_ENTITY_1.id, USER_ENTITY_2.id)).also {
-            db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
-                // then
-                assertEquals(mockUser.copy(deleted = true, team = null), searchResult?.toSimpleEntity())
-            }
+        db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
+            // then
+            assertEquals(mockUser.copy(deleted = true, team = null, userType = UserTypeEntity.NONE), searchResult?.toSimpleEntity())
         }
     }
 
@@ -520,8 +518,10 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUsers_whenMarkUserAsDeletedAndRemoveFromGroupConv_thenRetainBasicInformation() = runTest {
         val user = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
-        val groupConversation = newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
-        val oneOnOneConversation = newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        val groupConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
+        val oneOnOneConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
         db.userDAO.upsertUsers(listOf(user))
         db.conversationDAO.insertConversation(groupConversation)
         db.conversationDAO.insertConversation(oneOnOneConversation)
@@ -540,11 +540,11 @@ class UserDAOTest : BaseDatabaseTest() {
             assertEquals(user.phone, it.phone)
         }
 
-        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  groupConversation.id).first().also {
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = groupConversation.id).first().also {
             assertFalse(it)
         }
 
-        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  oneOnOneConversation.id).first().also {
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = oneOnOneConversation.id).first().also {
             assertTrue(it)
         }
     }
@@ -552,8 +552,10 @@ class UserDAOTest : BaseDatabaseTest() {
     @Test
     fun givenExistingUsers_whenUpsertToDeleted_thenRetainBasicInformation() = runTest {
         val user = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
-        val groupConversation = newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
-        val oneOnOneConversation = newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        val groupConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
+        val oneOnOneConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
         db.userDAO.upsertUsers(listOf(user))
         db.conversationDAO.insertConversation(groupConversation)
         db.conversationDAO.insertConversation(oneOnOneConversation)
@@ -572,11 +574,11 @@ class UserDAOTest : BaseDatabaseTest() {
             assertEquals(user.phone, it.phone)
         }
 
-        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  groupConversation.id).first().also {
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = groupConversation.id).first().also {
             assertFalse(it)
         }
 
-        db.memberDAO.observeIsUserMember(userId = user.id, conversationId =  oneOnOneConversation.id).first().also {
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = oneOnOneConversation.id).first().also {
             assertTrue(it)
         }
     }
