@@ -273,12 +273,21 @@ class MLSClientImpl(
     override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState =
         toE2EIConversationState(coreCrypto.e2eiConversationState(groupId.decodeBase64Bytes()))
 
-    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
         val clientIds = clients.map {
             it.toString().encodeToByteArray()
         }
-        return coreCrypto.getUserIdentities(groupId.decodeBase64Bytes(), clientIds).map {
+        return coreCrypto.getDeviceIdentities(groupId.decodeBase64Bytes(), clientIds).map {
             toIdentity(it)
+        }
+    }
+
+    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): Map<String, List<WireIdentity>> {
+        val usersIds = clients.map {
+            it.getEncodedUserID()
+        }
+        return coreCrypto.getUserIdentities(groupId.decodeBase64Bytes(), usersIds).mapValues {
+            it.value.map { identity -> toIdentity(identity) }
         }
     }
 

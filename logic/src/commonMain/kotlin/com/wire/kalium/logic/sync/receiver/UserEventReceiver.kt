@@ -27,11 +27,11 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
@@ -41,6 +41,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -56,7 +58,9 @@ internal class UserEventReceiverImpl internal constructor(
     private val oneOnOneResolver: OneOnOneResolver,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>
+    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
+    private val legalHoldRequestHandler: LegalHoldRequestHandler,
+    private val legalHoldHandler: LegalHoldHandler
 ) : UserEventReceiver {
 
     override suspend fun onEvent(event: Event.User): Either<CoreFailure, Unit> {
@@ -66,6 +70,9 @@ internal class UserEventReceiverImpl internal constructor(
             is Event.User.UserDelete -> handleUserDelete(event)
             is Event.User.Update -> handleUserUpdate(event)
             is Event.User.NewClient -> handleNewClient(event)
+            is Event.User.LegalHoldRequest -> legalHoldRequestHandler.handle(event)
+            is Event.User.LegalHoldEnabled -> legalHoldHandler.handleEnable(event)
+            is Event.User.LegalHoldDisabled -> legalHoldHandler.handleDisable(event)
         }
     }
 
@@ -175,6 +182,8 @@ internal class UserEventReceiverImpl internal constructor(
             logout(LogoutReason.DELETED_ACCOUNT)
             Either.Right(Unit)
         } else {
+            // TODO: those 2 steps must be done in one transaction
+            //  userRepo.markAsDeleted(event.userId) will mark user as deleted and remove from the group conversations
             userRepository.removeUser(event.userId)
                 .onSuccess {
                     conversationRepository.deleteUserFromConversations(event.userId)

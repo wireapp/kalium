@@ -48,7 +48,6 @@ import com.wire.kalium.network.api.v2.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
@@ -202,8 +201,9 @@ internal class AuthenticatedHttpClientProviderImpl(
     }
 
     private val loadToken: suspend () -> BearerTokens? = {
-        val session = sessionManager.session() ?: error("missing user session")
-        BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+        sessionManager.session()?.let { session ->
+            BearerTokens(accessToken = session.accessToken, refreshToken = session.refreshToken)
+        }
     }
 
     private val refreshToken: suspend RefreshTokensParams.() -> BearerTokens = {

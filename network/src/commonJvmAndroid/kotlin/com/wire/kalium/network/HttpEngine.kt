@@ -29,7 +29,6 @@ import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
-import okhttp3.TlsVersion
 import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
@@ -51,7 +50,7 @@ internal object OkHttpSingleton {
             .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-    }.build()
+    }.connectionSpecs(supportedConnectionSpecs()).build()
 
     fun createNew(block: OkHttpClient.Builder.() -> Unit): OkHttpClient {
         return sharedClient.newBuilder().apply(block).build()
@@ -98,8 +97,6 @@ actual fun defaultHttpEngine(
             proxy(proxy)
         }
 
-        connectionSpecs(supportedConnectionSpecs())
-
     }.also {
         preconfigured = it
         webSocketFactory = KaliumWebSocketFactory(it)
@@ -123,9 +120,6 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
 }
 
 private fun supportedConnectionSpecs(): List<ConnectionSpec> {
-    val wireSpec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-        .tlsVersions(TlsVersion.TLS_1_2)
-        .build()
-
+    val wireSpec = ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS).build()
     return listOf(wireSpec, ConnectionSpec.CLEARTEXT)
 }

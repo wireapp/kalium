@@ -53,7 +53,7 @@ data class UserProfileDTO(
     @SerialName("id") override val nonQualifiedId: NonQualifiedUserId,
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
-    @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse,
+    @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO,
 ) : UserDTO()
 
 fun UserProfileDTO.isTeamMember(selfUserTeamId: String?, selfUserDomain: String?) =

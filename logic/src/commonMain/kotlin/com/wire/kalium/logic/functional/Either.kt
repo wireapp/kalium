@@ -110,6 +110,16 @@ inline fun <T, L, R> Either<L, R>.flatMap(fn: (R) -> Either<L, T>): Either<L, T>
     }
 
 /**
+ * Right-biased getOrFail() FP convention which means that Right is assumed to be the default case
+ * to operate on and return the result. If it is Left, operations like map, flatMap, ... return the Left value unchanged.
+ */
+inline fun <L, R> Either<L, R>.getOrFail(fn: (failure: L) -> R): R =
+    when (this) {
+        is Left -> fn(value)
+        is Right -> value
+    }
+
+/**
  * Left-biased flatMap() FP convention which means that Left is assumed to be the default case
  * to operate on. If it is Right, operations like map, flatMap, ... return the Right value unchanged.
  */
@@ -169,7 +179,7 @@ fun <L, R> Either<L, R>.getOrElse(value: R): R =
  * Returns the value from this `Right` or the result of `fn` if this is a `Left`.
  * Right(12).getOrElse{ it + 3 } RETURNS 12 and Left(12).getOrElse{ it + 3 } RETURNS 15
  */
-fun <L, R> Either<L, R>.getOrElse(fn: (L) -> (R)): R =
+inline fun <L, R> Either<L, R>.getOrElse(fn: (L) -> (R)): R =
     when (this) {
         is Left -> fn(value)
         is Right -> this.value

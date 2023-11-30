@@ -23,7 +23,6 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.network.api.base.model.LocationResponse
 
 object ClientResponseJson {
     private val jsonProvider = { serializable: ClientDTO ->
@@ -36,10 +35,6 @@ object ClientResponseJson {
         |   "class": "${serializable.deviceType}",
         |   "label": "${serializable.label}",
         |   "cookie": "${serializable.cookie}",
-        |   "location": {
-        |     "lat": ${serializable.location!!.latitude},
-        |     "lon": ${serializable.location!!.longitude}
-        |   },
         |   "model": "${serializable.model}",
         |   "capabilities": {
         |     "capabilities": [
@@ -57,7 +52,6 @@ object ClientResponseJson {
             deviceType = DeviceTypeDTO.Phone,
             registrationTime = "2023-05-12T10:52:02.671Z",
             lastActive = "2023-05-12T10:52:02.671Z",
-            location = LocationResponse(latitude = "1.2345", longitude = "6.7890"),
             label = "label",
             cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
             capabilities = Capabilities(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),

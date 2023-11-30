@@ -19,27 +19,34 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
+import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
+import com.wire.kalium.logic.util.stubs.FailureSyncMigration
+import com.wire.kalium.logic.util.stubs.MigrationCrashStep
+import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.times
 import io.mockative.verify
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.test.runTest
@@ -62,69 +69,63 @@ class SlowSyncWorkerTest {
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .arrange()
 
-        worker.slowSyncStepsFlow().collect()
+        worker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        assertAllUseCasesSuccessfulRun(arrangement)
+        assertUseCases(arrangement, SlowSyncStep.values().toHashSet())
     }
 
     @Test
     fun givenSyncSelfUserFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
-        val steps = hashSetOf(SlowSyncStep.SELF_USER)
+        val steps = hashSetOf(SlowSyncStep.MIGRATION, SlowSyncStep.SELF_USER)
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserFailure()
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
     fun givenSyncFeatureConfigsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
-        val steps = hashSetOf(SlowSyncStep.SELF_USER, SlowSyncStep.FEATURE_FLAGS)
+        val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.FEATURE_FLAGS
+        )
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
             .withSyncFeatureConfigsFailure()
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
     fun givenUpdateSupportedProtocolsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
-        val steps = hashSetOf(SlowSyncStep.SELF_USER, SlowSyncStep.FEATURE_FLAGS, SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)
+        val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.FEATURE_FLAGS,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS
+        )
         val (arrangement, worker) = Arrangement()
             .withSyncSelfUserSuccess()
             .withSyncFeatureConfigsSuccess()
@@ -132,29 +133,20 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
     fun givenSyncConversationsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
@@ -168,37 +160,20 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
     fun givenSyncConnectionsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
@@ -214,41 +189,20 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncSelfTeam)
-            .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
     fun givenSyncSelfTeamFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
@@ -266,51 +220,61 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncSelfTeam)
-            .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncContacts)
-            .suspendFunction(arrangement.syncContacts::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
+
     @Test
-    fun givenSyncContactsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+    fun givenFetchLegalHoldStatusFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
+        )
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusFailure()
+            .arrange()
+
+        assertFailsWith<KaliumSyncException> {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
+                assertTrue {
+                    it in steps
+                }
+            }
+        }
+
+        assertUseCases(arrangement, steps)
+    }
+
+    @Test
+    fun givenSyncContactsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+            SlowSyncStep.FEATURE_FLAGS,
+            SlowSyncStep.CONVERSATIONS,
+            SlowSyncStep.CONNECTIONS,
+            SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
             SlowSyncStep.CONTACTS,
         )
         val (arrangement, worker) = Arrangement()
@@ -320,60 +284,32 @@ class SlowSyncWorkerTest {
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .withSyncContactsFailure()
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncSelfTeam)
-            .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncContacts)
-            .suspendFunction(arrangement.syncContacts::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.joinMLSConversations)
-            .suspendFunction(arrangement.joinMLSConversations::invoke)
-            .with(any())
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
     fun givenJoinMLSConversationsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
             SlowSyncStep.CONTACTS,
             SlowSyncStep.JOINING_MLS_CONVERSATIONS
         )
@@ -384,19 +320,20 @@ class SlowSyncWorkerTest {
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsFailure()
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow().collect {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
                 assertTrue {
                     it in steps
                 }
             }
         }
 
-        assertAllUseCasesSuccessfulRun(arrangement)
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -408,7 +345,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFails {
-            slowSyncWorker.slowSyncStepsFlow().collect()
+            slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
         verify(arrangement.eventRepository)
@@ -424,7 +361,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFails {
-            slowSyncWorker.slowSyncStepsFlow().collect()
+            slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
         verify(arrangement.eventRepository)
@@ -446,7 +383,7 @@ class SlowSyncWorkerTest {
             .arrange()
 
         assertFails {
-            slowSyncWorker.slowSyncStepsFlow().collect()
+            slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
         verify(arrangement.eventRepository)
@@ -468,12 +405,14 @@ class SlowSyncWorkerTest {
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .arrange()
 
-        slowSyncWorker.slowSyncStepsFlow().collect()
+        slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         verify(arrangement.eventRepository)
             .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
@@ -481,39 +420,67 @@ class SlowSyncWorkerTest {
             .wasInvoked(exactly = once)
     }
 
-    private fun assertAllUseCasesSuccessfulRun(arrangement: Arrangement) {
+    @Test
+    fun givenMigrationFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(SlowSyncStep.MIGRATION)
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserFailure()
+            .arrange()
+
+        assertFailsWith<KaliumSyncException> {
+            worker.slowSyncStepsFlow(failedMigration).collect {
+                assertTrue {
+                    it in steps
+                }
+            }
+        }
+
         verify(arrangement.syncSelfUser)
             .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
 
         verify(arrangement.syncFeatureConfigs)
             .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
+    }
+
+    private fun assertUseCases(arrangement: Arrangement, steps: HashSet<SlowSyncStep>) {
+        verify(arrangement.syncSelfUser)
+            .suspendFunction(arrangement.syncSelfUser::invoke)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
+
+        verify(arrangement.syncFeatureConfigs)
+            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.FEATURE_FLAGS)) once else 0.times)
 
         verify(arrangement.updateSupportedProtocols)
             .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)) once else 0.times)
 
         verify(arrangement.syncConversations)
             .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONVERSATIONS)) once else 0.times)
 
         verify(arrangement.syncConnections)
             .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONNECTIONS)) once else 0.times)
 
         verify(arrangement.syncSelfTeam)
             .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_TEAM)) once else 0.times)
 
         verify(arrangement.syncContacts)
             .suspendFunction(arrangement.syncContacts::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
 
         verify(arrangement.joinMLSConversations)
             .suspendFunction(arrangement.joinMLSConversations::invoke)
             .with(any())
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
+
+        verify(arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase)
+            .suspendFunction(arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.LEGAL_HOLD)) once else 0.times)
     }
 
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl() {
@@ -545,6 +512,9 @@ class SlowSyncWorkerTest {
         @Mock
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
 
+        @Mock
+        val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
+
         init {
             withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
         }
@@ -559,6 +529,7 @@ class SlowSyncWorkerTest {
             syncContacts = syncContacts,
             joinMLSConversations = joinMLSConversations,
             updateSupportedProtocols = updateSupportedProtocols,
+            fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
         )
 
@@ -674,6 +645,20 @@ class SlowSyncWorkerTest {
                 .thenReturn(success)
         }
 
+        fun withFetchLegalHoldStatusFailure() = apply {
+            given(fetchLegalHoldForSelfUserFromRemoteUseCase)
+                .suspendFunction(fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(failure)
+        }
+
+        fun withFetchLegalHoldStatusSuccess(status: LegalHoldStatus = LegalHoldStatus.NO_CONSENT) = apply {
+            given(fetchLegalHoldForSelfUserFromRemoteUseCase)
+                .suspendFunction(fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(status))
+        }
+
         fun withResolveOneOnOneConversationsSuccess() = apply {
             given(oneOnOneResolver)
                 .suspendFunction(oneOnOneResolver::resolveAllOneOnOneConversations)
@@ -682,8 +667,20 @@ class SlowSyncWorkerTest {
         }
     }
 
-    companion object {
+    private companion object {
         val failure = Either.Left(CoreFailure.Unknown(null))
         val success = Either.Right(Unit)
+
+        val successfullyMigration: List<SuccessSyncMigration> = listOf(
+            SuccessSyncMigration(1),
+            SuccessSyncMigration(2),
+            SuccessSyncMigration(3),
+        )
+
+        val failedMigration: List<SyncMigrationStep> = listOf(
+            SuccessSyncMigration(1),
+            FailureSyncMigration(2),
+            MigrationCrashStep(3, "this step should never be executed"),
+        )
     }
 }

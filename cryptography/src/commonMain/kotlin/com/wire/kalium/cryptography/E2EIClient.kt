@@ -33,7 +33,8 @@ data class NewAcmeOrder(
 
 data class AcmeChallenge(
     var delegate: JsonRawData,
-    var url: String
+    var url: String,
+    var target: String
 )
 
 data class NewAcmeAuthz(

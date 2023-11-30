@@ -39,6 +39,8 @@ import com.wire.kalium.logic.data.conversation.ConversationRoleMapper
 import com.wire.kalium.logic.data.conversation.ConversationRoleMapperImpl
 import com.wire.kalium.logic.data.conversation.ConversationStatusMapper
 import com.wire.kalium.logic.data.conversation.ConversationStatusMapperImpl
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSCommitBundleMapper
 import com.wire.kalium.logic.data.conversation.MLSCommitBundleMapperImpl
 import com.wire.kalium.logic.data.conversation.MemberMapper
@@ -168,4 +170,5 @@ internal object MapperProvider {
     fun receiptModeMapper(): ReceiptModeMapper = ReceiptModeMapperImpl()
     fun sendMessagePartialFailureMapper(): SendMessagePartialFailureMapper = SendMessagePartialFailureMapperImpl()
     fun serviceMapper(): ServiceMapper = ServiceMapper()
+    fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl()
 }

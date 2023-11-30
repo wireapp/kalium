@@ -23,20 +23,22 @@ logging:
 
     # The default level of all loggers. Can be OFF, ERROR, WARN, INFO, DEBUG, TRACE, or ALL.
     level: INFO
+    loggers:
+        com.wire.kalium: DEBUG
 
     appenders:
         - type: console
-          threshold: INFO
+          threshold: DEBUG
         - type: file
-          threshold: INFO
-          logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
+          threshold: DEBUG
+          logFormat: "%-6level [%d{HH:mm:ss.SSS}] %X{code} %msg %n"
           currentLogFilename: /var/log/kalium-testservice/application.log
           archivedLogFilenamePattern: /var/log/kalium-testservice/application-%d{yyyy-MM-dd}.log
           archivedFileCount: 7
           timeZone: GMT+1
         - type: file
           threshold: ALL
-          logFormat: "%-6level [%d{HH:mm:ss.SSS}] [%t] %logger{5} - %X{code} %msg %n"
+          logFormat: "%-6level [%d{HH:mm:ss.SSS}] %X{code} %msg %n"
           currentLogFilename: /var/log/kalium-testservice/application_debug.log
           archivedLogFilenamePattern: /var/log/kalium-testservice/application_debug-%d{yyyy-MM-dd}.log
           archivedFileCount: 7

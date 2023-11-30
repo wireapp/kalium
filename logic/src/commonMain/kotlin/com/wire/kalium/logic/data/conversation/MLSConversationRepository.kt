@@ -91,7 +91,7 @@ data class DecryptedMessageBundle(
     val identity: E2EIdentity?
 )
 
-data class E2EIdentity(var clientId: String, var handle: String, var displayName: String, var domain: String)
+data class E2EIdentity(val clientId: String, val handle: String, val displayName: String, val domain: String)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
@@ -557,7 +557,7 @@ internal class MLSConversationDataSource(
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    mlsClient.getUserIdentities(
+                    mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(E2EIQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
                     ).first() // todo: ask if it's possible that's a client has more than one identity?

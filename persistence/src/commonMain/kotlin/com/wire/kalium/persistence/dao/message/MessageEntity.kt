@@ -179,7 +179,12 @@ sealed interface MessageEntity {
         /**
          * The last attempt at fetching and saving this asset's data failed.
          */
-        FAILED
+        FAILED,
+
+        /**
+         * Asset was not found on the server
+         */
+        NOT_FOUND
     }
 
     enum class ConfirmationType {
@@ -322,6 +327,8 @@ sealed class MessageEntityContent {
     data object MissedCall : System()
     data object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
+
+    @Deprecated("not maintained and will be deleted")
     data class TeamMemberRemoved(val userName: String) : System()
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
