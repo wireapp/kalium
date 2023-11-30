@@ -22,12 +22,12 @@ import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
@@ -450,6 +450,7 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
+            .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -475,6 +476,7 @@ class ConversationGroupRepositoryTest {
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .withSuccessfulHandleMemberJoinEvent()
+            .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -1565,6 +1567,13 @@ class ConversationGroupRepositoryTest {
             given(newGroupConversationSystemMessagesCreator)
                 .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
                 .whenInvokedWith(anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withInsertAddedAndFailedSystemMessageSuccess(): Arrangement = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 
