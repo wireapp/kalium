@@ -85,12 +85,12 @@ kotlin {
                 implementation(libs.settings.kmpTest)
             }
         }
-        val nonJsMain by creating {
-            dependsOn(commonMain)
-            dependencies {
-                implementation(libs.androidx.dataStore.kmm)
-            }
-        }
+//        val nonJsMain by creating {
+//            dependsOn(commonMain)
+//            dependencies {
+//                implementation(libs.androidx.dataStore.kmm)
+//            }
+//        }
         val jvmMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
