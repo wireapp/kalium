@@ -27,6 +27,7 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
+        enableJs.set(false)
         enableJsTests.set(false)
     }
 }
@@ -69,7 +70,7 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
-
+                implementation(libs.androidx.dataStore.kmm)
                 implementation(project(":util"))
                 api(project(":logger"))
             }
@@ -91,22 +92,20 @@ kotlin {
             }
         }
         val jvmMain by getting {
-            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
             }
         }
         val jvmTest by getting
-        val jsMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.jsDriver)
-                implementation(npm("sql.js", "1.6.2"))
-                implementation(devNpm("copy-webpack-plugin", "9.1.0"))
-            }
-        }
-        val jsTest by getting
+//        val jsMain by getting {
+//            dependencies {
+//                implementation(libs.sqldelight.jsDriver)
+//                implementation(npm("sql.js", "1.6.2"))
+//                implementation(devNpm("copy-webpack-plugin", "9.1.0"))
+//            }
+//        }
+//        val jsTest by getting
         val androidMain by getting {
-            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.androidCrypto)
                 implementation(libs.sqldelight.androidDriver)
@@ -117,7 +116,6 @@ kotlin {
             }
         }
         val appleMain by getting {
-            dependsOn(nonJsMain)
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
             }
