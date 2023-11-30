@@ -48,7 +48,7 @@ internal class NotifyConversationIsOpenUseCaseImpl(
 
     override suspend operator fun invoke(conversationId: ConversationId) {
         kaliumLogger.v(
-            "Notifying that conversation with ID: $conversationId is open"
+            "Notifying that conversation with ID: ${conversationId.toLogString()} is open"
         )
         val conversation = conversationRepository.observeConversationDetailsById(conversationId)
             .filterIsInstance<Either.Right<ConversationDetails>>()
@@ -57,7 +57,7 @@ internal class NotifyConversationIsOpenUseCaseImpl(
 
         if (conversation is ConversationDetails.OneOne) {
             kaliumLogger.v(
-                "Reevaluating protocol for 1:1 conversation with ID: $conversationId"
+                "Reevaluating protocol for 1:1 conversation with ID: ${conversationId.toLogString()}"
             )
             oneOnOneResolver.resolveOneOnOneConversationWithUser(conversation.otherUser)
         }
