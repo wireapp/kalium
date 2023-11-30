@@ -262,7 +262,9 @@ internal class ConversationGroupRepositoryImpl(
     }
 
     private suspend fun handleMLSMembersAdded(
-        conversationId: ConversationId, userIdList: List<UserId>, failedUsersList: Set<UserId>
+        conversationId: ConversationId,
+        userIdList: List<UserId>,
+        failedUsersList: Set<UserId>
     ): Either<CoreFailure, Unit> {
         return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
             conversationId.toDao(), userIdList, failedUsersList.toList()
