@@ -19,10 +19,15 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -70,12 +75,45 @@ class AddMemberToConversationUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenServerResponseWith403_whenAddingToGroupConversionFail_thenUpdateUsersInfo() = runTest {
+
+        val error = NetworkFailure.ServerMiscommunication(
+            KaliumException.InvalidRequestError(
+                errorResponse = ErrorResponse(
+                    code = 403,
+                    message = "Forbidden",
+                    label = "Forbidden"
+                )
+            )
+        )
+        val (arrangement, addMemberUseCase) = Arrangement()
+            .arrange {
+                withAddMembers(Either.Left(error))
+                withFetchUsersByIdReturning(Either.Right(Unit))
+            }
+
+        val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
+        assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
+
+        verify(arrangement.conversationGroupRepository)
+            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
+            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(setOf(TestConversation.USER_1)))
+            .wasInvoked(exactly = once)
+    }
+
+    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
         @Mock
         val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
 
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
-            conversationGroupRepository
+            conversationGroupRepository,
+            userRepository
         )
 
         fun withAddMembers(either: Either<CoreFailure, Unit>) = apply {
@@ -85,6 +123,6 @@ class AddMemberToConversationUseCaseTest {
                 .thenReturn(either)
         }
 
-        fun arrange() = this to addMemberUseCase
+        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to addMemberUseCase }
     }
 }
