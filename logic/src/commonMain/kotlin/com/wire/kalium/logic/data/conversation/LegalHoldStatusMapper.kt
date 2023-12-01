@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 
 interface LegalHoldStatusMapper {

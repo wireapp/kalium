@@ -71,8 +71,8 @@ data class ConversationViewEntity(
     val mlsVerificationStatus: ConversationEntity.VerificationStatus,
     val userSupportedProtocols: Set<SupportedProtocolEntity>?,
     val userActiveOneOnOneConversationId: ConversationIDEntity?,
-    val proteusVerificationStatus: ConversationEntity.VerificationStatus
+    val proteusVerificationStatus: ConversationEntity.VerificationStatus,
+    val legalHoldStatus: ConversationEntity.LegalHoldStatus
 ) {
     val isMember: Boolean get() = selfRole != null
-
 }
