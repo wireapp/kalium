@@ -799,6 +799,7 @@ class MessageRepositoryTest {
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
         const val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
+        val INSTANT_TEST_DATETIME = Instant.parse(TEST_DATETIME)
         val TEST_MESSAGE = Message.Regular(
             id = "uid",
             content = TEST_CONTENT,
@@ -811,7 +812,7 @@ class MessageRepositoryTest {
             isSelfMessage = false
         )
         val TEST_ASSET_MESSAGE = AssetMessage(
-            time = TEST_DATETIME,
+            time = INSTANT_TEST_DATETIME,
             conversationId = TEST_CONVERSATION_ID,
             username = "username",
             messageId = "messageId",

@@ -31,6 +31,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -45,7 +46,7 @@ class GetAssetMessagesForConversationUseCaseTest {
         val offset = 0
 
         val assetMessage = AssetMessage(
-            time = "2022-04-21T20:56:22.393Z",
+            time = Instant.fromEpochMilliseconds(10),
             conversationId = someConversationId,
             username = "username",
             messageId = "messageId",
