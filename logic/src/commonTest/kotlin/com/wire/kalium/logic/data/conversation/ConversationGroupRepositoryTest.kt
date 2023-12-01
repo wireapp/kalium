@@ -1195,12 +1195,12 @@ class ConversationGroupRepositoryTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .withAddMemberAPISucceedChanged()
+            .withSuccessfulAddMemberToMLSGroup()
             .withAddingMemberToMlsGroupResults(
                 KEY_PACKAGES_NOT_AVAILABLE_FAILURE,
                 Either.Right(Unit)
             )
-            .withAddMemberAPISucceedChanged()
-            .withSuccessfulAddMemberToMLSGroup()
             .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
@@ -1236,11 +1236,11 @@ class ConversationGroupRepositoryTest {
             .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
+            .withSuccessfulAddMemberToMLSGroup()
             .withAddingMemberToMlsGroupResults(
                 buildCommitBundleFederatedFailure("otherDomain"),
                 Either.Right(Unit)
             )
-            .withSuccessfulAddMemberToMLSGroup()
             .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
@@ -1303,7 +1303,7 @@ class ConversationGroupRepositoryTest {
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
             .with(anything(), matching {
-                it.size == initialCountUsers - 1  // removed 1 failed user with commit bundle federated error
+                it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
             }).wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
