@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.handler.legalhold
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
+import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHold
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -49,6 +51,7 @@ internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val persistOtherUserClients: PersistOtherUserClientsUseCase,
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase,
+    private val isConversationUnderLegalHold: IsConversationUnderLegalHold,
     private val persistMessage: PersistMessageUseCase,
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
@@ -69,15 +72,14 @@ internal class LegalHoldHandlerImpl internal constructor(
                     { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
                 )
 
+                isConversationUnderLegalHold(conversation.id)
+                    .map { isUnderLegalHold ->
+                        if (isUnderLegalHold) {
+                            conversationRepository.updateLegalHoldStatus(conversation.id, Conversation.LegalHoldStatus.ENABLED)
+                        }
+                    }
             }
         }
-
-        /*
-            TODO:
-                - check if this conversation has already been under legal hold
-                - if yes, do nothing
-                - if not, update conversation
-         */
 
         return Either.Right(Unit)
     }
@@ -88,21 +90,23 @@ internal class LegalHoldHandlerImpl internal constructor(
 
         conversationRepository.getConversationsByUserId(legalHoldDisabled.userId).map {
             it.forEach { conversation ->
+
                 createOrReplaceMemberSystemMessageForConversation(
                     legalHoldDisabled.userId,
                     conversation.id,
                     { content -> content.copy(members = content.members - selfUserId) },
                     { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
                 )
+
+                isConversationUnderLegalHold(conversation.id)
+                    .map { isUnderLegalHold ->
+                        if (!isUnderLegalHold) {
+                            createSystemMessage(MessageContent.LegalHold.DisabledForConversation, conversation.id)
+                            conversationRepository.updateLegalHoldStatus(conversation.id, Conversation.LegalHoldStatus.DISABLED)
+                        }
+                    }
             }
         }
-
-        /*
-            TODO:
-                - check if any other member of this conversation is still under legal hold
-                - if yes, do nothing
-                - if not, update conversation and create new system message legal hold disabled for conversation
-         */
 
         return Either.Right(Unit)
     }
@@ -120,7 +124,7 @@ internal class LegalHoldHandlerImpl internal constructor(
         }
     }
 
-    private suspend inline fun <reified T: MessageContent.LegalHold> createOrReplaceMemberSystemMessageForConversation(
+    private suspend inline fun <reified T : MessageContent.LegalHold> createOrReplaceMemberSystemMessageForConversation(
         userId: UserId,
         conversationId: ConversationId,
         updateContent: (T) -> T,

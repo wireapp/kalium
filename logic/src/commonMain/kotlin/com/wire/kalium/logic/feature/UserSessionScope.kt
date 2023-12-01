@@ -168,6 +168,8 @@ import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHold
+import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHoldImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
@@ -1362,11 +1364,18 @@ class UserSessionScope internal constructor(
             clientRepository = clientRepository
         )
 
+    private val isConversationUnderLegalHold: IsConversationUnderLegalHold
+        get() = IsConversationUnderLegalHoldImpl(clientRepository, conversationRepository)
+
     private val legalHoldHandler = LegalHoldHandlerImpl(
         selfUserId = userId,
         persistOtherUserClients = persistOtherUserClients,
         fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
+        isConversationUnderLegalHold = isConversationUnderLegalHold,
+        persistMessage = persistMessage,
         userConfigRepository = userConfigRepository,
+        conversationRepository = conversationRepository,
+        messageRepository = messageRepository,
         coroutineContext = coroutineContext
     )
 
