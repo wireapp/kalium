@@ -220,11 +220,6 @@ interface MessageRepository {
         targetConversation: ConversationId
     ): Either<StorageFailure, Unit>
 
-    suspend fun getConversationMessagesFromSearch(
-        searchQuery: String,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<Message.Standalone>>
-
     suspend fun getSearchedConversationMessagePosition(
         conversationId: ConversationId,
         messageId: String
@@ -651,16 +646,6 @@ class MessageDataSource(
             from = originalConversation.toDao(),
             to = targetConversation.toDao()
         )
-    }
-
-    override suspend fun getConversationMessagesFromSearch(
-        searchQuery: String,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<Message.Standalone>> = wrapStorageRequest {
-        messageDAO.getConversationMessagesFromSearch(
-            searchQuery = searchQuery,
-            conversationId = conversationId.toDao()
-        ).map(messageMapper::fromEntityToMessage)
     }
 
     override suspend fun getSearchedConversationMessagePosition(

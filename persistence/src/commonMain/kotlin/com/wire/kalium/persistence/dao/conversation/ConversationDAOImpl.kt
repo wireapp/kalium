@@ -399,4 +399,17 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
 
+    override suspend fun updateLegalHoldStatus(
+        conversationId: QualifiedIDEntity,
+        legalHoldStatus: ConversationEntity.LegalHoldStatus
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
+    }
+
+    override suspend fun observeLegalHoldForConversation(conversationId: QualifiedIDEntity) =
+        conversationQueries.selectLegalHoldStatus(conversationId)
+            .asFlow()
+            .mapToOneOrDefault(ConversationEntity.LegalHoldStatus.DISABLED)
+            .flowOn(coroutineContext)
+
 }

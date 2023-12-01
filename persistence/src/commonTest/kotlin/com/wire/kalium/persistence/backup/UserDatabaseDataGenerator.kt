@@ -284,7 +284,8 @@ class UserDatabaseDataGenerator(
                     archived = false,
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
                 )
             )
 
@@ -330,7 +331,8 @@ class UserDatabaseDataGenerator(
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
         userDatabaseBuilder.conversationDAO.insertConversation(conversation)
         return conversation
@@ -400,7 +402,8 @@ class UserDatabaseDataGenerator(
                 archived = false,
                 archivedInstant = null,
                 mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
             )
 
             userDatabaseBuilder.conversationDAO.insertConversation(conversationEntity)
@@ -469,7 +472,8 @@ class UserDatabaseDataGenerator(
                     archived = false,
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
                 )
             )
 
@@ -516,7 +520,8 @@ class UserDatabaseDataGenerator(
                     archived = false,
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
                 )
             )
 
@@ -632,7 +637,8 @@ class UserDatabaseDataGenerator(
                     archived = false,
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
                 )
             )
 
