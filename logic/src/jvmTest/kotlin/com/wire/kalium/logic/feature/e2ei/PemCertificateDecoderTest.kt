@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.DeviceStatus
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -43,7 +44,7 @@ class PemCertificateDecoderTest {
             .withValidStatus()
             .arrange()
 
-        val result = pemCertificateDecoder.decode(validPemCertificateString)
+        val result = pemCertificateDecoder.decode(validPemCertificateString, DeviceStatus.VALID)
 
         verify(arrangement.x509CertificateGeneratorMock)
             .function(arrangement.x509CertificateGeneratorMock::generate)
@@ -60,7 +61,7 @@ class PemCertificateDecoderTest {
             .withValidStatus()
             .arrange()
 
-        pemCertificateDecoder.decode(invalidPemCertificateString)
+        pemCertificateDecoder.decode(invalidPemCertificateString, DeviceStatus.VALID)
     }
 
     class Arrangement {

@@ -78,8 +78,13 @@ data class WireIdentity(
     val handle: String,
     val displayName: String,
     val domain: String,
-    val certificate: String
+    val certificate: String,
+    val status: DeviceStatus
 )
+
+enum class DeviceStatus {
+    VALID,EXPIRED,REVOKED;
+}
 
 @Suppress("MagicNumber")
 data class E2EIQualifiedClientId(

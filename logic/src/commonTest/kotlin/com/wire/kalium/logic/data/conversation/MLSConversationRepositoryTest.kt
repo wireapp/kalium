@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.DeviceStatus
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.GroupInfoBundle
@@ -1616,7 +1617,7 @@ class MLSConversationRepositoryTest {
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList())
-            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate")
+            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", DeviceStatus.VALID)
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(

@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.DeviceStatus
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
@@ -118,7 +119,8 @@ class GetE2eiCertificateUseCaseTest {
             handle = "alic_test",
             displayName = "Alice Test",
             domain = "test.com",
-            certificate = "certificate"
+            certificate = "certificate",
+            status = DeviceStatus.EXPIRED
         )
     }
 }

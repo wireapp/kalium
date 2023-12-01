@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.DeviceStatus
+
 expect interface PemCertificateDecoder {
-    fun decode(certificate: String): E2eiCertificate
+    fun decode(certificate: String, status: DeviceStatus): E2eiCertificate
 }
 
 expect class PemCertificateDecoderImpl(

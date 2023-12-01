@@ -17,19 +17,20 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.DeviceStatus
 import java.util.Date
 
 actual interface CertificateStatusChecker {
-    actual fun status(notAfterTimestamp: Long): CertificateStatus
+    actual fun status(notAfterTimestamp: Long, deviceStatus: DeviceStatus): CertificateStatus
 }
 
 actual class CertificateStatusCheckerImpl : CertificateStatusChecker {
-    override fun status(notAfterTimestamp: Long): CertificateStatus {
-        // TODO check for revoked from coreCrypto when API is ready
+    override fun status(notAfterTimestamp: Long, deviceStatus: DeviceStatus): CertificateStatus {
+        if (deviceStatus == DeviceStatus.REVOKED) return CertificateStatus.REVOKED
 
         val current = Date()
         println("current timestap is ${current.time}")
-        if (current.time >= notAfterTimestamp)
+        if (current.time >= notAfterTimestamp || deviceStatus == DeviceStatus.EXPIRED)
             return CertificateStatus.EXPIRED
         return CertificateStatus.VALID
     }
