@@ -307,6 +307,11 @@ sealed class MessageContent {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
     }
+    sealed class LegalHold : System() {
+        data class EnabledForMembers(val members: List<UserId>) : LegalHold()
+        data class DisabledForMembers(val members: List<UserId>) : LegalHold()
+        data object DisabledForConversation : LegalHold()
+    }
 }
 
 /**
@@ -359,6 +364,9 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
+    is MessageContent.LegalHold.DisabledForConversation -> "LegalHold.DisabledForConversation"
+    is MessageContent.LegalHold.DisabledForMembers -> "LegalHold.DisabledForMembers"
+    is MessageContent.LegalHold.EnabledForMembers -> "LegalHold.EnabledForMembers"
     null -> "null"
 }
 

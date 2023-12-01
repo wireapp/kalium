@@ -198,7 +198,7 @@ sealed interface MessageEntity {
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, HISTORY_LOST_PROTOCOL_CHANGED,
         CONVERSATION_MESSAGE_TIMER_CHANGED, CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS,
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
-        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_STARTED_UNVERIFIED_WARNING
+        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_STARTED_UNVERIFIED_WARNING, LEGAL_HOLD,
     }
 
     enum class MemberChangeType {
@@ -207,6 +207,10 @@ sealed interface MessageEntity {
 
     enum class FederationType {
         DELETE, CONNECTION_REMOVED
+    }
+
+    enum class LegalHoldType {
+        ENABLED_FOR_MEMBERS, DISABLED_FOR_MEMBERS, DISABLED_FOR_CONVERSATION
     }
 
     enum class Visibility {
@@ -341,6 +345,7 @@ sealed class MessageEntityContent {
     data object ConversationVerifiedProteus : System()
     data object ConversationStartedUnverifiedWarning : System()
     data class Federation(val domainList: List<String>, val type: MessageEntity.FederationType) : System()
+    data class LegalHold(val memberUserIdList: List<QualifiedIDEntity>, val type: MessageEntity.LegalHoldType) : System()
 }
 
 /**

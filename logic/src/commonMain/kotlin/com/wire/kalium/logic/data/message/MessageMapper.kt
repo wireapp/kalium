@@ -266,6 +266,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
+            MessageEntity.ContentType.LEGAL_HOLD -> null
         }
     }
 
@@ -381,6 +382,15 @@ class MessageMapperImpl(
         }
         is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
+        is MessageEntityContent.LegalHold -> {
+            when (this.type) {
+                MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.DisabledForConversation
+                MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
+                    MessageContent.LegalHold.DisabledForMembers(this.memberUserIdList.map { it.toModel() })
+                MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
+                    MessageContent.LegalHold.EnabledForMembers(this.memberUserIdList.map { it.toModel() })
+            }
+        }
     }
 }
 
@@ -600,4 +610,10 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
     MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
     is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
+    MessageContent.LegalHold.DisabledForConversation ->
+        MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
+    is MessageContent.LegalHold.DisabledForMembers ->
+        MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
+    is MessageContent.LegalHold.EnabledForMembers ->
+        MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
 }

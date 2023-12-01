@@ -206,6 +206,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -444,7 +445,9 @@ object MessageMapper {
         buttonsJson: String,
         federationDomainList: List<String>?,
         federationType: MessageEntity.FederationType?,
-        conversationProtocolChanged: ConversationEntity.Protocol?
+        conversationProtocolChanged: ConversationEntity.Protocol?,
+        legalHoldMemberList: List<QualifiedIDEntity>?,
+        legalHoldType: MessageEntity.LegalHoldType?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -579,6 +582,10 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
+            MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
+                memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
+                type = legalHoldType.requireField("legalHoldType")
+            )
         }
 
         return createMessageEntity(
