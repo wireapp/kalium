@@ -20,11 +20,13 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.data.conversation.LegalHoldStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
+import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -44,6 +46,7 @@ import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.times
 import io.mockative.verify
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.test.runTest
@@ -66,11 +69,12 @@ class SlowSyncWorkerTest {
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .arrange()
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        assertAllUseCasesSuccessfulRun(arrangement)
+        assertUseCases(arrangement, SlowSyncStep.values().toHashSet())
     }
 
     @Test
@@ -88,13 +92,7 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -117,17 +115,7 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -152,17 +140,7 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -189,25 +167,7 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -236,29 +196,7 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncSelfTeam)
-            .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -289,33 +227,41 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
+        assertUseCases(arrangement, steps)
+    }
 
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
 
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
+    @Test
+    fun givenFetchLegalHoldStatusFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+            SlowSyncStep.FEATURE_FLAGS,
+            SlowSyncStep.CONVERSATIONS,
+            SlowSyncStep.CONNECTIONS,
+            SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
+        )
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusFailure()
+            .arrange()
 
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
+        assertFailsWith<KaliumSyncException> {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
+                assertTrue {
+                    it in steps
+                }
+            }
+        }
 
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncSelfTeam)
-            .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncContacts)
-            .suspendFunction(arrangement.syncContacts::invoke)
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -328,6 +274,7 @@ class SlowSyncWorkerTest {
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
             SlowSyncStep.CONTACTS,
         )
         val (arrangement, worker) = Arrangement()
@@ -337,6 +284,7 @@ class SlowSyncWorkerTest {
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .withSyncContactsFailure()
             .arrange()
 
@@ -348,38 +296,7 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncSelfTeam)
-            .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.syncContacts)
-            .suspendFunction(arrangement.syncContacts::invoke)
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.joinMLSConversations)
-            .suspendFunction(arrangement.joinMLSConversations::invoke)
-            .with(any())
-            .wasNotInvoked()
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -392,6 +309,7 @@ class SlowSyncWorkerTest {
             SlowSyncStep.CONVERSATIONS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
             SlowSyncStep.CONTACTS,
             SlowSyncStep.JOINING_MLS_CONVERSATIONS
         )
@@ -402,6 +320,7 @@ class SlowSyncWorkerTest {
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsFailure()
             .arrange()
@@ -414,7 +333,7 @@ class SlowSyncWorkerTest {
             }
         }
 
-        assertAllUseCasesSuccessfulRun(arrangement)
+        assertUseCases(arrangement, steps)
     }
 
     @Test
@@ -486,9 +405,11 @@ class SlowSyncWorkerTest {
             .withSyncConversationsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
+            .withFetchLegalHoldStatusSuccess()
             .arrange()
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
@@ -523,39 +444,43 @@ class SlowSyncWorkerTest {
             .wasNotInvoked()
     }
 
-    private fun assertAllUseCasesSuccessfulRun(arrangement: Arrangement) {
+    private fun assertUseCases(arrangement: Arrangement, steps: HashSet<SlowSyncStep>) {
         verify(arrangement.syncSelfUser)
             .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
 
         verify(arrangement.syncFeatureConfigs)
             .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.FEATURE_FLAGS)) once else 0.times)
 
         verify(arrangement.updateSupportedProtocols)
             .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)) once else 0.times)
 
         verify(arrangement.syncConversations)
             .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONVERSATIONS)) once else 0.times)
 
         verify(arrangement.syncConnections)
             .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONNECTIONS)) once else 0.times)
 
         verify(arrangement.syncSelfTeam)
             .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_TEAM)) once else 0.times)
 
         verify(arrangement.syncContacts)
             .suspendFunction(arrangement.syncContacts::invoke)
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
 
         verify(arrangement.joinMLSConversations)
             .suspendFunction(arrangement.joinMLSConversations::invoke)
             .with(any())
-            .wasInvoked(exactly = once)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
+
+        verify(arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase)
+            .suspendFunction(arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
+            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.LEGAL_HOLD)) once else 0.times)
     }
 
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl() {
@@ -587,6 +512,9 @@ class SlowSyncWorkerTest {
         @Mock
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
 
+        @Mock
+        val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
+
         init {
             withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
         }
@@ -601,6 +529,7 @@ class SlowSyncWorkerTest {
             syncContacts = syncContacts,
             joinMLSConversations = joinMLSConversations,
             updateSupportedProtocols = updateSupportedProtocols,
+            fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
         )
 
@@ -714,6 +643,20 @@ class SlowSyncWorkerTest {
                 .suspendFunction(joinMLSConversations::invoke)
                 .whenInvokedWith(eq(keepRetryingOnFailure))
                 .thenReturn(success)
+        }
+
+        fun withFetchLegalHoldStatusFailure() = apply {
+            given(fetchLegalHoldForSelfUserFromRemoteUseCase)
+                .suspendFunction(fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(failure)
+        }
+
+        fun withFetchLegalHoldStatusSuccess(status: LegalHoldStatus = LegalHoldStatus.NO_CONSENT) = apply {
+            given(fetchLegalHoldForSelfUserFromRemoteUseCase)
+                .suspendFunction(fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(status))
         }
 
         fun withResolveOneOnOneConversationsSuccess() = apply {

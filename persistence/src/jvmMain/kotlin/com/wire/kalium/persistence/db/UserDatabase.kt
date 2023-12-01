@@ -30,9 +30,14 @@ import java.util.Properties
 
 private const val DATABASE_NAME = "main.db"
 
-actual class PlatformDatabaseData(
-    val storePath: File
+actual data class PlatformDatabaseData(
+    val storageData: StorageData
 )
+
+sealed interface StorageData {
+    data class FileBacked(val file: File) : StorageData
+    data object InMemory : StorageData
+}
 
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
@@ -41,15 +46,22 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean
 ): UserDatabaseBuilder {
+    val storageData = platformDatabaseData.storageData
+    if (storageData is StorageData.InMemory) {
+        return inMemoryDatabase(userId, dispatcher)
+    }
+    if (storageData !is StorageData.FileBacked) {
+        throw IllegalStateException("Unsupported storage data type: $storageData")
+    }
     if (passphrase != null) {
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
-    val databasePath = platformDatabaseData.storePath.resolve(DATABASE_NAME)
+    val databasePath = storageData.file.resolve(DATABASE_NAME)
     val databaseExists = databasePath.exists()
 
     // Make sure all intermediate directories exist
-    platformDatabaseData.storePath.mkdirs()
+    storageData.file.mkdirs()
 
     val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}", enableWAL)
 
@@ -66,6 +78,18 @@ actual fun userDatabaseDriverByPath(
     enableWAL: Boolean
 ): SqlDriver = sqlDriver(path, false)
 
+internal actual fun getDatabaseAbsoluteFileLocation(
+    platformDatabaseData: PlatformDatabaseData,
+    userId: UserIDEntity
+): String? {
+    val storageData = platformDatabaseData.storageData
+    if (storageData !is StorageData.FileBacked) {
+        return null
+    }
+    val dbFile = storageData.file.resolve(DATABASE_NAME)
+    return if (dbFile.exists()) dbFile.absolutePath else null
+}
+
 private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
     driverUri,
     Properties(1).apply {
@@ -78,21 +102,32 @@ private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSq
     }
 )
 
-fun inMemoryDatabase(userId: UserIDEntity, dispatcher: CoroutineDispatcher): UserDatabaseBuilder {
+/**
+ * Creates an in-memory user database,
+ * or returns an existing one if it already exists.
+ *
+ * @param userId The ID of the user for whom the database is created.
+ * @param dispatcher The coroutine dispatcher to be used for executing database operations.
+ * @return The user database builder.
+ */
+fun inMemoryDatabase(
+    userId: UserIDEntity,
+    dispatcher: CoroutineDispatcher
+): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
     val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY, false)
     UserDatabase.Schema.create(driver)
-    return UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(File("inMemory")), false)
+    val storageData = StorageData.FileBacked(File("inMemory"))
+    UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storageData), false)
+}
+
+fun clearInMemoryDatabase(userId: UserIDEntity): Boolean {
+    return InMemoryDatabaseCache.clearEntry(userId)
 }
 
 internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
-): Boolean = platformDatabaseData.storePath.resolve(DATABASE_NAME).delete() ?: false
-
-internal actual fun getDatabaseAbsoluteFileLocation(
-    platformDatabaseData: PlatformDatabaseData,
-    userId: UserIDEntity
-): String? {
-    val dbFile = platformDatabaseData.storePath.resolve(DATABASE_NAME)
-    return if (dbFile.exists()) dbFile.absolutePath else null
+): Boolean = when (val storageData = platformDatabaseData.storageData) {
+    StorageData.InMemory -> clearInMemoryDatabase(userId)
+    is StorageData.FileBacked -> storageData.file.resolve(DATABASE_NAME).delete()
 }

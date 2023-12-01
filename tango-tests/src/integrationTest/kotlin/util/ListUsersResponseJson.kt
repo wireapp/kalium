@@ -19,7 +19,7 @@
 package util
 
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 
@@ -35,7 +35,7 @@ object ListUsersResponseJson {
             name = "usera",
             handle = "user_a",
             accentId = 2147483647,
-            legalHoldStatus = LegalHoldStatusResponse.ENABLED,
+            legalHoldStatus = LegalHoldStatusDTO.ENABLED,
             teamId = null,
             assets = emptyList(),
             deleted = false,
@@ -50,7 +50,7 @@ object ListUsersResponseJson {
             name = "userb",
             handle = "user_b",
             accentId = 2147483647,
-            legalHoldStatus = LegalHoldStatusResponse.ENABLED,
+            legalHoldStatus = LegalHoldStatusDTO.ENABLED,
             teamId = null,
             assets = emptyList(),
             deleted = false,

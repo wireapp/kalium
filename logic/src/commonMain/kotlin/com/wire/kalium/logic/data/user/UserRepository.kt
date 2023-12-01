@@ -49,7 +49,6 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -62,8 +61,6 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.api.base.model.isTeamMember
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isNotFound
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -229,26 +226,13 @@ internal class UserDataSource internal constructor(
         return fetchUsersByIds(ids)
     }
 
-    /**
-     * Fetches user information for all of users id stored in the DB
-     * and updates the DB with the new information.
-     * If the user is not found on the server, it will be marked as deleted.
-     */
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
-            .onFailure {
-                if (it is NetworkFailure.ServerMiscommunication &&
-                    it.kaliumException is KaliumException.InvalidRequestError &&
-                    it.kaliumException.isNotFound()) {
-                    wrapStorageRequest { userDAO.markUserAsDeleted(userId.toDao()) }
-                }
-            }
             .flatMap { userProfileDTO ->
                 fetchTeamMembersByIds(listOf(userProfileDTO))
                     .flatMap { persistUsers(listOf(userProfileDTO), it) }
             }
 
-    @Suppress("MagicNumber")
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         if (qualifiedUserIdList.isEmpty()) {
             Either.Right(Unit)
@@ -332,8 +316,8 @@ internal class UserDataSource internal constructor(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.ACCEPTED,
                     userTypeEntity =
-                    if (userProfileDTO.service != null) UserTypeEntity.SERVICE
-                    else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
+                        if (userProfileDTO.service != null) UserTypeEntity.SERVICE
+                        else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
                 )
             }
         val otherUsers = listUserProfileDTO
