@@ -96,7 +96,7 @@ jobs:
                         ./**/build/outputs/androidTest-results/**/*.xml
 
             -   name: Publish Unit Test Results
-                uses: EnricoMi/publish-unit-test-result-action/composite@v1.25
+                uses: EnricoMi/publish-unit-test-result-action/composite@v2.7
                 if: always()
                 with:
                     files: |

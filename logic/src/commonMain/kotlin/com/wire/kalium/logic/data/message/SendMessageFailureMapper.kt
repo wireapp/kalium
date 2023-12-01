@@ -32,10 +32,10 @@ interface SendMessageFailureMapper {
 class SendMessageFailureMapperImpl : SendMessageFailureMapper {
     override fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure = with(error.errorBody) {
         ProteusSendMessageFailure(
-            missing.fromNestedMapToSimpleMap(),
-            redundant.fromNestedMapToSimpleMap(),
-            deleted.fromNestedMapToSimpleMap(),
-            failedToConfirmClients?.fromNestedMapToSimpleMap()
+            missingClientsOfUsers = missing.fromNestedMapToSimpleMap(),
+            redundantClientsOfUsers = redundant.fromNestedMapToSimpleMap(),
+            deletedClientsOfUsers = deleted.fromNestedMapToSimpleMap(),
+            failedClientsOfUsers = failedToConfirmClients?.fromNestedMapToSimpleMap()
         )
     }
 
