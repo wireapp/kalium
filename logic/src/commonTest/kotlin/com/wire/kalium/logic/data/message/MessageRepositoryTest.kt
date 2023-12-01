@@ -494,58 +494,6 @@ class MessageRepositoryTest {
     }
 
     @Test
-    fun givenConversationWithMessages_whenSearchingForSpecificMessages_thenReturnOnlyMetCriteriaMessages() = runTest {
-        // given
-        val qualifiedIdEntity = TEST_QUALIFIED_ID_ENTITY
-        val conversationId = TEST_CONVERSATION_ID
-        val searchTerm = "message 1"
-
-        val messageEntity1 = TEST_MESSAGE_ENTITY.copy(
-            id = "msg1",
-            conversationId = qualifiedIdEntity,
-            content = MessageEntityContent.Text("message 10")
-        )
-
-        val messages = listOf(messageEntity1)
-
-        val message1 = TEST_MESSAGE.copy(
-            id = "msg1",
-            conversationId = conversationId,
-            content = MessageContent.Text("message 10")
-        )
-
-        val expectedMessages = listOf(message1)
-
-        val (_, messageRepository) = Arrangement()
-            .withMessagesFromSearch(
-                searchTerm = searchTerm,
-                conversationId = qualifiedIdEntity,
-                messages = messages
-            )
-            .withMappedMessageModel(
-                result = message1,
-                param = messageEntity1
-            )
-            .arrange()
-
-        // when
-        val result = messageRepository.getConversationMessagesFromSearch(
-            searchQuery = searchTerm,
-            conversationId = conversationId
-        )
-
-        // then
-        assertEquals(
-            expectedMessages.size,
-            (result as Either.Right).value.size
-        )
-        assertEquals(
-            expectedMessages.first().id,
-            (result as Either.Right).value.first().id
-        )
-    }
-
-    @Test
     fun givenSearchedMessages_whenMessageIsSelected_thenReturnMessagePosition() = runTest {
         // given
         val qualifiedIdEntity = TEST_QUALIFIED_ID_ENTITY
@@ -724,17 +672,6 @@ class MessageRepositoryTest {
                 .suspendFunction(messageDAO::moveMessages)
                 .whenInvokedWith(any())
                 .thenThrow(throwable)
-        }
-
-        fun withMessagesFromSearch(
-            searchTerm: String,
-            conversationId: QualifiedIDEntity,
-            messages: List<MessageEntity>
-        ) = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::getConversationMessagesFromSearch)
-                .whenInvokedWith(eq(searchTerm), eq(conversationId))
-                .thenReturn(messages)
         }
 
         fun withSelectedMessagePosition(
