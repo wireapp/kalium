@@ -14,7 +14,7 @@ jobs:
       uses: ./.github/workflows/codestyle.yml
   gradle-run-tests:
     needs: [detekt]
-    runs-on: macos-13
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
@@ -28,6 +28,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 #          cache: gradle # Cache disabled as we use Gradle Setup below
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: Gradle Setup
         uses: gradle/gradle-build-action@v2
