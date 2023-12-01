@@ -1319,6 +1319,33 @@ class ConversationRepositoryTest {
         }
     }
 
+    @Test
+    fun givenLegalHoldStatus_whenUpdateIsCalled_thenInvokeUpdateLegalHoldStatusFromOnce() = runTest {
+        val (arrange, conversationRepository) = Arrangement()
+            .arrange()
+
+        conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
+
+        verify(arrange.conversationDAO)
+            .suspendFunction(arrange.conversationDAO::updateLegalHoldStatus)
+            .with(eq(CONVERSATION_ID.toDao()), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenConversationId_whenObservingLegalHoldStatus_thenInvokeObserveLegalHoldStatusFromOnce() = runTest {
+        val (arrange, conversationRepository) = Arrangement()
+            .withObserveLegalHoldStatus()
+            .arrange()
+
+        conversationRepository.observeLegalHoldForConversation(CONVERSATION_ID)
+
+        verify(arrange.conversationDAO)
+            .suspendFunction(arrange.conversationDAO::observeLegalHoldForConversation)
+            .with(eq(CONVERSATION_ID.toDao()))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1681,6 +1708,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(conversationApi::updateProtocol)
                 .whenInvokedWith(any(), any())
                 .thenReturn(response)
+        }
+
+        fun withObserveLegalHoldStatus() = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::observeLegalHoldForConversation)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(ConversationEntity.LegalHoldStatus.ENABLED))
         }
 
         fun arrange() = this to conversationRepository
