@@ -242,15 +242,7 @@ class ProtoContentMapperImpl(
                 is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
                 else -> false
             }
-            val legalHoldStatus = when (val content = genericMessage.content) {
-                is GenericMessage.Content.Text -> content.value.legalHoldStatus
-                is GenericMessage.Content.Asset -> content.value.legalHoldStatus
-                is GenericMessage.Content.Knock -> content.value.legalHoldStatus
-                is GenericMessage.Content.Location -> content.value.legalHoldStatus
-                is GenericMessage.Content.Reaction -> content.value.legalHoldStatus
-                is GenericMessage.Content.Composite -> content.value.legalHoldStatus
-                else -> null
-            }
+            val legalHoldStatus = getLegalHoldStatusFromProtoContent(genericMessage)
             val expiresAfterMillis: Long? = when (val content = genericMessage.content) {
                 is GenericMessage.Content.Ephemeral -> content.value.expireAfterMillis
                 else -> null
@@ -265,7 +257,18 @@ class ProtoContentMapperImpl(
         }
     }
 
-    private fun fromProtoLegalHoldStatus(legalHoldStatus: LegalHoldStatus?) : Conversation.LegalHoldStatus =
+    private fun getLegalHoldStatusFromProtoContent(genericMessage: GenericMessage) =
+        when (val content = genericMessage.content) {
+            is GenericMessage.Content.Text -> content.value.legalHoldStatus
+            is GenericMessage.Content.Asset -> content.value.legalHoldStatus
+            is GenericMessage.Content.Knock -> content.value.legalHoldStatus
+            is GenericMessage.Content.Location -> content.value.legalHoldStatus
+            is GenericMessage.Content.Reaction -> content.value.legalHoldStatus
+            is GenericMessage.Content.Composite -> content.value.legalHoldStatus
+            else -> null
+        }
+
+    private fun fromProtoLegalHoldStatus(legalHoldStatus: LegalHoldStatus?): Conversation.LegalHoldStatus =
         legalHoldStatus?.let {
             when (legalHoldStatus) {
                 is LegalHoldStatus.ENABLED -> Conversation.LegalHoldStatus.ENABLED
@@ -363,7 +366,7 @@ class ProtoContentMapperImpl(
     private fun packReaction(
         readableContent: MessageContent.Reaction,
         legalHoldStatus: Conversation.LegalHoldStatus
-    ) : GenericMessage.Content.Reaction {
+    ): GenericMessage.Content.Reaction {
         val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
         return GenericMessage.Content.Reaction(
             Reaction(
@@ -494,7 +497,7 @@ class ProtoContentMapperImpl(
         time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
     )
 
-    private fun toProtoLegalHoldStatus(legalHoldStatus: Conversation.LegalHoldStatus) : LegalHoldStatus =
+    private fun toProtoLegalHoldStatus(legalHoldStatus: Conversation.LegalHoldStatus): LegalHoldStatus =
         when (legalHoldStatus) {
             Conversation.LegalHoldStatus.ENABLED -> LegalHoldStatus.ENABLED
             Conversation.LegalHoldStatus.DISABLED -> LegalHoldStatus.DISABLED
