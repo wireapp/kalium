@@ -114,6 +114,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.LastRead -> Message.Visibility.HIDDEN
                     is MessageContent.Cleared -> Message.Visibility.HIDDEN
                     is MessageContent.Composite -> Message.Visibility.VISIBLE
+                    is MessageContent.Location -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -233,6 +234,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Composite -> persistMessage(message)
+            is MessageContent.Location -> persistMessage(message)
         }
     }
 

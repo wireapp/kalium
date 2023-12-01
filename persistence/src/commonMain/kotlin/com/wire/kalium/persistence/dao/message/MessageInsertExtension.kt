@@ -265,6 +265,8 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.Location -> TODO()
         }
     }
 
@@ -289,6 +291,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
+                is MessageEntityContent.Location,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
@@ -414,5 +417,6 @@ internal class MessageInsertExtensionImpl(
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
+        is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
     }
 }

@@ -288,6 +288,13 @@ sealed class MessageContent {
         val clientId: ClientId? = null
     ) : Regular()
 
+    data class Location(
+        val latitude: Float,
+        val longitude: Float,
+        val name: String? = null,
+        val zoom: Int? = null,
+    ) : Regular()
+
     data object MLSWrongEpochWarning : System()
 
     data object ClientAction : Signaling()
@@ -359,6 +366,7 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
+    is MessageContent.Location -> "Location"
     null -> "null"
 }
 

@@ -206,6 +206,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.LOCATION -> MessagePreviewEntityContent.Unknown // todo(ym). create location preview
         }
     }
 
@@ -444,7 +445,11 @@ object MessageMapper {
         buttonsJson: String,
         federationDomainList: List<String>?,
         federationType: MessageEntity.FederationType?,
-        conversationProtocolChanged: ConversationEntity.Protocol?
+        conversationProtocolChanged: ConversationEntity.Protocol?,
+        latitude: Float?,
+        longitude: Float?,
+        locationName: String?,
+        locationZoom: Int?
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -579,6 +584,12 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
+            MessageEntity.ContentType.LOCATION -> MessageEntityContent.Location(
+                latitude = latitude.requireField("latitude"),
+                longitude = longitude.requireField("longitude"),
+                locationName,
+                locationZoom
+            )
         }
 
         return createMessageEntity(

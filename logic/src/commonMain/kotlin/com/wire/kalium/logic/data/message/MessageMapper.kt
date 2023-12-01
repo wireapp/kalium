@@ -244,6 +244,7 @@ class MessageMapperImpl(
                 )
             }
 
+            MessageEntity.ContentType.LOCATION -> TODO()// todo(ym). create location notification
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -338,6 +339,13 @@ class MessageMapperImpl(
                 )
             },
         )
+
+        is MessageContent.Location -> MessageEntityContent.Location(
+            latitude = regularMessage.latitude,
+            longitude = regularMessage.longitude,
+            name = regularMessage.name,
+            zoom = regularMessage.zoom
+        )
     }
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
@@ -379,6 +387,7 @@ class MessageMapperImpl(
             MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
             MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
         }
+
         is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
     }
@@ -529,6 +538,13 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 isSelected = it.isSelected
             )
         }
+    )
+
+    is MessageEntityContent.Location -> MessageContent.Location(
+        latitude = this.latitude,
+        longitude = this.longitude,
+        name = this.name,
+        zoom = this.zoom
     )
 }
 
