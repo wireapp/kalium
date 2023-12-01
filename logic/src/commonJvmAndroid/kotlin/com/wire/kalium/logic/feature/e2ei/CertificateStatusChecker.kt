@@ -26,12 +26,13 @@ actual interface CertificateStatusChecker {
 
 actual class CertificateStatusCheckerImpl : CertificateStatusChecker {
     override fun status(notAfterTimestamp: Long, deviceStatus: DeviceStatus): CertificateStatus {
-        if (deviceStatus == DeviceStatus.REVOKED) return CertificateStatus.REVOKED
-
         val current = Date()
-        println("current timestap is ${current.time}")
-        if (current.time >= notAfterTimestamp || deviceStatus == DeviceStatus.EXPIRED)
-            return CertificateStatus.EXPIRED
-        return CertificateStatus.VALID
+        println("current timestamp is ${current.time}")
+
+        return when {
+            (deviceStatus == DeviceStatus.REVOKED) -> CertificateStatus.REVOKED
+            (current.time >= notAfterTimestamp || deviceStatus == DeviceStatus.EXPIRED) -> CertificateStatus.EXPIRED
+            else -> CertificateStatus.VALID
+        }
     }
 }

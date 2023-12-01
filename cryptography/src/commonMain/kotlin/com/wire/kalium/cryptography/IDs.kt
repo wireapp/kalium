@@ -83,7 +83,7 @@ data class WireIdentity(
 )
 
 enum class DeviceStatus {
-    VALID,EXPIRED,REVOKED;
+    VALID, EXPIRED, REVOKED;
 }
 
 @Suppress("MagicNumber")
