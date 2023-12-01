@@ -136,7 +136,7 @@ FederationTerminatedContent.domain_list AS federationDomainList,
 FederationTerminatedContent.federation_type AS federationType,
 ConversationProtocolChangedContent.protocol AS conversationProtocolChanged,
 LegalHoldContent.legal_hold_member_list AS legalHoldMemberList,
-LegalHoldContent.legal_hold_type AS legalHoldType,
+LegalHoldContent.legal_hold_type AS legalHoldType
 
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
