@@ -249,6 +249,10 @@ internal class MessageDAOImpl internal constructor(
             .flowOn(coroutineContext)
             .mapToList()
 
+    override suspend fun getLastMessageByConversationId(conversationId: QualifiedIDEntity): MessageEntity? =
+        queries.selectLastMessageByConversationId(conversationId, mapper::toEntityMessageFromView)
+            .executeAsOneOrNull()
+
     override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
         notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
             .asFlow()

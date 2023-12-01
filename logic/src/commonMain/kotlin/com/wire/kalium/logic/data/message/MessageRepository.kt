@@ -116,6 +116,8 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
+    suspend fun getLastMessageForConversationId(conversationId: ConversationId): Either<StorageFailure, Message>
+
     suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotification>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
@@ -260,6 +262,11 @@ class MessageDataSource(
             offset,
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
+
+    override suspend fun getLastMessageForConversationId(conversationId: ConversationId): Either<StorageFailure, Message> =
+        wrapStorageRequest {
+            messageDAO.getLastMessageByConversationId(conversationId.toDao())
+        }.map(messageMapper::fromEntityToMessage)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
