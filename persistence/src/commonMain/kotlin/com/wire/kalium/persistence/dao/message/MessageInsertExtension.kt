@@ -266,7 +266,14 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
-            is MessageEntityContent.Location -> TODO()
+            is MessageEntityContent.Location -> messagesQueries.insertLocationMessageContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                latitude = content.latitude,
+                longitude = content.longitude,
+                name = content.name,
+                zoom = content.zoom
+            )
         }
     }
 
