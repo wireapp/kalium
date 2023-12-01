@@ -21,14 +21,17 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
 
@@ -67,18 +70,30 @@ class MessageSendFailureHandlerImpl internal constructor(
 ) : MessageSendFailureHandler {
 
     override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
-    // TODO(optimization): add/remove members to/from conversation
-        // TODO(optimization): remove clients from conversation
-        userRepository
-            .fetchUsersByIds(sendFailure.missingClientsOfUsers.keys)
-            .flatMap {
-                sendFailure
-                    .missingClientsOfUsers
-                    .entries
-                    .foldToEitherWhileRight(Unit) { entry, _ ->
-                        clientRepository.storeUserClientIdList(entry.key, entry.value)
-                    }
+        // TODO(optimization): add/remove members to/from conversation
+        handleDeletedClients(sendFailure.deletedClientsOfUsers)
+            .map { usersWithNoClientsRemaining ->
+                sendFailure.missingClientsOfUsers.keys + usersWithNoClientsRemaining
+            }.flatMap { usersThatNeedInfoRefresh ->
+                syncUserIds(usersThatNeedInfoRefresh)
+            }.flatMap {
+                addMissingClients(sendFailure.missingClientsOfUsers)
             }
+
+    private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
+        return if (deletedClient.isEmpty()) Either.Right(emptySet())
+        else clientRepository.removeClientsAndReturnUsersWithNoClients(deletedClient).map { it.toSet() }
+    }
+
+    private suspend fun syncUserIds(userId: Set<UserId>): Either<CoreFailure, Unit> {
+        return if (userId.isEmpty()) Either.Right(Unit)
+        else userRepository.fetchUsersByIds(userId)
+    }
+
+    private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> {
+        return if (missingClients.isEmpty()) Either.Right(Unit)
+        else clientRepository.storeMapOfUserToClientId(missingClients)
+    }
 
     override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,
@@ -92,10 +107,12 @@ class MessageSendFailureHandlerImpl internal constructor(
                 kaliumLogger.e("Sending message of type $messageType failed due to federation context availability.")
                 messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageId)
             }
+
             failure is NetworkFailure.NoNetworkConnection && scheduleResendIfNoNetwork -> {
                 kaliumLogger.i("Scheduling message for retrying in the future.")
                 messageSendingScheduler.scheduleSendingOfPendingMessages()
             }
+
             else -> {
                 messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageId)
             }

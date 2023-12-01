@@ -20,10 +20,13 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.OtherUserClient
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
+import io.mockative.matchers.Matcher
 import io.mockative.mock
 
 internal interface ClientRepositoryArrangement {
@@ -31,6 +34,19 @@ internal interface ClientRepositoryArrangement {
 
     fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>): ClientRepositoryArrangementImpl
     fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>): ClientRepositoryArrangementImpl
+    fun withRemoveClientsAndReturnUsersWithNoClients(
+        result: Either<StorageFailure, List<UserId>>,
+        redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>> = any()
+    )
+    fun withStoreUserClientIdList(
+        result: Either<StorageFailure, Unit>,
+        userId: Matcher<UserId> = any(),
+        clientIds: Matcher<List<ClientId>> = any()
+    )
+    fun withStoreMapOfUserToClientId(
+        result: Either<StorageFailure, Unit>,
+        mapUserToClientId: Matcher<Map<UserId, List<ClientId>>> = any()
+    )
 }
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {
@@ -48,6 +64,37 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         given(clientRepository)
             .suspendFunction(clientRepository::getClientsByUserId)
             .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withRemoveClientsAndReturnUsersWithNoClients(
+        result: Either<StorageFailure, List<UserId>>,
+        redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>>
+        ) {
+        given(clientRepository)
+            .suspendFunction(clientRepository::removeClientsAndReturnUsersWithNoClients)
+            .whenInvokedWith(redundantClientsOfUsers)
+            .thenReturn(result)
+    }
+
+    override fun withStoreUserClientIdList(
+        result: Either<StorageFailure, Unit>,
+        userId: Matcher<UserId>,
+        clientIds: Matcher<List<ClientId>>
+    ) {
+        given(clientRepository)
+            .suspendFunction(clientRepository::storeUserClientIdList)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
+
+    override fun withStoreMapOfUserToClientId(
+        result: Either<StorageFailure, Unit>,
+        mapUserToClientId: Matcher<Map<UserId, List<ClientId>>>
+    ) {
+        given(clientRepository)
+            .suspendFunction(clientRepository::storeMapOfUserToClientId)
+            .whenInvokedWith(mapUserToClientId)
             .thenReturn(result)
     }
 }
