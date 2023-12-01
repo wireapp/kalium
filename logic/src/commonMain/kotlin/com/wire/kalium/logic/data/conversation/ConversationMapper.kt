@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
@@ -81,6 +82,8 @@ interface ConversationMapper {
     fun fromFailedGroupConversationToEntity(conversationId: NetworkQualifiedId): ConversationEntity
     fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus): ConversationEntity.VerificationStatus
     fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
+    fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus
+    fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -122,7 +125,8 @@ internal class ConversationMapperImpl(
         archived = apiModel.members.self.otrArchived ?: false,
         archivedInstant = apiModel.members.self.otrArchivedRef?.toInstant(),
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
@@ -149,7 +153,8 @@ internal class ConversationMapperImpl(
             archived = archived,
             archivedDateTime = archivedDateTime,
             mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
-            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus)
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
         )
     }
 
@@ -176,7 +181,8 @@ internal class ConversationMapperImpl(
             archived = archived,
             archivedDateTime = archivedInstant,
             mlsVerificationStatus = verificationStatusFromEntity(mlsVerificationStatus),
-            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus)
+            proteusVerificationStatus = verificationStatusFromEntity(proteusVerificationStatus),
+            legalHoldStatus = legalHoldStatusFromEntity(legalHoldStatus)
         )
     }
 
@@ -375,7 +381,8 @@ internal class ConversationMapperImpl(
             archived = archived,
             archivedInstant = archivedDateTime,
             mlsVerificationStatus = verificationStatusToEntity(mlsVerificationStatus),
-            proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus)
+            proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus),
+            legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus)
         )
     }
 
@@ -405,7 +412,8 @@ internal class ConversationMapperImpl(
         archived = false,
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
@@ -436,6 +444,11 @@ internal class ConversationMapperImpl(
     override fun verificationStatusToEntity(verificationStatus: Conversation.VerificationStatus) =
         ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 
+    override fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus =
+        ConversationEntity.LegalHoldStatus.valueOf(legalHoldStatus.name)
+
+    override fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus =
+        Conversation.LegalHoldStatus.valueOf(legalHoldStatus.name)
 }
 
 internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {

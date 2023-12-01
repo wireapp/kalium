@@ -171,7 +171,9 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             archived = archivedState ?: false,
             archivedDateTime = conversationArchivedTimestamp,
             mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED
+            proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
+            legalHoldStatus = if (legalHoldStatus == 1) Conversation.LegalHoldStatus.ENABLED
+                else Conversation.LegalHoldStatus.DISABLED
         )
     }
 }

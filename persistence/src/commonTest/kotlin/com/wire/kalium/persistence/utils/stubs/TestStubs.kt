@@ -55,7 +55,8 @@ internal object TestStubs {
         archived = false,
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
     val conversationEntity2 = ConversationEntity(
         QualifiedIDEntity("2", "wire.com"),
@@ -82,7 +83,8 @@ internal object TestStubs {
         archived = false,
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
     val conversationEntity3 = ConversationEntity(
@@ -112,7 +114,8 @@ internal object TestStubs {
         archived = false,
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
     val conversationEntity4 = ConversationEntity(
@@ -142,7 +145,8 @@ internal object TestStubs {
         archived = false,
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
     val conversationEntity5 = ConversationEntity(
@@ -172,7 +176,8 @@ internal object TestStubs {
         archived = false,
         archivedInstant = null,
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+        proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+        legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
     val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)
