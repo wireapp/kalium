@@ -281,7 +281,7 @@ fun MessageEntity.DownloadStatus?.toModel(): Message.DownloadStatus {
 
 fun AssetMessageEntity.toModel(): AssetMessage {
     return AssetMessage(
-        time.toIsoDateTimeString(),
+        time,
         username,
         messageId,
         conversationId.toModel(),

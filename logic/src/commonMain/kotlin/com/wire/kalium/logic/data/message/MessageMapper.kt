@@ -133,7 +133,7 @@ class MessageMapperImpl(
 
     override fun fromAssetEntityToMessage(message: AssetMessageEntity): AssetMessage {
         return AssetMessage(
-            message.time.toIsoDateTimeString(),
+            message.time,
             message.username,
             message.messageId,
             message.conversationId.toModel(),
