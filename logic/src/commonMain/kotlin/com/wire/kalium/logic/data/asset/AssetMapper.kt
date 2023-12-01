@@ -36,6 +36,7 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.LegalHoldStatus
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -49,7 +50,11 @@ interface AssetMapper {
     fun fromUserAssetToDaoModel(assetId: String, assetDomain: String?, dataPath: Path, dataSize: Long): AssetEntity
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
-    fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset, expectsReadConfirmation: Boolean): Asset
+    fun fromAssetContentToProtoAssetMessage(
+        messageContent: MessageContent.Asset,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: LegalHoldStatus
+    ): Asset
 }
 
 class AssetMapperImpl(
@@ -193,8 +198,11 @@ class AssetMapperImpl(
         }
     }
 
-    override fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset, expectsReadConfirmation: Boolean): Asset =
-        with(messageContent.value) {
+    override fun fromAssetContentToProtoAssetMessage(
+        messageContent: MessageContent.Asset,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: LegalHoldStatus
+    ): Asset = with(messageContent.value) {
             Asset(
                 original = Asset.Original(
                     mimeType = mimeType,
@@ -228,7 +236,8 @@ class AssetMapperImpl(
                         encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
                     )
                 ),
-                expectsReadConfirmation = expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = legalHoldStatus
             )
         }
 }

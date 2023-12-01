@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.Base64
@@ -60,8 +61,12 @@ class ProteusMessageUnpackerTest {
     fun givenNewMessageEvent_whenUnpacking_shouldAskProteusClientForDecryption() = runTest {
         val (arrangement, proteusUnpacker) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
-            .withProtoContentMapperReturning(any(), ProtoContent.Readable("uuid", MessageContent.Unknown(), false))
-            .arrange()
+            .withProtoContentMapperReturning(any(), ProtoContent.Readable(
+                "uuid",
+                MessageContent.Unknown(),
+                false,
+                Conversation.LegalHoldStatus.DISABLED
+            )).arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
@@ -104,7 +109,12 @@ class ProteusMessageUnpackerTest {
             .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
                 matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
-                ProtoContent.Readable(messageUid, decryptedExternalContent, false)
+                ProtoContent.Readable(
+                    messageUid,
+                    decryptedExternalContent,
+                    false,
+                    Conversation.LegalHoldStatus.DISABLED
+                )
             ).arrange()
 
         val messageEvent = TestEvent.newMessageEvent(
