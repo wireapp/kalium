@@ -21,7 +21,7 @@ package com.wire.kalium.logic.framework
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.LegalHoldStatus
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.type.UserType
 
 object TestConversationDetails {

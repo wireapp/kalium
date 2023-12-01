@@ -52,7 +52,8 @@ SELECT
     archived,
     archived_date_time,
     verification_status,
-    proteus_verification_status
+    proteus_verification_status,
+    legal_hold_status
 FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;
