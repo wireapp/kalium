@@ -22,12 +22,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 11
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 #          cache: gradle # Cache disabled as we use Gradle Setup below
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: Gradle Setup
         uses: gradle/gradle-build-action@v2
@@ -65,7 +70,7 @@ jobs:
               ./**/build/test-results/**/*.xml
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.7
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2.11.0
         if: always()
         with:
           files: |

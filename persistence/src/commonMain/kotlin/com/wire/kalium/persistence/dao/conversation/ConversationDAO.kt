@@ -108,4 +108,6 @@ interface ConversationDAO {
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
     suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean)
+    suspend fun updateLegalHoldStatus(conversationId: QualifiedIDEntity, legalHoldStatus: ConversationEntity.LegalHoldStatus)
+    suspend fun observeLegalHoldForConversation(conversationId: QualifiedIDEntity): Flow<ConversationEntity.LegalHoldStatus>
 }

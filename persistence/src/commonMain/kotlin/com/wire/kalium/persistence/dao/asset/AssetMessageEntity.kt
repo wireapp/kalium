@@ -15,11 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.dao.asset
 
-package com.wire.kalium.logic.feature.message
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.datetime.Instant
 
-val MessageScope.getPaginatedFlowOfMessagesByConversation
-    get() = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
-
-val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation
-    get() = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(dispatcher, messageRepository)
+data class AssetMessageEntity(
+    val time: Instant,
+    val username: String?,
+    val messageId: String,
+    val conversationId: QualifiedIDEntity,
+    val assetId: String,
+    val width: Int,
+    val height: Int,
+    val downloadStatus: MessageEntity.DownloadStatus,
+    val assetPath: String?,
+    val isSelfAsset: Boolean
+)

@@ -284,6 +284,13 @@ interface ConversationRepository {
         conversationId: QualifiedID,
         value: Boolean
     ): Either<CoreFailure, Unit>
+
+    suspend fun updateLegalHoldStatus(
+        conversationId: ConversationId,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): Either<CoreFailure, Unit>
+
+    suspend fun observeLegalHoldForConversation(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1066,6 +1073,24 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.observeDegradedConversationNotified(conversationId.toDao())
             .wrapStorageRequest()
             .mapToRightOr(true)
+
+    override suspend fun updateLegalHoldStatus(
+        conversationId: ConversationId,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): Either<CoreFailure, Unit> {
+        val legalHoldStatusEntity = conversationMapper.legalHoldStatusToEntity(legalHoldStatus)
+        return wrapStorageRequest {
+            conversationDAO.updateLegalHoldStatus(
+                conversationId = conversationId.toDao(),
+                legalHoldStatus = legalHoldStatusEntity
+            )
+        }
+    }
+
+    override suspend fun observeLegalHoldForConversation(conversationId: ConversationId) =
+        conversationDAO.observeLegalHoldForConversation(conversationId.toDao())
+            .map { conversationMapper.legalHoldStatusFromEntity(it) }
+            .wrapStorageRequest()
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

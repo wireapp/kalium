@@ -16,10 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.data.user
 
-val MessageScope.getPaginatedFlowOfMessagesByConversation
-    get() = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
-
-val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation
-    get() = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(dispatcher, messageRepository)
+enum class LegalHoldStatus {
+    ENABLED,
+    PENDING,
+    DISABLED,
+    NO_CONSENT,
+}

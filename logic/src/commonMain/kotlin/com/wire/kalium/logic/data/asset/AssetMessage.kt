@@ -15,11 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.asset
 
-package com.wire.kalium.logic.feature.message
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.Message
+import kotlinx.datetime.Instant
+import okio.Path
 
-val MessageScope.getPaginatedFlowOfMessagesByConversation
-    get() = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
-
-val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation
-    get() = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(dispatcher, messageRepository)
+data class AssetMessage(
+    val time: Instant,
+    val username: String?,
+    val messageId: String,
+    val conversationId: QualifiedID,
+    val assetId: String,
+    val width: Int,
+    val height: Int,
+    val downloadStatus: Message.DownloadStatus,
+    val assetPath: Path?,
+    val isSelfAsset: Boolean
+)

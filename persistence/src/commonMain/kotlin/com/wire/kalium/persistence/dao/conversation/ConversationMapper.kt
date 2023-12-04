@@ -70,7 +70,8 @@ internal class ConversationMapper {
             mlsVerificationStatus = mls_verification_status,
             userSupportedProtocols = userSupportedProtocols,
             userActiveOneOnOneConversationId = otherUserActiveConversationId,
-            proteusVerificationStatus = proteus_verification_status
+            proteusVerificationStatus = proteus_verification_status,
+            legalHoldStatus = legal_hold_status
         )
     }
 
@@ -101,7 +102,8 @@ internal class ConversationMapper {
         archived: Boolean,
         archivedDateTime: Instant?,
         mlsVerificationStatus: ConversationEntity.VerificationStatus,
-        proteusVerificationStatus: ConversationEntity.VerificationStatus
+        proteusVerificationStatus: ConversationEntity.VerificationStatus,
+        legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -129,7 +131,8 @@ internal class ConversationMapper {
         archived = archived,
         archivedInstant = archivedDateTime,
         mlsVerificationStatus = mlsVerificationStatus,
-        proteusVerificationStatus = proteusVerificationStatus
+        proteusVerificationStatus = proteusVerificationStatus,
+        legalHoldStatus = legalHoldStatus
     )
 
     @Suppress("LongParameterList")

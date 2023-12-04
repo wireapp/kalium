@@ -15,12 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.util.map
 
-package com.wire.kalium.logic.data.conversation
-
-enum class LegalHoldStatus {
-    ENABLED,
-    PENDING,
-    DISABLED,
-    NO_CONSENT,
+fun <K, V> Map<out K, V>.forEachIndexed(action: (index: Int, entry: Map.Entry<K, V>) -> Unit) {
+    this.entries.toList().forEachIndexed { index, entry ->
+        action(index, entry)
+    }
 }

@@ -42,6 +42,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
+import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCase
+import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
@@ -221,6 +223,12 @@ class MessageScope internal constructor(
             dispatcher
         )
 
+    val getAssetMessagesByConversation: GetAssetMessagesForConversationUseCase
+        get() = GetAssetMessagesForConversationUseCaseImpl(
+            dispatcher,
+            messageRepository
+        )
+
     val getRecentMessages: GetRecentMessagesUseCase
         get() = GetRecentMessagesUseCase(
             messageRepository,
@@ -322,11 +330,6 @@ class MessageScope internal constructor(
             messageSender = messageSender,
             selfUserId = selfUserId,
             selfConversationIdProvider = selfConversationIdProvider
-        )
-
-    val getConversationMessagesFromSearchQuery: GetConversationMessagesFromSearchQueryUseCase
-        get() = GetConversationMessagesFromSearchQueryUseCaseImpl(
-            messageRepository = messageRepository
         )
 
     val getSearchedConversationMessagePosition: GetSearchedConversationMessagePositionUseCase
