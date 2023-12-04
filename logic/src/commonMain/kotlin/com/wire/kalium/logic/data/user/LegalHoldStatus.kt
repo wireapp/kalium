@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.conversation
+package com.wire.kalium.logic.data.user
 
 enum class LegalHoldStatus {
     ENABLED,

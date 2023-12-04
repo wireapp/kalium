@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -92,7 +93,8 @@ class ConversationScope internal constructor(
     private val userStorage: UserStorage,
     userPropertyRepository: UserPropertyRepository,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val kaliumLogger: KaliumLogger
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -124,6 +126,13 @@ class ConversationScope internal constructor(
 
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
+
+    val notifyConversationIsOpen: NotifyConversationIsOpenUseCase
+        get() = NotifyConversationIsOpenUseCaseImpl(
+            oneOnOneResolver,
+            conversationRepository,
+            kaliumLogger
+        )
 
     val observeIsSelfUserMemberUseCase: ObserveIsSelfUserMemberUseCase
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)

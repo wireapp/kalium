@@ -45,7 +45,8 @@ data class ConversationEntity(
     val archived: Boolean = false,
     val archivedInstant: Instant?,
     val mlsVerificationStatus: VerificationStatus,
-    val proteusVerificationStatus: VerificationStatus
+    val proteusVerificationStatus: VerificationStatus,
+    val legalHoldStatus: LegalHoldStatus
 ) {
     enum class AccessRole { TEAM_MEMBER, NON_TEAM_MEMBER, GUEST, SERVICE, EXTERNAL; }
 
@@ -58,6 +59,7 @@ data class ConversationEntity(
     enum class Protocol { PROTEUS, MLS, MIXED }
     enum class ReceiptMode { DISABLED, ENABLED }
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
+    enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val cipherSuiteTag: Int) {
