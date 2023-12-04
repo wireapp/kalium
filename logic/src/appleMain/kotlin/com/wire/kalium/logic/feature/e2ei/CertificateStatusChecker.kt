@@ -17,14 +17,14 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.cryptography.CertificateStatus
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 
 actual interface CertificateStatusChecker {
-    actual fun status(notAfterTimestamp: Long, deviceStatus: CertificateStatus): CertificateStatus
+    actual fun status(notAfterTimestamp: Long, certificateStatus: CryptoCertificateStatus): CertificateStatus
 }
 
 actual class CertificateStatusCheckerImpl : CertificateStatusChecker {
-    override fun status(notAfterTimestamp: Long, deviceStatus: CertificateStatus): CertificateStatus {
+    override fun status(notAfterTimestamp: Long, certificateStatus: CryptoCertificateStatus): CertificateStatus {
         TODO("Not yet implemented")
     }
 }

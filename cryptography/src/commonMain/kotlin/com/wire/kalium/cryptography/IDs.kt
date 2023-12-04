@@ -79,10 +79,10 @@ data class WireIdentity(
     val displayName: String,
     val domain: String,
     val certificate: String,
-    val status: CertificateStatus
+    val status: CryptoCertificateStatus
 )
 
-enum class CertificateStatus {
+enum class CryptoCertificateStatus {
     VALID, EXPIRED, REVOKED;
 }
 
