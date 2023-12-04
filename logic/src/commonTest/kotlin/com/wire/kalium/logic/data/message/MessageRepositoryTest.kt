@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
@@ -39,6 +40,7 @@ import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessa
 import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
@@ -60,6 +62,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import okio.Path.Companion.toPath
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -85,6 +88,27 @@ class MessageRepositoryTest {
             verify(messageDAO)
                 .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
                 .with(eq(mappedId), anything(), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenAConversationId_whenGettingAssetMessagesOfConversation_thenShouldUseIdMapperToMapTheConversationId() = runTest {
+        // Given
+        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
+        val (arrangement, messageRepository) = Arrangement()
+            .withAssetMessages(mappedId, listOf())
+            .withMappedAssetMessageModel(TEST_ASSET_MESSAGE)
+            .arrange()
+
+        // When
+        messageRepository.getAssetMessagesByConversationId(TEST_CONVERSATION_ID, 0, 0)
+
+        // Then
+        with(arrangement) {
+            verify(messageDAO)
+                .suspendFunction(messageDAO::getMessageAssets)
+                .with(eq(mappedId), anything(), anything())
                 .wasInvoked(exactly = once)
         }
     }
@@ -543,6 +567,14 @@ class MessageRepositoryTest {
             return this
         }
 
+        fun withMappedAssetMessageModel(message: AssetMessage): Arrangement {
+            given(messageMapper)
+                .function(messageMapper::fromAssetEntityToMessage)
+                .whenInvokedWith(anything())
+                .then { message }
+            return this
+        }
+
         fun withMappedMessageModel(result: Message.Regular, param: MessageEntity.Regular): Arrangement {
             given(messageMapper)
                 .function(messageMapper::fromEntityToMessage)
@@ -653,6 +685,16 @@ class MessageRepositoryTest {
                 .thenReturn(result)
         }
 
+        fun withAssetMessages(
+            conversationId: QualifiedIDEntity,
+            result: List<AssetMessageEntity>
+        ) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getMessageAssets)
+                .whenInvokedWith(eq(conversationId))
+                .thenReturn(result)
+        }
+
         fun arrange() = this to MessageDataSource(
             messageApi = messageApi,
             mlsMessageApi = mlsMessageApi,
@@ -694,6 +736,7 @@ class MessageRepositoryTest {
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
         const val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
+        val INSTANT_TEST_DATETIME = Instant.parse(TEST_DATETIME)
         val TEST_MESSAGE = Message.Regular(
             id = "uid",
             content = TEST_CONTENT,
@@ -704,6 +747,18 @@ class MessageRepositoryTest {
             status = Message.Status.Sent,
             editStatus = Message.EditStatus.NotEdited,
             isSelfMessage = false
+        )
+        val TEST_ASSET_MESSAGE = AssetMessage(
+            time = INSTANT_TEST_DATETIME,
+            conversationId = TEST_CONVERSATION_ID,
+            username = "username",
+            messageId = "messageId",
+            assetId = "assetId",
+            width = 640,
+            height = 480,
+            downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
+            assetPath = "asset/path".toPath(),
+            isSelfAsset = false
         )
 
         val TEST_FAILED_DELIVERY_USERS: Map<String, Map<String, List<String>>> = mapOf(
