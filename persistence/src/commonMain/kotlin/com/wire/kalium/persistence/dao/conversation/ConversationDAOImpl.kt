@@ -336,10 +336,6 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) = withContext(coroutineContext) {
-        memberQueries.deleteUserFromGroupConversations(userId, userId)
-    }
-
     override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(coroutineContext) {
         memberQueries.selectConversationsByMember(userId, conversationMapper::toModel).executeAsList()
     }

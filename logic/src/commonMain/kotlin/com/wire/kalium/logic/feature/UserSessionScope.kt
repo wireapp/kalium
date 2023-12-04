@@ -1561,7 +1561,8 @@ class UserSessionScope internal constructor(
             userStorage,
             userPropertyRepository,
             oneOnOneResolver,
-            this
+            this,
+            userScopedLogger
         )
     }
 
