@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
@@ -141,4 +142,10 @@ interface MessageDAO {
     ): Int
 
     val platformExtensions: MessageExtensions
+    suspend fun getMessageAssets(
+        conversationId: QualifiedIDEntity,
+        mimeTypes: Set<String>,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessageEntity>
 }
