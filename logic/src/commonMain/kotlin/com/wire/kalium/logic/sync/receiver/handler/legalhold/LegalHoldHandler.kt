@@ -30,8 +30,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
-import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHoldUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
+import com.wire.kalium.logic.feature.conversation.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
@@ -49,7 +49,7 @@ internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val persistOtherUserClients: PersistOtherUserClientsUseCase,
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase,
-    private val isConversationUnderLegalHold: IsConversationUnderLegalHoldUseCase,
+    private val membersHavingLegalHoldClientUseCase: MembersHavingLegalHoldClientUseCase,
     private val persistMessage: PersistMessageUseCase,
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
@@ -70,9 +70,10 @@ internal class LegalHoldHandlerImpl internal constructor(
             )
 
             it.forEach { conversation ->
-                isConversationUnderLegalHold(conversation.id)
-                    .map { isUnderLegalHold ->
-                        if (isUnderLegalHold) {
+                val conversationUnderLegalHold = conversation.legalHoldStatus == Conversation.LegalHoldStatus.ENABLED
+                membersHavingLegalHoldClientUseCase(conversation.id).map { it.isNotEmpty() }
+                    .map { anyMemberHavingLegalHoldClient ->
+                        if (!conversationUnderLegalHold && anyMemberHavingLegalHoldClient) {
                             conversationRepository.updateLegalHoldStatus(conversation.id, Conversation.LegalHoldStatus.ENABLED)
                         }
                     }
@@ -95,9 +96,10 @@ internal class LegalHoldHandlerImpl internal constructor(
             )
 
             it.forEach { conversation ->
-                isConversationUnderLegalHold(conversation.id)
-                    .map { isUnderLegalHold ->
-                        if (!isUnderLegalHold) {
+                val conversationUnderLegalHold = conversation.legalHoldStatus == Conversation.LegalHoldStatus.ENABLED
+                membersHavingLegalHoldClientUseCase(conversation.id).map { it.isNotEmpty() }
+                    .map { anyMemberHavingLegalHoldClient ->
+                        if (conversationUnderLegalHold && !anyMemberHavingLegalHoldClient) {
                             createSystemMessage(MessageContent.LegalHold.DisabledForConversation, conversation.id)
                             conversationRepository.updateLegalHoldStatus(conversation.id, Conversation.LegalHoldStatus.DISABLED)
                         }

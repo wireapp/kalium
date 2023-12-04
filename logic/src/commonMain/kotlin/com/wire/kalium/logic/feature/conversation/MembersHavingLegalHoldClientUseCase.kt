@@ -21,20 +21,21 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 
 /**
- * Checks if any client of members of given conversation id is under legal hold.
+ * Returns list of ids of conversation members having a legal hold client.
  */
-interface IsConversationUnderLegalHoldUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Boolean>
+interface MembersHavingLegalHoldClientUseCase {
+    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>>
 }
 
-internal class IsConversationUnderLegalHoldUseCaseImpl(
+internal class MembersHavingLegalHoldClientUseCaseImpl(
     private val clientRepository: ClientRepository,
-) : IsConversationUnderLegalHoldUseCase {
-    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Boolean> =
+) : MembersHavingLegalHoldClientUseCase {
+    override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>> =
         clientRepository.getClientsByConversationId(conversationId)
-            .map { it.values.flatten().any { it.type == ClientType.LegalHold } }
+            .map { it.filterValues { it.any { it.type == ClientType.LegalHold } }.keys.toList() }
 }

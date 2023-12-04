@@ -168,8 +168,6 @@ import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHoldUseCase
-import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHoldUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
@@ -185,6 +183,8 @@ import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManage
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandlerImpl
+import com.wire.kalium.logic.feature.conversation.MembersHavingLegalHoldClientUseCase
+import com.wire.kalium.logic.feature.conversation.MembersHavingLegalHoldClientUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -1364,14 +1364,14 @@ class UserSessionScope internal constructor(
             clientRepository = clientRepository
         )
 
-    private val isConversationUnderLegalHold: IsConversationUnderLegalHoldUseCase
-        get() = IsConversationUnderLegalHoldUseCaseImpl(clientRepository)
+    private val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
+        get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
         selfUserId = userId,
         persistOtherUserClients = persistOtherUserClients,
         fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
-        isConversationUnderLegalHold = isConversationUnderLegalHold,
+        membersHavingLegalHoldClientUseCase = membersHavingLegalHoldClient,
         persistMessage = persistMessage,
         userConfigRepository = userConfigRepository,
         conversationRepository = conversationRepository,
