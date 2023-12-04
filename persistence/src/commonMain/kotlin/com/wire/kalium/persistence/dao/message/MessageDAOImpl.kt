@@ -270,9 +270,12 @@ internal class MessageDAOImpl internal constructor(
             .flowOn(coroutineContext)
             .mapToList()
 
-    override suspend fun getLastMessageByConversationId(conversationId: QualifiedIDEntity): MessageEntity? =
-        queries.selectLastMessageByConversationId(conversationId, mapper::toEntityMessageFromView)
-            .executeAsOneOrNull()
+    override suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity> =
+        withContext(coroutineContext) {
+            queries.selectLastMessagesByConversationIds(conversationIds, mapper::toEntityMessageFromView)
+                .executeAsList()
+                .associateBy { it.conversationId }
+        }
 
     override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
         notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
@@ -335,6 +338,12 @@ internal class MessageDAOImpl internal constructor(
             queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
         }
     }
+
+    override suspend fun updateLegalHoldMessageContent(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        newContent: MessageEntityContent.LegalHold
+    ): Unit = queries.updateMessageLegalHoldContent(newContent.memberUserIdList, newContent.type, messageId, conversationId)
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         messagePreviewQueries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()

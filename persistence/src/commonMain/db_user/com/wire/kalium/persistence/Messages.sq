@@ -437,6 +437,11 @@ UPDATE MessageTextContent
 SET text_body = ?
 WHERE message_id = ? AND conversation_id = ?;
 
+updateMessageLegalHoldContent:
+UPDATE MessageLegalHoldContent
+SET legal_hold_member_list = :legal_hold_member_list, legal_hold_type = :legal_hold_type
+WHERE message_id = :message_id AND conversation_id = :conversation_id;
+
 updateMessageId:
 UPDATE Message
 SET id = :newId
@@ -454,8 +459,15 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 
-selectLastMessageByConversationId:
-SELECT * FROM MessageDetailsView WHERE conversationId = ? ORDER BY creation_date DESC LIMIT 1;
+selectLastMessagesByConversationIds:
+SELECT MessageDetailsView.* FROM MessageDetailsView
+JOIN (
+    SELECT conversationId, MAX(date) AS latest_date
+    FROM MessageDetailsView
+    WHERE conversationId IN :conversationIds
+    GROUP BY conversationId
+) AS lastMessage
+ON MessageDetailsView.conversationId = lastMessage.conversationId AND MessageDetailsView.date = lastMessage.latest_date;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;

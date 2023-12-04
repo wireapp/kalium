@@ -18,17 +18,11 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
-import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Checks if any client of members of given conversation id is under legal hold.
@@ -39,17 +33,8 @@ interface IsConversationUnderLegalHoldUseCase {
 
 internal class IsConversationUnderLegalHoldUseCaseImpl(
     private val clientRepository: ClientRepository,
-    private val conversationRepository: ConversationRepository,
 ) : IsConversationUnderLegalHoldUseCase {
     override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Boolean> =
-        conversationRepository.getConversationMembers(conversationId)
-            .flatMap<List<UserId>, StorageFailure, List<UserId>> { members ->
-                members.foldToEitherWhileRight(emptyList()) { userId, acc ->
-                    clientRepository.observeClientsByUserId(userId).firstOrNull()
-                        .let { it ?: Either.Left(StorageFailure.DataNotFound) }
-                        .map { if (it.any { it.type == ClientType.LegalHold }) acc + userId else acc }
-                }
-            }
-            .map { it.isNotEmpty() }
-
+        clientRepository.getClientsByConversationId(conversationId)
+            .map { it.values.flatten().any { it.type == ClientType.LegalHold } }
 }

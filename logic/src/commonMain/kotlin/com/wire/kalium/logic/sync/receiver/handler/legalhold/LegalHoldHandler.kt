@@ -33,8 +33,6 @@ import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHoldUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
@@ -64,14 +62,14 @@ internal class LegalHoldHandlerImpl internal constructor(
         processEvent(selfUserId, legalHoldEnabled.userId)
 
         conversationRepository.getConversationsByUserId(legalHoldEnabled.userId).map {
-            it.forEach { conversation ->
-                createOrReplaceMemberSystemMessageForConversation(
-                    legalHoldEnabled.userId,
-                    conversation.id,
-                    { content -> content.copy(members = content.members - selfUserId) },
-                    { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
-                )
+            handleMemberSystemMessagesForConversations(
+                userId = legalHoldEnabled.userId,
+                conversationIds = it.map { it.id },
+                updateContent = { content -> content.copy(members = content.members - selfUserId) },
+                createNewContent = { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
+            )
 
+            it.forEach { conversation ->
                 isConversationUnderLegalHold(conversation.id)
                     .map { isUnderLegalHold ->
                         if (isUnderLegalHold) {
@@ -89,15 +87,14 @@ internal class LegalHoldHandlerImpl internal constructor(
         processEvent(selfUserId, legalHoldDisabled.userId)
 
         conversationRepository.getConversationsByUserId(legalHoldDisabled.userId).map {
+            handleMemberSystemMessagesForConversations(
+                userId = legalHoldDisabled.userId,
+                conversationIds = it.map { it.id },
+                updateContent = { content -> content.copy(members = content.members - selfUserId) },
+                createNewContent = { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
+            )
+
             it.forEach { conversation ->
-
-                createOrReplaceMemberSystemMessageForConversation(
-                    legalHoldDisabled.userId,
-                    conversation.id,
-                    { content -> content.copy(members = content.members - selfUserId) },
-                    { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
-                )
-
                 isConversationUnderLegalHold(conversation.id)
                     .map { isUnderLegalHold ->
                         if (!isUnderLegalHold) {
@@ -124,25 +121,24 @@ internal class LegalHoldHandlerImpl internal constructor(
         }
     }
 
-    private suspend inline fun <reified T : MessageContent.LegalHold> createOrReplaceMemberSystemMessageForConversation(
+    private suspend inline fun <reified T : MessageContent.LegalHold> handleMemberSystemMessagesForConversations(
         userId: UserId,
-        conversationId: ConversationId,
+        conversationIds: List<ConversationId>,
         updateContent: (T) -> T,
         createNewContent: () -> T,
     ) {
-        val lastLegalHoldMessageIdAndContent = tryToGetLastMessage<T>(userId, conversationId)
-        if (lastLegalHoldMessageIdAndContent != null) {
-            val (lastLegalHoldMessageId, lastLegalHoldMessageContent) = lastLegalHoldMessageIdAndContent
-            messageRepository.deleteMessage(lastLegalHoldMessageId, conversationId)
-                .flatMap { persistMessage(createSystemMessage(updateContent(lastLegalHoldMessageContent), conversationId)) }
-        } else persistMessage(createSystemMessage(createNewContent(), conversationId))
+        val lastMessages =
+            if (userId == selfUserId) Either.Right(emptyMap()) // for self user we always create new messages
+            else messageRepository.getLastMessagesForConversationIds(conversationIds)
+                .map { it.filterValues { it.content is T }.mapValues { it.value.id to (it.value.content as T) } }
+        lastMessages.map { lastMessagesMap ->
+            conversationIds.forEach { conversationId ->
+                lastMessagesMap[conversationId]?.let { (lastMessageId, lastMessageContent) ->
+                        messageRepository.updateLegalHoldMessage(lastMessageId, conversationId, updateContent(lastMessageContent))
+                    } ?: persistMessage(createSystemMessage(createNewContent(), conversationId))
+            }
+        }
     }
-
-    private suspend inline fun <reified T> tryToGetLastMessage(userId: UserId, conversationId: ConversationId): Pair<String, T>? =
-        if (userId != selfUserId)
-            messageRepository.getLastMessageForConversationId(conversationId)
-                .getOrNull()?.let { if (it.content is T) it.id to it.content as T else null }
-        else null
 
     private fun createSystemMessage(content: MessageContent.LegalHold, conversationId: ConversationId): Message.System =
         Message.System(

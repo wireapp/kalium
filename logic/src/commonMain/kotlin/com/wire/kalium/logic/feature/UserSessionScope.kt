@@ -1365,7 +1365,7 @@ class UserSessionScope internal constructor(
         )
 
     private val isConversationUnderLegalHold: IsConversationUnderLegalHoldUseCase
-        get() = IsConversationUnderLegalHoldUseCaseImpl(clientRepository, conversationRepository)
+        get() = IsConversationUnderLegalHoldUseCaseImpl(clientRepository)
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
         selfUserId = userId,

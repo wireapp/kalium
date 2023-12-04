@@ -118,7 +118,9 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
-    suspend fun getLastMessageForConversationId(conversationId: ConversationId): Either<StorageFailure, Message>
+    suspend fun getLastMessagesForConversationIds(
+        conversationIdList: List<ConversationId>
+    ): Either<StorageFailure, Map<ConversationId, Message>>
 
     suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotification>>>
 
@@ -169,6 +171,12 @@ interface MessageRepository {
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
         editTimeStamp: String
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateLegalHoldMessage(
+        messageId: String,
+        conversationId: ConversationId,
+        messageContent: MessageContent.LegalHold
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
@@ -261,10 +269,11 @@ class MessageDataSource(
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
-    override suspend fun getLastMessageForConversationId(conversationId: ConversationId): Either<StorageFailure, Message> =
-        wrapStorageRequest {
-            messageDAO.getLastMessageByConversationId(conversationId.toDao())
-        }.map(messageMapper::fromEntityToMessage)
+    override suspend fun getLastMessagesForConversationIds(
+        conversationIdList: List<ConversationId>
+    ): Either<StorageFailure, Map<ConversationId, Message>> = wrapStorageRequest {
+        messageDAO.getLastMessagesByConversations(conversationIdList.map { it.toDao() })
+    }.map { it.map { it.key.toModel() to messageMapper.fromEntityToMessage(it.value) }.toMap() }
 
     override suspend fun getAssetMessagesByConversationId(
         conversationId: ConversationId,
@@ -548,6 +557,14 @@ class MessageDataSource(
                 newMessageId = newMessageId
             )
         }
+    }
+
+    override suspend fun updateLegalHoldMessage(
+        messageId: String,
+        conversationId: ConversationId,
+        messageContent: MessageContent.LegalHold
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateLegalHoldMessageContent(conversationId.toDao(), messageId, messageContent.toMessageEntityContent())
     }
 
     override suspend fun resetAssetProgressStatus() {

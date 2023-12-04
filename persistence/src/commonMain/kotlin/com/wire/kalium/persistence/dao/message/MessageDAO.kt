@@ -73,7 +73,7 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
-    suspend fun getLastMessageByConversationId(conversationId: QualifiedIDEntity): MessageEntity?
+    suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity>
 
     suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>>
 
@@ -90,6 +90,11 @@ interface MessageDAO {
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
+    )
+    suspend fun updateLegalHoldMessageContent(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        newContent: MessageEntityContent.LegalHold
     )
 
     suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
