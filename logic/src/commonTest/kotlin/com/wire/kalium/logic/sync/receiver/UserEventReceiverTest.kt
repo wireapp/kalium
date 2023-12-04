@@ -109,20 +109,14 @@ class UserEventReceiverTest {
     fun givenUserDeleteEvent_RepoAndPersisMessageAreInvoked() = runTest {
         val event = TestEvent.userDelete(userId = OTHER_USER_ID)
         val (arrangement, eventReceiver) = arrange {
-            withRemoveUserSuccess()
-            withDeleteUserFromConversationsSuccess()
+            withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess()
             withConversationsByUserId(listOf(TestConversation.CONVERSATION))
         }
 
         eventReceiver.onEvent(event)
 
         verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::removeUser)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteUserFromConversations)
+            .suspendFunction(arrangement.userRepository::markUserAsDeletedAndRemoveFromGroupConversations)
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -327,11 +321,6 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
-        }
-
-        fun withDeleteUserFromConversationsSuccess() = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::deleteUserFromConversations)
-                .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
         fun withConversationsByUserId(conversationIds: List<Conversation>) = apply {
