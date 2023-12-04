@@ -399,6 +399,7 @@ sealed class MessagePreviewEntityContent {
     data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
 
     data class Knock(val senderName: String?) : MessagePreviewEntityContent()
+    data class Location(val senderName: String?) : MessagePreviewEntityContent()
 
     data class MembersAdded(
         val senderName: String?,

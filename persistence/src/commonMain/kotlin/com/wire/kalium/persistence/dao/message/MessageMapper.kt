@@ -188,7 +188,7 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
-
+            MessageEntity.ContentType.LOCATION -> MessagePreviewEntityContent.Location(senderName = senderName)
             MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
@@ -206,7 +206,6 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
-            MessageEntity.ContentType.LOCATION -> MessagePreviewEntityContent.Unknown // todo(ym). create location preview
         }
     }
 

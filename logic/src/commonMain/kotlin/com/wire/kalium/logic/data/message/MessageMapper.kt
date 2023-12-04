@@ -244,7 +244,12 @@ class MessageMapperImpl(
                 )
             }
 
-            MessageEntity.ContentType.LOCATION -> TODO()// todo(ym). create location notification
+            MessageEntity.ContentType.LOCATION -> LocalNotificationMessage.Comment(
+                message.id,
+                sender,
+                message.date,
+                LocalNotificationCommentType.LOCATION
+            )
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -454,6 +459,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.ConversationVerifiedProteus -> MessagePreviewContent.VerificationChanged.VerifiedProteus
     is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls
     is MessagePreviewEntityContent.ConversationVerificationDegradedProteus -> MessagePreviewContent.VerificationChanged.DegradedProteus
+    is MessagePreviewEntityContent.Location -> MessagePreviewContent.WithUser.Location(username = senderName)
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {

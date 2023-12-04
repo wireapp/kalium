@@ -386,6 +386,7 @@ sealed interface MessagePreviewContent {
         data class QuotedSelf(override val username: String?) : WithUser
 
         data class Knock(override val username: String?) : WithUser
+        data class Location(override val username: String?) : WithUser
 
         data class MemberLeft(override val username: String?) : WithUser
 
