@@ -34,7 +34,8 @@ internal interface SyncSelfTeamUseCase {
 
 internal class SyncSelfTeamUseCaseImpl(
     private val userRepository: UserRepository,
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
+    private val fetchAllTeamMembersEagerly: Boolean
 ) : SyncSelfTeamUseCase {
 
     override suspend fun invoke(): Either<CoreFailure, Unit> {
@@ -42,10 +43,15 @@ internal class SyncSelfTeamUseCaseImpl(
 
         return user.teamId?.let { teamId ->
             teamRepository.fetchTeamById(teamId = teamId).flatMap {
-                teamRepository.fetchMembersByTeamId(
-                    teamId = teamId,
-                    userDomain = user.id.domain
-                )
+                if (fetchAllTeamMembersEagerly) {
+                    kaliumLogger.withFeatureId(SYNC).i("Fetching all team members eagerly")
+                    teamRepository.fetchMembersByTeamId(
+                        teamId = teamId,
+                        userDomain = user.id.domain
+                    )
+                } else {
+                    Either.Right(Unit)
+                }
             }.onSuccess {
                 teamRepository.syncServices(teamId = teamId)
             }

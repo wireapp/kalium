@@ -31,4 +31,5 @@ data class InstanceRequest(
     val password: String = "",
     val verificationCode: String? = null,
     val developmentApiEnabled: Boolean? = false,
+    val fetchAllTeamMembersEagerly: Boolean? = true,
 )
