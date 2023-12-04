@@ -91,9 +91,9 @@ internal class TeamDataSource(
     }
 
     override suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit> {
-        var hasMore = false
+        var hasMore = true
         var error: CoreFailure? = null
-        while (!hasMore && error == null) {
+        while (hasMore && error == null) {
             wrapApiRequest {
                 teamsApi.getTeamMembers(
                     teamId = teamId.value,
