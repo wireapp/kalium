@@ -89,7 +89,7 @@ class PemCertificateDecoderTest {
             given(certificateStatusChecker)
                 .function(certificateStatusChecker::status)
                 .whenInvokedWith(any())
-                .thenReturn(CryptoCertificateStatus.VALID)
+                .thenReturn(CertificateStatus.VALID)
         }
 
         private fun createPlatformX509Certificate(certificateString: String): PlatformX509Certificate {
