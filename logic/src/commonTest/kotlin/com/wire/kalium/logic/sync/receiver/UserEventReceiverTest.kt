@@ -110,7 +110,6 @@ class UserEventReceiverTest {
         val event = TestEvent.userDelete(userId = OTHER_USER_ID)
         val (arrangement, eventReceiver) = arrange {
             withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess()
-            // withDeleteUserFromConversationsSuccess()
             withConversationsByUserId(listOf(TestConversation.CONVERSATION))
         }
 
