@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
-import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHold
+import com.wire.kalium.logic.feature.conversation.IsConversationUnderLegalHoldUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -51,7 +51,7 @@ internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val persistOtherUserClients: PersistOtherUserClientsUseCase,
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase,
-    private val isConversationUnderLegalHold: IsConversationUnderLegalHold,
+    private val isConversationUnderLegalHold: IsConversationUnderLegalHoldUseCase,
     private val persistMessage: PersistMessageUseCase,
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,

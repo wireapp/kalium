@@ -33,14 +33,14 @@ import kotlinx.coroutines.flow.firstOrNull
 /**
  * Checks if any client of members of given conversation id is under legal hold.
  */
-interface IsConversationUnderLegalHold {
+interface IsConversationUnderLegalHoldUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Boolean>
 }
 
-internal class IsConversationUnderLegalHoldImpl(
+internal class IsConversationUnderLegalHoldUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
-) : IsConversationUnderLegalHold {
+) : IsConversationUnderLegalHoldUseCase {
     override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, Boolean> =
         conversationRepository.getConversationMembers(conversationId)
             .flatMap<List<UserId>, StorageFailure, List<UserId>> { members ->
