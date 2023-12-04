@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.map
 
 interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
+    suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit>
@@ -80,9 +81,35 @@ internal class TeamDataSource(
         teamsApi.getTeamInfo(teamId = teamId.value)
     }.map { teamDTO ->
         teamMapper.fromDtoToEntity(teamDTO)
-    }.flatMap { teamEntity ->
-        wrapStorageRequest { teamDAO.insertTeam(team = teamEntity) }.map {
-            teamMapper.fromDaoModelToTeam(teamEntity)
+    }.map { teamEntity ->
+        teamDAO.insertTeam(team = teamEntity)
+
+        teamMapper.fromDaoModelToTeam(teamEntity)
+    }
+
+    override suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit> = wrapApiRequest {
+        teamsApi.getTeamMembers(
+            teamId = teamId.value,
+            limitTo = null
+        )
+    }.map { teamMemberList ->
+        /**
+         * If hasMore is true, then this result should be discarded and not stored locally,
+         * otherwise the user will see random team members when opening the search UI.
+         * If the result has has_more field set to false, then these users are stored locally to be used in a search later.
+         */
+        if (teamMemberList.hasMore.not()) {
+            teamMemberList.members.map { teamMember ->
+                val userId = QualifiedIDEntity(teamMember.nonQualifiedUserId, userDomain)
+                val userType = userTypeEntityTypeMapper.teamRoleCodeToUserType(teamMember.permissions?.own)
+                userId to userType
+            }
+        } else {
+            listOf()
+        }
+    }.flatMap { teamMembers ->
+        wrapStorageRequest {
+            userDAO.upsertTeamMemberUserTypes(teamMembers.toMap())
         }
     }
 
@@ -102,11 +129,9 @@ internal class TeamDataSource(
 
     override suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
-            userDAO.upsertTeamMemberUserTypes(
-                mapOf(
-                    QualifiedIDEntity(userId, selfUserId.domain) to userTypeEntityTypeMapper.teamRoleCodeToUserType(permissionCode)
-                )
-            )
+            userDAO.upsertTeamMemberUserTypes(mapOf(
+                QualifiedIDEntity(userId, selfUserId.domain) to userTypeEntityTypeMapper.teamRoleCodeToUserType(permissionCode)
+            ))
         }
     }
 

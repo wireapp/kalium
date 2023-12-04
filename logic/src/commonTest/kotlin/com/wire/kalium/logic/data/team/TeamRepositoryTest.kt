@@ -49,6 +49,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
@@ -58,11 +59,13 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TeamRepositoryTest {
     @Test
     fun givenSelfUserExists_whenFetchingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
@@ -97,6 +100,56 @@ class TeamRepositoryTest {
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
         val result = teamRepository.fetchTeamById(teamId = TeamId("teamId"))
+
+        result.shouldFail {
+            assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
+        }
+    }
+
+    @Test
+    fun givenTeamIdAndUserDomain_whenFetchingTeamMembers_thenTeamMembersShouldBeSuccessful() = runTest {
+        val teamMember = TestTeam.memberDTO(
+            nonQualifiedUserId = "teamMember1"
+        )
+
+        val teamMembersList = TeamsApi.TeamMemberList(
+            hasMore = false,
+            members = listOf(
+                teamMember
+            )
+        )
+
+        val (arrangement, teamRepository) = Arrangement()
+            .arrange()
+
+        given(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamMembers)
+            .whenInvokedWith(oneOf("teamId"), oneOf(null))
+            .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
+
+        // Verifies that userDAO insertUsers was called with the correct mapped values
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertTeamMemberUserTypes)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        // Verifies that when fetching members by team id, it succeeded
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenTeamApiFails_whenFetchingTeamMembers_thenTheFailureIsPropagated() = runTest {
+        val (arrangement, teamRepository) = Arrangement()
+            .arrange()
+
+        given(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamMembers)
+            .whenInvokedWith(any(), anything())
+            .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
