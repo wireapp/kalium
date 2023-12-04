@@ -1,6 +1,6 @@
 import com.wire.kalium.monkeys.model.EventType;
 
-CREATE TABLE Event (
+CREATE TABLE IF NOT EXISTS Event (
     id SERIAL NOT NULL,
     execution_id INTEGER NOT NULL,
     event_time TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
@@ -12,8 +12,9 @@ CREATE TABLE Event (
 );
 
 selectByExecutionId:
-SELECT * FROM Event WHERE execution_id = ?;
+SELECT id, execution_id, event_time, monkey_index, team, CAST(event_data AS TEXT) event_data
+FROM Event WHERE execution_id = ?;
 
 insertEvent:
 INSERT INTO Event(execution_id, monkey_index, team, event_data)
-VALUES (?, ?, ?, ?);
+VALUES (?, ?, ?, CAST(? AS JSONB));

@@ -1,6 +1,6 @@
 import com.wire.kalium.monkeys.model.BackendConfig;
 
-CREATE TABLE Team (
+CREATE TABLE IF NOT EXISTS Team (
     id SERIAL NOT NULL,
     name TEXT NOT NULL,
     execution_id INTEGER NOT NULL,
@@ -12,7 +12,9 @@ CREATE TABLE Team (
 
 insertTeam:
 INSERT INTO Team(name, execution_id, user_count, backend_config)
-VALUES (?, ?, ?, ?);
+VALUES (?, ?, ?, CAST(? AS JSONB));
 
 selectTeams:
-SELECT * FROM Team WHERE execution_id = ?;
+-- sqldelight doesn't support json types (yet?), need to cast to text
+SELECT id, name, execution_id, user_count, CAST(backend_config AS TEXT) backend_config
+FROM Team WHERE execution_id = ?;

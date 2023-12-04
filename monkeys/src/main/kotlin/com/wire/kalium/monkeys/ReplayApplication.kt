@@ -76,7 +76,7 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
         mustExist = true, mustBeReadable = true, canBeDir = false
     )
     private val failFast by option(
-        "-s", help = "Stop the application if an action fails, otherwise ignore and continue processing next events"
+        "-f", help = "Stop the application if an action fails, otherwise ignore and continue processing next events"
     ).flag()
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-o", "--log-file", help = "output file for logs")

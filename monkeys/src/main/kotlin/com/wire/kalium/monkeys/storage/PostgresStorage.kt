@@ -18,6 +18,9 @@
 package com.wire.kalium.monkeys.storage
 
 import app.cash.sqldelight.ColumnAdapter
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitCreate
 import app.cash.sqldelight.driver.r2dbc.R2dbcDriver
 import com.wire.kalium.monkeys.db.Execution
 import com.wire.kalium.monkeys.db.InfiniteMonkeysDB
@@ -73,7 +76,7 @@ class PostgresStorage(pgConfig: EventConfig, private val executionId: Int? = nul
 
     override suspend fun store(event: Event) {
         withDatabase { database, execution ->
-            database.eventQueries.insertEvent(
+            database.executionEventQueries.insertEvent(
                 execution_id = execution.id,
                 monkey_index = event.monkeyOrigin.index,
                 team = event.monkeyOrigin.team,
@@ -95,15 +98,15 @@ class PostgresStorage(pgConfig: EventConfig, private val executionId: Int? = nul
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun CoroutineScope.readEvents() = produce {
         withDatabase { database, execution ->
-            for (event in database.eventQueries.selectByExecutionId(execution.id).executeAsList()) {
-                send(Event(MonkeyId(event.monkey_index, event.team), event.event_data))
+            for (event in database.executionEventQueries.selectByExecutionId(execution.id).awaitAsList()) {
+                send(Event(MonkeyId(event.monkey_index, event.team), Json.decodeFromString(event.event_data)))
             }
         }
     }
 
     override suspend fun readTeamConfig(): List<BackendConfig> {
         return withDatabase { database, execution ->
-            database.teamQueries.selectTeams(execution.id).executeAsList().map { it.backend_config }
+            database.teamQueries.selectTeams(execution.id).awaitAsList().map { Json.decodeFromString(it.backend_config) }
         }
     }
 
@@ -113,16 +116,18 @@ class PostgresStorage(pgConfig: EventConfig, private val executionId: Int? = nul
 
     private suspend fun <T> withDatabase(func: suspend (InfiniteMonkeysDB, Execution) -> T): T {
         val mono = Mono.from(this.connectionFactory.create())
+        val driver = mono.map { R2dbcDriver(it) }.awaitSingle()
+        InfiniteMonkeysDB.Schema.awaitCreate(driver)
         val database = InfiniteMonkeysDB(
-            driver = mono.map { R2dbcDriver(it) }.awaitSingle(),
+            driver = driver,
             EventAdapter = EventDB.Adapter(event_dataAdapter = eventTypeAdapter),
             TeamAdapter = Team.Adapter(backend_configAdapter = teamAdapter)
         )
         if (this.execution == null) {
             this.execution = if (this.executionId == null) {
-                database.executionQueries.insertExecution().executeAsOne()
+                database.executionQueries.insertExecution().awaitAsOne()
             } else {
-                database.executionQueries.selectExecution(this.executionId).executeAsOne()
+                database.executionQueries.selectExecution(this.executionId).awaitAsOne()
             }
         }
         return func(database, this.execution!!)
