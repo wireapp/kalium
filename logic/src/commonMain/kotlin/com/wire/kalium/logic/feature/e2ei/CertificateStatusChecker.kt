@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.cryptography.DeviceStatus
+import com.wire.kalium.cryptography.CertificateStatus
 
 expect interface CertificateStatusChecker {
-    fun status(notAfterTimestamp: Long, deviceStatus: DeviceStatus): CertificateStatus
+    fun status(notAfterTimestamp: Long, deviceStatus: CertificateStatus): CertificateStatus
 }
 
 expect class CertificateStatusCheckerImpl() : CertificateStatusChecker

@@ -17,21 +17,20 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.cryptography.DeviceStatus
+import com.wire.kalium.cryptography.CertificateStatus
 import java.util.Date
 
 actual interface CertificateStatusChecker {
-    actual fun status(notAfterTimestamp: Long, deviceStatus: DeviceStatus): CertificateStatus
+    actual fun status(notAfterTimestamp: Long, deviceStatus: CertificateStatus): CertificateStatus
 }
 
 actual class CertificateStatusCheckerImpl : CertificateStatusChecker {
-    override fun status(notAfterTimestamp: Long, deviceStatus: DeviceStatus): CertificateStatus {
+    override fun status(notAfterTimestamp: Long, deviceStatus: CertificateStatus): CertificateStatus {
         val current = Date()
-        println("current timestamp is ${current.time}")
 
         return when {
-            (deviceStatus == DeviceStatus.REVOKED) -> CertificateStatus.REVOKED
-            (current.time >= notAfterTimestamp || deviceStatus == DeviceStatus.EXPIRED) -> CertificateStatus.EXPIRED
+            (deviceStatus == CertificateStatus.REVOKED) -> CertificateStatus.REVOKED
+            (current.time >= notAfterTimestamp || deviceStatus == CertificateStatus.EXPIRED) -> CertificateStatus.EXPIRED
             else -> CertificateStatus.VALID
         }
     }

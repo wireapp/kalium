@@ -17,18 +17,18 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.cryptography.DeviceStatus
+import com.wire.kalium.cryptography.CertificateStatus
 import com.wire.kalium.logic.util.serialNumber
 
 actual interface PemCertificateDecoder {
-    actual fun decode(certificate: String, status: DeviceStatus): E2eiCertificate
+    actual fun decode(certificate: String, status: CertificateStatus): E2eiCertificate
 }
 
 actual class PemCertificateDecoderImpl actual constructor(
     private val x509CertificateGenerator: X509CertificateGenerator,
     private val certificateStatusChecker: CertificateStatusChecker
 ) : PemCertificateDecoder {
-    override fun decode(certificate: String, status: DeviceStatus): E2eiCertificate {
+    override fun decode(certificate: String, status: CertificateStatus): E2eiCertificate {
         x509CertificateGenerator.generate(certificate.toByteArray()).also {
             return E2eiCertificate(
                 issuer = it.value.issuerX500Principal.name,

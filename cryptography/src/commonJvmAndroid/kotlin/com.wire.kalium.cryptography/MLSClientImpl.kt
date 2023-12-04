@@ -332,9 +332,9 @@ class MLSClientImpl(
         )
 
         fun toDeviceStatus(value: com.wire.crypto.DeviceStatus) = when (value) {
-            com.wire.crypto.DeviceStatus.VALID -> DeviceStatus.VALID
-            com.wire.crypto.DeviceStatus.EXPIRED -> DeviceStatus.EXPIRED
-            com.wire.crypto.DeviceStatus.REVOKED -> DeviceStatus.REVOKED
+            com.wire.crypto.DeviceStatus.VALID -> CertificateStatus.VALID
+            com.wire.crypto.DeviceStatus.EXPIRED -> CertificateStatus.EXPIRED
+            com.wire.crypto.DeviceStatus.REVOKED -> CertificateStatus.REVOKED
         }
 
         // TODO: remove later, when CoreCrypto return the groupId instead of Hex value
