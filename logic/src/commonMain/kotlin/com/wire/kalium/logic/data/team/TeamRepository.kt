@@ -212,6 +212,6 @@ internal class TeamDataSource(
     }
 
     private companion object {
-        val FETCH_TEAM_MEMBER_PAGE_SIZE = 200
+        const val FETCH_TEAM_MEMBER_PAGE_SIZE = 200
     }
 }
