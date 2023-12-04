@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
@@ -365,6 +366,38 @@ object MessageMapper {
         lastEdit?.let { MessageEntity.EditStatus.Edited(it) }
             ?: MessageEntity.EditStatus.NotEdited
 
+    fun toEntityAssetMessageFromView(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType,
+        date: Instant,
+        visibility: MessageEntity.Visibility,
+        senderUserId: QualifiedIDEntity,
+        isEphemeral: Boolean,
+        senderName: String?,
+        selfUserId: QualifiedIDEntity?,
+        isSelfMessage: Boolean,
+        assetId: String?,
+        assetMimeType: String?,
+        assetHeight: Int?,
+        assetWidth: Int?,
+        assetDownloadStatus: MessageEntity.DownloadStatus?,
+        decodedAssetPath: String?
+    ): AssetMessageEntity {
+        return AssetMessageEntity(
+            time = date,
+            username = senderName,
+            messageId = id,
+            conversationId = conversationId,
+            assetId = assetId!!,
+            width = assetWidth!!,
+            height = assetHeight!!,
+            downloadStatus = assetDownloadStatus ?: MessageEntity.DownloadStatus.NOT_DOWNLOADED,
+            assetPath = decodedAssetPath,
+            isSelfAsset = isSelfMessage
+        )
+    }
+
     @Suppress("LongMethod", "ComplexMethod", "UNUSED_PARAMETER")
     fun toEntityMessageFromView(
         id: String,
@@ -487,7 +520,7 @@ object MessageMapper {
                 assetWidth = assetWidth,
                 assetHeight = assetHeight,
                 assetDurationMs = assetDuration,
-                assetNormalizedLoudness = assetNormalizedLoudness,
+                assetNormalizedLoudness = assetNormalizedLoudness
             )
 
             MessageEntity.ContentType.KNOCK -> MessageEntityContent.Knock(false)
