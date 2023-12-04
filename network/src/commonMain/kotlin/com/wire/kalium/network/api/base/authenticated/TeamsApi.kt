@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated
 
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
@@ -42,7 +43,7 @@ interface TeamsApi {
     data class TeamMemberDTO(
         @SerialName("user") val nonQualifiedUserId: NonQualifiedUserId,
         @SerialName("created_by") val createdBy: NonQualifiedUserId?,
-        @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusResponse?,
+        @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO?,
         @SerialName("created_at") val createdAt: String?,
         val permissions: Permissions?
     )
@@ -51,6 +52,15 @@ interface TeamsApi {
     data class Permissions(
         val copy: Int,
         @SerialName("self") val own: Int
+    )
+
+    @Serializable
+    data class TeamMemberIdList(
+        @SerialName("user_ids") val userIds: List<NonQualifiedUserId>
+    )
+    @Serializable
+    data class PasswordRequest(
+        @SerialName("password") val password: String?
     )
 
     sealed interface GetTeamsOptionsInterface
@@ -80,9 +90,12 @@ interface TeamsApi {
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
 
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
+    suspend fun getTeamMembersByIds(teamId: TeamId, teamMemberIdList: TeamMemberIdList): NetworkResponse<TeamMemberList>
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
     suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>
+    suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit>
+    suspend fun fetchLegalHoldStatus(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<LegalHoldStatusResponse>
 
     companion object {
         const val DEFAULT_SERVICES_SIZE = 100 // this number is copied from the web client

@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.featureConfig.AppLockModel
+import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -153,23 +155,6 @@ object TestEvent {
         icon = "icon",
     )
 
-    fun teamMemberJoin(eventId: String = "eventId") = Event.Team.MemberJoin(
-        eventId,
-        teamId = "teamId",
-        transient = false,
-        live = false,
-        memberId = "memberId"
-    )
-
-    fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
-        eventId,
-        teamId = "teamId",
-        memberId = "memberId",
-        timestampIso = "2022-03-30T15:36:00.000Z",
-        transient = false,
-        live = false
-    )
-
     fun teamMemberUpdate(eventId: String = "eventId", permissionCode: Int) = Event.Team.MemberUpdate(
         eventId,
         teamId = "teamId",
@@ -289,5 +274,21 @@ object TestEvent {
         live = false,
         protocol = Conversation.Protocol.MIXED,
         senderUserId = TestUser.OTHER_USER_ID
+    )
+
+    fun newFeatureConfigEvent() = Event.FeatureConfig.AppLockUpdated(
+        id = "eventId",
+        transient = false,
+        live = false,
+        model = AppLockModel(
+            inactivityTimeoutSecs = 60,
+            status = Status.ENABLED
+        )
+    )
+
+    fun newUnknownFeatureUpdate() = Event.FeatureConfig.UnknownFeatureUpdated(
+        id = "eventId",
+        transient = false,
+        live = false
     )
 }

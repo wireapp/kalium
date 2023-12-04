@@ -15,12 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.sync.slow
 
-package com.wire.kalium.logic.data.conversation
-
-enum class LegalHoldStatus {
-    ENABLED,
-    PENDING,
-    DISABLED,
-    NO_CONSENT,
+sealed interface SlowSyncParam {
+    data object Success : SlowSyncParam
+    data object NotPerformedBefore : SlowSyncParam
+    data object LastSlowSyncTooOld : SlowSyncParam
+    data class MigrationNeeded(val oldVersion: Int, val newVersion: Int) : SlowSyncParam
 }

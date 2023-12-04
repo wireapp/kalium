@@ -19,6 +19,9 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetMessage
+import com.wire.kalium.logic.data.asset.toDao
+import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.toDao
 import com.wire.kalium.logic.data.conversation.toModel
@@ -34,6 +37,7 @@ import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
@@ -45,12 +49,14 @@ import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
+import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
+    fun fromAssetEntityToMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
@@ -123,6 +129,21 @@ class MessageMapperImpl(
             is MessageEntity.Regular -> mapRegularMessage(message)
             is MessageEntity.System -> mapSystemMessage(message)
         }
+    }
+
+    override fun fromAssetEntityToMessage(message: AssetMessageEntity): AssetMessage {
+        return AssetMessage(
+            message.time,
+            message.username,
+            message.messageId,
+            message.conversationId.toModel(),
+            message.assetId,
+            message.width,
+            message.height,
+            message.downloadStatus.toModel(),
+            message.assetPath?.toPath(),
+            message.isSelfAsset
+        )
     }
 
     private fun mapRegularMessage(message: MessageEntity.Regular) = Message.Regular(
@@ -292,8 +313,8 @@ class MessageMapperImpl(
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
-                assetUploadStatus = assetMapper.fromUploadStatusToDaoModel(uploadStatus),
-                assetDownloadStatus = assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
+                assetUploadStatus = uploadStatus.toDao(),
+                assetDownloadStatus = downloadStatus.toDao(),
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
                 assetId = remoteData.assetId,
@@ -378,6 +399,7 @@ class MessageMapperImpl(
             MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
             MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
         }
+
         is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
     }

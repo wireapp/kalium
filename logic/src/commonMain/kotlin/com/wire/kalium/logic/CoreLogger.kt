@@ -40,6 +40,7 @@ object CoreLogger {
         CryptographyLogger.init(config = config)
         PersistenceLogger.init(config = config)
     }
+
     fun setLoggingLevel(level: KaliumLogLevel) {
         kaliumLoggerConfig.setLogLevel(level)
     }

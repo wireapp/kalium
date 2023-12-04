@@ -21,6 +21,10 @@ package com.wire.kalium.logic.data.session
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.auth.Account
+import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.auth.PersistentWebSocketStatus
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
@@ -29,10 +33,6 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.auth.Account
-import com.wire.kalium.logic.data.auth.AccountInfo
-import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.logic.data.auth.PersistentWebSocketStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -81,7 +81,7 @@ interface SessionRepository {
 }
 
 @Suppress("TooManyFunctions")
-internal class SessionDataSource(
+internal class SessionDataSource internal constructor(
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
     private val serverConfigRepository: ServerConfigRepository,

@@ -20,6 +20,7 @@ package com.wire.kalium.cryptography
 
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.client.toByteArray
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -44,6 +45,9 @@ class ProteusClientCoreCryptoImpl private constructor(
 
     override suspend fun remoteFingerPrint(sessionId: CryptoSessionId): ByteArray = wrapException {
         coreCrypto.proteusFingerprintRemote(sessionId.value).toByteArray()
+    }
+    override suspend fun getFingerprintFromPreKey(preKey: PreKeyCrypto): ByteArray = wrapException {
+        coreCrypto.proteusFingerprintPrekeybundle(preKey.encodedData.decodeBase64Bytes()).toByteArray()
     }
 
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKeyCrypto> {

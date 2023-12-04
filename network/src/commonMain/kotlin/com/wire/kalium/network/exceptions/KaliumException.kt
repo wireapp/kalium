@@ -32,6 +32,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.DOMAIN_BLOCKED_FOR_REGISTRATION
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_FAILURE
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.FEDERATION_NOT_ENABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.GUEST_LINKS_DISABLED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.HANDLE_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CODE
@@ -44,6 +45,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_FOUND
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_TEAM_MEMBER
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_CONVERSATION
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NO_CONVERSATION_CODE
@@ -127,6 +129,10 @@ fun KaliumException.InvalidRequestError.isBadRequest(): Boolean {
 
 fun KaliumException.InvalidRequestError.isNotFound(): Boolean {
     return errorResponse.code == HttpStatusCode.NotFound.value
+}
+
+fun KaliumException.InvalidRequestError.isNotFoundLabel(): Boolean {
+    return errorResponse.label == NOT_FOUND
 }
 
 fun KaliumException.InvalidRequestError.isDomainBlockedForRegistration(): Boolean {
@@ -224,3 +230,4 @@ val KaliumException.InvalidRequestError.authenticationCodeFailure: Authenticatio
     }
 
 fun KaliumException.FederationError.isFederationDenied() = errorResponse.label == FEDERATION_DENIED
+fun KaliumException.FederationError.isFederationNotEnabled() = errorResponse.label == FEDERATION_NOT_ENABLED

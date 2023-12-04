@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.data.user
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -41,6 +43,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
@@ -49,6 +52,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
@@ -66,7 +70,6 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
@@ -146,6 +149,7 @@ internal class UserDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
+    private val teamsApi: TeamsApi,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
@@ -224,9 +228,11 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchUserInfo(userId: UserId) =
         wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }
-            .flatMap { userProfileDTO -> persistUsers(listOf(userProfileDTO)) }
+            .flatMap { userProfileDTO ->
+                fetchTeamMembersByIds(listOf(userProfileDTO))
+                    .flatMap { persistUsers(listOf(userProfileDTO), it) }
+            }
 
-    @Suppress("MagicNumber")
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         if (qualifiedUserIdList.isEmpty()) {
             Either.Right(Unit)
@@ -247,35 +253,75 @@ internal class UserDataSource internal constructor(
                         )
                     }
                 }
+                .flatMapLeft { error ->
+                    if (error is NetworkFailure.FederatedBackendFailure.FederationNotEnabled) {
+                        val domains = qualifiedUserIdList
+                            .filterNot { it.domain == selfUserId.domain }
+                            .map { it.domain.obfuscateDomain() }
+                            .toSet()
+                        val domainNames = domains.joinToString(separator = ", ")
+                        kaliumLogger.e("User ids contains different domains when federation is not enabled by backend: $domainNames")
+                        wrapApiRequest {
+                            userDetailsApi.getMultipleUsers(
+                                ListUserRequest.qualifiedIds(qualifiedUserIdList.filter { it.domain == selfUserId.domain }
+                                    .map { userId -> userId.toApi() })
+                            )
+                        }
+                    } else {
+                        Either.Left(error)
+                    }
+                }
                 .flatMap { listUserProfileDTO ->
                     if (listUserProfileDTO.usersFailed.isNotEmpty()) {
                         kaliumLogger.d("Handling ${listUserProfileDTO.usersFailed.size} failed users")
                         persistIncompleteUsers(listUserProfileDTO.usersFailed)
                     }
-                    persistUsers(listUserProfileDTO.usersFound)
+                    fetchTeamMembersByIds(listUserProfileDTO.usersFound)
+                        .flatMap { persistUsers(listUserProfileDTO.usersFound, it) }
                 }
         }
+
+    private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
+        val selfUserDomain = selfUserId.domain
+        val selfUserTeamId = selfTeamIdProvider().getOrNull()
+        val teamMemberIds = userProfileList.filter { it.isTeamMember(selfUserTeamId?.value, selfUserDomain) }.map { it.id.value }
+        return if (selfUserTeamId == null || teamMemberIds.isEmpty()) Either.Right(emptyList())
+        else teamMemberIds
+            .chunked(BATCH_SIZE)
+            .foldToEitherWhileRight(emptyList()) { chunk, acc ->
+                wrapApiRequest {
+                    kaliumLogger.d("Fetching ${chunk.size} team members")
+                    teamsApi.getTeamMembersByIds(selfUserTeamId.value, TeamsApi.TeamMemberIdList(chunk))
+                }.map {
+                    kaliumLogger.d("Found ${it.members.size} team members")
+                    (acc + it.members).distinct()
+                }
+            }
+    }
 
     private suspend fun persistIncompleteUsers(usersFailed: List<NetworkQualifiedId>) = wrapStorageRequest {
         userDAO.insertOrIgnoreUsers(usersFailed.map { userMapper.fromFailedUserToEntity(it) })
     }
 
-    private suspend fun persistUsers(listUserProfileDTO: List<UserProfileDTO>) = wrapStorageRequest {
-        val selfUserDomain = selfUserId.domain
+    private suspend fun persistUsers(
+        listUserProfileDTO: List<UserProfileDTO>,
+        listTeamMemberDTO: List<TeamsApi.TeamMemberDTO>,
+    ) = wrapStorageRequest {
+        val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
-            .filter { userProfileDTO -> userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
+            .filter { userProfileDTO -> mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
-                    connectionState = ConnectionEntity.State.ACCEPTED, // this won't be updated, just to avoid a null value
-                    userTypeEntity = userDAO.observeUserDetailsByQualifiedID(userProfileDTO.id.toDao())
-                        .firstOrNull()?.userType ?: UserTypeEntity.STANDARD
+                    connectionState = ConnectionEntity.State.ACCEPTED,
+                    userTypeEntity =
+                        if (userProfileDTO.service != null) UserTypeEntity.SERVICE
+                        else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
                 )
             }
-
         val otherUsers = listUserProfileDTO
-            .filter { userProfileDTO -> !userProfileDTO.isTeamMember(selfUserTeamId, selfUserDomain) }
+            .filter { userProfileDTO -> !mapTeamMemberDTO.containsKey(userProfileDTO.id.value) }
             .map { userProfileDTO ->
                 userMapper.fromUserProfileDtoToUserEntity(
                     userProfile = userProfileDTO,
@@ -293,7 +339,6 @@ internal class UserDataSource internal constructor(
             userDAO.upsertUsers(teamMembers)
             userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
         }
-
         if (otherUsers.isNotEmpty()) {
             userDAO.upsertUsers(otherUsers)
         }
@@ -331,7 +376,7 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    @OptIn(FlowPreview::class)
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeSelfUserWithTeam(): Flow<Pair<SelfUser, Team?>> {
         return metadataDAO.valueByKeyFlow(SELF_USER_ID_KEY).filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)

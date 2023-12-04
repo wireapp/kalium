@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.E2EIConversationState
@@ -1257,14 +1258,14 @@ class MLSConversationRepositoryTest {
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdSucceed_thenReturnsIdentity() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(listOf(WIRE_IDENTITY))
+            .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
         assertEquals(Either.Right(WIRE_IDENTITY), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
 
         verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .suspendFunction(arrangement.mlsClient::getDeviceIdentities)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1278,14 +1279,14 @@ class MLSConversationRepositoryTest {
     fun givenGetClientId_whenGetE2EIConversationClientInfoByClientIdFails_thenReturnsError() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(listOf(WIRE_IDENTITY))
+            .withGetDeviceIdentitiesReturn(listOf(WIRE_IDENTITY))
             .withGetE2EIConversationClientInfoByClientIdReturns(null)
             .arrange()
 
         assertEquals(Either.Left(StorageFailure.DataNotFound), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
 
         verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .suspendFunction(arrangement.mlsClient::getDeviceIdentities)
             .with(any(), any())
             .wasNotInvoked()
 
@@ -1299,14 +1300,14 @@ class MLSConversationRepositoryTest {
     fun givenGetClientId_whenGetUserIdentitiesFails_thenReturnsError() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(emptyList())
+            .withGetDeviceIdentitiesReturn(emptyList())
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
         mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID).shouldFail()
 
         verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .suspendFunction(arrangement.mlsClient::getDeviceIdentities)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1433,9 +1434,9 @@ class MLSConversationRepositoryTest {
                 .thenReturn(ROTATE_BUNDLE)
         }
 
-        fun withGetUserIdentitiesReturn(identities: List<WireIdentity>) = apply {
+        fun withGetDeviceIdentitiesReturn(identities: List<WireIdentity>) = apply {
             given(mlsClient)
-                .suspendFunction(mlsClient::getUserIdentities)
+                .suspendFunction(mlsClient::getDeviceIdentities)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(identities)
         }
@@ -1617,7 +1618,7 @@ class MLSConversationRepositoryTest {
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList())
             val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate")
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
-                E2EIConversationClientInfoEntity(UserIDEntity("id", "domain.com"), "clientId", "groupId")
+                E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
                 message = null,
                 commitDelay = null,

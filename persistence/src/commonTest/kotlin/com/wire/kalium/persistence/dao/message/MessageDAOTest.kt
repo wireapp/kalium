@@ -22,6 +22,8 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
@@ -58,6 +60,7 @@ class MessageDAOTest : BaseDatabaseTest() {
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
     private lateinit var receiptDao: ReceiptDAO
+    private lateinit var assetDao: AssetDAO
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val conversationEntity2 = newConversationEntity("Test2")
@@ -73,6 +76,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
         receiptDao = db.receiptDAO
+        assetDao = db.assetDAO
     }
 
     @Test
@@ -435,6 +439,129 @@ class MessageDAOTest : BaseDatabaseTest() {
             .first()
         // then
         assertContains(messageTypes, UnreadEventTypeEntity.MESSAGE)
+    }
+
+    @Test
+    fun givenAssetMessageWithMimeType_WhenGettingAssetMessages_ThenListShouldContainAssetMessageWithMimeType() = runTest {
+        // given
+        val domain = "domain"
+        val conversationId = QualifiedIDEntity("1", domain)
+        val assetId = "assetId"
+        val messageId = "assetMessage"
+        val mimeType = "image/png"
+        conversationDAO.insertConversation(
+            newConversationEntity(id = conversationId)
+        )
+
+        userDAO.upsertUser(userEntity1)
+
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                // only valid asset
+                newRegularMessageEntity(
+                    id = messageId,
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = mimeType,
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                    )
+                ),
+                // asset with different mime type
+                newRegularMessageEntity(
+                    id = messageId + "1",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "image/jpeg",
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                    )
+                ),
+                // ephemeral message asset
+                newRegularMessageEntity(
+                    id = messageId + "2",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    expireAfterMs = 2000,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "image/png",
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = 111,
+                        assetHeight = 111,
+                    )
+                ),
+                // asset with null or 0 width/height
+                newRegularMessageEntity(
+                    id = messageId + "3",
+                    date = "2000-01-01T13:00:00.000Z".toInstant(),
+                    conversationId = conversationId,
+                    senderUserId = userEntity1.id,
+                    expireAfterMs = 2000,
+                    content = MessageEntityContent.Asset(
+                        1000,
+                        assetName = "test name",
+                        assetMimeType = "image/png",
+                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
+                        assetOtrKey = byteArrayOf(1),
+                        assetSha256Key = byteArrayOf(1),
+                        assetId = assetId,
+                        assetToken = "",
+                        assetDomain = domain,
+                        assetEncryptionAlgorithm = "",
+                        assetWidth = null,
+                        assetHeight = 0,
+                    )
+                ),
+            )
+        )
+
+        assetDao.insertAsset(
+            AssetEntity(
+                key = assetId,
+                dataSize = 123,
+                dataPath = "dataPath",
+                domain = domain,
+                downloadedDate = null
+            )
+        )
+
+        // when
+        val assetMessages = messageDAO.getMessageAssets(conversationId, setOf(mimeType), 100, 0)
+
+        // then
+        assertEquals(1, assetMessages.size)
+        assertEquals(assetId, assetMessages.first().assetId)
     }
 
     @Test
@@ -1764,63 +1891,58 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingConversationMessagesFromSearch_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenMessageIsSelected_thenReturnMessagePosition() = runTest {
+        // given
         insertInitialData()
 
-        val userInQuestion = userEntity1
         val otherUser = userEntity2
 
-        val expectedMessages = listOf(
-            newRegularMessageEntity(
-                "1",
-                conversationId = conversationEntity1.id,
-                status = MessageEntity.Status.SENT,
-                senderUserId = otherUser.id,
-                senderName = otherUser.name!!,
-                content = MessageEntityContent.Text("message10"),
-                date = Instant.parse("2022-03-30T15:36:00.000Z")
-            ),
-            newRegularMessageEntity(
-                "2",
-                conversationId = conversationEntity1.id,
-                status = MessageEntity.Status.SENT,
-                senderUserId = otherUser.id,
-                senderName = otherUser.name!!,
-                content = MessageEntityContent.Text("message11"),
-                date = Instant.parse("2022-03-30T15:36:01.000Z")
-            )
+        val expectedPosition = 1
+
+        val message1 = newRegularMessageEntity(
+            "1",
+            conversationId = conversationEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderUserId = otherUser.id,
+            senderName = otherUser.name!!,
+            content = MessageEntityContent.Text("message1"),
+            date = Instant.parse("2022-03-30T15:36:00.000Z")
+        )
+        val message2 = newRegularMessageEntity(
+            "2",
+            conversationId = conversationEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderUserId = otherUser.id,
+            senderName = otherUser.name!!,
+            content = MessageEntityContent.Text("message2"),
+            date = Instant.parse("2022-03-30T15:36:01.000Z")
+        )
+        val message3 = newRegularMessageEntity(
+            "3",
+            conversationId = conversationEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderUserId = otherUser.id,
+            senderName = otherUser.name!!,
+            content = MessageEntityContent.Text("message3"),
+            date = Instant.parse("2022-03-30T15:36:02.000Z")
         )
 
-        val allMessages = expectedMessages + listOf(
-            newRegularMessageEntity(
-                "3",
-                conversationId = conversationEntity1.id,
-                senderUserId = otherUser.id,
-                senderName = otherUser.name!!,
-                status = MessageEntity.Status.SENT,
-                content = MessageEntityContent.Text("message20"),
-                date = Instant.parse("2022-03-30T15:36:02.000Z")
-            ),
-            newRegularMessageEntity(
-                "4",
-                conversationId = conversationEntity1.id,
-                senderUserId = otherUser.id,
-                senderName = otherUser.name!!,
-                status = MessageEntity.Status.SENT,
-                content = MessageEntityContent.Text("message21"),
-                date = Instant.parse("2022-03-30T15:36:03.000Z")
-            )
+        val messages = listOf(
+            message1,
+            message2,
+            message3
         )
 
-        messageDAO.insertOrIgnoreMessages(allMessages)
+        messageDAO.insertOrIgnoreMessages(messages)
 
-        val result = messageDAO.getConversationMessagesFromSearch(
-            searchQuery = "message1",
-            conversationId = conversationEntity1.id
+        // when
+        val result = messageDAO.getSearchedConversationMessagePosition(
+            conversationId = conversationEntity1.id,
+            messageId = message3.id
         )
 
-        assertEquals(expectedMessages.size, result.size)
-        assertContentEquals(expectedMessages.sortedByDescending { it.date }, result)
+        // then
+        assertEquals(expectedPosition, result)
     }
 
     private suspend fun insertInitialData() {

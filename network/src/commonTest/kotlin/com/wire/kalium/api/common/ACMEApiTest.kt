@@ -49,7 +49,7 @@ internal class ACMEApiTest : ApiTest() {
         )
         val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
 
-        acmeApi.getACMEDirectories().also { actual ->
+        acmeApi.getACMEDirectories(BASE_URL).also { actual ->
             assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
             assertEquals(expected, actual.value)
         }
@@ -168,6 +168,7 @@ internal class ACMEApiTest : ApiTest() {
         }
     }
     companion object {
+        private const val BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android"
         private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
 
         val ACME_DIRECTORIES_RESPONSE = ACMEApiResponseJsonSample.validAcmeDirectoriesResponse.rawJson

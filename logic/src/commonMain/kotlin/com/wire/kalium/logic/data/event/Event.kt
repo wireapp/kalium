@@ -24,8 +24,8 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.Conversation.ReceiptMode
 import com.wire.kalium.logic.data.conversation.Conversation.TypingIndicatorMode
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SubconversationId
+import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
@@ -445,38 +446,6 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
             )
         }
 
-        data class MemberJoin(
-            override val id: String,
-            override val teamId: String,
-            override val transient: Boolean,
-            override val live: Boolean,
-            val memberId: String,
-        ) : Team(id, teamId, transient, live) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "Team.MemberJoin",
-                idKey to id.obfuscateId(),
-                teamIdKey to teamId.obfuscateId(),
-                memberIdKey to memberId.obfuscateId(),
-            )
-        }
-
-        data class MemberLeave(
-            override val id: String,
-            override val transient: Boolean,
-            override val live: Boolean,
-            override val teamId: String,
-            val memberId: String,
-            val timestampIso: String,
-        ) : Team(id, teamId, transient, live) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "Team.MemberLeave",
-                idKey to id.obfuscateId(),
-                teamIdKey to teamId.obfuscateId(),
-                timestampIsoKey to timestampIso,
-                memberIdKey to memberId.obfuscateId(),
-            )
-        }
-
         data class MemberUpdate(
             override val id: String,
             override val teamId: String,
@@ -720,6 +689,51 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
                 "deviceType" to client.deviceType,
                 "label" to (client.label ?: ""),
                 "isMLSCapable" to client.isMLSCapable
+            )
+        }
+
+        data class LegalHoldRequest(
+            override val transient: Boolean,
+            override val live: Boolean,
+            override val id: String,
+            val clientId: ClientId,
+            val lastPreKey: LastPreKey,
+            val userId: UserId
+        ) : User(id, transient, live) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+            typeKey to "User.LegalHold-request",
+            idKey to id.obfuscateId(),
+            "transient" to "$transient",
+            "clientId" to clientId.value.obfuscateId(),
+            "userId" to userId.toLogString(),
+            )
+        }
+
+        data class LegalHoldEnabled(
+            override val transient: Boolean,
+            override val live: Boolean,
+            override val id: String,
+            val userId: UserId
+        ) : User(id, transient, live) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.LegalHold-enabled",
+                idKey to id.obfuscateId(),
+                "transient" to "$transient",
+                "userId" to userId.toLogString()
+            )
+        }
+
+        data class LegalHoldDisabled(
+            override val transient: Boolean,
+            override val live: Boolean,
+            override val id: String,
+            val userId: UserId
+        ) : User(id, transient, live) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.LegalHold-disabled",
+                idKey to id.obfuscateId(),
+                "transient" to "$transient",
+                "userId" to userId.toLogString()
             )
         }
     }

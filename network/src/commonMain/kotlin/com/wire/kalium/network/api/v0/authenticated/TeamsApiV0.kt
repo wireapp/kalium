@@ -20,6 +20,8 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.client.PasswordRequest
+import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.ServiceDetailResponse
@@ -30,6 +32,9 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
 
 internal open class TeamsApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -60,16 +65,40 @@ internal open class TeamsApiV0 internal constructor(
             }
         }
 
+    override suspend fun getTeamMembersByIds(
+        teamId: TeamId,
+        teamMemberIdList: TeamsApi.TeamMemberIdList
+    ): NetworkResponse<TeamsApi.TeamMemberList> = wrapKaliumResponse {
+        httpClient.post("$PATH_TEAMS/$teamId/$PATH_MEMBERS_BY_IDS") {
+            setBody(teamMemberIdList)
+        }
+    }
+
     override suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamsApi.TeamMemberDTO> =
         wrapKaliumResponse {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
+        }
+
+    override suspend fun approveLegalHoldRequest(teamId: TeamId, userId: NonQualifiedUserId, password: String?): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.put("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId/$PATH_APPROVE") {
+                setBody(PasswordRequest(password))
+            }
+        }
+
+    override suspend fun fetchLegalHoldStatus(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<LegalHoldStatusResponse> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId")
         }
 
     private companion object {
         const val PATH_TEAMS = "teams"
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_MEMBERS = "members"
+        const val PATH_MEMBERS_BY_IDS = "get-members-by-ids-using-post"
         const val PATH_SERVICES = "services"
         const val PATH_WHITELISTED = "whitelisted"
+        const val PATH_LEGAL_HOLD = "legalhold"
+        const val PATH_APPROVE = "approve"
     }
 }

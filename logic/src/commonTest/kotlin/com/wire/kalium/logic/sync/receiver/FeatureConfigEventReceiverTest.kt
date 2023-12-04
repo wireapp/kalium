@@ -41,8 +41,11 @@ import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -279,6 +282,15 @@ class FeatureConfigEventReceiverTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenUnknownFeatureConfig_whenPrecessing_thenReturnSuccess() = runTest {
+        val newUnknownFeatureUpdate = TestEvent.newUnknownFeatureUpdate()
+        val (_, handler) = Arrangement()
+            .arrange()
+
+        handler.onEvent(newUnknownFeatureUpdate).shouldSucceed()
+    }
+
     private class Arrangement {
 
         var kaliumConfigs = KaliumConfigs()
@@ -297,7 +309,6 @@ class FeatureConfigEventReceiverTest {
                 MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
-                SecondFactorPasswordChallengeConfigHandler(userConfigRepository),
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
                 E2EIConfigHandler(userConfigRepository),
                 AppLockConfigHandler(userConfigRepository)

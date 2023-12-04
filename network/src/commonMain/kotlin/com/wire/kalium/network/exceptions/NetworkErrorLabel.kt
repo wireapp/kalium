@@ -42,15 +42,19 @@ internal object NetworkErrorLabel {
     const val MLS_KEY_PACKAGE_REF_NOT_FOUND = "mls-key-package-ref-not-found"
     const val MLS_MISSING_GROUP_INFO = "mls-missing-group-info"
     const val UNKNOWN_CLIENT = "unknown-client"
-    const val FEDERATION_FAILURE = "federation-remote-error"
     const val NOT_TEAM_MEMBER = "no-team-member"
     const val NO_CONVERSATION = "no-conversation"
     const val NO_CONVERSATION_CODE = "no-conversation-code"
     const val GUEST_LINKS_DISABLED = "guest-links-disabled"
     const val ACCESS_DENIED = "access-denied"
     const val WRONG_CONVERSATION_PASSWORD = "invalid-conversation-password"
-    const val FEDERATION_UNREACHABLE_DOMAINS = "federation-unreachable-domains-error"
+    const val NOT_FOUND = "not-found"
+
+    // Federation
+    const val FEDERATION_FAILURE = "federation-remote-error"
     const val FEDERATION_DENIED = "federation-denied"
+    const val FEDERATION_NOT_ENABLED = "federation-not-enabled"
+    const val FEDERATION_UNREACHABLE_DOMAINS = "federation-unreachable-domains-error"
 
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"

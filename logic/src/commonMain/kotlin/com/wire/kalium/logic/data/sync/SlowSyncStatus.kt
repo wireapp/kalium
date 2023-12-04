@@ -32,6 +32,7 @@ sealed interface SlowSyncStatus {
 }
 
 enum class SlowSyncStep {
+    MIGRATION,
     SELF_USER,
     FEATURE_FLAGS,
     UPDATE_SUPPORTED_PROTOCOLS,
@@ -40,5 +41,6 @@ enum class SlowSyncStep {
     SELF_TEAM,
     CONTACTS,
     JOINING_MLS_CONVERSATIONS,
-    RESOLVE_ONE_ON_ONE_PROTOCOLS
+    RESOLVE_ONE_ON_ONE_PROTOCOLS,
+    LEGAL_HOLD,
 }

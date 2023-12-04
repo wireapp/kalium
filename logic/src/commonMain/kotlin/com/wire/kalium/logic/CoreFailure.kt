@@ -20,10 +20,12 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
+import com.wire.kalium.network.exceptions.isFederationNotEnabled
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -99,7 +101,6 @@ sealed interface CoreFailure {
      */
     data object SyncEventOrClientNotFound : FeatureFailure()
 
-    data object FeatureNotImplemented : FeatureFailure()
     /**
      * No common Protocol found in order to establish a conversation between parties.
      * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
@@ -154,6 +155,7 @@ sealed class NetworkFailure : CoreFailure {
 
         data class General(val label: String) : FederatedBackendFailure()
         data class FederationDenied(val label: String) : FederatedBackendFailure()
+        data class FederationNotEnabled(val label: String) : FederatedBackendFailure()
 
         data class ConflictingBackends(override val domains: List<String>) : FederatedBackendFailure(), RetryableFailure
 
@@ -188,9 +190,15 @@ interface MLSFailure : CoreFailure {
     }
 }
 
-class E2EIFailure(internal val exception: Exception) : CoreFailure {
+interface E2EIFailure : CoreFailure {
+    data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
+    data class FailedOAuth(val reason: String) : E2EIFailure
+    data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
+    data object FailedRotationAndMigration : E2EIFailure
 
-    val rootCause: Throwable get() = exception
+    class Generic(internal val exception: Exception) : E2EIFailure {
+        val rootCause: Throwable get() = exception
+    }
 }
 
 class ProteusFailure(internal val proteusException: ProteusException) : CoreFailure {
@@ -206,7 +214,11 @@ sealed class EncryptionFailure : CoreFailure.FeatureFailure() {
 
 sealed class StorageFailure : CoreFailure {
     data object DataNotFound : StorageFailure()
-    data class Generic(val rootCause: Throwable) : StorageFailure()
+    data class Generic(val rootCause: Throwable) : StorageFailure() {
+        override fun toString(): String {
+            return "Generic(rootCause = ${rootCause.stackTraceToString()})"
+        }
+    }
 }
 
 private const val SOCKS_EXCEPTION = "socks"
@@ -221,6 +233,8 @@ internal inline fun <T : Any> wrapApiRequest(networkCall: () -> NetworkResponse<
                 exception is KaliumException.FederationError -> {
                     if (exception.isFederationDenied()) {
                         Either.Left(NetworkFailure.FederatedBackendFailure.FederationDenied(exception.errorResponse.label))
+                    } else if (exception.isFederationNotEnabled()) {
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FederationNotEnabled(exception.errorResponse.label))
                     } else {
                         Either.Left(NetworkFailure.FederatedBackendFailure.General(exception.errorResponse.label))
                     }
@@ -292,7 +306,7 @@ internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailur
         Either.Right(e2eiRequest())
     } catch (e: Exception) {
         kaliumLogger.e(e.stackTraceToString())
-        Either.Left(E2EIFailure(e))
+        Either.Left(E2EIFailure.Generic(e))
     }
 }
 

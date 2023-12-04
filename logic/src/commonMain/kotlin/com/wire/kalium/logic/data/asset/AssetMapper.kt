@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.cryptography.utils.calcFileMd5
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
@@ -33,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
 import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
@@ -40,6 +42,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import okio.Path
+import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
 interface AssetMapper {
@@ -50,10 +53,6 @@ interface AssetMapper {
     fun fromAssetEntityToAssetContent(assetContentEntity: MessageEntityContent.Asset): AssetContent
     fun fromProtoAssetMessageToAssetContent(protoAssetMessage: Asset): AssetContent
     fun fromAssetContentToProtoAssetMessage(messageContent: MessageContent.Asset, expectsReadConfirmation: Boolean): Asset
-    fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus
-    fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus
-    fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus
-    fun fromUploadStatusEntityToLogicModel(uploadStatus: MessageEntity.UploadStatus?): Message.UploadStatus
 }
 
 class AssetMapperImpl(
@@ -116,8 +115,8 @@ class AssetMapperImpl(
                         else -> AES_CBC
                     }
                 ),
-                uploadStatus = fromUploadStatusEntityToLogicModel(assetUploadStatus),
-                downloadStatus = fromDownloadStatusEntityToLogicModel(assetDownloadStatus)
+                uploadStatus = assetUploadStatus.toModel(),
+                downloadStatus = assetDownloadStatus.toModel()
             )
         }
     }
@@ -235,44 +234,61 @@ class AssetMapperImpl(
                 expectsReadConfirmation = expectsReadConfirmation
             )
         }
+}
 
-    override fun fromUploadStatusToDaoModel(uploadStatus: Message.UploadStatus): MessageEntity.UploadStatus {
-        return when (uploadStatus) {
-            Message.UploadStatus.NOT_UPLOADED -> MessageEntity.UploadStatus.NOT_UPLOADED
-            Message.UploadStatus.UPLOAD_IN_PROGRESS -> MessageEntity.UploadStatus.IN_PROGRESS
-            Message.UploadStatus.UPLOADED -> MessageEntity.UploadStatus.UPLOADED
-            Message.UploadStatus.FAILED_UPLOAD -> MessageEntity.UploadStatus.FAILED
-        }
+fun Message.UploadStatus.toDao(): MessageEntity.UploadStatus {
+    return when (this) {
+        Message.UploadStatus.NOT_UPLOADED -> MessageEntity.UploadStatus.NOT_UPLOADED
+        Message.UploadStatus.UPLOAD_IN_PROGRESS -> MessageEntity.UploadStatus.IN_PROGRESS
+        Message.UploadStatus.UPLOADED -> MessageEntity.UploadStatus.UPLOADED
+        Message.UploadStatus.FAILED_UPLOAD -> MessageEntity.UploadStatus.FAILED
     }
+}
 
-    override fun fromUploadStatusEntityToLogicModel(uploadStatus: MessageEntity.UploadStatus?): Message.UploadStatus {
-        return when (uploadStatus) {
-            MessageEntity.UploadStatus.NOT_UPLOADED -> Message.UploadStatus.NOT_UPLOADED
-            MessageEntity.UploadStatus.IN_PROGRESS -> Message.UploadStatus.UPLOAD_IN_PROGRESS
-            MessageEntity.UploadStatus.UPLOADED -> Message.UploadStatus.UPLOADED
-            MessageEntity.UploadStatus.FAILED -> Message.UploadStatus.FAILED_UPLOAD
-            null -> Message.UploadStatus.NOT_UPLOADED
-        }
+fun MessageEntity.UploadStatus?.toModel(): Message.UploadStatus {
+    return when (this) {
+        MessageEntity.UploadStatus.NOT_UPLOADED -> Message.UploadStatus.NOT_UPLOADED
+        MessageEntity.UploadStatus.IN_PROGRESS -> Message.UploadStatus.UPLOAD_IN_PROGRESS
+        MessageEntity.UploadStatus.UPLOADED -> Message.UploadStatus.UPLOADED
+        MessageEntity.UploadStatus.FAILED -> Message.UploadStatus.FAILED_UPLOAD
+        null -> Message.UploadStatus.NOT_UPLOADED
     }
+}
 
-    override fun fromDownloadStatusToDaoModel(downloadStatus: Message.DownloadStatus): MessageEntity.DownloadStatus {
-        return when (downloadStatus) {
-            Message.DownloadStatus.NOT_DOWNLOADED -> MessageEntity.DownloadStatus.NOT_DOWNLOADED
-            Message.DownloadStatus.DOWNLOAD_IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
-            Message.DownloadStatus.SAVED_INTERNALLY -> MessageEntity.DownloadStatus.SAVED_INTERNALLY
-            Message.DownloadStatus.SAVED_EXTERNALLY -> MessageEntity.DownloadStatus.SAVED_EXTERNALLY
-            Message.DownloadStatus.FAILED_DOWNLOAD -> MessageEntity.DownloadStatus.FAILED
-        }
+fun Message.DownloadStatus.toDao(): MessageEntity.DownloadStatus {
+    return when (this) {
+        Message.DownloadStatus.NOT_DOWNLOADED -> MessageEntity.DownloadStatus.NOT_DOWNLOADED
+        Message.DownloadStatus.DOWNLOAD_IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
+        Message.DownloadStatus.SAVED_INTERNALLY -> MessageEntity.DownloadStatus.SAVED_INTERNALLY
+        Message.DownloadStatus.SAVED_EXTERNALLY -> MessageEntity.DownloadStatus.SAVED_EXTERNALLY
+        Message.DownloadStatus.FAILED_DOWNLOAD -> MessageEntity.DownloadStatus.FAILED
+        Message.DownloadStatus.NOT_FOUND -> MessageEntity.DownloadStatus.NOT_FOUND
     }
+}
 
-    override fun fromDownloadStatusEntityToLogicModel(downloadStatus: MessageEntity.DownloadStatus?): Message.DownloadStatus {
-        return when (downloadStatus) {
-            MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
-            MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
-            MessageEntity.DownloadStatus.SAVED_INTERNALLY -> Message.DownloadStatus.SAVED_INTERNALLY
-            MessageEntity.DownloadStatus.SAVED_EXTERNALLY -> Message.DownloadStatus.SAVED_EXTERNALLY
-            MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED_DOWNLOAD
-            null -> Message.DownloadStatus.NOT_DOWNLOADED
-        }
+fun MessageEntity.DownloadStatus?.toModel(): Message.DownloadStatus {
+    return when (this) {
+        MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
+        MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+        MessageEntity.DownloadStatus.SAVED_INTERNALLY -> Message.DownloadStatus.SAVED_INTERNALLY
+        MessageEntity.DownloadStatus.SAVED_EXTERNALLY -> Message.DownloadStatus.SAVED_EXTERNALLY
+        MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED_DOWNLOAD
+        MessageEntity.DownloadStatus.NOT_FOUND -> Message.DownloadStatus.NOT_FOUND
+        null -> Message.DownloadStatus.NOT_DOWNLOADED
     }
+}
+
+fun AssetMessageEntity.toModel(): AssetMessage {
+    return AssetMessage(
+        time,
+        username,
+        messageId,
+        conversationId.toModel(),
+        assetId,
+        width,
+        height,
+        downloadStatus.toModel(),
+        assetPath = assetPath?.toPath(),
+        isSelfAsset = isSelfAsset
+    )
 }

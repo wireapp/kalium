@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOne
+import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -373,6 +374,17 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
     }
 
+    override suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean) =
+        withContext(coroutineContext) {
+            conversationQueries.updateDegradedConversationNotifiedFlag(updateFlag, conversationId)
+        }
+
+    override suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean> =
+        conversationQueries.selectDegradedConversationNotified(conversationId)
+            .asFlow()
+            .mapToOneOrDefault(true)
+            .flowOn(coroutineContext)
+
     override suspend fun clearContent(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
         conversationQueries.clearContent(conversationId)
     }
@@ -386,5 +398,18 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         unreadEventsQueries.getUnreadArchivedConversationsCount().asFlow().mapToOne()
+
+    override suspend fun updateLegalHoldStatus(
+        conversationId: QualifiedIDEntity,
+        legalHoldStatus: ConversationEntity.LegalHoldStatus
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
+    }
+
+    override suspend fun observeLegalHoldForConversation(conversationId: QualifiedIDEntity) =
+        conversationQueries.selectLegalHoldStatus(conversationId)
+            .asFlow()
+            .mapToOneOrDefault(ConversationEntity.LegalHoldStatus.DISABLED)
+            .flowOn(coroutineContext)
 
 }

@@ -1652,6 +1652,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
             userSupportedProtocols = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.supportedProtocols else null,
             userActiveOneOnOneConversationId = null,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
     }
 
@@ -1697,7 +1698,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
         val conversationEntity2 = ConversationEntity(
             QualifiedIDEntity("2", "wire.com"),
@@ -1724,7 +1726,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
 
         val conversationEntity3 = ConversationEntity(
@@ -1754,7 +1757,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
 
         val conversationEntity4 = ConversationEntity(
@@ -1784,7 +1788,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
         val conversationEntity5 = ConversationEntity(
             QualifiedIDEntity("5", "wire.com"),
@@ -1805,7 +1810,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
         val conversationEntity6 = ConversationEntity(
             QualifiedIDEntity("6", "wire.com"),
@@ -1834,7 +1840,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
 
         val member1 = MemberEntity(user1.id, MemberEntity.Role.Admin)

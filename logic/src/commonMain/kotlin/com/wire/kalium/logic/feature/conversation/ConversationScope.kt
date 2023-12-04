@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -64,7 +65,6 @@ import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
-import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
@@ -89,12 +89,12 @@ class ConversationScope internal constructor(
     private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val qualifiedIdMapper: QualifiedIdMapper,
-    private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
-    private val userPropertyRepository: UserPropertyRepository,
+    userPropertyRepository: UserPropertyRepository,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val kaliumLogger: KaliumLogger
 ) {
 
     val getSelfTeamUseCase: GetSelfTeamUseCase
@@ -127,6 +127,13 @@ class ConversationScope internal constructor(
     val observeConversationDetails: ObserveConversationDetailsUseCase
         get() = ObserveConversationDetailsUseCase(conversationRepository)
 
+    val notifyConversationIsOpen: NotifyConversationIsOpenUseCase
+        get() = NotifyConversationIsOpenUseCaseImpl(
+            oneOnOneResolver,
+            conversationRepository,
+            kaliumLogger
+        )
+
     val observeIsSelfUserMemberUseCase: ObserveIsSelfUserMemberUseCase
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
 
@@ -154,7 +161,7 @@ class ConversationScope internal constructor(
         )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository)
+        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository)
 
     val addServiceToConversationUseCase: AddServiceToConversationUseCase
         get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
@@ -306,5 +313,10 @@ class ConversationScope internal constructor(
 
     val clearUsersTypingEvents: ClearUsersTypingEventsUseCase
         get() = ClearUsersTypingEventsUseCaseImpl(typingIndicatorIncomingRepository)
+
+    val setUserInformedAboutVerificationBeforeMessagingUseCase: SetUserInformedAboutVerificationUseCase
+        get() = SetUserInformedAboutVerificationUseCaseImpl(conversationRepository)
+    val observeInformAboutVerificationBeforeMessagingFlagUseCase: ObserveDegradedConversationNotifiedUseCase
+        get() = ObserveDegradedConversationNotifiedUseCaseImpl(conversationRepository)
 
 }

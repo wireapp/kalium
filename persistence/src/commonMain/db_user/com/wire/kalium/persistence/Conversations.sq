@@ -1,8 +1,8 @@
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+import kotlin.Boolean;
 import kotlin.collections.List;
 import kotlinx.datetime.Instant;
-import kotlin.Boolean;
 
 CREATE TABLE Conversation (
     qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
@@ -42,7 +42,9 @@ CREATE TABLE Conversation (
     archived_date_time INTEGER AS Instant,
     -- mls_verification_status
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
-    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED"
+    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
+    degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED"
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -141,6 +143,11 @@ UPDATE Conversation
 SET mls_degraded_notified = ?
 WHERE qualified_id = :qualified_id;
 
+updateDegradedConversationNotifiedFlag:
+UPDATE Conversation
+SET degraded_conversation_notified = ?
+WHERE qualified_id = :qualified_id;
+
 CREATE VIEW IF NOT EXISTS ConversationDetails AS
 SELECT
 Conversation.qualified_id AS qualifiedId,
@@ -231,7 +238,8 @@ Conversation.incomplete_metadata,
 Conversation.archived,
 Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
-Conversation.proteus_verification_status
+Conversation.proteus_verification_status,
+Conversation.legal_hold_status
 FROM Conversation
 LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
     AND Conversation.type IS 'ONE_ON_ONE'
@@ -276,7 +284,7 @@ selectByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
 
 selectConversationByQualifiedId:
-SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status, proteus_verification_status FROM Conversation WHERE qualified_id = ?;
+SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status, proteus_verification_status, legal_hold_status FROM Conversation WHERE qualified_id = ?;
 
 selectProtocolInfoByQualifiedId:
 SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
@@ -401,6 +409,19 @@ UPDATE Conversation
 SET verification_status = :status
 WHERE qualified_id = :conversationId;
 
+updateLegalHoldStatus:
+UPDATE Conversation
+SET legal_hold_status = ?
+WHERE qualified_id = :qualified_id;
+
+selectLegalHoldStatus:
+SELECT legal_hold_status FROM Conversation
+WHERE qualified_id = :conversationId;
+
+selectDegradedConversationNotified:
+SELECT degraded_conversation_notified FROM Conversation
+WHERE qualified_id = :conversationId;
+
 clearContent {
 DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
 DELETE FROM Message WHERE conversation_id = :conversationId;
@@ -430,4 +451,8 @@ BEGIN
         "SENT",
         "VISIBLE"
     );
+
+    UPDATE Conversation
+    SET degraded_conversation_notified = (new.proteus_verification_status != "DEGRADED")
+    WHERE qualified_id = new.qualified_id;
 END;

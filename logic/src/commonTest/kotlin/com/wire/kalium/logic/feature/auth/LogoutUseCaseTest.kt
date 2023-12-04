@@ -82,9 +82,7 @@ class LogoutUseCaseTest {
             verify(arrangement.deregisterTokenUseCase)
                 .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
                 .wasInvoked(exactly = once)
-            verify(arrangement.logoutRepository)
-                .suspendFunction(arrangement.logoutRepository::logout)
-                .wasInvoked(exactly = once)
+
             verify(arrangement.sessionRepository)
                 .suspendFunction(arrangement.sessionRepository::logout)
                 .with(any(), eq(reason))
@@ -211,6 +209,10 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
+        verify(arrangement.logoutRepository)
+            .suspendFunction(arrangement.logoutRepository::logout)
+            .wasNotInvoked()
+
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
             .wasInvoked(exactly = once)
@@ -238,9 +240,14 @@ class LogoutUseCaseTest {
             logoutUseCase.invoke(reason)
             arrangement.globalTestScope.advanceUntilIdle()
 
+            verify(arrangement.logoutRepository)
+                .suspendFunction(arrangement.logoutRepository::logout)
+                .wasInvoked(exactly = once)
+
             verify(arrangement.clearClientDataUseCase)
                 .suspendFunction(arrangement.clearClientDataUseCase::invoke)
                 .wasInvoked(exactly = once)
+
             verify(arrangement.clearUserDataUseCase)
                 .suspendFunction(arrangement.clearUserDataUseCase::invoke)
                 .wasNotInvoked()
@@ -270,6 +277,10 @@ class LogoutUseCaseTest {
 
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
+
+        verify(arrangement.logoutRepository)
+            .suspendFunction(arrangement.logoutRepository::logout)
+            .wasInvoked(exactly = once)
 
         verify(arrangement.clearClientDataUseCase)
             .suspendFunction(arrangement.clearClientDataUseCase::invoke)
@@ -306,6 +317,10 @@ class LogoutUseCaseTest {
 
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
+
+        verify(arrangement.logoutRepository)
+            .suspendFunction(arrangement.logoutRepository::logout)
+            .wasInvoked(exactly = once)
 
         verify(arrangement.observeEstablishedCallsUseCase)
             .suspendFunction(arrangement.observeEstablishedCallsUseCase::invoke)

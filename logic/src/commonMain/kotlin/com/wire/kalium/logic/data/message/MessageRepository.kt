@@ -22,6 +22,9 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.asset.AssetMessage
+import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
+import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
@@ -217,12 +220,13 @@ interface MessageRepository {
         targetConversation: ConversationId
     ): Either<StorageFailure, Unit>
 
-    suspend fun getConversationMessagesFromSearch(
-        searchQuery: String,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<Message.Standalone>>
+    suspend fun getSearchedConversationMessagePosition(
+        conversationId: ConversationId,
+        messageId: String
+    ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
+    suspend fun getAssetMessagesByConversationId(conversationId: ConversationId, limit: Int, offset: Int): List<AssetMessage>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -254,6 +258,18 @@ class MessageDataSource(
             offset,
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
+
+    override suspend fun getAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessage> = messageDAO.getMessageAssets(
+        conversationId.toDao(),
+        mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+        limit,
+        offset
+    )
+        .map(messageMapper::fromAssetEntityToMessage)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
@@ -366,7 +382,7 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateAssetUploadStatus(
-                assetMapper.fromUploadStatusToDaoModel(uploadStatus),
+                uploadStatus.toDao(),
                 messageUuid,
                 conversationId.toDao()
             )
@@ -379,7 +395,7 @@ class MessageDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             messageDAO.updateAssetDownloadStatus(
-                assetMapper.fromDownloadStatusToDaoModel(downloadStatus),
+                downloadStatus.toDao(),
                 messageUuid,
                 conversationId.toDao()
             )
@@ -640,13 +656,13 @@ class MessageDataSource(
         )
     }
 
-    override suspend fun getConversationMessagesFromSearch(
-        searchQuery: String,
-        conversationId: ConversationId
-    ): Either<CoreFailure, List<Message.Standalone>> = wrapStorageRequest {
-        messageDAO.getConversationMessagesFromSearch(
-            searchQuery = searchQuery,
-            conversationId = conversationId.toDao()
-        ).map(messageMapper::fromEntityToMessage)
+    override suspend fun getSearchedConversationMessagePosition(
+        conversationId: ConversationId,
+        messageId: String
+    ): Either<StorageFailure, Int> = wrapStorageRequest {
+        messageDAO.getSearchedConversationMessagePosition(
+            conversationId = conversationId.toDao(),
+            messageId = messageId
+        )
     }
 }

@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.client
 
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -69,6 +70,7 @@ enum class ClientTypeEntity {
 interface ClientDAO {
     suspend fun insertClient(client: InsertClientParam)
     suspend fun insertClients(clients: List<InsertClientParam>)
+    suspend fun removeClientsAndReturnUsersWithNoClients(redundantClientsOfUsers: Map<UserIDEntity, List<String>>): List<QualifiedIDEntity>
     suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
     suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client>
     suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>>

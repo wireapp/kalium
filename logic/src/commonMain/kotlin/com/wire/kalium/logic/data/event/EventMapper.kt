@@ -31,8 +31,11 @@ import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.event.Event.UserProperty.ReadReceiptModeSet
 import com.wire.kalium.logic.data.event.Event.UserProperty.TypingIndicatorModeSet
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
@@ -51,7 +54,7 @@ import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.serializer
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 class EventMapper(
     private val memberMapper: MemberMapper,
     private val connectionMapper: ConnectionMapper,
@@ -59,7 +62,8 @@ class EventMapper(
     private val roleMapper: ConversationRoleMapper,
     private val selfUserId: UserId,
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
-    private val clientMapper: ClientMapper = MapperProvider.clientMapper()
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
+    private val qualifiedIdMapper: QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)
 ) {
     fun fromDTO(eventResponse: EventResponse, live: Boolean = false): List<Event> {
         // TODO(edge-case): Multiple payloads in the same event have the same ID, is this an issue when marking lastProcessedEventId?
@@ -82,14 +86,15 @@ class EventMapper(
             is EventContentDTO.User.NewConnectionDTO -> connectionUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.User.ClientRemoveDTO -> clientRemove(id, eventContentDTO, transient, live)
             is EventContentDTO.User.UserDeleteDTO -> userDelete(id, eventContentDTO, transient, live)
-            is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO, transient, live)
             is EventContentDTO.User.NewClientDTO -> newClient(id, eventContentDTO, transient, live)
+            is EventContentDTO.User.NewLegalHoldRequestDTO -> legalHoldRequest(id, transient, live, eventContentDTO)
+            is EventContentDTO.User.LegalHoldEnabledDTO -> legalHoldEnabled(id, transient, live, eventContentDTO)
+            is EventContentDTO.User.LegalHoldDisabledDTO -> legalHoldDisabled(id, transient, live, eventContentDTO)
+            is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO, transient, live)
             is EventContentDTO.Unknown -> unknown(id, transient, live, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, live, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient, live)
-            is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient, live)
-            is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient, live)
@@ -355,6 +360,50 @@ class EventMapper(
         connectionMapper.fromApiToModel(eventConnectionDTO.connection)
     )
 
+    internal fun legalHoldRequest(
+        id: String,
+        transient: Boolean,
+        live: Boolean,
+        eventContentDTO: EventContentDTO.User.NewLegalHoldRequestDTO
+    ): Event.User.LegalHoldRequest {
+        return Event.User.LegalHoldRequest(
+            transient = transient,
+            live = live,
+            id = id,
+            clientId = ClientId(eventContentDTO.clientId.clientId),
+            lastPreKey = LastPreKey(eventContentDTO.lastPreKey.id, eventContentDTO.lastPreKey.key),
+            userId = qualifiedIdMapper.fromStringToQualifiedID(eventContentDTO.id)
+        )
+    }
+
+    internal fun legalHoldEnabled(
+        id: String,
+        transient: Boolean,
+        live: Boolean,
+        eventContentDTO: EventContentDTO.User.LegalHoldEnabledDTO
+    ): Event.User.LegalHoldEnabled {
+        return Event.User.LegalHoldEnabled(
+            transient,
+            live,
+            id,
+            qualifiedIdMapper.fromStringToQualifiedID(eventContentDTO.id)
+        )
+    }
+
+    internal fun legalHoldDisabled(
+        id: String,
+        transient: Boolean,
+        live: Boolean,
+        eventContentDTO: EventContentDTO.User.LegalHoldDisabledDTO
+    ): Event.User.LegalHoldDisabled {
+        return Event.User.LegalHoldDisabled(
+            transient,
+            live,
+            id,
+            qualifiedIdMapper.fromStringToQualifiedID(eventContentDTO.id)
+        )
+    }
+
     private fun userDelete(
         id: String,
         eventUserDelete: EventContentDTO.User.UserDeleteDTO,
@@ -496,6 +545,7 @@ class EventMapper(
         else -> MutedConversationStatus.AllAllowed
     }
 
+    @Suppress("LongMethod")
     private fun featureConfig(
         id: String,
         featureConfigUpdatedDTO: EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO,
@@ -565,7 +615,13 @@ class EventMapper(
             featureConfigMapper.fromDTO(featureConfigUpdatedDTO.data as FeatureConfigData.AppLock)
         )
 
-        else -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient, live)
+        is FeatureConfigData.DigitalSignatures,
+        is FeatureConfigData.Legalhold,
+        is FeatureConfigData.SSO,
+        is FeatureConfigData.SearchVisibility,
+        is FeatureConfigData.SecondFactorPasswordChallenge,
+        is FeatureConfigData.Unknown,
+        is FeatureConfigData.ValidateSAMLEmails -> Event.FeatureConfig.UnknownFeatureUpdated(id, transient, live)
     }
 
     private fun conversationDeleted(
@@ -595,33 +651,6 @@ class EventMapper(
         transient = transient,
         live = live,
         timestampIso = event.time,
-    )
-
-    private fun teamMemberJoined(
-        id: String,
-        event: EventContentDTO.Team.MemberJoin,
-        transient: Boolean,
-        live: Boolean
-    ) = Event.Team.MemberJoin(
-        id = id,
-        teamId = event.teamId,
-        transient = transient,
-        live = live,
-        memberId = event.teamMember.nonQualifiedUserId
-    )
-
-    private fun teamMemberLeft(
-        id: String,
-        event: EventContentDTO.Team.MemberLeave,
-        transient: Boolean,
-        live: Boolean
-    ) = Event.Team.MemberLeave(
-        id = id,
-        teamId = event.teamId,
-        memberId = event.teamMember.nonQualifiedUserId,
-        transient = transient,
-        live = live,
-        timestampIso = event.time
     )
 
     private fun teamMemberUpdate(

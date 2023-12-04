@@ -24,13 +24,17 @@ import com.wire.kalium.model.ServiceDetailsResponseJson
 import com.wire.kalium.model.TeamsResponsesJson
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.ServiceDetailResponse
+import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.v0.authenticated.TeamsApiV0
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.encodeToString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -120,11 +124,56 @@ internal class TeamsApiV0Test : ApiTest() {
             }
         }
 
+    private fun testApprovingLegalHold(teamId: TeamId, userId: NonQualifiedUserId, password: String?) = runTest {
+        val expectedRequestBody = KtxSerializer.json.encodeToString(TeamsApi.PasswordRequest(password))
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPut()
+                assertJson()
+                assertNoQueryParams()
+                assertJsonBodyContent(expectedRequestBody)
+                assertPathEqual("/$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId/$PATH_APPROVE")
+            }
+        )
+        val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+        teamsApi.approveLegalHoldRequest(teamId, userId, password)
+    }
+
+    @Test
+    fun givenAValidTeamIdAndUserIdAndPassword_whenApprovingLegalHold_theRequestShouldBeConfiguredCorrectly() =
+        testApprovingLegalHold(DUMMY_TEAM_ID, DUMMY_USER_ID, "password")
+
+    @Test
+    fun givenAValidTeamIdAndUserIdAndNoPassword_whenApprovingLegalHold_theRequestShouldBeConfiguredCorrectly() =
+        testApprovingLegalHold(DUMMY_TEAM_ID, DUMMY_USER_ID, null)
+
+    @Test
+    fun givenAValidTeamIdAndUserId_whenFetchingLegalHoldStatus_thenRequestShouldBeConfiguredCorrectly() = runTest {
+        val teamId = DUMMY_TEAM_ID
+        val userId = DUMMY_USER_ID
+        val networkClient = mockAuthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertNoQueryParams()
+                assertPathEqual("/$PATH_TEAMS/$teamId/$PATH_LEGAL_HOLD/$userId")
+            }
+        )
+        val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+        teamsApi.fetchLegalHoldStatus(teamId, userId)
+    }
+
     private companion object {
         const val PATH_TEAMS = "teams"
         const val PATH_CONVERSATIONS = "conversations"
         const val PATH_MEMBERS = "members"
+        const val PATH_LEGAL_HOLD = "legalhold"
+        const val PATH_APPROVE = "approve"
         const val DUMMY_TEAM_ID = "770b0623-ffd5-4e08-8092-7a6b9b9ca3b4"
+        const val DUMMY_USER_ID = "96a6e8e4-6420-49db-aa83-2711edf7580d"
         val GET_TEAM_MEMBER_CLIENT_RESPONSE = TeamsResponsesJson.GetTeamsMembers.validGetTeamsMembers
         val SERVICES_LIST_RESPONSE = ServiceDetailsResponseJson.valid
     }

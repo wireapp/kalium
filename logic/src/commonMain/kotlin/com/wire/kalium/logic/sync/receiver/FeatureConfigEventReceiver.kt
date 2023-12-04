@@ -30,7 +30,6 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
@@ -47,7 +46,6 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val mlsMigrationConfigHandler: MLSMigrationConfigHandler,
     private val classifiedDomainsConfigHandler: ClassifiedDomainsConfigHandler,
     private val conferenceCallingConfigHandler: ConferenceCallingConfigHandler,
-    private val passwordChallengeConfigHandler: SecondFactorPasswordChallengeConfigHandler,
     private val selfDeletingMessagesConfigHandler: SelfDeletingMessagesConfigHandler,
     private val e2EIConfigHandler: E2EIConfigHandler,
     private val appLockConfigHandler: AppLockConfigHandler
@@ -62,33 +60,33 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                 )
             }
             .onFailure {
-                if (it is CoreFailure.FeatureNotImplemented) {
-                    kaliumLogger.logEventProcessing(
-                        EventLoggingStatus.SKIPPED,
-                        event,
-                        Pair("info", "Ignoring unknown feature config update")
-                    )
-                } else {
-                    kaliumLogger.logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("error", it)
-                    )
-                }
+                kaliumLogger.logEventProcessing(
+                    EventLoggingStatus.FAILURE,
+                    event,
+                    Pair("error", it)
+                )
             }
 
-    @Suppress("LongMethod", "ComplexMethod")
-    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
-        when (event) {
-            is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
-            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
-            is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
-            is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
-            is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
-            is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
-            is Event.FeatureConfig.SelfDeletingMessagesConfig -> selfDeletingMessagesConfigHandler.handle(event.model)
-            is Event.FeatureConfig.MLSE2EIUpdated -> e2EIConfigHandler.handle(event.model)
-            is Event.FeatureConfig.AppLockUpdated -> appLockConfigHandler.handle(event.model)
-            is Event.FeatureConfig.UnknownFeatureUpdated -> Either.Left(CoreFailure.FeatureNotImplemented)
+@Suppress("LongMethod", "ComplexMethod")
+private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
+    when (event) {
+        is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
+        is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
+        is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
+        is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
+        is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
+        is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
+        is Event.FeatureConfig.SelfDeletingMessagesConfig -> selfDeletingMessagesConfigHandler.handle(event.model)
+        is Event.FeatureConfig.MLSE2EIUpdated -> e2EIConfigHandler.handle(event.model)
+        is Event.FeatureConfig.AppLockUpdated -> appLockConfigHandler.handle(event.model)
+        is Event.FeatureConfig.UnknownFeatureUpdated -> {
+            kaliumLogger.logEventProcessing(
+                EventLoggingStatus.SKIPPED,
+                event,
+                Pair("info", "Ignoring unknown feature config update")
+            )
+
+            Either.Right(Unit)
         }
+    }
 }

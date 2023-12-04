@@ -188,12 +188,16 @@ class ClientDAOTest : BaseDatabaseTest() {
     fun givenIsMLSCapableIsFalse_whenUpdatingAClient_thenItShouldUpdatedToTrue() = runTest {
         val user = user
         userDAO.upsertUser(user)
-        clientDAO.insertClient(insertedClient.copy(
-            isMLSCapable = false
-        ))
-        clientDAO.insertClient(insertedClient.copy(
-            isMLSCapable = true
-        ))
+        clientDAO.insertClient(
+            insertedClient.copy(
+                isMLSCapable = false
+            )
+        )
+        clientDAO.insertClient(
+            insertedClient.copy(
+                isMLSCapable = true
+            )
+        )
         assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isMLSCapable }
     }
 
@@ -201,12 +205,16 @@ class ClientDAOTest : BaseDatabaseTest() {
     fun givenIsMLSCapableIsTrue_whenUpdatingAClient_thenItShouldRemainTrue() = runTest {
         val user = user
         userDAO.upsertUser(user)
-        clientDAO.insertClient(insertedClient.copy(
-            isMLSCapable = true
-        ))
-        clientDAO.insertClient(insertedClient.copy(
-            isMLSCapable = false
-        ))
+        clientDAO.insertClient(
+            insertedClient.copy(
+                isMLSCapable = true
+            )
+        )
+        clientDAO.insertClient(
+            insertedClient.copy(
+                isMLSCapable = false
+            )
+        )
         assertTrue { clientDAO.getClientsOfUserByQualifiedID(userId).first().isMLSCapable }
     }
 
@@ -355,6 +363,32 @@ class ClientDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenYUserHaveNoClientsAfterDeletingClients_whenCallingRemoveClientsAndReturnUsersWithNoClients_thenUserIsReturned() = runTest {
+        val userWithAllClientsDeleted = user
+        val clientsWithAllClientsDeleted = listOf(insertedClient1, insertedClient2)
+
+
+        val userWithClients = newUserEntity(QualifiedIDEntity("test2", "domain"))
+        val clientsWithClients = listOf(
+            insertedClient1.copy(userWithClients.id, "id1", deviceType = null), // will be deleted
+            insertedClient2.copy(userWithClients.id, "id2", deviceType = null) // will be retained
+        )
+
+        userDAO.upsertUsers(listOf(userWithAllClientsDeleted, userWithClients))
+        clientDAO.insertClients(clientsWithAllClientsDeleted)
+        clientDAO.insertClients(clientsWithClients)
+
+        clientDAO.removeClientsAndReturnUsersWithNoClients(
+            mapOf(
+                userWithAllClientsDeleted.id to clientsWithAllClientsDeleted.map { it.id },
+                userWithClients.id to listOf(clientsWithClients.first()).map { it.id }
+            )
+        ).also {
+            assertEquals(listOf(userWithAllClientsDeleted.id), it)
+        }
+    }
+
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
@@ -398,7 +432,8 @@ class ClientDAOTest : BaseDatabaseTest() {
             archived = false,
             archivedInstant = null,
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED
+            proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
         )
     }
 }
