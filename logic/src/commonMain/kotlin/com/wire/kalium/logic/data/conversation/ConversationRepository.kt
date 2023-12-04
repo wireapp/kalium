@@ -215,9 +215,6 @@ interface ConversationRepository {
     suspend fun clearContent(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
-
-    suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
-
     suspend fun getConversationsByUserId(userId: UserId): Either<CoreFailure, List<Conversation>>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun changeConversationName(
@@ -873,10 +870,6 @@ internal class ConversationDataSource internal constructor(
             conversationId.toDao(),
             idMapper.toStringDaoModel(selfUserId)
         )?.toModel()
-    }
-
-    override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationDAO.revokeOneOnOneConversationsWithDeletedUser(userId.toDao())
     }
 
     override suspend fun getConversationsByUserId(userId: UserId): Either<CoreFailure, List<Conversation>> {

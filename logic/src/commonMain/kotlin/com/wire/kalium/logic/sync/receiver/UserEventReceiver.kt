@@ -182,28 +182,7 @@ internal class UserEventReceiverImpl internal constructor(
             logout(LogoutReason.DELETED_ACCOUNT)
             Either.Right(Unit)
         } else {
-            // TODO: those 2 steps must be done in one transaction
-            //  userRepo.markAsDeleted(event.userId) will mark user as deleted and remove from the group conversations
-            userRepository.removeUser(event.userId)
-                .onSuccess {
-                    conversationRepository.deleteUserFromConversations(event.userId)
-                        .onSuccess {
-                            kaliumLogger
-                                .logEventProcessing(
-                                    EventLoggingStatus.SUCCESS,
-                                    event
-                                )
-                        }
-                        .onFailure {
-                            kaliumLogger
-                                .logEventProcessing(
-                                    EventLoggingStatus.FAILURE,
-                                    event,
-                                    Pair("errorInfo", "$it")
-                                )
-                        }
-
-                }
+            userRepository.markUserAsDeletedAndRemoveFromGroupConversations(event.userId)
                 .onFailure {
                     kaliumLogger
                         .logEventProcessing(

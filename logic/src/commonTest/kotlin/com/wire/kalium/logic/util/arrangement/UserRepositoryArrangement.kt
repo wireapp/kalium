@@ -37,7 +37,7 @@ internal interface UserRepositoryArrangement {
 
     fun withUpdateUserFailure(coreFailure: CoreFailure)
 
-    fun withRemoveUserSuccess()
+    fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess()
 
     fun withSelfUserReturning(selfUser: SelfUser?)
 
@@ -74,8 +74,8 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
             .whenInvokedWith(any()).thenReturn(Either.Left(coreFailure))
     }
 
-    override fun withRemoveUserSuccess() {
-        given(userRepository).suspendFunction(userRepository::removeUser)
+    override fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess() {
+        given(userRepository).suspendFunction(userRepository::markUserAsDeletedAndRemoveFromGroupConversations)
             .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
     }
 
