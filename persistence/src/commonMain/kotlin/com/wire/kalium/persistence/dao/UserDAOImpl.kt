@@ -208,25 +208,30 @@ class UserDAOImpl internal constructor(
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
             for (user: UserEntity in users) {
-                userQueries.insertUser(
-                    qualified_id = user.id,
-                    name = user.name,
-                    handle = user.handle,
-                    email = user.email,
-                    phone = user.phone,
-                    accent_id = user.accentId,
-                    team = user.team,
-                    preview_asset_id = user.previewAssetId,
-                    complete_asset_id = user.completeAssetId,
-                    user_type = user.userType,
-                    bot_service = user.botService,
-                    incomplete_metadata = user.hasIncompleteMetadata,
-                    expires_at = user.expiresAt,
-                    connection_status = user.connectionStatus,
-                    deleted = user.deleted,
-                    supported_protocols = user.supportedProtocols,
-                    active_one_on_one_conversation_id = user.activeOneOnOneConversationId
-                )
+                if (user.deleted) {
+                    // mark as deleted and remove from groups
+                    safeMarkAsDeleted(user.id)
+                } else {
+                    userQueries.insertUser(
+                        qualified_id = user.id,
+                        name = user.name,
+                        handle = user.handle,
+                        email = user.email,
+                        phone = user.phone,
+                        accent_id = user.accentId,
+                        team = user.team,
+                        preview_asset_id = user.previewAssetId,
+                        complete_asset_id = user.completeAssetId,
+                        user_type = user.userType,
+                        bot_service = user.botService,
+                        incomplete_metadata = user.hasIncompleteMetadata,
+                        expires_at = user.expiresAt,
+                        connection_status = user.connectionStatus,
+                        deleted = user.deleted,
+                        supported_protocols = user.supportedProtocols,
+                        active_one_on_one_conversation_id = user.activeOneOnOneConversationId
+                    )
+                }
             }
         }
     }
@@ -299,8 +304,15 @@ class UserDAOImpl internal constructor(
         userQueries.deleteUser(qualifiedID)
     }
 
-    override suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
-        userQueries.markUserAsDeleted(user_type = UserTypeEntity.NONE, qualified_id = qualifiedID)
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
+        userQueries.transaction {
+            safeMarkAsDeleted(qualifiedID)
+        }
+    }
+
+    private fun safeMarkAsDeleted(qualifiedID: QualifiedIDEntity) {
+        userQueries.markUserAsDeleted(qualifiedID, UserTypeEntity.NONE)
+        userQueries.deleteUserFromGroupConversations(qualifiedID)
     }
 
     override suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity) {

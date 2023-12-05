@@ -82,9 +82,18 @@ connection_status = excluded.connection_status,
 user_type = excluded.user_type;
 
 markUserAsDeleted:
-UPDATE User
-SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, user_type = ?, deleted = 1
-WHERE qualified_id = ?;
+INSERT INTO User(qualified_id, user_type, deleted)
+VALUES (:qualified_id, :user_type, 1)
+ON CONFLICT (qualified_id) DO UPDATE SET
+team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, user_type = excluded.user_type, deleted = 1;
+
+deleteUserFromGroupConversations:
+DELETE FROM Member
+WHERE conversation IN (
+    SELECT conversation FROM Member
+    JOIN Conversation ON Conversation.qualified_id = Member.conversation
+    WHERE Member.user = :qualified_id AND Conversation.type = 'GROUP'
+) AND Member.user = :qualified_id;
 
 markUserAsDefederated:
 UPDATE User
