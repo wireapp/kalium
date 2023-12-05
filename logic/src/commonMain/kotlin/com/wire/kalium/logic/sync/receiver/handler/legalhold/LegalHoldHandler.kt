@@ -71,8 +71,8 @@ internal class LegalHoldHandlerImpl internal constructor(
         if (!userHasBeenUnderLegalHold) {
             handleSystemMessages(
                 userId = legalHoldEnabled.userId,
-                updateContent = { content -> content.copy(members = content.members - selfUserId) },
-                createNewContent = { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
+                updateContent = { content -> content.copy(members = content.members - legalHoldEnabled.userId) },
+                createNewContent = { MessageContent.LegalHold.EnabledForMembers(members = listOf(legalHoldEnabled.userId)) }
             )
         }
 
@@ -89,8 +89,8 @@ internal class LegalHoldHandlerImpl internal constructor(
         if (userHasBeenUnderLegalHold) {
             handleSystemMessages(
                 legalHoldDisabled.userId,
-                updateContent = { content -> content.copy(members = content.members - selfUserId) },
-                createNewContent = { MessageContent.LegalHold.DisabledForMembers(members = listOf(selfUserId)) }
+                updateContent = { content -> content.copy(members = content.members - legalHoldDisabled.userId) },
+                createNewContent = { MessageContent.LegalHold.DisabledForMembers(members = listOf(legalHoldDisabled.userId)) }
             )
         }
 
