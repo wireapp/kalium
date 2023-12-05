@@ -24,6 +24,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -42,7 +43,10 @@ interface MessageSendFailureHandler {
      * @return Either.Left if can't recover from error
      * @return Either.Right if the error was properly handled and a new attempt at sending message can be made
      */
-    suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit>
+    suspend fun handleClientsHaveChangedFailure(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit>
 
     /**
      * Handle a failure when attempting to send a message
@@ -66,19 +70,30 @@ class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
     private val messageRepository: MessageRepository,
-    private val messageSendingScheduler: MessageSendingScheduler
+    private val messageSendingScheduler: MessageSendingScheduler,
+    private val conversationRepository: ConversationRepository,
 ) : MessageSendFailureHandler {
 
-    override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
-        // TODO(optimization): add/remove members to/from conversation
+    override suspend fun handleClientsHaveChangedFailure(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit> =
         handleDeletedClients(sendFailure.deletedClientsOfUsers)
             .map { usersWithNoClientsRemaining ->
                 sendFailure.missingClientsOfUsers.keys + usersWithNoClientsRemaining
             }.flatMap { usersThatNeedInfoRefresh ->
                 syncUserIds(usersThatNeedInfoRefresh)
             }.flatMap {
+                updateConversationInfo(sendFailure, conversationId)
+            }.flatMap {
                 addMissingClients(sendFailure.missingClientsOfUsers)
             }
+
+    private suspend fun updateConversationInfo(sendFailure: ProteusSendMessageFailure, conversationId: ConversationId?): Either<CoreFailure, Unit> {
+        if (conversationId == null) return Either.Right(Unit)
+        if (sendFailure.deletedClientsOfUsers.isEmpty() && sendFailure.missingClientsOfUsers.isEmpty()) return Either.Right(Unit)
+        return conversationRepository.fetchConversation(conversationId)
+    }
 
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
         return if (deletedClient.isEmpty()) Either.Right(emptySet())
