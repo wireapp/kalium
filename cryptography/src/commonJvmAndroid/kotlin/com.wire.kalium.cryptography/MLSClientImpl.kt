@@ -327,8 +327,15 @@ class MLSClientImpl(
             value.handle,
             value.displayName,
             value.domain,
-            value.certificate
+            value.certificate,
+            toDeviceStatus(value.status)
         )
+
+        fun toDeviceStatus(value: com.wire.crypto.DeviceStatus) = when (value) {
+            com.wire.crypto.DeviceStatus.VALID -> CryptoCertificateStatus.VALID
+            com.wire.crypto.DeviceStatus.EXPIRED -> CryptoCertificateStatus.EXPIRED
+            com.wire.crypto.DeviceStatus.REVOKED -> CryptoCertificateStatus.REVOKED
+        }
 
         // TODO: remove later, when CoreCrypto return the groupId instead of Hex value
         @Suppress("MagicNumber")
@@ -366,9 +373,7 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let {
-                WireIdentity(it.clientId, it.handle, it.displayName, it.domain, it.certificate)
-            }
+            value.identity?.let { toIdentity(it) }
         )
 
         fun toDecryptedMessageBundle(value: BufferedDecryptedMessage) = DecryptedMessageBundle(
@@ -376,9 +381,7 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let {
-                WireIdentity(it.clientId, it.handle, it.displayName, it.domain, it.certificate)
-            }
+            value.identity?.let { toIdentity(it) }
         )
     }
 }
