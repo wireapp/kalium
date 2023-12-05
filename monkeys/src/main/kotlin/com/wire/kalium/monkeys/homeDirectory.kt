@@ -35,6 +35,7 @@ fun coreLogic(
             encryptProteusStorage = true,
             isMLSSupportEnabled = true,
             wipeOnDeviceRemoval = true,
+            fetchAllTeamMembersEagerly = true,
         ), "Wire Infinite Monkeys"
     )
     coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
