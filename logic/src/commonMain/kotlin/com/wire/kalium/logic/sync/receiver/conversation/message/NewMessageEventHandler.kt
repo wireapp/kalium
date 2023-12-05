@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -43,6 +44,7 @@ internal interface NewMessageEventHandler {
 internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
+    private val conversationRepository: ConversationRepository,
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
@@ -83,7 +85,10 @@ internal class NewMessageEventHandlerImpl(
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
                     handleSuccessfulResult(it)
-                    // TODO(legalhold): update legal hold status in DB
+                    conversationRepository.updateLegalHoldStatus(
+                        conversationId = it.conversationId,
+                        legalHoldStatus = it.content.legalHoldStatus
+                    )
                     onMessageInserted(it)
                 }
                 kaliumLogger
@@ -130,6 +135,10 @@ internal class NewMessageEventHandlerImpl(
                 it.forEach {
                     if (it is MessageUnpackResult.ApplicationMessage) {
                         handleSuccessfulResult(it)
+                        conversationRepository.updateLegalHoldStatus(
+                            conversationId = it.conversationId,
+                            legalHoldStatus = it.content.legalHoldStatus
+                        )
                         onMessageInserted(it)
                     }
                 }
