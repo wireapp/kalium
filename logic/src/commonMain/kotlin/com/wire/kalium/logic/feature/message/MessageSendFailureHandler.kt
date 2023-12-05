@@ -40,7 +40,10 @@ interface MessageSendFailureHandler {
      * @return Either.Left if can't recover from error
      * @return Either.Right if the error was properly handled and a new attempt at sending message can be made
      */
-    suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure, conversationId: ConversationId?): Either<CoreFailure, Unit>
+    suspend fun handleClientsHaveChangedFailure(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit>
 
     /**
      * Handle a failure when attempting to send a message
@@ -68,7 +71,10 @@ class MessageSendFailureHandlerImpl internal constructor(
     private val messageSendingScheduler: MessageSendingScheduler
 ) : MessageSendFailureHandler {
 
-    override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure, conversationId: ConversationId?): Either<CoreFailure, Unit> =
+    override suspend fun handleClientsHaveChangedFailure(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit> =
     // TODO(optimization): add/remove members to/from conversation
         // TODO(optimization): remove clients from conversation
         userRepository
@@ -87,7 +93,6 @@ class MessageSendFailureHandlerImpl internal constructor(
                     }
             }
 
-
     override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,
         conversationId: ConversationId,
@@ -100,10 +105,12 @@ class MessageSendFailureHandlerImpl internal constructor(
                 kaliumLogger.e("Sending message of type $messageType failed due to federation context availability.")
                 messageRepository.updateMessageStatus(MessageEntity.Status.FAILED_REMOTELY, conversationId, messageId)
             }
+
             failure is NetworkFailure.NoNetworkConnection && scheduleResendIfNoNetwork -> {
                 kaliumLogger.i("Scheduling message for retrying in the future.")
                 messageSendingScheduler.scheduleSendingOfPendingMessages()
             }
+
             else -> {
                 messageRepository.updateMessageStatus(MessageEntity.Status.FAILED, conversationId, messageId)
             }
