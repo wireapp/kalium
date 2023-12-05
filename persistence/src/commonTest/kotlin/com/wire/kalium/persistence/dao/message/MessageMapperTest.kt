@@ -160,7 +160,11 @@ class MessageMapperTest {
             buttonsJson: String = "[]",
             federationDomainList: List<String>? = null,
             federationType: MessageEntity.FederationType? = null,
-            conversationProtocolChanged: ConversationEntity.Protocol? = null
+            conversationProtocolChanged: ConversationEntity.Protocol? = null,
+            latitude: Float? = null,
+            longitude: Float? = null,
+            locationName: String? = null,
+            locationZoom: Int? = null
         ): MessageEntity {
             return MessageMapper.toEntityMessageFromView(
                 id,
@@ -240,7 +244,11 @@ class MessageMapperTest {
                 buttonsJson,
                 federationDomainList,
                 federationType,
-                conversationProtocolChanged
+                conversationProtocolChanged,
+                latitude,
+                longitude,
+                locationName,
+                locationZoom
             )
         }
 
