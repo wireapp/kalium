@@ -98,7 +98,6 @@ class MessageSendFailureHandlerImpl internal constructor(
             else -> conversationRepository.fetchConversation(conversationId)
         }
 
-
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
         return if (deletedClient.isEmpty()) Either.Right(emptySet())
         else clientRepository.removeClientsAndReturnUsersWithNoClients(deletedClient).map { it.toSet() }
