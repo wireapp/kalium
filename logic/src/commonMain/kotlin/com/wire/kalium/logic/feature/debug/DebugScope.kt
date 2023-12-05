@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -119,6 +120,8 @@ class DebugScope internal constructor(
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
+            conversationRepository = conversationRepository,
+            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
             proteusClientProvider = proteusClientProvider,
             selfUserId = userId,
             protoContentMapper = protoContentMapper
@@ -126,7 +129,9 @@ class DebugScope internal constructor(
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
+            conversationRepository = conversationRepository,
             mlsClientProvider = mlsClientProvider,
+            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
             selfUserId = userId,
             protoContentMapper = protoContentMapper
         )

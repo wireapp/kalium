@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCase
@@ -106,6 +107,8 @@ class MessageScope internal constructor(
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
+            conversationRepository = conversationRepository,
+            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
             proteusClientProvider = proteusClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
@@ -113,6 +116,8 @@ class MessageScope internal constructor(
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
+            conversationRepository = conversationRepository,
+            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
             mlsClientProvider = mlsClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper

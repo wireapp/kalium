@@ -22,6 +22,8 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
@@ -34,6 +36,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import kotlinx.coroutines.flow.first
 
 interface MLSMessageCreator {
 
@@ -45,6 +48,8 @@ interface MLSMessageCreator {
 }
 
 class MLSMessageCreatorImpl(
+    private val conversationRepository: ConversationRepository,
+    private val legalHoldStatusMapper: LegalHoldStatusMapper,
     private val mlsClientProvider: MLSClientProvider,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
@@ -60,10 +65,10 @@ class MLSMessageCreatorImpl(
                 else -> false
             }
 
-            // TODO(legalhold) - Get correct legal hold status
-            val legalHoldStatus = when (message) {
-                is Message.Regular -> Conversation.LegalHoldStatus.DISABLED
-                else -> Conversation.LegalHoldStatus.DISABLED
+            val legalHoldStatus = conversationRepository.observeLegalHoldForConversation(
+                message.conversationId
+            ).first().let {
+                legalHoldStatusMapper.mapLegalHoldConversationStatus(it, message)
             }
 
             val content = protoContentMapper.encodeToProtobuf(
