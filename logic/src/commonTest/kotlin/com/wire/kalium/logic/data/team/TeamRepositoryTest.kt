@@ -120,12 +120,8 @@ class TeamRepositoryTest {
         )
 
         val (arrangement, teamRepository) = Arrangement()
+            .withGetTeamMembers(NetworkResponse.Success(teamMembersList, mapOf(), 200))
             .arrange()
-
-        given(arrangement.teamsApi)
-            .suspendFunction(arrangement.teamsApi::getTeamMembers)
-            .whenInvokedWith(oneOf("teamId"), oneOf(null))
-            .thenReturn(NetworkResponse.Success(value = teamMembersList, headers = mapOf(), httpCode = 200))
 
         val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
@@ -417,13 +413,6 @@ class TeamRepositoryTest {
                 .then { NetworkResponse.Success(value = teamDTO, headers = mapOf(), httpCode = 200) }
         }
 
-        fun withApiGetTeamMemberSuccess(teamMemberDTO: TeamsApi.TeamMemberDTO) = apply {
-            given(teamsApi)
-                .suspendFunction(teamsApi::getTeamMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(value = teamMemberDTO, headers = mapOf(), httpCode = 200))
-        }
-
         fun withFetchWhiteListedServicesSuccess() = apply {
             given(teamsApi)
                 .suspendFunction(teamsApi::whiteListedServices)
@@ -458,6 +447,14 @@ class TeamRepositoryTest {
                 .suspendFunction(legalHoldRequestHandler::handle)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withGetTeamMembers(result: NetworkResponse<TeamsApi.TeamMemberList>) = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::getTeamMembers)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+
         }
 
         fun arrange() = this to teamRepository
