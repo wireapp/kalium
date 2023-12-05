@@ -41,6 +41,7 @@ internal interface NewMessageEventHandler {
     suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage)
 }
 
+@Suppress("LongParameterList")
 internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
