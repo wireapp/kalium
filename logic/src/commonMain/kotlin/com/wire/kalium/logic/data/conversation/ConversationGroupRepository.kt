@@ -185,7 +185,8 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.Mixed ->
                         tryAddMembersToCloudAndStorage(userIdList, conversationId)
                             .flatMap {
-                                tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList)
+                                // best effort approach for migrated conversations, no retries
+                                mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
