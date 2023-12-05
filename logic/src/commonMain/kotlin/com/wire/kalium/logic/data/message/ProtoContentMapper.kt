@@ -86,8 +86,7 @@ class ProtoContentMapperImpl(
             mapEphemeralContent(
                 protoContent.messageContent,
                 protoContent.expiresAfterMillis,
-                protoContent.expectsReadConfirmation,
-                protoContent.legalHoldStatus
+                protoContent.expectsReadConfirmation
             )
         } else {
             mapNormalContent(
@@ -175,26 +174,25 @@ class ProtoContentMapperImpl(
     private fun mapEphemeralContent(
         readableContent: MessageContent.FromProto,
         expireAfterMillis: Long,
-        expectsReadConfirmation: Boolean,
-        legalHoldStatus: Conversation.LegalHoldStatus
+        expectsReadConfirmation: Boolean
     ): GenericMessage.Content<out Any> {
         val ephemeralContent = when (readableContent) {
             is MessageContent.Text -> {
-                val text = packText(readableContent, expectsReadConfirmation, legalHoldStatus)
+                val text = packText(readableContent, expectsReadConfirmation, Conversation.LegalHoldStatus.UNKNOWN)
                 Ephemeral.Content.Text(
                     text.value
                 )
             }
 
             is MessageContent.Asset -> {
-                val asset = packAsset(readableContent, expectsReadConfirmation, legalHoldStatus)
+                val asset = packAsset(readableContent, expectsReadConfirmation, Conversation.LegalHoldStatus.UNKNOWN)
                 Ephemeral.Content.Asset(
                     asset.value
                 )
             }
 
             is MessageContent.Knock -> {
-                val knock = packKnock(readableContent, legalHoldStatus)
+                val knock = GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
                 Ephemeral.Content.Knock(
                     knock.value
                 )
