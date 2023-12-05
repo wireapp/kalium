@@ -23,6 +23,8 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -45,13 +47,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageSendFailureHandlerTest {
 
     @Test
@@ -62,7 +62,7 @@ class MessageSendFailureHandlerTest {
             .arrange()
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
 
         verify(arrangement.userRepository)
             .suspendFunction(arrangement.userRepository::fetchUsersByIds)
@@ -78,7 +78,7 @@ class MessageSendFailureHandlerTest {
             .arrange()
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
 
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::storeUserClientIdList)
@@ -99,7 +99,7 @@ class MessageSendFailureHandlerTest {
             .arrange()
         val failureData = ProteusSendMessageFailure(mapOf(), mapOf(), mapOf(), null)
 
-        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
@@ -113,7 +113,7 @@ class MessageSendFailureHandlerTest {
             .arrange()
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne), mapOf(), mapOf(), null)
 
-        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
@@ -175,18 +175,74 @@ class MessageSendFailureHandlerTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenMissingClientsError_whenAConversationIdIsProvided_thenUpdateConversationInfo() =  runTest {
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .withFetchUsersByIdSuccess()
+            .withStoreUserClientIdListSuccess()
+            .withFetchConversation(Either.Right(Unit))
+            .arrange()
+        val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
+
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, arrangement.conversationId)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMissingClientsError_whenNoConversationIdIsProvided_thenUpdateConversationInfo() =  runTest {
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .withFetchUsersByIdSuccess()
+            .withStoreUserClientIdListSuccess()
+            .arrange()
+        val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
+
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     class Arrangement {
 
         @Mock
         internal val clientRepository = mock(classOf<ClientRepository>())
+
         @Mock
         internal val userRepository = mock(classOf<UserRepository>())
+
         @Mock
         internal val messageRepository = mock(classOf<MessageRepository>())
+
         @Mock
         val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
+
+        @Mock
+        val conversationRepository = configure(mock(ConversationRepository::class)) { stubsUnitByDefault = true }
+
         private val messageSendFailureHandler: MessageSendFailureHandler =
-            MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository, messageSendingScheduler)
+            MessageSendFailureHandlerImpl(
+                userRepository,
+                clientRepository,
+                conversationRepository,
+                messageRepository,
+                messageSendingScheduler
+            )
         val userOne: Pair<UserId, List<ClientId>> =
             UserId("userId1", "anta.wire") to listOf(ClientId("clientId"), ClientId("secondClientId"))
         val userTwo: Pair<UserId, List<ClientId>> =
@@ -202,29 +258,40 @@ class MessageSendFailureHandlerTest {
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
+
         fun withFetchUsersByIdFailure(failure: CoreFailure) = apply {
             given(userRepository)
                 .suspendFunction(userRepository::fetchUsersByIds)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(failure))
         }
+
         fun withStoreUserClientIdListSuccess() = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::storeUserClientIdList)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
+
         fun withStoreUserClientIdListFailure(failure: StorageFailure) = apply {
             given(clientRepository)
                 .suspendFunction(clientRepository::storeUserClientIdList)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Left(failure))
         }
+
         fun withUpdateMessageStatusSuccess() = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withFetchConversation(result: Either<CoreFailure, Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchConversation)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
     }
 

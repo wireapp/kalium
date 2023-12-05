@@ -22,6 +22,7 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
@@ -39,7 +40,7 @@ interface MessageSendFailureHandler {
      * @return Either.Left if can't recover from error
      * @return Either.Right if the error was properly handled and a new attempt at sending message can be made
      */
-    suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit>
+    suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure, conversationId: ConversationId?): Either<CoreFailure, Unit>
 
     /**
      * Handle a failure when attempting to send a message
@@ -62,15 +63,21 @@ interface MessageSendFailureHandler {
 class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
     private val messageSendingScheduler: MessageSendingScheduler
 ) : MessageSendFailureHandler {
 
-    override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
+    override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure, conversationId: ConversationId?): Either<CoreFailure, Unit> =
     // TODO(optimization): add/remove members to/from conversation
         // TODO(optimization): remove clients from conversation
         userRepository
             .fetchUsersByIds(sendFailure.missingClientsOfUsers.keys)
+            .flatMap {
+                conversationId?.let {
+                    conversationRepository.fetchConversation(conversationId)
+                } ?: Either.Right(Unit)
+            }
             .flatMap {
                 sendFailure
                     .missingClientsOfUsers
@@ -79,6 +86,7 @@ class MessageSendFailureHandlerImpl internal constructor(
                         clientRepository.storeUserClientIdList(entry.key, entry.value)
                     }
             }
+
 
     override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,

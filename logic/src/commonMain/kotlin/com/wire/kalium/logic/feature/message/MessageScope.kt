@@ -97,7 +97,7 @@ class MessageScope internal constructor(
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
-        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository, messageSendingScheduler)
+        get() = MessageSendFailureHandlerImpl(userRepository, clientRepository, conversationRepository, messageRepository, messageSendingScheduler)
 
     private val sessionEstablisher: SessionEstablisher
         get() = SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
