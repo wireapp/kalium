@@ -89,11 +89,15 @@ class MessageSendFailureHandlerImpl internal constructor(
                 addMissingClients(sendFailure.missingClientsOfUsers)
             }
 
-    private suspend fun updateConversationInfo(sendFailure: ProteusSendMessageFailure, conversationId: ConversationId?): Either<CoreFailure, Unit> {
-        if (conversationId == null) return Either.Right(Unit)
-        if (sendFailure.deletedClientsOfUsers.isEmpty() && sendFailure.missingClientsOfUsers.isEmpty()) return Either.Right(Unit)
-        return conversationRepository.fetchConversation(conversationId)
-    }
+    private suspend fun updateConversationInfo(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit> = when {
+            (conversationId == null) -> Either.Right(Unit)
+            (sendFailure.deletedClientsOfUsers.isEmpty() && sendFailure.missingClientsOfUsers.isEmpty()) -> Either.Right(Unit)
+            else -> conversationRepository.fetchConversation(conversationId)
+        }
+
 
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
         return if (deletedClient.isEmpty()) Either.Right(emptySet())
