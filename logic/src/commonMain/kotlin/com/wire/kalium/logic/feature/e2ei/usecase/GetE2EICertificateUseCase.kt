@@ -40,7 +40,7 @@ class GetE2eiCertificateUseCaseImpl internal constructor(
                 GetE2EICertificateUseCaseResult.Failure.NotActivated
             },
             {
-                val certificate = pemCertificateDecoder.decode(it.certificate)
+                val certificate = pemCertificateDecoder.decode(it.certificate, it.status)
                 GetE2EICertificateUseCaseResult.Success(certificate)
             }
         )
