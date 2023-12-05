@@ -47,7 +47,7 @@ class ObserveLegalHoldRequestUseCaseTest {
 
             val result = useCase()
 
-            assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.NoObserveLegalHoldRequest)
+            assertTrue(result.first() is ObserveLegalHoldRequestUseCase.Result.NoLegalHoldRequest)
         }
 
     @Test
@@ -58,7 +58,7 @@ class ObserveLegalHoldRequestUseCaseTest {
 
         val result = useCase()
 
-        assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.Failure)
+        assertTrue(result.first() is ObserveLegalHoldRequestUseCase.Result.Failure)
     }
 
     @Test
@@ -70,7 +70,7 @@ class ObserveLegalHoldRequestUseCaseTest {
 
         val result = useCase()
 
-        assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.Failure)
+        assertTrue(result.first() is ObserveLegalHoldRequestUseCase.Result.Failure)
     }
 
     @Test
@@ -83,7 +83,7 @@ class ObserveLegalHoldRequestUseCaseTest {
 
             val result = useCase()
 
-            assertTrue(result.first() is ObserveLegalHoldRequestUseCaseResult.ObserveLegalHoldRequestAvailable)
+            assertTrue(result.first() is ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable)
         }
 
     private class Arrangement {

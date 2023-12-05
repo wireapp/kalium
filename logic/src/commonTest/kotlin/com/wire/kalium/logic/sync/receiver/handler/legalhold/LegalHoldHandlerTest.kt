@@ -19,10 +19,17 @@ package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
 import com.wire.kalium.logic.feature.client.SelfClientsResult
+import com.wire.kalium.logic.feature.conversation.MembersHavingLegalHoldClientUseCase
+import com.wire.kalium.logic.feature.legalhold.LegalHoldState
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -33,6 +40,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -50,7 +58,7 @@ class LegalHoldHandlerTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenLegalHoldEvent_whenUserIdIsSelfUserThenUpdateSelfUserClients() = runTest {
+    fun givenLegalHoldEvent_whenUserIdIsSelfUserThenUpdateSelfUserClientsAndDeleteLegalHoldRequest() = runTest {
         val (arrangement, handler) = Arrangement()
             .withDeleteLegalHoldSuccess()
             .withFetchSelfClientsFromRemoteSuccess()
@@ -67,7 +75,6 @@ class LegalHoldHandlerTest {
             .suspendFunction(arrangement.fetchSelfClientsFromRemote::invoke)
             .wasInvoked(once)
     }
-
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
@@ -96,14 +103,39 @@ class LegalHoldHandlerTest {
         val fetchSelfClientsFromRemote = mock(FetchSelfClientsFromRemoteUseCase::class)
 
         @Mock
+        val observeLegalHoldStateForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
+
+        @Mock
+        val membersHavingLegalHoldClient = mock(MembersHavingLegalHoldClientUseCase::class)
+
+        @Mock
+        val persistMessage = mock(PersistMessageUseCase::class)
+
+        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
+
+        @Mock
+        val conversationRepository = mock(ConversationRepository::class)
+
+        @Mock
+        val messageRepository = mock(MessageRepository::class)
+
+        init {
+            withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            withGetConversationsByUserIdSuccess(emptyList())
+        }
 
         fun arrange() =
             this to LegalHoldHandlerImpl(
                 selfUserId = TestUser.SELF.id,
                 persistOtherUserClients = persistOtherUserClients,
                 fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
+                observeLegalHoldStateForUser = observeLegalHoldStateForUser,
+                membersHavingLegalHoldClient = membersHavingLegalHoldClient,
+                persistMessage = persistMessage,
                 userConfigRepository = userConfigRepository,
+                conversationRepository = conversationRepository,
+                messageRepository = messageRepository,
                 coroutineContext = StandardTestDispatcher()
             )
 
@@ -119,6 +151,20 @@ class LegalHoldHandlerTest {
                 .suspendFunction(fetchSelfClientsFromRemote::invoke)
                 .whenInvoked()
                 .thenReturn(SelfClientsResult.Success(emptyList(), ClientId("client-id")))
+        }
+
+        fun withObserveLegalHoldStateForUserSuccess(state: LegalHoldState) = apply {
+            given(observeLegalHoldStateForUser)
+                .suspendFunction(observeLegalHoldStateForUser::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(state))
+        }
+
+        fun withGetConversationsByUserIdSuccess(conversations: List<Conversation> = emptyList()) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationsByUserId)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(conversations))
         }
     }
 
