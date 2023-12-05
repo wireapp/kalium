@@ -40,7 +40,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 internal interface LegalHoldHandler {
@@ -100,13 +99,9 @@ internal class LegalHoldHandlerImpl internal constructor(
     private suspend fun processEvent(selfUserId: UserId, userId: UserId) {
         if (selfUserId == userId) {
             userConfigRepository.deleteLegalHoldRequest()
-            coroutineScope.launch {
-                fetchSelfClientsFromRemote()
-            }
+            fetchSelfClientsFromRemote()
         } else {
-            coroutineScope.launch {
-                persistOtherUserClients(userId)
-            }
+            persistOtherUserClients(userId)
         }
     }
 
@@ -140,12 +135,14 @@ internal class LegalHoldHandlerImpl internal constructor(
                     membersHavingLegalHoldClient(conversation.id)
                         .map { if (it.isEmpty()) Conversation.LegalHoldStatus.DISABLED else Conversation.LegalHoldStatus.ENABLED }
                         .map { newConversationLegalHoldStatus ->
-                            // if conversation legal hold status has changed, update it
-                            if (newConversationLegalHoldStatus != conversation.legalHoldStatus)
+                            if (newConversationLegalHoldStatus != conversation.legalHoldStatus) {
+                                // if conversation legal hold status has changed, update it
                                 conversationRepository.updateLegalHoldStatus(conversation.id, newConversationLegalHoldStatus)
-                            // if conversation is no longer under legal hold, create system message for it
-                            if (newConversationLegalHoldStatus == Conversation.LegalHoldStatus.DISABLED)
-                                createSystemMessage(MessageContent.LegalHold.DisabledForConversation, conversation.id)
+                                // if conversation is no longer under legal hold, create system message for it
+                                if (newConversationLegalHoldStatus == Conversation.LegalHoldStatus.DISABLED) {
+                                    persistMessage(createSystemMessage(MessageContent.LegalHold.DisabledForConversation, conversation.id))
+                                }
+                            }
                         }
                 }
             }

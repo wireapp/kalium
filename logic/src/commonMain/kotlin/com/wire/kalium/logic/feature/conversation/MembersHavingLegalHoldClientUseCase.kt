@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.ClientType
+import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
@@ -37,5 +37,5 @@ internal class MembersHavingLegalHoldClientUseCaseImpl(
 ) : MembersHavingLegalHoldClientUseCase {
     override suspend fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>> =
         clientRepository.getClientsByConversationId(conversationId)
-            .map { it.filterValues { it.any { it.type == ClientType.LegalHold } }.keys.toList() }
+            .map { it.filterValues { it.any { it.deviceType == DeviceType.LegalHold } }.keys.toList() }
 }
