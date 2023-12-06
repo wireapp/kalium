@@ -400,19 +400,12 @@ class ClientRepositoryTest {
 
     @Test
     fun whenSavingNewClient_thenNewClientSaved() = runTest {
-        val (arrangement, repository) = Arrangement()
-            .withInsertClient()
-            .arrange()
+        val (arrangement, repository) = Arrangement().arrange()
 
         val newClientEvent = TestEvent.newClient()
         val insertClientParam = MapperProvider.clientMapper().toInsertClientParam(selfUserId, newClientEvent)
 
         repository.saveNewClientEvent(newClientEvent)
-
-        verify(arrangement.newClientDAO)
-            .suspendFunction(arrangement.newClientDAO::insertNewClient)
-            .with(eq(insertClientParam))
-            .wasInvoked(exactly = once)
 
         verify(arrangement.clientDAO)
             .suspendFunction(arrangement.clientDAO::insertClient)
@@ -503,13 +496,6 @@ class ClientRepositoryTest {
                 .suspendFunction(clientDAO::observeClientsByUserId)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(result))
-        }
-
-        fun withInsertClient() = apply {
-            given(clientDAO)
-                .suspendFunction(clientDAO::insertClient)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
         }
 
         fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {

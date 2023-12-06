@@ -1,0 +1,11 @@
+CREATE TRIGGER inserNewSelfClient
+AFTER INSERT ON Client
+WHEN new.user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+BEGIN
+    INSERT INTO NewClient(id, device_type, registration_date, model)
+    VALUES(new.id, new.device_type, new.registration_date, new.model)
+    ON CONFLICT (id) DO UPDATE SET
+    device_type = coalesce(excluded.device_type, device_type),
+    registration_date = coalesce(excluded.registration_date, registration_date),
+    model = coalesce(excluded.model, model);
+END;
