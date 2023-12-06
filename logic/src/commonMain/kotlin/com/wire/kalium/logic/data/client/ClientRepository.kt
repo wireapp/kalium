@@ -253,6 +253,7 @@ class ClientDataSource(
         newClientEvent: Event.User.NewClient
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         newClientDAO.insertNewClient(clientMapper.toInsertClientParam(selfUserID, newClientEvent))
+        clientDAO.insertClient(clientMapper.toInsertClientParam(selfUserID, newClientEvent))
     }
 
     override suspend fun clearNewClients() {
