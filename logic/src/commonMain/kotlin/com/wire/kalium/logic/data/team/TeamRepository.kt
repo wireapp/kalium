@@ -131,6 +131,15 @@ internal class TeamDataSource(
 
     override suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit> = wrapApiRequest {
         teamsApi.approveLegalHoldRequest(teamId.value, selfUserId.value, password)
+    }.flatMap {
+        legalHoldHandler.handleEnable(
+            eventMapper.legalHoldEnabled(
+                id = LocalId.generate(),
+                transient = true,
+                live = false,
+                eventContentDTO = EventContentDTO.User.LegalHoldEnabledDTO(id = selfUserId.toString())
+            )
+        )
     }.onSuccess {
         userConfigDAO.clearLegalHoldRequest()
     }
