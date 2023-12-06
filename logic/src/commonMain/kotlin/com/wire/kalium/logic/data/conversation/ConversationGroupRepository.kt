@@ -24,13 +24,13 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -185,14 +185,94 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.Mixed ->
                         tryAddMembersToCloudAndStorage(userIdList, conversationId)
                             .flatMap {
+                                // best effort approach for migrated conversations, no retries
                                 mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
-                        mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
+                        tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList)
                     }
                 }
             }
+
+    /**
+     * Handle the error cases and retry for claimPackages offline and out of packages.
+     * Handle error case and retry for sendingCommit unreachable.
+     */
+    private suspend fun tryAddMembersToMLSGroup(
+        conversationId: ConversationId,
+        groupId: String,
+        userIdList: List<UserId>,
+        failedUsersList: Set<UserId> = emptySet(),
+        remainingAttempts: Int = 2
+    ): Either<CoreFailure, Unit> {
+        return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
+            is Either.Right -> handleMLSMembersAdded(conversationId, userIdList, failedUsersList)
+            is Either.Left -> {
+                addingMemberResult.value.handleMLSMembersFailed(
+                    conversationId = conversationId,
+                    groupId = groupId,
+                    userIdList = userIdList,
+                    failedUsersList = failedUsersList,
+                    remainingAttempts = remainingAttempts,
+                )
+            }
+        }
+    }
+
+    private suspend fun CoreFailure.handleMLSMembersFailed(
+        conversationId: ConversationId,
+        groupId: String,
+        userIdList: List<UserId>,
+        failedUsersList: Set<UserId>,
+        remainingAttempts: Int,
+    ): Either<CoreFailure, Unit> {
+        return when {
+            // claiming key packages offline or out of packages
+            this is CoreFailure.NoKeyPackagesAvailable && remainingAttempts > 0 -> {
+                val (validUsers, failedUsers) = userIdList.partition { !this.failedUserIds.contains(it) }
+                tryAddMembersToMLSGroup(
+                    conversationId = conversationId,
+                    groupId = groupId,
+                    userIdList = validUsers,
+                    failedUsersList = (failedUsersList + failedUsers).toSet(),
+                    remainingAttempts = remainingAttempts - 1
+                )
+            }
+
+            // sending commit unreachable
+            this is NetworkFailure.FederatedBackendFailure.RetryableFailure && remainingAttempts > 0 -> {
+                val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(userIdList, this)
+                tryAddMembersToMLSGroup(
+                    conversationId = conversationId,
+                    groupId = groupId,
+                    userIdList = validUsers,
+                    failedUsersList = (failedUsersList + failedUsers).toSet(),
+                    remainingAttempts = remainingAttempts - 1
+                )
+            }
+
+            else -> {
+                newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                    conversationId, (failedUsersList + userIdList)
+                ).flatMap {
+                    Either.Left(this)
+                }
+            }
+        }
+    }
+
+    private suspend fun handleMLSMembersAdded(
+        conversationId: ConversationId,
+        userIdList: List<UserId>,
+        failedUsersList: Set<UserId>
+    ): Either<CoreFailure, Unit> {
+        return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
+            conversationId.toDao(), userIdList, failedUsersList.toList()
+        ).flatMap {
+            Either.Right(Unit)
+        }
+    }
 
     override suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
