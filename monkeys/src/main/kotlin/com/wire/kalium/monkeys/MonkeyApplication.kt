@@ -62,7 +62,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         if (logOutputFile != null) {
             CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
         } else {
-            CoreLogger.init(KaliumLogger.Config(logLevel, emptyList()))
+            CoreLogger.init(KaliumLogger.Config(logLevel))
         }
         MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
         logger.i("Initializing Metrics Endpoint")
@@ -81,22 +81,20 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private suspend fun runMonkeys(
         testData: TestData
-    ) = with(testData) {
+    ) {
         val users = TestDataImporter.generateUserData(testData)
-        testData.testCases.forEachIndexed { index, testCase ->
-            val monkeyPool = MonkeyPool(users, testCase.name)
+        return testData.testCases.forEachIndexed { index, testCase ->
             val coreLogic = coreLogic("$HOME_DIRECTORY/.kalium/${testCase.name.replace(' ', '_')}")
-            // the first one creates the preset groups
+            logger.i("Logging in and out all users to create key packages")
+            val monkeyPool = MonkeyPool(users, testCase.name)
+            // the first one creates the preset groups and logs everyone in so keypackages are created
             if (index == 0) {
+                logger.i("Creating initial key packages for clients (logging everyone in and out). This can take a while...")
+                monkeyPool.warmUp(coreLogic)
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->
                     ConversationPool.createPrefixedConversations(
-                        coreLogic,
-                        prefix,
-                        config.groupCount,
-                        config.userCount,
-                        config.protocol,
-                        monkeyPool
+                        coreLogic, prefix, config.groupCount, config.userCount, config.protocol, monkeyPool
                     )
                 }
             }

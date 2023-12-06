@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -59,7 +60,7 @@ internal class NewConversationMembersRepositoryImpl(
     }.flatMap {
         newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
             conversationId,
-            conversationResponse,
+            conversationResponse.members.otherMembers.map { it.id.toModel() },
             failedUsersList
         )
     }

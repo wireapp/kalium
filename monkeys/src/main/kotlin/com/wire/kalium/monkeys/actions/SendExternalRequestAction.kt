@@ -19,18 +19,14 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class LeaveConversationAction(val config: ActionType.LeaveConversation) : Action() {
+class SendExternalRequestAction(val config: ActionType.SendExternalRequest) : Action() {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = ConversationPool.randomDynamicConversations(this.config.countGroups.toInt())
-        targets.forEach { conv ->
-            val leavers = conv.randomMonkeys(this.config.userCount)
-            // conversation admin should never leave the group
-            leavers.filter { it.monkeyType.userData() != conv.creator.monkeyType.userData() }.forEach {
-                it.leaveConversation(conv.conversation.id)
-            }
+        val monkeys = monkeyPool.randomLoggedInMonkeysFromTeam(config.originTeam, config.userCount)
+        val usersFromTeam = monkeyPool.externalUsersFromTeam(config.targetTeam)
+        monkeys.forEach { monkey ->
+            monkey.sendRequest(usersFromTeam.random())
         }
     }
 }
