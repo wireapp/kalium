@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
@@ -47,7 +46,7 @@ internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
     suspend fun conversationResolvedMembersAddedAndFailed(
         conversationId: ConversationIDEntity,
-        conversationResponse: ConversationResponse,
+        validUsers: List<UserId>,
         failedUsersList: List<UserId> = emptyList()
     ): Either<CoreFailure, Unit>
 
@@ -64,7 +63,6 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val selfUserId: UserId,
-    private val memberMapper: MemberMapper = MapperProvider.memberMapper()
 ) : NewGroupConversationSystemMessagesCreator {
 
     override suspend fun conversationStarted(conversation: ConversationEntity) = run {
@@ -143,16 +141,14 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 
     override suspend fun conversationResolvedMembersAddedAndFailed(
         conversationId: ConversationIDEntity,
-        conversationResponse: ConversationResponse,
+        validUsers: List<UserId>,
         failedUsersList: List<UserId>
     ): Either<CoreFailure, Unit> = run {
-        if (conversationResponse.members.otherMembers.isNotEmpty()) {
+        if (validUsers.isNotEmpty()) {
             persistMessage(
                 Message.System(
                     id = uuid4().toString(),
-                    content = MessageContent.MemberChange.CreationAdded(
-                        memberMapper.fromApiModel(conversationResponse.members).otherMembers.map { it.id }
-                    ),
+                    content = MessageContent.MemberChange.CreationAdded(validUsers.toList()),
                     conversationId = conversationId.toModel(),
                     date = DateTimeUtil.currentIsoDateTimeString(),
                     senderUserId = selfUserId,
@@ -169,18 +165,22 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     override suspend fun conversationFailedToAddMembers(
         conversationId: ConversationId,
         userIdList: Set<UserId>
-    ): Either<CoreFailure, Unit> {
-        val messageFailedToAddMembers = Message.System(
-            uuid4().toString(),
-            MessageContent.MemberChange.FailedToAdd(userIdList.toList()),
-            conversationId,
-            DateTimeUtil.currentIsoDateTimeString(),
-            selfUserId,
-            Message.Status.Sent,
-            Message.Visibility.VISIBLE,
-            expirationData = null
-        )
-        return persistMessage(messageFailedToAddMembers)
+    ): Either<CoreFailure, Unit> = run {
+        if (userIdList.isNotEmpty()) {
+            persistMessage(
+                Message.System(
+                    uuid4().toString(),
+                    MessageContent.MemberChange.FailedToAdd(userIdList.toList()),
+                    conversationId,
+                    DateTimeUtil.currentIsoDateTimeString(),
+                    selfUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+        }
+        Either.Right(Unit)
     }
 
     private suspend fun createFailedToAddSystemMessage(conversationId: ConversationIDEntity, failedUsersList: List<UserId>) {

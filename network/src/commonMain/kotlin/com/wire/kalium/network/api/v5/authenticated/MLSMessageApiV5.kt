@@ -24,6 +24,8 @@ import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResp
 import com.wire.kalium.network.api.v4.authenticated.MLSMessageApiV4
 import com.wire.kalium.network.serialization.Mls
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -44,7 +46,9 @@ internal open class MLSMessageApiV5 internal constructor(
         }
 
     override suspend fun sendCommitBundle(bundle: MLSMessageApi.CommitBundle): NetworkResponse<SendMLSMessageResponse> =
-        wrapKaliumResponse {
+        wrapKaliumResponse(unsuccessfulResponseOverride = { response ->
+            wrapFederationResponse(response, delegatedHandler = { handleUnsuccessfulResponse(response) })
+        }) {
             httpClient.post(PATH_COMMIT_BUNDLES) {
                 setBody(bundle.value)
                 contentType(ContentType.Message.Mls)
