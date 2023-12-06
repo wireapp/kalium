@@ -54,10 +54,10 @@ sealed interface CoreFailure {
     data object MissingClientRegistration : CoreFailure
 
     /**
-     * A user has no key packages available which prevents him/her from being added
+     * Key packages requested not available which prevents them from being added
      * to an existing or new conversation.
      */
-    data class NoKeyPackagesAvailable(val userId: UserId) : CoreFailure
+    data class NoKeyPackagesAvailable(val failedUserIds: Set<UserId>) : CoreFailure
 
     /**
      * It's not allowed to run the application with development API enabled when

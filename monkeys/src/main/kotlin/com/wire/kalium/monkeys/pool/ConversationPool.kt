@@ -75,7 +75,7 @@ object ConversationPool {
         protocol: ConversationOptions.Protocol,
         monkeyPool: MonkeyPool
     ) {
-        val name = "By monkey ${creator.user.email} - $protocol - ${Random.nextUInt()}"
+        val name = "By monkey ${creator.monkeyType.userId()} - $protocol - ${Random.nextUInt()}"
         val monkeyList = creator.randomPeers(userCount, monkeyPool)
         val conversation = creator.createConversation(name, monkeyList, protocol)
         this.addToPool(conversation)
@@ -86,7 +86,7 @@ object ConversationPool {
         protocol: ConversationOptions.Protocol,
         monkeyPool: MonkeyPool
     ) {
-        val creator = monkeyPool.randomMonkeys(UserCount.single())[0]
+        val creator = monkeyPool.randomLoggedInMonkeys(UserCount.single())[0]
         this.createDynamicConversation(creator, userCount, protocol, monkeyPool)
     }
 
@@ -96,7 +96,7 @@ object ConversationPool {
         protocol: ConversationOptions.Protocol,
         monkeyPool: MonkeyPool
     ) {
-        val creator = monkeyPool.randomMonkeysFromTeam(team, UserCount.single())[0]
+        val creator = monkeyPool.randomLoggedInMonkeysFromTeam(team, UserCount.single())[0]
         this.createDynamicConversation(creator, userCount, protocol, monkeyPool)
     }
 
@@ -112,7 +112,7 @@ object ConversationPool {
     ) {
         repeat(count.toInt()) { groupIndex ->
             val creator = monkeyPool.randomMonkeys(UserCount.single())[0]
-            val name = "Prefixed $prefix by monkey ${creator.user.email} - $protocol - $groupIndex"
+            val name = "Prefixed $prefix by monkey ${creator.monkeyType.userId()} - $protocol - $groupIndex"
             val conversation = creator.makeReadyThen(coreLogic, monkeyPool) {
                 val participants = creator.randomPeers(userCount, monkeyPool)
                 createConversation(name, participants, protocol, false)

@@ -17,17 +17,26 @@
  */
 package com.wire.kalium.monkeys.pool
 
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey
+import com.wire.kalium.monkeys.importer.Team
 import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.importer.UserData
 import io.micrometer.core.instrument.Tag
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 class MonkeyPool(users: List<UserData>, testCase: String) {
-    // a map of monkeys per domain
+    // all the teams by name
+    private val teams: ConcurrentHashMap<String, Team> = ConcurrentHashMap()
+
+    // a map of monkeys per team
     private val pool: ConcurrentHashMap<String, MutableList<Monkey>> = ConcurrentHashMap()
 
     // a map of monkeys per UserId
@@ -41,27 +50,34 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
 
     init {
         users.forEach {
-            val monkey = Monkey(it)
-            this.pool.getOrPut(it.backend.teamName) { mutableListOf() }.add(monkey)
-            this.poolLoggedOut.getOrPut(it.backend.teamName) { ConcurrentHashMap() }[it.userId] = monkey
+            val monkey = Monkey.internal(it)
+            this.pool.getOrPut(it.team.name) { mutableListOf() }.add(monkey)
+            this.poolLoggedOut.getOrPut(it.team.name) { ConcurrentHashMap() }[it.userId] = monkey
             this.poolById[it.userId] = monkey
+            this.teams.putIfAbsent(it.team.name, it.team)
         }
         this.poolLoggedOut.forEach { (domain, usersById) ->
             MetricsCollector.gaugeMap(
-                "g_loggedOutUsers",
-                listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)),
-                usersById
+                "g_loggedOutUsers", listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)), usersById
             )
             // init so we can have metrics for it
             this.poolLoggedIn[domain] = ConcurrentHashMap()
         }
         this.poolLoggedIn.forEach { (domain, usersById) ->
             MetricsCollector.gaugeMap(
-                "g_loggedInUsers",
-                listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)),
-                usersById
+                "g_loggedInUsers", listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)), usersById
             )
         }
+    }
+
+    suspend fun warmUp(core: CoreLogic) = coroutineScope {
+        // this is needed to create key packages for clients at least once
+        poolById.values.map {
+            async {
+                it.login(core) {}
+                it.logout {}
+            }
+        }.awaitAll()
     }
 
     fun randomMonkeysFromTeam(team: String, userCount: UserCount): List<Monkey> {
@@ -86,6 +102,14 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
         return backendUsers.take(count.toInt())
     }
 
+    suspend fun randomMonkeysWithConnectionRequests(userCount: UserCount): Map<Monkey, List<ConversationDetails.Connection>> {
+        val monkeysWithPendingRequests = this.poolLoggedIn.values.flatMap { idToMonkey ->
+            idToMonkey.values.map { it to it.pendingConnectionRequests() }.filter { it.second.isNotEmpty() }
+        }.shuffled()
+        val count = resolveUserCount(userCount, monkeysWithPendingRequests.count().toUInt())
+        return monkeysWithPendingRequests.take(count.toInt()).toMap()
+    }
+
     /**
      * This is costly depending on the size. Use with caution
      */
@@ -104,14 +128,22 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
         return allUsers.take(count.toInt())
     }
 
+    suspend fun externalUsersFromTeam(teamName: String): List<Monkey> {
+        val team = this.teams[teamName] ?: error("Backend $teamName not found")
+        val monkeysFromTeam = this.pool[teamName] ?: error("Monkeys from $teamName not found")
+        return team.usersFromTeam().filter { u -> monkeysFromTeam.none { u == it.monkeyType.userId() } }.map(Monkey::external)
+    }
+
     fun loggedIn(monkey: Monkey) {
-        this.poolLoggedIn.getOrPut(monkey.user.backend.teamName) { ConcurrentHashMap() }[monkey.user.userId] = monkey
-        this.poolLoggedOut[monkey.user.backend.teamName]?.remove(monkey.user.userId)
+        this.poolLoggedIn.getOrPut(monkey.monkeyType.userData().team.name) { ConcurrentHashMap() }[monkey.monkeyType.userData().userId] =
+            monkey
+        this.poolLoggedOut[monkey.monkeyType.userData().team.name]?.remove(monkey.monkeyType.userData().userId)
     }
 
     fun loggedOut(monkey: Monkey) {
-        this.poolLoggedIn[monkey.user.backend.teamName]?.remove(monkey.user.userId)
-        this.poolLoggedOut.getOrPut(monkey.user.backend.teamName) { ConcurrentHashMap() }[monkey.user.userId] = monkey
+        this.poolLoggedIn[monkey.monkeyType.userData().team.name]?.remove(monkey.monkeyType.userData().userId)
+        this.poolLoggedOut.getOrPut(monkey.monkeyType.userData().team.name) { ConcurrentHashMap() }[monkey.monkeyType.userData().userId] =
+            monkey
     }
 
     private fun resolveUserCount(userCount: UserCount): UInt {
@@ -125,7 +157,7 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
     }
 
     fun get(userId: UserId): Monkey {
-        return this.poolById[userId] ?: error("Monkey with id $userId not found.")
+        return this.poolById[userId] ?: Monkey.external(userId)
     }
 }
 

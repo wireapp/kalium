@@ -34,6 +34,8 @@ abstract class Action {
                 is ActionType.Reconnect -> ReconnectAction(config.type)
                 is ActionType.SendMessage -> SendMessageAction(config.type)
                 is ActionType.SendRequest -> SendRequestAction(config.type)
+                is ActionType.HandleExternalRequest -> HandleExternalRequestAction(config.type)
+                is ActionType.SendExternalRequest -> SendExternalRequestAction(config.type)
             }
         }
     }

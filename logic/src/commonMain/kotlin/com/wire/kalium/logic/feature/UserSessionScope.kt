@@ -877,7 +877,9 @@ class UserSessionScope internal constructor(
 
     private val syncSelfTeamUseCase: SyncSelfTeamUseCase
         get() = SyncSelfTeamUseCaseImpl(
-            userRepository = userRepository, teamRepository = teamRepository
+            userRepository = userRepository,
+            teamRepository = teamRepository,
+            fetchAllTeamMembersEagerly = kaliumConfigs.fetchAllTeamMembersEagerly
         )
 
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
@@ -1090,22 +1092,23 @@ class UserSessionScope internal constructor(
             )
         })
 
-    internal val mlsMigrationWorker get() =
-        MLSMigrationWorkerImpl(
-            userConfigRepository,
-            featureConfigRepository,
-            mlsConfigHandler,
-            mlsMigrationConfigHandler,
-            mlsMigrator,
-        )
+    internal val mlsMigrationWorker
+        get() =
+            MLSMigrationWorkerImpl(
+                userConfigRepository,
+                featureConfigRepository,
+                mlsConfigHandler,
+                mlsMigrationConfigHandler,
+                mlsMigrator,
+            )
 
     internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
-            kaliumConfigs,
-            featureSupport,
-            incrementalSyncRepository,
-            lazy { clientRepository },
-            lazy { users.timestampKeyRepository },
-            lazy { mlsMigrationWorker }
+        kaliumConfigs,
+        featureSupport,
+        incrementalSyncRepository,
+        lazy { clientRepository },
+        lazy { users.timestampKeyRepository },
+        lazy { mlsMigrationWorker }
     )
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository
