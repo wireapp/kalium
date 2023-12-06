@@ -47,6 +47,7 @@ internal interface LegalHoldHandler {
     suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val persistOtherUserClients: PersistOtherUserClientsUseCase,

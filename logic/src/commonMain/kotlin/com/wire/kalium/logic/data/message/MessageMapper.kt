@@ -631,7 +631,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
     MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
     is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
-    is MessageContent.LegalHold -> when(this) {
+    is MessageContent.LegalHold -> when (this) {
         MessageContent.LegalHold.ForConversation.Disabled ->
             MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
         is MessageContent.LegalHold.ForMembers.Disabled ->
