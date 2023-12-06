@@ -173,10 +173,10 @@ interface MessageRepository {
         editTimeStamp: String
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateLegalHoldMessage(
+    suspend fun updateLegalHoldMessageMembers(
         messageId: String,
         conversationId: ConversationId,
-        messageContent: MessageContent.LegalHold
+        newMembers: List<UserId>,
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
@@ -559,12 +559,12 @@ class MessageDataSource(
         }
     }
 
-    override suspend fun updateLegalHoldMessage(
+    override suspend fun updateLegalHoldMessageMembers(
         messageId: String,
         conversationId: ConversationId,
-        messageContent: MessageContent.LegalHold
+        newMembers: List<UserId>,
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.updateLegalHoldMessageContent(conversationId.toDao(), messageId, messageContent.toMessageEntityContent())
+        messageDAO.updateLegalHoldMessageMembers(conversationId.toDao(), messageId, newMembers.map { it.toDao() })
     }
 
     override suspend fun resetAssetProgressStatus() {

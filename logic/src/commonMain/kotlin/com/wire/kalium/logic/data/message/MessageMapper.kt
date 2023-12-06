@@ -405,11 +405,11 @@ class MessageMapperImpl(
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
         is MessageEntityContent.LegalHold -> {
             when (this.type) {
-                MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.DisabledForConversation
+                MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
                 MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
-                    MessageContent.LegalHold.DisabledForMembers(this.memberUserIdList.map { it.toModel() })
+                    MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
                 MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
-                    MessageContent.LegalHold.EnabledForMembers(this.memberUserIdList.map { it.toModel() })
+                    MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
             }
         }
     }
@@ -635,10 +635,10 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
 }
 
 fun MessageContent.LegalHold.toMessageEntityContent(): MessageEntityContent.LegalHold = when(this) {
-    MessageContent.LegalHold.DisabledForConversation ->
+    MessageContent.LegalHold.ForConversation.Disabled ->
         MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
-    is MessageContent.LegalHold.DisabledForMembers ->
+    is MessageContent.LegalHold.ForMembers.Disabled ->
         MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
-    is MessageContent.LegalHold.EnabledForMembers ->
+    is MessageContent.LegalHold.ForMembers.Enabled ->
         MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
 }

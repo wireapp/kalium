@@ -437,9 +437,9 @@ UPDATE MessageTextContent
 SET text_body = ?
 WHERE message_id = ? AND conversation_id = ?;
 
-updateMessageLegalHoldContent:
+updateMessageLegalHoldContentMembers:
 UPDATE MessageLegalHoldContent
-SET legal_hold_member_list = :legal_hold_member_list, legal_hold_type = :legal_hold_type
+SET legal_hold_member_list = :legal_hold_member_list
 WHERE message_id = :message_id AND conversation_id = :conversation_id;
 
 updateMessageId:

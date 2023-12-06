@@ -91,11 +91,7 @@ interface MessageDAO {
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
     )
-    suspend fun updateLegalHoldMessageContent(
-        conversationId: QualifiedIDEntity,
-        messageId: String,
-        newContent: MessageEntityContent.LegalHold
-    )
+    suspend fun updateLegalHoldMessageMembers(conversationId: QualifiedIDEntity, messageId: String, newMembers: List<QualifiedIDEntity>)
 
     suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>

@@ -353,16 +353,16 @@ sealed interface Message {
                     typeKey to "conversationStartedUnverifiedWarning"
                 )
 
-                MessageContent.LegalHold.DisabledForConversation -> mutableMapOf(
+                MessageContent.LegalHold.ForConversation.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForConversation"
                 )
-                is MessageContent.LegalHold.DisabledForMembers -> mutableMapOf(
+                is MessageContent.LegalHold.ForMembers.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForMembers",
                     "members" to content.members.fold("") { acc, member ->
                         "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
                     }
                 )
-                is MessageContent.LegalHold.EnabledForMembers -> mutableMapOf(
+                is MessageContent.LegalHold.ForMembers.Enabled -> mutableMapOf(
                     typeKey to "legalHoldEnabledForMembers",
                     "members" to content.members.fold("") { acc, member ->
                         "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"

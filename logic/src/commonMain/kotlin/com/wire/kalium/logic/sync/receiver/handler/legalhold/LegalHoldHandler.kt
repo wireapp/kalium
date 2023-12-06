@@ -70,8 +70,8 @@ internal class LegalHoldHandlerImpl internal constructor(
         if (!userHasBeenUnderLegalHold) {
             handleSystemMessages(
                 userId = legalHoldEnabled.userId,
-                updateContent = { content -> content.copy(members = (content.members + legalHoldEnabled.userId).distinct()) },
-                createNewContent = { MessageContent.LegalHold.EnabledForMembers(members = listOf(legalHoldEnabled.userId)) }
+                update = { members -> (members + legalHoldEnabled.userId).distinct() },
+                createNew = { MessageContent.LegalHold.ForMembers.Enabled(members = listOf(legalHoldEnabled.userId)) }
             )
         }
 
@@ -88,8 +88,8 @@ internal class LegalHoldHandlerImpl internal constructor(
         if (userHasBeenUnderLegalHold) {
             handleSystemMessages(
                 legalHoldDisabled.userId,
-                updateContent = { content -> content.copy(members = (content.members + legalHoldDisabled.userId).distinct()) },
-                createNewContent = { MessageContent.LegalHold.DisabledForMembers(members = listOf(legalHoldDisabled.userId)) }
+                update = { members -> (members + legalHoldDisabled.userId).distinct() },
+                createNew = { MessageContent.LegalHold.ForMembers.Disabled(members = listOf(legalHoldDisabled.userId)) }
             )
         }
 
@@ -108,7 +108,7 @@ internal class LegalHoldHandlerImpl internal constructor(
     private suspend fun isUserUnderLegalHold(userId: UserId): Boolean =
         observeLegalHoldStateForUser(userId).firstOrNull() == LegalHoldState.Enabled
 
-    private suspend inline fun <reified T : MessageContent.LegalHold> getLastLegalHoldMessagesForConversations(
+    private suspend inline fun <reified T : MessageContent.LegalHold.ForMembers> getLastLegalHoldMessagesForConversations(
         userId: UserId,
         conversations: List<Conversation>,
     ) =
@@ -116,10 +116,10 @@ internal class LegalHoldHandlerImpl internal constructor(
         else messageRepository.getLastMessagesForConversationIds(conversations.map { it.id })
             .map { it.filterValues { it.content is T }.mapValues { it.value.id to (it.value.content as T) } }
 
-    private suspend inline fun <reified T : MessageContent.LegalHold> handleSystemMessages(
+    private suspend inline fun <reified T : MessageContent.LegalHold.ForMembers> handleSystemMessages(
         userId: UserId,
-        updateContent: (T) -> T,
-        createNewContent: () -> T,
+        update: (List<UserId>) -> List<UserId>,
+        createNew: () -> T,
     ) {
         // get all conversations where the given user is a member
         conversationRepository.getConversationsByUserId(userId).map { conversations ->
@@ -128,8 +128,8 @@ internal class LegalHoldHandlerImpl internal constructor(
                 conversations.forEach { conversation ->
                     // create or update legal hold message for members
                     lastMessagesMap[conversation.id]?.let { (lastMessageId, lastMessageContent) ->
-                        messageRepository.updateLegalHoldMessage(lastMessageId, conversation.id, updateContent(lastMessageContent))
-                    } ?: persistMessage(createSystemMessage(createNewContent(), conversation.id))
+                        messageRepository.updateLegalHoldMessageMembers(lastMessageId, conversation.id, update(lastMessageContent.members))
+                    } ?: persistMessage(createSystemMessage(createNew(), conversation.id))
 
                     // create legal hold message for conversation if needed
                     membersHavingLegalHoldClient(conversation.id)
@@ -140,7 +140,7 @@ internal class LegalHoldHandlerImpl internal constructor(
                                 conversationRepository.updateLegalHoldStatus(conversation.id, newConversationLegalHoldStatus)
                                 // if conversation is no longer under legal hold, create system message for it
                                 if (newConversationLegalHoldStatus == Conversation.LegalHoldStatus.DISABLED) {
-                                    persistMessage(createSystemMessage(MessageContent.LegalHold.DisabledForConversation, conversation.id))
+                                    persistMessage(createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversation.id))
                                 }
                             }
                         }

@@ -339,11 +339,11 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateLegalHoldMessageContent(
+    override suspend fun updateLegalHoldMessageMembers(
         conversationId: QualifiedIDEntity,
         messageId: String,
-        newContent: MessageEntityContent.LegalHold
-    ): Unit = queries.updateMessageLegalHoldContent(newContent.memberUserIdList, newContent.type, messageId, conversationId)
+        newMembers: List<QualifiedIDEntity>
+    ): Unit = queries.updateMessageLegalHoldContentMembers(newMembers, messageId, conversationId)
 
     override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         messagePreviewQueries.getLastMessages(mapper::toPreviewEntity).asFlow().flowOn(coroutineContext).mapToList()

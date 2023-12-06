@@ -308,9 +308,13 @@ sealed class MessageContent {
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
     }
     sealed class LegalHold : System() {
-        data class EnabledForMembers(val members: List<UserId>) : LegalHold()
-        data class DisabledForMembers(val members: List<UserId>) : LegalHold()
-        data object DisabledForConversation : LegalHold()
+        sealed class ForMembers(open val members: List<UserId>) : LegalHold() {
+            data class Enabled(override val members: List<UserId>) : ForMembers(members)
+            data class Disabled(override val members: List<UserId>) : ForMembers(members)
+        }
+        sealed class ForConversation : LegalHold() {
+            data object Disabled : ForConversation()
+        }
     }
 }
 
@@ -364,9 +368,9 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
-    is MessageContent.LegalHold.DisabledForConversation -> "LegalHold.DisabledForConversation"
-    is MessageContent.LegalHold.DisabledForMembers -> "LegalHold.DisabledForMembers"
-    is MessageContent.LegalHold.EnabledForMembers -> "LegalHold.EnabledForMembers"
+    is MessageContent.LegalHold.ForConversation.Disabled -> "LegalHold.ForConversation.Disabled"
+    is MessageContent.LegalHold.ForMembers.Disabled -> "LegalHold.ForMembers.Disabled"
+    is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
     null -> "null"
 }
 
