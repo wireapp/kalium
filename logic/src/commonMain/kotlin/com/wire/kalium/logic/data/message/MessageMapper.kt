@@ -367,50 +367,50 @@ class MessageMapperImpl(
         quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
         isQuoteVerified = textContent.quotedMessageReference?.isVerified,
     )
+}
 
-    @Suppress("ComplexMethod")
-    private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
-        is MessageEntityContent.MemberChange -> {
-            val memberList = this.memberUserIdList.map { it.toModel() }
-            when (this.memberChangeType) {
-                MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
-                MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
-                MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
-                MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
-                MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
-            }
+@Suppress("ComplexMethod")
+fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
+    is MessageEntityContent.MemberChange -> {
+        val memberList = this.memberUserIdList.map { it.toModel() }
+        when (this.memberChangeType) {
+            MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
+            MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
+            MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
+            MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
         }
+    }
 
-        is MessageEntityContent.MissedCall -> MessageContent.MissedCall
-        is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
-        is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
-        is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
-        is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
-        is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
-        is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
-        is MessageEntityContent.HistoryLostProtocolChanged -> MessageContent.HistoryLostProtocolChanged
-        is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
-        is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
-        is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
-        is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
-        is MessageEntityContent.ConversationVerifiedMLS -> MessageContent.ConversationVerifiedMLS
-        is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
-        is MessageEntityContent.ConversationVerifiedProteus -> MessageContent.ConversationVerifiedProteus
-        is MessageEntityContent.Federation -> when (type) {
-            MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
-            MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
-        }
+    is MessageEntityContent.MissedCall -> MessageContent.MissedCall
+    is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
+    is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
+    is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
+    is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
+    is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
+    is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
+    is MessageEntityContent.HistoryLostProtocolChanged -> MessageContent.HistoryLostProtocolChanged
+    is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
+    is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
+    is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
+    is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
+    is MessageEntityContent.ConversationVerifiedMLS -> MessageContent.ConversationVerifiedMLS
+    is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
+    is MessageEntityContent.ConversationVerifiedProteus -> MessageContent.ConversationVerifiedProteus
+    is MessageEntityContent.Federation -> when (type) {
+        MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
+        MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
+    }
 
-        is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
-        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
-        is MessageEntityContent.LegalHold -> {
-            when (this.type) {
-                MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
-                MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
-                    MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
-                MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
-                    MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
-            }
+    is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
+    is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
+    is MessageEntityContent.LegalHold -> {
+        when (this.type) {
+            MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
+            MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
+                MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
+            MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
+                MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
         }
     }
 }
@@ -631,14 +631,12 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
     MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
     is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
-    is MessageContent.LegalHold -> this.toMessageEntityContent()
-}
-
-fun MessageContent.LegalHold.toMessageEntityContent(): MessageEntityContent.LegalHold = when(this) {
-    MessageContent.LegalHold.ForConversation.Disabled ->
-        MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
-    is MessageContent.LegalHold.ForMembers.Disabled ->
-        MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
-    is MessageContent.LegalHold.ForMembers.Enabled ->
-        MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
+    is MessageContent.LegalHold -> when(this) {
+        MessageContent.LegalHold.ForConversation.Disabled ->
+            MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
+        is MessageContent.LegalHold.ForMembers.Disabled ->
+            MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
+        is MessageContent.LegalHold.ForMembers.Enabled ->
+            MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
+    }
 }
