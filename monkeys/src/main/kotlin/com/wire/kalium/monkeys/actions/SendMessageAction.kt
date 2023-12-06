@@ -27,10 +27,87 @@ import com.wire.kalium.monkeys.pool.MonkeyPool
 
 private const val ONE_2_1: String = "One21"
 private val EMOJI: List<String> = listOf(
-    "👀", "🦭", "😵‍💫", "👨‍🍳",
-    "🍌", "🍆", "👨‍🌾", "🏄‍",
-    "🥶", "🤤", "🙈", "🙊",
-    "🐒", "🙉", "🦍", "🐵"
+    "👀", "🦭", "😵‍💫", "👨‍🍳", "🍌", "🍆", "👨‍🌾", "🏄‍", "🥶", "🤤", "🙈", "🙊", "🐒", "🙉", "🦍", "🐵"
+)
+private val MESSAGES = listOf(
+    """
+        Hey there,
+        
+        I'm really in the mood for some bananas, and I was wondering if you could lend a hand. I'd truly appreciate it. Bananas have a 
+        special place in my heart, and your help would brighten my day.
+        
+        Thanks for thinking it over.
+    """,
+    """
+        Hey,
+
+        I've got a hankering for some bananas. Any chance you could help me out?
+
+        Appreciate it!
+    """,
+    """
+        Hello,
+
+        I'm on the hunt for bananas, and I'm reaching out to see if you or your group could assist. Your help would mean a lot to me.
+
+        Thanks in advance.
+    """,
+    """
+        Hey,
+
+        I've got this banana craving that won't quit. Can you come to the rescue?
+
+        Much appreciated!
+    """,
+    """
+        Hi there,
+
+        I'm in need of some bananas, and I'm wondering if you or your group could lend a hand. Your support would make my day.
+
+        Thanks a bunch!  
+    """,
+    """
+        Hello,
+
+        I'm really feeling the banana vibe right now. Could you or your group be the banana heroes I'm looking for?
+
+        Thanks in advance.
+    """,
+    """
+       Hey,
+
+       Bananas are calling my name. Any chance you can help satisfy my fruity desires?
+
+       Thanks a bunch! 
+    """,
+    """
+       Hi,
+
+       I'm on a mission to find bananas, and I'm hoping you or your group can assist. Your kindness would be greatly appreciated.
+
+       Thanks for considering. 
+    """,
+    """
+       Hey there,
+
+       I've got a strong craving for bananas. Could you lend a hand in satisfying it?
+
+       Many thanks! 
+    """,
+    """
+       Hello,
+
+       I'm in the mood for some bananas. Can you or your group help me out? It would mean a lot.
+
+       Thanks in advance! 
+    """,
+    """
+       Hey,
+
+       I've got this banana hankering that won't quit. Can you be the banana hero I need?
+
+       Much appreciated! 
+    """,
 )
 
 class SendMessageAction(val config: ActionType.SendMessage) : Action() {
@@ -42,7 +119,7 @@ class SendMessageAction(val config: ActionType.SendMessage) : Action() {
                         val monkeys = monkeyPool.randomLoggedInMonkeys(this.config.userCount)
                         monkeys.forEach { monkey ->
                             val targetMonkey = monkey.randomPeer(monkeyPool)
-                            monkey.sendDirectMessageTo(targetMonkey, randomMessage(targetMonkey.user.email, i))
+                            monkey.sendDirectMessageTo(targetMonkey, randomMessage())
                         }
                     } else {
                         ConversationPool.getFromPrefixed(target).forEach { conv ->
@@ -66,11 +143,14 @@ private suspend fun MonkeyConversation.sendMessage(userCount: UserCount, i: Int)
         logger.d("No monkey is logged in in the picked conversation")
     }
     monkeys.forEach { monkey ->
-        val message = randomMessage(this.conversation.name ?: "fellow stranger", i)
+        val message = randomMessage()
         monkey.sendMessageTo(this.conversation.id, message)
     }
 }
 
-private fun randomMessage(target: String, i: Int): String {
-    return "Hello everyone from $target. Give me ${i + 1} banana(s). ${EMOJI.random()}"
+private fun randomMessage(): String {
+    return """
+        ${MESSAGES.random()}
+        ${EMOJI.random()}
+    """.trimIndent()
 }
