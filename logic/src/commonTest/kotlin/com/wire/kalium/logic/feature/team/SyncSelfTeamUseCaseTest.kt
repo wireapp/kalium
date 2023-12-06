@@ -38,9 +38,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlin.properties.Delegates
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SyncSelfTeamUseCaseTest {
 
     @Test
@@ -54,6 +54,7 @@ class SyncSelfTeamUseCaseTest {
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
+            .witFetchAllTeamMembersEagerly(false)
             .arrange()
 
         // when
@@ -64,7 +65,10 @@ class SyncSelfTeamUseCaseTest {
             .suspendFunction(arrangement.teamRepository::fetchTeamById)
             .with(any())
             .wasNotInvoked()
-
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchMembersByTeamId)
+            .with(any(), any())
+            .wasNotInvoked()
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::syncServices)
             .with(any())
@@ -72,13 +76,15 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    fun givenSelfUserHasValidTeam_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
+    fun givenSelfUserHasValidTeamAndFetchAllTeamMembersEagerlyIsTrue_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
         // given
         val selfUserFlow = flowOf(TestUser.SELF)
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
+            .witFetchAllTeamMembersEagerly(true)
             .withTeam()
+            .withTeamMembers()
             .withServicesSync()
             .arrange()
 
@@ -90,7 +96,13 @@ class SyncSelfTeamUseCaseTest {
             .suspendFunction(arrangement.teamRepository::fetchTeamById)
             .with(eq(TestUser.SELF.teamId))
             .wasInvoked(exactly = once)
-
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchMembersByTeamId)
+            .with(
+                eq(TestUser.SELF.teamId),
+                eq(TestUser.SELF.id.domain)
+            )
+            .wasInvoked(exactly = once)
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::syncServices)
             .with(eq(TestUser.SELF.teamId))
@@ -104,6 +116,7 @@ class SyncSelfTeamUseCaseTest {
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
+            .witFetchAllTeamMembersEagerly(false)
             .withFailingTeamInfo()
             .arrange()
 
@@ -115,11 +128,20 @@ class SyncSelfTeamUseCaseTest {
             .suspendFunction(arrangement.teamRepository::fetchTeamById)
             .with(eq(TestUser.SELF.teamId))
             .wasInvoked(exactly = once)
-
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchMembersByTeamId)
+            .with(any(), any())
+            .wasNotInvoked()
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::syncServices)
             .with(any())
             .wasNotInvoked()
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchMembersByTeamId)
+            .with(
+                eq(TestUser.SELF.teamId),
+                eq(TestUser.SELF.id.domain)
+            ).wasNotInvoked()
     }
 
     @Test
@@ -129,7 +151,9 @@ class SyncSelfTeamUseCaseTest {
 
         val (_, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
+            .witFetchAllTeamMembersEagerly(false)
             .withTeam()
+            .withTeamMembers()
             .withFailingServicesSync()
             .arrange()
 
@@ -140,7 +164,39 @@ class SyncSelfTeamUseCaseTest {
         result.shouldSucceed()
     }
 
+    @Test
+    fun givenSelfUserHasValidTeamAndFetchAllTeamMembersEagerlyIsFalse_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
+        // given
+        val selfUserFlow = flowOf(TestUser.SELF)
+
+        val (arrangement, syncSelfTeamUseCase) = Arrangement()
+            .withSelfUser(selfUserFlow)
+            .witFetchAllTeamMembersEagerly(false)
+            .withTeam()
+            .withServicesSync()
+            .arrange()
+
+        // when
+        syncSelfTeamUseCase.invoke()
+
+        // then
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchTeamById)
+            .with(eq(TestUser.SELF.teamId))
+            .wasInvoked(exactly = once)
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchMembersByTeamId)
+            .with(any(), any())
+            .wasNotInvoked()
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::syncServices)
+            .with(eq(TestUser.SELF.teamId))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
+
+        var fetchAllTeamMembersEagerly by Delegates.notNull<Boolean>()
 
         @Mock
         val userRepository = mock(classOf<UserRepository>())
@@ -148,10 +204,10 @@ class SyncSelfTeamUseCaseTest {
         @Mock
         val teamRepository = mock(classOf<TeamRepository>())
 
-        val syncSelfTeamUseCase = SyncSelfTeamUseCaseImpl(
-            userRepository = userRepository,
-            teamRepository = teamRepository
-        )
+        private lateinit var syncSelfTeamUseCase: SyncSelfTeamUseCase
+        fun witFetchAllTeamMembersEagerly(result: Boolean) = apply {
+            fetchAllTeamMembersEagerly = result
+        }
 
         fun withSelfUser(selfUserFlow: Flow<SelfUser>) = apply {
             given(userRepository)
@@ -174,6 +230,13 @@ class SyncSelfTeamUseCaseTest {
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)))
         }
 
+        fun withTeamMembers() = apply {
+            given(teamRepository)
+                .suspendFunction(teamRepository::fetchMembersByTeamId)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withServicesSync() = apply {
             given(teamRepository)
                 .suspendFunction(teamRepository::syncServices)
@@ -188,10 +251,13 @@ class SyncSelfTeamUseCaseTest {
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied)))
         }
 
-        fun arrange() = this to syncSelfTeamUseCase
-
-        companion object {
-
+        fun arrange(): Pair<Arrangement, SyncSelfTeamUseCase> {
+            syncSelfTeamUseCase = SyncSelfTeamUseCaseImpl(
+                userRepository = userRepository,
+                teamRepository = teamRepository,
+                fetchAllTeamMembersEagerly
+            )
+            return this to syncSelfTeamUseCase
         }
     }
 }
