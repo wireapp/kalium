@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
