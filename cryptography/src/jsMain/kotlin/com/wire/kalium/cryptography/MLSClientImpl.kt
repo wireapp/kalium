@@ -100,7 +100,7 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun addMember(groupId: MLSGroupId, members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>): CommitBundle? {
+    override suspend fun addMember(groupId: MLSGroupId, membersKeyPackages: List<MLSKeyPackage>): CommitBundle? {
         TODO("Not yet implemented")
     }
 
@@ -112,15 +112,15 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override suspend fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiNewActivationEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override suspend fun e2eiNewActivationEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiNewRotateEnrollment(clientId: E2EIQualifiedClientId, displayName: String?, handle: String?): E2EIClient {
+    override suspend fun e2eiNewRotateEnrollment(clientId: CryptoQualifiedClientId, displayName: String?, handle: String?): E2EIClient {
         TODO("Not yet implemented")
     }
 
@@ -144,11 +144,11 @@ class MLSClientImpl : MLSClient {
         TODO("Not supported on js")
     }
 
-    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): Map<String, List<WireIdentity>> {
+    override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
         TODO("Not yet implemented")
     }
 }

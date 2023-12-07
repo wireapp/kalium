@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.E2EIQualifiedClientId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -53,7 +53,7 @@ internal class EI2EIClientProviderImpl(
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
-            val e2eiClientId = E2EIQualifiedClientId(
+            val e2eiClientId = CryptoQualifiedClientId(
                 currentClientId.value,
                 CryptoQualifiedID(value = userId.value, domain = userId.domain)
             )
@@ -64,14 +64,14 @@ internal class EI2EIClientProviderImpl(
                 getSelfUserInfo().flatMap { selfUser ->
                     mlsClientProvider.getMLSClient(currentClientId).flatMap {
                         val newE2EIClient = if (it.isE2EIEnabled()) {
-                            kaliumLogger.e("initial E2EI client for MLS client without e2ei")
+                            kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
                             it.e2eiNewRotateEnrollment(
                                 e2eiClientId,
                                 selfUser.first,
                                 selfUser.second
                             )
                         } else {
-                            kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
+                            kaliumLogger.e("initial E2EI client for MLS client without e2ei")
                             it.e2eiNewActivationEnrollment(
                                 e2eiClientId,
                                 selfUser.first,

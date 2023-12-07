@@ -30,13 +30,11 @@ class E2EIClientTest : BaseMLSClientTest() {
         val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String
     ) {
         val qualifiedClientId: CryptoQualifiedClientId = CryptoQualifiedClientId(clientId.value, id)
-        val e2eiCryptoId: E2EIQualifiedClientId = E2EIQualifiedClientId(clientId.value, id)
-
     }
 
     private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
         return createMLSClient(user.qualifiedClientId).newAcmeEnrollment(
-            user.e2eiCryptoId, user.name, user.handle
+            user.qualifiedClientId, user.name, user.handle
         )
     }
 

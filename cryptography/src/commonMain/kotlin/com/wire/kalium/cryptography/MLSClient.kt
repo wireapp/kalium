@@ -246,13 +246,13 @@ interface MLSClient {
      * Add a user/client to an existing MLS group
      *
      * @param groupId MLS group
-     * @param members list of clients with a claimed key package for each client.
+     * @param membersKeyPackages list of claimed key package for each member.
      *
      * @return commit bundle, which needs to be sent to the distribution service.
      */
     suspend fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+        membersKeyPackages: List<MLSKeyPackage>
     ): CommitBundle?
 
     /**
@@ -284,7 +284,7 @@ interface MLSClient {
      * @return wire end to end identity client
      */
     suspend fun newAcmeEnrollment(
-        clientId: E2EIQualifiedClientId,
+        clientId: CryptoQualifiedClientId,
         displayName: String,
         handle: String
     ): E2EIClient
@@ -295,7 +295,7 @@ interface MLSClient {
      * @return wire end to end identity client
      */
     suspend fun e2eiNewActivationEnrollment(
-        clientId: E2EIQualifiedClientId,
+        clientId: CryptoQualifiedClientId,
         displayName: String,
         handle: String
     ): E2EIClient
@@ -306,7 +306,7 @@ interface MLSClient {
      * @return wire end to end identity client
      */
     suspend fun e2eiNewRotateEnrollment(
-        clientId: E2EIQualifiedClientId,
+        clientId: CryptoQualifiedClientId,
         displayName: String?,
         handle: String?
     ): E2EIClient
@@ -343,15 +343,15 @@ interface MLSClient {
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity>
+    suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity>
 
     /**
      * Get the identity of given users in the given conversation
      *
-     * @param clients a list of clients of the requested users
+     * @param users list of requested users
      * @param groupId MLS group ID for an existing conversation
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): Map<String, List<WireIdentity>>
+    suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>>
 }
