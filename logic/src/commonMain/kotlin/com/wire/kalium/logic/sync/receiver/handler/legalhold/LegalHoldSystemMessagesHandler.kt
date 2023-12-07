@@ -49,7 +49,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
             update = { members -> (members + userId).distinct() },
             createNew = { MessageContent.LegalHold.ForMembers.Enabled(members = listOf(userId)) }
         )
-    override suspend fun handleDisable(userId: UserId)= handleSystemMessages(
+    override suspend fun handleDisable(userId: UserId) = handleSystemMessages(
         userId = userId,
         update = { members -> (members + userId).distinct() },
         createNew = { MessageContent.LegalHold.ForMembers.Disabled(members = listOf(userId)) }
