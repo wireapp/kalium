@@ -236,7 +236,6 @@ private fun toStatusCodeBasedKaliumException(
     return kException
 }
 
-
 /**
  * Wrap and handles federation aware endpoints that can send errors responses
  * And raise specific federated context exceptions,
