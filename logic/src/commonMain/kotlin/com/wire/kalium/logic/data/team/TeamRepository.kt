@@ -31,6 +31,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
@@ -50,6 +51,7 @@ import kotlinx.coroutines.flow.map
 
 interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
+    suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit>
@@ -81,8 +83,42 @@ internal class TeamDataSource(
     }.map { teamDTO ->
         teamMapper.fromDtoToEntity(teamDTO)
     }.flatMap { teamEntity ->
-        wrapStorageRequest { teamDAO.insertTeam(team = teamEntity) }.map {
+        wrapStorageRequest {
+            teamDAO.insertTeam(teamEntity)
+        }.map {
             teamMapper.fromDaoModelToTeam(teamEntity)
+        }
+    }
+
+    override suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit> {
+        var hasMore = true
+        var error: CoreFailure? = null
+        while (hasMore && error == null) {
+            wrapApiRequest {
+                teamsApi.getTeamMembers(
+                    teamId = teamId.value,
+                    limitTo = FETCH_TEAM_MEMBER_PAGE_SIZE
+                )
+            }.onSuccess {
+                hasMore = it.hasMore
+            }.map {
+                it.members.map { teamMember ->
+                    val userId = QualifiedIDEntity(teamMember.nonQualifiedUserId, userDomain)
+                    val userType = userTypeEntityTypeMapper.teamRoleCodeToUserType(teamMember.permissions?.own)
+                    userId to userType
+                }
+            }.flatMap { teamMembers ->
+                wrapStorageRequest {
+                    userDAO.upsertTeamMemberUserTypes(teamMembers.toMap())
+                }
+            }.onFailure {
+                error = it
+            }
+        }
+        return if (error != null) {
+            Either.Left(error!!)
+        } else {
+            Either.Right(Unit)
         }
     }
 
@@ -147,6 +183,7 @@ internal class TeamDataSource(
                     eventContentDTO = EventContentDTO.User.LegalHoldEnabledDTO(id = selfUserId.toString())
                 )
             )
+
             LegalHoldStatusDTO.DISABLED -> legalHoldHandler.handleDisable(
                 eventMapper.legalHoldDisabled(
                     id = LocalId.generate(),
@@ -155,6 +192,7 @@ internal class TeamDataSource(
                     eventContentDTO = EventContentDTO.User.LegalHoldDisabledDTO(id = selfUserId.toString())
                 )
             )
+
             LegalHoldStatusDTO.PENDING ->
                 legalHoldRequestHandler.handle(
                     eventMapper.legalHoldRequest(
@@ -168,7 +206,12 @@ internal class TeamDataSource(
                         )
                     )
                 )
+
             LegalHoldStatusDTO.NO_CONSENT -> Either.Right(Unit)
         }.map { legalHoldStatusMapper.fromApiModel(response.legalHoldStatusDTO) }
+    }
+
+    private companion object {
+        const val FETCH_TEAM_MEMBER_PAGE_SIZE = 200
     }
 }

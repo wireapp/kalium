@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import org.junit.Test
 import kotlin.test.assertEquals
 
@@ -28,9 +29,31 @@ class CertificateStatusCheckerTest {
         val (_, certificateStatusChecker) = Arrangement()
             .arrange()
 
-        val result = certificateStatusChecker.status(timestamp)
+        val result = certificateStatusChecker.status(timestamp, CryptoCertificateStatus.VALID)
 
         assertEquals(CertificateStatus.EXPIRED, result)
+    }
+
+    @Test
+    fun givenFutureTimestampAndExpiredCertificateStatus_whenCheckingTheStatus_thenReturnExpired() {
+        val timestamp = 4822355515000 // Sunday, 25 October 2122 07:11:55
+        val (_, certificateStatusChecker) = Arrangement()
+            .arrange()
+
+        val result = certificateStatusChecker.status(timestamp, CryptoCertificateStatus.EXPIRED)
+
+        assertEquals(CertificateStatus.EXPIRED, result)
+    }
+
+    @Test
+    fun givenFutureTimestampAndRevokedCertificateStatus_whenCheckingTheStatus_thenReturnExpired() {
+        val timestamp = 4822355515000 // Sunday, 25 October 2122 07:11:55
+        val (_, certificateStatusChecker) = Arrangement()
+            .arrange()
+
+        val result = certificateStatusChecker.status(timestamp, CryptoCertificateStatus.REVOKED)
+
+        assertEquals(CertificateStatus.REVOKED, result)
     }
 
     @Test
@@ -40,7 +63,7 @@ class CertificateStatusCheckerTest {
         val (_, certificateStatusChecker) = Arrangement()
             .arrange()
 
-        val result = certificateStatusChecker.status(timestamp)
+        val result = certificateStatusChecker.status(timestamp, CryptoCertificateStatus.VALID)
 
         assertEquals(CertificateStatus.VALID, result)
     }

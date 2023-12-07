@@ -37,7 +37,6 @@ import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.logic.sync.receiver.UserEventReceiverTest
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed

@@ -15,15 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.util.map
 
-import com.wire.kalium.cryptography.CryptoCertificateStatus
-
-expect interface PemCertificateDecoder {
-    fun decode(certificate: String, status: CryptoCertificateStatus): E2eiCertificate
+fun <K, V> Map<out K, V>.forEachIndexed(action: (index: Int, entry: Map.Entry<K, V>) -> Unit) {
+    this.entries.toList().forEachIndexed { index, entry ->
+        action(index, entry)
+    }
 }
-
-expect class PemCertificateDecoderImpl(
-    x509CertificateGenerator: X509CertificateGenerator = X509CertificateGeneratorImpl(),
-    certificateStatusChecker: CertificateStatusChecker = CertificateStatusCheckerImpl()
-) : PemCertificateDecoder

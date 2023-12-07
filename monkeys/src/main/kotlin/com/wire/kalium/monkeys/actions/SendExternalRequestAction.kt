@@ -15,15 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.monkeys.actions
 
-import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.pool.MonkeyPool
 
-expect interface PemCertificateDecoder {
-    fun decode(certificate: String, status: CryptoCertificateStatus): E2eiCertificate
+class SendExternalRequestAction(val config: ActionType.SendExternalRequest) : Action() {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+        val monkeys = monkeyPool.randomLoggedInMonkeysFromTeam(config.originTeam, config.userCount)
+        val usersFromTeam = monkeyPool.externalUsersFromTeam(config.targetTeam)
+        monkeys.forEach { monkey ->
+            monkey.sendRequest(usersFromTeam.random())
+        }
+    }
 }
-
-expect class PemCertificateDecoderImpl(
-    x509CertificateGenerator: X509CertificateGenerator = X509CertificateGeneratorImpl(),
-    certificateStatusChecker: CertificateStatusChecker = CertificateStatusCheckerImpl()
-) : PemCertificateDecoder
