@@ -22,7 +22,8 @@ import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.client.ClientDAOTest
+import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
@@ -33,9 +34,10 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class NewClientDAOTest: BaseDatabaseTest() {
+class NewClientDAOTest : BaseDatabaseTest() {
 
     private lateinit var newClientDAO: NewClientDAO
+    private lateinit var clientDAO: ClientDAO
     private lateinit var userDAO: UserDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
@@ -45,6 +47,7 @@ class NewClientDAOTest: BaseDatabaseTest() {
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         newClientDAO = db.newClientDAO
         userDAO = db.userDAO
+        clientDAO = db.clientDAO
     }
 
     @Test
@@ -54,7 +57,18 @@ class NewClientDAOTest: BaseDatabaseTest() {
             awaitItem().also { result -> assertEquals(emptyList(), result) }
             newClientDAO.insertNewClient(insertedClient1)
 
-            awaitItem().also { result -> assertEquals(listOf(client), result) }
+            awaitItem().also { result -> assertEquals(listOf(newClientEntity), result) }
+        }
+    }
+
+    @Test
+    fun whenANewClientsIsAdded_thenClientAddedToClientTable() = runTest {
+        userDAO.upsertUser(user)
+        clientDAO.observeClientsByUserId(user.id).test {
+            awaitItem().also { result -> assertEquals(emptyList(), result) }
+            newClientDAO.insertNewClient(insertedClient1)
+
+            awaitItem().also { result -> assertEquals(listOf(clientEntity), result) }
         }
     }
 
@@ -89,15 +103,33 @@ class NewClientDAOTest: BaseDatabaseTest() {
         )
         val insertedClient2 = insertedClient1.copy(user.id, "id2", deviceType = null)
 
-        val client = insertedClient1.toClientEntity()
+        val newClientEntity = insertedClient1.toNewClientEntity()
+        val clientEntity = insertedClient1.toClientEntity()
     }
 
 }
 
-private fun InsertClientParam.toClientEntity(): NewClientEntity =
+private fun InsertClientParam.toNewClientEntity(): NewClientEntity =
     NewClientEntity(
         id,
         deviceType = deviceType,
         model = model,
         registrationDate = registrationDate
+    )
+
+private fun InsertClientParam.toClientEntity(): Client =
+    Client(
+        id = id,
+        deviceType = deviceType,
+        model = model,
+        registrationDate = registrationDate,
+        userId = userId,
+        clientType = clientType,
+        isValid = true,
+        isProteusVerified = false,
+        lastActive = lastActive,
+        label = label,
+        mlsPublicKeys = mlsPublicKeys,
+        isMLSCapable = isMLSCapable
+
     )
