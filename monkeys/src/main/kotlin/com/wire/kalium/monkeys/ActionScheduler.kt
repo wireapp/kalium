@@ -37,8 +37,8 @@ object ActionScheduler {
     suspend fun start(testCase: String, actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         actions.forEach { actionConfig ->
             CoroutineScope(Dispatchers.Default).launch {
-                while (this.isActive) {
-                    val actionName = actionConfig.type::class.serializer().descriptor.serialName
+                val actionName = actionConfig.type::class.serializer().descriptor.serialName
+                do {
                     val tags = listOf(Tag.of("testCase", testCase))
                     try {
                         logger.i("Running action $actionName: ${actionConfig.description} ${actionConfig.count} times")
@@ -58,7 +58,8 @@ object ActionScheduler {
                         MetricsCollector.count("c_errors", tags.plusElement(Tag.of("action", actionName)))
                     }
                     delay(actionConfig.repeatInterval.toLong())
-                }
+                } while (this.isActive && actionConfig.repeatInterval > 0u)
+                logger.i("Task for action $actionName finished")
             }
         }
     }

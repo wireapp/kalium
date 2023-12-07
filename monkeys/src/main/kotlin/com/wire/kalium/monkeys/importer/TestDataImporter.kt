@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.logger
 import com.wire.kalium.network.KaliumKtorCustomLogging
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.util.serialization.toJsonArray
 import com.wire.kalium.util.serialization.toJsonObject
 import io.github.serpro69.kfaker.Faker
 import io.ktor.client.HttpClient
@@ -48,6 +47,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import java.net.URLEncoder
@@ -55,9 +56,7 @@ import java.util.UUID
 
 private const val TEAM_ROLE: String = "member"
 
-private val tokenStorage = mutableListOf<BearerTokens>()
-
-private data class Team(val id: String, val backend: Backend, val owner: UserData)
+private var token: BearerTokens? = null
 
 object TestDataImporter {
     @OptIn(ExperimentalSerializationApi::class)
@@ -75,54 +74,44 @@ object TestDataImporter {
         }
     }
 
-    private fun getUserData(backendConfig: BackendConfig): List<UserData> {
-        val backend = with(backendConfig) {
-            Backend(
-                api,
-                accounts,
-                webSocket,
-                blackList,
-                teams,
-                website,
-                title,
-                domain,
-                teamName
-            )
-        }
-        return backendConfig.users.map { user ->
-            UserData(
-                user.email,
-                backendConfig.passwordForUsers,
-                UserId(user.unqualifiedId, backendConfig.domain),
-                backend
-            )
-        }
-    }
-
-    private fun dumpUsers(teamName: String, users: List<UserData>) {
-        val json = users.map {
+    private fun dumpUsers(team: Team, users: List<UserData>) {
+        val json = mapOf("id" to team.id, "owner" to mapOf(
+            "email" to team.owner.email, "id" to team.owner.userId.value
+        ), "users" to users.map {
             mapOf(
-                "email" to it.email,
-                "id" to it.userId.value
+                "email" to it.email, "id" to it.userId.value
             )
-        }.toJsonArray()
-        File("$teamName.json").writeText(jsonSerializer.encodeToString(json))
+        }).toJsonObject()
+        File("${team.name}.json").writeText(jsonSerializer.encodeToString(json))
     }
 
     suspend fun generateUserData(testData: TestData): List<UserData> {
         return testData.backends.flatMap { backendConfig ->
-            if (backendConfig.users.isNotEmpty()) {
-                getUserData(backendConfig)
-            } else {
-                val httpClient = basicHttpClient(backendConfig)
-                val team = httpClient.createTeam(backendConfig)
-                val users = (1..backendConfig.userCount.toInt())
-                    .map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
-                    .plus(team.owner)
-                    .also { httpClient.close() }
-                if (backendConfig.dumpUsers) {
-                    dumpUsers(backendConfig.teamName, users)
+            val httpClient = basicHttpClient(backendConfig)
+            if (backendConfig.presetTeam != null) {
+                val backend = Backend.fromConfig(backendConfig)
+                val team = Team(
+                    backendConfig.teamName,
+                    backendConfig.presetTeam.id,
+                    backend,
+                    backendConfig.presetTeam.owner.email,
+                    backendConfig.passwordForUsers,
+                    UserId(backendConfig.presetTeam.owner.unqualifiedId, backendConfig.domain),
+                    httpClient
+                )
+                backendConfig.presetTeam.users.map { user ->
+                    UserData(
+                        user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team
+                    )
                 }
+            } else {
+                val team = httpClient.createTeam(backendConfig)
+                val users = (1..backendConfig.userCount.toInt()).map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
+                    .plus(team.owner).also { httpClient.close() }
+                if (backendConfig.dumpUsers) {
+                    dumpUsers(team, users)
+                }
+                users.forEach { setUserHandle(backendConfig, it) }
                 users
             }
         }
@@ -137,20 +126,13 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
     val email = "$ownerId@wire.com"
     post("activate/send") { setBody(mapOf("email" to email)) }
 
-    val code =
-        get("i/users/activation-code?email=${URLEncoder.encode(email, "utf-8")}").body<JsonObject>()["code"]?.jsonPrimitive?.content
-            ?: error("Failed to get activation code for owner")
+    val code = get("i/users/activation-code?email=${URLEncoder.encode(email, "utf-8")}").body<JsonObject>()["code"]?.jsonPrimitive?.content
+        ?: error("Failed to get activation code for owner")
     val user = post("register") {
         setBody(
             mapOf(
-                "email" to email,
-                "name" to ownerName,
-                "password" to backendConfig.passwordForUsers,
-                "email_code" to code,
-                "team" to mapOf(
-                    "name" to backendConfig.teamName,
-                    "icon" to "default",
-                    "binding" to true
+                "email" to email, "name" to ownerName, "password" to backendConfig.passwordForUsers, "email_code" to code, "team" to mapOf(
+                    "name" to backendConfig.teamName, "icon" to "default", "binding" to true
                 )
             ).toJsonObject()
         )
@@ -165,63 +147,86 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
                     "defaultProtocol" to "proteus",
                     "protocolToggleUsers" to listOf<String>(),
                     "supportedProtocols" to listOf("mls", "proteus")
-                ),
-                "status" to "enabled"
+                ), "status" to "enabled"
             ).toJsonObject()
         )
     }
 
     val backend = Backend.fromConfig(backendConfig)
     val userId = user["id"]?.jsonPrimitive?.content ?: error("Could not register user")
-    val team = Team(teamId, backend, UserData(email, backendConfig.passwordForUsers, UserId(userId, backend.domain), backend))
-    ownerLogin(team)
+    val team = Team(
+        name = backendConfig.teamName,
+        id = teamId,
+        backend = backend,
+        ownerEmail = email,
+        ownerPassword = backendConfig.passwordForUsers,
+        ownerId = UserId(userId, backend.domain),
+        client = this
+    )
+    login(team.owner.email, team.owner.password)
 
     put("self/handle") { setBody(mapOf("handle" to ownerId).toJsonObject()) }
     logger.i("Owner $email (id $userId) of team ${backendConfig.teamName} (id: $teamId) in backend ${backendConfig.domain}")
     return team
 }
 
+private suspend fun setUserHandle(backendConfig: BackendConfig, userData: UserData) {
+    lateinit var token: BearerTokens
+    val httpClient = basicHttpClient(backendConfig) { token }
+    httpClient.login(userData.email, userData.password) { accessToken ->
+        token = BearerTokens(accessToken, "")
+    }
+    httpClient.put("self/handle") { setBody(mapOf("handle" to "monkey-${userData.userId.value}").toJsonObject()) }
+}
+
 private suspend fun HttpClient.createUser(i: Int, team: Team, userPassword: String): UserData {
     val faker = Faker()
     val userName = faker.name.name()
-    val email = "monkey-user-$i-${team.id}@wire.com"
+    val email = "monkey-user-$i-${team.id}@${team.name}.wire.com"
     val invitationCode = invite(team.id, email, userName)
     val response = post("register") {
         setBody(
             mapOf(
-                "email" to email,
-                "name" to userName,
-                "password" to userPassword,
-                "team_code" to invitationCode
+                "email" to email, "name" to userName, "password" to userPassword, "team_code" to invitationCode
             ).toJsonObject()
         )
     }.body<JsonObject>()
     val userId = response["id"]?.jsonPrimitive?.content ?: error("Could not register user in team")
-    logger.d("Created user $email (id $userId) in team ${team.backend.teamName}")
-    return UserData(email, userPassword, UserId(userId, team.backend.domain), team.backend)
+    logger.d("Created user $email (id $userId) in team ${team.name}")
+    return UserData(email, userPassword, UserId(userId, team.backend.domain), team)
 }
 
-private suspend fun HttpClient.ownerLogin(team: Team) {
+private suspend fun HttpClient.login(
+    email: String,
+    password: String,
+    tokenProvider: (accessToken: String) -> Unit = { accessToken ->
+        token = BearerTokens(accessToken, "")
+    }
+) {
     val response = post("login") {
         setBody(
             mapOf(
-                "email" to team.owner.email,
-                "password" to team.owner.password,
-                "label" to ""
+                "email" to email, "password" to password, "label" to ""
             ).toJsonObject()
         )
     }.body<JsonObject>()
     val accessToken = response["access_token"]?.jsonPrimitive?.content ?: error("Could not login")
-    tokenStorage.add(BearerTokens(accessToken, ""))
+    tokenProvider(accessToken)
+}
+
+internal suspend fun HttpClient.teamParticipants(team: Team): List<UserId> {
+    this.login(team.owner.email, team.owner.password)
+    val members = get("teams/${team.id}/members").body<JsonObject>()
+    return members["members"]!!.jsonArray.map { member ->
+        UserId(member.jsonObject["user"]!!.jsonPrimitive.content, team.backend.domain)
+    }
 }
 
 private suspend fun HttpClient.invite(teamId: String, email: String, name: String): String {
     val invitationId = post("teams/$teamId/invitations") {
         setBody(
             mapOf(
-                "email" to email,
-                "role" to TEAM_ROLE,
-                "inviter_name" to name
+                "email" to email, "role" to TEAM_ROLE, "inviter_name" to name
             ).toJsonObject()
         )
     }.body<JsonObject>()["id"]?.jsonPrimitive?.content ?: error("Could not invite new user")
@@ -229,7 +234,7 @@ private suspend fun HttpClient.invite(teamId: String, email: String, name: Strin
         ?: error("Could not retrieve user invitation")
 }
 
-private fun basicHttpClient(backendConfig: BackendConfig) = HttpClient(OkHttp.create()) {
+private fun basicHttpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
     val excludedPaths = listOf("register", "login", "activate")
     defaultRequest {
         url(backendConfig.api)
@@ -251,9 +256,7 @@ private fun basicHttpClient(backendConfig: BackendConfig) = HttpClient(OkHttp.cr
             sendWithoutRequest {
                 it.url.pathSegments.isNotEmpty() && it.url.pathSegments[0] != "i" && !excludedPaths.contains(it.url.pathSegments[0])
             }
-            loadTokens {
-                tokenStorage.last()
-            }
+            loadTokens(tokenProvider)
         }
         basic {
             sendWithoutRequest {
