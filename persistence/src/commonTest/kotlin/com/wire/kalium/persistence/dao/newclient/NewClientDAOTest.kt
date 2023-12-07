@@ -20,17 +20,25 @@ package com.wire.kalium.persistence.dao.newclient
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.Client
+import com.wire.kalium.persistence.dao.client.ClientDAO
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class NewClientDAOTest: BaseDatabaseTest() {
+class NewClientDAOTest : BaseDatabaseTest() {
 
     private lateinit var newClientDAO: NewClientDAO
+    private lateinit var clientDAO: ClientDAO
+    private lateinit var userDAO: UserDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -38,20 +46,35 @@ class NewClientDAOTest: BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         newClientDAO = db.newClientDAO
+        userDAO = db.userDAO
+        clientDAO = db.clientDAO
     }
 
     @Test
     fun whenANewClientsIsAdded_thenNewClientListIsEmitted() = runTest {
+        userDAO.upsertUser(user)
         newClientDAO.observeNewClients().test {
             awaitItem().also { result -> assertEquals(emptyList(), result) }
             newClientDAO.insertNewClient(insertedClient1)
 
-            awaitItem().also { result -> assertEquals(listOf(client), result) }
+            awaitItem().also { result -> assertEquals(listOf(newClientEntity), result) }
+        }
+    }
+
+    @Test
+    fun whenANewClientsIsAdded_thenClientAddedToClientTable() = runTest {
+        userDAO.upsertUser(user)
+        clientDAO.observeClientsByUserId(user.id).test {
+            awaitItem().also { result -> assertEquals(emptyList(), result) }
+            newClientDAO.insertNewClient(insertedClient1)
+
+            awaitItem().also { result -> assertEquals(listOf(clientEntity), result) }
         }
     }
 
     @Test
     fun givenNewClients_whenClearNewClients_thenNewClientEmptyListIsEmitted() = runTest {
+        userDAO.upsertUser(user)
         newClientDAO.insertNewClient(insertedClient1)
         newClientDAO.insertNewClient(insertedClient2)
 
@@ -69,10 +92,10 @@ class NewClientDAOTest: BaseDatabaseTest() {
         val insertedClient1 = InsertClientParam(
             userId = user.id,
             id = "id1",
-            deviceType = null,
-            clientType = null,
-            label = null,
-            model = null,
+            deviceType = DeviceTypeEntity.Phone,
+            clientType = ClientTypeEntity.Permanent,
+            label = "some label",
+            model = "model",
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
@@ -80,15 +103,33 @@ class NewClientDAOTest: BaseDatabaseTest() {
         )
         val insertedClient2 = insertedClient1.copy(user.id, "id2", deviceType = null)
 
-        val client = insertedClient1.toClientEntity()
+        val newClientEntity = insertedClient1.toNewClientEntity()
+        val clientEntity = insertedClient1.toClientEntity()
     }
 
 }
 
-private fun InsertClientParam.toClientEntity(): NewClientEntity =
+private fun InsertClientParam.toNewClientEntity(): NewClientEntity =
     NewClientEntity(
         id,
         deviceType = deviceType,
         model = model,
         registrationDate = registrationDate
+    )
+
+private fun InsertClientParam.toClientEntity(): Client =
+    Client(
+        id = id,
+        deviceType = deviceType,
+        model = model,
+        registrationDate = registrationDate,
+        userId = userId,
+        clientType = clientType,
+        isValid = true,
+        isProteusVerified = false,
+        lastActive = lastActive,
+        label = label,
+        mlsPublicKeys = mlsPublicKeys,
+        isMLSCapable = isMLSCapable
+
     )
