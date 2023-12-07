@@ -18,13 +18,41 @@
 package com.wire.kalium.monkeys.importer
 
 import com.wire.kalium.logic.data.user.UserId
+import io.ktor.client.HttpClient
 
 data class UserData(
     val email: String,
     val password: String,
     val userId: UserId,
-    val backend: Backend
+    val team: Team,
 )
+
+@Suppress("LongParameterList")
+class Team(
+    val name: String,
+    val id: String,
+    val backend: Backend,
+    ownerEmail: String,
+    ownerPassword: String,
+    ownerId: UserId,
+    private val client: HttpClient
+) {
+    val owner: UserData
+
+    init {
+        this.owner = UserData(ownerEmail, ownerPassword, ownerId, this)
+    }
+
+    suspend fun usersFromTeam(): List<UserId> = this.client.teamParticipants(this)
+
+    override fun equals(other: Any?): Boolean {
+        return other != null && other is Team && other.id == this.id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+}
 
 data class Backend(
     val api: String,
@@ -35,11 +63,10 @@ data class Backend(
     val website: String,
     val title: String,
     val domain: String,
-    val teamName: String
 ) {
     companion object {
         fun fromConfig(config: BackendConfig): Backend = with(config) {
-            Backend(api, accounts, webSocket, blackList, teams, website, title, domain, teamName)
+            Backend(api, accounts, webSocket, blackList, teams, website, title, domain)
         }
     }
 }

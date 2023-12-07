@@ -18,16 +18,18 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
@@ -450,6 +452,7 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
+            .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -475,6 +478,7 @@ class ConversationGroupRepositoryTest {
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .withSuccessfulHandleMemberJoinEvent()
+            .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -1184,6 +1188,130 @@ class ConversationGroupRepositoryTest {
         }
     }
 
+    @Test
+    fun givenNoPackagesAvailable_whenAddingMembers_thenRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
+        // given
+        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .withAddMemberAPISucceedChanged()
+            .withSuccessfulAddMemberToMLSGroup()
+            .withAddingMemberToMlsGroupResults(
+                KEY_PACKAGES_NOT_AVAILABLE_FAILURE,
+                Either.Right(Unit)
+            )
+            .withInsertAddedAndFailedSystemMessageSuccess()
+            .arrange()
+
+        // when
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+
+        // then
+        val expectedFullUserIdsForRequestCount = 2
+        val expectedValidUsersWithKeyPackagesCount = 1
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == expectedFullUserIdsForRequestCount
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            .with(anything(), matching { it.size == 1 }, matching { it.size == 1 })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSendCommitFederatedFailure_whenAddingMembers_thenRetryOnceWithValidUsersAndPersistSystemMessage() = runTest {
+        // given
+        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .withAddMemberAPISucceedChanged()
+            .withSuccessfulAddMemberToMLSGroup()
+            .withAddingMemberToMlsGroupResults(
+                buildCommitBundleFederatedFailure("otherDomain"),
+                Either.Right(Unit)
+            )
+            .withInsertAddedAndFailedSystemMessageSuccess()
+            .arrange()
+
+        // when
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+
+        // then
+        val expectedFullUserIdsForRequestCount = 2
+        val expectedValidUsersWithKeyPackagesCount = 1
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == expectedFullUserIdsForRequestCount
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            .with(anything(), matching { it.size == 1 }, matching { it.size == 1 })
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMoreThan2Retries_whenAddingMembers_thenTheOperationsShouldFailAndPersistFailedToAddAllMembers() = runTest {
+        // given
+        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID_2, TestUser.OTHER_FEDERATED_USER_ID)
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
+            .withAddingMemberToMlsGroupResults(
+                KEY_PACKAGES_NOT_AVAILABLE_FAILURE,
+                buildCommitBundleFederatedFailure("otherDomain2"),
+                buildCommitBundleFederatedFailure("domainMember"),
+            )
+            .withInsertFailedToAddSystemMessageSuccess()
+            .arrange()
+
+        // when
+        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+
+        // then
+        val initialCountUsers = expectedInitialUsers.size
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == initialCountUsers
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == initialCountUsers - 1 // removed 1 failed users with key packages
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(anything(), matching {
+                it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
+            }).wasInvoked(exactly = once)
+
+        verify(arrangement.newGroupConversationSystemMessagesCreator)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            .with(anything(), matching { it.size == 3 })
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1443,6 +1571,16 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        /**
+         * Mocks sequentially responses from [MLSConversationRepository] with [result].
+         */
+        fun withAddingMemberToMlsGroupResults(vararg results: Either<CoreFailure, Unit>) = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::addMemberToMLSGroup)
+                .whenInvokedWith(any(), any())
+                .thenReturnSequentially(*results)
+        }
+
         fun withSuccessfulRemoveMemberFromMLSGroup() = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::removeMembersFromMLSGroup)
@@ -1568,6 +1706,13 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withInsertAddedAndFailedSystemMessageSuccess(): Arrangement = apply {
+            given(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(networkResponses: Array<NetworkResponse<ConversationMemberAddedResponse>>) =
             apply {
                 given(conversationApi)
@@ -1651,5 +1796,11 @@ class ConversationGroupRepositoryTest {
             mapOf(),
             HttpStatusCode.OK.value
         )
+
+        private fun buildCommitBundleFederatedFailure(vararg domains: String = arrayOf("otherDomain")) = Either.Left(
+            NetworkFailure.FederatedBackendFailure.FailedDomains(domains.toList())
+        )
+
+        val KEY_PACKAGES_NOT_AVAILABLE_FAILURE = Either.Left(CoreFailure.NoKeyPackagesAvailable(setOf(TestUser.OTHER_FEDERATED_USER_ID)))
     }
 }

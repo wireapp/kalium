@@ -64,6 +64,6 @@ class MonkeyConversation(val creator: Monkey, val conversation: Conversation, va
     }
 
     fun membersIds(): List<UserId> {
-        return this.participants.map { it.user.userId }
+        return this.participants.map { it.monkeyType.userId() }
     }
 }

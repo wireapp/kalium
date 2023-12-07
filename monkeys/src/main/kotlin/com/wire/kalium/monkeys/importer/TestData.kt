@@ -127,6 +127,22 @@ sealed class ActionType {
         @SerialName("delayResponse") val delayResponse: ULong = 0u,
         @SerialName("shouldAccept") val shouldAccept: Boolean = true
     ) : ActionType()
+
+    @Serializable
+    @SerialName("HANDLE_EXTERNAL_REQUEST")
+    data class HandleExternalRequest(
+        @SerialName("userCount") val userCount: UserCount,
+        @SerialName("shouldAccept") val shouldAccept: Boolean,
+        @SerialName("greetMessage") val greetMessage: String = ""
+    ) : ActionType()
+
+    @Serializable
+    @SerialName("SEND_EXTERNAL_REQUEST")
+    data class SendExternalRequest(
+        @SerialName("userCount") val userCount: UserCount,
+        @SerialName("originTeam") val originTeam: String,
+        @SerialName("targetTeam") val targetTeam: String
+    ) : ActionType()
 }
 
 @Serializable
@@ -145,7 +161,17 @@ data class BackendConfig(
     @SerialName("authPassword") val authPassword: String,
     @SerialName("userCount") val userCount: ULong,
     @SerialName("dumpUsers") val dumpUsers: Boolean = false,
-    @SerialName("users") val users: List<UserAccount> = listOf()
+    @SerialName("presetTeam") val presetTeam: TeamConfig? = null
+)
+
+@Serializable
+data class TeamConfig(
+    @SerialName("id")
+    val id: String,
+    @SerialName("owner")
+    val owner: UserAccount,
+    @SerialName("users")
+    val users: List<UserAccount>
 )
 
 @Serializable

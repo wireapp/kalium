@@ -97,7 +97,7 @@ interface ConversationRepository {
     // TODO make all functions to have only logic models
     suspend fun persistConversations(
         conversations: List<ConversationResponse>,
-        selfUserTeamId: String?,
+        selfUserTeamId: TeamId?,
         originatedFromEvent: Boolean = false,
         invalidateMembers: Boolean = false
     ): Either<CoreFailure, Unit>
@@ -346,7 +346,7 @@ internal class ConversationDataSource internal constructor(
                     }
                     persistConversations(
                         conversations = conversations.conversationsFound,
-                        selfUserTeamId = selfTeamIdProvider().getOrNull()?.value,
+                        selfUserTeamId = selfTeamIdProvider().getOrNull(),
                         invalidateMembers = true
                     )
 
@@ -388,7 +388,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun persistConversations(
         conversations: List<ConversationResponse>,
-        selfUserTeamId: String?,
+        selfUserTeamId: TeamId?,
         originatedFromEvent: Boolean,
         invalidateMembers: Boolean
     ) = wrapStorageRequest {
@@ -409,7 +409,7 @@ internal class ConversationDataSource internal constructor(
         conversations.forEach { conversationsResponse ->
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
-            if (invalidateMembers && conversationsResponse.type == ConversationResponse.Type.GROUP) {
+            if (invalidateMembers && conversationsResponse.toConversationType(selfUserTeamId) == ConversationEntity.Type.GROUP) {
                 memberDAO.updateFullMemberList(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
@@ -496,7 +496,7 @@ internal class ConversationDataSource internal constructor(
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
             persistConversations(
                 conversations = listOf(conversationResponse),
-                selfUserTeamId = selfUserTeamId?.value
+                selfUserTeamId = selfUserTeamId
             ).map { conversationResponse }
         }.flatMap { response ->
             baseInfoById(response.id.toModel())
@@ -566,7 +566,7 @@ internal class ConversationDataSource internal constructor(
             conversationApi.fetchConversationDetails(conversationID.toApi())
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
-            persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
+            persistConversations(listOf(it), selfUserTeamId, invalidateMembers = true)
         }
     }
 
@@ -579,7 +579,7 @@ internal class ConversationDataSource internal constructor(
             val conversation = it.copy(
                 type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
             )
-            persistConversations(listOf(conversation), selfUserTeamId?.value, invalidateMembers = true)
+            persistConversations(listOf(conversation), selfUserTeamId, invalidateMembers = true)
         }
     }
 
@@ -1052,7 +1052,7 @@ internal class ConversationDataSource internal constructor(
             }.flatMap { updated ->
                 if (updated) {
                     val selfUserTeamId = selfTeamIdProvider().getOrNull()
-                    persistConversations(listOf(conversationResponse), selfUserTeamId?.value, invalidateMembers = true)
+                    persistConversations(listOf(conversationResponse), selfUserTeamId, invalidateMembers = true)
                 } else {
                     Either.Right(Unit)
                 }.map {
