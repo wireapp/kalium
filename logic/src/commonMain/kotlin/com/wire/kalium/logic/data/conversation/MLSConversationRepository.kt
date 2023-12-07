@@ -536,13 +536,8 @@ internal class MLSConversationDataSource(
         }.map { rotateBundle ->
             // todo: make below API calls atomic when the backend does it in one request
             // todo: store keypackages to drop, later drop them again
-            kaliumLogger.w("drop old key packages after conversations migration")
-            keyPackageRepository.deleteKeyPackages(clientId, rotateBundle.keyPackageRefsToRemove).flatMapLeft {
-                return Either.Left(it)
-            }
-
-            kaliumLogger.w("upload new key packages including x509 certificate")
-            keyPackageRepository.uploadKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
+            kaliumLogger.w("upload new keypackages and drop old ones")
+            keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
                 return Either.Left(it)
             }
 

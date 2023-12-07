@@ -1117,8 +1117,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
             .withSendCommitBundleSuccessful()
-            .withUploadKeyPackagesReturning(Either.Right(Unit))
-            .withDeleteKeyPackagesReturning(Either.Right(Unit))
+            .withReplaceKeyPackagesReturning(Either.Right(Unit))
             .arrange()
 
         assertEquals(
@@ -1132,12 +1131,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
+            .suspendFunction(arrangement.keyPackageRepository::replaceKeyPackages)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1148,12 +1142,11 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenDropKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
+    fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
-            .withUploadKeyPackagesReturning(Either.Right(Unit))
-            .withDeleteKeyPackagesReturning(TEST_FAILURE)
+            .withReplaceKeyPackagesReturning(TEST_FAILURE)
             .withSendCommitBundleSuccessful()
             .arrange()
 
@@ -1168,48 +1161,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
-            .with(any(), any())
-            .wasNotInvoked()
-
-        verify(arrangement.mlsMessageApi)
-            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
-            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenUploadKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withRotateAllSuccessful()
-            .withUploadKeyPackagesReturning(TEST_FAILURE)
-            .withDeleteKeyPackagesReturning(Either.Right(Unit))
-            .withSendCommitBundleSuccessful()
-            .arrange()
-
-        assertEquals(
-            TEST_FAILURE,
-            mlsConversationRepository.rotateKeysAndMigrateConversations(TestClient.CLIENT_ID, arrangement.e2eiClient, "")
-        )
-
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::e2eiRotateAll)
-            .with(any(), any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
+            .suspendFunction(arrangement.keyPackageRepository::replaceKeyPackages)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1224,8 +1176,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
-            .withUploadKeyPackagesReturning(Either.Right(Unit))
-            .withDeleteKeyPackagesReturning(Either.Right(Unit))
+            .withReplaceKeyPackagesReturning(Either.Right(Unit))
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
@@ -1239,12 +1190,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
+            .suspendFunction(arrangement.keyPackageRepository::replaceKeyPackages)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1392,16 +1338,9 @@ class MLSConversationRepositoryTest {
                 .then { Either.Right(keyPackages) }
         }
 
-        fun withUploadKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
+        fun withReplaceKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
             given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::uploadKeyPackages)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
-        }
-
-        fun withDeleteKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::deleteKeyPackages)
+                .suspendFunction(keyPackageRepository::replaceKeyPackages)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }
