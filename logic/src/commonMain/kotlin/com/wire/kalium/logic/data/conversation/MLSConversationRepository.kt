@@ -534,7 +534,6 @@ internal class MLSConversationDataSource(
         wrapMLSRequest {
             mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
         }.map { rotateBundle ->
-            // todo: make below API calls atomic when the backend does it in one request
             // todo: store keypackages to drop, later drop them again
             kaliumLogger.w("upload new keypackages and drop old ones")
             keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
