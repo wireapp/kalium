@@ -15,15 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.logic.data.asset
 
-import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.Message
+import kotlinx.datetime.Instant
+import okio.Path
 
-expect interface PemCertificateDecoder {
-    fun decode(certificate: String, status: CryptoCertificateStatus): E2eiCertificate
-}
-
-expect class PemCertificateDecoderImpl(
-    x509CertificateGenerator: X509CertificateGenerator = X509CertificateGeneratorImpl(),
-    certificateStatusChecker: CertificateStatusChecker = CertificateStatusCheckerImpl()
-) : PemCertificateDecoder
+data class AssetMessage(
+    val time: Instant,
+    val username: String?,
+    val messageId: String,
+    val conversationId: QualifiedID,
+    val assetId: String,
+    val width: Int,
+    val height: Int,
+    val downloadStatus: Message.DownloadStatus,
+    val assetPath: Path?,
+    val isSelfAsset: Boolean
+)

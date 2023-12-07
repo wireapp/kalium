@@ -27,6 +27,8 @@ import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageList
 import com.wire.kalium.network.api.v4.authenticated.KeyPackageApiV4
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -42,7 +44,9 @@ internal open class KeyPackageApiV5 internal constructor(
 
     override suspend fun claimKeyPackages(
         param: KeyPackageApi.Param
-    ): NetworkResponse<ClaimedKeyPackageList> = wrapKaliumResponse {
+    ): NetworkResponse<ClaimedKeyPackageList> = wrapKaliumResponse(unsuccessfulResponseOverride = { response ->
+        wrapFederationResponse(response, delegatedHandler = { handleUnsuccessfulResponse(response) })
+    }) {
         httpClient.post("$PATH_KEY_PACKAGES/$PATH_CLAIM/${param.user.domain}/${param.user.value}") {
             if (param is KeyPackageApi.Param.SkipOwnClient) {
                 parameter(QUERY_SKIP_OWN, param.selfClientId)
