@@ -407,8 +407,8 @@ class ClientRepositoryTest {
 
         repository.saveNewClientEvent(newClientEvent)
 
-        verify(arrangement.clientDAO)
-            .suspendFunction(arrangement.clientDAO::insertClient)
+        verify(arrangement.newClientDAO)
+            .suspendFunction(arrangement.newClientDAO::insertNewClient)
             .with(eq(insertClientParam))
             .wasInvoked(exactly = once)
     }
