@@ -289,21 +289,12 @@ private suspend fun resolveStatusCodeBasedFirstOrFederated(response: HttpRespons
             response,
             errorResponse
         )
-    } catch (exception: Exception) {
-        when {
-            exception is JsonConvertException -> {
-                try {
-                    KaliumException.FederationConflictException(response.body<FederationConflictResponse>())
-                } catch (_: NoTransformationFoundException) {
-                    KaliumException.FederationConflictException(FederationConflictResponse(emptyList()))
-                }
-            }
-
-            else -> {
-                KaliumException.GenericError(exception)
-            }
+    } catch (exception: JsonConvertException) {
+        try {
+            KaliumException.FederationConflictException(response.body<FederationConflictResponse>())
+        } catch (_: NoTransformationFoundException) {
+            KaliumException.FederationConflictException(FederationConflictResponse(emptyList()))
         }
-
     }
     return NetworkResponse.Error(kaliumException)
 }
