@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
@@ -51,7 +52,12 @@ class ProtoContentMapperTest {
     @Test
     fun givenTextContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.Text("Hello")
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -67,7 +73,12 @@ class ProtoContentMapperTest {
                 quotedMessageId = "quotedMessageId", quotedMessageSha256 = null, true
             )
         )
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -116,7 +127,12 @@ class ProtoContentMapperTest {
                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -127,7 +143,12 @@ class ProtoContentMapperTest {
     @Test
     fun givenCallingContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val callingContent = MessageContent.Calling("Calling")
-        val protoContent = ProtoContent.Readable(TEST_CALLING_UUID, callingContent, false)
+        val protoContent = ProtoContent.Readable(
+            TEST_CALLING_UUID,
+            callingContent,
+            false,
+            Conversation.LegalHoldStatus.UNKNOWN
+        )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -138,7 +159,12 @@ class ProtoContentMapperTest {
     @Test
     fun givenDeleteMessageContent_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
         val messageContent = MessageContent.DeleteMessage(TEST_MESSAGE_UUID)
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            Conversation.LegalHoldStatus.UNKNOWN
+        )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -151,7 +177,12 @@ class ProtoContentMapperTest {
         val messageContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID, TEST_CONVERSATION_ID
         )
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false)
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            Conversation.LegalHoldStatus.UNKNOWN
+        )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
@@ -197,7 +228,70 @@ class ProtoContentMapperTest {
             listOf("messageI", "messageII", "messageIII")
         )
 
-        val originalContent = ProtoContent.Readable(messageUid, content, false)
+        val originalContent = ProtoContent.Readable(
+            messageUid,
+            content,
+            false,
+            Conversation.LegalHoldStatus.UNKNOWN
+        )
+        val encoded = protoContentMapper.encodeToProtobuf(originalContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(originalContent, decoded)
+    }
+    @Test
+    fun givenReactionContent_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
+        val messageUid = "uid"
+        val emojis = setOf("👍", "👎")
+        val content = MessageContent.Reaction(
+            messageUid,
+            emojis
+        )
+
+        val originalContent = ProtoContent.Readable(
+            messageUid,
+            content,
+            false,
+            Conversation.LegalHoldStatus.ENABLED
+        )
+        val encoded = protoContentMapper.encodeToProtobuf(originalContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(originalContent, decoded)
+    }
+
+    @Test
+    fun givenKnockContent_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
+        val messageUid = "uid"
+        val content = MessageContent.Knock(true)
+
+        val originalContent = ProtoContent.Readable(
+            messageUid,
+            content,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+        val encoded = protoContentMapper.encodeToProtobuf(originalContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(originalContent, decoded)
+    }
+    @Test
+    fun givenCompositeContent_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
+        val messageUid = "uid"
+        val textContent = MessageContent.Text("Hello")
+        val buttons = listOf(
+            MessageContent.Composite.Button("button1", "button1", false),
+            MessageContent.Composite.Button("button2", "button2", false)
+        )
+        val content = MessageContent.Composite(textContent, buttons)
+
+        val originalContent = ProtoContent.Readable(
+            messageUid,
+            content,
+            false,
+            Conversation.LegalHoldStatus.ENABLED
+        )
         val encoded = protoContentMapper.encodeToProtobuf(originalContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
@@ -212,7 +306,12 @@ class ProtoContentMapperTest {
             listOf("messageI", "messageII", "messageIII")
         )
 
-        val originalContent = ProtoContent.Readable(messageUid, content, false)
+        val originalContent = ProtoContent.Readable(
+            messageUid,
+            content,
+            false,
+            Conversation.LegalHoldStatus.UNKNOWN
+        )
         val encoded = protoContentMapper.encodeToProtobuf(originalContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
@@ -260,7 +359,8 @@ class ProtoContentMapperTest {
             messageUid = TEST_MESSAGE_UUID,
             messageContent = messageContent,
             expectsReadConfirmation = false,
-            expiresAfterMillis = expiresAfterMillis
+            expiresAfterMillis = expiresAfterMillis,
+            legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN
         )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
@@ -293,7 +393,13 @@ class ProtoContentMapperTest {
             )
         )
         val expiresAfterMillis = 1000L
-        val protoContent = ProtoContent.Readable(TEST_MESSAGE_UUID, messageContent, false, expiresAfterMillis = expiresAfterMillis)
+        val protoContent = ProtoContent.Readable(
+            messageUid = TEST_MESSAGE_UUID,
+            messageContent = messageContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN,
+            expiresAfterMillis = expiresAfterMillis
+        )
 
         val encoded = protoContentMapper.encodeToProtobuf(protoContent)
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
