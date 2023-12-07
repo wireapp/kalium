@@ -20,10 +20,15 @@ package com.wire.kalium.persistence.dao.newclient
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.ClientDAOTest
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,6 +36,7 @@ import kotlin.test.assertEquals
 class NewClientDAOTest: BaseDatabaseTest() {
 
     private lateinit var newClientDAO: NewClientDAO
+    private lateinit var userDAO: UserDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -38,10 +44,12 @@ class NewClientDAOTest: BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         newClientDAO = db.newClientDAO
+        userDAO = db.userDAO
     }
 
     @Test
     fun whenANewClientsIsAdded_thenNewClientListIsEmitted() = runTest {
+        userDAO.upsertUser(user)
         newClientDAO.observeNewClients().test {
             awaitItem().also { result -> assertEquals(emptyList(), result) }
             newClientDAO.insertNewClient(insertedClient1)
@@ -52,6 +60,7 @@ class NewClientDAOTest: BaseDatabaseTest() {
 
     @Test
     fun givenNewClients_whenClearNewClients_thenNewClientEmptyListIsEmitted() = runTest {
+        userDAO.upsertUser(user)
         newClientDAO.insertNewClient(insertedClient1)
         newClientDAO.insertNewClient(insertedClient2)
 
@@ -69,10 +78,10 @@ class NewClientDAOTest: BaseDatabaseTest() {
         val insertedClient1 = InsertClientParam(
             userId = user.id,
             id = "id1",
-            deviceType = null,
-            clientType = null,
-            label = null,
-            model = null,
+            deviceType = DeviceTypeEntity.Phone,
+            clientType = ClientTypeEntity.Permanent,
+            label = "some label",
+            model = "model",
             registrationDate = null,
             lastActive = null,
             mlsPublicKeys = null,
