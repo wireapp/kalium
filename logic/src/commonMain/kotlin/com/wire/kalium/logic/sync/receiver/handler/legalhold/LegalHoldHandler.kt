@@ -59,6 +59,7 @@ internal class LegalHoldHandlerImpl internal constructor(
             userConfigRepository.deleteLegalHoldRequest()
             coroutineScope.launch {
                 fetchSelfClientsFromRemote()
+                userConfigRepository.setLegalHoldChangeNotified(false)
             }
         } else {
             coroutineScope.launch {

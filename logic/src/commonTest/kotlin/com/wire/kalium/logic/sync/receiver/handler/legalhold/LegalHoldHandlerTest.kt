@@ -27,6 +27,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -53,6 +54,7 @@ class LegalHoldHandlerTest {
     fun givenLegalHoldEvent_whenUserIdIsSelfUserThenUpdateSelfUserClients() = runTest {
         val (arrangement, handler) = Arrangement()
             .withDeleteLegalHoldSuccess()
+            .withSetLegalHoldChangeNotifiedSuccess()
             .withFetchSelfClientsFromRemoteSuccess()
             .arrange()
 
@@ -60,6 +62,10 @@ class LegalHoldHandlerTest {
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::deleteLegalHoldRequest)
+            .wasInvoked(once)
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
+            .with(eq(false))
             .wasInvoked(once)
 
         advanceUntilIdle()
@@ -111,6 +117,13 @@ class LegalHoldHandlerTest {
             given(userConfigRepository)
                 .suspendFunction(userConfigRepository::deleteLegalHoldRequest)
                 .whenInvoked()
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSetLegalHoldChangeNotifiedSuccess() = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::setLegalHoldChangeNotified)
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
