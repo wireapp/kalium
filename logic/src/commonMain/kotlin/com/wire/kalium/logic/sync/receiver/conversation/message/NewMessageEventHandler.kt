@@ -83,6 +83,7 @@ internal class NewMessageEventHandlerImpl(
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
                     handleSuccessfulResult(it)
+                    // TODO(legalhold): update legal hold status in DB
                     onMessageInserted(it)
                 }
                 kaliumLogger

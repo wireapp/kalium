@@ -52,10 +52,17 @@ internal class NewClientDAOImpl(
     override suspend fun insertNewClient(client: InsertClientParam) = with(client) {
         withContext(queriesContext) {
             newClientsQueries.insertNewClient(
+                user_id = userId,
                 id = id,
                 device_type = deviceType,
+                client_type = clientType,
+                is_valid = true,
+                is_mls_capable = isMLSCapable,
                 registration_date = registrationDate,
-                model = model
+                last_active = lastActive,
+                model = model,
+                label = label,
+                mls_public_keys = mlsPublicKeys
             )
         }
     }

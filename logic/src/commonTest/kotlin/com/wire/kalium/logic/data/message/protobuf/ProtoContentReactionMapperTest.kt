@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message.protobuf
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -161,7 +162,8 @@ class ProtoContentReactionMapperTest {
         val protoContent = ProtoContent.Readable(
             "Whatever",
             MessageContent.Reaction("referencedMessageId", emojiSet = emojiSet),
-            false
+            false,
+            Conversation.LegalHoldStatus.DISABLED
         )
 
         val result = protoContentMapper.encodeToProtobuf(protoContent)
@@ -176,7 +178,8 @@ class ProtoContentReactionMapperTest {
         val protoContent = ProtoContent.Readable(
             "Whatever",
             MessageContent.Reaction("referencedMessageId", emojiSet = emojiSet),
-            false
+            false,
+            Conversation.LegalHoldStatus.DISABLED
         )
 
         val result = protoContentMapper.encodeToProtobuf(protoContent)
@@ -191,7 +194,8 @@ class ProtoContentReactionMapperTest {
         val protoContent = ProtoContent.Readable(
             "messageId",
             MessageContent.Reaction(referencedMessageId, emojiSet = setOf()),
-            false
+            false,
+            Conversation.LegalHoldStatus.DISABLED
         )
 
         val result = protoContentMapper.encodeToProtobuf(protoContent)

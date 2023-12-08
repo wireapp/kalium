@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
@@ -43,6 +44,7 @@ import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
+import com.wire.kalium.protobuf.messages.LegalHoldStatus
 import com.wire.kalium.protobuf.messages.Location
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
@@ -85,12 +87,14 @@ class ProtoContentMapperImpl(
             mapEphemeralContent(
                 protoContent.messageContent,
                 protoContent.expiresAfterMillis,
-                protoContent.expectsReadConfirmation
+                protoContent.expectsReadConfirmation,
+                protoContent.legalHoldStatus
             )
         } else {
             mapNormalContent(
                 protoContent.messageContent,
-                protoContent.expectsReadConfirmation
+                protoContent.expectsReadConfirmation,
+                protoContent.legalHoldStatus
             )
         }
     }
@@ -98,13 +102,14 @@ class ProtoContentMapperImpl(
     @Suppress("ComplexMethod")
     private fun mapNormalContent(
         readableContent: MessageContent.FromProto,
-        expectsReadConfirmation: Boolean
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
     ): GenericMessage.Content<out Any> {
         return when (readableContent) {
-            is MessageContent.Text -> packText(readableContent, expectsReadConfirmation)
+            is MessageContent.Text -> packText(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.Calling -> packCalling(readableContent)
-            is MessageContent.Asset -> packAsset(readableContent, expectsReadConfirmation)
-            is MessageContent.Knock -> GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
+            is MessageContent.Asset -> packAsset(readableContent, expectsReadConfirmation, legalHoldStatus)
+            is MessageContent.Knock -> packKnock(readableContent, legalHoldStatus)
             is MessageContent.DeleteMessage -> GenericMessage.Content.Deleted(MessageDelete(messageId = readableContent.messageId))
             is MessageContent.DeleteForMe -> packHidden(readableContent)
             is MessageContent.Availability -> GenericMessage.Content.Availability(
@@ -115,7 +120,7 @@ class ProtoContentMapperImpl(
 
             is MessageContent.LastRead -> packLastRead(readableContent)
             is MessageContent.Cleared -> packCleared(readableContent)
-            is MessageContent.Reaction -> packReaction(readableContent)
+            is MessageContent.Reaction -> packReaction(readableContent, legalHoldStatus)
             is MessageContent.Receipt -> packReceipt(readableContent)
             is MessageContent.ClientAction -> packClientAction()
             is MessageContent.TextEdited -> packEdited(readableContent)
@@ -124,7 +129,7 @@ class ProtoContentMapperImpl(
                     "Unexpected message content type: ${readableContent.getType()}"
                 )
 
-            is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation)
+            is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
             is MessageContent.ButtonActionConfirmation -> TODO()
@@ -144,12 +149,13 @@ class ProtoContentMapperImpl(
 
     private fun packComposite(
         readableContent: MessageContent.Composite,
-        expectsReadConfirmation: Boolean
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
     ): GenericMessage.Content.Composite {
         val items: MutableList<Composite.Item> = mutableListOf()
 
         readableContent.textContent?.let {
-            val text = packText(it, expectsReadConfirmation)
+            val text = packText(it, expectsReadConfirmation, legalHoldStatus)
             Composite.Item.Content.Text(text.value).also {
                 items.add(Composite.Item(it))
             }
@@ -161,7 +167,8 @@ class ProtoContentMapperImpl(
         val composite = GenericMessage.Content.Composite(
             Composite(
                 items = items,
-                expectsReadConfirmation = expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
             )
         )
         return composite
@@ -170,25 +177,26 @@ class ProtoContentMapperImpl(
     private fun mapEphemeralContent(
         readableContent: MessageContent.FromProto,
         expireAfterMillis: Long,
-        expectsReadConfirmation: Boolean
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
     ): GenericMessage.Content<out Any> {
         val ephemeralContent = when (readableContent) {
             is MessageContent.Text -> {
-                val text = packText(readableContent, expectsReadConfirmation)
+                val text = packText(readableContent, expectsReadConfirmation, legalHoldStatus)
                 Ephemeral.Content.Text(
                     text.value
                 )
             }
 
             is MessageContent.Asset -> {
-                val asset = packAsset(readableContent, expectsReadConfirmation)
+                val asset = packAsset(readableContent, expectsReadConfirmation, legalHoldStatus)
                 Ephemeral.Content.Asset(
                     asset.value
                 )
             }
 
             is MessageContent.Knock -> {
-                val knock = GenericMessage.Content.Knock(Knock(hotKnock = readableContent.hotKnock))
+                val knock = packKnock(readableContent, legalHoldStatus)
                 Ephemeral.Content.Knock(
                     knock.value
                 )
@@ -242,6 +250,7 @@ class ProtoContentMapperImpl(
                 is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
                 else -> false
             }
+            val legalHoldStatus = getLegalHoldStatusFromProtoContent(genericMessage)
             val expiresAfterMillis: Long? = when (val content = genericMessage.content) {
                 is GenericMessage.Content.Ephemeral -> content.value.expireAfterMillis
                 else -> null
@@ -250,10 +259,31 @@ class ProtoContentMapperImpl(
                 messageUid = genericMessage.messageId,
                 messageContent = getReadableContent(genericMessage, encodedContent),
                 expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = fromProtoLegalHoldStatus(legalHoldStatus),
                 expiresAfterMillis = expiresAfterMillis
             )
         }
     }
+
+    private fun getLegalHoldStatusFromProtoContent(genericMessage: GenericMessage) =
+        when (val content = genericMessage.content) {
+            is GenericMessage.Content.Text -> content.value.legalHoldStatus
+            is GenericMessage.Content.Asset -> content.value.legalHoldStatus
+            is GenericMessage.Content.Knock -> content.value.legalHoldStatus
+            is GenericMessage.Content.Location -> content.value.legalHoldStatus
+            is GenericMessage.Content.Reaction -> content.value.legalHoldStatus
+            is GenericMessage.Content.Composite -> content.value.legalHoldStatus
+            else -> null
+        }
+
+    private fun fromProtoLegalHoldStatus(legalHoldStatus: LegalHoldStatus?): Conversation.LegalHoldStatus =
+        legalHoldStatus?.let {
+            when (legalHoldStatus) {
+                is LegalHoldStatus.ENABLED -> Conversation.LegalHoldStatus.ENABLED
+                is LegalHoldStatus.DISABLED -> Conversation.LegalHoldStatus.DISABLED
+                else -> Conversation.LegalHoldStatus.UNKNOWN
+            }
+        } ?: run { Conversation.LegalHoldStatus.UNKNOWN }
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun getReadableContent(
@@ -350,12 +380,20 @@ class ProtoContentMapperImpl(
         )
     } ?: MessageContent.Ignored
 
-    private fun packReaction(readableContent: MessageContent.Reaction) =
-        GenericMessage.Content.Reaction(Reaction(emoji = readableContent.emojiSet.map { it.trim() }.filter { it.isNotBlank() }
-            .joinToString(separator = ",") { it },
-            messageId = readableContent.messageId
+    private fun packReaction(
+        readableContent: MessageContent.Reaction,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Reaction {
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
+        return GenericMessage.Content.Reaction(
+            Reaction(
+                emoji = readableContent.emojiSet.map { it.trim() }.filter { it.isNotBlank() }
+                    .joinToString(separator = ",") { it },
+                messageId = readableContent.messageId,
+                legalHoldStatus = protoLegalHoldStatus
+            )
         )
-        )
+    }
 
     private fun packClientAction() = GenericMessage.Content.ClientAction(ClientAction.RESET_SESSION)
 
@@ -476,17 +514,30 @@ class ProtoContentMapperImpl(
         time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp)
     )
 
-    private fun packText(readableContent: MessageContent.Text, expectsReadConfirmation: Boolean): GenericMessage.Content.Text {
+    private fun toProtoLegalHoldStatus(legalHoldStatus: Conversation.LegalHoldStatus): LegalHoldStatus =
+        when (legalHoldStatus) {
+            Conversation.LegalHoldStatus.ENABLED -> LegalHoldStatus.ENABLED
+            Conversation.LegalHoldStatus.DISABLED -> LegalHoldStatus.DISABLED
+            else -> LegalHoldStatus.UNKNOWN
+        }
+
+    private fun packText(
+        readableContent: MessageContent.Text,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Text {
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
         val quote = readableContent.quotedMessageReference?.let {
             Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
         }
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
         return GenericMessage.Content.Text(
             Text(
                 content = readableContent.value,
                 mentions = mentions,
                 quote = quote,
-                expectsReadConfirmation = expectsReadConfirmation
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = protoLegalHoldStatus
             )
         )
     }
@@ -524,11 +575,30 @@ class ProtoContentMapperImpl(
             }
         }
 
-    private fun packAsset(readableContent: MessageContent.Asset, expectsReadConfirmation: Boolean): GenericMessage.Content.Asset {
+    private fun packKnock(
+        readableContent: MessageContent.Knock,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Knock {
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
+        return GenericMessage.Content.Knock(
+            Knock(
+                hotKnock = readableContent.hotKnock,
+                legalHoldStatus = protoLegalHoldStatus
+            )
+        )
+    }
+
+    private fun packAsset(
+        readableContent: MessageContent.Asset,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Asset {
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
         return GenericMessage.Content.Asset(
             asset = assetMapper.fromAssetContentToProtoAssetMessage(
                 readableContent,
-                expectsReadConfirmation
+                expectsReadConfirmation,
+                protoLegalHoldStatus
             )
         )
     }

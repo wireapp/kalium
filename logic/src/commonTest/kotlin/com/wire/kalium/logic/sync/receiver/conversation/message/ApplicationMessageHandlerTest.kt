@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -71,7 +72,12 @@ class ApplicationMessageHandlerTest {
                 Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
             )
         )
-        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            validImageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
         val coreFailure = StorageFailure.DataNotFound
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
@@ -107,7 +113,12 @@ class ApplicationMessageHandlerTest {
             referencedMessageId = messageId,
             buttonId = "buttonId"
         )
-        val protoContent = ProtoContent.Readable(messageId, validImageContent, false)
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            validImageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
             .withButtonActionConfirmation(Either.Right(Unit))

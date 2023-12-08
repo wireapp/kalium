@@ -43,6 +43,7 @@ import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
@@ -80,11 +81,18 @@ class MessageEnvelopeCreatorImpl(
             else -> false
         }
 
+        // TODO(legalhold) - Get correct legal hold status
+        val legalHoldStatus = when (message) {
+            is Message.Regular -> Conversation.LegalHoldStatus.DISABLED
+            else -> Conversation.LegalHoldStatus.DISABLED
+        }
+
         val actualMessageContent = ProtoContent.Readable(
             messageUid = message.id,
             messageContent = message.content,
             expectsReadConfirmation = expectsReadConfirmation,
-            expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds
+            expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
+            legalHoldStatus = legalHoldStatus
         )
 
         return createEnvelope(actualMessageContent, recipients, senderClientId)
@@ -96,7 +104,11 @@ class MessageEnvelopeCreatorImpl(
     ): Either<CoreFailure, MessageEnvelope> {
         val senderClientId = message.senderClientId
         val expectsReadConfirmation = false
-        val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation)
+
+        // TODO - Get legal hold status
+        val legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN
+
+        val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation, legalHoldStatus)
 
         return createEnvelope(actualMessageContent, recipients, senderClientId)
     }

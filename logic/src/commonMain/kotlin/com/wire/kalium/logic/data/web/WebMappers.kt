@@ -52,7 +52,9 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                     MessageContent.Text(
                         data.text,
                     ),
-                    data.expectsReadConfirmation ?: false
+                    data.expectsReadConfirmation ?: false,
+                    legalHoldStatus = if (data.legalHoldStatus == 2) Conversation.LegalHoldStatus.ENABLED
+                        else Conversation.LegalHoldStatus.DISABLED
                 ),
                 encryptedProto = null,
                 null,
@@ -110,7 +112,9 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                                 downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                             ),
                         ),
-                        data.expectsReadConfirmation
+                        data.expectsReadConfirmation,
+                        legalHoldStatus = if (data.legalHoldStatus == 2) Conversation.LegalHoldStatus.ENABLED
+                        else Conversation.LegalHoldStatus.DISABLED
                     ),
                     encryptedProto = null,
                     null,
@@ -172,7 +176,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             archivedDateTime = conversationArchivedTimestamp,
             mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
-            legalHoldStatus = if (legalHoldStatus == 1) Conversation.LegalHoldStatus.ENABLED
+            legalHoldStatus = if (legalHoldStatus == 2) Conversation.LegalHoldStatus.ENABLED
                 else Conversation.LegalHoldStatus.DISABLED
         )
     }

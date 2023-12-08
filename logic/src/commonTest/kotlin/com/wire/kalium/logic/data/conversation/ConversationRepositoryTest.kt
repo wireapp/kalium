@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -137,7 +138,7 @@ class ConversationRepositoryTest {
             .withSelfUserFlow(selfUserFlow)
             .arrange()
 
-        conversationRepository.persistConversations(listOf(event.conversation), "teamId")
+        conversationRepository.persistConversations(listOf(event.conversation), TeamId("teamId"))
 
         with(arrangement) {
             verify(conversationDAO)
@@ -246,7 +247,7 @@ class ConversationRepositoryTest {
 
             conversationRepository.persistConversations(
                 listOf(event.conversation),
-                "teamId",
+                TeamId("teamId"),
                 originatedFromEvent = true
             )
 
