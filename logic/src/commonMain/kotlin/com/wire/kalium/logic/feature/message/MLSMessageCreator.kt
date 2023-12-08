@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.Message
@@ -59,11 +60,18 @@ class MLSMessageCreatorImpl(
                 else -> false
             }
 
+            // TODO(legalhold) - Get correct legal hold status
+            val legalHoldStatus = when (message) {
+                is Message.Regular -> Conversation.LegalHoldStatus.DISABLED
+                else -> Conversation.LegalHoldStatus.DISABLED
+            }
+
             val content = protoContentMapper.encodeToProtobuf(
                 protoContent = ProtoContent.Readable(
                     messageUid = message.id,
                     messageContent = message.content,
-                    expectsReadConfirmation = expectsReadConfirmation
+                    expectsReadConfirmation = expectsReadConfirmation,
+                    legalHoldStatus = legalHoldStatus
                 )
             )
             wrapMLSRequest { MLSMessageApi.Message(mlsClient.encryptMessage(idMapper.toCryptoModel(groupId), content.data)) }

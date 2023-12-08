@@ -23,6 +23,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -159,6 +160,7 @@ class NewMessageEventHandlerTest {
                                  value = "messageContent"
                              ),
                             expectsReadConfirmation = false,
+                            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
                             expiresAfterMillis = 123L
                         )
                     )
@@ -204,6 +206,7 @@ class NewMessageEventHandlerTest {
                                 value = "messageContent"
                             ),
                             expectsReadConfirmation = false,
+                            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
                             expiresAfterMillis = 123L
                         )
                     )
@@ -249,6 +252,7 @@ class NewMessageEventHandlerTest {
                                 value = "messageContent"
                             ),
                             expectsReadConfirmation = false,
+                            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
                             expiresAfterMillis = null
                         )
                     )
