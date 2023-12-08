@@ -47,7 +47,6 @@ class MLSClientImpl(
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
     private val defaultE2EIExpiry: UInt = 90U
-    private val defaultMLSCredentialType: MlsCredentialType = MlsCredentialType.BASIC
     override suspend fun close() {
         coreCrypto.close()
     }
@@ -57,11 +56,11 @@ class MLSClientImpl(
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(defaultCiphersuite, defaultMLSCredentialType, amount.toUInt())
+        return coreCrypto.clientKeypackages(defaultCiphersuite, toCredentialType(getMLSCredentials()), amount.toUInt())
     }
 
     override suspend fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, defaultMLSCredentialType)
+        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, toCredentialType(getMLSCredentials()))
     }
 
     override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -81,7 +80,7 @@ class MLSClientImpl(
             conversationId = groupId.decodeBase64Bytes(),
             epoch = epoch,
             ciphersuite = defaultCiphersuite,
-            credentialType = MlsCredentialType.BASIC
+            credentialType = toCredentialType(getMLSCredentials())
         )
     }
 
@@ -90,7 +89,7 @@ class MLSClientImpl(
             coreCrypto.joinByExternalCommit(
                 publicGroupState,
                 defaultGroupConfiguration,
-                MlsCredentialType.BASIC
+                toCredentialType(getMLSCredentials())
             )
         )
     }
@@ -114,7 +113,7 @@ class MLSClientImpl(
             emptyList()
         )
 
-        coreCrypto.createConversation(groupId.decodeBase64Bytes(), MlsCredentialType.BASIC, conf)
+        coreCrypto.createConversation(groupId.decodeBase64Bytes(), toCredentialType(getMLSCredentials()), conf)
     }
 
     override suspend fun wipeConversation(groupId: MLSGroupId) {
@@ -254,6 +253,10 @@ class MLSClientImpl(
         return coreCrypto.e2eiIsEnabled(defaultCiphersuite)
     }
 
+    override suspend fun getMLSCredentials(): CredentialType {
+        return if (isE2EIEnabled()) return CredentialType.X509 else CredentialType.DEFAULT
+    }
+
     override suspend fun e2eiRotateAll(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
@@ -381,5 +384,10 @@ class MLSClientImpl(
             value.hasEpochChanged,
             value.identity?.let { toIdentity(it) }
         )
+
+        fun toCredentialType(value: CredentialType) = when (value) {
+            CredentialType.Basic -> MlsCredentialType.BASIC
+            CredentialType.X509 -> MlsCredentialType.X509
+        }
     }
 }

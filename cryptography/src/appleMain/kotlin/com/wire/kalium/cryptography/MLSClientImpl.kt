@@ -151,7 +151,7 @@ class MLSClientImpl(
         if (membersKeyPackages.isEmpty()) {
             return null
         }
-
+        // todo: fix later when the code is fixed for jvm
         val invitees = membersKeyPackages.map {
             Invitee(toUByteList("it.first.toString()"), toUByteList(it))
         }
@@ -191,6 +191,10 @@ class MLSClientImpl(
     }
 
     override suspend fun isE2EIEnabled(): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getMLSCredentials(): CredentialType {
         TODO("Not yet implemented")
     }
 

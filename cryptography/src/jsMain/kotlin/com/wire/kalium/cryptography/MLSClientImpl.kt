@@ -132,6 +132,10 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
+    override suspend fun getMLSCredentials(): CredentialType {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun e2eiRotateAll(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,

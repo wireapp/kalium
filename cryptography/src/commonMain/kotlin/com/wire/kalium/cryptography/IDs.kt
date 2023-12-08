@@ -20,9 +20,6 @@
 
 package com.wire.kalium.cryptography
 
-import com.benasher44.uuid.uuidFrom
-import io.ktor.util.encodeBase64
-
 typealias MLSGroupId = String
 
 data class CryptoClientId(val value: String) {
