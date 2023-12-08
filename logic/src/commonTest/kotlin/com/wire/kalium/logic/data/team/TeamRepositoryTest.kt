@@ -245,10 +245,11 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenTeamIdAndUserIdAndPassword_whenApprovingLegalHoldRequest_thenItShouldSucceedAndClearRequestLocally() = runTest {
+    fun givenTeamIdAndUserIdAndPassword_whenApprovingLegalHoldRequest_thenItShouldSucceedAndClearRequestLocallyAndCreateEvent() = runTest {
         // given
         val (arrangement, teamRepository) = Arrangement()
             .withApiApproveLegalHoldSuccess()
+            .withHandleLegalHoldSuccesses()
             .arrange()
         // when
         val result = teamRepository.approveLegalHoldRequest(teamId = TeamId(value = "teamId"), password = "password")
@@ -256,6 +257,10 @@ class TeamRepositoryTest {
         result.shouldSucceed()
         verify(arrangement.userConfigDAO)
             .suspendFunction(arrangement.userConfigDAO::clearLegalHoldRequest)
+            .wasInvoked(once)
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleEnable)
+            .with(matching { it.userId == TestUser.USER_ID })
             .wasInvoked(once)
     }
 

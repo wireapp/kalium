@@ -63,14 +63,14 @@ class LegalHoldHandlerTest {
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::deleteLegalHoldRequest)
             .wasInvoked(once)
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
-            .with(eq(false))
-            .wasInvoked(once)
 
         advanceUntilIdle()
         verify(arrangement.fetchSelfClientsFromRemote)
             .suspendFunction(arrangement.fetchSelfClientsFromRemote::invoke)
+            .wasInvoked(once)
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
+            .with(eq(false))
             .wasInvoked(once)
     }
 
