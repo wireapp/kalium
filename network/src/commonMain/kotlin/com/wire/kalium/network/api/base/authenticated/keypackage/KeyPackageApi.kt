@@ -54,13 +54,13 @@ interface KeyPackageApi {
     suspend fun uploadKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit>
 
     /**
-     * Delete a batch key packages from the server
+     * Upload and replace a batch fresh key packages from the self client
      *
      * @param clientId client ID
      * @param keyPackages list of key packages
      *
      */
-    suspend fun deleteKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit>
+    suspend fun replaceKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit>
 
     /**
      * Get the number of available key packages for the self client

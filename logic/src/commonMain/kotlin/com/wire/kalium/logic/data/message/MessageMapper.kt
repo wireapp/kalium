@@ -264,6 +264,12 @@ class MessageMapperImpl(
                 )
             }
 
+            MessageEntity.ContentType.LOCATION -> LocalNotificationMessage.Comment(
+                message.id,
+                sender,
+                message.date,
+                LocalNotificationCommentType.LOCATION
+            )
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -357,6 +363,13 @@ class MessageMapperImpl(
                     isSelected = it.isSelected
                 )
             },
+        )
+
+        is MessageContent.Location -> MessageEntityContent.Location(
+            latitude = regularMessage.latitude,
+            longitude = regularMessage.longitude,
+            name = regularMessage.name,
+            zoom = regularMessage.zoom
         )
     }
 
@@ -466,6 +479,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.ConversationVerifiedProteus -> MessagePreviewContent.VerificationChanged.VerifiedProteus
     is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls
     is MessagePreviewEntityContent.ConversationVerificationDegradedProteus -> MessagePreviewContent.VerificationChanged.DegradedProteus
+    is MessagePreviewEntityContent.Location -> MessagePreviewContent.WithUser.Location(username = senderName)
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {
@@ -550,6 +564,13 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
                 isSelected = it.isSelected
             )
         }
+    )
+
+    is MessageEntityContent.Location -> MessageContent.Location(
+        latitude = this.latitude,
+        longitude = this.longitude,
+        name = this.name,
+        zoom = this.zoom
     )
 }
 
