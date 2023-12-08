@@ -64,7 +64,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
-interface MessageRepository {
+internal interface MessageRepository {
     /**
      * this fun should never be used directly, use PersistMessageUseCase() instead
      * @see PersistMessageUseCase
@@ -231,12 +231,11 @@ interface MessageRepository {
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
-class MessageDataSource(
+internal class MessageDataSource internal constructor (
     private val selfUserId: UserId,
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),

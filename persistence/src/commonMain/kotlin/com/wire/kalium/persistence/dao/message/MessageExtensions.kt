@@ -18,12 +18,97 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.paging.Pager
+import app.cash.paging.PagingConfig
+import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import kotlin.coroutines.CoroutineContext
 
-expect interface MessageExtensions
-expect class MessageExtensionsImpl(
-    messagesQueries: MessagesQueries,
-    messageMapper: MessageMapper,
-    coroutineContext: CoroutineContext
-) : MessageExtensions
+interface MessageExtensions {
+    fun getPagerForConversation(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<MessageEntity>
+
+    fun getPagerForMessagesSearch(
+        searchQuery: String,
+        conversationId: ConversationIDEntity,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<MessageEntity>
+}
+
+internal class MessageExtensionsImpl internal constructor(
+    private val messagesQueries: MessagesQueries,
+    private val messageMapper: MessageMapper,
+    private val coroutineContext: CoroutineContext,
+) : MessageExtensions {
+
+    override fun getPagerForConversation(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<MessageEntity> {
+        // We could return a Flow directly, but having the PagingSource is the only way to test this
+        return KaliumPager(
+            Pager(pagingConfig) { getPagingSource(conversationId, visibilities, startingOffset) },
+            getPagingSource(conversationId, visibilities, startingOffset),
+        )
+    }
+    override fun getPagerForMessagesSearch(
+        searchQuery: String,
+        conversationId: ConversationIDEntity,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<MessageEntity> {
+        // We could return a Flow directly, but having the PagingSource is the only way to test this
+        return KaliumPager(
+            Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset) },
+            getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset),
+        )
+    }
+
+    private fun getPagingSource(
+        conversationId: ConversationIDEntity,
+        visibilities: Collection<MessageEntity.Visibility>,
+        initialOffset: Long
+    ) = QueryPagingSource(
+            countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+            transacter = messagesQueries,
+            context = coroutineContext,
+            initialOffset = initialOffset,
+            queryProvider = { limit, offset ->
+                messagesQueries.selectByConversationIdAndVisibility(
+                    conversationId,
+                    visibilities,
+                    limit,
+                    offset,
+                    messageMapper::toEntityMessageFromView
+                )
+            }
+        )
+
+    private fun getMessagesSearchPagingSource(
+        searchQuery: String,
+        conversationId: ConversationIDEntity,
+        initialOffset: Long
+    ) = QueryPagingSource(
+            countQuery = messagesQueries.countBySearchedMessageAndConversationId(searchQuery, conversationId),
+            transacter = messagesQueries,
+            context = coroutineContext,
+            initialOffset = initialOffset,
+            queryProvider = { limit, offset ->
+                messagesQueries.selectConversationMessagesFromSearch(
+                    searchQuery,
+                    conversationId,
+                    limit,
+                    offset,
+                    messageMapper::toEntityMessageFromView
+                )
+            }
+        )
+}

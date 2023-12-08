@@ -18,11 +18,71 @@
 
 package com.wire.kalium.logic.data.message
 
+import app.cash.paging.PagingConfig
+import app.cash.paging.PagingData
+import app.cash.paging.map
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
-expect interface MessageRepositoryExtensions
+internal interface MessageRepositoryExtensions {
+    suspend fun getPaginatedMessagesByConversationIdAndVisibility(
+        conversationId: ConversationId,
+        visibility: List<Message.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>>
 
-expect class MessageRepositoryExtensionsImpl(
-    messageDAO: MessageDAO,
-    messageMapper: MessageMapper
-) : MessageRepositoryExtensions
+    suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
+        searchQuery: String,
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>>
+}
+
+internal class MessageRepositoryExtensionsImpl internal constructor(
+    private val messageDAO: MessageDAO,
+    private val messageMapper: MessageMapper,
+) : MessageRepositoryExtensions {
+
+    override suspend fun getPaginatedMessagesByConversationIdAndVisibility(
+        conversationId: ConversationId,
+        visibility: List<Message.Visibility>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> {
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
+            conversationId.toDao(),
+            visibility.map { it.toEntityVisibility() },
+            pagingConfig,
+            startingOffset
+        )
+
+        return pager.pager.flow.map {
+            it.map { messageMapper.fromEntityToMessage(it) }
+        }
+    }
+
+    override suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
+        searchQuery: String,
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> {
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForMessagesSearch(
+            searchQuery = searchQuery,
+            conversationId = conversationId.toDao(),
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset
+        )
+
+        return pager.pager.flow.map {
+            it.map { messageMapper.fromEntityToMessage(it) }
+        }
+    }
+}
