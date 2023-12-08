@@ -288,6 +288,13 @@ sealed class MessageContent {
         val clientId: ClientId? = null
     ) : Regular()
 
+    data class Location(
+        val latitude: Float,
+        val longitude: Float,
+        val name: String? = null,
+        val zoom: Int? = null,
+    ) : Regular()
+
     data object MLSWrongEpochWarning : System()
 
     data object ClientAction : Signaling()
@@ -359,6 +366,7 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
+    is MessageContent.Location -> "Location"
     null -> "null"
 }
 
@@ -378,6 +386,7 @@ sealed interface MessagePreviewContent {
         data class QuotedSelf(override val username: String?) : WithUser
 
         data class Knock(override val username: String?) : WithUser
+        data class Location(override val username: String?) : WithUser
 
         data class MemberLeft(override val username: String?) : WithUser
 
