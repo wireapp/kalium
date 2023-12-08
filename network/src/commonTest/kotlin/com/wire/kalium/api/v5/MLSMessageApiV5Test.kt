@@ -19,17 +19,24 @@
 package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.json.model.ErrorResponseJson
+import com.wire.kalium.model.EventContentDTOJson
 import com.wire.kalium.model.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
 import com.wire.kalium.network.api.v5.authenticated.MLSMessageApiV5
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.serialization.Mls
+import com.wire.kalium.network.utils.UnreachableRemoteBackends
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -79,6 +86,76 @@ internal class MLSMessageApiV5Test : ApiTest() {
             val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
             assertFalse(response.isSuccessful())
         }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundleFailsUnreachable_theRequestShouldFailWithUnreachableError() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            EventContentDTOJson.jsonProviderMemberJoinFailureUnreachable,
+            statusCode = HttpStatusCode.UnreachableRemoteBackends,
+            assertion =
+            {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            }
+        )
+        val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+        val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+
+        assertFalse(response.isSuccessful())
+        assertEquals(KaliumException.FederationUnreachableException::class, response.kException::class)
+    }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundleFailsConflict_theRequestShouldFailWithConflictDomainsError() = runTest {
+        val nonFederatingBackends = listOf("bella.wire.link", "foma.wire.link")
+        val networkClient = mockAuthenticatedNetworkClient(
+            ErrorResponseJson.validFederationConflictingBackends(
+                FederationConflictResponse(nonFederatingBackends)
+            ).rawJson,
+            statusCode = HttpStatusCode.Conflict,
+            assertion =
+            {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            }
+        )
+        val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+        val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+
+        assertFalse(response.isSuccessful())
+        assertEquals(KaliumException.FederationConflictException::class, response.kException::class)
+        assertEquals(
+            expected = nonFederatingBackends,
+            actual = (response.kException as KaliumException.FederationConflictException).errorResponse.nonFederatingBackends
+        )
+    }
+
+    @Test
+    fun givenCommitBundle_whenSendingBundleFailsConflictNonFederated_theRequestShouldFailWithRegularInvalidRequestError() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            ErrorResponseJson.valid(
+                ErrorResponse(
+                    code = HttpStatusCode.Conflict.value,
+                    message = "some other error",
+                    label = "mls-stale-message"
+                )
+            ).rawJson,
+            statusCode = HttpStatusCode.Conflict,
+            assertion =
+            {
+                assertPost()
+                assertContentType(ContentType.Message.Mls)
+                assertPathEqual(PATH_COMMIT_BUNDLES)
+            }
+        )
+        val mlsMessageApi: MLSMessageApi = MLSMessageApiV5(networkClient)
+        val response = mlsMessageApi.sendCommitBundle(COMMIT_BUNDLE)
+
+        assertFalse(response.isSuccessful())
+        assertEquals(KaliumException.InvalidRequestError::class, response.kException::class)
+    }
 
     private companion object {
         const val PATH_MESSAGE = "/mls/messages"
