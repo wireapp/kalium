@@ -19,8 +19,10 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.paging.Pager
+import app.cash.paging.PagingData
 import app.cash.paging.PagingSource
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlin.coroutines.CoroutineContext
 
 /**
