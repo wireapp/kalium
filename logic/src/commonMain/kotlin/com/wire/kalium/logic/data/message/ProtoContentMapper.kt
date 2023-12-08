@@ -45,6 +45,7 @@ import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Knock
 import com.wire.kalium.protobuf.messages.LastRead
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
+import com.wire.kalium.protobuf.messages.Location
 import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
@@ -132,6 +133,7 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
             is MessageContent.ButtonActionConfirmation -> TODO()
+            is MessageContent.Location -> TODO("todo, when implementing send location")
         }
     }
 
@@ -198,6 +200,10 @@ class ProtoContentMapperImpl(
                 Ephemeral.Content.Knock(
                     knock.value
                 )
+            }
+
+            is MessageContent.Location -> {
+                TODO("todo, when implementing send location")
             }
 
             is MessageContent.FailedDecryption,
@@ -319,7 +325,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
             is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
             is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
-            is GenericMessage.Content.Location -> MessageContent.Unknown(typeName, encodedContent.data)
+            is GenericMessage.Content.Location -> unpackLocation(protoContent)
             is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
 
             is GenericMessage.Content.External -> {
@@ -334,6 +340,15 @@ class ProtoContentMapperImpl(
         }
         return readableContent
     }
+
+    private fun unpackLocation(
+        protoContent: GenericMessage.Content.Location
+    ): MessageContent.FromProto = MessageContent.Location(
+        latitude = protoContent.value.latitude,
+        longitude = protoContent.value.longitude,
+        name = protoContent.value.name,
+        zoom = protoContent.value.zoom
+    )
 
     private fun packReceipt(
         receiptContent: MessageContent.Receipt
@@ -621,9 +636,20 @@ class ProtoContentMapperImpl(
                 )
             }
 
+            is Ephemeral.Content.Location -> {
+                val location = GenericMessage.Content.Location(
+                    Location(
+                        latitude = ephemeralContent.value.latitude,
+                        longitude = ephemeralContent.value.longitude,
+                        name = ephemeralContent.value.name,
+                        zoom = ephemeralContent.value.zoom
+                    )
+                )
+                unpackLocation(location)
+            }
+
             // Handle self-deleting Location messages when they are implemented
             is Ephemeral.Content.Image,
-            is Ephemeral.Content.Location,
             null -> {
                 MessageContent.Ignored
             }

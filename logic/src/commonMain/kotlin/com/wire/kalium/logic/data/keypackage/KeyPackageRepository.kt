@@ -43,7 +43,7 @@ interface KeyPackageRepository {
 
     suspend fun uploadKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
-    suspend fun deleteKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
+    suspend fun replaceKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
     suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO>
 
@@ -100,12 +100,12 @@ class KeyPackageDataSource(
             keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
         }
 
-    override suspend fun deleteKeyPackages(
+    override suspend fun replaceKeyPackages(
         clientId: ClientId,
         keyPackages: List<ByteArray>
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            keyPackageApi.deleteKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
         }
 
     override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =
