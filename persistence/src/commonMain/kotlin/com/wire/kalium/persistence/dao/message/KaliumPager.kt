@@ -29,7 +29,7 @@ import kotlin.coroutines.CoroutineContext
  * Exposes a [pagingDataFlow] that can be used in Android UI components to display paginated data.
  */
 class KaliumPager<EntityType : Any>(
-    val pager: Pager<Int, EntityType>,
+    private val pager: Pager<Int, EntityType>,
     internal val pagingSource: PagingSource<Int, EntityType>,
     private val coroutineContext: CoroutineContext
 ) {

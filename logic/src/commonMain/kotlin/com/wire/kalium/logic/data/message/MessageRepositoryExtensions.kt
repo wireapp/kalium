@@ -63,7 +63,7 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             startingOffset
         )
 
-        return pager.pager.flow.map {
+        return pager.pagingDataFlow.map {
             it.map { messageMapper.fromEntityToMessage(it) }
         }
     }
@@ -81,7 +81,7 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             startingOffset = startingOffset
         )
 
-        return pager.pager.flow.map {
+        return pager.pagingDataFlow.map {
             it.map { messageMapper.fromEntityToMessage(it) }
         }
     }

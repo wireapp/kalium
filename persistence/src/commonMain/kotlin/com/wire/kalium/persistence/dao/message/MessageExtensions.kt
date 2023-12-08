@@ -57,6 +57,7 @@ internal class MessageExtensionsImpl internal constructor(
         return KaliumPager(
             Pager(pagingConfig) { getPagingSource(conversationId, visibilities, startingOffset) },
             getPagingSource(conversationId, visibilities, startingOffset),
+            coroutineContext
         )
     }
     override fun getPagerForMessagesSearch(
@@ -69,6 +70,7 @@ internal class MessageExtensionsImpl internal constructor(
         return KaliumPager(
             Pager(pagingConfig) { getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset) },
             getMessagesSearchPagingSource(searchQuery, conversationId, startingOffset),
+            coroutineContext
         )
     }
 
