@@ -18,8 +18,11 @@
 
 package com.wire.kalium.persistence.message
 
-import androidx.paging.PagingConfig
-import androidx.paging.PagingSource
+import app.cash.paging.PagingConfig
+import app.cash.paging.PagingSource
+import app.cash.paging.PagingSourceLoadParamsAppend
+import app.cash.paging.PagingSourceLoadParamsRefresh
+import app.cash.paging.PagingSourceLoadResultPage
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -40,9 +43,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
-import org.junit.After
-import org.junit.Before
-import org.junit.Test
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -57,7 +60,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     private lateinit var userDAO: UserDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
-    @Before
+    @BeforeTest
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         deleteDatabase(selfUserId)
@@ -70,7 +73,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper, dispatcher)
     }
 
-    @After
+    @AfterTest
     fun tearDown() {
         deleteDatabase(selfUserId)
     }
@@ -81,7 +84,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSourceLoadResultPage<Int, MessageEntity>>(result)
         // Assuming the first page was fetched, itemsAfter should be the remaining ones
         assertEquals(MESSAGE_COUNT - PAGE_SIZE, result.itemsAfter)
         // No items before the first page
@@ -94,7 +97,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getSearchMessagesPager(searchQuery = "message 1").pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSourceLoadResultPage<Int, MessageEntity>>(result)
         // Assuming the first page was fetched containing only 3 results [message1, message10 and message100],
         // itemsAfter should be the remaining ones : 0
         assertEquals(0, result.itemsAfter)
@@ -108,7 +111,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSourceLoadResultPage<Long, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -121,7 +124,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSourceLoadResultPage<Long, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -134,7 +137,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSourceLoadResultPage<Int, MessageEntity>>(result)
         // First page fetched, second page starts at the end of the first one
         assertEquals(PAGE_SIZE, result.nextKey)
     }
@@ -145,7 +148,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSourceLoadResultPage<Int, MessageEntity>>(result)
         // First page fetched, second page starts at the end of the first one
         assertEquals(PAGE_SIZE, result.nextKey)
     }
@@ -157,7 +160,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         val pagingSource = getPager().pagingSource
         val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
+        assertIs<PagingSourceLoadResultPage<Int, MessageEntity>>(secondPageResult)
         assertFalse { secondPageResult.data.isEmpty() }
         assertTrue { secondPageResult.data.size <= PAGE_SIZE }
         secondPageResult.data.forEachIndexed { index, message ->
@@ -172,7 +175,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         val pagingSource = getSearchMessagesPager(searchQuery = "message").pagingSource
         val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
+        assertIs<PagingSourceLoadResultPage<Int, MessageEntity>>(secondPageResult)
         assertFalse { secondPageResult.data.isEmpty() }
         assertTrue { secondPageResult.data.size <= PAGE_SIZE }
         secondPageResult.data.forEachIndexed { index, message ->
@@ -195,11 +198,11 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.refresh() = load(
-        PagingSource.LoadParams.Refresh(null, com.wire.kalium.persistence.message.MessageExtensionsTest.PAGE_SIZE, true)
+        PagingSourceLoadParamsRefresh<Int>(null, PAGE_SIZE, false)
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.nextPageForOffset(key: Int) = load(
-        PagingSource.LoadParams.Append(key, com.wire.kalium.persistence.message.MessageExtensionsTest.PAGE_SIZE, true)
+        PagingSourceLoadParamsAppend<Int>(key, PAGE_SIZE, true)
     )
 
     private suspend fun populateMessageData(prefix: String = "") {
