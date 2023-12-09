@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.persistence.dao.message
+package com.wire.kalium.persistence.message
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
@@ -25,6 +25,13 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.KaliumPager
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessageExtensions
+import com.wire.kalium.persistence.dao.message.MessageExtensionsImpl
+import com.wire.kalium.persistence.dao.message.MessageMapper
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -188,11 +195,11 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.refresh() = load(
-        PagingSource.LoadParams.Refresh(null, PAGE_SIZE, true)
+        PagingSource.LoadParams.Refresh(null, com.wire.kalium.persistence.message.MessageExtensionsTest.PAGE_SIZE, true)
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.nextPageForOffset(key: Int) = load(
-        PagingSource.LoadParams.Append(key, PAGE_SIZE, true)
+        PagingSource.LoadParams.Append(key, com.wire.kalium.persistence.message.MessageExtensionsTest.PAGE_SIZE, true)
     )
 
     private suspend fun populateMessageData(prefix: String = "") {

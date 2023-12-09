@@ -16,12 +16,16 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.logic.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageMapper
+import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
+import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -36,12 +40,10 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageRepositoryExtensionsTest {
 
     private val fakePagingSource = object : PagingSource<Int, MessageEntity>() {
