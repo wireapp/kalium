@@ -18,10 +18,10 @@
 
 package com.wire.kalium.logic.message
 
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingSource
-import androidx.paging.PagingState
+import app.cash.paging.Pager
+import app.cash.paging.PagingConfig
+import app.cash.paging.PagingSource
+import app.cash.paging.PagingState
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
@@ -42,7 +42,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
+import kotlin.test.Test
 
 class MessageRepositoryExtensionsTest {
 
@@ -57,7 +57,7 @@ class MessageRepositoryExtensionsTest {
     fun givenParameters_whenPaginatedMessagesByConversation_thenShouldCallDaoExtensionsWithRightParameters() = runTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
-        val startingOffset = 0
+        val startingOffset = 0L
 
         val kaliumPager = KaliumPager(pager, fakePagingSource, StandardTestDispatcher())
         val (arrangement, messageRepositoryExtensions) = Arrangement()
