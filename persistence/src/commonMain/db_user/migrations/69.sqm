@@ -138,7 +138,7 @@ ConversationProtocolChangedContent.protocol AS conversationProtocolChanged,
 ConversationLocationContent.latitude AS latitude,
 ConversationLocationContent.longitude AS longitude,
 ConversationLocationContent.name AS locationName,
-ConversationLocationContent.zoom AS locationZoom
+ConversationLocationContent.zoom AS locationZoom,
 LegalHoldContent.legal_hold_member_list AS legalHoldMemberList,
 LegalHoldContent.legal_hold_type AS legalHoldType
 
