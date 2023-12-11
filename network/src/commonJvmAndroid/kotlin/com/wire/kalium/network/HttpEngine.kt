@@ -40,30 +40,13 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
-internal object OkHttpSingleton {
-    private val sharedClient = OkHttpClient.Builder().apply {
-
-        // OkHttp doesn't support configuring ping intervals dynamically,
-        // so they must be set when creating the Engine
-        // See https://youtrack.jetbrains.com/issue/KTOR-4752
-        pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
-            .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-            .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-            .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-    }.connectionSpecs(supportedConnectionSpecs()).build()
-
-    fun createNew(block: OkHttpClient.Builder.() -> Unit): OkHttpClient {
-        return sharedClient.newBuilder().apply(block).build()
-    }
-}
-
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning
 ): HttpClientEngine = OkHttp.create {
-    OkHttpSingleton.createNew {
+    OkhttpClientfactory {
         if (certificatePinning.isNotEmpty()) {
             val certPinner = CertificatePinner.Builder().apply {
                 certificatePinning.forEach { (cert, hosts) ->
@@ -119,7 +102,7 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
     hostnameVerifier { _, _ -> true }
 }
 
-private fun supportedConnectionSpecs(): List<ConnectionSpec> {
+fun supportedConnectionSpecs(): List<ConnectionSpec> {
     val wireSpec = ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS).build()
     return listOf(wireSpec, ConnectionSpec.CLEARTEXT)
 }
