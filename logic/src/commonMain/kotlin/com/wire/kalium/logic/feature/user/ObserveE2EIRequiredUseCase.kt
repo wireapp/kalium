@@ -19,8 +19,15 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.e2ei.CertificateStatus
+import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
+import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -50,6 +57,8 @@ interface ObserveE2EIRequiredUseCase {
 internal class ObserveE2EIRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureSupport: FeatureSupport,
+    private val e2eiCertificate: GetE2eiCertificateUseCase,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
 ) : ObserveE2EIRequiredUseCase {
 
@@ -63,28 +72,37 @@ internal class ObserveE2EIRequiredUseCaseImpl(
             .filterNotNull()
             .delayUntilNotifyTime()
             .flatMapLatest {
-                observeE2EISettings().flatMapLatest { setting ->
+                observeE2EISettings().map { setting ->
                     if (!setting.isRequired)
-                        flowOf(E2EIRequiredResult.NotRequired)
-                    else
-                        observeCurrentE2EICertificate().map { currentCertificate ->
-                            // TODO check here if current certificate needs to be renewed (soon, or now)
+                        E2EIRequiredResult.NotRequired
+                    else {
+                        currentClientIdProvider()
+                            .map { clientId ->
+                                val certificateResult = e2eiCertificate(clientId)
+                                when {
+                                    certificateResult.isValid() -> E2EIRequiredResult.NotRequired
 
-                            if (setting.gracePeriodEnd == null || setting.gracePeriodEnd <= DateTimeUtil.currentInstant())
-                                E2EIRequiredResult.NoGracePeriod.Create
-                            else E2EIRequiredResult.WithGracePeriod.Create(setting.gracePeriodEnd.minus(DateTimeUtil.currentInstant()))
-                        }
+                                    setting.isGracePeriodLeft() -> {
+                                        val timeLeft = setting.gracePeriodEnd!!.minus(DateTimeUtil.currentInstant())
+                                        if (certificateResult !is GetE2EICertificateUseCaseResult.Failure)
+                                            E2EIRequiredResult.WithGracePeriod.Renew(timeLeft)
+                                        else E2EIRequiredResult.WithGracePeriod.Create(timeLeft)
+                                    }
+
+                                    else -> {
+                                        if (certificateResult !is GetE2EICertificateUseCaseResult.Failure)
+                                            E2EIRequiredResult.NoGracePeriod.Renew
+                                        else E2EIRequiredResult.NoGracePeriod.Create
+                                    }
+                                }
+                            }.getOrElse { E2EIRequiredResult.NotRequired }
+                    }
                 }
             }
             .flowOn(dispatcher)
     }
 
     private fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
-
-    private fun observeCurrentE2EICertificate(): Flow<Unit> {
-        // TODO get current client E2EI certificate data here
-        return flowOf(Unit).flowOn(dispatcher)
-    }
 
     private fun Flow<Instant>.delayUntilNotifyTime(): Flow<Instant> = flatMapLatest { instant ->
         val delayMillis = instant
@@ -93,6 +111,11 @@ internal class ObserveE2EIRequiredUseCaseImpl(
             .coerceAtLeast(NO_DELAY_MS)
         flowOf(instant).onStart { delay(delayMillis) }
     }
+
+    private fun GetE2EICertificateUseCaseResult.isValid(): Boolean =
+        this is GetE2EICertificateUseCaseResult.Success && certificate.status == CertificateStatus.VALID
+
+    private fun E2EISettings.isGracePeriodLeft(): Boolean = gracePeriodEnd != null && gracePeriodEnd > DateTimeUtil.currentInstant()
 
     companion object {
         private const val NO_DELAY_MS = 0L
