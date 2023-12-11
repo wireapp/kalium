@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.LegalHoldStatus
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.classOf
@@ -65,7 +66,8 @@ class AssetMapperTest {
         // when
         val result = mapper.fromAssetContentToProtoAssetMessage(
             messageContent = messageContent,
-            expectsReadConfirmation = true
+            expectsReadConfirmation = true,
+            legalHoldStatus = LegalHoldStatus.DISABLED
         )
 
         // then

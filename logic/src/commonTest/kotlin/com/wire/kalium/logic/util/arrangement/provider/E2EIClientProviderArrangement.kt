@@ -74,13 +74,13 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
     override fun withE2EINewActivationEnrollmentSuccessful() {
         given(mlsClient)
             .suspendFunction(mlsClient::e2eiNewActivationEnrollment)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(e2eiClient)
     }
     override fun withE2EINewRotationEnrollmentSuccessful() {
         given(mlsClient)
             .suspendFunction(mlsClient::e2eiNewRotateEnrollment)
-            .whenInvokedWith(anything(), anything(), anything())
+            .whenInvokedWith(anything(), anything(), anything(), anything())
             .thenReturn(e2eiClient)
     }
 

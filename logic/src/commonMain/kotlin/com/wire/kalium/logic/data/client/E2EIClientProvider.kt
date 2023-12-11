@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -67,15 +68,17 @@ internal class EI2EIClientProviderImpl(
                             kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
                             it.e2eiNewRotateEnrollment(
                                 e2eiClientId,
-                                selfUser.first,
-                                selfUser.second
+                                selfUser.name,
+                                selfUser.handle,
+                                selfUser.teamId.toString()
                             )
                         } else {
                             kaliumLogger.e("initial E2EI client for MLS client without e2ei")
                             it.e2eiNewActivationEnrollment(
                                 e2eiClientId,
-                                selfUser.first,
-                                selfUser.second
+                                selfUser.name!!,
+                                selfUser.handle!!,
+                                selfUser.teamId.toString()
                             )
                         }
                         e2EIClient = newE2EIClient
@@ -86,11 +89,11 @@ internal class EI2EIClientProviderImpl(
 
         }
 
-    private suspend fun getSelfUserInfo(): Either<CoreFailure, Pair<String, String>> {
+    private suspend fun getSelfUserInfo(): Either<CoreFailure, SelfUser> {
         val selfUser = userRepository.getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         return if (selfUser.name == null || selfUser.handle == null)
             Either.Left(E2EIFailure.Generic(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
-        else Either.Right(Pair(selfUser.name, selfUser.handle))
+        else Either.Right(selfUser)
     }
 
     companion object {

@@ -73,6 +73,15 @@ value class Ed22519Key(
     val value: ByteArray
 )
 
+enum class CredentialType {
+    Basic,
+    X509;
+
+    companion object {
+        val DEFAULT = Basic
+    }
+}
+
 @Suppress("TooManyFunctions")
 interface MLSClient {
 
@@ -286,7 +295,8 @@ interface MLSClient {
     suspend fun newAcmeEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String,
-        handle: String
+        handle: String,
+        teamId: String?
     ): E2EIClient
 
     /**
@@ -297,7 +307,8 @@ interface MLSClient {
     suspend fun e2eiNewActivationEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String,
-        handle: String
+        handle: String,
+        teamId: String?
     ): E2EIClient
 
     /**
@@ -308,7 +319,8 @@ interface MLSClient {
     suspend fun e2eiNewRotateEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String?,
-        handle: String?
+        handle: String?,
+        teamId: String?
     ): E2EIClient
 
     /**
@@ -322,6 +334,13 @@ interface MLSClient {
      * @return the E2EI state for the current MLS Client
      */
     suspend fun isE2EIEnabled(): Boolean
+
+    /**
+     * The MLS Credentials based on the E2EI State
+     *
+     * @return the MLS Credentials for the current MLS Client
+     */
+    suspend fun getMLSCredentials(): CredentialType
 
     /**
      * Generate new keypackages after E2EI certificate issued

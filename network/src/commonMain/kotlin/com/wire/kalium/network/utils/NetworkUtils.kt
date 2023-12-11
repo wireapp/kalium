@@ -32,6 +32,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.isSuccess
+import io.ktor.serialization.JsonConvertException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
@@ -237,23 +238,19 @@ private fun toStatusCodeBasedKaliumException(
 
 /**
  * Wrap and handles federation aware endpoints that can send errors responses
- * And raise proper federated exceptions
+ * And raise specific federated context exceptions,
  *
- * @delegatedHandler the fallback handler when the response is not a federation error
+ * i.e. FederationError, FederationUnreachableException, FederationConflictException
+ *
+ * @param response the response to wrap
+ * @param delegatedHandler the fallback handler when the response cannot be handled as a federation error
  */
 suspend fun <T : Any> wrapFederationResponse(
     response: HttpResponse,
     delegatedHandler: suspend (HttpResponse) -> NetworkResponse<T>
 ) =
     when (response.status.value) {
-        HttpStatusCode.Conflict.value -> {
-            val errorResponse = try {
-                response.body()
-            } catch (_: NoTransformationFoundException) {
-                FederationConflictResponse(emptyList())
-            }
-            NetworkResponse.Error(KaliumException.FederationConflictException(errorResponse))
-        }
+        HttpStatusCode.Conflict.value -> resolveStatusCodeBasedFirstOrFederated(response)
 
         HttpStatusCode.UnprocessableEntity.value -> {
             val errorResponse = try {
@@ -277,3 +274,27 @@ suspend fun <T : Any> wrapFederationResponse(
             delegatedHandler.invoke(response)
         }
     }
+
+/**
+ * Due to the "shared" status code limitations nature of some endpoints.
+ * We need to first delegate to status code based exceptions and if parse fails go for federated error,
+ *
+ * i.e.: '/commit-bundles' 409 for "mls-stale-message" and 409 for "federation-conflict"
+ */
+private suspend fun resolveStatusCodeBasedFirstOrFederated(response: HttpResponse): NetworkResponse.Error {
+    val kaliumException = try {
+        val errorResponse = response.body<ErrorResponse>()
+        toStatusCodeBasedKaliumException(
+            response.status,
+            response,
+            errorResponse
+        )
+    } catch (exception: JsonConvertException) {
+        try {
+            KaliumException.FederationConflictException(response.body<FederationConflictResponse>())
+        } catch (_: NoTransformationFoundException) {
+            KaliumException.FederationConflictException(FederationConflictResponse(emptyList()))
+        }
+    }
+    return NetworkResponse.Error(kaliumException)
+}
