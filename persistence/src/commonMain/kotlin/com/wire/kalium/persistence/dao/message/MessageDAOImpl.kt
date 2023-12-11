@@ -253,6 +253,24 @@ internal class MessageDAOImpl internal constructor(
             ).executeAsList()
         }
 
+    override suspend fun getMessageAssetsWithoutImage(
+        conversationId: QualifiedIDEntity,
+        mimeTypes: Set<String>,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessageEntity> =
+        withContext(coroutineContext) {
+            assetViewQueries.getAssetMessagesByConversationIdAndMimeTypes(
+                conversationId,
+                listOf(MessageEntity.Visibility.VISIBLE),
+                listOf(MessageEntity.ContentType.ASSET),
+                mimeTypes,
+                limit.toLong(),
+                offset.toLong(),
+                mapper::toEntityAssetMessageFromView
+            ).executeAsList()
+        }
+
     override suspend fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,
