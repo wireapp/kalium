@@ -20,7 +20,9 @@ package com.wire.kalium.network
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-fun OkhttpClientfactory(block: OkHttpClient.Builder.() -> Unit): OkHttpClient = OkHttpSingleton.createNew(block)
+@Suppress("FunctionName")
+fun OkhttpClientFactory(block: OkHttpClient.Builder.() -> Unit): OkHttpClient = OkHttpSingleton.createNew(block)
+
 private object OkHttpSingleton {
     private val sharedClient = OkHttpClient.Builder().apply {
         // OkHttp doesn't support configuring ping intervals dynamically,

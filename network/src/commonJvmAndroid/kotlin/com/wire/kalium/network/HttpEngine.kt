@@ -35,7 +35,6 @@ import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
-import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
@@ -46,7 +45,7 @@ actual fun defaultHttpEngine(
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning
 ): HttpClientEngine = OkHttp.create {
-    OkhttpClientfactory {
+    OkhttpClientFactory {
         if (certificatePinning.isNotEmpty()) {
             val certPinner = CertificatePinner.Builder().apply {
                 certificatePinning.forEach { (cert, hosts) ->

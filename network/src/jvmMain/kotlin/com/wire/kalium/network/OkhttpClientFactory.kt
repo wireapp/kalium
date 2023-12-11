@@ -20,16 +20,16 @@ package com.wire.kalium.network
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-fun OkhttpClientfactory(block: OkHttpClient.Builder.() -> Unit): OkHttpClient = OkHttpClient.Builder()
+@Suppress("FunctionName")
+fun OkhttpClientFactory(block: OkHttpClient.Builder.() -> Unit): OkHttpClient = OkHttpClient.Builder()
     .apply(block)
     .apply {
 
-    // OkHttp doesn't support configuring ping intervals dynamically,
-    // so they must be set when creating the Engine
-    // See https://youtrack.jetbrains.com/issue/KTOR-4752
-    pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
-        .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-        .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-        .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-}.connectionSpecs(supportedConnectionSpecs()).build()
-
+        // OkHttp doesn't support configuring ping intervals dynamically,
+        // so they must be set when creating the Engine
+        // See https://youtrack.jetbrains.com/issue/KTOR-4752
+        pingInterval(WEBSOCKET_PING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS)
+            .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+            .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+            .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
+    }.connectionSpecs(supportedConnectionSpecs()).build()
