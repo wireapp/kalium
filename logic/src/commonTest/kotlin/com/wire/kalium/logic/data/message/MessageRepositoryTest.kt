@@ -107,7 +107,7 @@ class MessageRepositoryTest {
         // Then
         with(arrangement) {
             verify(messageDAO)
-                .suspendFunction(messageDAO::getMessageAssets)
+                .suspendFunction(messageDAO::getImageMessageAssets)
                 .with(eq(mappedId), anything(), anything())
                 .wasInvoked(exactly = once)
         }
@@ -690,7 +690,7 @@ class MessageRepositoryTest {
             result: List<AssetMessageEntity>
         ) = apply {
             given(messageDAO)
-                .suspendFunction(messageDAO::getMessageAssets)
+                .suspendFunction(messageDAO::getImageMessageAssets)
                 .whenInvokedWith(eq(conversationId))
                 .thenReturn(result)
         }

@@ -226,7 +226,12 @@ interface MessageRepository {
     ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
-    suspend fun getAssetMessagesByConversationId(conversationId: ConversationId, limit: Int, offset: Int): List<AssetMessage>
+    suspend fun getAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        shouldContainImages: Boolean,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessage>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -261,15 +266,27 @@ class MessageDataSource(
 
     override suspend fun getAssetMessagesByConversationId(
         conversationId: ConversationId,
+        shouldContainImages: Boolean,
         limit: Int,
         offset: Int
-    ): List<AssetMessage> = messageDAO.getMessageAssets(
-        conversationId.toDao(),
-        mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
-        limit,
-        offset
-    )
-        .map(messageMapper::fromAssetEntityToMessage)
+    ): List<AssetMessage> = if (shouldContainImages) {
+        messageDAO.getImageMessageAssets(
+            conversationId.toDao(),
+            mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+            limit,
+            offset
+        )
+            .map(messageMapper::fromAssetEntityToMessage)
+    } else {
+        messageDAO.getMessageAssetsWithoutImage(
+            conversationId.toDao(),
+            mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+            limit,
+            offset
+        )
+            .map(messageMapper::fromAssetEntityToMessage)
+    }
+
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(

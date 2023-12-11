@@ -84,7 +84,7 @@ class GetAssetMessagesForConversationUseCaseTest {
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
 
-        val getAssetMessagesByConversationUseCase = GetAssetMessagesForConversationUseCaseImpl(
+        val getAssetMessagesByConversationUseCase = GetImageAssetMessagesForConversationUseCaseImpl(
             testDispatcher,
             messageRepository
         )

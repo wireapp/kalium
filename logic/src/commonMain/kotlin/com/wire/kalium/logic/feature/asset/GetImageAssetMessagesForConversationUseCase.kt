@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.data.asset.AssetMessage
@@ -23,9 +24,9 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.withContext
 
-interface GetAssetMessagesForConversationUseCase {
+interface GetImageAssetMessagesForConversationUseCase {
     /**
-     * This use case will return asset messages that are not an image for a given [conversationId]
+     * This use case will return image asset messages for a given [conversationId]
      * paginated by [limit] and [offset]
      * @see AssetMessage
      */
@@ -36,10 +37,10 @@ interface GetAssetMessagesForConversationUseCase {
     ): List<AssetMessage>
 }
 
-class GetAssetMessagesForConversationUseCaseImpl internal constructor(
+class GetImageAssetMessagesForConversationUseCaseImpl internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository,
-) : GetAssetMessagesForConversationUseCase {
+) : GetImageAssetMessagesForConversationUseCase {
 
     override suspend operator fun invoke(
         conversationId: ConversationId,
@@ -48,7 +49,7 @@ class GetAssetMessagesForConversationUseCaseImpl internal constructor(
     ): List<AssetMessage> = withContext(dispatcher.io) {
         messageRepository.getAssetMessagesByConversationId(
             conversationId = conversationId,
-            shouldContainImages = false,
+            shouldContainImages = true,
             limit = limit,
             offset = offset
         )
