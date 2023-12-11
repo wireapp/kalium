@@ -174,15 +174,30 @@ class MLSClientImpl(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override suspend fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String, teamId: String?): E2EIClient {
+    override suspend fun newAcmeEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String,
+        teamId: String?
+    ): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiNewActivationEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String, teamId: String?): E2EIClient {
+    override suspend fun e2eiNewActivationEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String,
+        teamId: String?
+    ): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiNewRotateEnrollment(clientId: CryptoQualifiedClientId, displayName: String?, handle: String?, teamId: String?): E2EIClient {
+    override suspend fun e2eiNewRotateEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String?,
+        handle: String?,
+        teamId: String?
+    ): E2EIClient {
         TODO("Not yet implemented")
     }
 
