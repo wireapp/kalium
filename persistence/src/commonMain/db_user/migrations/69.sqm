@@ -1,14 +1,18 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+
+CREATE TABLE MessageLegalHoldContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      legal_hold_member_list TEXT AS List<QualifiedIDEntity> NOT NULL,
+      legal_hold_type TEXT AS LegalHoldType NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -134,7 +138,7 @@ ConversationProtocolChangedContent.protocol AS conversationProtocolChanged,
 ConversationLocationContent.latitude AS latitude,
 ConversationLocationContent.longitude AS longitude,
 ConversationLocationContent.name AS locationName,
-ConversationLocationContent.zoom AS locationZoom,
+ConversationLocationContent.zoom AS locationZoom
 LegalHoldContent.legal_hold_member_list AS legalHoldMemberList,
 LegalHoldContent.legal_hold_type AS legalHoldType
 
