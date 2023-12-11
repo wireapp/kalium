@@ -33,7 +33,7 @@ data class KaliumConfigs(
     val lowerKeyPackageLimits: Boolean = false,
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
     val developmentApiEnabled: Boolean = false,
-    val ignoreSSLCertificatesForUnboundCalls: Boolean = true,
+    val ignoreSSLCertificatesForUnboundCalls: Boolean = false,
     val guestRoomLink: Boolean = true,
     val selfDeletingMessages: Boolean = true,
     val wipeOnCookieInvalid: Boolean = false,
