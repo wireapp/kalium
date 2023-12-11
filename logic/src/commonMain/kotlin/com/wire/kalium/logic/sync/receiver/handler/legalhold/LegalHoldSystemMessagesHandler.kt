@@ -75,33 +75,35 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         conversationRepository.getConversationsByUserId(userId).map { conversations ->
             // get last legal hold messages for the given conversations
             getLastLegalHoldMessagesForConversations<T>(userId, conversations).map { lastMessagesMap ->
-                conversations.forEach { conversation ->
-                    val createOrUpdateSystemMessageForMembers: suspend () -> Unit = {
-                        lastMessagesMap[conversation.id]?.let { (lastMessageId, lastMessageContent) ->
-                            messageRepository.updateLegalHoldMessageMembers(lastMessageId, conversation.id, update(lastMessageContent.members))
-                        } ?: persistMessage(createSystemMessage(createNew(), conversation.id))
-                    }
-                    val createSystemMessageForConversationIfNeeded: suspend () -> Unit = {
-                        membersHavingLegalHoldClient(conversation.id)
-                            .map { if (it.isEmpty()) Conversation.LegalHoldStatus.DISABLED else Conversation.LegalHoldStatus.ENABLED }
-                            .map { newLegalHoldStatus ->
-                                if (newLegalHoldStatus != conversation.legalHoldStatus) {
-                                    // if conversation legal hold status has changed, update it
-                                    conversationRepository.updateLegalHoldStatus(conversation.id, newLegalHoldStatus)
-                                    // if conversation legal hold status changed, create system message for it
-                                    if (newLegalHoldStatus == Conversation.LegalHoldStatus.DISABLED) persistMessage(
-                                        createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversation.id)
-                                    )
-                                    else if (newLegalHoldStatus == Conversation.LegalHoldStatus.ENABLED) persistMessage(
-                                        createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversation.id)
-                                    )
-                                }
-                            }
-                    }
-                    listOf(createOrUpdateSystemMessageForMembers, createSystemMessageForConversationIfNeeded)
-                        .let { if (firstHandleForConversation) it.reversed() else it }
-                        .forEach { it() }
+
+                val createOrUpdateSystemMessageForMembers: suspend (conversation: Conversation) -> Unit = { conversation ->
+                    lastMessagesMap[conversation.id]?.let { (lastMessageId, lastMessageContent) ->
+                        messageRepository.updateLegalHoldMessageMembers(lastMessageId, conversation.id, update(lastMessageContent.members))
+                    } ?: persistMessage(createSystemMessage(createNew(), conversation.id))
                 }
+
+                val createSystemMessageForConversationIfNeeded: suspend (conversation: Conversation) -> Unit = { conversation ->
+                    membersHavingLegalHoldClient(conversation.id)
+                        .map { if (it.isEmpty()) Conversation.LegalHoldStatus.DISABLED else Conversation.LegalHoldStatus.ENABLED }
+                        .map { newLegalHoldStatus ->
+                            if (newLegalHoldStatus != conversation.legalHoldStatus) {
+                                // if conversation legal hold status has changed, update it
+                                conversationRepository.updateLegalHoldStatus(conversation.id, newLegalHoldStatus)
+                                // if conversation legal hold status changed, create system message for it
+                                if (newLegalHoldStatus == Conversation.LegalHoldStatus.DISABLED) persistMessage(
+                                    createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversation.id)
+                                )
+                                else if (newLegalHoldStatus == Conversation.LegalHoldStatus.ENABLED) persistMessage(
+                                    createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversation.id)
+                                )
+                            }
+                        }
+                }
+
+                val actionsForConversation = listOf(createOrUpdateSystemMessageForMembers, createSystemMessageForConversationIfNeeded)
+                    .let { if (firstHandleForConversation) it.reversed() else it }
+
+                conversations.forEach { conversation -> actionsForConversation.forEach { it(conversation) } }
             }
         }
     }
