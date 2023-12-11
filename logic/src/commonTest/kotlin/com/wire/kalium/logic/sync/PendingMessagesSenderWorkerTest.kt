@@ -39,10 +39,10 @@ import kotlin.test.Test
 class PendingMessagesSenderWorkerTest {
 
     @Mock
-    val messageRepository = configure(mock(MessageRepository::class)) { stubsUnitByDefault = true }
+    private val messageRepository = configure(mock(MessageRepository::class)) { stubsUnitByDefault = true }
 
     @Mock
-    val messageSender = configure(mock(MessageSender::class)) { stubsUnitByDefault = true }
+    private val messageSender = configure(mock(MessageSender::class)) { stubsUnitByDefault = true }
 
     private lateinit var pendingMessagesSenderWorker: PendingMessagesSenderWorker
 
