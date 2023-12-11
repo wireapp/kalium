@@ -33,6 +33,19 @@ LEFT JOIN User ON Message.sender_user_id = User.qualified_id
 LEFT JOIN MessageAssetContent AS AssetMessage ON Message.id = AssetMessage.message_id AND Message.conversation_id = AssetMessage.conversation_id
 LEFT JOIN Asset AS AssetContent ON AssetMessage.asset_id = AssetContent.key AND AssetMessage.asset_domain = AssetContent.domain;
 
+getImageAssetMessagesByConversationIdAndMimeTypes:
+SELECT * FROM MessageAssetView WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND contentType IN :contentTypes
+AND assetMimeType IN :mimeTypes
+AND assetWidth > 0
+AND assetHeight > 0
+AND assetId IS NOT NULL
+AND isEphemeral = FALSE
+ORDER BY date DESC
+LIMIT :limit
+OFFSET :offset;
+
 getAssetMessagesByConversationIdAndMimeTypes:
 SELECT * FROM MessageAssetView WHERE conversationId = :conversationId
 AND visibility IN :visibility

@@ -557,7 +557,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        val assetMessages = messageDAO.getMessageAssets(conversationId, setOf(mimeType), 100, 0)
+        val assetMessages = messageDAO.getImageMessageAssets(conversationId, setOf(mimeType), 100, 0)
 
         // then
         assertEquals(1, assetMessages.size)
