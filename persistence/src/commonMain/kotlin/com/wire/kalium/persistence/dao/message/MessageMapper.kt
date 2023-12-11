@@ -189,7 +189,7 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
-
+            MessageEntity.ContentType.LOCATION -> MessagePreviewEntityContent.Location(senderName = senderName)
             MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
@@ -479,6 +479,10 @@ object MessageMapper {
         federationDomainList: List<String>?,
         federationType: MessageEntity.FederationType?,
         conversationProtocolChanged: ConversationEntity.Protocol?,
+        latitude: Float?,
+        longitude: Float?,
+        locationName: String?,
+        locationZoom: Int?,
         legalHoldMemberList: List<QualifiedIDEntity>?,
         legalHoldType: MessageEntity.LegalHoldType?,
     ): MessageEntity {
@@ -615,6 +619,12 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
+            MessageEntity.ContentType.LOCATION -> MessageEntityContent.Location(
+                latitude = latitude.requireField("latitude"),
+                longitude = longitude.requireField("longitude"),
+                locationName,
+                locationZoom
+            )
             MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
                 memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
                 type = legalHoldType.requireField("legalHoldType")

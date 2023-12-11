@@ -180,6 +180,10 @@ class MessageMapperTest {
             federationDomainList: List<String>? = null,
             federationType: MessageEntity.FederationType? = null,
             conversationProtocolChanged: ConversationEntity.Protocol? = null,
+            latitude: Float? = null,
+            longitude: Float? = null,
+            locationName: String? = null,
+            locationZoom: Int? = null,
             legalHoldMemberList: List<QualifiedIDEntity>? = null,
             legalHoldType: MessageEntity.LegalHoldType? = null,
         ): MessageEntity {
@@ -262,6 +266,10 @@ class MessageMapperTest {
                 federationDomainList,
                 federationType,
                 conversationProtocolChanged,
+                latitude,
+                longitude,
+                locationName,
+                locationZoom,
                 legalHoldMemberList,
                 legalHoldType,
             )

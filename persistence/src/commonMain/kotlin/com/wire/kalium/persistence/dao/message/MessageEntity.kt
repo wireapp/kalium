@@ -198,7 +198,7 @@ sealed interface MessageEntity {
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, HISTORY_LOST_PROTOCOL_CHANGED,
         CONVERSATION_MESSAGE_TIMER_CHANGED, CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS,
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
-        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_STARTED_UNVERIFIED_WARNING, LEGAL_HOLD,
+        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD
     }
 
     enum class MemberChangeType {
@@ -297,6 +297,12 @@ sealed class MessageEntityContent {
     ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()
+    data class Location(
+        val latitude: Float,
+        val longitude: Float,
+        val name: String? = null,
+        val zoom: Int? = null,
+    ) : Regular()
 
     data class Unknown(
         val typeName: String? = null,
@@ -398,6 +404,7 @@ sealed class MessagePreviewEntityContent {
     data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
 
     data class Knock(val senderName: String?) : MessagePreviewEntityContent()
+    data class Location(val senderName: String?) : MessagePreviewEntityContent()
 
     data class MembersAdded(
         val senderName: String?,

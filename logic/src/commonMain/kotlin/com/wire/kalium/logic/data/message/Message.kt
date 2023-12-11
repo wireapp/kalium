@@ -134,6 +134,10 @@ sealed interface Message {
                 is MessageContent.Composite -> mutableMapOf(
                     typeKey to "composite"
                 )
+
+                is MessageContent.Location -> mutableMapOf(
+                    typeKey to "location",
+                )
             }
 
             val standardProperties = mapOf(
