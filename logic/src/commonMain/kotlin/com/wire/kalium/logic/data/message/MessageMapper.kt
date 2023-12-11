@@ -420,6 +420,7 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
     is MessageEntityContent.LegalHold -> {
         when (this.type) {
             MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
+            MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Enabled
             MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
                 MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
             MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
@@ -655,6 +656,8 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     is MessageContent.LegalHold -> when (this) {
         MessageContent.LegalHold.ForConversation.Disabled ->
             MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
+        MessageContent.LegalHold.ForConversation.Enabled ->
+            MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION)
         is MessageContent.LegalHold.ForMembers.Disabled ->
             MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
         is MessageContent.LegalHold.ForMembers.Enabled ->

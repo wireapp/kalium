@@ -320,6 +320,7 @@ sealed class MessageContent {
             data class Disabled(override val members: List<UserId>) : ForMembers(members)
         }
         sealed class ForConversation : LegalHold() {
+            data object Enabled : ForConversation()
             data object Disabled : ForConversation()
         }
     }
@@ -377,6 +378,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
     is MessageContent.Location -> "Location"
     is MessageContent.LegalHold.ForConversation.Disabled -> "LegalHold.ForConversation.Disabled"
+    is MessageContent.LegalHold.ForConversation.Enabled -> "LegalHold.ForConversation.Enabled"
     is MessageContent.LegalHold.ForMembers.Disabled -> "LegalHold.ForMembers.Disabled"
     is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
     null -> "null"

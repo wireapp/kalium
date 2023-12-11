@@ -85,9 +85,11 @@ internal class LegalHoldSystemMessagesHandlerImpl(
                             if (newConversationLegalHoldStatus != conversation.legalHoldStatus) {
                                 // if conversation legal hold status has changed, update it
                                 conversationRepository.updateLegalHoldStatus(conversation.id, newConversationLegalHoldStatus)
-                                // if conversation is no longer under legal hold, create system message for it
+                                // if conversation legal hold status changed, create system message for it
                                 if (newConversationLegalHoldStatus == Conversation.LegalHoldStatus.DISABLED) {
                                     persistMessage(createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversation.id))
+                                } else if (newConversationLegalHoldStatus == Conversation.LegalHoldStatus.ENABLED) {
+                                    persistMessage(createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversation.id))
                                 }
                             }
                         }

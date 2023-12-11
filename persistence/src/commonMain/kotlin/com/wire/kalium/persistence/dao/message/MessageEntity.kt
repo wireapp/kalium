@@ -210,7 +210,7 @@ sealed interface MessageEntity {
     }
 
     enum class LegalHoldType {
-        ENABLED_FOR_MEMBERS, DISABLED_FOR_MEMBERS, DISABLED_FOR_CONVERSATION
+        ENABLED_FOR_MEMBERS, DISABLED_FOR_MEMBERS, ENABLED_FOR_CONVERSATION, DISABLED_FOR_CONVERSATION
     }
 
     enum class Visibility {

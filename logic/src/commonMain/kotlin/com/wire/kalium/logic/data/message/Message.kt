@@ -360,6 +360,9 @@ sealed interface Message {
                 MessageContent.LegalHold.ForConversation.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForConversation"
                 )
+                MessageContent.LegalHold.ForConversation.Enabled -> mutableMapOf(
+                    typeKey to "legalHoldEnabledForConversation"
+                )
                 is MessageContent.LegalHold.ForMembers.Disabled -> mutableMapOf(
                     typeKey to "legalHoldDisabledForMembers",
                     "members" to content.members.fold("") { acc, member ->
