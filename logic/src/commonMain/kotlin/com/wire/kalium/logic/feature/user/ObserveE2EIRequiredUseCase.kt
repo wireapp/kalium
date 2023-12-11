@@ -24,7 +24,6 @@ import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
