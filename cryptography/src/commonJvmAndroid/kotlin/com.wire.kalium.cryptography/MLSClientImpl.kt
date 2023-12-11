@@ -198,13 +198,13 @@ class MLSClientImpl(
         return coreCrypto.exportSecretKey(groupId.decodeBase64Bytes(), keyLength)
     }
 
-    override suspend fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override suspend fun newAcmeEnrollment(clientId: CryptoQualifiedClientId, displayName: String, handle: String, teamId: String?): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewEnrollment(
                 clientId.toString(),
                 displayName,
                 handle,
-                "",
+                teamId,
                 defaultE2EIExpiry,
                 defaultCiphersuite
             )
@@ -214,14 +214,15 @@ class MLSClientImpl(
     override suspend fun e2eiNewActivationEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String,
-        handle: String
+        handle: String,
+        teamId: String?
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewActivationEnrollment(
                 clientId.toString(),
                 displayName,
                 handle,
-                "",
+                teamId,
                 defaultE2EIExpiry,
                 defaultCiphersuite
             )
@@ -231,14 +232,15 @@ class MLSClientImpl(
     override suspend fun e2eiNewRotateEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String?,
-        handle: String?
+        handle: String?,
+        teamId: String?
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewRotateEnrollment(
                 clientId.toString(),
                 displayName,
                 handle,
-                "",
+                teamId,
                 defaultE2EIExpiry,
                 defaultCiphersuite
             )

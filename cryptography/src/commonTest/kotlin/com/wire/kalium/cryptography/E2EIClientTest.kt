@@ -27,14 +27,14 @@ import kotlin.test.assertTrue
 @IgnoreJS
 class E2EIClientTest : BaseMLSClientTest() {
     data class SampleUser(
-        val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String
+        val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String, val teamId: String? = ""
     ) {
         val qualifiedClientId: CryptoQualifiedClientId = CryptoQualifiedClientId(clientId.value, id)
     }
 
     private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
         return createMLSClient(user.qualifiedClientId).newAcmeEnrollment(
-            user.qualifiedClientId, user.name, user.handle
+            user.qualifiedClientId, user.name, user.handle, user.teamId
         )
     }
 
@@ -151,7 +151,11 @@ class E2EIClientTest : BaseMLSClientTest() {
     companion object {
 
         val ALICE1 = SampleUser(
-            CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "elna.wire.link"), CryptoClientId("fb4b58152e20"), "Mojtaba Chenani", "mojtaba_wire"
+            CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "elna.wire.link"),
+            CryptoClientId("fb4b58152e20"),
+            "Mojtaba Chenani",
+            "mojtaba_wire",
+            "team"
         )
 
         val ACME_DIRECTORY_API_RESPONSE = """

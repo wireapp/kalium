@@ -295,7 +295,8 @@ interface MLSClient {
     suspend fun newAcmeEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String,
-        handle: String
+        handle: String,
+        teamId: String?
     ): E2EIClient
 
     /**
@@ -306,7 +307,8 @@ interface MLSClient {
     suspend fun e2eiNewActivationEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String,
-        handle: String
+        handle: String,
+        teamId: String?
     ): E2EIClient
 
     /**
@@ -317,7 +319,8 @@ interface MLSClient {
     suspend fun e2eiNewRotateEnrollment(
         clientId: CryptoQualifiedClientId,
         displayName: String?,
-        handle: String?
+        handle: String?,
+        teamId: String?
     ): E2EIClient
 
     /**
