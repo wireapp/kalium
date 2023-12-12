@@ -274,6 +274,13 @@ internal class MessageInsertExtensionImpl(
                 name = content.name,
                 zoom = content.zoom
             )
+
+            is MessageEntityContent.LegalHold -> messagesQueries.insertLegalHoldMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                legal_hold_member_list = content.memberUserIdList,
+                legal_hold_type = content.type
+            )
         }
     }
 
@@ -331,7 +338,9 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationDegradedProteus,
                 MessageEntityContent.ConversationVerifiedProteus,
                 MessageEntityContent.ConversationStartedUnverifiedWarning,
-                is MessageEntityContent.TeamMemberRemoved -> {
+                is MessageEntityContent.TeamMemberRemoved,
+                is MessageEntityContent.LegalHold,
+                -> {
                     /* no-op */
                 }
             }
@@ -425,5 +434,6 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
+        is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
     }
 }

@@ -23,10 +23,13 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
 import com.wire.kalium.logic.feature.client.SelfClientsResult
+import com.wire.kalium.logic.feature.legalhold.LegalHoldState
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
@@ -34,6 +37,7 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -51,7 +55,7 @@ class LegalHoldHandlerTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenLegalHoldEvent_whenUserIdIsSelfUserThenUpdateSelfUserClients() = runTest {
+    fun givenLegalHoldEvent_whenUserIdIsSelfUserThenUpdateSelfUserClientsAndDeleteLegalHoldRequest() = runTest {
         val (arrangement, handler) = Arrangement()
             .withDeleteLegalHoldSuccess()
             .withSetLegalHoldChangeNotifiedSuccess()
@@ -74,7 +78,6 @@ class LegalHoldHandlerTest {
             .wasInvoked(once)
     }
 
-
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenLegalHoldEvent_whenUserIdIsOtherUserThenUpdateOtherUserClients() = runTest {
@@ -93,6 +96,36 @@ class LegalHoldHandlerTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenUserLegalHoldEnabled_whenHandlingEnable_thenDoNotCreateOrUpdateSystemMessages() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)
+            .arrange()
+        // when
+        handler.handleEnable(legalHoldEventEnabled)
+        // then
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnable)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldDisabled_whenHandlingDisable_thenDoNotCreateOrUpdateSystemMessages() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            .arrange()
+        // when
+        handler.handleDisable(legalHoldEventDisabled)
+        // then
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisable)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -102,15 +135,28 @@ class LegalHoldHandlerTest {
         val fetchSelfClientsFromRemote = mock(FetchSelfClientsFromRemoteUseCase::class)
 
         @Mock
+        val observeLegalHoldStateForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
+
+        @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
+
+        @Mock
+        val legalHoldSystemMessagesHandler = configure(mock(LegalHoldSystemMessagesHandler::class)) { stubsUnitByDefault = true }
+
+        init {
+            withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            withFetchSelfClientsFromRemoteSuccess()
+            withDeleteLegalHoldRequestSuccess()
+        }
 
         fun arrange() =
             this to LegalHoldHandlerImpl(
                 selfUserId = TestUser.SELF.id,
                 persistOtherUserClients = persistOtherUserClients,
                 fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
+                observeLegalHoldStateForUser = observeLegalHoldStateForUser,
                 userConfigRepository = userConfigRepository,
-                coroutineContext = StandardTestDispatcher()
+                legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
             )
 
         fun withDeleteLegalHoldSuccess() = apply {
@@ -132,6 +178,20 @@ class LegalHoldHandlerTest {
                 .suspendFunction(fetchSelfClientsFromRemote::invoke)
                 .whenInvoked()
                 .thenReturn(SelfClientsResult.Success(emptyList(), ClientId("client-id")))
+        }
+
+        fun withObserveLegalHoldStateForUserSuccess(state: LegalHoldState) = apply {
+            given(observeLegalHoldStateForUser)
+                .suspendFunction(observeLegalHoldStateForUser::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(state))
+        }
+
+        fun withDeleteLegalHoldRequestSuccess() = apply {
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::deleteLegalHoldRequest)
+                .whenInvoked()
+                .thenReturn(Either.Right(Unit))
         }
     }
 

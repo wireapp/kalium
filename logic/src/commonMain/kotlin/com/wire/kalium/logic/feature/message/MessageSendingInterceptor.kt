@@ -30,7 +30,7 @@ interface MessageSendingInterceptor {
     suspend fun prepareMessage(originalMessage: Message.Sendable): Either<CoreFailure, Message.Sendable>
 }
 
-class MessageSendingInterceptorImpl(
+internal class MessageSendingInterceptorImpl internal constructor(
     private val messageContentEncoder: MessageContentEncoder,
     private val messageRepository: MessageRepository
 ) : MessageSendingInterceptor {

@@ -67,9 +67,6 @@ kotlin {
 
                 // Libsodium
                 implementation(libs.libsodiumBindingsMP)
-
-                // UUIDs
-                implementation(libs.benAsherUUID)
             }
         }
         val commonTest by getting {

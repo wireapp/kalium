@@ -356,6 +356,25 @@ sealed interface Message {
                 is MessageContent.ConversationStartedUnverifiedWarning -> mutableMapOf(
                     typeKey to "conversationStartedUnverifiedWarning"
                 )
+
+                MessageContent.LegalHold.ForConversation.Disabled -> mutableMapOf(
+                    typeKey to "legalHoldDisabledForConversation"
+                )
+                MessageContent.LegalHold.ForConversation.Enabled -> mutableMapOf(
+                    typeKey to "legalHoldEnabledForConversation"
+                )
+                is MessageContent.LegalHold.ForMembers.Disabled -> mutableMapOf(
+                    typeKey to "legalHoldDisabledForMembers",
+                    "members" to content.members.fold("") { acc, member ->
+                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                    }
+                )
+                is MessageContent.LegalHold.ForMembers.Enabled -> mutableMapOf(
+                    typeKey to "legalHoldEnabledForMembers",
+                    "members" to content.members.fold("") { acc, member ->
+                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                    }
+                )
             }
 
             val standardProperties = mapOf(

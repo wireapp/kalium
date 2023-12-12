@@ -1,5 +1,6 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntityContent;
@@ -133,7 +134,9 @@ ConversationProtocolChangedContent.protocol AS conversationProtocolChanged,
 ConversationLocationContent.latitude AS latitude,
 ConversationLocationContent.longitude AS longitude,
 ConversationLocationContent.name AS locationName,
-ConversationLocationContent.zoom AS locationZoom
+ConversationLocationContent.zoom AS locationZoom,
+LegalHoldContent.legal_hold_member_list AS legalHoldMemberList,
+LegalHoldContent.legal_hold_type AS legalHoldType
 
 FROM Message
 JOIN User ON Message.sender_user_id = User.qualified_id
@@ -160,5 +163,6 @@ LEFT JOIN MessageConversationTimerChangedContent AS ConversationTimerChangedCont
 LEFT JOIN MessageFederationTerminatedContent AS FederationTerminatedContent ON Message.id = FederationTerminatedContent.message_id AND Message.conversation_id = FederationTerminatedContent.conversation_id
 LEFT JOIN MessageConversationProtocolChangedContent AS ConversationProtocolChangedContent ON Message.id = ConversationProtocolChangedContent.message_id AND Message.conversation_id = ConversationProtocolChangedContent.conversation_id
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
+LEFT JOIN MessageLegalHoldContent AS LegalHoldContent ON Message.id = LegalHoldContent.message_id AND Message.conversation_id = LegalHoldContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
