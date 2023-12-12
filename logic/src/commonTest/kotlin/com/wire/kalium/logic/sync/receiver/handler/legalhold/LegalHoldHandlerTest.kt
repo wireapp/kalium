@@ -101,6 +101,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
             .arrange()
         // when
         handler.handleEnable(legalHoldEventEnabled)
