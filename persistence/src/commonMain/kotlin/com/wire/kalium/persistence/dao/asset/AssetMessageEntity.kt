@@ -27,8 +27,8 @@ data class AssetMessageEntity(
     val messageId: String,
     val conversationId: QualifiedIDEntity,
     val assetId: String,
-    val width: Int?,
-    val height: Int?,
+    val width: Int,
+    val height: Int,
     val downloadStatus: MessageEntity.DownloadStatus,
     val assetPath: String?,
     val isSelfAsset: Boolean
