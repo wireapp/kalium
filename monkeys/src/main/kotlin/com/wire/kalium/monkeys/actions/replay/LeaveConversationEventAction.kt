@@ -15,26 +15,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions
+package com.wire.kalium.monkeys.actions.replay
 
-import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.monkeys.actions.LeaveConversationAction
+import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
 import com.wire.kalium.monkeys.model.ActionType
-import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
+import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-open class DestroyConversationAction(val config: ActionType.DestroyConversation, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = conversationTargets()
-        targets.forEach {
-            it.destroy()
-            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversation.id)))
-        }
-    }
-
-    open fun conversationTargets(): List<MonkeyConversation> {
-        return ConversationPool.randomDynamicConversations(this.config.count.toInt())
+class LeaveConversationEventAction(private val leaver: MonkeyId, private val eventConfig: EventType.LeaveConversation) :
+    LeaveConversationAction(ActionType.LeaveConversation(1u, UserCount.single()), {}) {
+    override fun leavers(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
+        val conversation = ConversationPool.getFromOldId(this.eventConfig.conversationId)
+        return listOf(Pair(conversation, listOf(monkeyPool.getFromTeam(this.leaver.team, this.leaver.index))))
     }
 }

@@ -15,26 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions
+package com.wire.kalium.monkeys.actions.replay
 
-import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.monkeys.actions.SendMessageAction
+import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
 import com.wire.kalium.monkeys.model.ActionType
-import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
+import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-open class DestroyConversationAction(val config: ActionType.DestroyConversation, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = conversationTargets()
-        targets.forEach {
-            it.destroy()
-            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversation.id)))
-        }
-    }
-
-    open fun conversationTargets(): List<MonkeyConversation> {
-        return ConversationPool.randomDynamicConversations(this.config.count.toInt())
+class SendMessageEventAction(private val monkeySender: MonkeyId, private val eventConfig: EventType.SendMessage) :
+    SendMessageAction(ActionType.SendMessage(
+        UserCount.single(), 1u, 1u
+    ), {}) {
+    override suspend fun sendersTargets(monkeyPool: MonkeyPool):
+            List<Either<List<Pair<Monkey, Monkey>>, List<Pair<MonkeyConversation, List<Monkey>>>>> {
+        val sender = monkeyPool.getFromTeam(this.monkeySender.team, this.monkeySender.index)
+        val receiver = ConversationPool.getFromOldId(this.eventConfig.conversationId)
+        return listOf(Either.Right(listOf(Pair(receiver, listOf(sender)))))
     }
 }

@@ -15,18 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions
+package com.wire.kalium.monkeys.actions.replay
 
-import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.monkeys.actions.LoginAction
+import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class SendExternalRequestAction(val config: ActionType.SendExternalRequest) : Action({}) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val monkeys = monkeyPool.randomLoggedInMonkeysFromTeam(config.originTeam, config.userCount)
-        val usersFromTeam = monkeyPool.externalUsersFromTeam(config.targetTeam)
-        monkeys.forEach { monkey ->
-            monkey.sendRequest(usersFromTeam.random())
-        }
+class LoginEventAction(private val monkey: MonkeyId) : LoginAction(ActionType.Login(UserCount.single()), {}) {
+    override fun monkeys(monkeyPool: MonkeyPool): List<Monkey> {
+        return listOf(monkeyPool.getFromTeam(this.monkey.team, this.monkey.index))
     }
 }

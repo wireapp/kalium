@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.importer
+package com.wire.kalium.monkeys.model
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.logger
@@ -85,8 +85,8 @@ object TestDataImporter {
         File("${team.name}.json").writeText(jsonSerializer.encodeToString(json))
     }
 
-    suspend fun generateUserData(testData: TestData): List<UserData> {
-        return testData.backends.flatMap { backendConfig ->
+    suspend fun generateUserData(backends: List<BackendConfig>): List<UserData> {
+        return backends.flatMap { backendConfig ->
             val httpClient = basicHttpClient(backendConfig)
             if (backendConfig.presetTeam != null) {
                 val backend = Backend.fromConfig(backendConfig)
@@ -107,7 +107,7 @@ object TestDataImporter {
             } else {
                 val team = httpClient.createTeam(backendConfig)
                 val users = (1..backendConfig.userCount.toInt()).map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
-                    .plus(team.owner).also { httpClient.close() }
+                    .plus(team.owner)
                 if (backendConfig.dumpUsers) {
                     dumpUsers(team, users)
                 }
@@ -116,7 +116,6 @@ object TestDataImporter {
             }
         }
     }
-
 }
 
 private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {

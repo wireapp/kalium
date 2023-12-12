@@ -19,7 +19,7 @@ package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.conversation.Monkey
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.model.ActionType
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 private val DIRECT_MESSAGES = arrayOf(
@@ -48,7 +48,7 @@ private val DIRECT_MESSAGES = arrayOf(
     """.trimIndent()
 )
 
-class HandleExternalRequestAction(val config: ActionType.HandleExternalRequest) : Action() {
+class HandleExternalRequestAction(val config: ActionType.HandleExternalRequest) : Action({}) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         val monkeys = monkeyPool.randomMonkeysWithConnectionRequests(config.userCount)
         monkeys.forEach { (monkey, pendingConnections) ->
@@ -57,6 +57,7 @@ class HandleExternalRequestAction(val config: ActionType.HandleExternalRequest) 
                     Monkey.external(pendingConnections.random().otherUser?.id ?: error("Cannot get other user id from connection request"))
                 monkey.acceptRequest(otherUser)
                 monkey.sendDirectMessageTo(otherUser, config.greetMessage.ifBlank { DIRECT_MESSAGES.random() })
+                // TODO: event send
             } else {
                 monkey.rejectRequest(Monkey.external(pendingConnections.random().connection.qualifiedToId))
             }
