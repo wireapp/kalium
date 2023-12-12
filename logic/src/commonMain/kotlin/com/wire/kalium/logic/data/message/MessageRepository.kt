@@ -226,12 +226,17 @@ interface MessageRepository {
     ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
-    suspend fun getAssetMessagesByConversationId(
+    suspend fun getImageAssetMessagesByConversationId(
         conversationId: ConversationId,
-        shouldContainImages: Boolean,
         limit: Int,
         offset: Int
     ): List<AssetMessage>
+
+    suspend fun getAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int
+    ): List<Message.Standalone>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -264,28 +269,29 @@ class MessageDataSource(
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
-    override suspend fun getAssetMessagesByConversationId(
+    override suspend fun getImageAssetMessagesByConversationId(
         conversationId: ConversationId,
-        shouldContainImages: Boolean,
         limit: Int,
         offset: Int
-    ): List<AssetMessage> = if (shouldContainImages) {
-        messageDAO.getImageMessageAssets(
-            conversationId.toDao(),
-            mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
-            limit,
-            offset
-        )
-            .map(messageMapper::fromAssetEntityToAssetMessage)
-    } else {
-        messageDAO.getMessageAssetsWithoutImage(
-            conversationId.toDao(),
-            mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
-            limit,
-            offset
-        )
-            .map(messageMapper::fromAssetEntityToAssetMessage)
-    }
+    ): List<AssetMessage> = messageDAO.getImageMessageAssets(
+        conversationId.toDao(),
+        mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+        limit,
+        offset
+    )
+        .map(messageMapper::fromAssetEntityToAssetMessage)
+
+    override suspend fun getAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int
+    ): List<Message.Standalone> = messageDAO.getMessageAssetsWithoutImage(
+        conversationId.toDao(),
+        mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+        limit,
+        offset
+    )
+        .map(messageMapper::fromEntityToMessage)
 
 
     @OptIn(ExperimentalCoroutinesApi::class)

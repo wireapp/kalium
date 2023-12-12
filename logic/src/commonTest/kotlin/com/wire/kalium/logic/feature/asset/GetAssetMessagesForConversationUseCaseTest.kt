@@ -75,7 +75,7 @@ class GetAssetMessagesForConversationUseCaseTest {
 
         // Then
         verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getAssetMessagesByConversationId)
+            .suspendFunction(arrangement.messageRepository::getImageAssetMessagesByConversationId)
             .with(eq(someConversationId), eq(limit), eq(offset))
             .wasInvoked(exactly = once)
     }
@@ -96,7 +96,7 @@ class GetAssetMessagesForConversationUseCaseTest {
             offset: Int
         ): Arrangement = apply {
             given(messageRepository)
-                .suspendFunction(messageRepository::getAssetMessagesByConversationId)
+                .suspendFunction(messageRepository::getImageAssetMessagesByConversationId)
                 .whenInvokedWith(eq(conversationId), eq(limit), eq(offset))
                 .thenReturn(assetList)
         }

@@ -102,7 +102,7 @@ class MessageRepositoryTest {
             .arrange()
 
         // When
-        messageRepository.getAssetMessagesByConversationId(TEST_CONVERSATION_ID, 0, 0)
+        messageRepository.getImageAssetMessagesByConversationId(TEST_CONVERSATION_ID, 0, 0)
 
         // Then
         with(arrangement) {

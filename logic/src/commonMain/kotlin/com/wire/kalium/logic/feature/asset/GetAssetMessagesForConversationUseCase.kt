@@ -19,21 +19,22 @@ package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.withContext
 
 interface GetAssetMessagesForConversationUseCase {
     /**
-     * This use case will return asset messages that are not an image for a given [conversationId]
+     * This use case will return messages that contains assets (but not image) as content for a given [conversationId]
      * paginated by [limit] and [offset]
-     * @see AssetMessage
+     * @see Message.Standalone
      */
     suspend operator fun invoke(
         conversationId: ConversationId,
         limit: Int,
         offset: Int,
-    ): List<AssetMessage>
+    ): List<Message.Standalone>
 }
 
 class GetAssetMessagesForConversationUseCaseImpl internal constructor(
@@ -45,10 +46,9 @@ class GetAssetMessagesForConversationUseCaseImpl internal constructor(
         conversationId: ConversationId,
         limit: Int,
         offset: Int,
-    ): List<AssetMessage> = withContext(dispatcher.io) {
+    ): List<Message.Standalone> = withContext(dispatcher.io) {
         messageRepository.getAssetMessagesByConversationId(
             conversationId = conversationId,
-            shouldContainImages = false,
             limit = limit,
             offset = offset
         )

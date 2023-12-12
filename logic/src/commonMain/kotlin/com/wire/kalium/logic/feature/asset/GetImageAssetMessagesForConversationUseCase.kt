@@ -47,9 +47,8 @@ class GetImageAssetMessagesForConversationUseCaseImpl internal constructor(
         limit: Int,
         offset: Int,
     ): List<AssetMessage> = withContext(dispatcher.io) {
-        messageRepository.getAssetMessagesByConversationId(
+        messageRepository.getImageAssetMessagesByConversationId(
             conversationId = conversationId,
-            shouldContainImages = true,
             limit = limit,
             offset = offset
         )
