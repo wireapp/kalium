@@ -16,13 +16,23 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.message
+package com.wire.kalium.persistence.dao.message
 
-import com.wire.kalium.persistence.dao.message.MessageDAO
+import app.cash.paging.Pager
+import app.cash.paging.PagingData
+import app.cash.paging.PagingSource
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlin.coroutines.CoroutineContext
 
-actual interface MessageRepositoryExtensions
-
-actual class MessageRepositoryExtensionsImpl actual constructor(
-    messageDAO: MessageDAO,
-    messageMapper: MessageMapper
-) : MessageRepositoryExtensions
+/**
+ * Exposes a [pagingDataFlow] that can be used in Android UI components to display paginated data.
+ */
+class KaliumPager<EntityType : Any>(
+    private val pager: Pager<Int, EntityType>,
+    internal val pagingSource: PagingSource<Int, EntityType>,
+    private val coroutineContext: CoroutineContext
+) {
+    val pagingDataFlow: Flow<PagingData<EntityType>>
+        get() = pager.flow.flowOn(coroutineContext)
+}

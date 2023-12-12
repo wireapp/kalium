@@ -1244,10 +1244,14 @@ class UserSessionScope internal constructor(
 
     private val newMessageHandler: NewMessageEventHandler
         get() = NewMessageEventHandlerImpl(
-            proteusUnpacker, mlsUnpacker, applicationMessageHandler,
+            proteusUnpacker,
+            mlsUnpacker,
+            conversationRepository,
+            applicationMessageHandler,
             { conversationId, messageId ->
                 messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
-            }, userId,
+            },
+            userId,
             staleEpochVerifier
         )
 
