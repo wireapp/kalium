@@ -20,9 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.E2EIQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
@@ -401,13 +399,7 @@ internal class MLSConversationDataSource(
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        val clientKeyPackageList = keyPackages
-                            .map {
-                                Pair(
-                                    CryptoQualifiedClientId(it.clientID, CryptoQualifiedID(it.userId, it.domain)),
-                                    it.keyPackage.decodeBase64Bytes()
-                                )
-                            }
+                        val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
 
                         wrapMLSRequest {
                             if (userIdList.isEmpty()) {
@@ -553,7 +545,7 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
-                        listOf(E2EIQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
+                        listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
                     ).first() // todo: ask if it's possible that's a client has more than one identity?
                 }
             }

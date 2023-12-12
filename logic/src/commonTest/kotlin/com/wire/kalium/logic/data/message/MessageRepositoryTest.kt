@@ -557,9 +557,6 @@ class MessageRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val assetMapper = mock(AssetMapper::class)
-
-        @Mock
         val messageApi = mock(MessageApi::class)
 
         @Mock
@@ -736,7 +733,6 @@ class MessageRepositoryTest {
             mlsMessageApi = mlsMessageApi,
             messageDAO = messageDAO,
             messageMapper = messageMapper,
-            assetMapper = assetMapper,
             selfUserId = SELF_USER_ID,
             sendMessageFailureMapper = sendMessageFailureMapper,
             sendMessagePartialFailureMapper = sendMessagePartialFailureMapper
