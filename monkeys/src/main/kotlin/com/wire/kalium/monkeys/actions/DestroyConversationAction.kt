@@ -18,13 +18,23 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.conversation.MonkeyConversation
+import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class DestroyConversationAction(val config: ActionType.DestroyConversation) : Action() {
+open class DestroyConversationAction(val config: ActionType.DestroyConversation, sender: suspend (Event) -> Unit) : Action(sender) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = ConversationPool.randomDynamicConversations(this.config.count.toInt())
-        targets.forEach { it.destroy() }
+        val targets = conversationTargets()
+        targets.forEach {
+            it.destroy()
+            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversation.id)))
+        }
+    }
+
+    open fun conversationTargets(): List<MonkeyConversation> {
+        return ConversationPool.randomDynamicConversations(this.config.count.toInt())
     }
 }

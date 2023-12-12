@@ -29,19 +29,36 @@ import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
-import com.wire.kalium.monkeys.importer.TestData
-import com.wire.kalium.monkeys.importer.TestDataImporter
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
+import com.wire.kalium.monkeys.model.TestData
+import com.wire.kalium.monkeys.model.TestDataImporter
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import com.wire.kalium.monkeys.storage.DummyEventStorage
+import com.wire.kalium.monkeys.storage.EventStorage
+import com.wire.kalium.monkeys.storage.FileStorage
+import com.wire.kalium.monkeys.storage.PostgresStorage
 import io.ktor.server.application.call
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.engine.stopServerOnCancellation
 import io.ktor.server.netty.Netty
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import sun.misc.Signal
+import sun.misc.SignalHandler
+import kotlin.system.exitProcess
+
+fun CoroutineScope.stopIM() {
+    logger.i("Stopping Infinite Monkeys")
+    this.cancel("Stopping Infinite Monkeys")
+}
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
@@ -52,12 +69,14 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
     private val monkeyFileLogger: LogWriter by lazy { fileLogger(monkeysLogOutputFile ?: "monkeys.log") }
 
+    @Suppress("TooGenericExceptionCaught")
     override fun run() = runBlocking(Dispatchers.Default) {
+        val signalHandler = SignalHandler { this.stopIM() }
         // stop on ctrl + c
-        Signal.handle(Signal(("INT"))) {
-            logger.i("Stopping Infinite Monkeys")
-            this.coroutineContext.cancelChildren()
-        }
+        Signal.handle(Signal("INT"), signalHandler)
+        // stop when parent process sends signal
+        Signal.handle(Signal("HUP"), signalHandler)
+        Signal.handle(Signal("TERM"), signalHandler)
 
         if (logOutputFile != null) {
             CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
@@ -65,43 +84,63 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             CoreLogger.init(KaliumLogger.Config(logLevel))
         }
         MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
+
         logger.i("Initializing Metrics Endpoint")
-        io.ktor.server.engine.embeddedServer(Netty, port = 9090) {
+        embeddedServer(Netty, port = 9090) {
             routing {
                 get("/") {
                     call.respondText(MetricsCollector.metrics())
                 }
             }
-        }.start(false)
+        }.start(false).stopServerOnCancellation()
 
         logger.i("Initializing Infinite Monkeys")
         val testData = TestDataImporter.importFromFile(dataFilePath)
-        runMonkeys(testData)
+        val eventProcessor = when (testData.eventStorage) {
+            is com.wire.kalium.monkeys.model.EventStorage.FileStorage -> FileStorage(testData.eventStorage)
+            is com.wire.kalium.monkeys.model.EventStorage.PostgresStorage -> PostgresStorage(testData.eventStorage)
+            null -> DummyEventStorage()
+        }
+        eventProcessor.storeBackends(testData.backends)
+        try {
+            runMonkeys(testData, eventProcessor)
+        } catch (e: Throwable) {
+            logger.e("Error running Infinite Monkeys", e)
+        } finally {
+            eventProcessor.releaseResources()
+            exitProcess(0)
+        }
     }
 
-    private suspend fun runMonkeys(
-        testData: TestData
-    ) {
-        val users = TestDataImporter.generateUserData(testData)
-        return testData.testCases.forEachIndexed { index, testCase ->
-            val coreLogic = coreLogic("$HOME_DIRECTORY/.kalium/${testCase.name.replace(' ', '_')}")
-            logger.i("Logging in and out all users to create key packages")
+    private suspend fun runMonkeys(testData: TestData, eventStorage: EventStorage) {
+        val users = TestDataImporter.generateUserData(testData.backends)
+        testData.testCases.forEachIndexed { index, testCase ->
             val monkeyPool = MonkeyPool(users, testCase.name)
+            val coreLogic = coreLogic("$HOME_DIRECTORY/.kalium/${testCase.name.replace(' ', '_')}")
             // the first one creates the preset groups and logs everyone in so keypackages are created
+            val eventChannel = Channel<Event>(Channel.UNLIMITED)
             if (index == 0) {
                 logger.i("Creating initial key packages for clients (logging everyone in and out). This can take a while...")
                 monkeyPool.warmUp(coreLogic)
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->
                     ConversationPool.createPrefixedConversations(
-                        coreLogic, prefix, config.groupCount, config.userCount, config.protocol, monkeyPool
-                    )
+                        coreLogic,
+                        prefix,
+                        config.groupCount,
+                        config.userCount,
+                        config.protocol,
+                        monkeyPool
+                    ).forEach {
+                        eventChannel.send(Event(it.owner, EventType.CreateConversation(it)))
+                    }
                 }
             }
             logger.i("Running setup for test case ${testCase.name}")
-            ActionScheduler.runSetup(testCase.setup, coreLogic, monkeyPool)
+            runSetup(testCase.setup, coreLogic, monkeyPool, eventChannel)
             logger.i("Starting actions for test case ${testCase.name}")
-            ActionScheduler.start(testCase.name, testCase.actions, coreLogic, monkeyPool)
+            start(testCase.name, testCase.actions, coreLogic, monkeyPool, eventChannel)
+            eventStorage.processEvents(eventChannel)
         }
     }
 
