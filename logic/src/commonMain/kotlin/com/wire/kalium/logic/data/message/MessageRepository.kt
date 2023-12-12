@@ -276,7 +276,7 @@ class MessageDataSource(
             limit,
             offset
         )
-            .map(messageMapper::fromAssetEntityToMessage)
+            .map(messageMapper::fromAssetEntityToAssetMessage)
     } else {
         messageDAO.getMessageAssetsWithoutImage(
             conversationId.toDao(),
@@ -284,7 +284,7 @@ class MessageDataSource(
             limit,
             offset
         )
-            .map(messageMapper::fromAssetEntityToMessage)
+            .map(messageMapper::fromAssetEntityToAssetMessage)
     }
 
 

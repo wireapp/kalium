@@ -50,9 +50,7 @@ getAssetMessagesByConversationIdAndMimeTypes:
 SELECT * FROM MessageAssetView WHERE conversationId = :conversationId
 AND visibility IN :visibility
 AND contentType IN :contentTypes
-AND assetMimeType IN :mimeTypes
-AND assetWidth > 0
-AND assetHeight > 0
+AND assetMimeType NOT IN :mimeTypes
 AND assetId IS NOT NULL
 AND isEphemeral = FALSE
 ORDER BY date DESC

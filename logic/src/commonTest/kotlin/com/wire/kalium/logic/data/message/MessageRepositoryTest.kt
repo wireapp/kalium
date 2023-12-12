@@ -569,7 +569,7 @@ class MessageRepositoryTest {
 
         fun withMappedAssetMessageModel(message: AssetMessage): Arrangement {
             given(messageMapper)
-                .function(messageMapper::fromAssetEntityToMessage)
+                .function(messageMapper::fromAssetEntityToAssetMessage)
                 .whenInvokedWith(anything())
                 .then { message }
             return this
