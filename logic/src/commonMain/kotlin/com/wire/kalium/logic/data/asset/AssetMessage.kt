@@ -28,8 +28,8 @@ data class AssetMessage(
     val messageId: String,
     val conversationId: QualifiedID,
     val assetId: String,
-    val width: Int,
-    val height: Int,
+    val width: Int?,
+    val height: Int?,
     val downloadStatus: Message.DownloadStatus,
     val assetPath: Path?,
     val isSelfAsset: Boolean
