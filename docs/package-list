@@ -342,6 +342,8 @@ $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateVideoSt
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateVideoState/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.VideoState/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/update-video-state.html
 $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/index.html
 $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl/onLog/#kotlin.Int#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/on-log.html
+$dokka.location:com.wire.kalium.network//OkhttpClientFactory/#kotlin.Function1[[Error type: Unresolved type for OkHttpClient.Builder],kotlin.Unit]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-okhttp-client-factory.html
+$dokka.location:com.wire.kalium.network//supportedConnectionSpecs/#/PointingToDeclaration/network/com.wire.kalium.network/[jvm]supported-connection-specs.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener///PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/index.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/WrapperListener/#[Error type: Unresolved type for WebSocketListener]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/-wrapper-listener.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/onClosed/#[Error type: Unresolved type for WebSocket]#kotlin.Int#kotlin.String/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/on-closed.html
@@ -353,8 +355,6 @@ $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/o
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory///PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/index.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory/KaliumWebSocketFactory/#[Error type: Unresolved type for OkHttpClient]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-kalium-web-socket-factory.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory/newWebSocket/#[Error type: Unresolved type for Request]#[Error type: Unresolved type for WebSocketListener]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/new-web-socket.html
-$dokka.location:com.wire.kalium.network/OkHttpSingleton///PointingToDeclaration/network/com.wire.kalium.network/[jvm]-ok-http-singleton/index.html
-$dokka.location:com.wire.kalium.network/OkHttpSingleton/createNew/#kotlin.Function1[[Error type: Unresolved type for OkHttpClient.Builder],kotlin.Unit]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-ok-http-singleton/create-new.html
 module:calling
 com.wire.kalium.calling
 com.wire.kalium.calling.callbacks
