@@ -23,47 +23,63 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
+import com.wire.kalium.logic.feature.legalhold.LegalHoldState
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.flow.firstOrNull
 
 internal interface LegalHoldHandler {
-    suspend fun handleEnable(legalHoldEnable: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
-    suspend fun handleDisable(legalHoldEnable: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
+    suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
+    suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
 }
 
+@Suppress("LongParameterList")
 internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
     private val persistOtherUserClients: PersistOtherUserClientsUseCase,
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase,
+    private val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase,
     private val userConfigRepository: UserConfigRepository,
-    private val coroutineContext: CoroutineContext,
-    private val coroutineScope: CoroutineScope = CoroutineScope(coroutineContext)
+    private val legalHoldSystemMessagesHandler: LegalHoldSystemMessagesHandler,
 ) : LegalHoldHandler {
-    override suspend fun handleEnable(legalHoldEnable: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit> {
-        kaliumLogger.i("legal hold enabled for user ${legalHoldEnable.userId.toLogString()}")
-        processEvent(selfUserId, legalHoldEnable.userId)
+    override suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit> {
+        kaliumLogger.i("legal hold enabled for user ${legalHoldEnabled.userId.toLogString()}")
+        // check if the user has already been under legal hold prior to this event
+        val userHasBeenUnderLegalHold = isUserUnderLegalHold(legalHoldEnabled.userId)
+        // fetch and persist current clients for the given user
+        processEvent(selfUserId, legalHoldEnabled.userId)
+        // create system messages only if legal hold status has changed for the given user
+        if (!userHasBeenUnderLegalHold) {
+            legalHoldSystemMessagesHandler.handleEnable(legalHoldEnabled.userId)
+        }
+
         return Either.Right(Unit)
     }
 
-    override suspend fun handleDisable(legalHoldEnable: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit> {
-        kaliumLogger.i("legal hold disabled for user ${legalHoldEnable.userId.toLogString()}")
-        processEvent(selfUserId, legalHoldEnable.userId)
+    override suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit> {
+        kaliumLogger.i("legal hold disabled for user ${legalHoldDisabled.userId.toLogString()}")
+        // check if the user has already been under legal hold prior to this event
+        val userHasBeenUnderLegalHold = isUserUnderLegalHold(legalHoldDisabled.userId)
+        // fetch and persist current clients for the given user
+        processEvent(selfUserId, legalHoldDisabled.userId)
+        // create system messages only if legal hold status has changed for the given user
+        if (userHasBeenUnderLegalHold) {
+            legalHoldSystemMessagesHandler.handleDisable(legalHoldDisabled.userId)
+        }
+
         return Either.Right(Unit)
     }
 
     private suspend fun processEvent(selfUserId: UserId, userId: UserId) {
         if (selfUserId == userId) {
             userConfigRepository.deleteLegalHoldRequest()
-            coroutineScope.launch {
-                fetchSelfClientsFromRemote()
-            }
+            fetchSelfClientsFromRemote()
         } else {
-            coroutineScope.launch {
-                persistOtherUserClients(userId)
-            }
+            persistOtherUserClients(userId)
         }
     }
+
+    private suspend fun isUserUnderLegalHold(userId: UserId): Boolean =
+        observeLegalHoldStateForUser(userId).firstOrNull() == LegalHoldState.Enabled
 }

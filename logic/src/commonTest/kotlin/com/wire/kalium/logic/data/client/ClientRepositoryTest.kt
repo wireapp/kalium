@@ -24,8 +24,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
@@ -43,6 +45,7 @@ import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
@@ -66,6 +69,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
@@ -424,6 +428,39 @@ class ClientRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenConversationId_whenGettingClientsForConversation_thenDAOisCalled() = runTest {
+        // given
+        val userId1 = UserIDEntity("user-id1", "domain")
+        val userId2 = UserIDEntity("user-id2", "domain")
+        val user1ClientsList = listOf(
+            ClientEntity(
+                id = "client-id",
+                clientType = ClientTypeEntity.Permanent,
+                registrationDate = null,
+                lastActive = null,
+                deviceType = DeviceTypeEntity.Desktop,
+                label = null,
+                model = null,
+                isProteusVerified = false,
+                isValid = true,
+                userId = userId1,
+                mlsPublicKeys = null,
+                isMLSCapable = false
+            )
+        )
+        val (arrangement, clientRepository) = Arrangement()
+            .withGetClientsOfConversation(mapOf(userId1 to user1ClientsList, userId2 to emptyList()))
+            .arrange()
+        // when
+        val result = clientRepository.getClientsByConversationId(ConversationId("user-id", "domain"))
+        // then
+        result.shouldSucceed {
+            assertContentEquals(user1ClientsList.map { arrangement.clientMapper.fromClientEntity(it) }, it[userId1.toModel()])
+            assertContentEquals(emptyList(), it[userId2.toModel()])
+        }
+    }
+
     private companion object {
         val selfUserId = UserId("self-user-id", "domain")
         const val SECOND_FACTOR_CODE = "123456"
@@ -474,8 +511,11 @@ class ClientRepositoryTest {
         @Mock
         val newClientDAO = mock(classOf<NewClientDAO>())
 
-        var clientRepository: ClientRepository =
-            ClientDataSource(clientRemoteRepository, clientRegistrationStorage, clientDAO, newClientDAO, selfUserId, clientApi)
+        val clientMapper = MapperProvider.clientMapper()
+
+        var clientRepository: ClientRepository = ClientDataSource(
+            clientRemoteRepository, clientRegistrationStorage, clientDAO, newClientDAO, selfUserId, clientApi, clientMapper
+        )
 
         fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
             given(clientRegistrationStorage)
@@ -549,6 +589,12 @@ class ClientRepositoryTest {
                 .suspendFunction(clientDAO::deleteClient)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Unit)
+        }
+        fun withGetClientsOfConversation(result: Map<QualifiedIDEntity, List<ClientEntity>>) = apply {
+            given(clientDAO)
+                .suspendFunction(clientDAO::getClientsOfConversation)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
 
         fun arrange() = this to clientRepository
