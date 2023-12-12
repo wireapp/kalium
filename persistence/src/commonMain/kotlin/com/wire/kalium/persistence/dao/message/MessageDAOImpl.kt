@@ -258,7 +258,7 @@ internal class MessageDAOImpl internal constructor(
         mimeTypes: Set<String>,
         limit: Int,
         offset: Int
-    ): List<AssetMessageEntity> =
+    ): List<MessageEntity> =
         withContext(coroutineContext) {
             assetViewQueries.getAssetMessagesByConversationIdAndMimeTypes(
                 conversationId,
@@ -267,7 +267,7 @@ internal class MessageDAOImpl internal constructor(
                 mimeTypes,
                 limit.toLong(),
                 offset.toLong(),
-                mapper::toEntityAssetMessageFromView
+                mapper::toEntityMessageFromView
             ).executeAsList()
         }
 

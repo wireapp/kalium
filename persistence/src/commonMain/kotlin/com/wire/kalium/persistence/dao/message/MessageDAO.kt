@@ -155,5 +155,5 @@ interface MessageDAO {
         mimeTypes: Set<String>,
         limit: Int,
         offset: Int
-    ): List<AssetMessageEntity>
+    ): List<MessageEntity>
 }

@@ -47,12 +47,13 @@ LIMIT :limit
 OFFSET :offset;
 
 getAssetMessagesByConversationIdAndMimeTypes:
-SELECT * FROM MessageAssetView WHERE conversationId = :conversationId
+SELECT * FROM MessageDetailsView
+WHERE conversationId = :conversationId
 AND visibility IN :visibility
 AND contentType IN :contentTypes
 AND assetMimeType NOT IN :mimeTypes
 AND assetId IS NOT NULL
-AND isEphemeral = FALSE
+AND expireAfterMillis IS NULL
 ORDER BY date DESC
 LIMIT :limit
 OFFSET :offset;
