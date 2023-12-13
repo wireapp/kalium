@@ -20,15 +20,23 @@ package com.wire.kalium.logic.feature.client
 import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.e2ei.CertificateStatus
+import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
+import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
+import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
 import com.wire.kalium.logic.feature.user.E2EIRequiredResult
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.classOf
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.verify
@@ -41,6 +49,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -54,6 +63,8 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(MLS_E2EI_SETTING)
             .withE2EINotificationTime(null)
             .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure.NotActivated)
             .arrange()
 
         useCase().test {
@@ -71,6 +82,8 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure.NotActivated)
             .arrange()
 
         useCase().test {
@@ -88,10 +101,12 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure.NotActivated)
             .arrange()
 
         useCase().test {
-            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod.Create }
+            assertEquals(E2EIRequiredResult.NoGracePeriod.Create, awaitItem())
             awaitComplete()
         }
     }
@@ -106,6 +121,8 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant().plus(delayDuration))
             .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure.NotActivated)
             .arrange()
 
         useCase().test {
@@ -113,7 +130,7 @@ class ObserveE2EIRequiredUseCaseTest {
             expectNoEvents()
 
             advanceTimeBy(delayDuration.inWholeMilliseconds)
-            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod.Create }
+            assertEquals(E2EIRequiredResult.NoGracePeriod.Create, awaitItem())
             awaitComplete()
         }
     }
@@ -127,11 +144,13 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure.NotActivated)
             .arrange()
 
         useCase().test {
             advanceTimeBy(1000L)
-            assertTrue { awaitItem() == E2EIRequiredResult.NoGracePeriod.Create }
+            assertEquals(E2EIRequiredResult.NoGracePeriod.Create, awaitItem())
             awaitComplete()
         }
     }
@@ -142,6 +161,8 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(MLS_E2EI_SETTING)
             .withE2EINotificationTime(null)
             .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure.NotActivated)
             .arrange()
 
         useCase().test {
@@ -156,6 +177,8 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant())
             .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Failure.NotActivated)
             .arrange()
 
         useCase().test {
@@ -174,6 +197,7 @@ class ObserveE2EIRequiredUseCaseTest {
             .withMLSE2EISetting(setting)
             .withE2EINotificationTime(DateTimeUtil.currentInstant().plus(delayDuration))
             .withIsMLSSupported(false)
+            .withCurrentClientProviderSuccess()
             .arrange()
 
         useCase().test {
@@ -187,6 +211,48 @@ class ObserveE2EIRequiredUseCaseTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenSettingWithNotifyDateInPastAndUserHasCertificate_thenEmitNotRequiredResult() = runTest(TestKaliumDispatcher.io) {
+        val setting = MLS_E2EI_SETTING.copy(
+            gracePeriodEnd = DateTimeUtil.currentInstant()
+        )
+        val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
+            .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(GetE2EICertificateUseCaseResult.Success(VALID_CERTIFICATE))
+            .arrange()
+
+        useCase().test {
+            advanceTimeBy(1000L)
+            assertEquals(E2EIRequiredResult.NotRequired, awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenSettingWithNotifyDateInPastAndUserHasExpiredCertificate_thenEmitRequiredResult() = runTest(TestKaliumDispatcher.io) {
+        val setting = MLS_E2EI_SETTING.copy(
+            gracePeriodEnd = DateTimeUtil.currentInstant()
+        )
+        val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
+            .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(
+                GetE2EICertificateUseCaseResult.Success(VALID_CERTIFICATE.copy(status = CertificateStatus.EXPIRED))
+            )
+            .arrange()
+
+        useCase().test {
+            advanceTimeBy(1000L)
+            assertEquals(E2EIRequiredResult.NoGracePeriod.Renew, awaitItem())
+            awaitComplete()
+        }
+    }
+
     private class Arrangement(testDispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()) {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
@@ -194,8 +260,14 @@ class ObserveE2EIRequiredUseCaseTest {
         @Mock
         val featureSupport = mock(FeatureSupport::class)
 
+        @Mock
+        val e2eiCertificate = mock(GetE2eiCertificateUseCase::class)
+
+        @Mock
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+
         private var observeMLSEnabledUseCase: ObserveE2EIRequiredUseCase =
-            ObserveE2EIRequiredUseCaseImpl(userConfigRepository, featureSupport, testDispatcher)
+            ObserveE2EIRequiredUseCaseImpl(userConfigRepository, featureSupport, e2eiCertificate, currentClientIdProvider, testDispatcher)
 
         fun withMLSE2EISetting(setting: E2EISettings) = apply {
             given(userConfigRepository)
@@ -217,10 +289,25 @@ class ObserveE2EIRequiredUseCaseTest {
                 .thenReturn(supported)
         }
 
+        fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(clientId))
+        }
+
+        fun withGetE2EICertificateUseCaseResult(result: GetE2EICertificateUseCaseResult) = apply {
+            given(e2eiCertificate)
+                .suspendFunction(e2eiCertificate::invoke)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
         fun arrange() = this to observeMLSEnabledUseCase
     }
 
     companion object {
         private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null)
+        private val VALID_CERTIFICATE = E2eiCertificate(status = CertificateStatus.VALID)
     }
 }
