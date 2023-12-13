@@ -207,6 +207,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -481,7 +482,9 @@ object MessageMapper {
         latitude: Float?,
         longitude: Float?,
         locationName: String?,
-        locationZoom: Int?
+        locationZoom: Int?,
+        legalHoldMemberList: List<QualifiedIDEntity>?,
+        legalHoldType: MessageEntity.LegalHoldType?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -621,6 +624,10 @@ object MessageMapper {
                 longitude = longitude.requireField("longitude"),
                 locationName,
                 locationZoom
+            )
+            MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
+                memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
+                type = legalHoldType.requireField("legalHoldType")
             )
         }
 

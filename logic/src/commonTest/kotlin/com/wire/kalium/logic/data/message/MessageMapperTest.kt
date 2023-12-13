@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
@@ -30,6 +31,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -148,9 +150,96 @@ class MessageMapperTest {
         )
     }
 
+    @Test
+    fun givenLegalHoldForMembersEnabled_whenMappingToMessageEntityContent_thenResultShouldHaveExpectedData() {
+        // given
+        val memberUserIdList = listOf(UserId("value1", "domain1"), UserId("value2", "domain2"))
+        val messageContent = MessageContent.LegalHold.ForMembers.Enabled(memberUserIdList)
+        // when
+        val messageEntityContent = messageContent.toMessageEntityContent()
+        // then
+        assertIs<MessageEntityContent.LegalHold>(messageEntityContent)
+        assertEquals(MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS, messageEntityContent.type)
+        assertContentEquals(memberUserIdList.map { it.toDao() }, messageEntityContent.memberUserIdList)
+    }
+    @Test
+    fun givenLegalHoldForMembersDisabled_whenMappingToMessageEntityContent_thenResultShouldHaveExpectedData() {
+        // given
+        val memberUserIdList = listOf(UserId("value1", "domain1"), UserId("value2", "domain2"))
+        val messageContent = MessageContent.LegalHold.ForMembers.Disabled(memberUserIdList)
+        // when
+        val messageEntityContent = messageContent.toMessageEntityContent()
+        // then
+        assertIs<MessageEntityContent.LegalHold>(messageEntityContent)
+        assertEquals(MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS, messageEntityContent.type)
+        assertContentEquals(memberUserIdList.map { it.toDao() }, messageEntityContent.memberUserIdList)
+    }
+    @Test
+    fun givenLegalHoldForConversationDisabled_whenMappingToMessageEntityContent_thenResultShouldHaveExpectedData() {
+        // given
+        val messageContent = MessageContent.LegalHold.ForConversation.Disabled
+        // when
+        val messageEntityContent = messageContent.toMessageEntityContent()
+        // then
+        assertIs<MessageEntityContent.LegalHold>(messageEntityContent)
+        assertEquals(MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION, messageEntityContent.type)
+        assertContentEquals(emptyList(), messageEntityContent.memberUserIdList)
+    }
+    @Test
+    fun givenLegalHoldForConversationEnabled_whenMappingToMessageEntityContent_thenResultShouldHaveExpectedData() {
+        // given
+        val messageContent = MessageContent.LegalHold.ForConversation.Enabled
+        // when
+        val messageEntityContent = messageContent.toMessageEntityContent()
+        // then
+        assertIs<MessageEntityContent.LegalHold>(messageEntityContent)
+        assertEquals(MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION, messageEntityContent.type)
+        assertContentEquals(emptyList(), messageEntityContent.memberUserIdList)
+    }
+    @Test
+    fun givenLegalHoldContentWithTypeEnabledForMembers_whenMappingToMessageContent_thenResultShouldHaveExpectedData() {
+        // given
+        val memberUserIdList = listOf(QualifiedIDEntity("value1", "domain1"), QualifiedIDEntity("value2", "domain2"))
+        val messageEntityContent = MessageEntityContent.LegalHold(memberUserIdList, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
+        // when
+        val messageContent = messageEntityContent.toMessageContent()
+        // then
+        assertIs<MessageContent.LegalHold.ForMembers.Enabled>(messageContent)
+        assertContentEquals(memberUserIdList.map { it.toModel() }, messageContent.members)
+    }
+    @Test
+    fun givenLegalHoldContentWithTypeDisabledForMembers_whenMappingToMessageContent_thenResultShouldHaveExpectedData() {
+        // given
+        val memberUserIdList = listOf(QualifiedIDEntity("value1", "domain1"), QualifiedIDEntity("value2", "domain2"))
+        val messageEntityContent = MessageEntityContent.LegalHold(memberUserIdList, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
+        // when
+        val messageContent = messageEntityContent.toMessageContent()
+        // then
+        assertIs<MessageContent.LegalHold.ForMembers.Disabled>(messageContent)
+        assertContentEquals(memberUserIdList.map { it.toModel() }, messageContent.members)
+    }
+    @Test
+    fun givenLegalHoldContentWithTypeDisabledForConversation_whenMappingToMessageContent_thenResultShouldHaveExpectedData() {
+        // given
+        val messageEntityContent = MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
+        // when
+        val messageContent = messageEntityContent.toMessageContent()
+        // then
+        assertIs<MessageContent.LegalHold.ForConversation.Disabled>(messageContent)
+    }
+    @Test
+    fun givenLegalHoldContentWithTypeEnabledForConversation_whenMappingToMessageContent_thenResultShouldHaveExpectedData() {
+        // given
+        val messageEntityContent = MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION)
+        // when
+        val messageContent = messageEntityContent.toMessageContent()
+        // then
+        assertIs<MessageContent.LegalHold.ForConversation.Enabled>(messageContent)
+    }
+
     class Arrangement {
 
-        private val messageMapper = MessageMapperImpl(UserId(value = "someValue", "someDomain"))
+        val messageMapper = MessageMapperImpl(UserId(value = "someValue", "someDomain"))
 
         @Suppress("LongParameterList")
         fun withRegularMessageEntity(

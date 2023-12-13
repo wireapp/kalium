@@ -1,0 +1,20 @@
+import com.wire.kalium.monkeys.model.EventType;
+
+CREATE TABLE IF NOT EXISTS Event (
+    id SERIAL NOT NULL,
+    execution_id INTEGER NOT NULL,
+    event_time TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    monkey_index INTEGER NOT NULL,
+    team VARCHAR(100) NOT NULL,
+    event_data JSONB AS EventType NOT NULL,
+    PRIMARY KEY(id),
+    CONSTRAINT fk_execution FOREIGN KEY(execution_id) REFERENCES Execution(id)
+);
+
+selectByExecutionId:
+SELECT id, execution_id, event_time, monkey_index, team, CAST(event_data AS TEXT) event_data
+FROM Event WHERE execution_id = ?;
+
+insertEvent:
+INSERT INTO Event(execution_id, monkey_index, team, event_data)
+VALUES (?, ?, ?, CAST(? AS JSONB));

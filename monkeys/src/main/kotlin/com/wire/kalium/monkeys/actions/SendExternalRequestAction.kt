@@ -18,10 +18,10 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.model.ActionType
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class SendExternalRequestAction(val config: ActionType.SendExternalRequest) : Action() {
+class SendExternalRequestAction(val config: ActionType.SendExternalRequest) : Action({}) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         val monkeys = monkeyPool.randomLoggedInMonkeysFromTeam(config.originTeam, config.userCount)
         val usersFromTeam = monkeyPool.externalUsersFromTeam(config.targetTeam)

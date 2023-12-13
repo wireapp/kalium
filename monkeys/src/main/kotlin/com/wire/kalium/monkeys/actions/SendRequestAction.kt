@@ -18,21 +18,32 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.delay
 
-class SendRequestAction(val config: ActionType.SendRequest) : Action() {
+open class SendRequestAction(val config: ActionType.SendRequest, sender: suspend (Event) -> Unit) : Action(sender) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         val monkeys = monkeyPool.randomLoggedInMonkeysFromTeam(this.config.originTeam, this.config.userCount)
         monkeys.forEach { origin ->
             val targets = monkeyPool.randomLoggedInMonkeysFromTeam(this.config.targetTeam, this.config.targetUserCount)
-            targets.forEach { origin.sendRequest(it) }
+            targets.forEach {
+                origin.sendRequest(it)
+                this.sender(Event(origin.internalId, EventType.SendRequest(it.internalId)))
+            }
             delay(this.config.delayResponse.toLong())
             if (this.config.shouldAccept) {
-                targets.forEach { it.acceptRequest(origin) }
+                targets.forEach {
+                    it.acceptRequest(origin)
+                    this.sender(Event(it.internalId, EventType.RequestResponse(origin.internalId, this.config.shouldAccept)))
+                }
             } else {
-                targets.forEach { it.rejectRequest(origin) }
+                targets.forEach {
+                    it.rejectRequest(origin)
+                    this.sender(Event(it.internalId, EventType.RequestResponse(origin.internalId, this.config.shouldAccept)))
+                }
             }
         }
     }
