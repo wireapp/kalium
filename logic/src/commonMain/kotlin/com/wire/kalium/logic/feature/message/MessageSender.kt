@@ -352,7 +352,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
-                handleProteusError(it, "Send", message.toLogString()) {
+                handleProteusError(it, "Send", message.toLogString(), message.conversationId) {
                     attemptToSendWithProteus(message, messageTarget)
                 }
             }, { messageSent ->
@@ -375,7 +375,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .broadcastEnvelope(envelope, option)
             .fold({
-                handleProteusError(it, "Broadcast", message.toLogString()) {
+                handleProteusError(it, "Broadcast", message.toLogString(), null) {
                     attemptToBroadcastWithProteus(
                         message,
                         target
@@ -390,6 +390,7 @@ internal class MessageSenderImpl internal constructor(
         failure: CoreFailure,
         action: String, // Send or Broadcast
         messageLogString: String,
+        conversationId: ConversationId?,
         retry: suspend () -> Either<CoreFailure, String>
     ) =
         when (failure) {
@@ -398,7 +399,7 @@ internal class MessageSenderImpl internal constructor(
                     "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                 )
                 messageSendFailureHandler
-                    .handleClientsHaveChangedFailure(failure)
+                    .handleClientsHaveChangedFailure(failure, conversationId = conversationId)
                     .flatMap {
                         logger.w("Retrying After Proteus $action Failure: { \"message\" : \"${messageLogString}\"}")
                         retry()
