@@ -112,6 +112,8 @@ interface UserRepository {
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
     suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit>
 
+    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: List<UserId>): Either<CoreFailure, Unit>
+
     /**
      * Marks federated user as defederated in order to hold conversation history
      * when backends stops federating.
@@ -316,8 +318,8 @@ internal class UserDataSource internal constructor(
                     userProfile = userProfileDTO,
                     connectionState = ConnectionEntity.State.ACCEPTED,
                     userTypeEntity =
-                        if (userProfileDTO.service != null) UserTypeEntity.SERVICE
-                        else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
+                    if (userProfileDTO.service != null) UserTypeEntity.SERVICE
+                    else userTypeEntityMapper.teamRoleCodeToUserType(mapTeamMemberDTO[userProfileDTO.id.value]?.permissions?.own)
                 )
             }
         val otherUsers = listUserProfileDTO
@@ -502,11 +504,14 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
-        }
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
     }
+
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: List<UserId>): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.map { it.toDao() })
+        }
 
     override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

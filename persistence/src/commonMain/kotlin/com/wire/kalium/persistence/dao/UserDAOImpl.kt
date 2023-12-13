@@ -304,6 +304,14 @@ class UserDAOImpl internal constructor(
         userQueries.deleteUser(qualifiedID)
     }
 
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: List<QualifiedIDEntity>) = withContext(queriesContext) {
+        userQueries.transaction {
+            qualifiedID.forEach {
+                safeMarkAsDeleted(it)
+            }
+        }
+    }
+
     override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
         userQueries.transaction {
             safeMarkAsDeleted(qualifiedID)

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -67,19 +68,23 @@ class MemberLeaveEventHandlerTest {
 
     @Test
     fun givenDaoReturnsSuccess_whenDeletingMember_thenPersistSystemMessage() = runTest {
+
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Left)
+        val message = message(event)
+
         given(memberDao).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.then { Either.Right(Unit) }
 
         given(userRepository).coroutine {
-            fetchUsersIfUnknownByIds(memberLeaveEvent.removedList.toSet())
+            fetchUsersIfUnknownByIds(event.removedList.toSet())
         }.then { Either.Right(Unit) }
 
         given(persistMessage).coroutine {
             persistMessage(message)
         }.then { Either.Right(Unit) }
 
-        memberLeaveEventHandler.handle(memberLeaveEvent)
+        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
 
         verify(memberDao).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
@@ -97,23 +102,60 @@ class MemberLeaveEventHandlerTest {
 
     @Test
     fun givenDaoReturnsFailure_whenDeletingMember_thenNothingToDo() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Left)
         given(memberDao).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.then { Either.Left(failure) }
 
         given(userRepository).coroutine {
-            fetchUsersIfUnknownByIds(memberLeaveEvent.removedList.toSet())
+            fetchUsersIfUnknownByIds(event.removedList.toSet())
         }.then { Either.Left(failure) }
 
-        memberLeaveEventHandler.handle(memberLeaveEvent)
+        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
 
         verify(memberDao).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
         verify(persistMessage).coroutine {
-            persistMessage.invoke(message)
+            persistMessage.invoke(message(event))
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenDaoReturnsSuccess_whenDeletingMember_thenPersistSystemMessageAndFetchUsers() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.UserDeleted)
+        val message = message(event)
+
+        given(userRepository).coroutine {
+            markUserAsDeletedAndRemoveFromGroupConversations(event.removedList)
+        }.then { Either.Right(Unit) }
+
+        given(userRepository).coroutine {
+            fetchUsersIfUnknownByIds(event.removedList.toSet())
+        }.then { Either.Right(Unit) }
+
+        given(persistMessage).coroutine {
+            persistMessage(message)
+        }.then { Either.Right(Unit) }
+
+        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
+
+        verify(userRepository).coroutine {
+            markUserAsDeletedAndRemoveFromGroupConversations(event.removedList)
+        }.wasInvoked(once)
+
+        verify(userRepository).coroutine {
+            fetchUsersIfUnknownByIds(event.removedList.toSet())
+        }.wasInvoked(once)
+
+        verify(updateConversationClientsForCurrentCall).coroutine {
+            updateConversationClientsForCurrentCall.invoke(message.conversationId)
+        }.wasInvoked(once)
+
+        verify(persistMessage).coroutine {
+            persistMessage.invoke(message)
+        }.wasInvoked(once)
     }
 
     companion object {
@@ -125,21 +167,22 @@ class MemberLeaveEventHandlerTest {
         val conversationId = ConversationId("conversationId", "domain")
         val list = listOf(qualifiedUserIdEntity)
 
-        val memberLeaveEvent = Event.Conversation.MemberLeave(
+        fun memberLeaveEvent(reason: MemberLeaveReason) = Event.Conversation.MemberLeave(
             id = "id",
             conversationId = conversationId,
             transient = false,
             live = false,
             removedBy = userId,
             removedList = listOf(userId),
-            timestampIso = "timestampIso"
+            timestampIso = "timestampIso",
+            reason = reason
         )
-        val message = Message.System(
-            id = memberLeaveEvent.id,
-            content = MessageContent.MemberChange.Removed(members = memberLeaveEvent.removedList),
-            conversationId = memberLeaveEvent.conversationId,
-            date = memberLeaveEvent.timestampIso,
-            senderUserId = memberLeaveEvent.removedBy,
+        fun message(event: Event.Conversation.MemberLeave) = Message.System(
+            id = event.id,
+            content = MessageContent.MemberChange.Removed(members = event.removedList),
+            conversationId = event.conversationId,
+            date = event.timestampIso,
+            senderUserId = event.removedBy,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
             expirationData = null
