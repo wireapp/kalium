@@ -69,6 +69,7 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
+                implementation(libs.sqldelight.androidxPaging)
 
                 implementation(project(":util"))
                 api(project(":logger"))
@@ -102,8 +103,6 @@ kotlin {
             dependencies {
                 implementation(libs.androidCrypto)
                 implementation(libs.sqldelight.androidDriver)
-                implementation(libs.sqldelight.androidxPaging)
-                implementation(libs.paging3)
                 implementation(libs.sqlite.androidx)
                 implementation(libs.sql.android.cipher)
             }

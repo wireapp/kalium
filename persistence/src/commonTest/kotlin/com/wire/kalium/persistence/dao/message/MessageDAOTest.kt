@@ -64,6 +64,7 @@ class MessageDAOTest : BaseDatabaseTest() {
 
     private val conversationEntity1 = newConversationEntity("Test1")
     private val conversationEntity2 = newConversationEntity("Test2")
+    private val conversationEntity3 = newConversationEntity("Test3")
     private val userEntity1 = newUserEntity("userEntity1")
     private val userEntity2 = newUserEntity("userEntity2")
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
@@ -1945,6 +1946,34 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(expectedPosition, result)
     }
 
+    @Test
+    fun givenMessagesAreInserted_whenGettingLastMessagesByConversations_thenOnlyLastMessagesForEachConversationAreReturned() = runTest {
+        // given
+        insertInitialData()
+        fun createMessage(id: String, conversationId: QualifiedIDEntity, date: Instant) = newRegularMessageEntity(
+            id = id,
+            conversationId = conversationId,
+            date = date,
+            senderUserId = userEntity1.id,
+            senderName = userEntity1.name!!
+        )
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val messages = listOf(
+            createMessage(id = "1A", conversationId = conversationEntity1.id, date = baseInstant),
+            createMessage(id = "2A", conversationId = conversationEntity2.id, date = baseInstant + 5.seconds),
+            createMessage(id = "1B", conversationId = conversationEntity1.id, date = baseInstant + 1.seconds),
+        )
+        messageDAO.insertOrIgnoreMessages(messages)
+        // when
+        val result = messageDAO.getLastMessagesByConversations(
+            listOf(conversationEntity1.id, conversationEntity2.id, conversationEntity3.id)
+        )
+        // then
+        assertEquals(messages[2], result[conversationEntity1.id])
+        assertEquals(messages[1], result[conversationEntity2.id])
+        assertEquals(null, result[conversationEntity3.id])
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(
@@ -1953,5 +1982,6 @@ class MessageDAOTest : BaseDatabaseTest() {
             )
         )
         conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.insertConversation(conversationEntity3)
     }
 }
