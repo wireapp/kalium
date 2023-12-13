@@ -42,8 +42,11 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
+<<<<<<< HEAD
 import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCaseImpl
+=======
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
@@ -102,9 +105,15 @@ class MessageScope internal constructor(
         get() = MessageSendFailureHandlerImpl(
             userRepository,
             clientRepository,
+<<<<<<< HEAD
             messageRepository,
             messageSendingScheduler,
             conversationRepository
+=======
+            conversationRepository,
+            messageRepository,
+            messageSendingScheduler
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
         )
 
     private val sessionEstablisher: SessionEstablisher

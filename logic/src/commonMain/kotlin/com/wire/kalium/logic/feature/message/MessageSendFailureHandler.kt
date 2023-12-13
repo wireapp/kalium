@@ -23,7 +23,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.conversation.ClientId
+=======
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -69,6 +72,7 @@ interface MessageSendFailureHandler {
 class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val conversationRepository: ConversationRepository,
@@ -78,6 +82,7 @@ class MessageSendFailureHandlerImpl internal constructor(
         sendFailure: ProteusSendMessageFailure,
         conversationId: ConversationId?
     ): Either<CoreFailure, Unit> =
+<<<<<<< HEAD
         handleDeletedClients(sendFailure.deletedClientsOfUsers)
             .map { usersWithNoClientsRemaining ->
                 sendFailure.missingClientsOfUsers.keys + usersWithNoClientsRemaining
@@ -87,6 +92,24 @@ class MessageSendFailureHandlerImpl internal constructor(
                 updateConversationInfo(sendFailure, conversationId)
             }.flatMap {
                 addMissingClients(sendFailure.missingClientsOfUsers)
+=======
+    // TODO(optimization): add/remove members to/from conversation
+        // TODO(optimization): remove clients from conversation
+        userRepository
+            .fetchUsersByIds(sendFailure.missingClientsOfUsers.keys)
+            .flatMap {
+                conversationId?.let {
+                    conversationRepository.fetchConversation(conversationId)
+                } ?: Either.Right(Unit)
+            }
+            .flatMap {
+                sendFailure
+                    .missingClientsOfUsers
+                    .entries
+                    .foldToEitherWhileRight(Unit) { entry, _ ->
+                        clientRepository.storeUserClientIdList(entry.key, entry.value)
+                    }
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
             }
 
     private suspend fun updateConversationInfo(

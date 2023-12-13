@@ -23,6 +23,10 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+<<<<<<< HEAD
+=======
+import com.wire.kalium.logic.data.id.ConversationId
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -64,6 +68,14 @@ class MessageSendFailureHandlerTest {
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+<<<<<<< HEAD
+=======
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
     }
 
     @Test
@@ -94,9 +106,13 @@ class MessageSendFailureHandlerTest {
             .arrange()
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
+<<<<<<< HEAD
         val result = messageSendFailureHandler.handleClientsHaveChangedFailure(
             failureData, null
         )
+=======
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
@@ -174,6 +190,7 @@ class MessageSendFailureHandlerTest {
     }
 
     @Test
+<<<<<<< HEAD
     fun givenDeletedClientsError_whenAllUserClientsAreDeleted_thenClientsShouldBeRemovedAndUserIndoShouldBeFetched() = runTest {
         // 1. remove clients
         // 2. return the list of users that have no clients left
@@ -334,6 +351,55 @@ class MessageSendFailureHandlerTest {
     }
 
     class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
+=======
+    fun givenMissingClientsError_whenAConversationIdIsProvided_thenUpdateConversationInfo() =  runTest {
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .withFetchUsersByIdSuccess()
+            .withStoreUserClientIdListSuccess()
+            .withFetchConversation(Either.Right(Unit))
+            .arrange()
+        val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
+
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, arrangement.conversationId)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMissingClientsError_whenNoConversationIdIsProvided_thenUpdateConversationInfo() =  runTest {
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .withFetchUsersByIdSuccess()
+            .withStoreUserClientIdListSuccess()
+            .arrange()
+        val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
+
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    class Arrangement {
+
+        @Mock
+        internal val clientRepository = mock(classOf<ClientRepository>())
+
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
         @Mock
         internal val userRepository = mock(classOf<UserRepository>())
 
@@ -344,15 +410,25 @@ class MessageSendFailureHandlerTest {
         val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
 
         @Mock
+<<<<<<< HEAD
         val conversationRepository = mock(classOf<ConversationRepository>())
+=======
+        val conversationRepository = configure(mock(ConversationRepository::class)) { stubsUnitByDefault = true }
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
 
         private val messageSendFailureHandler: MessageSendFailureHandler =
             MessageSendFailureHandlerImpl(
                 userRepository,
                 clientRepository,
+<<<<<<< HEAD
                 messageRepository,
                 messageSendingScheduler,
                 conversationRepository
+=======
+                conversationRepository,
+                messageRepository,
+                messageSendingScheduler
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
             )
         val userOne: Pair<UserId, List<ClientId>> =
             UserId("userId1", "anta.wire") to listOf(ClientId("clientId"), ClientId("secondClientId"))
@@ -377,6 +453,23 @@ class MessageSendFailureHandlerTest {
                 .thenReturn(Either.Left(failure))
         }
 
+<<<<<<< HEAD
+=======
+        fun withStoreUserClientIdListSuccess() = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::storeUserClientIdList)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withStoreUserClientIdListFailure(failure: StorageFailure) = apply {
+            given(clientRepository)
+                .suspendFunction(clientRepository::storeUserClientIdList)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(failure))
+        }
+
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
         fun withUpdateMessageStatusSuccess() = apply {
             given(messageRepository)
                 .suspendFunction(messageRepository::updateMessageStatus)

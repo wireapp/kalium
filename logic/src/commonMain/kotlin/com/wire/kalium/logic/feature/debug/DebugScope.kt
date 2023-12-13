@@ -112,9 +112,15 @@ class DebugScope internal constructor(
         get() = MessageSendFailureHandlerImpl(
             userRepository,
             clientRepository,
+<<<<<<< HEAD
             messageRepository,
             messageSendingScheduler,
             conversationRepository
+=======
+            conversationRepository,
+            messageRepository,
+            messageSendingScheduler
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
         )
 
     private val sessionEstablisher: SessionEstablisher

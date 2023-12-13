@@ -399,7 +399,11 @@ internal class MessageSenderImpl internal constructor(
                     "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                 )
                 messageSendFailureHandler
+<<<<<<< HEAD
                     .handleClientsHaveChangedFailure(failure, conversationId)
+=======
+                    .handleClientsHaveChangedFailure(failure, conversationId = conversationId)
+>>>>>>> 3a80367c0d (feat: update conversation info when out of sync (#2287))
                     .flatMap {
                         logger.w("Retrying After Proteus $action Failure: { \"message\" : \"${messageLogString}\"}")
                         retry()
