@@ -110,7 +110,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             logger.e("Error running Infinite Monkeys", e)
         } finally {
             eventProcessor.releaseResources()
-            kaliumCacheFolders.forEach{ File(it).deleteRecursively() }
+            kaliumCacheFolders.forEach { File(it).deleteRecursively() }
             exitProcess(0)
         }
     }
@@ -128,12 +128,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->
                     ConversationPool.createPrefixedConversations(
-                        coreLogic,
-                        prefix,
-                        config.groupCount,
-                        config.userCount,
-                        config.protocol,
-                        monkeyPool
+                        coreLogic, prefix, config.groupCount, config.userCount, config.protocol, monkeyPool
                     ).forEach {
                         eventChannel.send(Event(it.owner, EventType.CreateConversation(it)))
                     }
