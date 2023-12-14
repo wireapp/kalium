@@ -152,11 +152,4 @@ interface MessageDAO {
         limit: Int,
         offset: Int
     ): List<AssetMessageEntity>
-
-    suspend fun getMessageAssetsWithoutImage(
-        conversationId: QualifiedIDEntity,
-        mimeTypes: Set<String>,
-        limit: Int,
-        offset: Int
-    ): List<MessageEntity>
 }

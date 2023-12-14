@@ -241,12 +241,6 @@ internal interface MessageRepository {
         limit: Int,
         offset: Int
     ): List<AssetMessage>
-
-    suspend fun getAssetMessagesByConversationId(
-        conversationId: ConversationId,
-        limit: Int,
-        offset: Int
-    ): List<Message.Standalone>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -256,7 +250,6 @@ internal class MessageDataSource internal constructor (
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
@@ -296,19 +289,6 @@ internal class MessageDataSource internal constructor (
         offset
     )
         .map(messageMapper::fromAssetEntityToAssetMessage)
-
-    override suspend fun getAssetMessagesByConversationId(
-        conversationId: ConversationId,
-        limit: Int,
-        offset: Int
-    ): List<Message.Standalone> = messageDAO.getMessageAssetsWithoutImage(
-        conversationId.toDao(),
-        mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
-        limit,
-        offset
-    )
-        .map(messageMapper::fromEntityToMessage)
-
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
