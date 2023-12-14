@@ -71,7 +71,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(libs.kotlin.test)
+                implementation(kotlin("test"))
                 implementation(libs.coroutines.test)
                 implementation(libs.okio.test)
             }
@@ -101,6 +101,16 @@ kotlin {
             dependencies {
                 implementation(libs.cryptoboxAndroid)
                 implementation(libs.androidCrypto)
+                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
+                    exclude("androidx.core")
+                    exclude("androidx.appcompat")
+                }
+            }
+        }
+
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
                 implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
                     exclude("androidx.core")
                     exclude("androidx.appcompat")
