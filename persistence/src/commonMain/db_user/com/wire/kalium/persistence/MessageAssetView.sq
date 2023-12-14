@@ -57,3 +57,13 @@ AND expireAfterMillis IS NULL
 ORDER BY date DESC
 LIMIT :limit
 OFFSET :offset;
+
+countAssetMessagesByConversationIdAndMimeTypes:
+SELECT COUNT(*) FROM MessageDetailsView
+WHERE conversationId = :conversationId
+AND visibility IN :visibility
+AND contentType IN :contentTypes
+AND assetMimeType NOT IN :mimeTypes
+AND assetId IS NOT NULL
+AND expireAfterMillis IS NULL
+ORDER BY date DESC;
