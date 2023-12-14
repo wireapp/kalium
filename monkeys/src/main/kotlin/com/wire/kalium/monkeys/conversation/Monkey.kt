@@ -37,6 +37,7 @@ import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.conversation.CreateConversationResult
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.Backend
 import com.wire.kalium.monkeys.model.MonkeyId
@@ -76,7 +77,7 @@ class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
         // this means there are users within the team not managed by IM
         // We can still send messages and add them to groups but not act on their behalf
         // MonkeyId is irrelevant for external users as we will never be able to act on their behalf
-        fun external(userId: UserId) = Monkey(MonkeyType.External(userId), MonkeyId(-1, ""))
+        fun external(userId: UserId) = Monkey(MonkeyType.External(userId), MonkeyId(-1, "", -1))
         fun internal(user: UserData, monkeyId: MonkeyId) = Monkey(MonkeyType.Internal(user), monkeyId)
     }
 
@@ -279,7 +280,10 @@ class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
 
     suspend fun sendMessageTo(conversationId: ConversationId, message: String) {
         this.monkeyState.readyThen {
-            messages.sendTextMessage(conversationId, message)
+            val result = messages.sendTextMessage(conversationId, message)
+            if (result is Either.Left) {
+               error("Error sending message: ${result.value}")
+            }
         }
     }
 }

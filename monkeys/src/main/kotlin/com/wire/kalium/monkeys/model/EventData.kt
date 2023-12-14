@@ -27,7 +27,9 @@ data class MonkeyId(
     @SerialName("index")
     val index: Int,
     @SerialName("team")
-    val team: String
+    val team: String,
+    @SerialName("client")
+    val clientId: Int
 )
 
 @Serializable
