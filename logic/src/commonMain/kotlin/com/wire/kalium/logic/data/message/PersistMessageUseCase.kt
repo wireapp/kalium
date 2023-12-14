@@ -110,5 +110,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.FederationStopped.Removed -> false
             is MessageContent.ConversationProtocolChanged -> false
             is MessageContent.ConversationStartedUnverifiedWarning -> false
+            is MessageContent.Location -> true
+            is MessageContent.LegalHold -> false
         }
 }

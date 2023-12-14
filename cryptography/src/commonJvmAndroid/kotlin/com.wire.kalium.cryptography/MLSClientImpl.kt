@@ -24,7 +24,6 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CustomConfiguration
 import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.E2eiConversationState
-import com.wire.crypto.Invitee
 import com.wire.crypto.MlsCredentialType
 import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
@@ -48,7 +47,6 @@ class MLSClientImpl(
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
     private val defaultE2EIExpiry: UInt = 90U
-    private val defaultMLSCredentialType: MlsCredentialType = MlsCredentialType.BASIC
     override suspend fun close() {
         coreCrypto.close()
     }
@@ -58,11 +56,11 @@ class MLSClientImpl(
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(defaultCiphersuite, defaultMLSCredentialType, amount.toUInt())
+        return coreCrypto.clientKeypackages(defaultCiphersuite, toCredentialType(getMLSCredentials()), amount.toUInt())
     }
 
     override suspend fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, defaultMLSCredentialType)
+        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, toCredentialType(getMLSCredentials()))
     }
 
     override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -82,7 +80,7 @@ class MLSClientImpl(
             conversationId = groupId.decodeBase64Bytes(),
             epoch = epoch,
             ciphersuite = defaultCiphersuite,
-            credentialType = MlsCredentialType.BASIC
+            credentialType = toCredentialType(getMLSCredentials())
         )
     }
 
@@ -91,7 +89,7 @@ class MLSClientImpl(
             coreCrypto.joinByExternalCommit(
                 publicGroupState,
                 defaultGroupConfiguration,
-                MlsCredentialType.BASIC
+                toCredentialType(getMLSCredentials())
             )
         )
     }
@@ -115,7 +113,7 @@ class MLSClientImpl(
             emptyList()
         )
 
-        coreCrypto.createConversation(groupId.decodeBase64Bytes(), MlsCredentialType.BASIC, conf)
+        coreCrypto.createConversation(groupId.decodeBase64Bytes(), toCredentialType(getMLSCredentials()), conf)
     }
 
     override suspend fun wipeConversation(groupId: MLSGroupId) {
@@ -171,17 +169,13 @@ class MLSClientImpl(
 
     override suspend fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+        membersKeyPackages: List<MLSKeyPackage>
     ): CommitBundle? {
-        if (members.isEmpty()) {
+        if (membersKeyPackages.isEmpty()) {
             return null
         }
 
-        val invitees = members.map {
-            Invitee(it.first.toString().encodeToByteArray(), it.second)
-        }
-
-        return toCommitBundle(coreCrypto.addClientsToConversation(groupId.decodeBase64Bytes(), invitees))
+        return toCommitBundle(coreCrypto.addClientsToConversation(groupId.decodeBase64Bytes(), membersKeyPackages))
     }
 
     override suspend fun removeMember(
@@ -204,12 +198,18 @@ class MLSClientImpl(
         return coreCrypto.exportSecretKey(groupId.decodeBase64Bytes(), keyLength)
     }
 
-    override suspend fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override suspend fun newAcmeEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String,
+        teamId: String?
+    ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewEnrollment(
                 clientId.toString(),
                 displayName,
                 handle,
+                teamId,
                 defaultE2EIExpiry,
                 defaultCiphersuite
             )
@@ -217,15 +217,17 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiNewActivationEnrollment(
-        clientId: E2EIQualifiedClientId,
+        clientId: CryptoQualifiedClientId,
         displayName: String,
-        handle: String
+        handle: String,
+        teamId: String?
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewActivationEnrollment(
                 clientId.toString(),
                 displayName,
                 handle,
+                teamId,
                 defaultE2EIExpiry,
                 defaultCiphersuite
             )
@@ -233,15 +235,17 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiNewRotateEnrollment(
-        clientId: E2EIQualifiedClientId,
+        clientId: CryptoQualifiedClientId,
         displayName: String?,
-        handle: String?
+        handle: String?,
+        teamId: String?
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewRotateEnrollment(
                 clientId.toString(),
                 displayName,
                 handle,
+                teamId,
                 defaultE2EIExpiry,
                 defaultCiphersuite
             )
@@ -254,6 +258,10 @@ class MLSClientImpl(
 
     override suspend fun isE2EIEnabled(): Boolean {
         return coreCrypto.e2eiIsEnabled(defaultCiphersuite)
+    }
+
+    override suspend fun getMLSCredentials(): CredentialType {
+        return if (isE2EIEnabled()) return CredentialType.X509 else CredentialType.DEFAULT
     }
 
     override suspend fun e2eiRotateAll(
@@ -273,7 +281,7 @@ class MLSClientImpl(
     override suspend fun isGroupVerified(groupId: MLSGroupId): E2EIConversationState =
         toE2EIConversationState(coreCrypto.e2eiConversationState(groupId.decodeBase64Bytes()))
 
-    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity> {
         val clientIds = clients.map {
             it.toString().encodeToByteArray()
         }
@@ -282,9 +290,9 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): Map<String, List<WireIdentity>> {
-        val usersIds = clients.map {
-            it.getEncodedUserID()
+    override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
+        val usersIds = users.map {
+            it.value
         }
         return coreCrypto.getUserIdentities(groupId.decodeBase64Bytes(), usersIds).mapValues {
             it.value.map { identity -> toIdentity(identity) }
@@ -327,8 +335,15 @@ class MLSClientImpl(
             value.handle,
             value.displayName,
             value.domain,
-            value.certificate
+            value.certificate,
+            toDeviceStatus(value.status)
         )
+
+        fun toDeviceStatus(value: com.wire.crypto.DeviceStatus) = when (value) {
+            com.wire.crypto.DeviceStatus.VALID -> CryptoCertificateStatus.VALID
+            com.wire.crypto.DeviceStatus.EXPIRED -> CryptoCertificateStatus.EXPIRED
+            com.wire.crypto.DeviceStatus.REVOKED -> CryptoCertificateStatus.REVOKED
+        }
 
         // TODO: remove later, when CoreCrypto return the groupId instead of Hex value
         @Suppress("MagicNumber")
@@ -366,9 +381,7 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let {
-                WireIdentity(it.clientId, it.handle, it.displayName, it.domain, it.certificate)
-            }
+            value.identity?.let { toIdentity(it) }
         )
 
         fun toDecryptedMessageBundle(value: BufferedDecryptedMessage) = DecryptedMessageBundle(
@@ -376,9 +389,12 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let {
-                WireIdentity(it.clientId, it.handle, it.displayName, it.domain, it.certificate)
-            }
+            value.identity?.let { toIdentity(it) }
         )
+
+        fun toCredentialType(value: CredentialType) = when (value) {
+            CredentialType.Basic -> MlsCredentialType.BASIC
+            CredentialType.X509 -> MlsCredentialType.X509
+        }
     }
 }

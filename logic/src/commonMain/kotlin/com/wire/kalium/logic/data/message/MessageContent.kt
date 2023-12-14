@@ -288,6 +288,13 @@ sealed class MessageContent {
         val clientId: ClientId? = null
     ) : Regular()
 
+    data class Location(
+        val latitude: Float,
+        val longitude: Float,
+        val name: String? = null,
+        val zoom: Int? = null,
+    ) : Regular()
+
     data object MLSWrongEpochWarning : System()
 
     data object ClientAction : Signaling()
@@ -306,6 +313,16 @@ sealed class MessageContent {
     sealed class FederationStopped : System() {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
+    }
+    sealed class LegalHold : System() {
+        sealed class ForMembers(open val members: List<UserId>) : LegalHold() {
+            data class Enabled(override val members: List<UserId>) : ForMembers(members)
+            data class Disabled(override val members: List<UserId>) : ForMembers(members)
+        }
+        sealed class ForConversation : LegalHold() {
+            data object Enabled : ForConversation()
+            data object Disabled : ForConversation()
+        }
     }
 }
 
@@ -359,6 +376,11 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
+    is MessageContent.Location -> "Location"
+    is MessageContent.LegalHold.ForConversation.Disabled -> "LegalHold.ForConversation.Disabled"
+    is MessageContent.LegalHold.ForConversation.Enabled -> "LegalHold.ForConversation.Enabled"
+    is MessageContent.LegalHold.ForMembers.Disabled -> "LegalHold.ForMembers.Disabled"
+    is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
     null -> "null"
 }
 
@@ -378,6 +400,7 @@ sealed interface MessagePreviewContent {
         data class QuotedSelf(override val username: String?) : WithUser
 
         data class Knock(override val username: String?) : WithUser
+        data class Location(override val username: String?) : WithUser
 
         data class MemberLeft(override val username: String?) : WithUser
 

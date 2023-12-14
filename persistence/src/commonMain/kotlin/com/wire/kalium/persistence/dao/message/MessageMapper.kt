@@ -189,7 +189,7 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
-
+            MessageEntity.ContentType.LOCATION -> MessagePreviewEntityContent.Location(senderName = senderName)
             MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_RECEIPT_MODE_CHANGED -> MessagePreviewEntityContent.Unknown
@@ -207,6 +207,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.LEGAL_HOLD -> MessagePreviewEntityContent.Unknown
         }
     }
 
@@ -477,7 +478,13 @@ object MessageMapper {
         buttonsJson: String,
         federationDomainList: List<String>?,
         federationType: MessageEntity.FederationType?,
-        conversationProtocolChanged: ConversationEntity.Protocol?
+        conversationProtocolChanged: ConversationEntity.Protocol?,
+        latitude: Float?,
+        longitude: Float?,
+        locationName: String?,
+        locationZoom: Int?,
+        legalHoldMemberList: List<QualifiedIDEntity>?,
+        legalHoldType: MessageEntity.LegalHoldType?,
     ): MessageEntity {
         // If message hsa been deleted, we don't care about the content. Also most of their internal content is null anyways
         val content = if (visibility == MessageEntity.Visibility.DELETED) {
@@ -612,6 +619,16 @@ object MessageMapper {
             )
 
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
+            MessageEntity.ContentType.LOCATION -> MessageEntityContent.Location(
+                latitude = latitude.requireField("latitude"),
+                longitude = longitude.requireField("longitude"),
+                locationName,
+                locationZoom
+            )
+            MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
+                memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
+                type = legalHoldType.requireField("legalHoldType")
+            )
         }
 
         return createMessageEntity(

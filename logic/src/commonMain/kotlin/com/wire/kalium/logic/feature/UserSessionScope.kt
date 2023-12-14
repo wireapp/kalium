@@ -221,6 +221,12 @@ import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.MarkLegalHoldChangeAsNotifiedForSelfUseCase
+import com.wire.kalium.logic.feature.legalhold.MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
+import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
@@ -388,6 +394,7 @@ import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessagesHandlerImpl
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
 import com.wire.kalium.logic.sync.slow.SlowSlowSyncCriteriaProviderImpl
@@ -875,7 +882,9 @@ class UserSessionScope internal constructor(
 
     private val syncSelfTeamUseCase: SyncSelfTeamUseCase
         get() = SyncSelfTeamUseCaseImpl(
-            userRepository = userRepository, teamRepository = teamRepository
+            userRepository = userRepository,
+            teamRepository = teamRepository,
+            fetchAllTeamMembersEagerly = kaliumConfigs.fetchAllTeamMembersEagerly
         )
 
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
@@ -1088,22 +1097,23 @@ class UserSessionScope internal constructor(
             )
         })
 
-    internal val mlsMigrationWorker get() =
-        MLSMigrationWorkerImpl(
-            userConfigRepository,
-            featureConfigRepository,
-            mlsConfigHandler,
-            mlsMigrationConfigHandler,
-            mlsMigrator,
-        )
+    internal val mlsMigrationWorker
+        get() =
+            MLSMigrationWorkerImpl(
+                userConfigRepository,
+                featureConfigRepository,
+                mlsConfigHandler,
+                mlsMigrationConfigHandler,
+                mlsMigrator,
+            )
 
     internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
-            kaliumConfigs,
-            featureSupport,
-            incrementalSyncRepository,
-            lazy { clientRepository },
-            lazy { users.timestampKeyRepository },
-            lazy { mlsMigrationWorker }
+        kaliumConfigs,
+        featureSupport,
+        incrementalSyncRepository,
+        lazy { clientRepository },
+        lazy { users.timestampKeyRepository },
+        lazy { mlsMigrationWorker }
     )
 
     private val mlsPublicKeysRepository: MLSPublicKeysRepository
@@ -1237,10 +1247,14 @@ class UserSessionScope internal constructor(
 
     private val newMessageHandler: NewMessageEventHandler
         get() = NewMessageEventHandlerImpl(
-            proteusUnpacker, mlsUnpacker, applicationMessageHandler,
+            proteusUnpacker,
+            mlsUnpacker,
+            conversationRepository,
+            applicationMessageHandler,
             { conversationId, messageId ->
                 messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
-            }, userId,
+            },
+            userId,
             staleEpochVerifier
         )
 
@@ -1339,6 +1353,12 @@ class UserSessionScope internal constructor(
     val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
         get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
 
+    val observeLegalHoldChangeNotifiedForSelf: ObserveLegalHoldChangeNotifiedForSelfUseCase
+        get() = ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(userConfigRepository, observeLegalHoldForSelfUser)
+
+    val markLegalHoldChangeAsNotifiedForSelf: MarkLegalHoldChangeAsNotifiedForSelfUseCase
+        get() = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)
+
     val observeLegalHoldRequest: ObserveLegalHoldRequestUseCase
         get() = ObserveLegalHoldRequestUseCaseImpl(
             userConfigRepository = userConfigRepository,
@@ -1362,12 +1382,24 @@ class UserSessionScope internal constructor(
             clientRepository = clientRepository
         )
 
+    private val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
+        get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
+
+    private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
+        selfUserId = userId,
+        membersHavingLegalHoldClient = membersHavingLegalHoldClient,
+        persistMessage = persistMessage,
+        conversationRepository = conversationRepository,
+        messageRepository = messageRepository,
+    )
+
     private val legalHoldHandler = LegalHoldHandlerImpl(
         selfUserId = userId,
         persistOtherUserClients = persistOtherUserClients,
         fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
+        observeLegalHoldStateForUser = observeLegalHoldStateForUser,
         userConfigRepository = userConfigRepository,
-        coroutineContext = coroutineContext
+        legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
     )
 
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
@@ -1692,7 +1724,13 @@ class UserSessionScope internal constructor(
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
 
-    val observeE2EIRequired: ObserveE2EIRequiredUseCase get() = ObserveE2EIRequiredUseCaseImpl(userConfigRepository, featureSupport)
+    val observeE2EIRequired: ObserveE2EIRequiredUseCase
+        get() = ObserveE2EIRequiredUseCaseImpl(
+            userConfigRepository,
+            featureSupport,
+            users.getE2EICertificate,
+            clientIdProvider
+        )
     val markE2EIRequiredAsNotified: MarkEnablingE2EIAsNotifiedUseCase
         get() = MarkEnablingE2EIAsNotifiedUseCaseImpl(userConfigRepository)
 

@@ -18,19 +18,30 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.conversation.Monkey
+import com.wire.kalium.monkeys.conversation.MonkeyConversation
+import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
-class LeaveConversationAction(val config: ActionType.LeaveConversation) : Action() {
+open class LeaveConversationAction(val config: ActionType.LeaveConversation, sender: suspend (Event) -> Unit) : Action(sender) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = ConversationPool.randomDynamicConversations(this.config.countGroups.toInt())
-        targets.forEach { conv ->
-            val leavers = conv.randomMonkeys(this.config.userCount)
+        val targets = leavers(monkeyPool)
+        targets.forEach { (conv, leavers) ->
             // conversation admin should never leave the group
-            leavers.filter { it.user != conv.creator.user }.forEach {
+            leavers.filter { it.monkeyType.userData() != conv.creator.monkeyType.userData() }.forEach {
                 it.leaveConversation(conv.conversation.id)
+                this.sender(Event(it.internalId, EventType.LeaveConversation(conv.conversation.id)))
             }
+        }
+    }
+
+    open fun leavers(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
+        return ConversationPool.randomDynamicConversations(this.config.countGroups.toInt()).map {
+            val leavers = it.randomMonkeys(this.config.userCount)
+            Pair(it, leavers)
         }
     }
 }

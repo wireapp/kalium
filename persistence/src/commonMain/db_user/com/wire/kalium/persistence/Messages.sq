@@ -1,11 +1,13 @@
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.FederationType;
+import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
 import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.Boolean;
+import kotlin.Float;
 import kotlin.Int;
 import kotlin.String;
 import kotlin.collections.List;
@@ -221,6 +223,29 @@ CREATE TABLE MessageConversationProtocolChangedContent (
       PRIMARY KEY (message_id, conversation_id)
 );
 
+CREATE TABLE MessageConversationLocationContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      latitude REAL AS Float NOT NULL,
+      longitude REAL AS Float NOT NULL,
+      name TEXT,
+      zoom INTEGER AS Int,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+CREATE TABLE MessageLegalHoldContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      legal_hold_member_list TEXT AS List<QualifiedIDEntity> NOT NULL,
+      legal_hold_type TEXT AS LegalHoldType NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,
@@ -383,6 +408,14 @@ insertConversationProtocolChanged:
 INSERT OR IGNORE INTO MessageConversationProtocolChangedContent(message_id, conversation_id, protocol)
 VALUES(?, ?, ?);
 
+insertLocationMessageContent:
+INSERT OR IGNORE INTO MessageConversationLocationContent(message_id, conversation_id, latitude, longitude, name, zoom)
+VALUES(?, ?, ?, ?, ?, ?);
+
+insertLegalHoldMessage:
+INSERT OR IGNORE INTO MessageLegalHoldContent(message_id, conversation_id, legal_hold_member_list, legal_hold_type)
+VALUES(?, ?, ?, ?);
+
 updateMessageStatus:
 UPDATE Message
 SET status = ?
@@ -421,6 +454,11 @@ UPDATE MessageTextContent
 SET text_body = ?
 WHERE message_id = ? AND conversation_id = ?;
 
+updateMessageLegalHoldContentMembers:
+UPDATE MessageLegalHoldContent
+SET legal_hold_member_list = :legal_hold_member_list
+WHERE message_id = :message_id AND conversation_id = :conversation_id;
+
 updateMessageId:
 UPDATE Message
 SET id = :newId
@@ -437,6 +475,16 @@ SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? ORDER
 
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+
+selectLastMessagesByConversationIds:
+SELECT MessageDetailsView.* FROM MessageDetailsView
+JOIN (
+    SELECT conversationId, MAX(date) AS latest_date
+    FROM MessageDetailsView
+    WHERE conversationId IN :conversationIds
+    GROUP BY conversationId
+) AS lastMessage
+ON MessageDetailsView.conversationId = lastMessage.conversationId AND MessageDetailsView.date = lastMessage.latest_date;
 
 selectMessagesByConversationIdAndVisibilityAfterDate:
 SELECT * FROM MessageDetailsView WHERE MessageDetailsView.conversationId = ? AND visibility IN ? AND date > ? ORDER BY date DESC;

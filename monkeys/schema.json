@@ -9,6 +9,31 @@
         "backends"
     ],
     "properties": {
+        "eventStorage": {
+            "description": "Defines the storage of events for replaying the test later",
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "type": {
+                    "enum": [
+                        "FILE",
+                        "POSTGRES"
+                    ]
+                }
+            },
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "$ref": "#/$defs/PostgresStorage"
+                    },
+                    {
+                        "$ref": "#/$defs/FileStorage"
+                    }
+                ]
+            }
+        },
         "conversationDistribution": {
             "description": "List of predefined groups to run the tests. A random user will be selected to create (if not logged in, it will automatically) and it will include only other users it is connected to.",
             "type": "object",
@@ -145,23 +170,56 @@
                         "description": "Should the application dump the users created into a file",
                         "type": "boolean"
                     },
-                    "users": {
-                        "description": "All users that are going to be used in the test. If set the parameters to create users will be ignored",
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "required": [
-                                "email",
-                                "id"
-                            ],
-                            "properties": {
-                                "email": {
-                                    "description": "Email of the user",
-                                    "type": "string"
-                                },
-                                "id": {
-                                    "description": "UUID of the user",
-                                    "type": "string"
+                    "presetTeam": {
+                        "description": "Team configuration and its users to use instead of creating them",
+                        "type": "object",
+                        "required": [
+                            "id",
+                            "owner",
+                            "users"
+                        ],
+                        "properties": {
+                            "id": {
+                                "description": "The team id",
+                                "type": "string"
+                            },
+                            "owner": {
+                                "description": "The creator of the group. It will be used to fetch the team's users, so it must have permission in the API to do so",
+                                "type": "object",
+                                "required": [
+                                    "email",
+                                    "id"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "description": "Email of the user",
+                                        "type": "string"
+                                    },
+                                    "id": {
+                                        "description": "UUID of the user",
+                                        "type": "string"
+                                    }
+                                }
+                            },
+                            "users": {
+                                "description": "All users that are going to be used in the test. If set the parameters to create users will be ignored",
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "email",
+                                        "id"
+                                    ],
+                                    "properties": {
+                                        "email": {
+                                            "description": "Email of the user",
+                                            "type": "string"
+                                        },
+                                        "id": {
+                                            "description": "UUID of the user",
+                                            "type": "string"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -225,7 +283,9 @@
                                 "ADD_USERS_TO_CONVERSATION",
                                 "LEAVE_CONVERSATION",
                                 "DESTROY_CONVERSATION",
-                                "SEND_REQUEST"
+                                "SEND_REQUEST",
+                                "HANDLE_EXTERNAL_REQUEST",
+                                "SEND_EXTERNAL_REQUEST"
                             ]
                         }
                     },
@@ -254,6 +314,12 @@
                             },
                             {
                                 "$ref": "#/$defs/SendRequest"
+                            },
+                            {
+                                "$ref": "#/$defs/SendExternalRequest"
+                            },
+                            {
+                                "$ref": "#/$defs/HandleExternalRequest"
                             }
                         ]
                     }
@@ -424,6 +490,97 @@
                 "shouldAccept": {
                     "description": "Should the request be accepted? Defaults to true",
                     "type": "boolean"
+                }
+            }
+        },
+        "SendExternalRequest": {
+            "description": "Picks a random user and send a connection request to an user not on the scope of the monkeys",
+            "type": "object",
+            "required": [
+                "userCount",
+                "originTeam",
+                "targetTeam"
+            ],
+            "properties": {
+                "userCount": {
+                    "description": "How many users should send requests",
+                    "$ref": "#/$defs/UserCount"
+                },
+                "originTeam": {
+                    "description": "Users from which team should the requests originate",
+                    "type": "string"
+                },
+                "targetTeam": {
+                    "description": "Users from which team should be targeted",
+                    "type": "string"
+                }
+            }
+        },
+        "HandleExternalRequest": {
+            "description": "Searches for a monkey with pending connection requests and accepts or rejects it. At this moment it considers also connection requests from other monkeys",
+            "type": "object",
+            "required": [
+                "userCount",
+                "shouldAccept"
+            ],
+            "properties": {
+                "userCount": {
+                    "description": "How many users should handle requests",
+                    "$ref": "#/$defs/UserCount"
+                },
+                "shouldAccept": {
+                    "description": "If the request should be accepted or not",
+                    "type": "boolean"
+                },
+                "greetMessage": {
+                    "description": "If accepted, this custom message will be sent to the other user. If not informed a random message will be sent.",
+                    "type": "string"
+                }
+            }
+        },
+        "FileStorage": {
+            "description": "File storage of events. The content will be one event per line as a json object",
+            "type": "object",
+            "required": [
+                "eventsLocation",
+                "teamsLocation"
+            ],
+            "properties": {
+                "eventsLocation": {
+                    "description": "The location where the file with the events should be saved",
+                    "type": "string"
+                },
+                "teamsLocation": {
+                    "description": "The location where the file with the backends' config should be saved",
+                    "type": "string"
+                }
+            }
+        },
+        "PostgresStorage": {
+            "description": "Database storage. It is useful when running multiple instances of the app",
+            "type": "object",
+            "required": [
+                "host",
+                "dbName",
+                "username",
+                "password"
+            ],
+            "properties": {
+                "host": {
+                    "description": "Host of the postgres database",
+                    "type": "string"
+                },
+                "dbName": {
+                    "description": "Database name",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Username of the postgres database",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "Password of the postgres database",
+                    "type": "string"
                 }
             }
         }

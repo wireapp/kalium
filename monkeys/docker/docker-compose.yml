@@ -5,10 +5,21 @@ services:
             context: ../../
             dockerfile: ./monkeys/docker/Dockerfile
         image: monkeys
+        depends_on:
+            - postgres
         volumes:
             - ./config:/config
         command:
             - /config/${CONFIG:-config.json}
+    postgres:
+        image: postgres
+        restart: unless-stopped
+        environment:
+            POSTGRES_PASSWORD: monkeys
+            POSTGRES_USER: monkeys
+            POSTGRES_DB: monkeys
+        ports:
+            - 5432:5432
     prometheus:
         image: prom/prometheus
         command:

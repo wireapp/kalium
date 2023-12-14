@@ -23,7 +23,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.first
@@ -34,18 +34,27 @@ internal interface SyncSelfTeamUseCase {
 
 internal class SyncSelfTeamUseCaseImpl(
     private val userRepository: UserRepository,
-    private val teamRepository: TeamRepository
+    private val teamRepository: TeamRepository,
+    private val fetchAllTeamMembersEagerly: Boolean
 ) : SyncSelfTeamUseCase {
 
     override suspend fun invoke(): Either<CoreFailure, Unit> {
         val user = userRepository.observeSelfUser().first()
 
         return user.teamId?.let { teamId ->
-            teamRepository.fetchTeamById(teamId = teamId)
-                .map { }
-                .onSuccess {
-                    teamRepository.syncServices(teamId = teamId)
+            teamRepository.fetchTeamById(teamId = teamId).flatMap {
+                if (fetchAllTeamMembersEagerly) {
+                    kaliumLogger.withFeatureId(SYNC).i("Fetching all team members eagerly")
+                    teamRepository.fetchMembersByTeamId(
+                        teamId = teamId,
+                        userDomain = user.id.domain
+                    )
+                } else {
+                    Either.Right(Unit)
                 }
+            }.onSuccess {
+                teamRepository.syncServices(teamId = teamId)
+            }
         } ?: run {
             kaliumLogger.withFeatureId(SYNC).i("Skipping team sync because user doesn't belong to a team")
             Either.Right(Unit)

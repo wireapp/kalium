@@ -39,11 +39,11 @@ internal open class KeyPackageApiV0 internal constructor() : KeyPackageApi {
         APINotSupported("MLS: uploadKeyPackages api is only available on API V5")
     )
 
-    override suspend fun deleteKeyPackages(
+    override suspend fun replaceKeyPackages(
         clientId: String,
         keyPackages: List<KeyPackage>
     ): NetworkResponse<Unit> = NetworkResponse.Error(
-        APINotSupported("MLS: uploadKeyPackages api is only available on API V5")
+        APINotSupported("MLS: replaceKeyPackages api is only available on API V5")
     )
 
     override suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO> =

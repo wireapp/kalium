@@ -265,6 +265,22 @@ internal class MessageInsertExtensionImpl(
             is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.Location -> messagesQueries.insertLocationMessageContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                latitude = content.latitude,
+                longitude = content.longitude,
+                name = content.name,
+                zoom = content.zoom
+            )
+
+            is MessageEntityContent.LegalHold -> messagesQueries.insertLegalHoldMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                legal_hold_member_list = content.memberUserIdList,
+                legal_hold_type = content.type
+            )
         }
     }
 
@@ -289,6 +305,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
+                is MessageEntityContent.Location,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
@@ -321,7 +338,9 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationDegradedProteus,
                 MessageEntityContent.ConversationVerifiedProteus,
                 MessageEntityContent.ConversationStartedUnverifiedWarning,
-                is MessageEntityContent.TeamMemberRemoved -> {
+                is MessageEntityContent.TeamMemberRemoved,
+                is MessageEntityContent.LegalHold,
+                -> {
                     /* no-op */
                 }
             }
@@ -414,5 +433,7 @@ internal class MessageInsertExtensionImpl(
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
         is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
+        is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
+        is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
     }
 }

@@ -22,14 +22,12 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
@@ -45,7 +43,7 @@ interface KeyPackageRepository {
 
     suspend fun uploadKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
-    suspend fun deleteKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
+    suspend fun replaceKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
     suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO>
 
@@ -58,25 +56,28 @@ class KeyPackageDataSource(
     private val keyPackageApi: KeyPackageApi,
     private val mlsClientProvider: MLSClientProvider,
     private val selfUserId: UserId,
-    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : KeyPackageRepository {
 
     override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>> =
         currentClientIdProvider().flatMap { selfClientId ->
-            userIds.map { userId ->
+            val failedUsers = mutableSetOf<UserId>()
+            val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
+            userIds.forEach { userId ->
                 wrapApiRequest {
-                    keyPackageApi.claimKeyPackages(
-                        KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value)
-                    )
-                }.flatMap {
+                    keyPackageApi.claimKeyPackages(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value))
+                }.fold({ failedUsers.add(userId) }) {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
-                        Either.Left(CoreFailure.NoKeyPackagesAvailable(userId))
+                        failedUsers.add(userId)
                     } else {
-                        Either.Right(it.keyPackages)
+                        claimedKeyPackages.addAll(it.keyPackages)
                     }
                 }
-            }.foldToEitherWhileRight(emptyList()) { item, acc ->
-                item.flatMap { Either.Right(acc + it) }
+            }
+
+            if (failedUsers.isNotEmpty()) {
+                Either.Left(CoreFailure.NoKeyPackagesAvailable(failedUsers))
+            } else {
+                Either.Right(claimedKeyPackages)
             }
         }
 
@@ -99,12 +100,12 @@ class KeyPackageDataSource(
             keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
         }
 
-    override suspend fun deleteKeyPackages(
+    override suspend fun replaceKeyPackages(
         clientId: ClientId,
         keyPackages: List<ByteArray>
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            keyPackageApi.deleteKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
         }
 
     override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =

@@ -194,7 +194,7 @@ data class Conversation(
     enum class TypingIndicatorMode { STARTED, STOPPED }
 
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
-    enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED }
+    enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED, UNKNOWN }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {

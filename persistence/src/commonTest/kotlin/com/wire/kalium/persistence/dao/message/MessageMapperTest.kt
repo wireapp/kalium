@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -78,6 +79,24 @@ class MessageMapperTest {
         // then
         assertEquals(messageEntity.status, MessageEntity.Status.READ)
         assertEquals(messageEntity.readCount, 10)
+    }
+
+    @Test
+    fun givenMessageDetailsViewWithLegalHoldMemberMessage_whenMappingToEntityMessage_thenMessageEntityHasExpectedData() {
+        // given
+        val membersList = listOf(QualifiedIDEntity("someValue", "someDomain"))
+        val type = MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS
+        // when
+        val messageEntity = Arrangement().toEntityFromView(
+            contentType = MessageEntity.ContentType.LEGAL_HOLD,
+            legalHoldMemberList = membersList,
+            legalHoldType = type,
+        )
+        // then
+        val content = messageEntity.content
+        assertIs<MessageEntityContent.LegalHold>(content)
+        assertContentEquals(content.memberUserIdList, membersList)
+        assertEquals(content.type, type)
     }
 
     private class Arrangement {
@@ -160,7 +179,13 @@ class MessageMapperTest {
             buttonsJson: String = "[]",
             federationDomainList: List<String>? = null,
             federationType: MessageEntity.FederationType? = null,
-            conversationProtocolChanged: ConversationEntity.Protocol? = null
+            conversationProtocolChanged: ConversationEntity.Protocol? = null,
+            latitude: Float? = null,
+            longitude: Float? = null,
+            locationName: String? = null,
+            locationZoom: Int? = null,
+            legalHoldMemberList: List<QualifiedIDEntity>? = null,
+            legalHoldType: MessageEntity.LegalHoldType? = null,
         ): MessageEntity {
             return MessageMapper.toEntityMessageFromView(
                 id,
@@ -240,7 +265,13 @@ class MessageMapperTest {
                 buttonsJson,
                 federationDomainList,
                 federationType,
-                conversationProtocolChanged
+                conversationProtocolChanged,
+                latitude,
+                longitude,
+                locationName,
+                locationZoom,
+                legalHoldMemberList,
+                legalHoldType,
             )
         }
 
