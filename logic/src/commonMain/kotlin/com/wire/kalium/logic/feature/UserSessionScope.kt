@@ -221,8 +221,12 @@ import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ApproveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.MarkLegalHoldChangeAsNotifiedForSelfUseCase
+import com.wire.kalium.logic.feature.legalhold.MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
@@ -1348,6 +1352,12 @@ class UserSessionScope internal constructor(
 
     val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
         get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
+
+    val observeLegalHoldChangeNotifiedForSelf: ObserveLegalHoldChangeNotifiedForSelfUseCase
+        get() = ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(userConfigRepository, observeLegalHoldForSelfUser)
+
+    val markLegalHoldChangeAsNotifiedForSelf: MarkLegalHoldChangeAsNotifiedForSelfUseCase
+        get() = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)
 
     val observeLegalHoldRequest: ObserveLegalHoldRequestUseCase
         get() = ObserveLegalHoldRequestUseCaseImpl(

@@ -72,8 +72,21 @@ class ValidateUserHandleUseCaseTest {
     fun givenUserHandleContainsDots_whenValidating_thenReturnProperValues() {
         val handleWithDot = "user.name"
         val result = validateUserHandleUseCase(handleWithDot)
-        assertFalse { result.isValid }
-        assertTrue { result.isValidAllowingDots }
+        assertTrue { result.isValid }
+    }
+
+    @Test
+    fun givenUserHandleContainsUnderline_whenValidating_thenReturnProperValues() {
+        val handleWithDot = "user_name"
+        val result = validateUserHandleUseCase(handleWithDot)
+        assertTrue { result.isValid }
+    }
+
+    @Test
+    fun givenUserHandleContainsDash_whenValidating_thenReturnProperValues() {
+        val handleWithDot = "user-name"
+        val result = validateUserHandleUseCase(handleWithDot)
+        assertTrue { result.isValid }
     }
 
     @Test
@@ -81,7 +94,7 @@ class ValidateUserHandleUseCaseTest {
         val handleWithDot = "user.name!with?invalid,characters"
         val result = validateUserHandleUseCase(handleWithDot)
         assertIs<ValidateUserHandleResult.Invalid.InvalidCharacters>(result)
-        assertTrue { result.invalidCharactersUsed.toSet() == listOf('.', '!', '?', ',').toSet() }
+        assertTrue { result.invalidCharactersUsed.toSet() == listOf('!', '?', ',').toSet() }
     }
 
     private companion object {
@@ -89,14 +102,16 @@ class ValidateUserHandleUseCaseTest {
             "cm",
             "hadle_",
             "user_99",
-            "1_user"
+            "1-user",
+            "user.name",
         )
 
         val INVALID_HANDLES = listOf(
             "c",
             "@hadle",
             "User_99",
-            "1_uSer"
+            "1-uSer",
+            "user,name",
         )
     }
 

@@ -122,7 +122,7 @@ internal class LoginUseCaseImpl internal constructor(
                 )
             }
 
-            validateUserHandleUseCase(cleanUserIdentifier).isValidAllowingDots -> {
+            validateUserHandleUseCase(cleanUserIdentifier).isValid -> {
                 loginRepository.loginWithHandle(
                     handle = cleanUserIdentifier,
                     password = password,
