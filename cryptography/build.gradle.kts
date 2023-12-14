@@ -71,7 +71,7 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
+                implementation(libs.kotlin.test)
                 implementation(libs.coroutines.test)
                 implementation(libs.okio.test)
             }
@@ -104,7 +104,6 @@ kotlin {
                 implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
                     exclude("androidx.core")
                     exclude("androidx.appcompat")
-                    exclude("kotlin-test")
                 }
             }
         }

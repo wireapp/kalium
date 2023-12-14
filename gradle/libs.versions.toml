@@ -115,6 +115,7 @@ androidtest-arch = { module = "androidx.arch.core:core-testing", version.ref = "
 androidtest-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-test-orchestrator" }
 core-ktx = { module = "androidx.test:core-ktx", version.ref = "android-test-runner" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 
 # coroutines
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
