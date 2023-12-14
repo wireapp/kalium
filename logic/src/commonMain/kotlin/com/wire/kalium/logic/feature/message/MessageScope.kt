@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -96,7 +97,8 @@ class MessageScope internal constructor(
     private val messageMetadataRepository: MessageMetadataRepository,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val scope: CoroutineScope,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -114,7 +116,7 @@ class MessageScope internal constructor(
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
             conversationRepository = conversationRepository,
-            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
+            legalHoldStatusMapper = legalHoldStatusMapper,
             proteusClientProvider = proteusClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
@@ -123,7 +125,7 @@ class MessageScope internal constructor(
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
             conversationRepository = conversationRepository,
-            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
+            legalHoldStatusMapper = legalHoldStatusMapper,
             mlsClientProvider = mlsClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper

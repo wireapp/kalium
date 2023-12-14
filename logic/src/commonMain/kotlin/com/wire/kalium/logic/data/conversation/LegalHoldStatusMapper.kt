@@ -24,7 +24,7 @@ import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 
-interface LegalHoldStatusMapper {
+internal interface LegalHoldStatusMapper {
     fun fromApiModel(legalHoldStatusDTO: LegalHoldStatusDTO): LegalHoldStatus
     fun mapLegalHoldConversationStatus(
         legalHoldStatus: Either<StorageFailure, Conversation.LegalHoldStatus>,
@@ -33,7 +33,7 @@ interface LegalHoldStatusMapper {
 
 }
 
-class LegalHoldStatusMapperImpl : LegalHoldStatusMapper {
+internal object LegalHoldStatusMapperImpl : LegalHoldStatusMapper {
     override fun fromApiModel(legalHoldStatusDTO: LegalHoldStatusDTO): LegalHoldStatus =
         when (legalHoldStatusDTO) {
             LegalHoldStatusDTO.ENABLED -> LegalHoldStatus.ENABLED
