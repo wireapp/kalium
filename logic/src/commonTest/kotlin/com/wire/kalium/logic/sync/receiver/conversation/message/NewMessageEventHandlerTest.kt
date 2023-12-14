@@ -206,7 +206,12 @@ class NewMessageEventHandlerTest {
     fun givenEphemeralMessageFromSelf_whenHandling_thenEnqueueForSelfDelete() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withUpdateLegalHoldStatusSuccess()
-            .withProteusUnpackerReturning(Either.Right(applicationMessage))
+            .withProteusUnpackerReturning(
+                Either.Right(
+                    applicationMessage.copy(
+                        content = applicationMessage.content.copy(expiresAfterMillis = 123L)
+                    )
+                ))
             .arrange()
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
