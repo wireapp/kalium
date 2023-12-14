@@ -176,10 +176,17 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
         withContext(coroutineContext) {
             memberQueries.transaction {
-                memberQueries.deleteMembersFromConversation(conversationID)
-                for (member: MemberEntity in memberList) {
+                val membersToDelete = memberQueries.selectAllMembersByConversation(conversationID)
+                    .executeAsList()
+                    .filter { member -> memberList.none { it.user == member.user } }
+
+                memberList.forEach { member ->
                     userQueries.insertOrIgnoreUserId(member.user)
                     memberQueries.insertMember(member.user, conversationID, member.role)
+                }
+
+                membersToDelete.forEach { member ->
+                    memberQueries.deleteMember(conversationID, member.user)
                 }
             }
         }
