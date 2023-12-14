@@ -17,40 +17,33 @@
  */
 package com.wire.kalium.logic.feature.asset
 
-import com.wire.kalium.logic.data.asset.AssetMessage
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 
-interface GetAssetMessagesForConversationUseCase {
-    /**
-     * This use case will return messages that contains assets (but not image) as content for a given [conversationId]
-     * paginated by [limit] and [offset]
-     * @see Message.Standalone
-     */
+/**
+ * This use case will observe and return a flow of paginated asset messages for a given conversation.
+ * @see PagingData
+ * @see Message
+ */
+class GetPaginatedFlowOfAssetMessageByConversationIdUseCase internal constructor(
+    private val dispatcher: KaliumDispatcher,
+    private val messageRepository: MessageRepository
+) {
     suspend operator fun invoke(
         conversationId: ConversationId,
-        limit: Int,
-        offset: Int,
-    ): List<Message.Standalone>
-}
-
-class GetAssetMessagesForConversationUseCaseImpl internal constructor(
-    private val dispatcher: KaliumDispatcher,
-    private val messageRepository: MessageRepository,
-) : GetAssetMessagesForConversationUseCase {
-
-    override suspend operator fun invoke(
-        conversationId: ConversationId,
-        limit: Int,
-        offset: Int,
-    ): List<Message.Standalone> = withContext(dispatcher.io) {
-        messageRepository.getAssetMessagesByConversationId(
-            conversationId = conversationId,
-            limit = limit,
-            offset = offset
-        )
-    }
+        mimeTypes: Set<String>,
+        startingOffset: Long,
+        pagingConfig: PagingConfig
+    ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessageAssetsWithoutImageByConversationId(
+        conversationId = conversationId,
+        mimeTypes = mimeTypes,
+        pagingConfig = pagingConfig,
+        startingOffset = startingOffset
+    ).flowOn(dispatcher.io)
 }

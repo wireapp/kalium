@@ -23,6 +23,7 @@ import app.cash.paging.PagingData
 import app.cash.paging.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -40,6 +41,13 @@ internal interface MessageRepositoryExtensions {
     suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
         searchQuery: String,
         conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>>
+
+    suspend fun getPaginatedMessageAssetsWithoutImageByConversationId(
+        conversationId: ConversationId,
+        mimeTypes: Set<String>,
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<Message.Standalone>>
@@ -83,6 +91,26 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
 
         return pager.pagingDataFlow.map {
             it.map { messageMapper.fromEntityToMessage(it) }
+        }
+    }
+
+    override suspend fun getPaginatedMessageAssetsWithoutImageByConversationId(
+        conversationId: ConversationId,
+        mimeTypes: Set<String>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> {
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForMessageAssetsWithoutImage(
+            conversationId = conversationId.toDao(),
+            mimeTypes = mimeTypes,
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset
+        )
+
+        return pager.pagingDataFlow.map {
+            it.map { messageEntity ->
+                messageMapper.fromEntityToMessage(messageEntity)
+            }
         }
     }
 }
