@@ -20,17 +20,20 @@ package com.wire.kalium.logger
 
 import co.touchlab.kermit.LogWriter
 import co.touchlab.kermit.Severity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.io.File
-import java.util.Timer
-import kotlin.concurrent.scheduleAtFixedRate
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 
 private var LOG_FILE_FLUSH_PERIOD = 5.seconds.toLong(DurationUnit.MILLISECONDS)
 
-class FileLogger(outputfile: File) : LogWriter() {
+class FileLogger(outputFile: File) : LogWriter() {
 
-    private val writer = outputfile.bufferedWriter()
+    private val writer = outputFile.bufferedWriter()
 
     init {
         // Attempt to close & flush the output file before the process terminates
@@ -41,8 +44,12 @@ class FileLogger(outputfile: File) : LogWriter() {
         )
 
         // Flush the output file every 5 seconds for the case when there a low log output
-        Timer().scheduleAtFixedRate(delay = LOG_FILE_FLUSH_PERIOD, period = LOG_FILE_FLUSH_PERIOD) {
-            writer.flush()
+        CoroutineScope(Dispatchers.IO).launch {
+            while (this.isActive) {
+                log(Severity.Verbose, "Flushing log", "logger")
+                delay(LOG_FILE_FLUSH_PERIOD)
+                writer.flush()
+            }
         }
     }
 

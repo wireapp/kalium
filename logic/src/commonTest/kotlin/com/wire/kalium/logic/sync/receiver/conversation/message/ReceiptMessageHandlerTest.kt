@@ -59,7 +59,7 @@ class ReceiptMessageHandlerTest {
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
 
     @Mock
-    val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
+    private val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
 
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, messageRepository)
 

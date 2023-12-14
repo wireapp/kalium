@@ -416,8 +416,8 @@ class LoginUseCaseTest {
     }
 
     @Test
-    fun givenUserHandleWithDots_whenLoggingInUsingUserHandle_thenReturnSuccess() = runTest {
-        val handle = "cool.user"
+    fun givenUserHandleWithValidCharacters_whenLoggingInUsingUserHandle_thenReturnSuccess() = runTest {
+        val handle = "-cool.user_"
 
         val (arrangement, loginUseCase) = Arrangement()
             .withEmailValidationSucceeding(
@@ -425,7 +425,7 @@ class LoginUseCaseTest {
                 email = handle
             )
             .withHandleValidationReturning(
-                handleValidationResult = ValidateUserHandleResult.Invalid.InvalidCharacters("cooluser", listOf('.')),
+                handleValidationResult = ValidateUserHandleResult.Valid(handle),
                 handle = handle
             )
             .withLoginUsingHandleResulting(Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID))
@@ -448,6 +448,42 @@ class LoginUseCaseTest {
             .coroutine { loginWithHandle(handle, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT) }
             .wasInvoked(exactly = once)
 
+        verify(arrangement.loginRepository)
+            .suspendFunction(arrangement.loginRepository::loginWithEmail)
+            .with(any(), any(), any(), any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserHandleWithInvalidCharacters_whenLoggingInUsingUserHandle_thenReturnInvalidUserIdentifier() = runTest {
+        val handle = "!cool:user?"
+
+        val (arrangement, loginUseCase) = Arrangement()
+            .withEmailValidationSucceeding(
+                isSucceeding = false,
+                email = handle
+            )
+            .withHandleValidationReturning(
+                handleValidationResult = ValidateUserHandleResult.Invalid.InvalidCharacters("cooluser", listOf('!', ':', '?')),
+                handle = handle
+            )
+            .withLoginUsingHandleResulting(Either.Right(TEST_AUTH_TOKENS to TEST_SSO_ID))
+            .arrange()
+
+        val loginUserCaseResult = loginUseCase(handle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
+
+        assertEquals(AuthenticationResult.Failure.InvalidUserIdentifier, loginUserCaseResult)
+
+        verify(arrangement.validateEmailUseCase)
+            .invocation { invoke(handle) }
+            .wasInvoked(exactly = once)
+        verify(arrangement.validateUserHandleUseCase)
+            .invocation { invoke(handle) }
+            .wasInvoked(exactly = once)
+        verify(arrangement.loginRepository)
+            .suspendFunction(arrangement.loginRepository::loginWithHandle)
+            .with(any(), any(), any(), any())
+            .wasNotInvoked()
         verify(arrangement.loginRepository)
             .suspendFunction(arrangement.loginRepository::loginWithEmail)
             .with(any(), any(), any(), any(), any())

@@ -34,7 +34,7 @@ interface EnrollE2EIUseCase {
     suspend fun finalizeEnrollment(
         idToken: String,
         initializationResult: E2EIEnrollmentResult.Initialized
-    ): Either<CoreFailure, E2EIEnrollmentResult>
+    ): Either<E2EIFailure, E2EIEnrollmentResult>
 }
 
 @Suppress("ReturnCount")
@@ -91,7 +91,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
     override suspend fun finalizeEnrollment(
         idToken: String,
         initializationResult: E2EIEnrollmentResult.Initialized
-    ): Either<CoreFailure, E2EIEnrollmentResult> {
+    ): Either<E2EIFailure, E2EIEnrollmentResult> {
 
         var prevNonce = initializationResult.lastNonce
         val authz = initializationResult.authz

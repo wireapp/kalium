@@ -37,10 +37,11 @@ import com.wire.kalium.logic.feature.client.RegisterClientUseCase
 import com.wire.kalium.logic.feature.conversation.CreateConversationResult
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
-import com.wire.kalium.monkeys.importer.Backend
-import com.wire.kalium.monkeys.importer.UserCount
-import com.wire.kalium.monkeys.importer.UserData
 import com.wire.kalium.monkeys.logger
+import com.wire.kalium.monkeys.model.Backend
+import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.model.UserCount
+import com.wire.kalium.monkeys.model.UserData
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
@@ -70,12 +71,13 @@ sealed class MonkeyType {
  * the [monkeyState] which we can use to perform actions.
  */
 @Suppress("TooManyFunctions")
-class Monkey(val monkeyType: MonkeyType) {
+class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     companion object {
         // this means there are users within the team not managed by IM
         // We can still send messages and add them to groups but not act on their behalf
-        fun external(userId: UserId) = Monkey(MonkeyType.External(userId))
-        fun internal(user: UserData) = Monkey(MonkeyType.Internal(user))
+        // MonkeyId is irrelevant for external users as we will never be able to act on their behalf
+        fun external(userId: UserId) = Monkey(MonkeyType.External(userId), MonkeyId(-1, ""))
+        fun internal(user: UserData, monkeyId: MonkeyId) = Monkey(MonkeyType.Internal(user), monkeyId)
     }
 
     private var monkeyState: MonkeyState = MonkeyState.NotReady

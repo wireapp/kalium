@@ -58,6 +58,7 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
+                implementation(libs.sqldelight.androidxPaging)
                 // Concurrent collections
                 implementation(libs.concurrentCollections)
                 implementation(libs.statelyCommons)
@@ -107,7 +108,6 @@ kotlin {
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                implementation(libs.paging3)
                 implementation(libs.work)
                 implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
                     exclude("androidx.core")

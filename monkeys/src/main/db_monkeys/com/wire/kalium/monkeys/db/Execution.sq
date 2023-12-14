@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS Execution (
+    id SERIAL NOT NULL,
+    start_time TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    end_time TIMESTAMP WITHOUT TIME ZONE,
+    PRIMARY KEY(id)
+);
+
+insertExecution:
+INSERT INTO Execution(id) VALUES(DEFAULT) RETURNING id, start_time, end_time;
+
+selectExecution:
+SELECT * FROM Execution WHERE id = ?;
+
+finishExecution:
+UPDATE Execution SET end_time = NOW() WHERE id = ?;

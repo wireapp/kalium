@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageFederationTerminatedContent
+import com.wire.kalium.persistence.MessageLegalHoldContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
@@ -232,5 +233,11 @@ internal object TableMapper {
         latitudeAdapter = FloatColumnAdapter,
         longitudeAdapter = FloatColumnAdapter,
         zoomAdapter = IntColumnAdapter
+    )
+
+    val messageLegalHoldContentAdapter = MessageLegalHoldContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        legal_hold_member_listAdapter = QualifiedIDListAdapter,
+        legal_hold_typeAdapter = EnumColumnAdapter()
     )
 }
