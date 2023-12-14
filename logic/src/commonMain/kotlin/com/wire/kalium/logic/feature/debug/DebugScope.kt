@@ -127,7 +127,7 @@ class DebugScope internal constructor(
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
             conversationRepository = conversationRepository,
-            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
+            legalHoldStatusMapper = LegalHoldStatusMapperImpl,
             proteusClientProvider = proteusClientProvider,
             selfUserId = userId,
             protoContentMapper = protoContentMapper
@@ -137,7 +137,7 @@ class DebugScope internal constructor(
         get() = MLSMessageCreatorImpl(
             conversationRepository = conversationRepository,
             mlsClientProvider = mlsClientProvider,
-            legalHoldStatusMapper = LegalHoldStatusMapperImpl(),
+            legalHoldStatusMapper = LegalHoldStatusMapperImpl,
             selfUserId = userId,
             protoContentMapper = protoContentMapper
         )
