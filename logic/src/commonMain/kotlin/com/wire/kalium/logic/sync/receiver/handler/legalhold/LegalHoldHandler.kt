@@ -75,6 +75,7 @@ internal class LegalHoldHandlerImpl internal constructor(
         if (selfUserId == userId) {
             userConfigRepository.deleteLegalHoldRequest()
             fetchSelfClientsFromRemote()
+            userConfigRepository.setLegalHoldChangeNotified(false)
         } else {
             persistOtherUserClients(userId)
         }
